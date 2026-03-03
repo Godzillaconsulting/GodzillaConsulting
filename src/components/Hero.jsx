@@ -10,7 +10,7 @@ import logoMedhaus from '../assets/Logos/Medhaus Logo@2x.png';
 import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
-import heroVideo from '../assets/Intro LP_final.mp4';
+import heroVideo from '../assets/Videos/Intro LP_final.mp4';
 
 const Hero = () => {
     const logos = [

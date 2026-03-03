@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { Download, X, Check } from 'lucide-react';
+import { useLeadCapture } from '../hooks/useLeadCapture';
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 
 const Recursos = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [email, setEmail] = useState('');
+    const [website, setWebsite] = useState(''); // Honeypot trap
     const [activeItem, setActiveItem] = useState(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
+
+    // Importamos nuestra conexión hook al backend (Esto sustituye temporalmente o acompaña a la simulación visual)
+    const { captureLead, status, errorMessage, resetStatus } = useLeadCapture();
 
     const magnets = [
         {
@@ -139,17 +144,56 @@ const Recursos = () => {
                                     </p>
                                 </div>
 
-                                <form onSubmit={(e) => {
+                                <form onSubmit={async (e) => {
                                     e.preventDefault();
                                     if (email.trim() === '') return;
 
-                                    // Simulamos guardado en CRM y envío de correo
-                                    console.log('Lead capturado (Simulación API de envío):', email);
+                                    // Si un bot llenó el honeypot, lo dejamos pasar sin accionar nada (simulando éxito)
+                                    if (website !== '') {
+                                        setIsSubmitted(true);
+                                        return;
+                                    }
 
-                                    // Cambiamos el estado para mostrar UI de éxito
+                                    // Para que esto funcione 100% el .env debe apuntar al servidor.
+                                    // AHORA conectaremos el click con nuestro servidor real (Node.js)
+                                    // Determinar slug para API basado en el ID
+                                    let slug = '';
+                                    if (activeItem?.id === 1) {
+                                        slug = 'prompts-ia-marketing';
+                                    } else if (activeItem?.id === 2) {
+                                        slug = 'leads-whatsapp';
+                                    }
+
+                                    if (slug) {
+                                        // Mandamos al back el Lead para que mande el CORREO real
+                                        await captureLead(email, slug, website);
+                                    }
+
+                                    /* === DESCARGA DIRECTA COMENTADA POR USUARIO ===
+                                    let fileName = '';
+                                    if (activeItem?.id === 1) fileName = 'prompts-ia.pdf';
+                                    else if (activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
+
+                                    if (fileName) {
+                                        const link = document.createElement('a');
+                                        link.href = `/lead-magnets/${fileName}`;
+                                        link.download = fileName;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }
+                                    ================================================*/
+
+                                    // Cambiamos el estado para mostrar UI de éxito en la pantalla al usuario
                                     setIsSubmitted(true);
                                 }}>
-                                    <div className="mb-4">
+                                    <div className="mb-4 relative">
+
+                                        {/* HONEYPOT TRAP */}
+                                        <div style={{ position: 'absolute', left: '-5000px' }} aria-hidden="true">
+                                            <input type="text" name="b_website" tabIndex="-1" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                                        </div>
+
                                         <input
                                             type="email"
                                             required
@@ -161,10 +205,20 @@ const Recursos = () => {
                                     </div>
                                     <button
                                         type="submit"
-                                        className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl"
+                                        disabled={status === 'loading'}
+                                        className={`w-full py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center
+                                            ${status === 'loading'
+                                                ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                                : 'bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] hover:shadow-xl'
+                                            }`}
                                     >
-                                        Enviar a mi correo
+                                        {status === 'loading' ? 'Enviando email...' : 'Enviar a mi correo'}
                                     </button>
+
+                                    {/* Mostrar Errores de API si existieran sin trabar la UI */}
+                                    {status === 'error' && (
+                                        <p className="text-red-400 text-sm mt-3 text-center">{errorMessage || 'Error enviando correo'}</p>
+                                    )}
                                     <p className="text-xs text-gray-500 mt-4 text-center">
                                         Prometemos no enviarte spam. Puedes desuscribirte en cualquier momento.
                                     </p>

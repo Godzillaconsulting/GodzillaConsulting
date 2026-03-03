@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import bgVideo from '../assets/7020018_Particle_Dot_3840x2160.mp4';
+// import bgVideo from '../assets/7020018_Particle_Dot_3840x2160.mp4'; // TEMP: Comentado por falta de archivo
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';
@@ -15,37 +15,37 @@ const Servicios = () => {
     const services = [
         {
             id: 'bots',
-            icon: <img src={gifBot} alt="Bot" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifBot} alt="Bot" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'Automatización de Bots',
             desc: 'Automatiza tu atención al cliente 24/7 con bots entrenados en tu negocio, que responden dudas, califican prospectos y los llevan directo a la cita o a la venta. Integrados con WhatsApp, redes sociales y tu CRM.'
         },
         {
             id: 'video',
-            icon: <img src={gifVideo} alt="Video" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifVideo} alt="Video" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'Producción audiovisual',
             desc: 'Creamos contenido audiovisual estratégico que genera confianza, autoridad, fortalece tu marca, comunica tu propuesta de valor y potencia la conversión en campañas y redes sociales.'
         },
         {
             id: 'funnels',
-            icon: <img src={gifEmbudo} alt="Embudo" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifEmbudo} alt="Embudo" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'Embudos de venta',
             desc: 'Estructuramos embudos digitales orientados a resultados que convierten tráfico en citas y oportunidades comerciales medibles.'
         },
         {
             id: 'social',
-            icon: <img src={gifRedes} alt="Redes Sociales" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifRedes} alt="Redes Sociales" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'Gestión de redes sociales',
             desc: 'Administramos la presencia digital de tu marca con una estrategia de contenido profesional, enfocada en posicionamiento, reputación y generación de prospectos.'
         },
         {
             id: 'seo',
-            icon: <img src={gifSeo} alt="SEO" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifSeo} alt="SEO" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'Optimización web y SEO',
             desc: 'Optimizamos tu sitio web y su estructura SEO para mejorar visibilidad en buscadores, experiencia de usuario y generación de leads calificados.'
         },
         {
             id: 'crm',
-            icon: <img src={gifCrm} alt="CRM" className="w-8 h-8 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
+            icon: <img src={gifCrm} alt="CRM" className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 object-contain transition-all group-hover:brightness-0 group-hover:invert" />,
             title: 'CRM con SAAS personalizado',
             desc: 'Implementamos plataformas CRM y soluciones SaaS a la medida para centralizar contactos, automatizar seguimientos y facilitar la gestión comercial de tu equipo.'
         }
@@ -56,7 +56,8 @@ const Servicios = () => {
 
             {/* Header with Video Background */}
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
-                <video
+                {/* VIDEO TEMPORALMENTE COMENTADO
+<video
                     src={bgVideo}
                     autoPlay
                     loop
@@ -64,6 +65,13 @@ const Servicios = () => {
                     playsInline
                     className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
                 />
+*/}
+                {/* PLACEHOLDER PARA MANTENER EL DISEÑO */}
+                <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center text-white/40 border-2 border-dashed border-white/10">
+                    <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 opacity-50"><span className="text-2xl ml-1">▶</span></div>
+                    <span className="text-lg font-medium">Video Placeholder</span>
+                    <span className="text-sm mt-1">Archivo de video faltante</span>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
                 <h2 className="relative z-20 text-5xl md:text-7xl font-black text-center text-white mt-10 tracking-tighter drop-shadow-2xl">
@@ -82,7 +90,7 @@ const Servicios = () => {
                             return (
                                 <div key={srv.id} className="relative z-10 flex flex-col items-center group cursor-pointer" onClick={() => setActiveIdx(idx)}>
                                     <div className={`w-[120px] h-[120px] rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-[#CC0000] border-[6px] border-white outline outline-4 outline-[#CC0000] scale-[1.15] shadow-2xl z-20' : 'bg-[#18181b] border-[6px] border-white hover:bg-[#333333] hover:scale-105 shadow-lg'}`}>
-                                        <div className={`text-white transition-all ${isActive ? 'brightness-0 invert' : ''} [&_img]:block`} style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}>
+                                        <div className={`text-white transition-all ${isActive ? 'brightness-0 invert' : ''} flex items-center justify-center`} style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}>
                                             {srv.icon}
                                         </div>
                                     </div>
@@ -143,7 +151,7 @@ const Servicios = () => {
                                     className={`p-6 flex items-center gap-4 cursor-pointer transition-colors ${isActive ? 'bg-[#111111] text-white' : 'bg-white text-[#111111]'}`}
                                     onClick={() => setActiveIdx(isActive ? -1 : idx)}
                                 >
-                                    <div className={`p-3 rounded-full ${isActive ? 'bg-[#CC0000] text-white [&_img]:brightness-0 [&_img]:invert' : 'bg-[#111111] text-white'}`}>
+                                    <div className={`p-3 rounded-full flex items-center justify-center ${isActive ? 'bg-[#CC0000] text-white [&_img]:brightness-0 [&_img]:invert' : 'bg-[#111111] text-white'}`}>
                                         {srv.icon}
                                     </div>
                                     <h3 className="font-bold text-lg leading-tight">{srv.title}</h3>

@@ -13,6 +13,8 @@
     "@sanity/client": "^7.16.0",
     "@sanity/image-url": "^2.0.3",
     "@tailwindcss/vite": "^4.2.1",
+    "mongoose": "^9.2.3",
+    "pdfkit": "^0.17.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

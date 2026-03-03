@@ -15,7 +15,7 @@ const Responsabilidades = () => {
         <section className="bg-[#111111] pt-24 pb-12">
             <div className="container mx-auto px-6 max-w-5xl">
                 <div className="bg-[#1A1A1A] rounded-t-[2rem] p-10 md:p-16 border-b-8 border-[#CC0000]">
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase leading-none">
+                    <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase leading-none break-words hyphens-auto">
                         Responsabilidades <br className="hidden md:block" />
                         <span className="text-gray-400">de nuestros clientes</span>
                     </h2>

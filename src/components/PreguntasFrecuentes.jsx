@@ -1,40 +1,41 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { client } from '../sanityClient';
 
-const faqs = [
+const defaultFaqs = [
     {
-        id: 1,
+        orden: 1,
         question: '¿Qué servicios ofrecen exactamente?',
         answer:
             'Ofrecemos una gama completa de servicios digitales que incluyen automatización de bots, producción audiovisual estratégica, diseño de embudos de venta, gestión de redes sociales, optimización SEO y CRM personalizado.',
     },
     {
-        id: 2,
+        orden: 2,
         question: '¿Cuánto tiempo tarda en verse resultados?',
         answer:
             'Los tiempos varían según el servicio. Las campañas de captación pueden generar leads en días, mientras que el SEO y el posicionamiento de marca suelen tomar entre 3 y 6 meses para mostrar resultados significativos.',
     },
     {
-        id: 3,
+        orden: 3,
         question: '¿Trabajan con clientes fuera de México?',
         answer:
             'Sí, tenemos clientes en diversos países. Nuestras estrategias digitales son globales y podemos adaptarnos a diferentes mercados e idiomas.',
     },
     {
-        id: 4,
+        orden: 4,
         question: '¿Cómo es el proceso de contratación?',
         answer:
             'El proceso comienza con una sesión de estrategia gratuita donde analizamos tus necesidades. Luego presentamos una propuesta personalizada, firmamos el contrato y comenzamos la fase de implementación.',
     },
     {
-        id: 5,
+        orden: 5,
         question: '¿Ofrecen garantías sobre los resultados?',
         answer:
             'Trabajamos con métricas claras y objetivos definidos desde el inicio. Si bien no podemos garantizar resultados exactos (ninguna agencia honesta puede), nos comprometemos con la transparencia total y la optimización continua de cada campaña.',
     },
     {
-        id: 6,
+        orden: 6,
         question: '¿Cuáles son sus métodos de pago?',
         answer:
             'Aceptamos transferencia bancaria, tarjeta de crédito/débito y pagos internacionales vía PayPal o Stripe. Los planes se facturan mensualmente y no hay contratos de largo plazo obligatorios.',
@@ -82,6 +83,19 @@ function FAQItem({ item }) {
 }
 
 export default function PreguntasFrecuentes() {
+    const [faqs, setFaqs] = useState(defaultFaqs);
+
+    useEffect(() => {
+        client
+            .fetch(`*[_type == "faq"] | order(orden asc)`)
+            .then((data) => {
+                if (data && data.length > 0) {
+                    setFaqs(data);
+                }
+            })
+            .catch((error) => console.error('Error cargando FAQs de Sanity:', error));
+    }, []);
+
     return (
         <div className="min-h-screen bg-[#0d0d0d] pt-[100px] pb-24">
             {/* Header */}
@@ -102,8 +116,8 @@ export default function PreguntasFrecuentes() {
             {/* FAQ List */}
             <div className="max-w-3xl mx-auto px-6">
                 <div className="bg-[#161616] rounded-2xl border border-white/5 shadow-2xl px-8 md:px-12 py-4">
-                    {faqs.map((faq) => (
-                        <FAQItem key={faq.id} item={faq} />
+                    {faqs.map((faq, idx) => (
+                        <FAQItem key={faq._id || faq.orden || idx} item={faq} />
                     ))}
                 </div>
 

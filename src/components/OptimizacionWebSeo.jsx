@@ -164,7 +164,7 @@ const OptimizacionWebSeo = () => {
                 </div>
             </div>
         </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

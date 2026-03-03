@@ -160,7 +160,7 @@ const NivelExpansion = () => {
                     </div>
                 </div>
             </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </div>
     );
 };

@@ -165,7 +165,7 @@ const Bots = () => {
                 </div>
             </div>
         </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

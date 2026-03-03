@@ -164,7 +164,7 @@ const EmbudosDeVenta = () => {
                 </div>
             </div>
         </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

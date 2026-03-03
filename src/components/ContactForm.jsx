@@ -6,7 +6,7 @@ import facebookIcon from '../assets/icons/1730342312_facebook-logo-2024.png';
 import tiktokIcon from '../assets/icons/tik-tok-png-logo-dad7.png';
 import linkedinIcon from '../assets/icons/1715491568linkedin-icon-png.png';
 
-const ContactForm = () => {
+const ContactForm = ({ showNewsletter = true }) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [sessionType, setSessionType] = useState('video'); // 'video' | 'presencial'
 
@@ -169,43 +169,44 @@ const ContactForm = () => {
                     </div>
                 </div>
 
-                {/* Newsletter and Social Section */}
-                <div className="mt-28 max-w-[350px] mx-auto flex flex-col items-center justify-center text-center">
-                    <img src={godzillaLogoCircle} alt="Godzilla Consulting Logo" className="w-[124px] h-[124px] object-contain mb-8" />
-                    <h4 className="text-3xl font-black text-[#111111] mb-8 leading-tight tracking-tight">
-                        Suscríbete a <br /> nuestro boletín
-                    </h4>
-                    <div className="w-full flex items-center border-b border-gray-400 pb-2 mb-2 group cursor-pointer focus-within:border-[#CC0000] focus-within:border-b-2 transition-all">
-                        <input
-                            type="email"
-                            placeholder="Ingresa tu correo electrónico"
-                            className="w-full bg-transparent outline-none text-[#111111] placeholder-gray-500 font-medium text-sm"
-                        />
-                        <button className="text-[#111111] group-hover:text-[#CC0000] transition-colors focus:outline-none ml-2">
-                            <ArrowRight size={20} />
-                        </button>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-medium tracking-wide w-full text-left mb-16">Obtén las últimas noticias sobre marketing e IA.</p>
+                {showNewsletter && (
+                    <div className="mt-28 max-w-[350px] mx-auto flex flex-col items-center justify-center text-center">
+                        <img src={godzillaLogoCircle} alt="Godzilla Consulting Logo" className="w-[124px] h-[124px] object-contain mb-8" />
+                        <h4 className="text-3xl font-black text-[#111111] mb-8 leading-tight tracking-tight">
+                            Suscríbete a <br /> nuestro boletín
+                        </h4>
+                        <div className="w-full flex items-center border-b border-gray-400 pb-2 mb-2 group cursor-pointer focus-within:border-[#CC0000] focus-within:border-b-2 transition-all">
+                            <input
+                                type="email"
+                                placeholder="Ingresa tu correo electrónico"
+                                className="w-full bg-transparent outline-none text-[#111111] placeholder-gray-500 font-medium text-sm"
+                            />
+                            <button className="text-[#111111] group-hover:text-[#CC0000] transition-colors focus:outline-none ml-2">
+                                <ArrowRight size={20} />
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-gray-500 font-medium tracking-wide w-full text-left mb-16">Obtén las últimas noticias sobre marketing e IA.</p>
 
-                    <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
-                    <div className="flex justify-center items-center gap-8">
-                        <a href="#" className="hover:scale-110 transition-transform">
-                            <img src={instagramIcon} alt="Instagram" className="w-10 h-10 object-contain" />
-                        </a>
-                        <a href="#" className="hover:scale-110 transition-transform">
-                            <img src={facebookIcon} alt="Facebook" className="w-10 h-10 object-contain" />
-                        </a>
-                        <a href="#" className="hover:scale-110 transition-transform">
-                            <img src={tiktokIcon} alt="TikTok" className="w-10 h-10 object-contain" />
-                        </a>
-                        <a href="#" className="hover:scale-110 transition-transform">
-                            <img src={linkedinIcon} alt="LinkedIn" className="w-10 h-10 object-contain" />
-                        </a>
+                        <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
+                        <div className="flex justify-center items-center gap-8">
+                            <a href="#" className="hover:scale-110 transition-transform">
+                                <img src={instagramIcon} alt="Instagram" className="w-10 h-10 object-contain" />
+                            </a>
+                            <a href="#" className="hover:scale-110 transition-transform">
+                                <img src={facebookIcon} alt="Facebook" className="w-10 h-10 object-contain" />
+                            </a>
+                            <a href="#" className="hover:scale-110 transition-transform">
+                                <img src={tiktokIcon} alt="TikTok" className="w-10 h-10 object-contain" />
+                            </a>
+                            <a href="#" className="hover:scale-110 transition-transform">
+                                <img src={linkedinIcon} alt="LinkedIn" className="w-10 h-10 object-contain" />
+                            </a>
+                        </div>
                     </div>
-                </div>
+                )}
 
             </div>
-        </section>
+        </section >
     );
 };
 

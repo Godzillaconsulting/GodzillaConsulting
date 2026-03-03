@@ -162,7 +162,7 @@ const NivelEsencial = () => {
                     </div>
                 </div>
             </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </div>
     );
 };

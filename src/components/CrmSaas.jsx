@@ -165,7 +165,7 @@ const CrmSaas = () => {
                     </div>
                 </div>
             </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

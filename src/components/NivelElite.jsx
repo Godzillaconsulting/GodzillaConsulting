@@ -160,7 +160,7 @@ const NivelElite = () => {
                     </div>
                 </div>
             </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </div>
     );
 };

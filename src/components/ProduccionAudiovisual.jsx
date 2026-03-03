@@ -164,7 +164,7 @@ const ProduccionAudiovisual = () => {
                 </div>
             </div>
         </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

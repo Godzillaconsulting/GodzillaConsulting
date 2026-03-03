@@ -184,12 +184,12 @@ const Paquetes = () => {
                                                 Contáctanos
                                             </Link>
                                         ) : (
-                                            <button className={`w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
+                                            <a href="#contacto" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
                                                 {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
-                                            </button>
+                                            </a>
                                         )}
                                     </div>
                                 </div>

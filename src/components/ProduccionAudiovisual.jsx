@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
+import { client } from '../sanityClient';
+
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';
@@ -9,13 +11,29 @@ import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
 import gifCrm from '../assets/Gifs/Estadistica.gif';
 import audiovisualVideo from '../assets/GC_VideoEImagenWebPage_AM_181225.mp4';
 
+const defaultContent = {
+    title: 'Producción\naudiovisual',
+    subtitle: 'Cambiamos tus likes por ventas con contenido audiovisual irresistible.',
+    ctaText: 'Agendar cita',
+    ctaLink: '#contacto'
+};
+
 const ProduccionAudiovisual = () => {
     const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(true);
     const [isMuted, setIsMuted] = useState(true);
+    const [content, setContent] = useState(defaultContent);
 
     useEffect(() => {
         window.scrollTo(0, 0);
+
+        client.fetch(`*[_type == "landingServicio" && slug.current == "audiovisual"][0]{..., "videoFileUrl": videoFile.asset->url}`)
+            .then((data) => {
+                if (data) {
+                    setContent(Object.assign({}, defaultContent, data));
+                }
+            })
+            .catch(err => console.error("Error fetching audiovisual content:", err));
     }, []);
 
     const togglePlay = () => {
@@ -37,14 +55,15 @@ const ProduccionAudiovisual = () => {
     };
 
     return (
-        <section className="pt-[100px] min-h-screen flex flex-col bg-[#111111]">
+        <>
+            <section className="pt-[100px] min-h-screen flex flex-col bg-[#111111]">
             <div className="flex-1 flex flex-col md:flex-row w-full relative">
 
                 {/* Left Side: Video Area */}
                 <div className="w-full md:w-2/3 min-h-[400px] md:min-h-0 bg-[#18181b] relative overflow-hidden group">
                     <video
                         ref={videoRef}
-                        src={audiovisualVideo}
+                        src={content.videoFileUrl || content.videoUrl || audiovisualVideo}
                         autoPlay
                         muted
                         playsInline
@@ -97,14 +116,15 @@ const ProduccionAudiovisual = () => {
                 {/* Right Side: Red Area with Content */}
                 <div className="w-full md:w-1/3 bg-[#CC0000] flex flex-col justify-center items-center py-16 md:py-0 px-8 lg:px-12">
                     <div className="max-w-xs flex flex-col items-center text-center">
-                        <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight">
-                            Producción<br />audiovisual
-                        </h1>
+                        <h1
+                            className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
+                            dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
+                        />
                         <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                            Cambiamos tus likes por ventas con contenido audiovisual irresistible.
+                            {content.subtitle}
                         </p>
-                        <Link to="/#contacto" className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl">
-                            Agendar cita <ArrowRight size={20} className="text-[#CC0000]" />
+                        <Link to={content.ctaLink} className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl">
+                            {content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
                         </Link>
                     </div>
                 </div>
@@ -135,6 +155,8 @@ const ProduccionAudiovisual = () => {
                 </div>
             </div>
         </section>
+            <ContactForm />
+        </>
     );
 };
 

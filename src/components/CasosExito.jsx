@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { client, urlFor } from '../sanityClient';
 
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from '../assets/Logos/Circle One Logo@2x.png';
@@ -8,11 +9,37 @@ import logoGrupoMrg from '../assets/Logos/Grupo MRG Logo@2x.png';
 import logoMedhaus from '../assets/Logos/Medhaus Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 
+const defaultCases = [
+    { _id: 'default-1', orden: 1, logoSrc: logoFacemaker, nombre: 'Facemaker', category: 'Clínica Estética' },
+    { _id: 'default-2', orden: 2, logoSrc: logoCircleOne, nombre: 'Circle One', category: 'Hotelería' },
+    { _id: 'default-3', orden: 3, logoSrc: logoCeoCuts, nombre: 'CEO Cuts', category: 'Barbería' },
+    { _id: 'default-4', orden: 4, logoSrc: logoMedhaus, nombre: 'Medhaus', category: 'Sector Médico' },
+    { _id: 'default-5', orden: 5, logoSrc: logoArtika, nombre: 'Artika', category: 'Heladerías' },
+    { _id: 'default-6', orden: 6, logoSrc: logoGrupoMrg, nombre: 'Grupo MRG', category: 'Banquetes y Eventos' },
+];
+
 const CasosExito = () => {
     const scrollContainerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeftState, setScrollLeftState] = useState(0);
+    const [cases, setCases] = useState(defaultCases);
+
+    useEffect(() => {
+        client
+            .fetch(`*[_type == "casoExito"] | order(orden asc)`)
+            .then((data) => {
+                if (data && data.length > 0) {
+                    setCases(data);
+                }
+            })
+            .catch((error) => console.error('Error cargando casos de éxito de Sanity:', error));
+    }, []);
+
+    const getLogoSrc = (item) => {
+        if (item.logo) return urlFor(item.logo).width(200).url();
+        return item.logoSrc;
+    };
 
     const onMouseDown = (e) => {
         setIsDragging(true);
@@ -20,19 +47,14 @@ const CasosExito = () => {
         setScrollLeftState(scrollContainerRef.current.scrollLeft);
     };
 
-    const onMouseLeave = () => {
-        setIsDragging(false);
-    };
-
-    const onMouseUp = () => {
-        setIsDragging(false);
-    };
+    const onMouseLeave = () => setIsDragging(false);
+    const onMouseUp = () => setIsDragging(false);
 
     const onMouseMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
         const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 2; // Velocidad de arrastre
+        const walk = (x - startX) * 2;
         scrollContainerRef.current.scrollLeft = scrollLeftState - walk;
     };
 
@@ -47,15 +69,6 @@ const CasosExito = () => {
             scrollContainerRef.current.scrollBy({ left: 350, behavior: 'smooth' });
         }
     };
-
-    const cases = [
-        { id: 1, logo: logoFacemaker, category: 'Clínica Estética' },
-        { id: 2, logo: logoCircleOne, category: 'Hotelería' },
-        { id: 3, logo: logoCeoCuts, category: 'Barbería' },
-        { id: 4, logo: logoMedhaus, category: 'Sector Médico' },
-        { id: 5, logo: logoArtika, category: 'Heladerías' },
-        { id: 6, logo: logoGrupoMrg, category: 'Banquetes y Eventos' },
-    ];
 
     return (
         <section id="portafolio" className="py-24 bg-[#111111] relative overflow-hidden">
@@ -94,7 +107,7 @@ const CasosExito = () => {
                     >
                         {cases.map((item) => (
                             <div
-                                key={item.id}
+                                key={item._id}
                                 className="flex-none w-[280px] md:w-[350px] aspect-square snap-center relative bg-[#1A1A1A] rounded-[2rem] border-2 border-transparent hover:border-[#CC0000] transition-all duration-300 group/card cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(204,0,0,0.3)]"
                             >
                                 {/* Red outline detail from prototype */}
@@ -104,8 +117,8 @@ const CasosExito = () => {
                                 <div className="relative z-10 h-full flex flex-col items-center justify-center p-8 gap-6">
                                     <div className="flex-1 flex items-center justify-center w-full">
                                         <img
-                                            src={item.logo}
-                                            alt="Caso de Éxito"
+                                            src={getLogoSrc(item)}
+                                            alt={item.nombre || 'Caso de Éxito'}
                                             className="max-h-20 w-auto object-contain brightness-0 invert opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300"
                                         />
                                     </div>

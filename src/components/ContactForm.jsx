@@ -10,17 +10,127 @@ const ContactForm = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [sessionType, setSessionType] = useState('video'); // 'video' | 'presencial'
 
-    const handleSubmit = (e) => {
+    // Estados para los campos de captura
+    const [nombre, setNombre] = useState('');
+    const [email, setEmail] = useState('');
+    const [telefono, setTelefono] = useState('');
+    const [fecha, setFecha] = useState('');
+    const [hora, setHora] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (window.fbq) {
-            window.fbq('track', 'Lead');
+        setIsLoading(true);
+
+        const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/contact';
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, email, telefono, preferencia_sesion: sessionType, fecha, hora })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                if (window.fbq) {
+                    window.fbq('track', 'Lead');
+                }
+                setIsSubmitted(true);
+                // Limpiar campos
+                setNombre('');
+                setEmail('');
+                setTelefono('');
+                setFecha('');
+                setHora('');
+            } else {
+                alert(data.message || 'Error al procesar el registro.');
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('Error de conexión. Por favor revisa tu internet.');
+        } finally {
+            setIsLoading(false);
         }
-        setIsSubmitted(true);
     };
 
     const resetForm = () => {
         setIsSubmitted(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const today = new Date();
+    // Ajustar a la zona horaria local para evitar desfasajes en minDate
+    const minDateStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    // Verifica si la cadena YYYY-MM-DD cae en fin de semana o feriado en EE. UU.
+    const isWeekendOrHoliday = (dateString) => {
+        const d = new Date(`${dateString}T00:00:00`);
+        const dayOfWeek = d.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) return true; // Sábado o Domingo
+
+        const month = d.getMonth() + 1;
+        const day = d.getDate();
+        const year = d.getFullYear();
+
+        const getNthDayOfMonth = (n, targetDayOfWeek, m, y) => {
+            let count = 0;
+            for (let i = 1; i <= 31; i++) {
+                const temp = new Date(y, m - 1, i);
+                if (temp.getMonth() !== m - 1) break;
+                if (temp.getDay() === targetDayOfWeek) {
+                    count++;
+                    if (count === n) return i;
+                }
+            }
+            return -1;
+        };
+
+        const getLastDayOfMonth = (targetDayOfWeek, m, y) => {
+            let lastDay = -1;
+            for (let i = 1; i <= 31; i++) {
+                const temp = new Date(y, m - 1, i);
+                if (temp.getMonth() !== m - 1) break;
+                if (temp.getDay() === targetDayOfWeek) {
+                    lastDay = i;
+                }
+            }
+            return lastDay;
+        };
+
+        // Fijos
+        if (month === 1 && day === 1) return true;
+        if (month === 6 && day === 19) return true;
+        if (month === 7 && day === 4) return true;
+        if (month === 11 && day === 11) return true;
+        if (month === 12 && day === 25) return true;
+
+        // Variables
+        if (month === 1 && day === getNthDayOfMonth(3, 1, 1, year)) return true; // MLK
+        if (month === 2 && day === getNthDayOfMonth(3, 1, 2, year)) return true; // Presidents
+        if (month === 5 && day === getLastDayOfMonth(1, 5, year)) return true; // Memorial
+        if (month === 9 && day === getNthDayOfMonth(1, 1, 9, year)) return true; // Labor 
+        if (month === 10 && day === getNthDayOfMonth(2, 1, 10, year)) return true; // Columbus 
+        if (month === 11 && day === getNthDayOfMonth(4, 4, 11, year)) return true; // Thanksgiving
+
+        return false;
+    };
+
+    const handleFechaChange = (e) => {
+        const val = e.target.value;
+        if (!val) {
+            setFecha('');
+            return;
+        }
+
+        if (isWeekendOrHoliday(val)) {
+            alert('Por favor selecciona una fecha válida: de Lunes a Viernes y que no sea un día feriado en EE. UU.');
+            setFecha('');
+            e.target.value = '';
+        } else {
+            setFecha(val);
+        }
     };
 
     return (
@@ -59,7 +169,7 @@ const ContactForm = () => {
                                         <label className="flex items-center text-sm font-bold mb-2">
                                             Nombre completo <span className="text-[#CC0000] mx-1">*</span>
                                         </label>
-                                        <input type="text" required placeholder="Juan José Pérez Rojas" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
+                                        <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required placeholder="Juan José Pérez Rojas" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
                                     </div>
 
                                     {/* Email */}
@@ -67,7 +177,7 @@ const ContactForm = () => {
                                         <label className="flex items-center text-sm font-bold mb-2">
                                             E-mail <span className="text-[#CC0000] mx-1">*</span>
                                         </label>
-                                        <input type="email" required placeholder="Juanjoseprojas@outlook.com" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
+                                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Juanjoseprojas@outlook.com" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
                                     </div>
 
                                     {/* Teléfono */}
@@ -80,7 +190,7 @@ const ContactForm = () => {
                                                 <option>+52</option>
                                                 <option>+1</option>
                                             </select>
-                                            <input type="tel" required placeholder="656 958 4728" className="w-full bg-transparent text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
+                                            <input type="tel" value={telefono} onChange={e => setTelefono(e.target.value)} required placeholder="656 958 4728" className="w-full bg-transparent text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
                                         </div>
                                     </div>
 
@@ -115,20 +225,20 @@ const ContactForm = () => {
                                             <label className="flex items-center text-sm font-bold mb-2">
                                                 Fecha (lun-vie) <span className="text-[#CC0000] mx-1">*</span>
                                             </label>
-                                            <select required defaultValue="" className="w-full bg-white text-gray-800 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000] appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}>
-                                                <option value="" disabled className="text-gray-500">dd/mm/aa</option>
-                                                <option value="lunes">Lunes</option>
-                                                <option value="martes">Martes</option>
-                                                <option value="miercoles">Miércoles</option>
-                                                <option value="jueves">Jueves</option>
-                                                <option value="viernes">Viernes</option>
-                                            </select>
+                                            <input
+                                                type="date"
+                                                required
+                                                min={minDateStr}
+                                                value={fecha}
+                                                onChange={handleFechaChange}
+                                                className="w-full bg-white text-gray-800 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000] appearance-none cursor-pointer"
+                                            />
                                         </div>
                                         <div>
                                             <label className="flex items-center text-sm font-bold mb-2">
                                                 Hora <span className="text-[#CC0000] mx-1">*</span>
                                             </label>
-                                            <select required defaultValue="" className="w-full bg-white text-gray-800 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000] appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}>
+                                            <select required value={hora} onChange={(e) => setHora(e.target.value)} className="w-full bg-white text-gray-800 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000] appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}>
                                                 <option value="" disabled className="text-gray-500">Seleccionar hora</option>
                                                 <option value="09:00">09:00 AM</option>
                                                 <option value="12:00">12:00 PM</option>
@@ -140,8 +250,8 @@ const ContactForm = () => {
 
                                     {/* Submit */}
                                     <div className="flex flex-col items-center pt-8">
-                                        <button type="submit" className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-10 py-4 rounded-full font-bold text-lg w-auto transition-all hover:scale-105 uppercase shadow-[0_4px_14px_rgba(204,0,0,0.4)]">
-                                            CONFIRMAR CITA
+                                        <button type="submit" disabled={isLoading} className={`hover:bg-white text-white hover:text-[#CC0000] px-10 py-4 rounded-full font-bold text-lg w-auto transition-all hover:scale-105 uppercase shadow-[0_4px_14px_rgba(204,0,0,0.4)] ${isLoading ? 'bg-gray-500 cursor-not-allowed' : 'bg-[#CC0000]'}`}>
+                                            {isLoading ? 'ENVIANDO...' : 'CONFIRMAR CITA'}
                                         </button>
                                         <p className="mt-6 text-sm font-bold italic text-white flex items-center">
                                             Campos obligatorios <span className="text-[#CC0000] text-lg leading-none ml-1">*</span>
@@ -152,13 +262,13 @@ const ContactForm = () => {
                                 <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
                                     <CheckCircle size={80} className="text-[#25D366] mb-8 animate-bounce" />
                                     <p className="text-[#25D366] font-bold text-sm tracking-widest uppercase mb-4">
-                                        TU RESPUESTA FUE ENVIADA CON ÉXITO
+                                        ¡REGISTRO EXITOSO!
                                     </p>
                                     <h3 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
                                         ¡MUCHAS GRACIAS<br />POR TU TIEMPO!
                                     </h3>
                                     <p className="text-gray-300 text-lg mb-12 max-w-sm mx-auto">
-                                        NUESTRO EQUIPO SE PONDRÁ EN CONTACTO CONTIGO LO MÁS PRONTO POSIBLE.
+                                        Godzilla Consulting te enviará información pronto.
                                     </p>
                                     <button onClick={resetForm} className="bg-transparent text-white border-2 border-white px-10 py-3 rounded-full font-bold hover:bg-white hover:text-[#111111] transition-colors">
                                         Regresar al formulario

@@ -40,7 +40,7 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
     while (retries >= 0) {
         try {
             const result = await resend.emails.send({
-                from: 'Godzilla Consulting <hola@godzillaconsulting.com>',
+                from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
                 to: [to],
                 subject: subject,
                 html: htmlTemplate,

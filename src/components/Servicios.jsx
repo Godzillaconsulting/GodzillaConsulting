@@ -36,7 +36,7 @@ const Servicios = () => {
 
     // Obtiene la URL del ícono: desde Sanity o desde el asset local
     const getIconSrc = (srv) => {
-        if (srv.icono) return urlFor(srv.icono).width(64).height(64).url();
+        if (srv.icono) return urlFor(srv.icono).width(256).height(256).url();
         return srv.iconSrc;
     };
 
@@ -47,7 +47,7 @@ const Servicios = () => {
         <img
             src={getIconSrc(srv)}
             alt={srv.title}
-            className="w-8 h-8 object-contain transition-all"
+            className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"
             style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}
         />
     );
@@ -93,7 +93,7 @@ const Servicios = () => {
                                     <div className={`w-[120px] h-[120px] rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-[#CC0000] border-[6px] border-white outline outline-4 outline-[#CC0000] scale-[1.15] shadow-2xl z-20' : 'bg-[#18181b] border-[6px] border-white hover:bg-[#333333] hover:scale-105 shadow-lg'}`}>
                                         {renderIconImg(srv, isActive)}
                                     </div>
-                                    <h3 className={`mt-8 text-center font-bold text-base md:text-lg max-w-[180px] text-[#CC0000] transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+                                    <h3 className={`mt-10 text-center font-bold text-base md:text-xl max-w-[200px] text-[#CC0000] transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                                         {srv.title}
                                     </h3>
                                 </div>

@@ -6,30 +6,30 @@ import { client } from '../sanityClient';
 const Paquetes = () => {
     const defaultPackages = [
         {
-            id: 1,
-            title: 'Nivel Expansión',
-            price: '$29,900',
-            period: 'al mes',
-            highlighted: false,
-            features: [
-                'Todo lo del Nivel Esencial',
-                'Tráfico Bilingüe (Ads Meta/Google)',
-                'Landing Page de Alta Conversión'
-            ],
-            guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.'
-        },
-        {
             id: 2,
             title: 'Nivel Esencial',
             price: '$7,900',
             period: 'al mes',
-            highlighted: true,
+            highlighted: false,
             features: [
                 'Agente IA (Web + WhatsApp)',
                 'Respuesta en menos de 5 segundos 24/7',
                 'Captura de datos automática'
             ],
             guarantee: 'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.'
+        },
+        {
+            id: 1,
+            title: 'Nivel Expansión',
+            price: '$29,900',
+            period: 'al mes',
+            highlighted: true,
+            features: [
+                'Todo lo del Nivel Esencial',
+                'Tráfico Bilingüe (Ads Meta/Google)',
+                'Landing Page de Alta Conversión'
+            ],
+            guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.'
         },
         {
             id: 3,
@@ -53,7 +53,18 @@ const Paquetes = () => {
         client.fetch(`*[_type == "paquete"] | order(id asc)`)
             .then((data) => {
                 if (data && data.length > 0) {
-                    setPackages(data);
+                    const desiredOrder = [2, 1, 3];
+                    const sortedData = data.sort((a, b) => {
+                        const indexA = desiredOrder.indexOf(a.id);
+                        const indexB = desiredOrder.indexOf(b.id);
+                        return (indexA !== -1 ? indexA : 99) - (indexB !== -1 ? indexB : 99);
+                    });
+
+                    const finalData = sortedData.map((pkg, index) => ({
+                        ...pkg,
+                        highlighted: index === 1
+                    }));
+                    setPackages(finalData);
                 }
             })
             .catch((error) => console.error("Error cargando paquetes de Sanity:", error));
@@ -118,21 +129,21 @@ const Paquetes = () => {
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                 : 'bg-white text-black hover:bg-gray-200'}
                    `}>
-                                            Elegir este plan
+                                            {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
                                         </Link>
                                     ) : pkg.id === 1 ? (
                                         <Link to="/nivel-expansion" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                 : 'bg-white text-black hover:bg-gray-200'}
                    `}>
-                                            Contáctanos
+                                            {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
                                         </Link>
                                     ) : pkg.id === 3 ? (
                                         <Link to="/nivel-elite" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                 : 'bg-white text-black hover:bg-gray-200'}
                    `}>
-                                            Contáctanos
+                                            {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
                                         </Link>
                                     ) : (
                                         <button className={`w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg

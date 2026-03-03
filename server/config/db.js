@@ -1,46 +1,28 @@
-import mongoose from 'mongoose';
-import LeadMagnet from '../models/LeadMagnet.js';
+import pg from 'pg';
+import dotenv from 'dotenv';
 
-const seedDatabase = async () => {
-    try {
-        const count = await LeadMagnet.countDocuments();
-        if (count === 0) {
-            await LeadMagnet.insertMany([
-                {
-                    slug: 'prompts-ia-marketing',
-                    title: '7 prompts de IA para marketing que sí funcionan',
-                    email_subject: '🎁 Aquí están tus 7 prompts de IA para marketing',
-                    email_body: 'Hola, gracias por descargar nuestro recurso. Adjunto encontrarás los 7 prompts de IA para marketing que realmente generan resultados. Cualquier pregunta, responde este correo.',
-                    file_url: 'https://tu-storage.com/prompts.pdf' // Reemplazar con URL real
-                },
-                {
-                    slug: 'leads-whatsapp',
-                    title: 'Cómo generar leads en WhatsApp sin spam',
-                    email_subject: '📲 Tu guía: Genera leads en WhatsApp sin spam',
-                    email_body: 'Hola, gracias por tu interés. Adjunto encontrarás la guía completa para generar leads en WhatsApp de forma profesional y sin spam.',
-                    file_url: 'https://tu-storage.com/whatsapp.pdf' // Reemplazar con URL real
-                }
-            ]);
-            console.log('🌱 Base de datos inicializada automáticamente con Lead Magnets.');
-        }
-    } catch (error) {
-        console.error('❌ Error inicializando datos semilla:', error.message);
+dotenv.config();
+
+const { Pool } = pg;
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
-};
+});
 
-const connectDB = async () => {
+// Verificación de conexión
+export const connectDB = async () => {
     try {
-        if (mongoose.connection.readyState >= 1) return;
-        const conn = await mongoose.connect(process.env.MONGODB_URI);
-        console.log(`✅ MongoDB Conectado: ${conn.connection.host}`);
-
-        // Correr el seeder para asegurar que existen los magnets
-        await seedDatabase();
-
+        const client = await pool.connect();
+        console.log('✅ PostgreSQL Conectado a Neon');
+        client.release();
     } catch (error) {
-        console.error(`❌ Error en MongoDB: ${error.message}`);
+        console.error(`❌ Error en PostgreSQL: ${error.message}`);
         process.exit(1);
     }
 };
 
-export default connectDB;
+export default pool;
+

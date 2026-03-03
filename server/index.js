@@ -4,12 +4,13 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import leadsRoutes from './routes/leads.js';
-import connectDB from './config/db.js';
+import contactRoutes from './routes/contact.js';
+import { connectDB } from './config/db.js';
 
 // Inicializar variables de entorno (.env)
 dotenv.config();
 
-// Inicializar conexión a MongoDB Atlas
+// Inicializar conexión a PostgreSQL (Neon)
 connectDB();
 
 const app = express();
@@ -54,6 +55,7 @@ app.use(express.json());
 
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
+app.use('/api/contact', apiLimiter, contactRoutes);
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));

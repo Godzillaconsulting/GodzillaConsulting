@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { client } from '../sanityClient';

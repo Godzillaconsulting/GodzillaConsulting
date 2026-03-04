@@ -162,35 +162,14 @@ const Paquetes = () => {
                                                 {pkg.guarantee}
                                             </p>
                                         )}
-                                        {pkg.id === 2 ? (
-                                            <Link to="/nivel-esencial" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
+                                        <Link
+                                            to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
+                                            className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
-                                                Elegir este plan
-                                            </Link>
-                                        ) : pkg.id === 1 ? (
-                                            <Link to="/nivel-expansion" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                                Contáctanos
-                                            </Link>
-                                        ) : pkg.id === 3 ? (
-                                            <Link to="/nivel-elite" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                                Contáctanos
-                                            </Link>
-                                        ) : (
-                                            <Link to={`/${pkg.title.toLowerCase().replace(/\s+/g, '-')}`} className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                                {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
-                                            </Link>
-                                        )}
+                                            {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
+                                        </Link>
                                     </div>
                                 </div>
                             )

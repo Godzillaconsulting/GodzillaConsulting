@@ -24,17 +24,23 @@ const port = process.env.PORT || 3000;
 app.use(helmet());
 
 // CORS: Define qué dominios pueden hacer peticiones a este servidor
-const allowedOrigins = [process.env.FRONTEND_URL]; // Solo acepta tu Frontend
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'https://godzillaconsulting.ai',
+    'https://www.godzillaconsulting.ai'
+];
+
 app.use(cors({
     origin: function (origin, callback) {
-        // En POSTMAN/local origin puede ser undefined. Bloquéalo en produccion.
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // En POSTMAN/local origin puede ser undefined. 
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
             callback(null, true);
         } else {
             callback(new Error('Bloqueado por CORS: Origen no permitido.'));
         }
     },
-    methods: ['POST', 'OPTIONS'], // Solo necesitamos POST para recibir los leads
+    methods: ['POST', 'GET', 'OPTIONS'],
+    credentials: true
 }));
 
 // Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)

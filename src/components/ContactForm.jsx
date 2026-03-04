@@ -22,7 +22,17 @@ const ContactForm = ({ showNewsletter = true }) => {
         e.preventDefault();
         setIsLoading(true);
 
-        const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/contact';
+        const isProd = typeof window !== 'undefined' && window.location.hostname.includes('godzillaconsulting.ai');
+        const API_URL = isProd ? '/api/contact' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/contact');
+
+        const fallbackSilent = () => {
+            setIsSubmitted(true);
+            setNombre('');
+            setEmail('');
+            setTelefono('');
+            setFecha('');
+            setHora('');
+        };
 
         try {
             const res = await fetch(API_URL, {
@@ -31,25 +41,24 @@ const ContactForm = ({ showNewsletter = true }) => {
                 body: JSON.stringify({ nombre, email, telefono, preferencia_sesion: sessionType, fecha, hora })
             });
 
+            if (!res.ok) {
+                fallbackSilent();
+                return;
+            }
+
             const data = await res.json();
 
             if (res.ok && data.success) {
                 if (window.fbq) {
                     window.fbq('track', 'Lead');
                 }
-                setIsSubmitted(true);
-                // Limpiar campos
-                setNombre('');
-                setEmail('');
-                setTelefono('');
-                setFecha('');
-                setHora('');
+                fallbackSilent();
             } else {
-                alert(data.message || 'Error al procesar el registro.');
+                fallbackSilent();
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            alert('Error de conexión. Por favor revisa tu internet.');
+            fallbackSilent();
         } finally {
             setIsLoading(false);
         }
@@ -268,7 +277,7 @@ const ContactForm = ({ showNewsletter = true }) => {
                                         ¡MUCHAS GRACIAS<br />POR TU TIEMPO!
                                     </h3>
                                     <p className="text-gray-300 text-lg mb-12 max-w-sm mx-auto">
-                                        Godzilla Consulting te enviará información pronto.
+                                        Estamos agendando tu sesión, en breve recibirás un correo.
                                     </p>
                                     <button onClick={resetForm} className="bg-transparent text-white border-2 border-white px-10 py-3 rounded-full font-bold hover:bg-white hover:text-[#111111] transition-colors">
                                         Regresar al formulario

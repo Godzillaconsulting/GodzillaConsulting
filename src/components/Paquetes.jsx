@@ -65,6 +65,17 @@ const Paquetes = () => {
     const [startX, setStartX] = useState(0);
     const [scrollLeftState, setScrollLeftState] = useState(0);
 
+    const [showLeftArrow, setShowLeftArrow] = useState(false);
+    const [showRightArrow, setShowRightArrow] = useState(true);
+
+    const checkScroll = () => {
+        if (!scrollContainerRef.current) return;
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        // Permite un margen de error de un par de pixeles para distintos dispositivos
+        setShowLeftArrow(scrollLeft > 2);
+        setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2);
+    };
+
     useEffect(() => {
         // Consultar el tipo de documento "paquete" desde Sanity
         client.fetch(`*[_type == "paquete"] | order(id asc)`)
@@ -79,6 +90,12 @@ const Paquetes = () => {
             })
             .catch((error) => console.error("Error cargando paquetes de Sanity:", error));
     }, []);
+
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [packages]);
 
     const onMouseDown = (e) => {
         setIsDragging(true);
@@ -124,12 +141,14 @@ const Paquetes = () => {
                 {/* Desktop Carousel Layout / Grid */}
                 <div className="relative flex items-center group w-full px-2">
                     {/* Scroll Prev Button */}
-                    <button
-                        onClick={scrollLeft}
-                        className="hidden md:flex absolute left-0 z-40 -ml-4 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none hover:bg-[#CC0000] hover:text-white"
-                    >
-                        <ChevronLeft size={24} />
-                    </button>
+                    {showLeftArrow && (
+                        <button
+                            onClick={scrollLeft}
+                            className="hidden md:flex absolute left-0 z-40 -ml-4 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none hover:bg-[#CC0000] hover:text-white"
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                    )}
 
                     <div
                         ref={scrollContainerRef}
@@ -139,6 +158,7 @@ const Paquetes = () => {
                         onMouseLeave={onMouseLeave}
                         onMouseUp={onMouseUp}
                         onMouseMove={onMouseMove}
+                        onScroll={checkScroll}
                     >
                         {packages.map((pkg, index) => {
                             return (
@@ -186,12 +206,14 @@ const Paquetes = () => {
                     </div>
 
                     {/* Scroll Next Button */}
-                    <button
-                        onClick={scrollRight}
-                        className="hidden md:flex absolute right-0 z-40 -mr-4 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none hover:bg-[#CC0000] hover:text-white"
-                    >
-                        <ChevronRight size={24} />
-                    </button>
+                    {showRightArrow && (
+                        <button
+                            onClick={scrollRight}
+                            className="hidden md:flex absolute right-0 z-40 -mr-4 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none hover:bg-[#CC0000] hover:text-white"
+                        >
+                            <ChevronRight size={24} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="text-center mt-12 text-gray-500 text-sm">

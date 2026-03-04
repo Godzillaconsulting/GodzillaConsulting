@@ -26,9 +26,8 @@ dist-ssr
 .vercel
 
 # Large media files (exceed GitHub's 100MB limit)
-# These are included in the Vercel build directly
-*.mp4
-*.mov
+# *.mp4 — permitidos (< 100MB)
+# *.mov — permitidos (< 100MB)
 *.avi
 *.webm
 *.mkv

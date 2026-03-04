@@ -162,21 +162,21 @@ const Paquetes = () => {
                                                 {pkg.guarantee}
                                             </p>
                                         )}
-                                        {pkg.title === "Nivel Esencial" ? (
+                                        {pkg.id === 2 ? (
                                             <Link to="/nivel-esencial" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
                                                 Elegir este plan
                                             </Link>
-                                        ) : pkg.title === "Nivel Expansión" ? (
+                                        ) : pkg.id === 1 ? (
                                             <Link to="/nivel-expansion" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
                                                 Contáctanos
                                             </Link>
-                                        ) : pkg.title === "Nivel Élite" ? (
+                                        ) : pkg.id === 3 ? (
                                             <Link to="/nivel-elite" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
@@ -184,12 +184,12 @@ const Paquetes = () => {
                                                 Contáctanos
                                             </Link>
                                         ) : (
-                                            <a href="#contacto" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
+                                            <Link to={`/${pkg.title.toLowerCase().replace(/\s+/g, '-')}`} className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
                                                 {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
-                                            </a>
+                                            </Link>
                                         )}
                                     </div>
                                 </div>

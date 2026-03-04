@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
 import { client } from '../sanityClient';
@@ -163,7 +164,7 @@ const GestionRedesSociales = () => {
                 </div>
             </div>
         </section>
-            <ContactForm />
+            <ContactForm showNewsletter={false} />
         </>
     );
 };

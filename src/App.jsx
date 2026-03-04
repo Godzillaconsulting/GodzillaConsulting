@@ -22,6 +22,7 @@ import CrmSaas from './components/CrmSaas';
 import NivelEsencial from './components/NivelEsencial';
 import NivelExpansion from './components/NivelExpansion';
 import NivelElite from './components/NivelElite';
+import LandingPaqueteDynamic from './components/LandingPaqueteDynamic';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import PreguntasFrecuentes from './components/PreguntasFrecuentes';
@@ -148,6 +149,7 @@ function AppLayout() {
           <Route path="/nivel-esencial" element={<NivelEsencial />} />
           <Route path="/nivel-expansion" element={<NivelExpansion />} />
           <Route path="/nivel-elite" element={<NivelElite />} />
+          <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/faq" element={<PreguntasFrecuentes />} />

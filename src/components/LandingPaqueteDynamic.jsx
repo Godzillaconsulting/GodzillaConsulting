@@ -119,7 +119,10 @@ const LandingPaqueteDynamic = () => {
 
                             <div className="text-center pt-2">
                                 <div className="flex justify-center items-baseline gap-2 mb-8">
-                                    <span className="text-[2.75rem] md:text-5xl font-bold text-white">Consúltalo</span>
+                                    <span className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice || 'Consúltalo'}</span>
+                                    {content.planPrice && content.planPeriod && (
+                                        <span className="text-xl text-gray-300 font-medium">{content.planPeriod}</span>
+                                    )}
                                 </div>
                                 <a href="#contacto" className="block text-center w-full max-w-sm mx-auto bg-[#CC0000] text-white py-4 rounded-full font-bold text-xl hover:bg-white hover:text-[#CC0000] transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-transparent hover:border-[#CC0000]">
                                     Contáctanos

@@ -31,3 +31,4 @@ dist-ssr
 *.avi
 *.webm
 *.mkv
+.env*.local

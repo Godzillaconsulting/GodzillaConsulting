@@ -5,13 +5,20 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const isNeon = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('neon.tech');
+const connectionString =
+    process.env.NODE_ENV === 'development' && process.env.DATABASE_URL_DEV
+        ? process.env.DATABASE_URL_DEV
+        : process.env.DATABASE_URL;
+
+const isNeon = connectionString && connectionString.includes('neon.tech');
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: isNeon ? {
-        rejectUnauthorized: false,
-    } : false
+    connectionString,
+    ssl: isNeon ? { rejectUnauthorized: false } : false,
+    // Optimizado para Vercel Serverless + Neon PgBouncer
+    max: 1,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
 });
 
 // Verificación de conexión

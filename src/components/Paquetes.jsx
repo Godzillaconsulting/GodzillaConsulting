@@ -134,7 +134,7 @@ const Paquetes = () => {
                         PAQUETES
                     </h2>
                     <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
-                        Ayudamos a pymes, clínicas, despachos y negocios de servicio a convertir tráfico en oportunidades reales: web con UX, embudos, bots y CRM alineados a una sola métrica: más clientes.
+                        Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.
                     </p>
                 </div>
 

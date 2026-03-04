@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import culturaImage from '../assets/images/Nuestra cultura image.jpg';
-import dotBg from '../assets/images/dot effect background@2x.png';
+import culturaVideo from '../assets/AdobeStock_494215230.mov';
 
 const Cultura = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -58,16 +58,17 @@ const Cultura = () => {
     };
     return (
         <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
-            {/* Decorative Elements */}
-            <div
-                className="absolute inset-0 pointer-events-none opacity-60"
-                style={{
-                    backgroundImage: `url(${dotBg})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
-                }}
-            ></div>
+            {/* Video de fondo */}
+            <video
+                src={culturaVideo}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+            />
+            {/* Overlay oscuro para legibilidad */}
+            <div className="absolute inset-0 bg-[#111111]/60 pointer-events-none" />
             <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-[#CC0000]/10 to-transparent blur-[100px] pointer-events-none"></div>
 
             <div className="container relative z-10 mx-auto px-6 max-w-7xl">
@@ -150,7 +151,7 @@ const Cultura = () => {
                         </div>
                     </div>
 
-                    {/* CEO Image Workspace Placeholder */}
+                    {/* CEO Image */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
                         <div className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl">

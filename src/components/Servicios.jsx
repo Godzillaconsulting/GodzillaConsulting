@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { client, urlFor } from '../sanityClient';
-// import bgVideo from '../assets/7020018_Particle_Dot_3840x2160.mp4'; // TEMP: Comentado por falta de archivo
+// import bgVideo from '../assets/7020018_Particle_Dot_3840x2160.mp4';
+import bgVideo from '../assets/7020018_Particle_Dot_3840x2160.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';
@@ -59,8 +60,8 @@ const Servicios = () => {
 
             {/* Header with Video Background */}
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
-                {/* VIDEO TEMPORALMENTE COMENTADO
-<video
+                {/* Video de fondo - partículas */}
+                <video
                     src={bgVideo}
                     autoPlay
                     loop
@@ -68,13 +69,6 @@ const Servicios = () => {
                     playsInline
                     className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
                 />
-*/}
-                {/* PLACEHOLDER PARA MANTENER EL DISEÑO */}
-                <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center text-white/40 border-2 border-dashed border-white/10">
-                    <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 opacity-50"><span className="text-2xl ml-1">▶</span></div>
-                    <span className="text-lg font-medium">Video Placeholder</span>
-                    <span className="text-sm mt-1">Archivo de video faltante</span>
-                </div>
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
                 <h2 className="relative z-20 text-5xl md:text-7xl font-black text-center text-white mt-10 tracking-tighter drop-shadow-2xl">

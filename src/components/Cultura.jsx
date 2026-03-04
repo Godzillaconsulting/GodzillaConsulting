@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
-import culturaImage from '../assets/images/Nuestra cultura image.jpg';
 import dotBg from '../assets/images/dot effect background@2x.png';
+import culturaVideo from '../assets/AdobeStock_494215230.mov';
 
 const Cultura = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -150,14 +150,17 @@ const Cultura = () => {
                         </div>
                     </div>
 
-                    {/* CEO Image Workspace Placeholder */}
+                    {/* Video lado derecho */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
                         <div className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl">
-                            <img
-                                src={culturaImage}
-                                alt="Oscar Villanueva - CEO"
-                                className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"
+                            <video
+                                src={culturaVideo}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover object-center transition-all duration-700 hover:scale-105"
                             />
                         </div>
                     </div>

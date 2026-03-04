@@ -1,5 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { client, urlFor } from '../sanityClient';
 
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
@@ -18,36 +17,24 @@ const defaultCases = [
     { _id: 'default-6', orden: 6, logoSrc: logoGrupoMrg, nombre: 'Grupo MRG', category: 'Banquetes y Eventos' },
 ];
 
+const CARD_WIDTH = 350 + 24; // w-[350px] + gap-6
+const SPEED = 0.6; // px por frame
+
 const CasosExito = () => {
     const scrollContainerRef = useRef(null);
+    const animFrameRef = useRef(null);
+    const isPausedRef = useRef(false);
+
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeftState, setScrollLeftState] = useState(0);
     const [cases, setCases] = useState(defaultCases);
 
-    const [showLeftArrow, setShowLeftArrow] = useState(false);
-    const [showRightArrow, setShowRightArrow] = useState(true);
-
-    const checkScroll = () => {
-        if (!scrollContainerRef.current) return;
-        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-        setShowLeftArrow(scrollLeft > 2);
-        setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2);
-    };
-
-    useEffect(() => {
-        checkScroll();
-        window.addEventListener('resize', checkScroll);
-        return () => window.removeEventListener('resize', checkScroll);
-    }, [cases]);
-
     useEffect(() => {
         client
             .fetch(`*[_type == "casoExito"] | order(orden asc)`)
             .then((data) => {
-                if (data && data.length > 0) {
-                    setCases(data);
-                }
+                if (data && data.length > 0) setCases(data);
             })
             .catch((error) => console.error('Error cargando casos de éxito de Sanity:', error));
     }, []);
@@ -57,34 +44,68 @@ const CasosExito = () => {
         return item.logoSrc;
     };
 
+    // Auto-scroll loop usando RAF
+    const animate = useCallback(() => {
+        const el = scrollContainerRef.current;
+        if (!el || isPausedRef.current) {
+            animFrameRef.current = requestAnimationFrame(animate);
+            return;
+        }
+
+        el.scrollLeft += SPEED;
+
+        // Cuando llega a la mitad (copia 2 empieza), reset silencioso al inicio
+        const halfWidth = el.scrollWidth / 2;
+        if (el.scrollLeft >= halfWidth) {
+            el.scrollLeft -= halfWidth;
+        }
+
+        animFrameRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    useEffect(() => {
+        animFrameRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animFrameRef.current);
+    }, [animate]);
+
+    // --- Drag & Swipe handlers ---
+    const onMouseEnter = () => { isPausedRef.current = true; };
+    const onMouseLeave = () => {
+        isPausedRef.current = false;
+        setIsDragging(false);
+    };
+
     const onMouseDown = (e) => {
         setIsDragging(true);
         setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
         setScrollLeftState(scrollContainerRef.current.scrollLeft);
     };
-
-    const onMouseLeave = () => setIsDragging(false);
     const onMouseUp = () => setIsDragging(false);
 
     const onMouseMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
         const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
+        const walk = (x - startX) * 1.5;
         scrollContainerRef.current.scrollLeft = scrollLeftState - walk;
     };
 
-    const scrollLeft = () => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({ left: -350, behavior: 'smooth' });
-        }
+    // Touch support
+    const touchStartX = useRef(0);
+    const touchScrollLeft = useRef(0);
+    const onTouchStart = (e) => {
+        isPausedRef.current = true;
+        touchStartX.current = e.touches[0].pageX;
+        touchScrollLeft.current = scrollContainerRef.current.scrollLeft;
+    };
+    const onTouchEnd = () => { isPausedRef.current = false; };
+    const onTouchMove = (e) => {
+        const walk = (touchStartX.current - e.touches[0].pageX) * 1.5;
+        scrollContainerRef.current.scrollLeft = touchScrollLeft.current + walk;
     };
 
-    const scrollRight = () => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({ left: 350, behavior: 'smooth' });
-        }
-    };
+    // Duplicamos las tarjetas para el loop infinito
+    const allCases = [...cases, ...cases];
 
     return (
         <section id="portafolio" className="py-24 bg-[#111111] relative overflow-hidden">
@@ -101,34 +122,29 @@ const CasosExito = () => {
                     </p>
                 </div>
 
-                <div className="relative flex items-center group">
-
-                    {/* Scroll Prev Button */}
-                    {showLeftArrow && (
-                        <button
-                            onClick={scrollLeft}
-                            className="absolute left-0 z-20 -ml-4 md:-ml-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                    )}
+                {/* Gradient fade edges */}
+                <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#111111] to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#111111] to-transparent z-10 pointer-events-none" />
 
                     <div
                         ref={scrollContainerRef}
-                        className={`flex gap-6 overflow-x-auto hide-scrollbar py-8 px-4 transition-all duration-300 ${isDragging ? 'cursor-grabbing snap-none select-none' : 'cursor-grab snap-x snap-mandatory'}`}
+                        className={`flex gap-6 overflow-x-auto hide-scrollbar py-8 px-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                         style={{ msOverflowStyle: 'none', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
-                        onMouseDown={onMouseDown}
+                        onMouseEnter={onMouseEnter}
                         onMouseLeave={onMouseLeave}
+                        onMouseDown={onMouseDown}
                         onMouseUp={onMouseUp}
                         onMouseMove={onMouseMove}
-                        onScroll={checkScroll}
+                        onTouchStart={onTouchStart}
+                        onTouchEnd={onTouchEnd}
+                        onTouchMove={onTouchMove}
                     >
-                        {cases.map((item) => (
+                        {allCases.map((item, idx) => (
                             <div
-                                key={item._id}
-                                className="flex-none w-[280px] md:w-[350px] aspect-square snap-center relative bg-[#1A1A1A] rounded-[2rem] border-2 border-transparent hover:border-[#CC0000] transition-all duration-300 group/card cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(204,0,0,0.3)]"
+                                key={`${item._id}-${idx}`}
+                                className="flex-none w-[280px] md:w-[350px] aspect-square relative bg-[#1A1A1A] rounded-[2rem] border-2 border-transparent hover:border-[#CC0000] transition-all duration-300 group/card cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(204,0,0,0.3)]"
                             >
-                                {/* Red outline detail from prototype */}
                                 <div className="absolute -inset-1 bg-[#CC0000] rounded-[2rem] z-[-1] opacity-0 group-hover/card:opacity-100 transition-opacity blur-sm"></div>
                                 <div className="absolute inset-0 bg-[#1A1A1A] rounded-[2rem] z-0"></div>
 
@@ -138,6 +154,7 @@ const CasosExito = () => {
                                             src={getLogoSrc(item)}
                                             alt={item.nombre || 'Caso de Éxito'}
                                             className="max-h-36 w-full object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300 px-4"
+                                            draggable="false"
                                         />
                                     </div>
                                     <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
@@ -147,16 +164,6 @@ const CasosExito = () => {
                             </div>
                         ))}
                     </div>
-
-                    {/* Scroll Next Button */}
-                    {showRightArrow && (
-                        <button
-                            onClick={scrollRight}
-                            className="absolute right-0 z-20 -mr-4 md:-mr-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
-                        >
-                            <ChevronRight size={24} />
-                        </button>
-                    )}
                 </div>
 
             </div>

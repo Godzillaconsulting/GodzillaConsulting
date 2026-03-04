@@ -25,6 +25,22 @@ const CasosExito = () => {
     const [scrollLeftState, setScrollLeftState] = useState(0);
     const [cases, setCases] = useState(defaultCases);
 
+    const [showLeftArrow, setShowLeftArrow] = useState(false);
+    const [showRightArrow, setShowRightArrow] = useState(true);
+
+    const checkScroll = () => {
+        if (!scrollContainerRef.current) return;
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        setShowLeftArrow(scrollLeft > 2);
+        setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2);
+    };
+
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [cases]);
+
     useEffect(() => {
         client
             .fetch(`*[_type == "casoExito"] | order(orden asc)`)
@@ -37,7 +53,7 @@ const CasosExito = () => {
     }, []);
 
     const getLogoSrc = (item) => {
-        if (item.logo) return urlFor(item.logo).width(200).url();
+        if (item.logo) return urlFor(item.logo).width(500).url();
         return item.logoSrc;
     };
 
@@ -88,14 +104,15 @@ const CasosExito = () => {
                 <div className="relative flex items-center group">
 
                     {/* Scroll Prev Button */}
-                    <button
-                        onClick={scrollLeft}
-                        className="absolute left-0 z-20 -ml-4 md:-ml-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none"
-                    >
-                        <ChevronLeft size={24} />
-                    </button>
+                    {showLeftArrow && (
+                        <button
+                            onClick={scrollLeft}
+                            className="absolute left-0 z-20 -ml-4 md:-ml-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 focus:outline-none"
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                    )}
 
-                    {/* Cards Container */}
                     <div
                         ref={scrollContainerRef}
                         className={`flex gap-6 overflow-x-auto hide-scrollbar py-8 px-4 transition-all duration-300 ${isDragging ? 'cursor-grabbing snap-none select-none' : 'cursor-grab snap-x snap-mandatory'}`}
@@ -104,6 +121,7 @@ const CasosExito = () => {
                         onMouseLeave={onMouseLeave}
                         onMouseUp={onMouseUp}
                         onMouseMove={onMouseMove}
+                        onScroll={checkScroll}
                     >
                         {cases.map((item) => (
                             <div
@@ -119,7 +137,7 @@ const CasosExito = () => {
                                         <img
                                             src={getLogoSrc(item)}
                                             alt={item.nombre || 'Caso de Éxito'}
-                                            className="max-h-20 w-auto object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300"
+                                            className="max-h-36 w-full object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300 px-4"
                                         />
                                     </div>
                                     <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
@@ -131,12 +149,14 @@ const CasosExito = () => {
                     </div>
 
                     {/* Scroll Next Button */}
-                    <button
-                        onClick={scrollRight}
-                        className="absolute right-0 z-20 -mr-4 md:-mr-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
-                    >
-                        <ChevronRight size={24} />
-                    </button>
+                    {showRightArrow && (
+                        <button
+                            onClick={scrollRight}
+                            className="absolute right-0 z-20 -mr-4 md:-mr-8 bg-white text-black p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
+                        >
+                            <ChevronRight size={24} />
+                        </button>
+                    )}
                 </div>
 
             </div>

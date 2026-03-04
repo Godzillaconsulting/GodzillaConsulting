@@ -50,8 +50,7 @@ const Servicios = () => {
         <img
             src={getIconSrc(srv)}
             alt={srv.title}
-            className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"
-
+            className={`w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110 ${isActive ? 'brightness-0 invert' : ''}`}
         />
     );
 
@@ -131,7 +130,7 @@ const Servicios = () => {
                                     onClick={() => setActiveIdx(isActive ? -1 : idx)}
                                 >
                                     <div className={`p-3 rounded-full ${isActive ? 'bg-[#CC0000]' : 'bg-[#111111]'}`}>
-                                        {renderIconImg(srv, true)}
+                                        {renderIconImg(srv, isActive)}
                                     </div>
                                     <h3 className="font-bold text-lg leading-tight">{srv.title}</h3>
                                 </div>

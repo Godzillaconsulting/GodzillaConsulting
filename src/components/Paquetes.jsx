@@ -160,7 +160,7 @@ const Paquetes = () => {
                                             to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
                                             className="block text-center w-full py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-lg bg-white text-black hover:bg-gray-200 hover:scale-105 group-hover/card:shadow-xl group-hover/card:text-[#CC0000]"
                                         >
-                                            Ver Detalles
+                                            Elige este plan
                                         </Link>
                                     </div>
                                 </div>

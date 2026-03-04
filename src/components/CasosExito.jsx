@@ -119,7 +119,7 @@ const CasosExito = () => {
                                         <img
                                             src={getLogoSrc(item)}
                                             alt={item.nombre || 'Caso de Éxito'}
-                                            className="max-h-20 w-auto object-contain brightness-0 invert opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300"
+                                            className="max-h-20 w-auto object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300"
                                         />
                                     </div>
                                     <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">

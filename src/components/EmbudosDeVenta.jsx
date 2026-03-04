@@ -103,22 +103,22 @@ const EmbudosDeVenta = () => {
                 {/* Center Icons Stack (Desktop only) */}
                 <div className="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-6 py-8">
                     <Link to="/bots" className="w-14 h-14 rounded-full bg-[#18181b] border-[3px] border-white flex items-center justify-center mx-auto hover:bg-[#CC0000] transition-all cursor-pointer group shadow-lg">
-                        <img src={gifBot} alt="Bot" className="w-8 h-8 object-contain group-hover:scale-110 group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifBot} alt="Bot" className="w-8 h-8 object-contain group-hover:scale-110 transition-all" />
                     </Link>
                     <Link to="/audiovisual" className="w-14 h-14 rounded-full bg-[#18181b] border-[3px] border-white flex items-center justify-center mx-auto hover:bg-[#CC0000] transition-all cursor-pointer group shadow-lg">
-                        <img src={gifVideo} alt="Video" className="w-8 h-8 object-contain group-hover:scale-110 group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifVideo} alt="Video" className="w-8 h-8 object-contain group-hover:scale-110 transition-all" />
                     </Link>
                     <div className="w-28 h-28 rounded-full bg-[#CC0000] border-[6px] border-white flex items-center justify-center shadow-2xl cursor-pointer">
-                        <img src={gifEmbudo} alt="Embudo" className="w-16 h-16 object-contain brightness-0 invert" />
+                        <img src={gifEmbudo} alt="Embudo" className="w-16 h-16 object-contain" />
                     </div>
                     <Link to="/redes" className="w-14 h-14 rounded-full bg-[#18181b] border-[3px] border-white flex items-center justify-center mx-auto hover:bg-[#CC0000] transition-all cursor-pointer group shadow-lg">
-                        <img src={gifRedes} alt="Redes Sociales" className="w-8 h-8 object-contain group-hover:scale-110 group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifRedes} alt="Redes Sociales" className="w-8 h-8 object-contain group-hover:scale-110 transition-all" />
                     </Link>
                     <Link to="/seo" className="w-14 h-14 rounded-full bg-[#18181b] border-[3px] border-white flex items-center justify-center mx-auto hover:bg-[#CC0000] transition-all cursor-pointer group shadow-lg">
-                        <img src={gifSeo} alt="SEO" className="w-8 h-8 object-contain group-hover:scale-110 group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifSeo} alt="SEO" className="w-8 h-8 object-contain group-hover:scale-110 transition-all" />
                     </Link>
                     <Link to="/crm" className="w-14 h-14 rounded-full bg-[#18181b] border-[3px] border-white flex items-center justify-center mx-auto hover:bg-[#CC0000] transition-all cursor-pointer group shadow-lg">
-                        <img src={gifCrm} alt="CRM" className="w-8 h-8 object-contain group-hover:scale-110 group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifCrm} alt="CRM" className="w-8 h-8 object-contain group-hover:scale-110 transition-all" />
                     </Link>
                 </div>
 
@@ -144,22 +144,22 @@ const EmbudosDeVenta = () => {
             <div className="md:hidden w-full bg-[#111111] py-6 border-t border-gray-800">
                 <div className="flex justify-center gap-4 px-4 overflow-x-auto pb-2 items-center">
                     <Link to="/bots" className="w-12 h-12 shrink-0 rounded-full bg-[#18181b] border-2 border-white flex items-center justify-center hover:bg-[#CC0000] transition-colors group">
-                        <img src={gifBot} alt="Bot" className="w-6 h-6 object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifBot} alt="Bot" className="w-6 h-6 object-contain transition-all" />
                     </Link>
                     <Link to="/audiovisual" className="w-12 h-12 shrink-0 rounded-full bg-[#18181b] border-2 border-white flex items-center justify-center hover:bg-[#CC0000] transition-colors group">
-                        <img src={gifVideo} alt="Video" className="w-6 h-6 object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifVideo} alt="Video" className="w-6 h-6 object-contain transition-all" />
                     </Link>
                     <div className="w-16 h-16 shrink-0 rounded-full bg-[#CC0000] border-4 border-white flex items-center justify-center shadow-lg">
-                        <img src={gifEmbudo} alt="Embudo" className="w-10 h-10 object-contain brightness-0 invert" />
+                        <img src={gifEmbudo} alt="Embudo" className="w-10 h-10 object-contain" />
                     </div>
                     <Link to="/redes" className="w-12 h-12 shrink-0 rounded-full bg-[#18181b] border-2 border-white flex items-center justify-center hover:bg-[#CC0000] transition-colors group">
-                        <img src={gifRedes} alt="Redes Sociales" className="w-6 h-6 object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifRedes} alt="Redes Sociales" className="w-6 h-6 object-contain transition-all" />
                     </Link>
                     <Link to="/seo" className="w-12 h-12 shrink-0 rounded-full bg-[#18181b] border-2 border-white flex items-center justify-center hover:bg-[#CC0000] transition-colors group">
-                        <img src={gifSeo} alt="SEO" className="w-6 h-6 object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifSeo} alt="SEO" className="w-6 h-6 object-contain transition-all" />
                     </Link>
                     <Link to="/crm" className="w-12 h-12 shrink-0 rounded-full bg-[#18181b] border-2 border-white flex items-center justify-center hover:bg-[#CC0000] transition-colors group">
-                        <img src={gifCrm} alt="CRM" className="w-6 h-6 object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                        <img src={gifCrm} alt="CRM" className="w-6 h-6 object-contain transition-all" />
                     </Link>
                 </div>
             </div>

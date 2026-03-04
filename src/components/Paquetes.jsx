@@ -6,8 +6,21 @@ import { client } from '../sanityClient';
 const Paquetes = () => {
     const defaultPackages = [
         {
+            id: 1,
+            title: 'Posicionamiento Social',
+            price: '$7,900',
+            period: 'al mes',
+            highlighted: false,
+            features: [
+                'Estrategia de Contenido Omnicanal',
+                'Copywriting de Respuesta Directa',
+                'Community Management'
+            ],
+            guarantee: 'GARANTÍA: Si en 14 días no ves un incremento real en el engagement, el siguiente mes es GRATIS.'
+        },
+        {
             id: 2,
-            title: 'Nivel Esencial',
+            title: 'Control IA',
             price: '$7,900',
             period: 'al mes',
             highlighted: false,
@@ -19,8 +32,8 @@ const Paquetes = () => {
             guarantee: 'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.'
         },
         {
-            id: 1,
-            title: 'Nivel Expansión',
+            id: 3,
+            title: 'Expansión',
             price: '$29,900',
             period: 'al mes',
             highlighted: true,
@@ -32,8 +45,8 @@ const Paquetes = () => {
             guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.'
         },
         {
-            id: 3,
-            title: 'Nivel Élite',
+            id: 4,
+            title: 'Élite',
             price: '$39,500',
             period: 'al mes',
             highlighted: false,
@@ -42,7 +55,7 @@ const Paquetes = () => {
                 'Reactivación de Base de Datos',
                 'Consultoría Mensual y Cierre'
             ],
-            guarantee: 'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS'
+            guarantee: 'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS.'
         }
     ];
 
@@ -57,18 +70,9 @@ const Paquetes = () => {
         client.fetch(`*[_type == "paquete"] | order(id asc)`)
             .then((data) => {
                 if (data && data.length > 0) {
-                    const desiredOrder = [2, 1, 3];
-                    const sortedData = data
-                        .filter(pkg => desiredOrder.includes(pkg.id))
-                        .sort((a, b) => {
-                            const indexA = desiredOrder.indexOf(a.id);
-                            const indexB = desiredOrder.indexOf(b.id);
-                            return indexA - indexB;
-                        });
-
-                    const finalData = sortedData.map((pkg, index) => ({
+                    const finalData = data.map((pkg) => ({
                         ...pkg,
-                        highlighted: index === 1
+                        highlighted: pkg.id === 3
                     }));
                     setPackages(finalData);
                 }
@@ -175,33 +179,19 @@ const Paquetes = () => {
                                                 {pkg.guarantee}
                                             </p>
                                         )}
-                                        {pkg.title === "Nivel Esencial" ? (
-                                            <Link to="/nivel-esencial" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
+                                        {pkg.id <= 2 ? (
+                                            <a href="#contacto" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
                                                 Elegir este plan
-                                            </Link>
-                                        ) : pkg.title === "Nivel Expansión" ? (
-                                            <Link to="/nivel-expansion" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                                Contáctanos
-                                            </Link>
-                                        ) : pkg.title === "Nivel Élite" ? (
-                                            <Link to="/nivel-elite" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                                Contáctanos
-                                            </Link>
+                                            </a>
                                         ) : (
                                             <a href="#contacto" className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
                      ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
                                                     : 'bg-white text-black hover:bg-gray-200'}
                    `}>
-                                                {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
+                                                Contáctanos
                                             </a>
                                         )}
                                     </div>

@@ -37,7 +37,10 @@ const Servicios = () => {
     // Obtiene la URL del ícono: desde Sanity o desde el asset local
     const getIconSrc = (srv) => {
         if (srv.icono) return urlFor(srv.icono).width(256).height(256).url();
-        return srv.iconSrc;
+        const fallback = defaultServices.find(
+            d => (d.id?.current && srv.id?.current && d.id.current === srv.id.current) || d.title === srv.title
+        );
+        return srv.iconSrc || (fallback ? fallback.iconSrc : null);
     };
 
     // Obtiene el enlace: desde Sanity o desde el default
@@ -48,7 +51,7 @@ const Servicios = () => {
             src={getIconSrc(srv)}
             alt={srv.title}
             className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"
-            style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}
+
         />
     );
 

@@ -62,23 +62,22 @@ const OptimizacionWebSeo = () => {
 
                     {/* Left Side: Video Area */}
                     <div className="w-full md:w-2/3 min-h-[400px] md:min-h-0 bg-[#18181b] relative overflow-hidden group">
-                        {/* VIDEO TEMPORALMENTE COMENTADO
-<video
-                        ref={videoRef}
-                        src={content.videoFileUrl || content.videoUrl || seoVideo}
-                        autoPlay
-                        muted
-                        playsInline
-                        className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
-                        onClick={togglePlay}
-                    />
-*/}
-                        {/* PLACEHOLDER PARA MANTENER EL DISEÑO */}
-                        <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center text-white/40 border-2 border-dashed border-white/10">
-                            <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 opacity-50"><span className="text-2xl ml-1">▶</span></div>
-                            <span className="text-lg font-medium">Video Placeholder</span>
-                            <span className="text-sm mt-1">Archivo de video faltante</span>
-                        </div>
+                        {(content.videoFileUrl || content.videoUrl) ? (
+                            <video
+                                ref={videoRef}
+                                src={content.videoFileUrl || content.videoUrl}
+                                autoPlay
+                                muted
+                                playsInline
+                                className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                                onClick={togglePlay}
+                            />
+                        ) : (
+                            <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center text-white/40">
+                                <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 opacity-50"><span className="text-2xl ml-1">▶</span></div>
+                                <span className="text-lg font-medium">Próximamente...</span>
+                            </div>
+                        )}
 
                         {/* Video Controls Overlay */}
                         <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

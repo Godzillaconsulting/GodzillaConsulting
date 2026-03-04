@@ -51,7 +51,8 @@ const Servicios = () => {
         <img
             src={getIconSrc(srv)}
             alt={srv.title}
-            className={`w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110 ${isActive ? 'brightness-0 invert' : ''}`}
+            className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"
+            style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}
         />
     );
 

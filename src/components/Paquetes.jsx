@@ -124,31 +124,25 @@ const Paquetes = () => {
                         onMouseMove={onMouseMove}
                     >
                         {packages.map((pkg, index) => {
-                            const isHighlighted = pkg.highlighted;
                             return (
                                 <div
                                     key={pkg._id || pkg.id}
-                                    className={`flex-none w-[320px] md:w-[380px] snap-center rounded-[2rem] p-8 md:p-10 relative flex flex-col justify-between transition-all duration-500
-                   ${isHighlighted ?
-                                            'bg-[#CC0000] text-white z-20 scale-100 lg:scale-105 shadow-[0_0_40px_rgba(204,0,0,0.4)] border border-red-500/50 min-h-[550px]' :
-                                            'bg-[#1A1A1A] text-white z-10 border border-gray-800 hover:border-gray-600 min-h-[480px]'
-                                        }
-                 `}
+                                    className="group/card flex-none w-[320px] md:w-[380px] snap-center rounded-[2rem] p-8 md:p-10 relative flex flex-col justify-between transition-all duration-500 bg-[#1A1A1A] text-white z-10 border border-gray-800 hover:bg-[#CC0000] hover:border-red-500/50 hover:shadow-[0_0_40px_rgba(204,0,0,0.4)] hover:-translate-y-4 hover:z-20 min-h-[480px]"
                                 >
                                     <div>
-                                        <h3 className={`text-xl font-medium mb-4 text-center ${isHighlighted ? 'text-white' : 'text-gray-300'}`}>
+                                        <h3 className="text-xl font-medium mb-4 text-center text-gray-300 group-hover/card:text-white transition-colors duration-300">
                                             {pkg.title}
                                         </h3>
                                         <div className="flex items-baseline justify-center gap-1 mb-10">
                                             <span className="text-5xl md:text-6xl font-black tracking-tighter">{pkg.price}</span>
-                                            <span className={`text-lg font-medium ${isHighlighted ? 'text-gray-100' : 'text-gray-400'}`}> {pkg.period}</span>
+                                            <span className="text-lg font-medium text-gray-400 group-hover/card:text-gray-100 transition-colors duration-300"> {pkg.period}</span>
                                         </div>
 
                                         <ul className="space-y-4">
                                             {pkg.features?.map((feature, i) => (
                                                 <li key={i} className="flex items-start gap-3">
-                                                    <CheckCircle2 size={20} className={`shrink-0 mt-0.5 ${isHighlighted ? 'text-white' : 'text-[#25D366]'}`} />
-                                                    <span className={`text-sm md:text-base leading-tight ${isHighlighted ? 'text-white font-medium' : 'text-gray-300'}`}>
+                                                    <CheckCircle2 size={20} className="shrink-0 mt-0.5 text-[#25D366] group-hover/card:text-white transition-colors duration-300" />
+                                                    <span className="text-sm md:text-base leading-tight text-gray-300 group-hover/card:text-white group-hover/card:font-medium transition-all duration-300">
                                                         {feature}
                                                     </span>
                                                 </li>
@@ -158,17 +152,15 @@ const Paquetes = () => {
 
                                     <div className="mt-10">
                                         {pkg.guarantee && (
-                                            <p className={`text-xs text-center font-medium mb-4 px-2 leading-relaxed ${isHighlighted ? 'text-white/90' : 'text-gray-400'}`}>
+                                            <p className="text-xs text-center font-medium mb-4 px-2 leading-relaxed text-gray-400 group-hover/card:text-white/90 transition-colors duration-300">
                                                 {pkg.guarantee}
                                             </p>
                                         )}
                                         <Link
                                             to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
-                                            className={`block text-center w-full py-4 rounded-full font-bold text-lg transition-transform hover:scale-105 shadow-lg
-                     ${isHighlighted ? 'bg-[#CC0000] text-white border-2 border-white/20 hover:bg-white hover:text-[#CC0000]'
-                                                    : 'bg-white text-black hover:bg-gray-200'}
-                   `}>
-                                            {isHighlighted ? 'Elegir este plan' : 'Contáctanos'}
+                                            className="block text-center w-full py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-lg bg-white text-black hover:bg-gray-200 hover:scale-105 group-hover/card:shadow-xl group-hover/card:text-[#CC0000]"
+                                        >
+                                            Ver Detalles
                                         </Link>
                                     </div>
                                 </div>

@@ -17,6 +17,7 @@ const pool = new Pool({
 // Verificación de conexión
 export const connectDB = async () => {
     try {
+        console.log('⏳ Intentando conectar a PostgreSQL...');
         const client = await pool.connect();
         console.log('✅ PostgreSQL Conectado a Neon');
         client.release();

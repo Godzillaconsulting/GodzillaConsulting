@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash);
 CREATE TABLE IF NOT EXISTS citas (
   id SERIAL PRIMARY KEY,
   nombre_completo TEXT,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT NOT NULL,
   telefono TEXT,
   tipo_sesion TEXT,
   fecha DATE,

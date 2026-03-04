@@ -45,8 +45,8 @@ app.use(cors({
 
 // Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos en la memoria de Node
-    max: 5, // Cada IP solo puede enviar 5 leads max cada 15 mins
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 5,
     message: { error: 'Demasiadas solicitudes: intenta nuevamente más tarde.' },
     standardHeaders: true,
     legacyHeaders: false,

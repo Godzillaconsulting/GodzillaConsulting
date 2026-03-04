@@ -42,10 +42,19 @@ const ContactForm = ({ showNewsletter = true }) => {
             });
 
             if (!res.ok) {
-                if (isProd) {
+                const errorText = await res.text();
+                // Si es un error de validación (400), siempre lo mostramos
+                if (res.status === 400) {
+                    try {
+                        const errData = JSON.parse(errorText);
+                        alert(`Validación: ${errData.message}`);
+                    } catch (e) {
+                        alert(`Error de validación: ${errorText}`);
+                    }
+                } else if (isProd) {
+                    // Solo es silencioso si es un error 500 o similar en producción
                     fallbackSilent();
                 } else {
-                    const errorText = await res.text();
                     alert(`Error ${res.status}: ${errorText}`);
                 }
                 return;
@@ -59,6 +68,7 @@ const ContactForm = ({ showNewsletter = true }) => {
                 }
                 fallbackSilent();
             } else {
+                // Si el servidor responde success: false pero status 200 (raro pero posible)
                 if (isProd) {
                     fallbackSilent();
                 } else {

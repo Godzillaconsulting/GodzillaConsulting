@@ -43,7 +43,7 @@ const NivelElite = () => {
     return (
         <div className="bg-black min-h-screen text-white pt-20">
             {/* Hero Section */}
-            <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 overflow-hidden">
+            <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 overflow-x-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-center z-0"
                     style={{ backgroundImage: `url(${heroBg})`, opacity: 0.6 }}
@@ -55,15 +55,15 @@ const NivelElite = () => {
                         {content.heroTopText}
                     </p>
                     <h1
-                        className="text-[5rem] md:text-[8rem] lg:text-[10rem] font-bold leading-[0.9] tracking-tight mb-16 drop-shadow-2xl"
+                        className="text-[2.8rem] sm:text-[4.5rem] md:text-[8rem] lg:text-[10rem] font-bold leading-[0.9] tracking-tight mb-8 md:mb-16 drop-shadow-2xl"
                         dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
                     />
 
-                    <div className="flex flex-col sm:flex-row gap-6 mb-16 w-full max-w-xl justify-center z-20">
-                        <a href="#detalles" className="bg-white text-black px-12 py-4 rounded-full font-bold text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105">
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
+                        <a href="#detalles" className="bg-white text-black px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105">
                             Descubre más
                         </a>
-                        <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-12 py-4 rounded-full font-bold text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105">
+                        <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105">
                             Ver otros paquetes
                         </Link>
                     </div>

@@ -65,11 +65,17 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
+app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 
 // ==========================================
-// 3. INICIO DEL SERVIDOR
+// 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================
-app.listen(port, () => {
-    console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
-    console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
+        console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
+    });
+}
+
+// Exportar para Vercel
+export default app;

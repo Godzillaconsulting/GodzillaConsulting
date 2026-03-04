@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://godzilla-backend.onrender.com/api/:path*"
+            "destination": "/api"
         },
         {
             "source": "/(.*)",

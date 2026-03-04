@@ -94,7 +94,11 @@ async function setupTables() {
         `);
         console.log('✅ Tabla "leads" creada.');
 
-        console.log('🎉 Todas las tablas se han creado correctamente en Neon.');
+        await client.query(`
+            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO godzilla_backend;
+            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO godzilla_backend;
+        `);
+        console.log('✅ Permisos otorgados a godzilla_backend.');
     } catch (err) {
         console.error('❌ Error al crear las tablas:', err);
     } finally {

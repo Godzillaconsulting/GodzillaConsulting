@@ -3,8 +3,11 @@ import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { client } from '../sanityClient';
 
+import godzillaHover from '../assets/images/Godzilla Prueba.png';
+
 const Paquetes = () => {
     const defaultPackages = [
+
         {
             id: 1,
             title: 'Posicionamiento Social',
@@ -162,43 +165,62 @@ const Paquetes = () => {
                     >
                         {packages.map((pkg, index) => {
                             return (
-                                <div
-                                    key={pkg._id || pkg.id}
-                                    className="group/card flex-none w-[320px] md:w-[380px] snap-center rounded-[2rem] p-8 md:p-10 relative flex flex-col justify-between transition-all duration-500 bg-[#1A1A1A] text-white z-10 border border-gray-800 hover:bg-[#CC0000] hover:border-red-500/50 hover:shadow-[0_0_40px_rgba(204,0,0,0.4)] hover:-translate-y-4 hover:z-20 min-h-[480px]"
-                                >
-                                    <div>
-                                        <h3 className="text-xl font-medium mb-4 text-center text-gray-300 group-hover/card:text-white transition-colors duration-300">
-                                            {pkg.title}
-                                        </h3>
-                                        <div className="flex items-baseline justify-center gap-1 mb-10">
-                                            <span className="text-5xl md:text-6xl font-black tracking-tighter">{pkg.price}</span>
-                                            <span className="text-lg font-medium text-gray-400 group-hover/card:text-gray-100 transition-colors duration-300"> {pkg.period}</span>
+                                <div className="relative flex-none w-[320px] md:w-[380px] snap-center group/container">
+                                    {/* Godzilla Grabbing from behind */}
+                                    <div
+                                        className="absolute -inset-10 z-0 opacity-0 group-hover/container:opacity-100 group-hover/container:scale-110 transition-all duration-700 pointer-events-none"
+                                        style={{
+                                            backgroundImage: `url(${godzillaHover})`,
+                                            backgroundSize: 'contain',
+                                            backgroundPosition: 'center',
+                                            backgroundRepeat: 'no-repeat',
+                                            filter: 'drop-shadow(0 0 20px #CC0000)'
+                                        }}
+                                    />
+
+                                    <div
+                                        key={pkg._id || pkg.id}
+                                        className="group/card w-full h-full rounded-[2rem] p-8 md:p-10 relative flex flex-col justify-between transition-all duration-500 bg-[#1A1A1A] text-white z-10 border border-gray-800 overflow-hidden hover:border-red-500/50 hover:shadow-[0_0_40px_rgba(204,0,0,0.4)] hover:-translate-y-4 min-h-[480px]"
+                                    >
+                                        {/* Internal White Contrast Background */}
+                                        <div
+                                            className="absolute inset-0 z-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none bg-white"
+                                        />
+
+                                        <div className="relative z-10">
+                                            <h3 className="text-xl font-medium mb-4 text-center text-gray-300 group-hover/card:text-black transition-colors duration-300">
+                                                {pkg.title}
+                                            </h3>
+                                            <div className="flex items-baseline justify-center gap-1 mb-10">
+                                                <span className="text-5xl md:text-6xl font-black tracking-tighter group-hover/card:text-black transition-colors duration-300">{pkg.price}</span>
+                                                <span className="text-lg font-medium text-gray-400 group-hover/card:text-black/80 transition-colors duration-300"> {pkg.period}</span>
+                                            </div>
+
+                                            <ul className="space-y-4">
+                                                {pkg.features?.map((feature, i) => (
+                                                    <li key={i} className="flex items-start gap-3">
+                                                        <CheckCircle2 size={20} className="shrink-0 mt-0.5 text-[#25D366] group-hover/card:text-black transition-colors duration-300" />
+                                                        <span className="text-sm md:text-base leading-tight text-gray-300 group-hover/card:text-black group-hover/card:font-bold transition-all duration-300">
+                                                            {feature}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
 
-                                        <ul className="space-y-4">
-                                            {pkg.features?.map((feature, i) => (
-                                                <li key={i} className="flex items-start gap-3">
-                                                    <CheckCircle2 size={20} className="shrink-0 mt-0.5 text-[#25D366] group-hover/card:text-white transition-colors duration-300" />
-                                                    <span className="text-sm md:text-base leading-tight text-gray-300 group-hover/card:text-white group-hover/card:font-medium transition-all duration-300">
-                                                        {feature}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    <div className="mt-10">
-                                        {pkg.guarantee && (
-                                            <p className="text-xs text-center font-medium mb-4 px-2 leading-relaxed text-gray-400 group-hover/card:text-white/90 transition-colors duration-300">
-                                                {pkg.guarantee}
-                                            </p>
-                                        )}
-                                        <Link
-                                            to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
-                                            className="block text-center w-full py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-lg bg-white text-black hover:bg-gray-200 hover:scale-105 group-hover/card:shadow-xl group-hover/card:text-[#CC0000]"
-                                        >
-                                            Elige este plan
-                                        </Link>
+                                        <div className="relative z-10 mt-10">
+                                            {pkg.guarantee && (
+                                                <p className="text-xs text-center font-bold mb-4 px-2 leading-relaxed text-gray-400 group-hover/card:text-black transition-colors duration-300">
+                                                    {pkg.guarantee}
+                                                </p>
+                                            )}
+                                            <Link
+                                                to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
+                                                className="block text-center w-full py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-lg bg-white text-black hover:bg-black hover:text-white hover:scale-105 group-hover/card:shadow-xl"
+                                            >
+                                                Elige este plan
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             )

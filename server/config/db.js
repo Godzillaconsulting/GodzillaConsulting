@@ -24,13 +24,14 @@ const pool = new Pool({
 // Verificación de conexión
 export const connectDB = async () => {
     try {
-        console.log('⏳ Intentando conectar a PostgreSQL...');
+        console.log('⏳ Intentando conectar a PostgreSQL (Vercel Node ENV:', process.env.NODE_ENV, ')...');
         const client = await pool.connect();
         console.log('✅ PostgreSQL Conectado a Neon');
         client.release();
     } catch (error) {
-        console.error(`❌ Error en PostgreSQL: ${error.message}`);
-        process.exit(1);
+        console.error(`❌ Error en PostgreSQL: ${error.message} | URL usada: ${connectionString ? 'SI' : 'NO'}`);
+        // NEVER use process.exit(1) in a serverless function!
+        // It brings down the entire sandbox and returns a hard Vercel 500 error.
     }
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Video, MapPin } from 'lucide-react';
+import { CheckCircle, ArrowRight, Video, MapPin, Youtube } from 'lucide-react';
 import godzillaLogoCircle from '../assets/images/logo-godzilla-circle.png';
 import instagramIcon from '../assets/icons/1725819461instagram-logo.png';
 import facebookIcon from '../assets/icons/1730342312_facebook-logo-2024.png';
@@ -331,17 +331,17 @@ const ContactForm = ({ showNewsletter = true }) => {
 
                         <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
                         <div className="flex justify-center items-center gap-8">
-                            <a href="#" className="hover:scale-110 transition-transform">
+                            <a href="https://www.instagram.com/godzilla_consulting/" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                                 <img src={instagramIcon} alt="Instagram" className="w-10 h-10 object-contain" />
                             </a>
-                            <a href="#" className="hover:scale-110 transition-transform">
+                            <a href="https://www.facebook.com/godzillajuarez" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                                 <img src={facebookIcon} alt="Facebook" className="w-10 h-10 object-contain" />
                             </a>
-                            <a href="#" className="hover:scale-110 transition-transform">
+                            <a href="https://www.tiktok.com/@godzilla_co_jrz" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                                 <img src={tiktokIcon} alt="TikTok" className="w-10 h-10 object-contain" />
                             </a>
-                            <a href="#" className="hover:scale-110 transition-transform">
-                                <img src={linkedinIcon} alt="LinkedIn" className="w-10 h-10 object-contain" />
+                            <a href="https://www.youtube.com/channel/UCNg0_UUqZCt4SFdE3TxutLw" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+                                <Youtube size={40} className="text-[#CC0000]" strokeWidth={1.5} />
                             </a>
                         </div>
                     </div>

@@ -28,15 +28,21 @@ export const useLeadCapture = () => {
             });
 
             if (!response.ok) {
-                // FALLBACK SILENCIOSO: Si falla el servidor, mostramos éxito simulado
-                setStatus('success');
+                // FALLBACK SILENCIOSO: Solo en Producción
+                if (isProd) {
+                    setStatus('success');
+                } else {
+                    const errorText = await response.text();
+                    setStatus('error');
+                    setErrorMessage(`Error ${response.status}: ${errorText}`);
+                }
                 return;
             }
 
             const data = await response.json();
 
             // Status 200 => El servidor no se cayó, pero validemos la data
-            if (response.ok && data.success) {
+            if (data.success) {
                 // Si la BD dice que ya se lo mandó antes
                 if (data.message === 'already_sent') {
                     setStatus('already_sent');
@@ -45,14 +51,23 @@ export const useLeadCapture = () => {
                     setStatus('success');
                 }
             } else {
-                // Fallback silencioso en lugar de mostrar error
-                setStatus('success');
+                // Fallback silencioso en producción
+                if (isProd) {
+                    setStatus('success');
+                } else {
+                    setStatus('error');
+                    setErrorMessage(data.message || 'Error del servidor');
+                }
             }
 
         } catch (error) {
             console.error('Fetch Lead Capture Error:', error);
-            // Fallback silencioso en catch
-            setStatus('success');
+            if (isProd) {
+                setStatus('success');
+            } else {
+                setStatus('error');
+                setErrorMessage(`Error de red: ${error.message}`);
+            }
         }
     };
 

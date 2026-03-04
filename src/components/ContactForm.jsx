@@ -42,23 +42,36 @@ const ContactForm = ({ showNewsletter = true }) => {
             });
 
             if (!res.ok) {
-                fallbackSilent();
+                if (isProd) {
+                    fallbackSilent();
+                } else {
+                    const errorText = await res.text();
+                    alert(`Error ${res.status}: ${errorText}`);
+                }
                 return;
             }
 
             const data = await res.json();
 
-            if (res.ok && data.success) {
+            if (data.success) {
                 if (window.fbq) {
                     window.fbq('track', 'Lead');
                 }
                 fallbackSilent();
             } else {
-                fallbackSilent();
+                if (isProd) {
+                    fallbackSilent();
+                } else {
+                    alert(data.message || 'Error del servidor');
+                }
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            fallbackSilent();
+            if (isProd) {
+                fallbackSilent();
+            } else {
+                alert(`Error de conexión: ${error.message}`);
+            }
         } finally {
             setIsLoading(false);
         }

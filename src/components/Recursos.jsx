@@ -138,9 +138,9 @@ const Recursos = () => {
                         ) : (
                             <>
                                 <div className="text-center mb-6">
-                                    <h3 className="text-2xl font-bold text-white mb-2">¡Estás a un paso!</h3>
+                                    <h3 className="text-2xl font-bold text-white mb-2">¡Recurso listo para descargar!</h3>
                                     <p className="text-gray-400 text-sm">
-                                        Ingresa tu mejor correo electrónico para enviarte "{activeItem?.title}" directamente a tu bandeja de entrada.
+                                        Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.
                                     </p>
                                 </div>
 
@@ -166,12 +166,7 @@ const Recursos = () => {
                                         slug = 'crm-template';
                                     }
 
-                                    if (slug) {
-                                        // Mandamos al back el Lead para que mande el CORREO real
-                                        await captureLead(email, slug, website);
-                                    }
-
-                                    // DESCARGA DIRECTA (Re-habilitada)
+                                    // DESCARGA DIRECTA (Inmediata para mejor UX)
                                     let fileName = '';
                                     if (activeItem?.id === 1) fileName = 'prompts-ia.pdf';
                                     else if (activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
@@ -184,6 +179,11 @@ const Recursos = () => {
                                         document.body.appendChild(link);
                                         link.click();
                                         document.body.removeChild(link);
+                                    }
+
+                                    if (slug) {
+                                        // Mandamos al back el Lead para que mande el CORREO real (en segundo plano)
+                                        captureLead(email, slug, website);
                                     }
 
                                     // Cambiamos el estado para mostrar UI de éxito en la pantalla al usuario

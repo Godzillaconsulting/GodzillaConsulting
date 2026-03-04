@@ -162,6 +162,8 @@ const Recursos = () => {
                                         slug = 'prompts-ia-marketing';
                                     } else if (activeItem?.id === 2) {
                                         slug = 'leads-whatsapp';
+                                    } else if (activeItem?.id === 3) {
+                                        slug = 'crm-template';
                                     }
 
                                     if (slug) {
@@ -169,10 +171,11 @@ const Recursos = () => {
                                         await captureLead(email, slug, website);
                                     }
 
-                                    /* === DESCARGA DIRECTA COMENTADA POR USUARIO ===
+                                    // DESCARGA DIRECTA (Re-habilitada)
                                     let fileName = '';
                                     if (activeItem?.id === 1) fileName = 'prompts-ia.pdf';
                                     else if (activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
+                                    else if (activeItem?.id === 3) fileName = 'crm-template.xlsx';
 
                                     if (fileName) {
                                         const link = document.createElement('a');
@@ -182,7 +185,6 @@ const Recursos = () => {
                                         link.click();
                                         document.body.removeChild(link);
                                     }
-                                    ================================================*/
 
                                     // Cambiamos el estado para mostrar UI de éxito en la pantalla al usuario
                                     setIsSubmitted(true);

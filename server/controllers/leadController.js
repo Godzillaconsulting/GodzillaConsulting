@@ -37,19 +37,12 @@ export const processLead = async (req, res) => {
 
         const magnet = magnetResult.rows[0];
 
-        // 4. Revisar si el usuario ya bajó este recurso particular
+        // 4. (Opcional) Revisar si el usuario ya bajó este recurso.
+        // Se ha removido el bloqueo de 'already_sent' para permitir auditoría de múltiples descargas.
         const existingDownload = await client.query(
             'SELECT id FROM downloads WHERE user_id = $1 AND lead_magnet_id = $2',
             [userId, magnet.id]
         );
-
-        if (existingDownload.rows.length > 0) {
-            await client.query('COMMIT');
-            return res.status(200).json({
-                success: true,
-                message: 'already_sent'
-            });
-        }
 
         // 5. Registrar la descarga (sent: false por ahora)
         const downloadResult = await client.query(

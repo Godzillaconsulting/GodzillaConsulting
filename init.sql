@@ -55,8 +55,7 @@ CREATE TABLE IF NOT EXISTS downloads (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   lead_magnet_id INT NOT NULL REFERENCES lead_magnets(id) ON DELETE CASCADE,
   sent BOOLEAN DEFAULT FALSE,
-  downloaded_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, lead_magnet_id)
+  downloaded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_downloads_user_id ON downloads(user_id);
@@ -80,18 +79,27 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
 -- ============================================
 -- DATOS INICIALES: lead_magnets
 -- ============================================
-INSERT INTO lead_magnets (slug, title, email_subject, email_body)
+INSERT INTO lead_magnets (slug, title, file_url, email_subject, email_body)
 VALUES
 (
   'prompts-ia-marketing',
   '7 prompts de IA para marketing que sí funcionan',
+  'https://godzillaconsulting.ai/lead-magnets/prompts-ia.pdf',
   '🎁 Aquí están tus 7 prompts de IA para marketing',
   'Hola, gracias por descargar nuestro recurso. Adjunto encontrarás los 7 prompts que realmente funcionan. Cualquier duda, responde este correo.'
 ),
 (
   'leads-whatsapp',
   'Cómo generar leads en WhatsApp sin spam',
+  'https://godzillaconsulting.ai/lead-magnets/whatsapp-guia.pdf',
   '📲 Tu guía: Genera leads en WhatsApp sin spam',
   'Hola, gracias por tu interés. Adjunto encontrarás la guía completa para generar leads en WhatsApp sin parecer spam. Estamos aquí para cualquier pregunta.'
+),
+(
+  'crm-template',
+  'Plantilla de CRM Personalizable',
+  'https://godzillaconsulting.ai/lead-magnets/crm-template.xlsx',
+  '📊 Tu Plantilla de CRM Personalizable está lista',
+  'Hola, aquí tienes la plantilla de CRM que solicitaste. Esperamos que te ayude a organizar mejor tus ventas. ¡Mucho éxito!'
 )
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE SET file_url = EXCLUDED.file_url;

@@ -93,7 +93,7 @@ const Servicios = () => {
                             const isActive = activeIdx === idx;
                             return (
                                 <div key={srv._id} className="relative z-10 flex flex-col items-center group cursor-pointer" onClick={() => setActiveIdx(idx)}>
-                                    <div className={`w-[120px] h-[120px] rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-[#CC0000] border-[6px] border-white outline outline-4 outline-[#CC0000] scale-[1.15] shadow-2xl z-20' : 'bg-[#18181b] border-[6px] border-white hover:bg-[#333333] hover:scale-105 shadow-lg'}`}>
+                                    <div className={`w-[120px] h-[120px] rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-[#18181b] border-[6px] border-white outline outline-4 outline-[#CC0000] scale-[1.15] shadow-[0_0_40px_rgba(204,0,0,0.6)] z-20' : 'bg-[#18181b] border-[6px] border-white hover:bg-[#333333] hover:scale-105 shadow-lg'}`}>
                                         {renderIconImg(srv, isActive)}
                                     </div>
                                     <h3 className={`mt-10 text-center font-bold text-base md:text-xl max-w-[200px] text-[#CC0000] transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
@@ -130,7 +130,7 @@ const Servicios = () => {
                                     className={`p-6 flex items-center gap-4 cursor-pointer transition-colors ${isActive ? 'bg-[#111111] text-white' : 'bg-white text-[#111111]'}`}
                                     onClick={() => setActiveIdx(isActive ? -1 : idx)}
                                 >
-                                    <div className={`p-3 rounded-full ${isActive ? 'bg-[#CC0000]' : 'bg-[#111111]'}`}>
+                                    <div className={`p-3 rounded-full border-2 ${isActive ? 'bg-[#111111] border-[#CC0000] shadow-[0_0_15px_rgba(204,0,0,0.5)]' : 'bg-[#111111] border-transparent'}`}>
                                         {renderIconImg(srv, true)}
                                     </div>
                                     <h3 className="font-bold text-lg leading-tight">{srv.title}</h3>

@@ -55,7 +55,7 @@ const NivelExpansion = () => {
                         {content.heroTopText}
                     </p>
                     <h1
-                        className="text-[2.8rem] sm:text-[4.5rem] md:text-[7rem] lg:text-[9rem] font-bold leading-[0.9] tracking-tight mb-8 md:mb-16 drop-shadow-2xl"
+                        className="text-[2rem] sm:text-[3.5rem] md:text-[7rem] lg:text-[9rem] font-bold leading-[0.9] tracking-tight mb-8 md:mb-16 drop-shadow-2xl"
                         dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
                     />
 

@@ -43,7 +43,7 @@ const LandingPaqueteDynamic = () => {
     return (
         <div className="bg-black min-h-screen text-white pt-20">
             {/* Hero Section */}
-            <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 overflow-hidden">
+            <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 overflow-x-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-center z-0"
                     style={{ backgroundImage: `url(${heroBg})`, opacity: 0.6 }}
@@ -52,19 +52,19 @@ const LandingPaqueteDynamic = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black z-0 pointer-events-none" />
 
                 <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center h-full pt-10 pb-8">
-                    <p className="text-lg md:text-2xl font-bold mb-6 drop-shadow-lg max-w-2xl text-[#f3f3f3]">
+                    <p className="text-base md:text-2xl font-bold mb-4 md:mb-6 drop-shadow-lg max-w-2xl text-[#f3f3f3]">
                         {content.heroTopText}
                     </p>
                     <h1
-                        className="text-[5rem] md:text-[8rem] lg:text-[10rem] font-bold leading-[0.9] tracking-tight mb-16 drop-shadow-2xl uppercase"
+                        className="text-[2rem] sm:text-[3rem] md:text-[8rem] lg:text-[10rem] font-bold leading-[0.9] tracking-tight mb-6 md:mb-16 drop-shadow-2xl uppercase w-full"
                         dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
                     />
 
-                    <div className="flex flex-col sm:flex-row gap-6 mb-16 w-full max-w-xl justify-center z-20">
-                        <a href="#detalles" className="bg-white text-black px-12 py-4 rounded-full font-bold text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105">
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
+                        <a href="#detalles" className="bg-white text-black px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105 text-center">
                             Descubre más
                         </a>
-                        <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-12 py-4 rounded-full font-bold text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105">
+                        <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105 text-center">
                             Ver otros paquetes
                         </Link>
                     </div>
@@ -87,7 +87,7 @@ const LandingPaqueteDynamic = () => {
                                 Detalles del plan
                             </div>
 
-                            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight uppercase">
+                            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight uppercase break-words">
                                 {content.heroTitle && content.heroTitle.replace('\n', ' ')}
                             </h2>
 

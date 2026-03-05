@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Video, MapPin, Youtube } from 'lucide-react';
+import { CheckCircle, ArrowRight, Video, MapPin } from 'lucide-react';
 import godzillaLogoCircle from '../assets/images/logo-godzilla-circle.png';
 import instagramIcon from '../assets/icons/1725819461instagram-logo.png';
 import facebookIcon from '../assets/icons/1730342312_facebook-logo-2024.png';
 import tiktokIcon from '../assets/icons/tik-tok-png-logo-dad7.png';
+import youtubeIcon from '../assets/icons/1701508703YouTube-Icon-PNG.png';
 import linkedinIcon from '../assets/icons/1715491568linkedin-icon-png.png';
 
 const ContactForm = ({ showNewsletter = true }) => {
@@ -341,7 +342,7 @@ const ContactForm = ({ showNewsletter = true }) => {
                                 <img src={tiktokIcon} alt="TikTok" className="w-10 h-10 object-contain" />
                             </a>
                             <a href="https://www.youtube.com/channel/UCNg0_UUqZCt4SFdE3TxutLw" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
-                                <Youtube size={40} className="text-[#CC0000]" strokeWidth={1.5} />
+                                <img src={youtubeIcon} alt="YouTube" className="w-10 h-10 object-contain" />
                             </a>
                         </div>
                     </div>

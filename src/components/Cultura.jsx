@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import culturaImage from '../assets/images/Nuestra cultura image.jpg';
-import culturaVideo from '../assets/AdobeStock_494215230.mov';
+import culturaVideo from '../assets/Particulas Rojas.mp4';
 
 const Cultura = () => {
     const [currentSlide, setCurrentSlide] = useState(0);

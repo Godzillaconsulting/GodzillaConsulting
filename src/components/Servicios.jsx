@@ -36,11 +36,25 @@ const Servicios = () => {
 
     // Obtiene la URL del ícono: desde Sanity o desde el asset local
     const getIconSrc = (srv) => {
+        // 1. Si viene de Sanity con imagen cargada
         if (srv.icono) return urlFor(srv.icono).width(256).height(256).url();
-        const fallback = defaultServices.find(
-            d => (d.id?.current && srv.id?.current && d.id.current === srv.id.current) || d.title === srv.title
-        );
-        return srv.iconSrc || (fallback ? fallback.iconSrc : null);
+
+        // 2. Si es un objeto local (default) ya trae iconSrc
+        if (srv.iconSrc) return srv.iconSrc;
+
+        // 3. Fallback inteligente: buscar en defaults usando slug o palabras clave del título
+        const slug = srv.id?.current || '';
+        const title = srv.title || '';
+
+        const fallback = defaultServices.find(d => {
+            const dSlug = d.id?.current || '';
+            const dTitle = d.title || '';
+            return (slug && dSlug && slug === dSlug) ||
+                (title && dTitle && title.toLowerCase().includes(dTitle.toLowerCase())) ||
+                (title && dTitle && dTitle.toLowerCase().includes(title.toLowerCase()));
+        });
+
+        return fallback ? fallback.iconSrc : null;
     };
 
     // Obtiene el enlace: desde Sanity o desde el default

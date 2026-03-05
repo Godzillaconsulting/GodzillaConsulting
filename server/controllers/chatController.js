@@ -132,7 +132,7 @@ export const processChatMessage = async (req, res) => {
 
     try {
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-pro",
+            model: "gemini-2.5-flash",
             systemInstruction: SYSTEM_PROMPT,
             tools: [{ functionDeclarations: chatTools }]
         });

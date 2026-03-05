@@ -40,8 +40,20 @@ const CasosExito = () => {
     }, []);
 
     const getLogoSrc = (item) => {
+        // 1. Si viene de Sanity con imagen
         if (item.logo) return urlFor(item.logo).width(500).url();
-        return item.logoSrc;
+
+        // 2. Si ya trae logoSrc (locales)
+        if (item.logoSrc) return item.logoSrc;
+
+        // 3. Fallback: Buscar en los defaults por nombre si Sanity no tiene logo
+        const fallback = defaultCases.find(d =>
+            item.nombre && d.nombre &&
+            (item.nombre.toLowerCase().includes(d.nombre.toLowerCase()) ||
+                d.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+        );
+
+        return fallback ? fallback.logoSrc : null;
     };
 
     // Auto-scroll loop usando RAF

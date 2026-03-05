@@ -32,3 +32,6 @@ dist-ssr
 *.webm
 *.mkv
 .env*.local
+.env
+server/.env
+server/.env.local

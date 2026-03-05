@@ -132,9 +132,12 @@ const Bots = () => {
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
                                 {content.subtitle}
                             </p>
-                            <Link to={content.ctaLink} className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl">
+                            <button
+                                onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
+                            >
                                 {content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
-                            </Link>
+                            </button>
                         </div>
                     </div>
 

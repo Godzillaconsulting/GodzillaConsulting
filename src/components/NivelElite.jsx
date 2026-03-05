@@ -3,7 +3,7 @@ import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { client } from '../sanityClient';
-import heroBg from '../assets/images/3d-abstract-background-with-cyber-particles-connections-technology-network.jpg';
+import backgroundVideo from '../assets/Particulas Rojas LANDINGS.mp4';
 
 const defaultContent = {
     heroTopText: 'Organiza un sistema que capture, atienda y organice a tus prospectos sin que tú muevas un dedo',
@@ -44,10 +44,15 @@ const NivelElite = () => {
         <div className="bg-black min-h-screen text-white pt-20">
             {/* Hero Section */}
             <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-4 overflow-x-hidden">
-                <div
-                    className="absolute inset-0 bg-cover bg-center z-0"
-                    style={{ backgroundImage: `url(${heroBg})`, opacity: 0.6 }}
-                />
+                <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover z-0 opacity-60"
+                >
+                    <source src={backgroundVideo} type="video/mp4" />
+                </video>
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black z-0 pointer-events-none" />
 
                 <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center h-full pt-10 pb-8">

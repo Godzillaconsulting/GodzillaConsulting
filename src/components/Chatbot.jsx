@@ -5,13 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { role: 'model', text: '¡Hola! Soy Goyi, tu asistente virtual en Godzilla Consulting. ¿En qué puedo ayudarte hoy?' }
+        { role: 'model', text: '¡Hola! Soy Goyi, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const isProd = typeof window !== 'undefined' && window.location.hostname.includes('godzillaconsulting.ai');
+    const API_URL = isProd ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:3000');
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -96,8 +97,8 @@ const Chatbot = () => {
                                 >
                                     <div
                                         className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                                ? 'bg-[#CC0000] text-white rounded-tr-sm'
-                                                : 'bg-[#2a0000] border border-gray-800 text-gray-100 rounded-tl-sm'
+                                            ? 'bg-[#CC0000] text-white rounded-tr-sm'
+                                            : 'bg-[#2a0000] border border-gray-800 text-gray-100 rounded-tl-sm'
                                             }`}
                                     >
                                         {msg.text}

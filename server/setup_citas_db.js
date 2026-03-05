@@ -12,10 +12,10 @@ async function initCitasTable() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS citas (
                 id SERIAL PRIMARY KEY,
-                nombre VARCHAR(255) NOT NULL,
-                correo VARCHAR(255) NOT NULL,
+                nombre_completo VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
                 telefono VARCHAR(50),
-                servicio VARCHAR(255) NOT NULL,
+                tipo_sesion VARCHAR(255) NOT NULL,
                 fecha DATE NOT NULL,
                 hora TIME NOT NULL,
                 status VARCHAR(50) DEFAULT 'confirmada',

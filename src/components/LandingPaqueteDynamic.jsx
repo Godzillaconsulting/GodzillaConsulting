@@ -56,7 +56,8 @@ const LandingPaqueteDynamic = () => {
                         {content.heroTopText}
                     </p>
                     <h1
-                        className="text-[2rem] sm:text-[3rem] md:text-[8rem] lg:text-[10rem] font-bold leading-[0.9] tracking-tight mb-6 md:mb-16 drop-shadow-2xl uppercase w-full"
+                        className="text-[2rem] sm:text-[3rem] md:text-8xl lg:text-[10rem] font-bold leading-[1.1] md:leading-[0.9] tracking-tight mb-8 md:mb-16 drop-shadow-2xl uppercase w-full break-words max-w-full"
+                        style={{ wordBreak: 'break-word', hyphens: 'auto' }}
                         dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
                     />
 
@@ -87,7 +88,10 @@ const LandingPaqueteDynamic = () => {
                                 Detalles del plan
                             </div>
 
-                            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight uppercase break-words">
+                            <h2
+                                className="text-[1.8rem] sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight uppercase break-words max-w-full"
+                                style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                            >
                                 {content.heroTitle && content.heroTitle.replace('\n', ' ')}
                             </h2>
 

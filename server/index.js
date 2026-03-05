@@ -59,13 +59,17 @@ app.use(express.json());
 // 2. RUTAS DE LA API
 // ==========================================
 
+import chatRoutes from './routes/chat.js';
+
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
+app.use('/api/chat', apiLimiter, chatRoutes);
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
+
 
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)

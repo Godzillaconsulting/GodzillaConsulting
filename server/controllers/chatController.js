@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
 
-// Initialize Gemini Pro model
-const genAI = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY ?
-    new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) : null;
+// Initialize Gemini Pro model will be done inside the request handler to ensure dotenv is fully loaded
 
 const SYSTEM_PROMPT = `
 # PROMPT 1 — BOT IA PARA PÁGINA WEB (ESPECIALISTA EN PERFORMANCE MARKETING IA)
@@ -126,9 +124,11 @@ export const processChatMessage = async (req, res) => {
         return res.status(400).json({ error: "Messages array is required." });
     }
 
-    if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         return res.status(500).json({ error: "GEMINI_API_KEY no configurada en el servidor." });
     }
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     try {
         const model = genAI.getGenerativeModel({

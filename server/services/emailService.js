@@ -1,8 +1,6 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Función central para envíos de correo de Lead Magnets
@@ -39,16 +37,27 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
 
     while (retries >= 0) {
         try {
-            const result = await resend.emails.send({
-                from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-                to: [to],
-                subject: subject,
-                html: htmlTemplate,
-                // Opcionalmente podemos recibir "attachments" y pasarlos pero por
-                // ahora la orden fue usar un archivo URL y que bajen un botón
+            // Configurar el transporter de Nodemailer con la clave de aplicación de Gmail
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_APP_PASSWORD
+                }
             });
-            // Si funciona retorna true, si result trae error lanza catch
-            if (result.error) throw new Error(result.error.message);
+
+            // Opciones del correo
+            const mailOptions = {
+                from: `"Godzilla Consulting \uD83E\uDD96" <${process.env.EMAIL_USER}>`,
+                to: to,
+                subject: subject,
+                html: htmlTemplate
+            };
+
+            const result = await transporter.sendMail(mailOptions);
+            
+            // Si funciona retorna true
+            if (!result.messageId) throw new Error("No messageId returned from transporter");
             return true;
         } catch (error) {
             console.error(`❌ [Email Service] Fallo al enviar al correo: ${to}. Intentos restantes: ${retries}`, error);

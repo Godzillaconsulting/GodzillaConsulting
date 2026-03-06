@@ -9,6 +9,7 @@ import { connectDB } from './config/db.js';
 
 // Inicializar variables de entorno (.env)
 dotenv.config();
+console.log('[DEBUG] .env cargado. GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Presente' : 'FALTANTE');
 
 // Inicializar conexión a PostgreSQL (Neon)
 connectDB();

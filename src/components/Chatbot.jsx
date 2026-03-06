@@ -59,18 +59,21 @@ const Chatbot = () => {
         <>
             {/* Chatbot Toggle Button */}
             <div className="fixed bottom-6 right-6 z-50">
-                <button
+                <motion.button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="bg-[#CC0000] hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition-transform hover:scale-110 flex items-center justify-center border-2 border-brand-black"
+                    className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none ${isOpen ? 'bg-[#CC0000] text-white p-4' : 'w-[70px] h-[70px] p-0 overflow-hidden'}`}
+                    animate={isOpen ? { scale: 1 } : { scale: [1, 1.08, 1] }}
+                    transition={isOpen ? { duration: 0.2 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                    whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
                 >
                     {isOpen ? <X size={28} /> : (
                         <img 
                             src={zillaIcon} 
                             alt="Zilla Icon" 
-                            className="w-8 h-8 rounded-full object-cover" 
+                            className="w-full h-full object-cover" 
                         />
                     )}
-                </button>
+                </motion.button>
             </div>
 
             {/* Chatbot Window */}

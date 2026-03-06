@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, BrainCircuit, CalendarCheck } from 'lucide-react';
+import { MessageSquare, X, Send, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import zillaIcon from '../assets/Icono de chatbot.jpeg';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { role: 'model', text: '¡Hola! Soy Goyi, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' }
+        { role: 'model', text: '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +49,7 @@ const Chatbot = () => {
             setMessages((prev) => [...prev, { role: 'model', text: data.reply }]);
         } catch (error) {
             console.error('Error in chat:', error);
-            setMessages((prev) => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al conectar con Goyi. Intenta recargar la página.' }]);
+            setMessages((prev) => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
         } finally {
             setIsLoading(false);
         }
@@ -62,7 +63,13 @@ const Chatbot = () => {
                     onClick={() => setIsOpen(!isOpen)}
                     className="bg-[#CC0000] hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition-transform hover:scale-110 flex items-center justify-center border-2 border-brand-black"
                 >
-                    {isOpen ? <X size={28} /> : <BrainCircuit size={28} />}
+                    {isOpen ? <X size={28} /> : (
+                        <img 
+                            src={zillaIcon} 
+                            alt="Zilla Icon" 
+                            className="w-8 h-8 rounded-full object-cover" 
+                        />
+                    )}
                 </button>
             </div>
 
@@ -79,8 +86,12 @@ const Chatbot = () => {
                         {/* Header */}
                         <div className="bg-[#CC0000] p-4 flex justify-between items-center text-white">
                             <div className="flex items-center gap-2 font-bold">
-                                <BrainCircuit size={24} />
-                                <span>Goyi - Asistente IA</span>
+                                <img 
+                                    src={zillaIcon} 
+                                    alt="Zilla" 
+                                    className="w-6 h-6 rounded-full object-cover" 
+                                />
+                                <span>Zilla - Asistente IA</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="hover:text-gray-200 transition-colors">
                                 <X size={20} />

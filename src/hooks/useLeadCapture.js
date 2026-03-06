@@ -12,8 +12,7 @@ export const useLeadCapture = () => {
     const captureLead = async (email, slug, website = '') => {
         // En desarrollo, esto apuntaría a http://localhost:3000
         // En producción a https://godzillaconsulting-backend.railway.app
-        const isProd = typeof window !== 'undefined' && window.location.hostname.includes('godzillaconsulting.ai');
-        const API_URL = isProd ? '/api/leads' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/leads');
+        const API_URL = import.meta.env.VITE_BACKEND_URL || '/api/leads';
 
         setStatus('loading');
         setErrorMessage('');
@@ -28,14 +27,9 @@ export const useLeadCapture = () => {
             });
 
             if (!response.ok) {
-                // FALLBACK SILENCIOSO: Solo en Producción
-                if (isProd) {
-                    setStatus('success');
-                } else {
-                    const errorText = await response.text();
-                    setStatus('error');
-                    setErrorMessage(`Error ${response.status}: ${errorText}`);
-                }
+                const errorText = await response.text();
+                setStatus('error');
+                setErrorMessage(`Error ${response.status}: ${errorText}`);
                 return;
             }
 
@@ -51,23 +45,14 @@ export const useLeadCapture = () => {
                     setStatus('success');
                 }
             } else {
-                // Fallback silencioso en producción
-                if (isProd) {
-                    setStatus('success');
-                } else {
-                    setStatus('error');
-                    setErrorMessage(data.message || 'Error del servidor');
-                }
+                setStatus('error');
+                setErrorMessage(data.message || 'Error del servidor');
             }
 
         } catch (error) {
             console.error('Fetch Lead Capture Error:', error);
-            if (isProd) {
-                setStatus('success');
-            } else {
-                setStatus('error');
-                setErrorMessage(`Error de red: ${error.message}`);
-            }
+            setStatus('error');
+            setErrorMessage(`Error de red: ${error.message}`);
         }
     };
 

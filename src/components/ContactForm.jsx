@@ -23,8 +23,7 @@ const ContactForm = ({ showNewsletter = true }) => {
         e.preventDefault();
         setIsLoading(true);
 
-        const isProd = typeof window !== 'undefined' && window.location.hostname.includes('godzillaconsulting.ai');
-        const API_URL = isProd ? '/api/contact' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/contact');
+        const API_URL = import.meta.env.VITE_BACKEND_URL || '/api/contact';
 
         const fallbackSilent = () => {
             setIsSubmitted(true);
@@ -52,9 +51,6 @@ const ContactForm = ({ showNewsletter = true }) => {
                     } catch (e) {
                         alert(`Error de validación: ${errorText}`);
                     }
-                } else if (isProd) {
-                    // Solo es silencioso si es un error 500 o similar en producción
-                    fallbackSilent();
                 } else {
                     alert(`Error ${res.status}: ${errorText}`);
                 }
@@ -69,20 +65,11 @@ const ContactForm = ({ showNewsletter = true }) => {
                 }
                 fallbackSilent();
             } else {
-                // Si el servidor responde success: false pero status 200 (raro pero posible)
-                if (isProd) {
-                    fallbackSilent();
-                } else {
-                    alert(data.message || 'Error del servidor');
-                }
+                alert(data.message || 'Error del servidor');
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            if (isProd) {
-                fallbackSilent();
-            } else {
-                alert(`Error de conexión: ${error.message}`);
-            }
+            alert(`Error de conexión: ${error.message}`);
         } finally {
             setIsLoading(false);
         }

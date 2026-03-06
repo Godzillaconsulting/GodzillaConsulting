@@ -11,8 +11,7 @@ const Chatbot = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const isProd = typeof window !== 'undefined' && window.location.hostname.includes('godzillaconsulting.ai');
-    const API_URL = isProd ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:3000');
+    const API_URL = import.meta.env.VITE_API_URL || '';
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

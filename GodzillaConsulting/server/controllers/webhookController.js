@@ -100,6 +100,13 @@ export const processWebhookMessage = async (req, res) => {
         // Caso B: Messenger o Instagram (Usan 'messaging')
         else if (entry.messaging && entry.messaging[0] && entry.messaging[0].message) {
             const msgObj = entry.messaging[0];
+            
+            // FILTRO DE SEGURIDAD: Evitar que el bot se responda a sí mismo (is_echo)
+            if (msgObj.message.is_echo) {
+                console.log("Ignorando mensaje 'echo' proveniente de la propia página.");
+                return res.status(200).send("EVENT_RECEIVED");
+            }
+
             // Si el webhook trae id de IG, es Instagram, si es de página de Facebook, es Messenger
             platform = entry.id.toString().includes("ig") ? "instagram" : "messenger"; // Esto puede variar, lo manejamos genérico por ahora
             if (req.query.platform) platform = req.query.platform; // Si queremos forzarlo por Query String en el webhook

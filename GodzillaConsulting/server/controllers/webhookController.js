@@ -169,6 +169,7 @@ export const processWebhookMessage = async (req, res) => {
                 // Para IG y Messenger la API Graph v19+ usa /me/messages
                 GRAPH_URL = `https://graph.facebook.com/v19.0/me/messages`;
                 requestBody = {
+                    messaging_type: "RESPONSE",
                     recipient: { id: senderId },
                     message: { text: botReply }
                 };

@@ -1,4 +1,3 @@
-
-import app from '../server/index.js';
+import app from '../GodzillaConsulting/server/index.js';
 
 export default app;

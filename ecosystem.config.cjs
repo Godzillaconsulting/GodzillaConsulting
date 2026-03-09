@@ -14,9 +14,9 @@ module.exports = {
       }
     },
     {
-      name: "ngrok-tunnel",
-      script: "ngrok",
-      args: "http 3000",
+      name: "cloudflare-tunnel",
+      script: "C:\\Users\\JareG\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe\\cloudflared.exe",
+      args: "tunnel --url http://localhost:3000",
       watch: false,
     }
   ]

@@ -80,9 +80,6 @@ export const processWebhookMessage = async (req, res) => {
         return res.sendStatus(400); 
     }
 
-    // Le retornamos un 200 rápido a Meta para que sepamos que lo recibimos (Standard Meta Practice)
-    res.status(200).send("EVENT_RECEIVED");
-
     try {
         const entry = body.entry[0];
         let senderId = null;
@@ -112,7 +109,9 @@ export const processWebhookMessage = async (req, res) => {
         }
 
         // Si no es un mensaje de texto válido (ej: updates de estado, leídos, etc), ignoramos
-        if (!messageText || !senderId) return;
+        if (!messageText || !senderId) {
+            return res.status(200).send("EVENT_RECEIVED");
+        }
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
 
@@ -195,4 +194,8 @@ export const processWebhookMessage = async (req, res) => {
     } catch (error) {
         console.error("❌ Error interno procesando webhook:", error);
     }
+
+    // VERCEL / SERVERLESS FIX: Meta espera un 200 EVENT_RECEIVED para saber que terminó bien.
+    // Solo podemos enviar la respuesta de Vercel HASTA QUE todas las tareas de fondo terminen.
+    return res.status(200).send("EVENT_RECEIVED");
 };

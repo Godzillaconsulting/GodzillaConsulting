@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
-// fetch is native in Node.js 18+, no import needed
 
-// Reutilizamos el system prompt base de Zilla (Mismo que en chatController)
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
 
@@ -35,7 +33,7 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 4. **Paso a paso**: Haz **SOLO UNA PREGUNTA** por mensaje al final de tu texto. Ve descifrando la necesidad del cliente paso a paso. NUNCA envíes cuestionarios de múltiples preguntas.
 5. **Precios Prohibidos**: TIENES ESTRICTAMENTE PROHIBIDO dar precios o cotizaciones. Si el cliente te pregunta "cuánto cuesta" o por el precio de algún paquete, dile amablemente que vea todos los detalles de costos en la página web oficial: https://godzillaconsulting.ai
 6. **Detalles de Paquete**: Si te preguntan qué incluye un paquete, da los detalles concretos (mira la sección Paquetes) sin marearlos y sin dar precio.
-7. **Memoria**: NO repitas información. Si el usuario ya mencionó su producto/leads, úsalo pero no lo repitas.
+7. **Memoria**: NO repitas información. Si el usuario ya mencionó su producto/leads, úsalo pero no lo repitas. MANTEN EN CUENTA EL RESUMEN DE CONTEXTO.
 8. **Citas**: Si el cliente tiene intención real, guíalo suavemente a agendar usando el protocolo.
 
 ## CONTACTO Y REDES SOCIALES OFICIALES
@@ -88,40 +86,59 @@ const chatTools = [
     }
 ];
 
-// Helper para cargar y guardar sesiones (Memoria Inteligente JSONB)
-// Retorna el historial formateado para Gemini o un array vacío si es usuario nuevo.
-async function getOrCreateSession(senderId, platform) {
+// Helper: UPSERT para base de datos (Memoria Inteligente)
+async function appendMessageToSession(senderId, role, content) {
+    const query = `
+        INSERT INTO sesiones_chat (id_usuario_red, historial_mensajes, resumen_contexto, ultima_actualizacion)
+        VALUES ($1, $2, '', CURRENT_TIMESTAMP)
+        ON CONFLICT (id_usuario_red)
+        DO UPDATE SET
+            historial_mensajes = sesiones_chat.historial_mensajes || $2,
+            ultima_actualizacion = CURRENT_TIMESTAMP
+        RETURNING historial_mensajes, resumen_contexto;
+    `;
+    const newMsg = JSON.stringify([{ role, contenido: content }]);
     try {
-        const result = await pool.query(
-            "SELECT historial_mensajes FROM sesiones_chat WHERE id_usuario_red = $1",
-            [senderId]
-        );
-        
-        if (result.rows.length > 0) {
-            return result.rows[0].historial_mensajes;
-        } else {
-            // Usuario nuevo, lo creamos con historial vacío
-            await pool.query(
-                "INSERT INTO sesiones_chat (id_usuario_red, plataforma) VALUES ($1, $2)",
-                [senderId, platform]
-            );
-            return [];
-        }
+        const res = await pool.query(query, [senderId, newMsg]);
+        return res.rows[0];
     } catch (e) {
-        console.error("❌ Error leyendo sesión JSONB:", e.message);
-        return [];
+        console.error("❌ Error en appendMessageToSession:", e.message);
+        return null;
     }
 }
 
-// Guarda toda la conversación (User y Model) en bloque dentro del JSONB
-async function updateSession(senderId, newHistoryArray) {
+// Helper: Compresión con Gemini
+async function compressContextIfNeeded(senderId, historial_mensajes, resumen_contexto) {
+    if (!historial_mensajes || historial_mensajes.length < 20) return;
+
     try {
-        await pool.query(
-            "UPDATE sesiones_chat SET historial_mensajes = $1, ultima_actualizacion = CURRENT_TIMESTAMP WHERE id_usuario_red = $2",
-            [JSON.stringify(newHistoryArray), senderId]
-        );
+        console.log(`[Compresión] Iniciando compresión de memoria para ${senderId}...`);
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
+        
+        let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes (nombre, servicio de interés, citas o detalles clave).\n\nConversación:\n${historyText}`;
+        if (resumen_contexto) {
+            prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
+        }
+
+        const result = await model.generateContent(prompt);
+        const newSummary = result.response.text();
+
+        // Limpiar el historial_mensajes de JSONB y guardar el nuevo resumen
+        const query = `
+            UPDATE sesiones_chat 
+            SET historial_mensajes = '[]'::jsonb,
+                resumen_contexto = $1,
+                ultima_actualizacion = CURRENT_TIMESTAMP
+            WHERE id_usuario_red = $2
+        `;
+        await pool.query(query, [newSummary, senderId]);
+        console.log(`[Compresión] ✅ Memoria comprimida y guardada para ${senderId}.`);
     } catch (e) {
-        console.error("❌ Error actualizando sesión JSONB:", e.message);
+        console.error("❌ Error comprimiendo contexto:", e);
     }
 }
 
@@ -145,7 +162,6 @@ export const verifyWebhook = (req, res) => {
 
 // 2. Recepción y procesamiento de mensajes (POST)
 export const processWebhookMessage = async (req, res) => {
-    // 2.a Validar que venga body
     const body = req.body;
     if (!body || !body.entry || !body.entry[0]) {
         return res.sendStatus(400); 
@@ -156,11 +172,8 @@ export const processWebhookMessage = async (req, res) => {
         let senderId = null;
         let messageText = null;
         let platform = null;
-        let phoneNumberId = null; // Solo para WhatsApp
+        let phoneNumberId = null;
 
-        // --- DETECCIÓN DE PLATAFORMA Y EXTRACCIÓN DE DATOS ---
-        
-        // Caso A: WhatsApp (Usa 'changes')
         if (entry.changes && entry.changes[0] && entry.changes[0].value.messages) {
             const data = entry.changes[0].value;
             platform = "whatsapp";
@@ -168,64 +181,67 @@ export const processWebhookMessage = async (req, res) => {
             senderId = data.contacts[0].wa_id;
             phoneNumberId = data.metadata.phone_number_id; 
         } 
-        // Caso B: Messenger o Instagram (Usan 'messaging')
         else if (entry.messaging && entry.messaging[0] && entry.messaging[0].message) {
             const msgObj = entry.messaging[0];
             
-            // FILTRO DE SEGURIDAD: Evitar que el bot se responda a sí mismo (is_echo)
             if (msgObj.message.is_echo) {
                 console.log("Ignorando mensaje 'echo' proveniente de la propia página.");
                 return res.status(200).send("EVENT_RECEIVED");
             }
 
-            // Detección oficial de plataforma
             if (body.object === "instagram") {
                 platform = "instagram";
             } else if (body.object === "page") {
                 platform = "messenger";
             } else {
-                platform = "messenger"; // fallback
+                platform = "messenger"; 
             }
 
-            if (req.query.platform) platform = req.query.platform; // Forzar por query si es necesario
+            if (req.query.platform) platform = req.query.platform; 
             
             messageText = msgObj.message.text;
             senderId = msgObj.sender.id;
         }
 
-        // Si no es un mensaje de texto válido (ej: updates de estado, leídos, etc), ignoramos
         if (!messageText || !senderId) {
             return res.status(200).send("EVENT_RECEIVED");
         }
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
 
-        // 2.b Cargar sesión o crearla si es nuevo lead
-        const geminiHistory = await getOrCreateSession(senderId, platform);
-        
-        // Agregamos el mensaje que acaba de enviar el usuario al arreglo en memoria temporal
-        geminiHistory.push({
-            role: "user",
-            parts: [{ text: messageText }]
-        });
+        // 2.a Guardar mensaje del usuario y recuperar sesión
+        const sessionData = await appendMessageToSession(senderId, "user", messageText);
+        if (!sessionData) return res.status(500).send("Error en DB");
 
-        // 2.d Iniciar Gemini y generar respuesta
+        const { historial_mensajes, resumen_contexto } = sessionData;
+
+        // Inyectar contexto comprimido en el sistema si existe
+        let finalSystemPrompt = SYSTEM_PROMPT;
+        if (resumen_contexto && resumen_contexto.trim() !== '') {
+            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
+        }
+
+        // Formatear el historial reciente para Gemini-2.0-flash
+        // historial_mensajes traído del UPSERT ya incluye el mensaje recién agregado del usuario.
+        const geminiHistory = historial_mensajes.slice(0, -1).map(m => ({
+            role: m.role,
+            parts: [{ text: m.contenido }]
+        }));
+
+        // 2.b Iniciar Gemini y generar respuesta
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash",
-            systemInstruction: SYSTEM_PROMPT,
+            systemInstruction: finalSystemPrompt,
             tools: [{ functionDeclarations: chatTools }]
         });
 
-        // Nota: Le mandamos a Gemini todo el arreglo excepto el último mensaje del usuario (ese va en sendMessage)
-        const oldHistoryForStartChat = geminiHistory.slice(0, -1);
-        const chat = model.startChat({ history: oldHistoryForStartChat });
-        
+        const chat = model.startChat({ history: geminiHistory });
         let result = await chat.sendMessage(messageText);
         let botReply = result.response.text();
 
-        // Manejar posibles invocaciones de herramientas (Function Calling)
+        // Function Calls
         const functionCalls = result.response.functionCalls();
         if (functionCalls && functionCalls.length > 0) {
             for (const call of functionCalls) {
@@ -248,7 +264,6 @@ export const processWebhookMessage = async (req, res) => {
                     fRes = { resources: r.rows };
                 }
                 
-                // Devolvemos el resultado de la función a Gemini para que termine de armar su respuesta final humana
                 result = await chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]);
                 botReply = result.response.text();
             }
@@ -256,16 +271,15 @@ export const processWebhookMessage = async (req, res) => {
 
         console.log(`🤖 Zilla Bot preparado para responder vía [${platform}]:`, botReply.substring(0, 50) + '...');
 
-        // 2.e Agregamos la respuesta del bot al arreglo en memoria temporal y GUARDAMOS en DB
-        geminiHistory.push({
-            role: "model",
-            parts: [{ text: botReply }]
-        });
+        // 2.c Guardar respuesta del bot en DB y verificar compresión
+        const postBotSession = await appendMessageToSession(senderId, "model", botReply);
         
-        // Hacemos un solo UPDATE en DB con todo el arreglo modificado
-        await updateSession(senderId, geminiHistory);
+        // Disparar compresión en segundo plano sin bloquar la respuesta a Meta
+        if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {
+            compressContextIfNeeded(senderId, postBotSession.historial_mensajes, postBotSession.resumen_contexto);
+        }
 
-        // 2.f Enviar respuesta a Meta usando Graph API (Fetch)
+        // 2.d Enviar respuesta a Meta usando Graph API
         let GRAPH_URL = "";
         let requestBody = {};
         const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN;
@@ -283,7 +297,6 @@ export const processWebhookMessage = async (req, res) => {
             case "messenger":
             case "instagram":
             default:
-                // Para IG y Messenger la API Graph v19+ usa /me/messages
                 GRAPH_URL = `https://graph.facebook.com/v19.0/me/messages`;
                 requestBody = {
                     messaging_type: "RESPONSE",
@@ -313,7 +326,5 @@ export const processWebhookMessage = async (req, res) => {
         console.error("❌ Error interno procesando webhook:", error);
     }
 
-    // VERCEL / SERVERLESS FIX: Meta espera un 200 EVENT_RECEIVED para saber que terminó bien.
-    // Solo podemos enviar la respuesta de Vercel HASTA QUE todas las tareas de fondo terminen.
     return res.status(200).send("EVENT_RECEIVED");
 };

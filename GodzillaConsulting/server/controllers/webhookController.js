@@ -153,9 +153,16 @@ export const processWebhookMessage = async (req, res) => {
                 return res.status(200).send("EVENT_RECEIVED");
             }
 
-            // Si el webhook trae id de IG, es Instagram, si es de página de Facebook, es Messenger
-            platform = entry.id.toString().includes("ig") ? "instagram" : "messenger"; // Esto puede variar, lo manejamos genérico por ahora
-            if (req.query.platform) platform = req.query.platform; // Si queremos forzarlo por Query String en el webhook
+            // Detección oficial de plataforma
+            if (body.object === "instagram") {
+                platform = "instagram";
+            } else if (body.object === "page") {
+                platform = "messenger";
+            } else {
+                platform = "messenger"; // fallback
+            }
+
+            if (req.query.platform) platform = req.query.platform; // Forzar por query si es necesario
             
             messageText = msgObj.message.text;
             senderId = msgObj.sender.id;

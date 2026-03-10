@@ -118,7 +118,7 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
-        
+
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes (nombre, servicio de interés, citas o detalles clave).\n\nConversación:\n${historyText}`;
         if (resumen_contexto) {
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
@@ -163,9 +163,18 @@ export const verifyWebhook = (req, res) => {
 // 2. Recepción y procesamiento de mensajes (POST)
 export const processWebhookMessage = async (req, res) => {
     const body = req.body;
+    
+    // Log completo de auditoría (IG/WP/Messenger) pedido por Senior QA 
+    console.log("\n=================== WEBHOOK PAYLOAD ===================");
+    console.log(JSON.stringify(body, null, 2));
+    console.log("=======================================================\n");
+
     if (!body || !body.entry || !body.entry[0]) {
-        return res.sendStatus(400); 
+        return res.sendStatus(400);
     }
+
+    // 0. Responder a Meta INMEDIATAMENTE con 200 OK para que Meta no bloquee el webhook (por la demora de Gemini)
+    res.status(200).send("EVENT_RECEIVED");
 
     try {
         const entry = body.entry[0];
@@ -179,32 +188,36 @@ export const processWebhookMessage = async (req, res) => {
             platform = "whatsapp";
             messageText = data.messages[0].text.body;
             senderId = data.contacts[0].wa_id;
-            phoneNumberId = data.metadata.phone_number_id; 
-        } 
+            phoneNumberId = data.metadata.phone_number_id;
+        }
         else if (entry.messaging && entry.messaging[0] && entry.messaging[0].message) {
             const msgObj = entry.messaging[0];
-            
+
             if (msgObj.message.is_echo) {
                 console.log("Ignorando mensaje 'echo' proveniente de la propia página.");
-                return res.status(200).send("EVENT_RECEIVED");
+                return;
             }
 
+            // Meta envía en 'object' si es de Instagram, Page o WhatsApp
             if (body.object === "instagram") {
                 platform = "instagram";
             } else if (body.object === "page") {
                 platform = "messenger";
+            } else if (body.object === "whatsapp_business_account") {
+                platform = "whatsapp";
             } else {
-                platform = "messenger"; 
+                platform = "messenger";
             }
 
-            if (req.query.platform) platform = req.query.platform; 
-            
+            if (req.query.platform) platform = req.query.platform;
+
             messageText = msgObj.message.text;
             senderId = msgObj.sender.id;
         }
 
         if (!messageText || !senderId) {
-            return res.status(200).send("EVENT_RECEIVED");
+            console.log("⚠️ Payload no contenía 'messageText' o 'senderId'. Saliendo del proceso.");
+            return;
         }
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
@@ -263,7 +276,7 @@ export const processWebhookMessage = async (req, res) => {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
                 }
-                
+
                 result = await chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]);
                 botReply = result.response.text();
             }
@@ -273,7 +286,7 @@ export const processWebhookMessage = async (req, res) => {
 
         // 2.c Guardar respuesta del bot en DB y verificar compresión
         const postBotSession = await appendMessageToSession(senderId, "model", botReply);
-        
+
         // Disparar compresión en segundo plano sin bloquar la respuesta a Meta
         if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {
             compressContextIfNeeded(senderId, postBotSession.historial_mensajes, postBotSession.resumen_contexto);
@@ -321,10 +334,9 @@ export const processWebhookMessage = async (req, res) => {
             const errData = await graphResponse.json();
             console.error(`❌ Error enviando a Meta Graph API (${platform}):`, errData);
         }
-        
+
     } catch (error) {
         console.error("❌ Error interno procesando webhook:", error);
     }
 
-    return res.status(200).send("EVENT_RECEIVED");
 };

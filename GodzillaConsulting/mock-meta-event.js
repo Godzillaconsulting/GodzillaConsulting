@@ -7,8 +7,8 @@ async function testGodzillaBot() {
         object: "instagram",
         entry: [{
           messaging: [{
-            sender: { id: "MOCK_USER_IG" },
-            message: { text: "Price list please" }
+            sender: { id: "MOCK_USER_G_CAL_3" },
+            message: { text: "Quiero agendar una cita para Consultoría Élite el 2026-03-20 a las 10:00. Mi nombre es Mock User, correo mock@test.com, teléfono 5551234567 y mis notas son: urge." }
           }]
         }]
       };

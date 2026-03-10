@@ -47,6 +47,7 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 Si el usuario muestra interés en continuar, ofrécele agendar una llamada.
 Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
 **SIEMPRE** usa la herramienta 'check_availability' antes de confirmar una cita para validar que el slot está libre.
+**MUY IMPORTANTE**: Inmediatamente después de agendar exitosamente usando la herramienta, envía un mensaje final de confirmación profesional que resuma los datos de la cita (ej. "¡Perfecto, [Nombre]! Tu cita para [Servicio] ha quedado agendada para el [Fecha] a las [Hora]. Te enviaremos un correo de confirmación pronto.").
 `;
 
 const chatTools = [
@@ -141,6 +142,18 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.error("❌ Error comprimiendo contexto:", e);
     }
 }
+
+// Placeholder para futura implementación de Google Calendar API
+async function agendarEnGoogleCalendar(datosCita) {
+    console.log("\n=================================");
+    console.log("📅 [Google Calendar] Preparando evento...");
+    console.log("Datos limpios extraídos para Google:", JSON.stringify(datosCita, null, 2));
+    console.log("AQUÍ: Se insertará la autenticación con Service Account (google-credentials.json)");
+    console.log("AQUÍ: Se llamará a calendar.events.insert() con los datos.");
+    console.log("=================================\n");
+    return true;
+}
+
 
 // 1. Verificación (GET) para Meta / Meta Developer Portal
 export const verifyWebhook = (req, res) => {
@@ -270,8 +283,15 @@ export const processWebhookMessage = async (req, res) => {
                         "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
                         [nombre, correo, telefono, servicio, fecha, hora, notas]
                     );
+                    
+                    // Extraer los datos limpios en un objeto JSON explícito
+                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                    
+                    // Llamar a la función placeholder para integración futura
+                    await agendarEnGoogleCalendar(datosCita);
+
                     fRes = { success: true, id: r.rows[0].id };
-                    console.log(`[Tool] Cita guardada con éxito (ID: ${fRes.id})`);
+                    console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
@@ -295,11 +315,12 @@ export const processWebhookMessage = async (req, res) => {
         // 2.d Enviar respuesta a Meta usando Graph API
         let GRAPH_URL = "";
         let requestBody = {};
-        const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+        let ACCESS_TOKEN = "";
 
         switch (platform) {
             case "whatsapp":
                 GRAPH_URL = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+                ACCESS_TOKEN = process.env.WA_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
                 requestBody = {
                     messaging_product: "whatsapp",
                     to: senderId,
@@ -311,6 +332,7 @@ export const processWebhookMessage = async (req, res) => {
             case "instagram":
             default:
                 GRAPH_URL = `https://graph.facebook.com/v19.0/me/messages`;
+                ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
                 requestBody = {
                     messaging_type: "RESPONSE",
                     recipient: { id: senderId },
@@ -322,7 +344,7 @@ export const processWebhookMessage = async (req, res) => {
         const graphResponse = await fetch(GRAPH_URL, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${PAGE_TOKEN}`,
+                "Authorization": `Bearer ${ACCESS_TOKEN}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(requestBody)

@@ -88,15 +88,40 @@ const chatTools = [
     }
 ];
 
-// Helper para guardar mensajes en la base de datos Neon (Manejará tanto user como bot)
-async function saveMessage(senderId, platform, role, content) {
+// Helper para cargar y guardar sesiones (Memoria Inteligente JSONB)
+// Retorna el historial formateado para Gemini o un array vacío si es usuario nuevo.
+async function getOrCreateSession(senderId, platform) {
+    try {
+        const result = await pool.query(
+            "SELECT historial_mensajes FROM sesiones_chat WHERE id_usuario_red = $1",
+            [senderId]
+        );
+        
+        if (result.rows.length > 0) {
+            return result.rows[0].historial_mensajes;
+        } else {
+            // Usuario nuevo, lo creamos con historial vacío
+            await pool.query(
+                "INSERT INTO sesiones_chat (id_usuario_red, plataforma) VALUES ($1, $2)",
+                [senderId, platform]
+            );
+            return [];
+        }
+    } catch (e) {
+        console.error("❌ Error leyendo sesión JSONB:", e.message);
+        return [];
+    }
+}
+
+// Guarda toda la conversación (User y Model) en bloque dentro del JSONB
+async function updateSession(senderId, newHistoryArray) {
     try {
         await pool.query(
-            "INSERT INTO chats_redes (sender_id, plataforma, role, content) VALUES ($1, $2, $3, $4)",
-            [senderId, platform, role, content]
+            "UPDATE sesiones_chat SET historial_mensajes = $1, ultima_actualizacion = CURRENT_TIMESTAMP WHERE id_usuario_red = $2",
+            [JSON.stringify(newHistoryArray), senderId]
         );
     } catch (e) {
-        console.error("❌ Error guardando historial en la DB:", e.message);
+        console.error("❌ Error actualizando sesión JSONB:", e.message);
     }
 }
 
@@ -175,20 +200,14 @@ export const processWebhookMessage = async (req, res) => {
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
 
-        // 2.b Guardar mensaje entrante del usuario en la Base de Datos
-        await saveMessage(senderId, platform, "user", messageText);
-
-        // 2.c Obtener el historial reciente del usuario para dárselo a Gemini
-        const contextHistoryRaw = await pool.query(
-            "SELECT role, content FROM chats_redes WHERE sender_id=$1 ORDER BY created_at ASC LIMIT 10",
-            [senderId]
-        );
-
-        // Formatear el historial para Gemini-2.0-flash
-        const geminiHistory = contextHistoryRaw.rows.slice(0, -1).map(row => ({
-            role: row.role === "assistant" || row.role === "model" ? "model" : "user",
-            parts: [{ text: row.content }]
-        }));
+        // 2.b Cargar sesión o crearla si es nuevo lead
+        const geminiHistory = await getOrCreateSession(senderId, platform);
+        
+        // Agregamos el mensaje que acaba de enviar el usuario al arreglo en memoria temporal
+        geminiHistory.push({
+            role: "user",
+            parts: [{ text: messageText }]
+        });
 
         // 2.d Iniciar Gemini y generar respuesta
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -199,7 +218,10 @@ export const processWebhookMessage = async (req, res) => {
             tools: [{ functionDeclarations: chatTools }]
         });
 
-        const chat = model.startChat({ history: geminiHistory });
+        // Nota: Le mandamos a Gemini todo el arreglo excepto el último mensaje del usuario (ese va en sendMessage)
+        const oldHistoryForStartChat = geminiHistory.slice(0, -1);
+        const chat = model.startChat({ history: oldHistoryForStartChat });
+        
         let result = await chat.sendMessage(messageText);
         let botReply = result.response.text();
 
@@ -234,8 +256,14 @@ export const processWebhookMessage = async (req, res) => {
 
         console.log(`🤖 Zilla Bot preparado para responder vía [${platform}]:`, botReply.substring(0, 50) + '...');
 
-        // 2.e Guardar la respuesta generada por el bot en la DB
-        await saveMessage(senderId, platform, "model", botReply);
+        // 2.e Agregamos la respuesta del bot al arreglo en memoria temporal y GUARDAMOS en DB
+        geminiHistory.push({
+            role: "model",
+            parts: [{ text: botReply }]
+        });
+        
+        // Hacemos un solo UPDATE en DB con todo el arreglo modificado
+        await updateSession(senderId, geminiHistory);
 
         // 2.f Enviar respuesta a Meta usando Graph API (Fetch)
         let GRAPH_URL = "";

@@ -17,6 +17,8 @@ console.log('[DEBUG] PAGE_ACCESS_TOKEN:', process.env.PAGE_ACCESS_TOKEN ? 'Prese
 connectDB();
 
 const app = express();
+// Confiar en el proxy inverso de Vercel (Requerido por express-rate-limit)
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
 
 // ==========================================

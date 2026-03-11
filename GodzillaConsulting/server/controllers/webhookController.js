@@ -319,7 +319,7 @@ export const processWebhookMessage = async (req, res) => {
         switch (platform) {
             case "whatsapp":
                 GRAPH_URL = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
-                ACCESS_TOKEN = process.env.WA_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
+                ACCESS_TOKEN = process.env.WP_ACCESS_TOKEN || process.env.WA_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
                 requestBody = {
                     messaging_product: "whatsapp",
                     to: senderId,

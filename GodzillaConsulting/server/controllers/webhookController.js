@@ -186,8 +186,7 @@ export const processWebhookMessage = async (req, res) => {
         return res.sendStatus(400);
     }
 
-    // 0. Responder a Meta INMEDIATAMENTE con 200 OK para que Meta no bloquee el webhook (por la demora de Gemini)
-    res.status(200).send("EVENT_RECEIVED");
+    // Se remueve res.send(200) prematuro que congelaba Vercel/Lambda. Se aplaza al final de la ejecución sincrónica/asincrónica.
 
     try {
         const entry = body.entry[0];
@@ -208,7 +207,7 @@ export const processWebhookMessage = async (req, res) => {
 
             if (msgObj.message.is_echo) {
                 console.log("Ignorando mensaje 'echo' proveniente de la propia página.");
-                return;
+                return res.status(200).send("EVENT_RECEIVED");
             }
 
             // Meta envía en 'object' si es de Instagram, Page o WhatsApp
@@ -230,7 +229,7 @@ export const processWebhookMessage = async (req, res) => {
 
         if (!messageText || !senderId) {
             console.log("⚠️ Payload no contenía 'messageText' o 'senderId'. Saliendo del proceso.");
-            return;
+            return res.status(200).send("EVENT_RECEIVED");
         }
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
@@ -361,4 +360,5 @@ export const processWebhookMessage = async (req, res) => {
         console.error("❌ Error interno procesando webhook:", error);
     }
 
+    return res.status(200).send("EVENT_RECEIVED");
 };

@@ -1,4 +1,4 @@
-const CALENDAR_ID = '538f3ed0539ed99bbf49c29312bea01d82665308bfbe7f57a9f861e7fe693c16@group.calendar.google.com';
+const CALENDAR_ID = 'godzilla.oscar21@gmail.com';
 
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");

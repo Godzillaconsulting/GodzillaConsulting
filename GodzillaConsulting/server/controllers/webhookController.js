@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
+import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -142,18 +143,6 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.error("❌ Error comprimiendo contexto:", e);
     }
 }
-
-// Placeholder para futura implementación de Google Calendar API
-async function agendarEnGoogleCalendar(datosCita) {
-    console.log("\n=================================");
-    console.log("📅 [Google Calendar] Preparando evento...");
-    console.log("Datos limpios extraídos para Google:", JSON.stringify(datosCita, null, 2));
-    console.log("AQUÍ: Se insertará la autenticación con Service Account (google-credentials.json)");
-    console.log("AQUÍ: Se llamará a calendar.events.insert() con los datos.");
-    console.log("=================================\n");
-    return true;
-}
-
 
 // 1. Verificación (GET) para Meta / Meta Developer Portal
 export const verifyWebhook = (req, res) => {

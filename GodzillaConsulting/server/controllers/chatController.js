@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
+import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -47,6 +48,7 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 Si el usuario muestra interés en continuar, ofrécele agendar una llamada.
 Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
 **SIEMPRE** usa la herramienta 'check_availability' antes de confirmar una cita para validar que el slot está libre.
+**MUY IMPORTANTE**: Inmediatamente después de agendar exitosamente usando la herramienta, envía un mensaje final de confirmación profesional que resuma los datos de la cita (ej. "¡Perfecto, [Nombre]! Tu cita para [Servicio] ha quedado agendada para el [Fecha] a las [Hora]. Te enviaremos un correo de confirmación pronto.").
 `;
 
 const chatTools = [
@@ -125,6 +127,10 @@ export const processChatMessage = async (req, res) => {
                         "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
                         [nombre, correo, telefono, servicio, fecha, hora, notas]
                     );
+                    
+                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                    await agendarEnGoogleCalendar(datosCita);
+
                     fRes = { success: true, id: r.rows[0].id };
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

@@ -2,27 +2,39 @@ import { google } from 'googleapis';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
-let auth;
-if (process.env.GOOGLE_CREDENTIALS) {
-    // En Vercel leemos el JSON desde las variables de entorno para mayor seguridad
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-    auth = new google.auth.GoogleAuth({
-        credentials,
-        scopes: SCOPES,
-    });
-} else {
-    // En local usamos el archivo
-    auth = new google.auth.GoogleAuth({
-        keyFile: './google-credentials.json',
-        scopes: SCOPES,
-    });
-}
-
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
-    console.log("📅 [Google Calendar] Escribiendo evento...");
+    console.log("📅 [Google Calendar] Iniciando agendamiento...");
     
     try {
+        let auth;
+        try {
+            if (process.env.GOOGLE_CREDENTIALS) {
+                // Parseamos de forma segura. Si el formato está mal, tirará error aquí y no en el arranque.
+                let credsRaw = process.env.GOOGLE_CREDENTIALS;
+                
+                // Minitratamiento por si vienen saltos de línea mal formateados desde Vercel
+                if (typeof credsRaw === 'string' && credsRaw.startsWith('{')) {
+                    // Reemplazar saltos de línea literales \n que suelen arruinarse
+                    credsRaw = credsRaw.replace(/\\n/g, '\n'); 
+                }
+                
+                const credentials = JSON.parse(credsRaw);
+                auth = new google.auth.GoogleAuth({
+                    credentials,
+                    scopes: SCOPES,
+                });
+            } else {
+                auth = new google.auth.GoogleAuth({
+                    keyFile: './google-credentials.json',
+                    scopes: SCOPES,
+                });
+            }
+        } catch (authErr) {
+            console.error("❌ Error de Autenticación de Google Credentials:", authErr.message);
+            return false; // Salir de la función sin crashear el proceso
+        }
+
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
         
@@ -37,14 +49,8 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         const event = {
             summary: `Cita Zilla: ${datosCita.nombre} - ${datosCita.servicio}`,
             description: desc,
-            start: {
-                dateTime: startDateTime,
-                timeZone: 'America/Regina',
-            },
-            end: {
-                dateTime: endDateTime,
-                timeZone: 'America/Regina',
-            },
+            start: { dateTime: startDateTime, timeZone: 'America/Regina' },
+            end: { dateTime: endDateTime, timeZone: 'America/Regina' },
             colorId: '4',
         };
 
@@ -54,9 +60,11 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         });
 
         console.log("✅ Evento creado en GCalendar! URL: ", response.data.htmlLink);
+        console.log("=================================\n");
+        return true;
     } catch (e) {
-        console.error("❌ Error conectando a Google Calendar:", e.message);
+        console.error("❌ Error conectando a Google Calendar API:", e.message);
+        console.log("=================================\n");
+        return false;
     }
-    console.log("=================================\n");
-    return true;
 };

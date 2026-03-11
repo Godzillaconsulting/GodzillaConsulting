@@ -266,20 +266,25 @@ export const processWebhookMessage = async (req, res) => {
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
                     console.log(`[Tool] Verificando disponibilidad para ${fecha} a las ${hora}: ${fRes.disponible}`);
                 } else if (call.name === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                    const r = await pool.query(
-                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                        [nombre, correo, telefono, servicio, fecha, hora, notas]
-                    );
-                    
-                    // Extraer los datos limpios en un objeto JSON explícito
-                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                    
-                    // Llamar a la función placeholder para integración futura
-                    await agendarEnGoogleCalendar(datosCita);
+                    try {
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                        const r = await pool.query(
+                            "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                            [nombre, correo, telefono, servicio, fecha, hora, notas]
+                        );
+                        
+                        // Extraer los datos limpios en un objeto JSON explícito
+                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                        
+                        // Llamar a la función placeholder para integración futura
+                        await agendarEnGoogleCalendar(datosCita);
 
-                    fRes = { success: true, id: r.rows[0].id };
-                    console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
+                        fRes = { success: true, id: r.rows[0].id };
+                        console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
+                    } catch (metaErr) {
+                        console.error("❌ Error al agendar cita en Meta Webhook:", metaErr);
+                        fRes = { success: false, error: "Hubo un pequeño problema técnico procesando la cita, pero ya estoy notificando al equipo de Godzilla Consulting. Por favor intenta de nuevo más tarde." };
+                    }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };

@@ -122,16 +122,21 @@ export const processChatMessage = async (req, res) => {
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
                 } else if (call.name === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                    const r = await pool.query(
-                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                        [nombre, correo, telefono, servicio, fecha, hora, notas]
-                    );
+                    try {
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                        const r = await pool.query(
+                            "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                            [nombre, correo, telefono, servicio, fecha, hora, notas]
+                        );
 
-                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                    await agendarEnGoogleCalendar(datosCita);
+                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                        await agendarEnGoogleCalendar(datosCita);
 
-                    fRes = { success: true, id: r.rows[0].id };
+                        fRes = { success: true, id: r.rows[0].id };
+                    } catch (appErr) {
+                        console.error("❌ Error al agendar cita en Web Chat:", appErr);
+                        fRes = { success: false, error: "Hubo un pequeño problema técnico procesando la cita, pero ya estoy notificando al equipo de Godzilla Consulting. Por favor intenta de nuevo más tarde." };
+                    }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };

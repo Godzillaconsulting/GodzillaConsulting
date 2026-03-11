@@ -1,45 +1,27 @@
-import { google } from 'googleapis';
-
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+const CALENDAR_ID = '538f3ed0539ed99bbf49c29312bea01d82665308bfbe7f57a9f861e7fe693c16@group.calendar.google.com';
 
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");
     
     try {
-        let auth;
-        try {
-            if (process.env.GOOGLE_CREDENTIALS) {
-                // Parseamos de forma segura. Si el formato está mal, tirará error aquí y no en el arranque.
-                let credsRaw = process.env.GOOGLE_CREDENTIALS;
-                
-                // Minitratamiento por si vienen saltos de línea mal formateados desde Vercel
-                if (typeof credsRaw === 'string' && credsRaw.startsWith('{')) {
-                    // Reemplazar saltos de línea literales \n que suelen arruinarse
-                    credsRaw = credsRaw.replace(/\\n/g, '\n'); 
-                }
-                
-                const credentials = JSON.parse(credsRaw);
-                auth = new google.auth.GoogleAuth({
-                    credentials,
-                    scopes: SCOPES,
-                });
-            } else {
-                auth = new google.auth.GoogleAuth({
-                    keyFile: './google-credentials.json',
-                    scopes: SCOPES,
-                });
-            }
-        } catch (authErr) {
-            console.error("❌ Error de Autenticación de Google Credentials:", authErr.message);
-            return false; // Salir de la función sin crashear el proceso
+        // Dynamic import para evitar que Vercel falle al cargar el módulo pesado al iniciar
+        const { google } = await import('googleapis');
+
+        let authConfig;
+        if (process.env.GOOGLE_CREDENTIALS) {
+            let credsRaw = process.env.GOOGLE_CREDENTIALS;
+            const credentials = JSON.parse(credsRaw);
+            authConfig = { credentials, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
+        } else {
+            authConfig = { keyFile: './google-credentials.json', scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         }
 
+        const auth = new google.auth.GoogleAuth(authConfig);
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
         
         const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-06:00`; 
-        
         const dateObj = new Date(startDateTime);
         dateObj.setHours(dateObj.getHours() + 1);
         const endDateTime = dateObj.toISOString();
@@ -55,7 +37,7 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         };
 
         const response = await calendar.events.insert({
-            calendarId: '538f3ed0539ed99bbf49c29312bea01d82665308bfbe7f57a9f861e7fe693c16@group.calendar.google.com', 
+            calendarId: CALENDAR_ID, 
             resource: event,
         });
 
@@ -63,8 +45,8 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         console.log("=================================\n");
         return true;
     } catch (e) {
-        console.error("❌ Error conectando a Google Calendar API:", e.message);
+        console.error("❌ Error en agendarEnGoogleCalendar:", e.message);
         console.log("=================================\n");
-        return false;
+        return false; // Fallar silenciosamente, no crashear el bot
     }
 };

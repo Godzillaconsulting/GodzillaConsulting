@@ -2,10 +2,21 @@ import { google } from 'googleapis';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
-const auth = new google.auth.GoogleAuth({
-    keyFile: './google-credentials.json',
-    scopes: SCOPES,
-});
+let auth;
+if (process.env.GOOGLE_CREDENTIALS) {
+    // En Vercel leemos el JSON desde las variables de entorno para mayor seguridad
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: SCOPES,
+    });
+} else {
+    // En local usamos el archivo
+    auth = new google.auth.GoogleAuth({
+        keyFile: './google-credentials.json',
+        scopes: SCOPES,
+    });
+}
 
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");

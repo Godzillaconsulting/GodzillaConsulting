@@ -127,7 +127,7 @@ export const processChatMessage = async (req, res) => {
                         "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
                         [nombre, correo, telefono, servicio, fecha, hora, notas]
                     );
-                    
+
                     const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
                     await agendarEnGoogleCalendar(datosCita);
 

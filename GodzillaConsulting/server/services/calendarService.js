@@ -46,6 +46,15 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         return true;
     } catch (e) {
         console.error("❌ Error en agendarEnGoogleCalendar:", e.message);
+        
+        // Log detallado de la API de Google (Status Code y JSON de respuesta)
+        if (e.response && e.response.status) {
+            console.error("   ➡️ Status Code:", e.response.status);
+        }
+        if (e.response && e.response.data) {
+            console.error("   ➡️ Error Detallado de Google:", JSON.stringify(e.response.data, null, 2));
+        }
+
         console.log("=================================\n");
         return false; // Fallar silenciosamente, no crashear el bot
     }

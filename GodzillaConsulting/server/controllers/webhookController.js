@@ -166,10 +166,14 @@ export const verifyWebhook = (req, res) => {
 export const processWebhookMessage = async (req, res) => {
     const body = req.body;
     
-    // Log completo de auditoría (IG/WP/Messenger) pedido por Senior QA 
-    console.log("\n=================== WEBHOOK PAYLOAD ===================");
-    console.log(JSON.stringify(body, null, 2));
-    console.log("=======================================================\n");
+    // Log simplificado para no saturar memoria en Vercel/PM2.
+    if (process.env.NODE_ENV === "development") {
+        console.log("\n=================== WEBHOOK PAYLOAD ===================");
+        console.log(JSON.stringify(body, null, 2));
+        console.log("=======================================================\n");
+    } else {
+        console.log(`\n⚡ [WEBHOOK] Recibido evento de: ${body.object}`);
+    }
 
     if (!body || !body.entry || !body.entry[0]) {
         return res.sendStatus(400);

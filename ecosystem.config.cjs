@@ -4,13 +4,16 @@ module.exports = {
       name: "godzilla-bot-redes",
       script: "./index.js",
       cwd: "./GodzillaConsulting/server",
-      watch: true,
-      ignore_watch: ["node_modules", "server_output.log"],
+      instances: "max",
+      exec_mode: "cluster",
+      watch: false,
       env: {
         NODE_ENV: "development",
+        PORT: 3000
       },
       env_production: {
         NODE_ENV: "production",
+        PORT: 3000
       }
     },
     {

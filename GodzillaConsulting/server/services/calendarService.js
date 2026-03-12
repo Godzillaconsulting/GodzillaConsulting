@@ -20,7 +20,7 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
         
-        // Ajuste GMT-7 / Chihuahua / Juárez / Ojinaga
+        // Ajuste GMT-7 / Chihuahua
         const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-07:00`; 
         const dateObj = new Date(startDateTime);
         dateObj.setHours(dateObj.getHours() + 1);
@@ -31,8 +31,8 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         const event = {
             summary: `Cita Zilla: ${datosCita.nombre} - ${datosCita.servicio || 'General'}`,
             description: desc,
-            start: { dateTime: startDateTime, timeZone: 'America/Ojinaga' }, // Husos horarios actualizados para la frontera
-            end: { dateTime: endDateTime, timeZone: 'America/Ojinaga' },
+            start: { dateTime: startDateTime, timeZone: 'America/Chihuahua' },
+            end: { dateTime: endDateTime, timeZone: 'America/Chihuahua' },
             colorId: '4',
         };
 
@@ -47,15 +47,18 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
     } catch (e) {
         console.error("❌ Error en agendarEnGoogleCalendar:", e.message);
         
+        let errorMsg = e.message;
         // Log detallado de la API de Google (Status Code y JSON de respuesta)
         if (e.response && e.response.status) {
             console.error("   ➡️ Status Code:", e.response.status);
+            errorMsg += ` (HTTP ${e.response.status})`;
         }
         if (e.response && e.response.data) {
             console.error("   ➡️ Error Detallado de Google:", JSON.stringify(e.response.data, null, 2));
+            errorMsg += ` - Detalle: ${JSON.stringify(e.response.data)}`;
         }
 
         console.log("=================================\n");
-        return false; // Fallar silenciosamente, no crashear el bot ni el formulario
+        throw new Error(`Fallo en Google Calendar: ${errorMsg}`);
     }
 };

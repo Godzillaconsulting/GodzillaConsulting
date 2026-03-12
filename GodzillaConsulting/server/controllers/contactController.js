@@ -22,9 +22,9 @@ export const processContactForm = async (req, res) => {
 
         console.log("✅ Cita guardada en BD con ID:", result.rows[0].id);
 
-        // 🚀 Disparar evento a Google Calendar Asíncronamente (Fire and Forget)
-        // No le ponemos un 'await' crudo que bloquee, usamos .then y .catch para liberar rápido el HTTP.
-        agendarEnGoogleCalendar({
+        // 🚀 Disparar evento a Google Calendar de Forma Sincrónica (Await Obligatorio)
+        console.log("⏳ Esperando confirmación de Google Calendar...");
+        await agendarEnGoogleCalendar({
             nombre: nombre.trim(),
             correo: email.trim().toLowerCase(),
             telefono: telefono.trim(),
@@ -32,13 +32,9 @@ export const processContactForm = async (req, res) => {
             fecha: fecha,
             hora: hora,
             notas: "Cita agendada desde Landing Page Oficial"
-        }).then(success => {
-            if (!success) console.error("⚠️ Falló la inserción en Google Calendar (Ver logs de GCalendar).");
-        }).catch(err => {
-            console.error("❌ Excepción crítica al invocar Google Calendar:", err.message);
         });
 
-        // ⚡ Retornar respuesta INMEDIATA al usuario (App Rápida)
+        // ⚡ Retornar respuesta sólo si Google Calendar NO arrojó error
         return res.status(200).json({
             success: true,
             message: `¡Registro exitoso (ID: ${result.rows[0].id})! Godzilla Consulting te enviará información pronto.`

@@ -1,4 +1,4 @@
-const CALENDAR_ID = 'godzilla.oscar21@gmail.com';
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
 
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
@@ -21,18 +21,19 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
         
-        const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-06:00`; 
+        // Ajuste GMT-7 / Chihuahua / Juárez / Ojinaga
+        const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-07:00`; 
         const dateObj = new Date(startDateTime);
         dateObj.setHours(dateObj.getHours() + 1);
         const endDateTime = dateObj.toISOString();
 
-        const desc = `Cliente: ${datosCita.nombre}\nServicio: ${datosCita.servicio}\nTel: ${datosCita.telefono}\nCorreo: ${datosCita.correo}\nNotas: ${datosCita.notas}`;
+        const desc = `Cliente: ${datosCita.nombre}\nServicio: ${datosCita.servicio}\nTel: ${datosCita.telefono}\nCorreo: ${datosCita.correo}\nNotas: ${datosCita.notas || 'Ninguna'}`;
 
         const event = {
-            summary: `Cita Zilla: ${datosCita.nombre} - ${datosCita.servicio}`,
+            summary: `Cita Zilla: ${datosCita.nombre} - ${datosCita.servicio || 'General'}`,
             description: desc,
-            start: { dateTime: startDateTime, timeZone: 'America/Regina' },
-            end: { dateTime: endDateTime, timeZone: 'America/Regina' },
+            start: { dateTime: startDateTime, timeZone: 'America/Ojinaga' }, // Husos horarios actualizados para la frontera
+            end: { dateTime: endDateTime, timeZone: 'America/Ojinaga' },
             colorId: '4',
         };
 
@@ -56,6 +57,6 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         }
 
         console.log("=================================\n");
-        return false; // Fallar silenciosamente, no crashear el bot
+        return false; // Fallar silenciosamente, no crashear el bot ni el formulario
     }
 };

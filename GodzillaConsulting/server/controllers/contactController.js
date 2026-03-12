@@ -1,9 +1,10 @@
 import pool from '../config/db.js';
+import { agendarEnGoogleCalendar } from '../services/calendarService.js';
 
 export const processContactForm = async (req, res) => {
     const client = await pool.connect();
     try {
-        console.log("📩 Recibiendo solicitud de Cita:", req.body);
+        console.log("📩 Recibiendo solicitud de Cita Landing Page:", req.body);
         const { nombre, email, telefono, preferencia_sesion, fecha, hora } = req.body;
 
         if (!nombre || !email || !telefono || !preferencia_sesion || !fecha || !hora) {
@@ -11,16 +12,33 @@ export const processContactForm = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
         }
 
-        console.log("🛠️ Insertando en DB...");
+        console.log("🛠️ Insertando en DB Neon...");
         // Insert into citas table (match the real Neon structure)
         const result = await client.query(
-            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, 'confirmada') RETURNING id`,
             [nombre.trim(), email.trim().toLowerCase(), telefono.trim(), preferencia_sesion, fecha, hora]
         );
 
-        console.log("✅ Cita guardada con ID:", result.rows[0].id);
+        console.log("✅ Cita guardada en BD con ID:", result.rows[0].id);
 
+        // 🚀 Disparar evento a Google Calendar Asíncronamente (Fire and Forget)
+        // No le ponemos un 'await' crudo que bloquee, usamos .then y .catch para liberar rápido el HTTP.
+        agendarEnGoogleCalendar({
+            nombre: nombre.trim(),
+            correo: email.trim().toLowerCase(),
+            telefono: telefono.trim(),
+            servicio: preferencia_sesion,
+            fecha: fecha,
+            hora: hora,
+            notas: "Cita agendada desde Landing Page Oficial"
+        }).then(success => {
+            if (!success) console.error("⚠️ Falló la inserción en Google Calendar (Ver logs de GCalendar).");
+        }).catch(err => {
+            console.error("❌ Excepción crítica al invocar Google Calendar:", err.message);
+        });
+
+        // ⚡ Retornar respuesta INMEDIATA al usuario (App Rápida)
         return res.status(200).json({
             success: true,
             message: `¡Registro exitoso (ID: ${result.rows[0].id})! Godzilla Consulting te enviará información pronto.`

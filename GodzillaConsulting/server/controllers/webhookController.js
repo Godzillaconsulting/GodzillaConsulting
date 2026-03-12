@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 
+// Caché en memoria para evitar procesamiento duplicado por reintentos veloces de Meta
+const processedMessages = new Set();
+
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
 
@@ -188,6 +191,7 @@ export const processWebhookMessage = async (req, res) => {
         let messageText = null;
         let platform = null;
         let phoneNumberId = null;
+        let messageId = null;
 
         if (entry.changes && entry.changes[0] && entry.changes[0].value.messages) {
             const data = entry.changes[0].value;
@@ -195,6 +199,7 @@ export const processWebhookMessage = async (req, res) => {
             messageText = data.messages[0].text.body;
             senderId = data.contacts[0].wa_id;
             phoneNumberId = data.metadata.phone_number_id;
+            messageId = data.messages[0].id;
         }
         else if (entry.messaging && entry.messaging[0] && entry.messaging[0].message) {
             const msgObj = entry.messaging[0];
@@ -219,11 +224,23 @@ export const processWebhookMessage = async (req, res) => {
 
             messageText = msgObj.message.text;
             senderId = msgObj.sender.id;
+            messageId = msgObj.message.mid;
         }
 
         if (!messageText || !senderId) {
             console.log("⚠️ Payload no contenía 'messageText' o 'senderId'. Saliendo del proceso.");
             return res.status(200).send("EVENT_RECEIVED");
+        }
+        
+        // 1.b Prevenir Reintentos de Meta (Idempotencia)
+        if (messageId) {
+            if (processedMessages.has(messageId)) {
+                console.log(`[Deduplicación] Ignorando mensaje duplicado de Meta por reintento: ${messageId}`);
+                return res.status(200).send("EVENT_RECEIVED");
+            }
+            processedMessages.add(messageId);
+            // Limpiar caché vieja si crece mucho (previene fugas de memoria en Vercel)
+            if (processedMessages.size > 2000) processedMessages.clear();
         }
 
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);

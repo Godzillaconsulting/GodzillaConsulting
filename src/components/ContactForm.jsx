@@ -43,16 +43,16 @@ const ContactForm = ({ showNewsletter = true }) => {
 
             if (!res.ok) {
                 const errorText = await res.text();
-                // Si es un error de validación (400), siempre lo mostramos
-                if (res.status === 400) {
+                // Si es un error controlado (400, 409, 429), parsearlo y mostrar el mensaje amigable
+                if (res.status === 400 || res.status === 409 || res.status === 429) {
                     try {
                         const errData = JSON.parse(errorText);
-                        alert(`Validación: ${errData.message}`);
+                        alert(`${errData.message}`);
                     } catch (e) {
-                        alert(`Error de validación: ${errorText}`);
+                        alert(`Aviso: ${errorText}`);
                     }
                 } else {
-                    alert(`Error ${res.status}: ${errorText}`);
+                    alert(`Error interno (${res.status}). Por favor, intenta más tarde.`);
                 }
                 return;
             }

@@ -89,11 +89,16 @@ app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================
+import { initWhatsAppBot } from './whatsappBot.js';
+
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     app.listen(port, () => {
         console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
         console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
         console.log(`🤖 Gestionado por PM2 (si aplica) | Entorno: ${process.env.NODE_ENV}`);
+        
+        // Iniciar instancia local de WhatsApp
+        initWhatsAppBot();
     });
 }
 

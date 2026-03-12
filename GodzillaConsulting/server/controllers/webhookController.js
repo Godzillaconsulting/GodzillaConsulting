@@ -89,19 +89,20 @@ const chatTools = [
 ];
 
 // Helper: UPSERT para base de datos (Memoria Inteligente)
-async function appendMessageToSession(senderId, role, content) {
+async function appendMessageToSession(senderId, role, content, plataforma = 'desconocida') {
     const query = `
-        INSERT INTO sesiones_chat (id_usuario_red, historial_mensajes, resumen_contexto, ultima_actualizacion)
-        VALUES ($1, $2, '', CURRENT_TIMESTAMP)
+        INSERT INTO sesiones_chat (id_usuario_red, historial_mensajes, resumen_contexto, ultima_actualizacion, plataforma)
+        VALUES ($1, $2, '', CURRENT_TIMESTAMP, $3)
         ON CONFLICT (id_usuario_red)
         DO UPDATE SET
             historial_mensajes = sesiones_chat.historial_mensajes || $2,
-            ultima_actualizacion = CURRENT_TIMESTAMP
+            ultima_actualizacion = CURRENT_TIMESTAMP,
+            plataforma = EXCLUDED.plataforma
         RETURNING historial_mensajes, resumen_contexto;
     `;
     const newMsg = JSON.stringify([{ role, contenido: content }]);
     try {
-        const res = await pool.query(query, [senderId, newMsg]);
+        const res = await pool.query(query, [senderId, newMsg, plataforma]);
         return res.rows[0];
     } catch (e) {
         console.error("❌ Error en appendMessageToSession:", e.message);
@@ -228,7 +229,7 @@ export const processWebhookMessage = async (req, res) => {
         console.log(`📩 Mensaje recibido de [${senderId}] vía [${platform}]: ${messageText}`);
 
         // 2.a Guardar mensaje del usuario y recuperar sesión
-        const sessionData = await appendMessageToSession(senderId, "user", messageText);
+        const sessionData = await appendMessageToSession(senderId, "user", messageText, platform);
         if (!sessionData) return res.status(500).send("Error en DB");
 
         const { historial_mensajes, resumen_contexto } = sessionData;
@@ -311,6 +312,10 @@ export const processWebhookMessage = async (req, res) => {
 
                             fRes = { success: true, id: r.rows[0].id };
                             console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
+                            
+                            if (platform === "instagram") {
+                                botReply = "¡Listo! Tu cita ha sido agendada. Te envié los detalles a tu calendario.";
+                            }
                         }
                     } catch (metaErr) {
                         console.error("❌ Error al agendar cita en Meta Webhook:", metaErr);
@@ -322,14 +327,18 @@ export const processWebhookMessage = async (req, res) => {
                 }
 
                 result = await chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]);
-                botReply = result.response.text();
+                
+                // Solo reasignar la respuesta si no inyectamos forzosamente el msj de Instagram
+                if (!(platform === "instagram" && call.name === "save_appointment" && fRes.success)) {
+                    botReply = result.response.text();
+                }
             }
         }
 
         console.log(`🤖 Zilla Bot preparado para responder vía [${platform}]:`, botReply.substring(0, 50) + '...');
 
         // 2.c Guardar respuesta del bot en DB y verificar compresión
-        const postBotSession = await appendMessageToSession(senderId, "model", botReply);
+        const postBotSession = await appendMessageToSession(senderId, "model", botReply, platform);
 
         // Disparar compresión en segundo plano sin bloquar la respuesta a Meta
         if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {

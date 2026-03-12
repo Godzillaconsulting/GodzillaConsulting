@@ -74,8 +74,8 @@ const chatTools = [
                 correo: { type: "STRING" },
                 telefono: { type: "STRING" },
                 servicio: { type: "STRING" },
-                fecha: { type: "STRING" },
-                hora: { type: "STRING" },
+                fecha: { type: "STRING", description: "YYYY-MM-DD" },
+                hora: { type: "STRING", description: "HH:MM (24h)" },
                 notas: { type: "STRING", description: "Notas adicionales" }
             },
             required: ["nombre", "correo", "telefono", "servicio", "fecha", "hora", "notas"]

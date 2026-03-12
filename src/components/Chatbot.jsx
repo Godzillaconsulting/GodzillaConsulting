@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import zillaIcon from '../assets/Icono de chatbot.jpeg';
+import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -61,18 +62,12 @@ const Chatbot = () => {
             <div className="fixed bottom-6 right-6 z-50">
                 <motion.button
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none ${isOpen ? 'bg-[#CC0000] text-white p-4' : 'w-[70px] h-[70px] p-0 overflow-hidden'}`}
+                    className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none bg-[#CC0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
                     animate={isOpen ? { scale: 1 } : { scale: [1, 1.08, 1] }}
                     transition={isOpen ? { duration: 0.2 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
                     whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
                 >
-                    {isOpen ? <X size={28} /> : (
-                        <img 
-                            src={zillaIcon} 
-                            alt="Zilla Icon" 
-                            className="w-full h-full object-cover" 
-                        />
-                    )}
+                    {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}
                 </motion.button>
             </div>
 

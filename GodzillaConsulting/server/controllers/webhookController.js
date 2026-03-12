@@ -285,36 +285,97 @@ export const processWebhookMessage = async (req, res) => {
                 let fRes = {};
                 if (call.name === "check_availability") {
                     const { fecha, hora } = call.args;
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                    fRes = { disponible: parseInt(r.rows[0].count) === 0 };
-                    console.log(`[Tool] Verificando disponibilidad para ${fecha} a las ${hora}: ${fRes.disponible}`);
+                    
+                    // Guardián de Horario y Días
+                    const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                    const isSunday = dateObj.getDay() === 0;
+                    const hourInt = parseInt(hora.split(':')[0], 10);
+                    
+                    if (isSunday) {
+                        fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
+                        console.log(`[Guardián] Rechazo: Domingo para ${fecha} a las ${hora}`);
+                    } else if (hourInt < 9 || hourInt >= 19) {
+                        fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
+                        console.log(`[Guardián] Rechazo: Fuera de Horario para ${fecha} a las ${hora}`);
+                    } else {
+                        // Guardián Anti-Empalme Multi-Tabla
+                        const query = `
+                            SELECT SUM(c) as total FROM (
+                                SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
+                                UNION ALL
+                                SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                UNION ALL
+                                SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                            ) as sum_tables
+                        `;
+                        const r = await pool.query(query, [fecha, hora]);
+                        const isBusy = parseInt(r.rows[0].total) > 0;
+                        fRes = { disponible: !isBusy, razon: isBusy ? "Ese horario ya está ocupado. Intenta con otra hora." : "Horario disponible" };
+                        console.log(`[Tool] Disponibilidad multi-tabla para ${fecha} a las ${hora}: ${fRes.disponible}`);
+                    }
                 } else if (call.name === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                         
-                        // Candado Anti-Empalme Crítico (Double Booking Preventer)
-                        const conflictCheck = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                        if (parseInt(conflictCheck.rows[0].count) > 0) {
-                             console.warn(`⚠️ [Cita Rechazada] Intento de agendar en horario ocupado: ${fecha} ${hora}`);
-                             fRes = { success: false, error: "Ese horario acaba de ser ocupado. Por favor pídele al cliente que elija otra hora." };
-                        } else {
-                            // Insertar cita si está libre
-                            const r = await pool.query(
-                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                [nombre, correo, telefono, servicio, fecha, hora, notas]
-                            );
-                            
-                            // Extraer los datos limpios en un objeto JSON explícito
-                            const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                            
-                            // Llamar a la función de Google Calendar
-                            await agendarEnGoogleCalendar(datosCita);
+                        // Candado Final (Por si Gemini intentó puentear el check_availability)
+                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                        const isSunday = dateObj.getDay() === 0;
+                        const hourInt = parseInt(hora.split(':')[0], 10);
 
-                            fRes = { success: true, id: r.rows[0].id };
-                            console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
-                            
-                            if (platform === "instagram") {
-                                botReply = "¡Listo! Tu cita ha sido agendada. Te envié los detalles a tu calendario.";
+                        if (isSunday || hourInt < 9 || hourInt >= 19) {
+                             console.warn(`⚠️ [Cita Rechazada por Guardián Final]: ${fecha} ${hora}`);
+                             fRes = { success: false, error: "Intento de agendar fuera de horario o en domingo. Pide otra fecha/hora al cliente." };
+                        } else {
+                            const queryConflict = `
+                                SELECT SUM(c) as total FROM (
+                                    SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                ) as sum_tables
+                            `;
+                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                            if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                 console.warn(`⚠️ [Cita Rechazada] Intento de agendar en horario ocupado (Doble check): ${fecha} ${hora}`);
+                                 fRes = { success: false, error: "Ese horario acaba de ser ocupado. Por favor pídele al cliente que elija otra hora." };
+                            } else {
+                                // Extraer los datos limpios en un objeto JSON explícito
+                                const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                
+                                try {
+                                    // 1. Intentar agendar en Google Calendar PRIMERO
+                                    await agendarEnGoogleCalendar(datosCita);
+                                    
+                                    // 2. Si Google Calendar tiene éxito, guardamos en la base de datos
+                                    let newId;
+                                    if (platform === 'whatsapp') {
+                                        const r = await pool.query(
+                                            "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status) VALUES ($1,$2,$3,$4,'confirmada') RETURNING id",
+                                            [nombre, telefono, fecha, hora]
+                                        );
+                                        newId = r.rows[0].id;
+                                        console.log(`[Tool] Cita insertada en citas_whatsapp (ID: ${newId})`);
+                                    } else {
+                                        const r = await pool.query(
+                                            "INSERT INTO citas_facebook_ig (nombre, fbid, plataforma, fecha_cita, hora, status) VALUES ($1,$2,$3,$4,$5,'confirmada') RETURNING id",
+                                            [nombre, senderId, platform || 'messenger', fecha, hora]
+                                        );
+                                        newId = r.rows[0].id;
+                                        console.log(`[Tool] Cita insertada en citas_facebook_ig (ID: ${newId})`);
+                                    }
+
+                                    fRes = { success: true, id: newId, alert: "Guardado en DB y Calendar." };
+                                    console.log(`[Tool] Cita guardada con éxito en BD y Calendar (ID: ${newId})`);
+                                    
+                                    if (platform === "instagram") {
+                                        botReply = "¡Listo! Tu cita ha sido agendada. Te envié los detalles a tu calendario.";
+                                    }
+                                } catch (calErr) {
+                                    console.error("❌ Fallo Google Calendar Webhook (NO se guardó en DB):", calErr.message);
+                                    // 3. Si falla, obligar a Gemini a pedirle al usuario otra hora.
+                                    fRes = { success: false, error: "El sistema de agendas de Google rechazó el horario o los datos (" + calErr.message + "). Por favor indícale al cliente que intente nuevamente o elija otro horario." };
+                                }
                             }
                         }
                     } catch (metaErr) {

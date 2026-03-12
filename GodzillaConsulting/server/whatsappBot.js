@@ -227,31 +227,51 @@ export const initWhatsAppBot = () => {
                     let fRes = {};
                     if (call.name === "check_availability") {
                         const { fecha, hora } = call.args;
-                        const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                        fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                        const query = `
+                            SELECT SUM(c) as total FROM (
+                                SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
+                                UNION ALL
+                                SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                UNION ALL
+                                SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                            ) as sum_tables
+                        `;
+                        const r = await pool.query(query, [fecha, hora]);
+                        fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                         console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
                     } else if (call.name === "save_appointment") {
                         try {
                             const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                             
-                            const conflictCheck = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                            if (parseInt(conflictCheck.rows[0].count) > 0) {
+                            const queryConflict = `
+                                SELECT SUM(c) as total FROM (
+                                    SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                ) as sum_tables
+                            `;
+                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                            
+                            if (parseInt(conflictCheck.rows[0].total) > 0) {
                                  console.warn(`⚠️ [WA Empalme] Intento de agendar ocupado: ${fecha} ${hora}`);
                                  fRes = { success: false, error: "Horario recién ocupado." };
                             } else {
-                                const r = await pool.query(
-                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                    [nombre, correo, telefono, servicio, fecha, hora, notas]
-                                );
-                                
                                 const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
                                 
                                 try {
                                     await agendarEnGoogleCalendar(datosCita);
+                                    
+                                    const r = await pool.query(
+                                        "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status) VALUES ($1,$2,$3,$4,'confirmada') RETURNING id",
+                                        [nombre, telefono, fecha, hora]
+                                    );
+                                    
                                     fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB y Calendar." };
                                 } catch (calErr) {
-                                    console.error("❌ Fallo Google Calendar WA (Guardado en DB de todos modos):", calErr.message);
-                                    fRes = { success: true, id: r.rows[0].id, alert: "Cita guardada en DB pero Calendar falló (" + calErr.message + ")" };
+                                    console.error("❌ Fallo Google Calendar WA (NO se guardó en DB):", calErr.message);
+                                    fRes = { success: false, error: "El sistema de agendas de Google rechazó el horario (" + calErr.message + "). Por favor intenta con otra fecha/hora." };
                                 }
                             }
                         } catch (waErr) {

@@ -145,15 +145,22 @@ export const processChatMessage = async (req, res) => {
                              console.warn(`⚠️ [Web Cita Rechazada] Intento de agendar en horario ocupado: ${fecha} ${hora}`);
                              fRes = { success: false, error: "Ese horario acaba de ser ocupado. Por favor pídele al cliente que elija otra hora." };
                         } else {
-                            const r = await pool.query(
-                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                [nombre, correo, telefono, servicio, fecha, hora, notas]
-                            );
-    
                             const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                            await agendarEnGoogleCalendar(datosCita);
-    
-                            fRes = { success: true, id: r.rows[0].id };
+                            try {
+                                await agendarEnGoogleCalendar(datosCita);
+                                
+                                // Si llegamos aquí, Google Calendar tuvo éxito. Guardar en DB.
+                                const r = await pool.query(
+                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                    [nombre, correo, telefono, servicio, fecha, hora, notas]
+                                );
+                                
+                                fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB y Calendar." };
+                            } catch (calErr) {
+                                console.error("❌ Fallo Google Calendar Web (NO se guardó en DB):", calErr.message);
+                                // Obligar a Gemini a notificar al usuario que intente otra vez
+                                fRes = { success: false, error: "El sistema de agendas de Google rechazó el horario o los datos (" + calErr.message + "). Por favor indícale al cliente que intente nuevamente o elija otro horario." };
+                            }
                         }
                     } catch (appErr) {
                         console.error("❌ Error al agendar cita en Web Chat:", appErr);

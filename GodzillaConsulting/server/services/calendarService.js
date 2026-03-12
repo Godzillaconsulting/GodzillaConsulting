@@ -1,7 +1,7 @@
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
+    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || '538f3ed0539ed99bbf49c29312bea01d82665308bfbe7f57a9f861e7fe693c16@group.calendar.google.com';
     
     try {
         // Dynamic import para evitar que Vercel falle al cargar el módulo pesado al iniciar

@@ -239,12 +239,30 @@ export const processWebhookMessage = async (req, res) => {
             finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
         }
 
-        // Formatear el historial reciente para Gemini-2.0-flash
-        // historial_mensajes traído del UPSERT ya incluye el mensaje recién agregado del usuario.
-        const geminiHistory = historial_mensajes.slice(0, -1).map(m => ({
-            role: m.role,
-            parts: [{ text: m.contenido }]
-        }));
+        // 2.a Refactorización Crítica: Prevenir bloqueo de Gemini por Roles NO alternados
+        // Gemini rechaza hacer startChat si hay dos "user" o dos "model" seguidos (ej. un humano intervino en el chat).
+        // Solución: Agrupar mensajes consecutivos del mismo rol en un solo bloque.
+        let safeHistory = [];
+        let rawHistoryForGemini = historial_mensajes.slice(0, -1); // Excluimos el último que se envía con sendMessage
+        
+        for (const msg of rawHistoryForGemini) {
+            if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === msg.role) {
+                // Si el rol es el mismo que el anterior, simplemente le concatenamos el texto
+                safeHistory[safeHistory.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.contenido}`;
+            } else {
+                // Si es un rol nuevo o el inicio, lo pusheamos
+                safeHistory.push({
+                    role: msg.role === "assistant" ? "model" : msg.role, // asegurar nombres
+                    parts: [{ text: msg.contenido }]
+                });
+            }
+        }
+        
+        // Regla final: Gemini siempre espera que el historial termine en "model" para poder recibir un "user" via sendMessage.
+        // Si termina en "user", agregamos un dummy model.
+        if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
+            safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
+        }
 
         // 2.b Iniciar Gemini y generar respuesta
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -255,7 +273,7 @@ export const processWebhookMessage = async (req, res) => {
             tools: [{ functionDeclarations: chatTools }]
         });
 
-        const chat = model.startChat({ history: geminiHistory });
+        const chat = model.startChat({ history: safeHistory });
         let result = await chat.sendMessage(messageText);
         let botReply = result.response.text();
 
@@ -272,19 +290,28 @@ export const processWebhookMessage = async (req, res) => {
                 } else if (call.name === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                        const r = await pool.query(
-                            "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                            [nombre, correo, telefono, servicio, fecha, hora, notas]
-                        );
                         
-                        // Extraer los datos limpios en un objeto JSON explícito
-                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                        
-                        // Llamar a la función placeholder para integración futura
-                        await agendarEnGoogleCalendar(datosCita);
+                        // Candado Anti-Empalme Crítico (Double Booking Preventer)
+                        const conflictCheck = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
+                        if (parseInt(conflictCheck.rows[0].count) > 0) {
+                             console.warn(`⚠️ [Cita Rechazada] Intento de agendar en horario ocupado: ${fecha} ${hora}`);
+                             fRes = { success: false, error: "Ese horario acaba de ser ocupado. Por favor pídele al cliente que elija otra hora." };
+                        } else {
+                            // Insertar cita si está libre
+                            const r = await pool.query(
+                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                [nombre, correo, telefono, servicio, fecha, hora, notas]
+                            );
+                            
+                            // Extraer los datos limpios en un objeto JSON explícito
+                            const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                            
+                            // Llamar a la función de Google Calendar
+                            await agendarEnGoogleCalendar(datosCita);
 
-                        fRes = { success: true, id: r.rows[0].id };
-                        console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
+                            fRes = { success: true, id: r.rows[0].id };
+                            console.log(`[Tool] Cita guardada con éxito en BD (ID: ${fRes.id})`);
+                        }
                     } catch (metaErr) {
                         console.error("❌ Error al agendar cita en Meta Webhook:", metaErr);
                         fRes = { success: false, error: "Hubo un pequeño problema técnico procesando la cita, pero ya estoy notificando al equipo de Godzilla Consulting. Por favor intenta de nuevo más tarde." };

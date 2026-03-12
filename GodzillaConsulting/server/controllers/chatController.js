@@ -101,11 +101,25 @@ export const processChatMessage = async (req, res) => {
             tools: [{ functionDeclarations: chatTools }]
         });
 
-        let history = messages.slice(0, -1).map(m => ({
+        let rawHistory = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
             parts: [{ text: m.content || m.text }]
         }));
+
+        let history = [];
+        for (const msg of rawHistory) {
+            if (history.length > 0 && history[history.length - 1].role === msg.role) {
+                history[history.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.parts[0].text}`;
+            } else {
+                history.push(msg);
+            }
+        }
+
         while (history.length > 0 && history[0].role !== "user") history.shift();
+
+        if (history.length > 0 && history[history.length - 1].role === "user") {
+            history.push({ role: "model", parts: [{ text: "(Esperando respuesta...)" }] });
+        }
 
         const chat = model.startChat({ history });
         const lastMsg = messages[messages.length - 1].content || messages[messages.length - 1].text;
@@ -124,15 +138,23 @@ export const processChatMessage = async (req, res) => {
                 } else if (call.name === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                        const r = await pool.query(
-                            "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                            [nombre, correo, telefono, servicio, fecha, hora, notas]
-                        );
-
-                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                        await agendarEnGoogleCalendar(datosCita);
-
-                        fRes = { success: true, id: r.rows[0].id };
+                        
+                        // Candado Anti-Empalme Crítico (Double Booking Preventer)
+                        const conflictCheck = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
+                        if (parseInt(conflictCheck.rows[0].count) > 0) {
+                             console.warn(`⚠️ [Web Cita Rechazada] Intento de agendar en horario ocupado: ${fecha} ${hora}`);
+                             fRes = { success: false, error: "Ese horario acaba de ser ocupado. Por favor pídele al cliente que elija otra hora." };
+                        } else {
+                            const r = await pool.query(
+                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                [nombre, correo, telefono, servicio, fecha, hora, notas]
+                            );
+    
+                            const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                            await agendarEnGoogleCalendar(datosCita);
+    
+                            fRes = { success: true, id: r.rows[0].id };
+                        }
                     } catch (appErr) {
                         console.error("❌ Error al agendar cita en Web Chat:", appErr);
                         fRes = { success: false, error: "Hubo un pequeño problema técnico procesando la cita, pero ya estoy notificando al equipo de Godzilla Consulting. Por favor intenta de nuevo más tarde." };

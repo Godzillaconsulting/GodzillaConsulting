@@ -344,7 +344,7 @@ export const processWebhookMessage = async (req, res) => {
         switch (platform) {
             case "whatsapp":
                 GRAPH_URL = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
-                ACCESS_TOKEN = process.env.WP_ACCESS_TOKEN || process.env.WA_ACCESS_TOKEN || 'EAAdo2DBD1K8BQ13ZAA0geo0ggNMtEHRTF8IlVWra8duNO5AbjvlFaD2nWsvd8qolRSidIDTKiaDzuZARYzqyTFXP7t3sZAZALjHdgHQHQBKTdWn661HRsNTW1Rvy3DnyOda3UUM8EXYT80YQgdJAA3vdoZBdNlsER4czybKCwaHepRrGefgfSrWHfFbQNL5ZB3345E0Rb27i4BqBsUq9m6ZAvGZBZBjfZB7E7KjwqYUrWc4uZB7bzzv3dWrxvaaleZAGGa4YXbZCKlf7Ikn7PF1FuaMrfk6pG';
+                ACCESS_TOKEN = process.env.WP_ACCESS_TOKEN || process.env.WA_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
                 requestBody = {
                     messaging_product: "whatsapp",
                     to: senderId,
@@ -356,7 +356,7 @@ export const processWebhookMessage = async (req, res) => {
             case "instagram":
             default:
                 GRAPH_URL = `https://graph.facebook.com/v19.0/me/messages`;
-                ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || 'EAAdo2DBD1K8BQ13ZAA0geo0ggNMtEHRTF8IlVWra8duNO5AbjvlFaD2nWsvd8qolRSidIDTKiaDzuZARYzqyTFXP7t3sZAZALjHdgHQHQBKTdWn661HRsNTW1Rvy3DnyOda3UUM8EXYT80YQgdJAA3vdoZBdNlsER4czybKCwaHepRrGefgfSrWHfFbQNL5ZB3345E0Rb27i4BqBsUq9m6ZAvGZBZBjfZB7E7KjwqYUrWc4uZB7bzzv3dWrxvaaleZAGGa4YXbZCKlf7Ikn7PF1FuaMrfk6pG';
+                ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
                 requestBody = {
                     messaging_type: "RESPONSE",
                     recipient: { id: senderId },

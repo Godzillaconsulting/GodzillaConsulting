@@ -127,16 +127,16 @@ app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 // ==========================================
 import { initWhatsAppBot } from './whatsappBot.js';
 
-app.listen(port, () => {
-    console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
-    console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
-    console.log(`🤖 Gestionado por PM2 / Node | Entorno: ${process.env.NODE_ENV}`);
-    
-    // Iniciar instancia local de WhatsApp SIEMPRE EXCEPTO en Vercel
-    if (!process.env.VERCEL) {
+if (!process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
+        console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
+        console.log(`🤖 Gestionado por PM2 / Node | Entorno: ${process.env.NODE_ENV}`);
+        
+        // Iniciar instancia local de WhatsApp
         initWhatsAppBot();
-    }
-});
+    });
+}
 
 // Exportar para Vercel
 export default app;

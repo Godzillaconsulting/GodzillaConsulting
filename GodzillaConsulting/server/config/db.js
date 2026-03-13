@@ -33,8 +33,10 @@ export const connectDB = async () => {
         // DEVOPS RECOVERY: HEARTBEAT KEEP-ALIVE PARA NEON
         // -------------------------------------------------------------
         // Evita que la DB en Neon Postgres Serverless cierre la conexión
-        // si el bot no inyecta citas en minutos. (Solo se evalua si NO es Vercel).
-        if (!process.env.VERCEL) {
+        // si el bot no inyecta citas en minutos. (Solo en PM2 o Local, Nunca en Vercel Serverless).
+        const isLocalOrPM2 = process.env.NODE_ENV === 'development' || process.env.IS_PM2 === 'true';
+
+        if (isLocalOrPM2) {
             setInterval(async () => {
                 try {
                     const beat = await pool.connect();

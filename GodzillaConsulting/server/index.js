@@ -7,7 +7,9 @@ import path from 'path';
 // Previene que el bot o el servidor mueran si hay un error no contemplado.
 const logErrorToFile = (type, error) => {
     try {
-        if (process.env.VERCEL) return; // Vercel Cloud es Read-Only
+        const isLocal = process.env.NODE_ENV === 'development' || process.env.IS_PM2 === 'true';
+        if (!isLocal) return; // Vercel Cloud es Read-Only
+        
         const errorMsg = `\n[${new Date().toISOString()}] [${type}] ${error.stack || error}\n`;
         fs.appendFileSync(path.join(process.cwd(), 'error.log'), errorMsg);
         console.log(`🛡️ [DEVOPS] Error crítico atrapado (${type}). El bot continuará operando.`);
@@ -108,18 +110,19 @@ app.use('/api/webhook', webhookLimiter, webhookRoutes);
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 
-
 // ==========================================
 // 3. INICIO DEL SERVIDOR 
 // ==========================================
 
-if (!process.env.VERCEL) {
+const isLocalOrPM2 = process.env.NODE_ENV === 'development' || process.env.IS_PM2 === 'true';
+
+if (isLocalOrPM2) {
     app.listen(port, async () => {
         console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
         console.log(`🤖 Gestionado por PM2 / Node | Entorno: ${process.env.NODE_ENV}`);
         
         try {
-            // Importación Dinámica: Truqueamos al Bundler de Vercel para que no descargue Puppeteer en la Nube, ya que excede los 50MB.
+            // Importación Dinámica: Truqueamos al Bundler de Vercel para que no descargue Puppeteer en la Nube
             const waFile = './whatsappBot.js';
             const botModule = await import(waFile);
             botModule.initWhatsAppBot();

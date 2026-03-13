@@ -5,18 +5,11 @@ module.exports = {
       script: "./index.js",
       instances: 1,
       autorestart: true,
-      watch: ["."],
-      // IMPORTANTÍSIMO: Ignorar estas carpetas para evitar que PM2 reinicie el bot infinitamente cada que reciba un mje
-      ignore_watch: [
-        "node_modules",
-        "whatsapp-session",
-        "logs",
-        "*.log",
-        ".git"
-      ],
-      max_memory_restart: "500M", // Si se traba Puppeteer y absorbe RAM, reinicia sutilmente
+      watch: false,
+      max_memory_restart: "1G", // Chromium puede absorber hasta 800MB al arrancar. Elevamos el techo protector a 1GB.
       env: {
         NODE_ENV: "production",
+        IS_PM2: "true"
       },
       env_development: {
         NODE_ENV: "development"

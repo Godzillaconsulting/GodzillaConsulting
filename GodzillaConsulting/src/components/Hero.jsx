@@ -28,23 +28,19 @@ const Hero = () => {
 
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center">
 
-                {/* Main Headline */}
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-4xl drop-shadow-2xl">
-                    Construyamos juntos el legado de tu negocio
-                </h1>
-
                 {/* Subtitle / CTA Area */}
-                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center min-h-[160px]">
-                    {/* Contenedor del anillo curvado, desplazado hacia abajo para centrar el arco con el CTA */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[20%] w-[1000px] sm:w-[1200px] z-0 opacity-80">
+                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center h-[300px]">
+                    {/* Contenedor del anillo curvado tipo "Domo" superior, no interactivo y translúcido */}
+                    <div className="absolute bottom-[25%] left-1/2 -translate-x-1/2 translate-y-[15%] w-[800px] sm:w-[1000px] z-0 opacity-80 pointer-events-none origin-bottom">
                         <CurvedLoop 
                             marqueeText="DETÉN ✦ LA ✦ FUGA ✦ DE ✦ LEADS ✦ ESCALA ✦ TU ✦ NEGOCIO ✦ CON ✦ NOSOTROS ✦ "
                             speed={7.6}
                             curveAmount={330}
-                            interactive={true}
+                            interactive={false}
                         />
                     </div>
-                    <a href="#paquetes" className="relative z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
+                    {/* CTA Z-index alto para dominar el hover y click */}
+                    <a href="#paquetes" className="absolute bottom-[20%] left-1/2 -translate-x-1/2 z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-max">
                         <span className="relative">Ver planes y garantías</span>
                     </a>
                 </div>

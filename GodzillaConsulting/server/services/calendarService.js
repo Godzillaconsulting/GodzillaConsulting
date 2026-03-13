@@ -5,7 +5,7 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
     
     try {
         // Dynamic import para evitar que Vercel falle al cargar el módulo pesado al iniciar
-        const { google } = await import('googleapis');
+        const { calendar: getCalendar } = await import('@googleapis/calendar');
 
         let authConfig;
         if (process.env.GOOGLE_CREDENTIALS) {
@@ -21,9 +21,12 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
             authConfig = { keyFile: credsPath, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         }
 
-        const auth = new google.auth.GoogleAuth(authConfig);
+        // Necesario para importar la clase GoogleAuth nativa de google-auth-library
+        const { GoogleAuth } = await import('google-auth-library');
+        const auth = new GoogleAuth(authConfig);
         const authClient = await auth.getClient();
-        const calendar = google.calendar({ version: 'v3', auth: authClient });
+        
+        const calendar = getCalendar({ version: 'v3', auth: authClient });
         
         // Ajuste GMT-7 / Chihuahua
         const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-07:00`; 
@@ -73,7 +76,7 @@ export const cancelarEnGoogleCalendar = async (eventId) => {
     console.log(`\n=================================\n🗑️  [Google Calendar] Cancelando evento: ${eventId}...`);
     const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
     try {
-        const { google } = await import('googleapis');
+        const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
         if (process.env.GOOGLE_CREDENTIALS) {
             authConfig = { credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
@@ -84,8 +87,9 @@ export const cancelarEnGoogleCalendar = async (eventId) => {
             authConfig = { keyFile: credsPath, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         }
 
-        const authClient = await new google.auth.GoogleAuth(authConfig).getClient();
-        await google.calendar({ version: 'v3', auth: authClient }).events.delete({ calendarId: CALENDAR_ID, eventId: eventId });
+        const { GoogleAuth } = await import('google-auth-library');
+        const authClient = await new GoogleAuth(authConfig).getClient();
+        await getCalendar({ version: 'v3', auth: authClient }).events.delete({ calendarId: CALENDAR_ID, eventId: eventId });
         console.log("✅ Evento cancelado en GCalendar.");
         console.log("=================================\n");
         return true;
@@ -99,7 +103,7 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
     console.log(`\n=================================\n🔄 [Google Calendar] Reagendando evento: ${eventId}...`);
     const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
     try {
-        const { google } = await import('googleapis');
+        const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
         if (process.env.GOOGLE_CREDENTIALS) {
             authConfig = { credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
@@ -110,8 +114,9 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
             authConfig = { keyFile: credsPath, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         }
 
-        const authClient = await new google.auth.GoogleAuth(authConfig).getClient();
-        const calendar = google.calendar({ version: 'v3', auth: authClient });
+        const { GoogleAuth } = await import('google-auth-library');
+        const authClient = await new GoogleAuth(authConfig).getClient();
+        const calendar = getCalendar({ version: 'v3', auth: authClient });
         
         // Obtener el evento original para preservar su título/descripción
         const eventoActual = await calendar.events.get({ calendarId: CALENDAR_ID, eventId: eventId });

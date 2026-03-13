@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
-import { agendarEnGoogleCalendar } from "../services/calendarService.js";
+import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from "../services/calendarService.js";
 
 // Caché en memoria para evitar procesamiento duplicado por reintentos veloces de Meta
 const processedMessages = new Set();
@@ -39,6 +39,7 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 6. **Detalles de Paquete**: Si te preguntan qué incluye un paquete, da los detalles concretos (mira la sección Paquetes) sin marearlos y sin dar precio.
 7. **Memoria**: NO repitas información. Si el usuario ya mencionó su producto/leads, úsalo pero no lo repitas. MANTEN EN CUENTA EL RESUMEN DE CONTEXTO.
 8. **Citas**: Si el cliente tiene intención real, guíalo suavemente a agendar usando el protocolo.
+9. **Cancelaciones y Reagendamientos**: Si el cliente pide CANCELAR, pregúntale su teléfono (si no lo tienes en el contexto) y ejecuta la herramienta de cancelación inmediatamente. Si pide cambiar la cita, pregúntale la nueva fecha deseada y ejecuta la herramienta de reagendamiento.
 
 ## CONTACTO Y REDES SOCIALES OFICIALES
 - **Teléfono Oficial / WhatsApp**: +52 656 581 8912
@@ -51,7 +52,7 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 Si el usuario muestra interés en continuar, ofrécele agendar una llamada.
 Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
 **SIEMPRE** usa la herramienta 'check_availability' antes de confirmar una cita para validar que el slot está libre.
-**MUY IMPORTANTE**: Inmediatamente después de agendar exitosamente usando la herramienta, envía un mensaje final de confirmación profesional que resuma los datos de la cita (ej. "¡Perfecto, [Nombre]! Tu cita para [Servicio] ha quedado agendada para el [Fecha] a las [Hora]. Te enviaremos un correo de confirmación pronto.").
+**MUY IMPORTANTE**: Inmediatamente después de agendar exitosamente usando la herramienta, envía un mensaje final de confirmación profesional que resuma los datos de la cita.
 `;
 
 const chatTools = [
@@ -82,6 +83,30 @@ const chatTools = [
                 notas: { type: "STRING", description: "Notas adicionales" }
             },
             required: ["nombre", "correo", "telefono", "servicio", "fecha", "hora", "notas"]
+        }
+    },
+    {
+        name: "cancel_appointment",
+        description: "Cancela de forma definitiva una cita usando el telefono del cliente.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                identificador: { type: "STRING", description: "El número de teléfono del cliente para buscar su cita." }
+            },
+            required: ["identificador"]
+        }
+    },
+    {
+        name: "reschedule_appointment",
+        description: "Modifica una cita existente cambiándola a otra fecha y hora.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                identificador: { type: "STRING", description: "Télefono del cliente." },
+                nueva_fecha: { type: "STRING", description: "YYYY-MM-DD" },
+                nueva_hora: { type: "STRING", description: "HH:MM (24h)" }
+            },
+            required: ["identificador", "nueva_fecha", "nueva_hora"]
         }
     },
     {
@@ -362,21 +387,21 @@ export const processWebhookMessage = async (req, res) => {
                                 
                                 try {
                                     // 1. Intentar agendar en Google Calendar PRIMERO
-                                    await agendarEnGoogleCalendar(datosCita);
+                                    const calendarId = await agendarEnGoogleCalendar(datosCita);
                                     
                                     // 2. Si Google Calendar tiene éxito, guardamos en la base de datos
                                     let newId;
                                     if (platform === 'whatsapp') {
                                         const r = await pool.query(
-                                            "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status) VALUES ($1,$2,$3,$4,'confirmada') RETURNING id",
-                                            [nombre, telefono, fecha, hora]
+                                            "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status, google_calendar_id) VALUES ($1,$2,$3,$4,'confirmada',$5) RETURNING id",
+                                            [nombre, telefono, fecha, hora, calendarId]
                                         );
                                         newId = r.rows[0].id;
                                         console.log(`[Tool] Cita insertada en citas_whatsapp (ID: ${newId})`);
                                     } else {
                                         const r = await pool.query(
-                                            "INSERT INTO citas_facebook_ig (nombre, fbid, plataforma, fecha_cita, hora, status) VALUES ($1,$2,$3,$4,$5,'confirmada') RETURNING id",
-                                            [nombre, senderId, platform || 'messenger', fecha, hora]
+                                            "INSERT INTO citas_facebook_ig (nombre, fbid, plataforma, fecha_cita, hora, status, google_calendar_id) VALUES ($1,$2,$3,$4,$5,'confirmada',$6) RETURNING id",
+                                            [nombre, senderId, platform || 'messenger', fecha, hora, calendarId]
                                         );
                                         newId = r.rows[0].id;
                                         console.log(`[Tool] Cita insertada en citas_facebook_ig (ID: ${newId})`);
@@ -398,6 +423,78 @@ export const processWebhookMessage = async (req, res) => {
                     } catch (metaErr) {
                         console.error("❌ Error al agendar cita en Meta Webhook:", metaErr);
                         fRes = { success: false, error: "Hubo un pequeño problema técnico procesando la cita, pero ya estoy notificando al equipo de Godzilla Consulting. Por favor intenta de nuevo más tarde." };
+                    }
+                } else if (call.name === "cancel_appointment") {
+                    const { identificador } = call.args;
+                    try {
+                        let result;
+                        let tableName = platform === 'whatsapp' ? 'citas_whatsapp' : 'citas_facebook_ig';
+
+                        if (platform === 'whatsapp') {
+                            result = await pool.query(`SELECT id, google_calendar_id FROM ${tableName} WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1`, [identificador]);
+                        } else {
+                            // Para FB/IG buscamos por fbid (senderId de Meta) mapeado al nombre que Gemini interpretó
+                            result = await pool.query(`SELECT id, google_calendar_id FROM ${tableName} WHERE fbid = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1`, [senderId]);
+                        }
+
+                        if (result.rows.length === 0) {
+                            fRes = { success: false, error: "No encontré ninguna cita activa." };
+                        } else {
+                            const cita = result.rows[0];
+                            if (cita.google_calendar_id) {
+                                await cancelarEnGoogleCalendar(cita.google_calendar_id);
+                            }
+                            await pool.query(`UPDATE ${tableName} SET status = 'cancelada' WHERE id = $1`, [cita.id]);
+                            fRes = { success: true, message: "Cita cancelada correctamente." };
+                            console.log(`[Tool] Cita ${cita.id} cancelada exitosamente en ${tableName}.`);
+                        }
+                    } catch (err) {
+                        console.error("❌ Error cancelando:", err);
+                        fRes = { success: false, error: "Error interno procesando cancelación." };
+                    }
+                } else if (call.name === "reschedule_appointment") {
+                    const { identificador, nueva_fecha, nueva_hora } = call.args;
+                    try {
+                        let result;
+                        let tableName = platform === 'whatsapp' ? 'citas_whatsapp' : 'citas_facebook_ig';
+
+                        if (platform === 'whatsapp') {
+                            result = await pool.query(`SELECT id, google_calendar_id FROM ${tableName} WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1`, [identificador]);
+                        } else {
+                            result = await pool.query(`SELECT id, google_calendar_id FROM ${tableName} WHERE fbid = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1`, [senderId]);
+                        }
+
+                        if (result.rows.length === 0) {
+                            fRes = { success: false, error: "No encontré ninguna cita activa previa." };
+                        } else {
+                            const cita = result.rows[0];
+                            
+                            // Verificar empalme para la nueva hora
+                            const queryConflict = `
+                                SELECT SUM(c) as total FROM (
+                                    SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
+                                ) as sum_tables
+                            `;
+                            const conflictCheck = await pool.query(queryConflict, [nueva_fecha, nueva_hora]);
+                            
+                            if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                fRes = { success: false, error: "Ese nuevo horario está ocupado. Intenta con otra fecha/hora." };
+                            } else {
+                                if (cita.google_calendar_id) {
+                                    await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora);
+                                }
+                                await pool.query(`UPDATE ${tableName} SET fecha_cita = $1, hora = $2 WHERE id = $3`, [nueva_fecha, nueva_hora, cita.id]);
+                                fRes = { success: true, message: "Cita reagendada exitosamente." };
+                                console.log(`[Tool] Cita ${cita.id} reagendada exitosamente en ${tableName}.`);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("❌ Error reagendando:", err);
+                        fRes = { success: false, error: "Error técnico reagendando, intenta de nuevo más tarde." };
                     }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

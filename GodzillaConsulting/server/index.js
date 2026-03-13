@@ -32,6 +32,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import xss from 'xss-clean';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import { connectDB } from './config/db.js';
@@ -47,10 +48,42 @@ app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
 
 // ==========================================
-// 1. MIDDLEWARES DE SEGURIDAD
+// 1. MIDDLEWARES DE SEGURIDAD Y FIREWALL
 // ==========================================
 
-app.use(helmet());
+// CLOUDFLARE FIREWALL
+// En producción, solo permite accesos que vengan a través del proxy de Cloudflare (cf-connecting-ip).
+app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL) {
+        const cfIp = req.headers['cf-connecting-ip'];
+        // Vercel u otros proxies pueden sobreescribir cf-ip o no mandarlo, pero Cloudflare siempre lo envía.
+        // Asumiendo que todo el tráfico debe venir de CF, se deniega acceso directo a IP.
+        if (!cfIp && req.hostname !== 'localhost') {
+            console.warn(`[FIREWALL] Bloqueo de acceso directo IP detectado. IP: ${req.ip}`);
+            return res.status(403).send("Forbidden: Direct IP access not allowed. Use the official domain.");
+        }
+    }
+    next();
+});
+
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://godzillaconsulting.ai"],
+            connectSrc: ["'self'", "https://godzillaconsulting.ai"],
+            imgSrc: ["'self'", "data:", "https://*"],
+        },
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// Sanitización Global contra Cross-Site Scripting (XSS)
+app.use(xss());
 
 const allowedOrigins = [
     process.env.FRONTEND_URL,
@@ -117,18 +150,9 @@ app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 const isLocalOrPM2 = process.env.NODE_ENV === 'development' || process.env.IS_PM2 === 'true';
 
 if (isLocalOrPM2) {
-    app.listen(port, async () => {
-        console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
+    app.listen(port, () => {
+        console.log(`🚀 Godzilla Web Server Activo en Puerto ${port}`);
         console.log(`🤖 Gestionado por PM2 / Node | Entorno: ${process.env.NODE_ENV}`);
-        
-        try {
-            // Importación Dinámica: Truqueamos al Bundler de Vercel para que no descargue Puppeteer en la Nube
-            const waFile = './whatsappBot.js';
-            const botModule = await import(waFile);
-            botModule.initWhatsAppBot();
-        } catch (e) {
-            console.error("Fallo al iniciar módulo de WhatsApp Local", e);
-        }
     });
 }
 

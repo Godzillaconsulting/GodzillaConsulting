@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import zillaIcon from '../assets/Icono de chatbot.jpeg';
+import zillaIcon from '../assets/images/logo-godzilla-circle.png';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);

@@ -1,3 +1,30 @@
+import fs from 'fs';
+import path from 'path';
+
+// ==========================================
+// 🛡️ ESCUDO ANTI-CAÍDAS (DEVOPS 24/7)
+// ==========================================
+// Previene que el bot o el servidor mueran si hay un error no contemplado.
+const logErrorToFile = (type, error) => {
+    try {
+        const errorMsg = `\n[${new Date().toISOString()}] [${type}] ${error.stack || error}\n`;
+        // Guardamos en un archivo error.log en la raíz del backend (sync para evitar fallos asíncronos en colapso)
+        fs.appendFileSync(path.join(process.cwd(), 'error.log'), errorMsg);
+        console.log(`🛡️ [DEVOPS] Error crítico atrapado (${type}). El bot continuará operando.`);
+    } catch (e) {
+        console.error("No se pudo escribir el error en el log:", e);
+    }
+};
+
+process.on('uncaughtException', (err) => {
+    logErrorToFile('Uncaught Exception', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logErrorToFile('Unhandled Rejection', reason);
+});
+// ==========================================
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -48,11 +75,20 @@ app.use(cors({
     credentials: true
 }));
 
-// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)
+// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario de contacto/leads)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: process.env.NODE_ENV === 'development' ? 1000 : 5,
     message: { error: 'Demasiadas solicitudes: intenta nuevamente más tarde.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate Limit para Chat Web (Permitir flujos de conversación largos)
+const chatLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 150, // Permite 150 mensajes por IP cada 15 min
+    message: { error: 'Por favor, espera unos minutos antes de enviar más mensajes.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -78,7 +114,7 @@ import webhookRoutes from './routes/webhook.js';
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
-app.use('/api/chat', apiLimiter, chatRoutes);
+app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/webhook', webhookLimiter, webhookRoutes); // Meta necesita un límite alto
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
@@ -87,20 +123,20 @@ app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 
 
 // ==========================================
-// 3. INICIO DEL SERVIDOR (Solo local)
+// 3. INICIO DEL SERVIDOR 
 // ==========================================
 import { initWhatsAppBot } from './whatsappBot.js';
 
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-    app.listen(port, () => {
-        console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
-        console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
-        console.log(`🤖 Gestionado por PM2 (si aplica) | Entorno: ${process.env.NODE_ENV}`);
-        
-        // Iniciar instancia local de WhatsApp
+app.listen(port, () => {
+    console.log(`🚀 Godzilla Bot Activo en Puerto ${port}`);
+    console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
+    console.log(`🤖 Gestionado por PM2 / Node | Entorno: ${process.env.NODE_ENV}`);
+    
+    // Iniciar instancia local de WhatsApp SIEMPRE EXCEPTO en Vercel
+    if (!process.env.VERCEL) {
         initWhatsAppBot();
-    });
-}
+    }
+});
 
 // Exportar para Vercel
 export default app;

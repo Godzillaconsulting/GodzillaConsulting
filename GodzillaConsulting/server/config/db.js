@@ -28,6 +28,25 @@ export const connectDB = async () => {
         const client = await pool.connect();
         console.log('✅ PostgreSQL Conectado a Neon');
         client.release();
+
+        // -------------------------------------------------------------
+        // DEVOPS RECOVERY: HEARTBEAT KEEP-ALIVE PARA NEON
+        // -------------------------------------------------------------
+        // Evita que la DB en Neon Postgres Serverless cierre la conexión
+        // si el bot no inyecta citas en minutos. (Solo se evalua si NO es Vercel).
+        if (!process.env.VERCEL) {
+            setInterval(async () => {
+                try {
+                    const beat = await pool.connect();
+                    await beat.query('SELECT 1');
+                    beat.release();
+                    console.log('💓 [DB Heartbeat] Teniendo viva la conexión de Neon...');
+                } catch (errHeart) {
+                    console.error('💔 [DB Heartbeat Error] Neon se desconectó momentáneamente:', errHeart.message);
+                }
+            }, 4.5 * 60 * 1000); // Latido cada 4.5 minutos
+        }
+        
     } catch (error) {
         console.error(`❌ Error en PostgreSQL: ${error.message} | URL usada: ${connectionString ? 'SI' : 'NO'}`);
         // NEVER use process.exit(1) in a serverless function!

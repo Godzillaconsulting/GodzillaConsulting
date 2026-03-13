@@ -40,8 +40,9 @@ module.exports = {
       script: "./start-instagram.js",
       instances: 1,
       autorestart: true,
+      exp_backoff_restart_delay: 100,
       watch: false,
-      max_memory_restart: "1G",
+      max_memory_restart: "600M",
       env: {
         NODE_ENV: "production",
         IS_PM2: "true"

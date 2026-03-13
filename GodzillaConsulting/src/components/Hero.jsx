@@ -11,6 +11,7 @@ import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 import heroVideo from '../assets/Intro_LP_final_Optimized.mp4';
+import CurvedLoop from './CurvedLoop';
 
 const Hero = () => {
     const logos = [
@@ -19,17 +20,10 @@ const Hero = () => {
     ];
     return (
         <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-            {/* Background Layer - Video */}
-            <div className="absolute inset-0 z-0 bg-[#111111]">
-                <video
-                    src={heroVideo}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/60 via-[#111111]/40 to-[#111111] z-10"></div>
+            {/* Background Layer */}
+            <div className="absolute inset-0 z-0 bg-[#111111] bg-cover bg-center" style={{ backgroundImage: "url('/background-building.jpg')" }}>
+                {/* Overlay negro semi-transparente para opacar el fondo */}
+                <div className="absolute inset-0 bg-[#111111]/70 z-10 pointer-events-none"></div>
             </div>
 
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center">
@@ -40,8 +34,17 @@ const Hero = () => {
                 </h1>
 
                 {/* Subtitle / CTA Area */}
-                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center">
-                    <a href="#paquetes" className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
+                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center min-h-[160px]">
+                    {/* Contenedor del anillo curvado, desplazado hacia abajo para centrar el arco con el CTA */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[20%] w-[1000px] sm:w-[1200px] z-0 opacity-80">
+                        <CurvedLoop 
+                            marqueeText="DETÉN ✦ LA ✦ FUGA ✦ DE ✦ LEADS ✦ ESCALA ✦ TU ✦ NEGOCIO ✦ CON ✦ NOSOTROS ✦ "
+                            speed={7.6}
+                            curveAmount={330}
+                            interactive={true}
+                        />
+                    </div>
+                    <a href="#paquetes" className="relative z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
                         <span className="relative">Ver planes y garantías</span>
                     </a>
                 </div>

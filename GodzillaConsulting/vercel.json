@@ -1,4 +1,9 @@
 {
+    "functions": {
+        "api/index.js": {
+            "maxDuration": 25
+        }
+    },
     "rewrites": [
         {
             "source": "/api/:path*",
@@ -9,4 +14,4 @@
             "destination": "/"
         }
     ]
-}
+}

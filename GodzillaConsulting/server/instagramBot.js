@@ -263,6 +263,18 @@ export async function startIgBot() {
         const sessionDir = path.join(os.homedir(), '.godzilla-sessions', 'instagram');
         const sessionPath = path.join(sessionDir, `${username}.json`);
         
+        // Rutina de Seguridad: Bloquear lectura externa (chmod 700)
+        try {
+            if (!fs.existsSync(sessionDir)) {
+                fs.mkdirSync(sessionDir, { recursive: true, mode: 0o700 });
+            } else {
+                fs.chmodSync(sessionDir, 0o700);
+            }
+            console.log(`🔒 [Seguridad] Permisos 700 aplicados a la sesión de Instagram.`);
+        } catch (e) {
+            console.warn(`⚠️ [Seguridad] No se pudieron aplicar permisos 700 a la sesión: ${e.message}`);
+        }
+
         ig.state.generateDevice(username);
         
         let shouldLogin = true;

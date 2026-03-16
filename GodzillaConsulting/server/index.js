@@ -53,12 +53,18 @@ const port = process.env.PORT || 3000;
 // CLOUDFLARE FIREWALL
 // En producción, solo permite accesos que vengan a través del proxy de Cloudflare (cf-connecting-ip).
 app.use((req, res, next) => {
+    // Si la ruta es un webhook externo (ej. Facebook/Meta), dejamos pasar siempre porque no usan Cloudflare
+    if (req.path.startsWith('/api/webhook')) {
+        return next();
+    }
+
     if (process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL) {
         const cfIp = req.headers['cf-connecting-ip'];
-        // Vercel u otros proxies pueden sobreescribir cf-ip o no mandarlo, pero Cloudflare siempre lo envía.
-        // Asumiendo que todo el tráfico debe venir de CF, se deniega acceso directo a IP.
-        if (!cfIp && req.hostname !== 'localhost') {
-            console.warn(`[FIREWALL] Bloqueo de acceso directo IP detectado. IP: ${req.ip}`);
+        // Eximir explícitamente cualquier variante de localhost
+        const isLocalHost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.hostname === '::1';
+        
+        if (!cfIp && !isLocalHost) {
+            console.warn(`[FIREWALL] Bloqueo de acceso directo IP detectado desde: ${req.ip} hacia ${req.path}`);
             return res.status(403).send("Forbidden: Direct IP access not allowed. Use the official domain.");
         }
     }

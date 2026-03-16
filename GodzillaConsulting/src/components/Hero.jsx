@@ -11,7 +11,7 @@ import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 import heroVideo from '../assets/Intro_LP_final_Optimized.mp4';
-import CurvedLoop from './CurvedLoop';
+import ColorBends from './ColorBends';
 
 const Hero = () => {
     const logos = [
@@ -34,17 +34,9 @@ const Hero = () => {
                 </h1>
 
                 {/* Subtitle / CTA Area */}
-                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center min-h-[160px]">
-                    {/* Contenedor del anillo curvado, desplazado hacia abajo para centrar el arco con el CTA */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[20%] w-[1000px] sm:w-[1200px] z-0 opacity-80">
-                        <CurvedLoop 
-                            marqueeText="DETÉN ✦ LA ✦ FUGA ✦ DE ✦ LEADS ✦ ESCALA ✦ TU ✦ NEGOCIO ✦ CON ✦ NOSOTROS ✦ "
-                            speed={7.6}
-                            curveAmount={330}
-                            interactive={true}
-                        />
-                    </div>
-                    <a href="#paquetes" className="relative z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
+                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center h-[300px]">
+                    {/* CTA Z-index alto para dominar el hover y click */}
+                    <a href="#paquetes" className="absolute bottom-[20%] left-1/2 -translate-x-1/2 z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-max">
                         <span className="relative">Ver planes y garantías</span>
                     </a>
                 </div>

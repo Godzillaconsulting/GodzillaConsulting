@@ -183,6 +183,18 @@ export const initWhatsAppBot = () => {
     // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
     const sessionPath = path.join(os.homedir(), '.godzilla-sessions', 'whatsapp');
     
+    // Rutina de Seguridad: Bloquear lectura externa (chmod 700)
+    try {
+        if (!fs.existsSync(sessionPath)) {
+            fs.mkdirSync(sessionPath, { recursive: true, mode: 0o700 });
+        } else {
+            fs.chmodSync(sessionPath, 0o700);
+        }
+        console.log(`🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.`);
+    } catch (e) {
+        console.warn(`⚠️ [Seguridad] No se pudieron aplicar permisos 700 a la sesión: ${e.message}`);
+    }
+    
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {

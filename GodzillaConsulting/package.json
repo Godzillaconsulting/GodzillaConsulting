@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "server"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir",
@@ -10,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "godzilla-backend": "workspace:*",
     "@google/generative-ai": "^0.24.1",
     "@googleapis/calendar": "^14.2.0",
     "@sanity/client": "^7.16.0",

@@ -286,11 +286,11 @@ export default function ColorBends({
       pointerTargetRef.current.set(x, y);
     };
 
-    container.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointermove', handlePointerMove);
     return () => {
-      container.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointermove', handlePointerMove);
     };
   }, []);
 
-  return <div ref={containerRef} className={`color-bends-container ${className}`} style={style} />;
+  return <div ref={containerRef} className={\`color-bends-container \${className || ''}\`} style={style} />;
 }

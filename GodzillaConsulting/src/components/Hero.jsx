@@ -21,9 +21,23 @@ const Hero = () => {
     return (
         <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
             {/* Background Layer */}
-            <div className="absolute inset-0 z-0 bg-[#111111] bg-cover bg-center" style={{ backgroundImage: "url('/background-building.jpg')" }}>
-                {/* Overlay negro semi-transparente para opacar el fondo */}
-                <div className="absolute inset-0 bg-[#111111]/70 z-10 pointer-events-none"></div>
+            <div className="absolute inset-0 z-0 bg-[#111111] overflow-hidden">
+                <ColorBends
+                  colors={["#ff5c7a", "#8a5cff", "#00ffd1"]}
+                  rotation={-51}
+                  speed={0.2}
+                  scale={1}
+                  frequency={1}
+                  warpStrength={1}
+                  mouseInfluence={1}
+                  parallax={0.5}
+                  noise={0.1}
+                  transparent
+                  autoRotate={-5}
+                  color="#ff0000"
+                />
+                {/* Overlay negro semi-transparente para mejorar contraste del texto */}
+                <div className="absolute inset-0 bg-[#111111]/40 z-10 pointer-events-none"></div>
             </div>
 
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center">

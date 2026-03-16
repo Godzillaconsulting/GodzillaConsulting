@@ -1,10 +1,4 @@
 {
-    "functions": {
-        "api/**/*.js": {
-            "includeFiles": "{node_modules,server}/**",
-            "maxDuration": 25
-        }
-    },
     "rewrites": [
         {
             "source": "/api/:path*",
@@ -15,4 +9,4 @@
             "destination": "/"
         }
     ]
-}
+}

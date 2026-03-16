@@ -1,4 +1,10 @@
 {
+    "functions": {
+        "api/**/*.js": {
+            "includeFiles": "node_modules/{express,cors,helmet,express-rate-limit,dotenv,express-validator,nodemailer,pg,pg-pool,pg-protocol,pg-types,pgpass,firebase-admin,@googleapis/calendar,@google/generative-ai,google-auth-library}/**",
+            "maxDuration": 25
+        }
+    },
     "rewrites": [
         {
             "source": "/api/:path*",

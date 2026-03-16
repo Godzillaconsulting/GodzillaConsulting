@@ -23,7 +23,7 @@ const Hero = () => {
             {/* Background Layer */}
             <div className="absolute inset-0 z-0 bg-[#111111] overflow-hidden">
                 <ColorBends
-                  colors={["#ff5c7a", "#8a5cff", "#00ffd1"]}
+                  colors={["#ff0000", "#cc0000", "#990000"]}
                   rotation={-51}
                   speed={0.2}
                   scale={1}

@@ -1,4 +1,2 @@
-import app from '../server/index.js';
-
-// Vercel Serverless Function Entrypoint
+import app from 'godzilla-backend/index.js';
 export default app;

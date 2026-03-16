@@ -1,5 +1,18 @@
 import fs from 'fs';
 import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
+import leadsRoutes from './routes/leads.js';
+import contactRoutes from './routes/contact.js';
+import chatRoutes from './routes/chat.js';
+import webhookRoutes from './routes/webhook.js';
+import { connectDB } from './config/db.js';
+
+// Inicializar variables de entorno (.env)
+dotenv.config();
 
 // ==========================================
 // 🛡️ ESCUDO ANTI-CAÍDAS (DEVOPS 24/7)
@@ -27,17 +40,6 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 // ==========================================
 
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-import leadsRoutes from './routes/leads.js';
-import contactRoutes from './routes/contact.js';
-import { connectDB } from './config/db.js';
-
-// Inicializar variables de entorno (.env)
-dotenv.config();
 
 // Inicializar conexión a PostgreSQL (Neon)
 connectDB();
@@ -133,9 +135,6 @@ app.use(express.json());
 // ==========================================
 // 2. RUTAS DE LA API
 // ==========================================
-
-import chatRoutes from './routes/chat.js';
-import webhookRoutes from './routes/webhook.js';
 
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);

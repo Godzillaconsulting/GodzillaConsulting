@@ -62,16 +62,33 @@ app.use((req, res, next) => {
 
     if (process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL) {
         const cfIp = req.headers['cf-connecting-ip'];
-        // Eximir explícitamente cualquier variante de localhost
-        const isLocalHost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.hostname === '::1';
+        const vercelIp = req.headers['x-vercel-forwarded-for'];
         
-        if (!cfIp && !isLocalHost) {
+        // Eximir explícitamente cualquier variante de localhost y el frontend hosteado
+        const isLocalHost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.hostname === '::1';
+        const isFrontendOrigin = req.headers.origin && req.headers.origin.includes('godzillaconsulting.ai');
+        
+        if (!cfIp && !vercelIp && !isLocalHost && !isFrontendOrigin) {
             console.warn(`[FIREWALL] Bloqueo de acceso directo IP detectado desde: ${req.ip} hacia ${req.path}`);
             return res.status(403).send("Forbidden: Direct IP access not allowed. Use the official domain.");
         }
     }
     next();
 });
+
+// MOVED HERE: parse JSON before webhook and mount webhook before helmet/cors
+app.use(express.json());
+
+const webhookLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// RUTA DE WEBHOOKS ANTES DE HELMET Y CORS
+// Meta requiere devolver el 200 con el challenge limpio, sin headers restrictivos
+app.use('/api/webhook', webhookLimiter, webhookRoutes);
 
 app.use(helmet({
     contentSecurityPolicy: {
@@ -96,15 +113,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || (origin && origin.includes('vercel.app')) || (origin && origin.includes('godzillaconsulting.ai'))) {
-            callback(null, true);
-        } else {
-            // En vez de arrojar Error (que causa 500 en Vercel), simplemente lo pasamos como false
-            // para que CORS devuelva headers restringidos limpiamente
-            callback(null, false);
-        }
-    },
+    origin: '*',
     methods: ['POST', 'GET', 'OPTIONS'],
     credentials: true
 }));
@@ -125,15 +134,6 @@ const chatLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-const webhookLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-app.use(express.json());
-
 // ==========================================
 // 2. RUTAS DE LA API
 // ==========================================
@@ -141,7 +141,6 @@ app.use(express.json());
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
-app.use('/api/webhook', webhookLimiter, webhookRoutes);
 
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));

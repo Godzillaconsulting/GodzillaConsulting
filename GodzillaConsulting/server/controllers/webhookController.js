@@ -196,6 +196,11 @@ export const processWebhookMessage = async (req, res) => {
         if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
             safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
         }
+        
+        // REGLA CRÍTICA: Gemini exige que historial empiece con "user". (Evita "First content should be with role 'user', got model")
+        if (safeHistory.length > 0 && safeHistory[0].role === "model") {
+            safeHistory.unshift({ role: "user", parts: [{ text: "(El cliente continuó la conversación)" }] });
+        }
 
         // 2.b Iniciar Gemini y generar respuesta
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();

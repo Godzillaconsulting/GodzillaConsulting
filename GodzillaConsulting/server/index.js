@@ -32,7 +32,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import xss from 'xss-clean';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import { connectDB } from './config/db.js';
@@ -81,9 +80,6 @@ app.use(helmet({
         preload: true
     }
 }));
-
-// Sanitización Global contra Cross-Site Scripting (XSS)
-app.use(xss());
 
 const allowedOrigins = [
     process.env.FRONTEND_URL,

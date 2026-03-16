@@ -5,6 +5,7 @@ module.exports = {
       script: "./index.js",
       instances: 1,
       autorestart: true,
+      restart_delay: 10000,
       watch: false,
       max_memory_restart: "300M",
       env: {
@@ -24,6 +25,7 @@ module.exports = {
       script: "./start-whatsapp.js",
       instances: 1,
       autorestart: true,
+      restart_delay: 10000,
       watch: false,
       max_memory_restart: "500M",
       env: {
@@ -40,7 +42,7 @@ module.exports = {
       script: "./start-instagram.js",
       instances: 1,
       autorestart: true,
-      exp_backoff_restart_delay: 100,
+      restart_delay: 10000,
       watch: false,
       max_memory_restart: "600M",
       env: {

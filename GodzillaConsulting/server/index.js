@@ -97,10 +97,12 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || (origin && origin.includes('vercel.app')) || (origin && origin.includes('godzillaconsulting.ai'))) {
             callback(null, true);
         } else {
-            callback(new Error('Bloqueado por CORS: Origen no permitido.'));
+            // En vez de arrojar Error (que causa 500 en Vercel), simplemente lo pasamos como false
+            // para que CORS devuelva headers restringidos limpiamente
+            callback(null, false);
         }
     },
     methods: ['POST', 'GET', 'OPTIONS'],

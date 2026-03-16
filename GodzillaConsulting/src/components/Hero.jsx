@@ -20,8 +20,8 @@ const Hero = () => {
     ];
     return (
         <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-            {/* Background Layer */}
-            <div className="absolute inset-0 z-0 bg-[#111111] overflow-hidden">
+            {/* Background Layer (Three.js WebGL) */}
+            <div className="absolute inset-0 z-0 bg-[#111111] overflow-hidden w-full h-full pointer-events-auto">
                 <ColorBends
                   colors={["#ff0000", "#cc0000", "#990000"]}
                   rotation={-51}
@@ -37,7 +37,7 @@ const Hero = () => {
                   color="#ff0000"
                 />
                 {/* Overlay negro semi-transparente para mejorar contraste del texto */}
-                <div className="absolute inset-0 bg-[#111111]/40 z-10 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-transparent z-10 pointer-events-none"></div>
             </div>
 
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center">

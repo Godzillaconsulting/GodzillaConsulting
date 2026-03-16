@@ -1,8 +1,12 @@
 import { IgApiClient } from 'instagram-private-api';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
 import pool, { connectDB } from './config/db.js';
 import { agendarEnGoogleCalendar } from './services/calendarService.js';
+import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -11,58 +15,6 @@ const ig = new IgApiClient();
 
 // Helper: Generador de delays aleatorios (Typing Simulation / Anti-Ban)
 const delay = (min, max) => new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min));
-
-// Prompt Base
-const SYSTEM_PROMPT = `
-# Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
-
-## IDENTIDAD Y CONTEXTO
-Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Oscar Villanueva (CEO)** y ubicada en **Ciudad Juárez, Chihuahua**. Tu enfoque es transformar la presencia digital en ventas reales y rentabilidad.
-
-## CONOCIMIENTO DE LA AGENCIA
-- **Misión**: Ayudar a empresas mexicanas a crecer mediante tecnología.
-- **Visión**: Elevar el éxito de los negocios digitalizados en México.
-- **Experiencia**: Hemos impulsado a médicos, clínicas estéticas, abogados, hoteles y restaurantes.
-
-## SERVICIOS (Soluciones Estratégicas)
-- **Automatización de Bots**: Atención 24/7 en Web y WhatsApp integrada a CRM.
-- **Producción Audiovisual**: Contenido estratégico para generar autoridad y confianza.
-- **Embudos de Venta**: Estructuras orientadas a convertir tráfico en citas.
-- **Gestión de Redes**: Posicionamiento y reputación profesional.
-- **SEO y Optimización Web**: Visibilidad y experiencia de usuario.
-- **CRM/SaaS Personalizado**: Centralización y seguimiento comercial automático.
-
-## REGLAS DE CONVERSACIÓN (¡CRÍTICO!)
-1. **Identidad Ultra Humana**: NUNCA digas "Como IA", "Soy una inteligencia artificial". Habla como experto humano, relajado pero directo.
-2. **Micro-Mensajes**: Tus respuestas deben ser EXTREMADAMENTE cortas. Máximo 1 a 2 renglones físicos. Ve al grano inmediatamente sin saludos formales.
-3. **Paso a paso**: Haz **SOLO UNA PREGUNTA** por mensaje al final de tu texto.
-4. **Precios Prohibidos**: TIENES ESTRICTAMENTE PROHIBIDO dar precios. Dirígelos a https://godzillaconsulting.ai
-5. **Citas (PROTOCOLO)**: Si el cliente tiene intención real, ofrécele agendar una llamada. Obtén: Nombre, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM).
-6. **MUY IMPORTANTE**: En Instagram NO pedimos el correo electrónico en la herramienta, solo el Nombre y Teléfono.
-
-## HERRAMIENTA OBLIGATORIA
-Si ya tienes la fecha, hora, nombre y teléfono, utiliza SIEMPRE la herramienta 'validar_y_guardar_cita_ig' antes de decirle al cliente que ya está agendado.
-Si fue exitosa, confírmale. Si el slot está ocupado, dile amablemente que sugiera otro horario.
-`;
-
-const chatTools = [
-    {
-        name: "validar_y_guardar_cita_ig",
-        description: "Valida disponibilidad de un horario y si está libre, agenda la cita en la base de datos de Instagram y Google Calendar.",
-        parameters: {
-            type: "OBJECT",
-            properties: {
-                nombre: { type: "STRING" },
-                telefono: { type: "STRING" },
-                servicio: { type: "STRING" },
-                fecha: { type: "STRING", description: "YYYY-MM-DD" },
-                hora: { type: "STRING", description: "HH:MM (24h)" },
-                resumen_para_bd: { type: "STRING", description: "Un breve resumen de la plática o dolor del cliente (1 párrafo max)." }
-            },
-            required: ["nombre", "telefono", "servicio", "fecha", "hora"]
-        }
-    }
-];
 
 // Estado en Memoria de Sesiones 
 const userSessions = new Map();
@@ -165,7 +117,10 @@ async function handleIgInbox() {
             }
 
             const chat = model.startChat({ history: safeHistory });
-            let result = await chat.sendMessage(messageText);
+            let result = await withTimeout(
+                chat.sendMessage(messageText),
+                "He tenido un lapsus de conexión... ¿podrías repetir tu último mensaje?"
+            );
             let botReply = result.response.text();
 
             // Evaluar Tool Calls
@@ -212,7 +167,10 @@ async function handleIgInbox() {
                         }
 
                         // Completar el call
-                        result = await chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]);
+                        result = await withTimeout(
+                            chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
+                            "Disculpa la tardanza, tuvimos un error procesando tu información. ¿Me confirmas qué paso dábamos?"
+                        );
                         botReply = result.response.text();
                     }
                 }
@@ -241,9 +199,7 @@ async function handleIgInbox() {
     }
 }
 
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+
 
 // Inicialización Principal (Log In e Insta Loop)
 export async function startIgBot() {
@@ -313,6 +269,14 @@ export async function startIgBot() {
 
     } catch (error) {
         console.error("❌ [IG Bot] Error de Arranque:", error);
-        process.exit(1);
+        throw error;
     }
+
+    // ==========================================
+    // 🛡️ PM2 GRACEFUL SHUTDOWN
+    // ==========================================
+    process.on('SIGINT', async () => {
+        console.log('🛑 [SIGINT] Recibida orden de apagado (PM2) para Instagram.');
+        process.exit(0);
+    });
 }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "godzilla-backend": "file:./godzilla-backend.tgz",
+    "godzilla-backend": "workspace:*",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/generative-ai": "^0.24.1",
     "@googleapis/calendar": "^14.2.0",

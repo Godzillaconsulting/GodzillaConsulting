@@ -9,12 +9,9 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config();scargables.",
-        parameters: { type: "OBJECT", properties: {} }
-    }
-];
+dotenv.config();
 
-// Helper: UPSERT para base de datos (Memoria Inteligente)
+
 async function appendMessageToSession(senderId, role, content, plataforma = 'whatsapp_web') {
     const query = `
         INSERT INTO sesiones_chat (id_usuario_red, historial_mensajes, resumen_contexto, ultima_actualizacion, plataforma)

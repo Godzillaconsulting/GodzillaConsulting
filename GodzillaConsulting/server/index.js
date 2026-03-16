@@ -22,7 +22,7 @@ const logErrorToFile = (type, error) => {
     try {
         const isLocal = process.env.NODE_ENV === 'development' || process.env.IS_PM2 === 'true';
         if (!isLocal) return; // Vercel Cloud es Read-Only
-        
+
         const errorMsg = `\n[${new Date().toISOString()}] [${type}] ${error.stack || error}\n`;
         fs.appendFileSync(path.join(process.cwd(), 'error.log'), errorMsg);
         console.log(`🛡️ [DEVOPS] Error crítico atrapado (${type}). El bot continuará operando.`);
@@ -63,11 +63,11 @@ app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL) {
         const cfIp = req.headers['cf-connecting-ip'];
         const vercelIp = req.headers['x-vercel-forwarded-for'];
-        
+
         // Eximir explícitamente cualquier variante de localhost y el frontend hosteado
         const isLocalHost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.hostname === '::1';
         const isFrontendOrigin = req.headers.origin && req.headers.origin.includes('godzillaconsulting.ai');
-        
+
         if (!cfIp && !vercelIp && !isLocalHost && !isFrontendOrigin) {
             console.warn(`[FIREWALL] Bloqueo de acceso directo IP detectado desde: ${req.ip} hacia ${req.path}`);
             return res.status(403).send("Forbidden: Direct IP access not allowed. Use the official domain.");
@@ -128,7 +128,7 @@ const apiLimiter = rateLimit({
 
 const chatLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 150, 
+    max: 150,
     message: { error: 'Por favor, espera unos minutos antes de enviar más mensajes.' },
     standardHeaders: true,
     legacyHeaders: false,

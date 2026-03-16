@@ -1,9 +1,16 @@
+// ==========================================
+// api/server.js — Punto de entrada para Vercel Serverless
+// ==========================================
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
+import leadsRoutes from './routes/leads.js';
+import contactRoutes from './routes/contact.js';
+import chatRoutes from './routes/chat.js';
+import webhookRoutes from './routes/webhook.js';
 
 // Inicializar variables de entorno (.env)
 dotenv.config();
@@ -81,11 +88,6 @@ app.use(express.json());
 // 2. RUTAS DE LA API
 // ==========================================
 
-import leadsRoutes from './routes/leads.js';
-import contactRoutes from './routes/contact.js';
-import chatRoutes from './routes/chat.js';
-import webhookRoutes from './routes/webhook.js';
-
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
@@ -95,3 +97,4 @@ app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 
 export default app;
+

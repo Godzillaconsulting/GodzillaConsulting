@@ -1,0 +1,212 @@
+﻿import { GoogleGenerativeAI } from "@google/generative-ai";
+import pool from "../config/db.js";
+
+// Initialize Gemini Pro model
+const genAI = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY ?
+    new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) : null;
+
+const SYSTEM_PROMPT = `
+# PROMPT 1 ÔÇö BOT IA PARA P├üGINA WEB (ESPECIALISTA EN PERFORMANCE MARKETING IA)
+# Cliente: Godzilla Consulting (https://godzillaconsulting.ai)
+
+## ROL Y IDENTIDAD
+Act├║a como un Senior Performance Marketer especializado en IA Predictiva y Generativa aplicada a embudos de ventas. 
+Tu rol oficial es Goyi, el Especialista en Performance Marketing de Godzilla Consulting.
+Tu ├║nico objetivo es analizar, estructurar y optimizar el rendimiento de las etapas TOFU, MOFU y BOFU (que aqu├¡ denominaremos LOFU por el enfoque en Loyalty/Low Funnel).
+Adem├ís, tienes la funci├│n de evaluar si prospectos y clientes requieren una consultor├¡a a profundidad y agendar citas para el equipo.
+
+## RESTRICCI├ôN DE DOMINIO ESTRICTA Y S├ìNTESIS
+- SINTETIZA TUS RESPUESTAS EXTREMADAMENTE. S├® directo, al grano y nunca te extiendas en explicaciones largas o p├írrafos innecesarios.
+- No eres un asistente de informaci├│n general.
+- Si se te solicita informaci├│n fuera del marketing, publicidad digital o tecnolog├¡a de IA en ventas, deber├ís declinar la respuesta de forma MUY CORTA (ej: "Mi arquitectura est├í limitada a Performance Marketing. ┬┐Puedo ayudarte a optimizar m├®tricas como el CPA o ROAS?").
+- Tu lenguaje debe ser t├®cnico: enfocado en m├®tricas (CTR, CPA, ROAS, LTV), algoritmos de puja, segmentaci├│n por clusters y personalizaci├│n sint├®tica de contenidos.
+
+## CONOCIMIENTO DE ESTADO DEL ARTE (TOFU, MOFU, LOFU)
+- **TOFU (Top of the Funnel):** Sabes que la IA mejora el alcance mediante audiencias lookalike de nueva generaci├│n y la creaci├│n masiva de creatividades din├ímicas (DCO) para captar atenci├│n y bajar el CPA.
+- **MOFU (Middle of the Funnel):** Utilizas Lead Scoring predictivo y Chatbots de nutrici├│n (Nurturing) para filtrar la intenci├│n de compra (MQL a SQL).
+- **LOFU (Low/Loyalty Funnel):** Optimizas algoritmos de conversi├│n de "├║ltimo clic" y modelos de atribuci├│n basados en IA para maximizar el LTV (Lifetime Value).
+
+## IDIOMA
+Detecta autom├íticamente el idioma en que escribe el usuario y responde siempre en ese mismo idioma.
+
+## BASE DE CONOCIMIENTO (Godzilla Consulting)
+Toda consulta inicial en Godzilla Consulting es confidencial y sin costo.
+Los tiempos de entrega se definen en propuesta formal tras la primera reuni├│n.
+Para cancelar o reprogramar una cita, se requiere aviso con al menos 24 horas de anticipaci├│n.
+
+### SERVICIOS:
+- **Automatizaci├│n de Bots:** Atenci├│n 24/7 con bots entrenados, calificaci├│n de prospectos e integraci├│n con WhatsApp/CRM.
+- **Producci├│n Audiovisual:** Contenido estrat├®gico para generar confianza y autoridad.
+- **Embudos de Venta:** Estructuras digitales para conversi├│n de tr├ífico en citas.
+- **Gesti├│n de Redes Sociales:** Estrategia de contenido enfocada en posicionamiento.
+- **Optimizaci├│n Web y SEO:** Mejora de visibilidad y experiencia de usuario.
+- **CRM con SaaS Personalizado:** Centralizaci├│n de contactos y automatizaci├│n comercial.
+
+### PAQUETES Y PRECIOS (MXN):
+- **Posicionamiento Social ($7,900/mes):** Estrategia omnicanal, copy, community management. Garant├¡a: 14 d├¡as o siguiente mes GRATIS.
+- **Control IA ($7,900/mes):** Agente IA (Web + WhatsApp), respuesta < 5s, captura autom├ítica. Garant├¡a: 7 d├¡as o siguiente mes GRATIS.
+- **Expansi├│n ($29,900/mes):** Todo lo anterior + Ads (Meta/Google) + Landing Page. Garant├¡a: 30 d├¡as o devoluci├│n completa.
+- **├ëlite ($39,500/mes):** Estrategia Godfather, reactivaci├│n de DB, consultor├¡a mensual. Garant├¡a: +20% en citas en 90 d├¡as o trabajamos GRATIS.
+
+## FLUJO DE RESPUESTA Y ESCALAMIENTO A ASESOR HUMANO (AGENDAMIENTO)
+Si el usuario requiere asistencia t├®cnica directa, una auditor├¡a, o implementar las estrategias, dir├¡gelo al agendamiento.
+Cuando el usuario mencione querer agendar, reservar o programar una cita, activa el flujo de agendamiento.
+Datos a recolectar: Nombre completo, Correo electr├│nico, Tel├®fono (opcional), Servicio o motivo, Fecha deseada (DD/MM/YYYY), Hora deseada.
+
+### Reglas de validaci├│n y Agendamiento (OBLIGATORIAS)
+Ô£à D├ìAS V├üLIDOS: Lunes a viernes.
+Ô£à HORARIO V├üLIDO: 9:00 AM a 5:00 PM.
+Ô£à SIN EMPALMES: Usar "check_availability" antes de confirmar.
+Ô£à FERIADOS (NO agendar): 1 ene, 19 jun, 4 jul, 11 nov, 25 dic.
+
+### Herramientas
+Tienes herramientas disponibles: \`check_availability(fecha, hora)\` y \`save_appointment(nombre, correo, telefono, servicio, fecha, hora)\`. 
+DEBES USARLAS PARA CONFIRMAR Y GUARDAR LAS CITAS.
+`
+
+const chatTools = [
+    {
+        name: "check_availability",
+        description: "Consulta la base de datos SQL para ver si una fecha y hora est├ín disponibles para una cita. Retorna un objeto con si est├í disponible y los slots sugeridos.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                fecha: {
+                    type: "STRING",
+                    description: "Fecha deseada de la cita con formato YYYY-MM-DD"
+                },
+                hora: {
+                    type: "STRING",
+                    description: "Hora deseada de la cita con formato HH:MM en 24h (ej: 14:00, 09:30)"
+                }
+            },
+            required: ["fecha", "hora"]
+        }
+    },
+    {
+        name: "save_appointment",
+        description: "Inserta una cita confirmada en la tabla citas de la base de datos SQL y retorna la confirmaci├│n.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                nombre: {
+                    type: "STRING",
+                    description: "Nombre completo del usuario"
+                },
+                correo: {
+                    type: "STRING",
+                    description: "Correo electr├│nico del usuario"
+                },
+                telefono: {
+                    type: "STRING",
+                    description: "N├║mero de tel├®fono del usuario (opcional)"
+                },
+                servicio: {
+                    type: "STRING",
+                    description: "Servicio de inter├®s o motivo de la cita"
+                },
+                fecha: {
+                    type: "STRING",
+                    description: "Fecha de la cita con formato YYYY-MM-DD"
+                },
+                hora: {
+                    type: "STRING",
+                    description: "Hora de la cita con formato HH:MM en 24h"
+                }
+            },
+            required: ["nombre", "correo", "servicio", "fecha", "hora"]
+        }
+    }
+];
+
+export const processChatMessage = async (req, res) => {
+    const { messages } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages array is required." });
+    }
+
+    if (!genAI) {
+        return res.status(500).json({ error: "GEMINI_API_KEY no configurada en el servidor." });
+    }
+
+    try {
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-pro",
+            systemInstruction: SYSTEM_PROMPT,
+            tools: [{ functionDeclarations: chatTools }]
+        });
+
+        let history = messages.slice(0, -1).map(m => ({
+            role: m.role || "user",
+            parts: [{ text: m.content || m.text }]
+        }));
+
+        // Google Gemini requiere estrictamente que el primer mensaje en el historial sea del 'user'
+        while (history.length > 0 && history[0].role !== "user") {
+            history.shift();
+        }
+
+        const chat = model.startChat({ history });
+
+        const lastMessage = messages[messages.length - 1].content || messages[messages.length - 1].text;
+
+        // We send message and potentially handle function calls
+        let result = await chat.sendMessage(lastMessage);
+        let responseText = result.response.text();
+
+        const functionCalls = result.response.functionCalls();
+
+        if (functionCalls && functionCalls.length > 0) {
+            for (const call of functionCalls) {
+                let functionResponse = {};
+
+                if (call.name === "check_availability") {
+                    const { fecha, hora } = call.args;
+                    try {
+                        const query = `
+                            SELECT COUNT(*) FROM citas
+                            WHERE fecha = $1 AND hora = $2 AND status != 'cancelada';
+                        `;
+                        const dbRes = await pool.query(query, [fecha, hora]);
+                        const isBooked = parseInt(dbRes.rows[0].count) > 0;
+
+                        functionResponse = { disponible: !isBooked };
+                    } catch (error) {
+                        console.error(error);
+                        functionResponse = { error: "Failed to check availability" };
+                    }
+                } else if (call.name === "save_appointment") {
+                    const { nombre, correo, telefono, servicio, fecha, hora } = call.args;
+
+                    try {
+                        const query = `
+                            INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, status)
+                            VALUES ($1, $2, $3, $4, $5, $6, 'confirmada')
+                            RETURNING id;
+                        `;
+                        const dbRes = await pool.query(query, [nombre, correo, telefono || "", servicio, fecha, hora]);
+
+                        functionResponse = { success: true, id_cita: dbRes.rows[0].id };
+                    } catch (error) {
+                        console.error(error);
+                        functionResponse = { success: false, error: "Failed to save appointment in database" };
+                    }
+                }
+
+                result = await chat.sendMessage([{
+                    functionResponse: {
+                        name: call.name,
+                        response: functionResponse
+                    }
+                }]);
+                responseText = result.response.text();
+            }
+        }
+
+        return res.status(200).json({ reply: responseText });
+    } catch (error) {
+        console.error("Error in chat controller:", error);
+        return res.status(500).json({ error: "Failed to process chat response", details: error.message });
+    }
+};

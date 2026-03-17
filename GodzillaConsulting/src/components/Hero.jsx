@@ -21,7 +21,7 @@ const Hero = () => {
     return (
         <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
             {/* Background Layer (Three.js WebGL) */}
-            <div className="absolute inset-0 z-0 bg-[#111111] overflow-hidden w-full h-full pointer-events-auto">
+            <div className="absolute top-0 left-0 w-full h-full z-[1] overflow-hidden">
                 <ColorBends
                   colors={["#ff0000", "#cc0000", "#990000"]}
                   rotation={-51}
@@ -36,19 +36,17 @@ const Hero = () => {
                   autoRotate={-5}
                   color="#ff0000"
                 />
-                {/* Overlay negro semi-transparente para mejorar contraste del texto */}
-                <div className="absolute inset-0 bg-transparent z-10 pointer-events-none"></div>
             </div>
 
-            <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center">
+            <div className="container relative z-[2] mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
 
                 {/* Main Headline */}
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-4xl drop-shadow-2xl">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-4xl drop-shadow-2xl pointer-events-auto">
                     Construyamos juntos el legado de tu negocio
                 </h1>
 
                 {/* Subtitle / CTA Area */}
-                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center h-[300px]">
+                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center h-[300px] pointer-events-auto">
                     {/* CTA Z-index alto para dominar el hover y click */}
                     <a href="#paquetes" className="absolute bottom-[20%] left-1/2 -translate-x-1/2 z-10 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-max">
                         <span className="relative">Ver planes y garantías</span>

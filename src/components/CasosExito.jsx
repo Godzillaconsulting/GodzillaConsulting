@@ -152,29 +152,51 @@ const CasosExito = () => {
                         onTouchEnd={onTouchEnd}
                         onTouchMove={onTouchMove}
                     >
-                        {allCases.map((item, idx) => (
-                            <div
-                                key={`${item._id}-${idx}`}
-                                className="flex-none w-[280px] md:w-[350px] aspect-square relative bg-[#1A1A1A] rounded-[2rem] border-2 border-transparent hover:border-[#CC0000] transition-all duration-300 group/card cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(204,0,0,0.3)]"
-                            >
-                                <div className="absolute -inset-1 bg-[#CC0000] rounded-[2rem] z-[-1] opacity-0 group-hover/card:opacity-100 transition-opacity blur-sm"></div>
-                                <div className="absolute inset-0 bg-[#1A1A1A] rounded-[2rem] z-0"></div>
+                        {allCases.map((item, idx) => {
+                            const CardContent = (
+                                <>
+                                    <div className="absolute -inset-1 bg-[#CC0000] rounded-[2rem] z-[-1] opacity-0 group-hover/card:opacity-100 transition-opacity blur-sm"></div>
+                                    <div className="absolute inset-0 bg-[#1A1A1A] rounded-[2rem] z-0"></div>
 
-                                <div className="relative z-10 h-full flex flex-col items-center justify-center p-8 gap-6">
-                                    <div className="flex-1 flex items-center justify-center w-full">
-                                        <img
-                                            src={getLogoSrc(item)}
-                                            alt={item.nombre || 'Caso de Éxito'}
-                                            className="max-h-36 w-full object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300 px-4"
-                                            draggable="false"
-                                        />
+                                    <div className="relative z-10 h-full flex flex-col items-center justify-center p-8 gap-6 pointer-events-none">
+                                        <div className="flex-1 flex items-center justify-center w-full">
+                                            <img
+                                                src={getLogoSrc(item)}
+                                                alt={item.nombre || 'Caso de Éxito'}
+                                                className="max-h-36 w-full object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300 px-4"
+                                                draggable="false"
+                                            />
+                                        </div>
+                                        <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
+                                            {item.category}
+                                        </div>
                                     </div>
-                                    <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
-                                        {item.category}
-                                    </div>
+                                </>
+                            );
+
+                            const classNameStr = `flex-none w-[280px] md:w-[350px] aspect-square relative bg-[#1A1A1A] rounded-[2rem] border-2 border-transparent hover:border-[#CC0000] transition-all duration-300 group/card shadow-lg hover:shadow-[0_0_30px_rgba(204,0,0,0.3)] ${item.link ? (!isDragging ? 'cursor-pointer' : 'cursor-grabbing') : 'cursor-default'}`;
+
+                            return item.link ? (
+                                <a
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    key={`${item._id}-${idx}`}
+                                    className={classNameStr}
+                                    draggable="false"
+                                >
+                                    {CardContent}
+                                </a>
+                            ) : (
+                                <div
+                                    key={`${item._id}-${idx}`}
+                                    className={classNameStr}
+                                    draggable="false"
+                                >
+                                    {CardContent}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

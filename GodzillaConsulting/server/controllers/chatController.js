@@ -131,7 +131,8 @@ export const processChatMessage = async (req, res) => {
             tools: [{ functionDeclarations: chatTools }]
         });
 
-        let rawHistory = messages.slice(0, -1).map(m => ({
+        const msgs = Array.isArray(messages) ? messages : [];
+        let rawHistory = msgs.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
             parts: [{ text: m.content || m.text }]
         }));
@@ -152,7 +153,8 @@ export const processChatMessage = async (req, res) => {
         }
 
         const chat = model.startChat({ history });
-        const lastMsg = messages[messages.length - 1].content || messages[messages.length - 1].text;
+        const lastMsgObj = msgs.length > 0 ? msgs[msgs.length - 1] : { content: "Hola", text: "Hola" };
+        const lastMsg = lastMsgObj.content || lastMsgObj.text || "Hola";
 
         let result = await chat.sendMessage(lastMsg);
         let responseText = result.response.text();

@@ -1,7 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
+import { client, urlFor } from '../sanityClient';
+
+const defaultMagnets = [
+    {
+        id: 1,
+        orden: 1,
+        title: '7 prompts de IA para marketing que sí funcionan',
+        description: 'El contenido de calidad ya no tiene que consumir horas de tu equipo. Esta colección de 7 prompts especializados te da las herramientas exactas que necesitas para crear copy, estrategias y análisis de nivel profesional en minutos. Acelera tu producción sin sacrificar calidad.',
+        image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80',
+    },
+    {
+        id: 2,
+        orden: 2,
+        title: 'Cómo generar leads en WhatsApp sin spam',
+        description: 'WhatsApp se ha consolidado como el canal de comunicación preferido en México, con más de 90 millones de usuarios activos. Esta guía te muestra cómo aprovechar esta plataforma de manera profesional y efectiva para hacer crecer tu negocio. Domina el canal de comunicación más poderoso del país.',
+        image: whatsapp3d,
+    },
+    {
+        id: 3,
+        orden: 3,
+        title: 'Plantilla de CRM Personalizable',
+        description: 'Llevar un seguimiento de tus leads en libretas u hojas caóticas te hace perder ventas a diario. Con este CRM en Excel totalmente personalizable y fácil de usar, podrás organizar a tus prospectos de forma clara, priorizar tus seguimientos y maximizar tu porcentaje de cierre. Simplifica tu proceso de ventas hoy mismo.',
+        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80',
+    }
+];
 
 const Recursos = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -9,30 +34,28 @@ const Recursos = () => {
     const [website, setWebsite] = useState(''); // Honeypot trap
     const [activeItem, setActiveItem] = useState(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [magnetsState, setMagnetsState] = useState(defaultMagnets);
 
     // Importamos nuestra conexión hook al backend (Esto sustituye temporalmente o acompaña a la simulación visual)
     const { captureLead, status, errorMessage, resetStatus } = useLeadCapture();
 
-    const magnets = [
-        {
-            id: 1,
-            title: '7 prompts de IA para marketing que sí funcionan',
-            description: 'El contenido de calidad ya no tiene que consumir horas de tu equipo. Esta colección de 7 prompts especializados te da las herramientas exactas que necesitas para crear copy, estrategias y análisis de nivel profesional en minutos. Acelera tu producción sin sacrificar calidad.',
-            image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80',
-        },
-        {
-            id: 2,
-            title: 'Cómo generar leads en WhatsApp sin spam',
-            description: 'WhatsApp se ha consolidado como el canal de comunicación preferido en México, con más de 90 millones de usuarios activos. Esta guía te muestra cómo aprovechar esta plataforma de manera profesional y efectiva para hacer crecer tu negocio. Domina el canal de comunicación más poderoso del país.',
-            image: whatsapp3d,
-        },
-        {
-            id: 3,
-            title: 'Plantilla de CRM Personalizable',
-            description: 'Llevar un seguimiento de tus leads en libretas u hojas caóticas te hace perder ventas a diario. Con este CRM en Excel totalmente personalizable y fácil de usar, podrás organizar a tus prospectos de forma clara, priorizar tus seguimientos y maximizar tu porcentaje de cierre. Simplifica tu proceso de ventas hoy mismo.',
-            image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80',
+    useEffect(() => {
+        client
+            .fetch(`*[_type == "recurso"] | order(orden asc)`)
+            .then((data) => {
+                if (data && data.length > 0) {
+                    setMagnetsState(data);
+                }
+            })
+            .catch((error) => console.error('Error cargando recursos de Sanity:', error));
+    }, []);
+
+    const getImageSrc = (item) => {
+        if (item.image && typeof item.image === 'object' && item.image.asset) {
+            return urlFor(item.image).width(800).url();
         }
-    ];
+        return item.image; // fallback url o imagen importada
+    };
 
     return (
         <section id="recursos" className="py-24 bg-[#111111] overflow-hidden">
@@ -47,13 +70,13 @@ const Recursos = () => {
                 </div>
 
                 <div className="space-y-16">
-                    {magnets.map((item, index) => (
-                        <div key={item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-16 items-center group`}>
+                    {magnetsState.map((item, index) => (
+                        <div key={item._id || item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-16 items-center group`}>
 
                             {/* Image Container with Custom Frame */}
                             <div className="w-full md:w-1/3 flex-shrink-0">
                                 <div className="relative aspect-square rounded-[3rem] border bg-gray-900 border-gray-800 p-2 shadow-2xl overflow-hidden group-hover:border-[#CC0000] transition-colors duration-500">
-                                    <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-[2.5rem] opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                                    <img src={getImageSrc(item)} alt={item.title} className="w-full h-full object-cover rounded-[2.5rem] opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
 
                                     {/* Hover Download Overlay */}
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-[2.5rem]">
@@ -158,19 +181,19 @@ const Recursos = () => {
                                     // AHORA conectaremos el click con nuestro servidor real (Node.js)
                                     // Determinar slug para API basado en el ID
                                     let slug = '';
-                                    if (activeItem?.id === 1) {
-                                        slug = 'prompts-ia-marketing';
-                                    } else if (activeItem?.id === 2) {
-                                        slug = 'leads-whatsapp';
-                                    } else if (activeItem?.id === 3) {
-                                        slug = 'crm-template';
-                                    }
+                                    if (activeItem?.orden === 1 || activeItem?.id === 1) slug = 'prompts-ia-marketing';
+                                    else if (activeItem?.orden === 2 || activeItem?.id === 2) slug = 'leads-whatsapp';
+                                    else if (activeItem?.orden === 3 || activeItem?.id === 3) slug = 'crm-template';
+                                    
+                                    if (activeItem?.slug) slug = activeItem.slug; // override from Sanity
 
                                     // DESCARGA DIRECTA (Inmediata para mejor UX)
                                     let fileName = '';
-                                    if (activeItem?.id === 1) fileName = 'prompts-ia.pdf';
-                                    else if (activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
-                                    else if (activeItem?.id === 3) fileName = 'crm-template.xlsx';
+                                    if (activeItem?.orden === 1 || activeItem?.id === 1) fileName = 'prompts-ia.pdf';
+                                    else if (activeItem?.orden === 2 || activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
+                                    else if (activeItem?.orden === 3 || activeItem?.id === 3) fileName = 'crm-template.xlsx';
+
+                                    if (activeItem?.fileName) fileName = activeItem.fileName; // override from Sanity
 
                                     if (fileName) {
                                         const link = document.createElement('a');

@@ -1,0 +1,7 @@
+Fetching Domains under godzillas-projects-fbcf3811
+> 1 Domain found under godzillas-projects-fbcf3811 [167ms]
+ 
+  Domain             Registrar           Nameservers         Expiration Date    Creator                     Age    
+  accrual.com.mx     Third Party         Third Party         -                  godzillaoscar21-7510        11d    
+ 
+

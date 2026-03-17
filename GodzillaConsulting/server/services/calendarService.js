@@ -9,7 +9,11 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
 
         let authConfig;
-        if (process.env.GOOGLE_CREDENTIALS) {
+        if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+            let credsRaw = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('ascii');
+            const credentials = JSON.parse(credsRaw);
+            authConfig = { credentials, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
+        } else if (process.env.GOOGLE_CREDENTIALS) {
             let credsRaw = process.env.GOOGLE_CREDENTIALS;
             const credentials = JSON.parse(credsRaw);
             authConfig = { credentials, scopes: ['https://www.googleapis.com/auth/calendar.events'] };
@@ -79,7 +83,10 @@ export const cancelarEnGoogleCalendar = async (eventId) => {
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
-        if (process.env.GOOGLE_CREDENTIALS) {
+        if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+            const credsRaw = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('ascii');
+            authConfig = { credentials: JSON.parse(credsRaw), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
+        } else if (process.env.GOOGLE_CREDENTIALS) {
             authConfig = { credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         } else {
             const { fileURLToPath } = await import('url');
@@ -106,7 +113,10 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
-        if (process.env.GOOGLE_CREDENTIALS) {
+        if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+            const credsRaw = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('ascii');
+            authConfig = { credentials: JSON.parse(credsRaw), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
+        } else if (process.env.GOOGLE_CREDENTIALS) {
             authConfig = { credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS), scopes: ['https://www.googleapis.com/auth/calendar.events'] };
         } else {
             const { fileURLToPath } = await import('url');

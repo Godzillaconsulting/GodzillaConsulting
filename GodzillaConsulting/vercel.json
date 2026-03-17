@@ -1,22 +1,13 @@
 {
-    "framework": "vite",
-    "outputDirectory": "dist",
-    "installCommand": "npm install && cd api && npm install",
-    "buildCommand": "npm run build",
-    "functions": {
-        "api/index.js": {
-            "maxDuration": 25,
-            "includeFiles": "server/**"
-        }
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/index.js"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ]
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

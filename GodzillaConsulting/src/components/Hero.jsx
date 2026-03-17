@@ -1,5 +1,4 @@
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
 
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from '../assets/Logos/Circle One Logo@2x.png';
@@ -10,7 +9,7 @@ import logoMedhaus from '../assets/Logos/Medhaus Logo@2x.png';
 import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
-import heroVideo from '../assets/Intro_LP_final_Optimized.mp4';
+
 import ColorBends from './ColorBends';
 
 const Hero = () => {

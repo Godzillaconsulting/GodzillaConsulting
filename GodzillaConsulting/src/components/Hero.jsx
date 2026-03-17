@@ -22,7 +22,7 @@ const Hero = () => {
             {/* Background Layer - ColorBends WebGL Canvas */}
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, overflow: 'hidden' }}>
                 <ColorBends
-                  colors={["#ff0000", "#cc0000", "#990000"]}
+                  colors={["#ff5c7a", "#8a5cff", "#00ffd1"]}
                   rotation={-51}
                   speed={0.2}
                   scale={1}

@@ -124,8 +124,6 @@ export default function ColorBends({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
-
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -224,7 +222,7 @@ export default function ColorBends({
         container.removeChild(renderer.domElement);
       }
     };
-  }, []); // Run setup once to fix three.js context losses
+  }, [frequency, mouseInfluence, noise, parallax, scale, speed, transparent, warpStrength]);
 
   useEffect(() => {
     const material = materialRef.current;
@@ -286,9 +284,9 @@ export default function ColorBends({
       pointerTargetRef.current.set(x, y);
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointermove', handlePointerMove);
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointermove', handlePointerMove);
     };
   }, []);
 

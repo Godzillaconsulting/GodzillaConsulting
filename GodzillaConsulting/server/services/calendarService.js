@@ -1,4 +1,4 @@
-/* global process */
+/* global process, Buffer */
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");
@@ -33,11 +33,12 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
         
         const calendar = getCalendar({ version: 'v3', auth: authClient });
         
-        // Ajuste GMT-7 / Chihuahua
-        const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00-07:00`; 
-        const dateObj = new Date(startDateTime);
-        dateObj.setHours(dateObj.getHours() + 1);
-        const endDateTime = dateObj.toISOString();
+        // Usamos formato flotante y delegamos el TimeZone exacto a Google
+        const startDateTime = `${datosCita.fecha}T${datosCita.hora}:00`; 
+        
+        const [h, m] = datosCita.hora.split(':');
+        const endHour = (parseInt(h, 10) + 1).toString().padStart(2, '0');
+        const endDateTime = `${datosCita.fecha}T${endHour}:${m}:00`;
 
         const desc = `Cliente: ${datosCita.nombre}\nServicio: ${datosCita.servicio}\nTel: ${datosCita.telefono}\nCorreo: ${datosCita.correo}\nNotas: ${datosCita.notas || 'Ninguna'}`;
 
@@ -132,10 +133,11 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
         // Obtener el evento original para preservar su título/descripción
         const eventoActual = await calendar.events.get({ calendarId: CALENDAR_ID, eventId: eventId });
         
-        const startDateTime = `${nuevaFecha}T${nuevaHora}:00-07:00`; 
-        const dateObj = new Date(startDateTime);
-        dateObj.setHours(dateObj.getHours() + 1);
-        const endDateTime = dateObj.toISOString();
+        // Usar formato flotante y dejar que 'America/Chihuahua' aplique el offset correcto
+        const startDateTime = `${nuevaFecha}T${nuevaHora}:00`; 
+        const [h, m] = nuevaHora.split(':');
+        const endHour = (parseInt(h, 10) + 1).toString().padStart(2, '0');
+        const endDateTime = `${nuevaFecha}T${endHour}:${m}:00`;
 
         eventoActual.data.start = { dateTime: startDateTime, timeZone: 'America/Chihuahua' };
         eventoActual.data.end = { dateTime: endDateTime, timeZone: 'America/Chihuahua' };

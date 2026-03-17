@@ -205,6 +205,11 @@ export const processWebhookMessage = async (req, res) => {
         // 2.b Iniciar Gemini y generar respuesta
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
+
+        const now = new Date();
+        const sysDate = new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Chihuahua', dateStyle: 'full', timeStyle: 'short' }).format(now);
+        finalSystemPrompt = finalSystemPrompt.replace("## IDENTIDAD Y CONTEXTO", `## FECHA ACTUAL DEL SISTEMA\n¡ATENCIÓN! Hoy es ${sysDate} (Hora de Juárez). Utiliza esta fecha como tu presente absoluto y NUNCA asumas otra.\n\n## IDENTIDAD Y CONTEXTO`);
+
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash",
             systemInstruction: finalSystemPrompt,
@@ -227,13 +232,17 @@ export const processWebhookMessage = async (req, res) => {
                     const { fecha, hora } = call.args;
                     
                     // Guardián de Horario y Días
-                    const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                    const isSunday = dateObj.getDay() === 0;
-                    const hourInt = parseInt(hora.split(':')[0], 10);
                     const now = new Date();
+                    const sysDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chihuahua', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+                    const sysTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Chihuahua', hour: '2-digit', minute: '2-digit' }).format(now);
                     
-                    if (dateObj < now) {
-                        fRes = { disponible: false, razon: "La fecha solicitada es en el pasado. Solicita una fecha futura." };
+                    const safeDateString = `${fecha}T12:00:00`;
+                    const dateObjDay = new Date(safeDateString);
+                    const isSunday = dateObjDay.getDay() === 0;
+                    const hourInt = parseInt(hora.split(':')[0], 10);
+                    
+                    if (fecha < sysDate || (fecha === sysDate && hora <= sysTime)) {
+                        fRes = { disponible: false, razon: `La fecha solicitada es en el pasado (Hoy es ${sysDate} ${sysTime}). Solicita una fecha futura.` };
                         console.log(`[Guardián] Rechazo: Fecha Pasada para ${fecha} a las ${hora}`);
                     } else if (isSunday) {
                         fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
@@ -262,14 +271,18 @@ export const processWebhookMessage = async (req, res) => {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                         
                         // Candado Final (Por si Gemini intentó puentear el check_availability)
-                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                        const isSunday = dateObj.getDay() === 0;
-                        const hourInt = parseInt(hora.split(':')[0], 10);
                         const now = new Date();
+                        const sysDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chihuahua', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+                        const sysTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Chihuahua', hour: '2-digit', minute: '2-digit' }).format(now);
+                        
+                        const safeDateString = `${fecha}T12:00:00`;
+                        const dateObjDay = new Date(safeDateString);
+                        const isSunday = dateObjDay.getDay() === 0;
+                        const hourInt = parseInt(hora.split(':')[0], 10);
 
-                        if (dateObj < now) {
+                        if (fecha < sysDate || (fecha === sysDate && hora <= sysTime)) {
                              console.warn(`⚠️ [Cita Rechazada por Guardián Final]: Fecha pasada ${fecha} ${hora}`);
-                             fRes = { success: false, error: "Intento de agendar en el pasado. Pide otra fecha/hora a futuro." };
+                             fRes = { success: false, error: `Intento de agendar en el pasado (Hoy es ${sysDate} ${sysTime}). Pide otra fecha/hora a futuro.` };
                         } else if (isSunday || hourInt < 9 || hourInt >= 19) {
                              console.warn(`⚠️ [Cita Rechazada por Guardián Final]: ${fecha} ${hora}`);
                              fRes = { success: false, error: "Intento de agendar fuera de horario o en domingo. Pide otra fecha/hora al cliente." };
@@ -385,13 +398,17 @@ export const processWebhookMessage = async (req, res) => {
                             const cita = result.rows[0];
                             
                             // Verificar empalme para la nueva hora
-                            const dateObj = new Date(`${nueva_fecha}T${nueva_hora}:00-07:00`);
-                            const isSunday = dateObj.getDay() === 0;
-                            const hourInt = parseInt(nueva_hora.split(':')[0], 10);
                             const now = new Date();
+                            const sysDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chihuahua', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+                            const sysTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Chihuahua', hour: '2-digit', minute: '2-digit' }).format(now);
+                            
+                            const safeDateString = `${nueva_fecha}T12:00:00`;
+                            const dateObjDay = new Date(safeDateString);
+                            const isSunday = dateObjDay.getDay() === 0;
+                            const hourInt = parseInt(nueva_hora.split(':')[0], 10);
 
-                            if (dateObj < now) {
-                                fRes = { success: false, error: "La nueva fecha/hora ya pasó. Intenta con una fecha futura." };
+                            if (nueva_fecha < sysDate || (nueva_fecha === sysDate && nueva_hora <= sysTime)) {
+                                fRes = { success: false, error: `La nueva fecha/hora ya pasó (Hoy es ${sysDate} ${sysTime}). Intenta con una fecha futura.` };
                             } else if (isSunday || hourInt < 9 || hourInt >= 19) {
                                 fRes = { success: false, error: "El nuevo horario está fuera de horario de oficina o es domingo." };
                             } else {

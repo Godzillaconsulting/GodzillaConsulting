@@ -2,7 +2,8 @@
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+    // Forzando el email del calendario de Oscar
+    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
     
     try {
         // Dynamic import para evitar que Vercel falle al cargar el módulo pesado al iniciar
@@ -50,9 +51,13 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
             colorId: '4',
         };
 
+        // JSON enviado debe estar limpio (Limpieza rigurosa para evitar el error de 'Unterminated string')
+        // JSON.parse(JSON.stringify(event)) removes any undefined or weird properties
+        const cleanEvent = JSON.parse(JSON.stringify(event));
+
         const response = await calendar.events.insert({
             calendarId: CALENDAR_ID, 
-            resource: event,
+            resource: cleanEvent,
         });
 
         console.log("✅ Evento creado en GCalendar! URL: ", response.data.htmlLink);
@@ -80,7 +85,7 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
 
 export const cancelarEnGoogleCalendar = async (eventId) => {
     console.log(`\n=================================\n🗑️  [Google Calendar] Cancelando evento: ${eventId}...`);
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
@@ -110,7 +115,7 @@ export const cancelarEnGoogleCalendar = async (eventId) => {
 
 export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora) => {
     console.log(`\n=================================\n🔄 [Google Calendar] Reagendando evento: ${eventId}...`);
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
@@ -142,7 +147,9 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
         eventoActual.data.start = { dateTime: startDateTime, timeZone: 'America/Chihuahua' };
         eventoActual.data.end = { dateTime: endDateTime, timeZone: 'America/Chihuahua' };
 
-        await calendar.events.update({ calendarId: CALENDAR_ID, eventId: eventId, resource: eventoActual.data });
+        const cleanEvent = JSON.parse(JSON.stringify(eventoActual.data));
+
+        await calendar.events.update({ calendarId: CALENDAR_ID, eventId: eventId, resource: cleanEvent });
         console.log("✅ Evento reagendado en GCalendar.");
         console.log("=================================\n");
         return true;

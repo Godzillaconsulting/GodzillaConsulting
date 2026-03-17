@@ -5,20 +5,25 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const connectionString =
+let connectionString =
     process.env.NODE_ENV === 'development' && process.env.DATABASE_URL_DEV
         ? process.env.DATABASE_URL_DEV
         : process.env.DATABASE_URL;
+
+// Requerido por Meta para conexiones seguras sin certificados autofirmados
+if (connectionString && !connectionString.includes('sslmode=')) {
+    connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=verify-full';
+}
 
 const isNeon = connectionString && connectionString.includes('neon.tech');
 
 const pool = new Pool({
     connectionString,
-    ssl: isNeon ? { rejectUnauthorized: false } : false,
-    // Optimizado para Vercel Serverless + Neon PgBouncer
+    ssl: isNeon ? { rejectUnauthorized: true } : false,
+    // Optimizado para Vercel Serverless + Neon PgBouncer y evitar Timeouts largos
     max: 1,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 30000,
 });
 
 // Verificación de conexión

@@ -36,23 +36,6 @@ module.exports = {
       error_file: "./logs/wa-error.log",
       merge_logs: true,
       time: true
-    },
-    {
-      name: "godzilla-instagram",
-      script: "./start-instagram.js",
-      instances: 1,
-      autorestart: true,
-      restart_delay: 30000,
-      watch: false,
-      max_memory_restart: "600M",
-      env: {
-        NODE_ENV: "production",
-        IS_PM2: "true"
-      },
-      out_file: "./logs/ig-out.log",
-      error_file: "./logs/ig-error.log",
-      merge_logs: true,
-      time: true
     }
   ]
 };

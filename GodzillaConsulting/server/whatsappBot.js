@@ -1,6 +1,8 @@
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
+import qrcodeLib from 'qrcode';
+import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
@@ -98,15 +100,51 @@ export const initWhatsAppBot = () => {
         }
     });
 
+    let currentQR = null;
+
     client.on('qr', (qr) => {
+        currentQR = qr;
         console.log('\n======================================================');
-        console.log('📱 ESCANEA ESTE CÓDIGO QR CON LA APP DE WHATSAPP 📱');
+        console.log('📱 CÓDIGO QR GENERADO. DISPONIBLE EN LA URL WEB Y TERMINAL 📱');
         console.log('======================================================');
         qrcode.generate(qr, { small: true });
     });
 
     client.on('ready', () => {
+        currentQR = null;
         console.log('✅ ZillaBot (WhatsApp Web) está conectado y listo!');
+    });
+
+    // ===============================================
+    // MICRO-SERVIDOR WEB PARA ENVIARLE EL QR AL CLIENTE
+    // ===============================================
+    const qrApp = express();
+    qrApp.get('/qr', async (req, res) => {
+        if (!currentQR) {
+            return res.send(`
+                <h2 style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+                    ✅ El bot ya está conectado, o el QR aún se está generando (Recarga en 5 segundos).
+                </h2>
+            `);
+        }
+        try {
+            const qrImageURL = await qrcodeLib.toDataURL(currentQR);
+            res.send(`
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background: #111; color: white;">
+                    <h1 style="color: #ff0000;">Escanea con WhatsApp</h1>
+                    <p>Abre WhatsApp en tu celular > Dispositivos Vinculados > Vincular un dispositivo</p>
+                    <img src="${qrImageURL}" style="width: 350px; height: 350px; border-radius: 10px; padding: 20px; background: white;" />
+                    <p style="margin-top: 20px; opacity: 0.6;">Godzilla Consulting - Bot Authentication</p>
+                </div>
+            `);
+        } catch (e) {
+            res.status(500).send("Error generando imagen QR: " + e.message);
+        }
+    });
+
+    const QR_PORT = process.env.QR_PORT || 3002;
+    qrApp.listen(QR_PORT, () => {
+        console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${QR_PORT}/qr`);
     });
 
     client.on('message', async (message) => {

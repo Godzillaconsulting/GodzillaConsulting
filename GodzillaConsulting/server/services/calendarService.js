@@ -2,8 +2,8 @@
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");
-    // Forzando el email del calendario de Oscar
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
+    // Forzando el email del calendario de Oscar de forma estricta por sobreescribir la basura de ENV
+    const CALENDAR_ID = 'godzilla.oscar21@gmail.com';
     
     try {
         // Dynamic import para evitar que Vercel falle al cargar el módulo pesado al iniciar
@@ -85,7 +85,7 @@ export const agendarEnGoogleCalendar = async (datosCita) => {
 
 export const cancelarEnGoogleCalendar = async (eventId) => {
     console.log(`\n=================================\n🗑️  [Google Calendar] Cancelando evento: ${eventId}...`);
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
+    const CALENDAR_ID = 'godzilla.oscar21@gmail.com';
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;
@@ -115,7 +115,7 @@ export const cancelarEnGoogleCalendar = async (eventId) => {
 
 export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora) => {
     console.log(`\n=================================\n🔄 [Google Calendar] Reagendando evento: ${eventId}...`);
-    const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'godzilla.oscar21@gmail.com';
+    const CALENDAR_ID = 'godzilla.oscar21@gmail.com';
     try {
         const { calendar: getCalendar } = await import('@googleapis/calendar');
         let authConfig;

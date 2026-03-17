@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build --emptyOutDir",
+    "lint:date-validations": "eslint server/controllers/chatController.js server/services/calendarService.js",
+    "build": "npm run lint:date-validations && vite build --emptyOutDir",
     "lint": "echo 'Linting disabled for Vercel' && exit 0",
     "preview": "vite preview"
   },
@@ -23,17 +24,12 @@
     "express": "^4.22.1",
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.3.1",
-    "firebase-admin": "^13.7.0",
     "google-auth-library": "^10.6.1",
     "helmet": "^8.1.0",
-    "nodemailer": "^8.0.2",
-    "pdfkit": "^0.17.2",
     "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "resend": "^6.9.3",
-    "three": "^0.183.2",
-    "xss-clean": "^0.1.4"
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

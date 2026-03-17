@@ -12,6 +12,21 @@ export const processContactForm = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
         }
 
+        // 🛡️ Capa 1.5: Guardian de Fecha Pasada / Fuera de Horario / Domingo
+        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+        const now = new Date();
+        const isSunday = dateObj.getDay() === 0;
+        const hourInt = parseInt(hora.split(':')[0], 10);
+
+        if (dateObj < now) {
+             console.warn(`⚠️ [Cita Rechazada por Guardián]: Fecha pasada ${fecha} ${hora}`);
+             return res.status(400).json({ success: false, message: 'No es posible agendar en el pasado. Selecciona una fecha válida a futuro.' });
+        } else if (isSunday || hourInt < 9 || hourInt >= 19) {
+             console.warn(`⚠️ [Cita Rechazada por Guardián]: Fuera de horario o Domingo ${fecha} ${hora}`);
+             return res.status(400).json({ success: false, message: 'Intento de agendar fuera de horario o en domingo. El horario de oficina es de 9:00 AM a 7:00 PM.' });
+        }
+
+
         // 🛡️ Capa 2: Bloqueo de Correos Duplicados (Unique Constraint Lógico)
         // Evita que la misma persona agende 10 veces seguidas o envíe basura
         const resEmail = await client.query(

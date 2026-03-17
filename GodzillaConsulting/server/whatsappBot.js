@@ -169,52 +169,88 @@ export const initWhatsAppBot = () => {
                     let fRes = {};
                     if (call.name === "check_availability") {
                         const { fecha, hora } = call.args;
-                        const query = `
-                            SELECT SUM(c) as total FROM (
-                                SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
-                                UNION ALL
-                                SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                                UNION ALL
-                                SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                            ) as sum_tables
-                        `;
-                        const r = await pool.query(query, [fecha, hora]);
-                        fRes = { disponible: parseInt(r.rows[0].total) === 0 };
-                        console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
+                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                        const isSunday = dateObj.getDay() === 0;
+                        const hourInt = parseInt(hora.split(':')[0], 10);
+                        const now = new Date();
+
+                        if (dateObj < now) {
+                            fRes = { disponible: false, razon: "La fecha solicitada es en el pasado. Solicita una fecha futura." };
+                            console.log(`[WA Guardián] Rechazo: Fecha Pasada para ${fecha} a las ${hora}`);
+                        } else if (isSunday) {
+                            fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
+                            console.log(`[WA Guardián] Rechazo: Domingo para ${fecha} a las ${hora}`);
+                        } else if (hourInt < 9 || hourInt >= 19) {
+                            fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
+                            console.log(`[WA Guardián] Rechazo: Fuera de Horario para ${fecha} a las ${hora}`);
+                        } else {
+                            const query = `
+                                SELECT SUM(c) as total FROM (
+                                    SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                    UNION ALL
+                                    SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                ) as sum_tables
+                            `;
+                            const r = await pool.query(query, [fecha, hora]);
+                            fRes = { disponible: parseInt(r.rows[0].total) === 0 };
+                            console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
+                        }
                     } else if (call.name === "save_appointment") {
                         try {
                             const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                             
-                            const queryConflict = `
-                                SELECT SUM(c) as total FROM (
-                                    SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
-                                    UNION ALL
-                                    SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                                    UNION ALL
-                                    SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                                ) as sum_tables
-                            `;
-                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
-                            
-                            if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                 console.warn(`⚠️ [WA Empalme] Intento de agendar ocupado: ${fecha} ${hora}`);
-                                 fRes = { success: false, error: "Horario recién ocupado." };
+                            const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                            const isSunday = dateObj.getDay() === 0;
+                            const hourInt = parseInt(hora.split(':')[0], 10);
+                            const now = new Date();
+
+                            if (dateObj < now) {
+                                 console.warn(`⚠️ [Cita Rechazada por Guardián Final]: Fecha pasada ${fecha} ${hora}`);
+                                 fRes = { success: false, error: "Intento de agendar en el pasado. Pide otra fecha/hora a futuro." };
+                            } else if (isSunday || hourInt < 9 || hourInt >= 19) {
+                                 console.warn(`⚠️ [Cita Rechazada por Guardián Final]: ${fecha} ${hora}`);
+                                 fRes = { success: false, error: "Intento de agendar fuera de horario o en domingo. Pide otra fecha/hora al cliente." };
                             } else {
-                                const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                const queryConflict = `
+                                    SELECT SUM(c) as total FROM (
+                                        SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                        UNION ALL
+                                        SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                        UNION ALL
+                                        SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                    ) as sum_tables
+                                `;
+                                const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
                                 
-                                try {
-                                    const calendarId = await agendarEnGoogleCalendar(datosCita);
+                                if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                     console.warn(`⚠️ [WA Empalme] Intento de agendar ocupado: ${fecha} ${hora}`);
+                                     fRes = { success: false, error: "Horario recién ocupado." };
+                                } else {
+                                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                    let calendarId = null;
                                     
-                                    const r = await pool.query(
-                                        "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status, google_calendar_id) VALUES ($1,$2,$3,$4,'confirmada',$5) RETURNING id",
-                                        [nombre, telefono, fecha, hora, calendarId]
-                                    );
-                                    
-                                    fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB y Calendar." };
-                                    
-                                } catch (calErr) {
-                                    console.error("❌ Fallo Google Calendar WA (NO se guardó en DB):", calErr.message);
-                                    fRes = { success: false, error: "El sistema de agendas de Google rechazó el horario (" + calErr.message + "). Por favor intenta con otra fecha/hora." };
+                                    try {
+                                        calendarId = await agendarEnGoogleCalendar(datosCita);
+                                        
+                                        try {
+                                            const r = await pool.query(
+                                                "INSERT INTO citas_whatsapp (nombre, telefono, fecha_cita, hora, status, google_calendar_id) VALUES ($1,$2,$3,$4,'confirmada',$5) RETURNING id",
+                                                [nombre, telefono, fecha, hora, calendarId]
+                                            );
+                                            fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB y Calendar." };
+                                        } catch (dbErr) {
+                                            console.error("❌ Fallo crítico al guardar en BD (Ejecutando Rollback de Calendar):", dbErr.message);
+                                            if (calendarId) {
+                                                await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error("❌ Fallo en Rollback Calendar:", rollbackErr.message));
+                                            }
+                                            fRes = { success: false, error: "Hubo un error de base de datos tu cita no fue agendada (" + dbErr.message + "). Intenta más tarde." };
+                                        }
+                                    } catch (calErr) {
+                                         console.error("❌ Fallo Google Calendar WA (NO se guardó en DB):", calErr.message);
+                                         fRes = { success: false, error: "El sistema de agendas de Google rechazó el horario (" + calErr.message + "). Por favor intenta con otra fecha/hora." };
+                                    }
                                 }
                             }
                         } catch (waErr) {
@@ -250,26 +286,37 @@ export const initWhatsAppBot = () => {
                                 const cita = result.rows[0];
                                 
                                 // Verificar empalme para la nueva hora
-                                const queryConflict = `
-                                    SELECT SUM(c) as total FROM (
-                                        SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'
-                                        UNION ALL
-                                        SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                                        UNION ALL
-                                        SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND hora=$2 AND status!='cancelada'
-                                    ) as sum_tables
-                                `;
-                                const conflictCheck = await pool.query(queryConflict, [nueva_fecha, nueva_hora]);
-                                
-                                if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                    fRes = { success: false, error: "Ese nuevo horario está ocupado. Intenta con otra fecha/hora." };
+                                const dateObj = new Date(`${nueva_fecha}T${nueva_hora}:00-07:00`);
+                                const isSunday = dateObj.getDay() === 0;
+                                const hourInt = parseInt(nueva_hora.split(':')[0], 10);
+                                const now = new Date();
+
+                                if (dateObj < now) {
+                                    fRes = { success: false, error: "La nueva fecha/hora ya pasó. Intenta con una fecha futura." };
+                                } else if (isSunday || hourInt < 9 || hourInt >= 19) {
+                                    fRes = { success: false, error: "El nuevo horario está fuera de horario de oficina o es domingo." };
                                 } else {
-                                    if (cita.google_calendar_id) {
-                                        await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora);
+                                    const queryConflict = `
+                                        SELECT SUM(c) as total FROM (
+                                            SELECT COUNT(*) as c FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                            UNION ALL
+                                            SELECT COUNT(*) as c FROM citas_whatsapp WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                            UNION ALL
+                                            SELECT COUNT(*) as c FROM citas_facebook_ig WHERE fecha_cita=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'
+                                        ) as sum_tables
+                                    `;
+                                    const conflictCheck = await pool.query(queryConflict, [nueva_fecha, nueva_hora]);
+                                
+                                    if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                        fRes = { success: false, error: "Ese nuevo horario está ocupado. Intenta con otra fecha/hora." };
+                                    } else {
+                                        if (cita.google_calendar_id) {
+                                            await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora);
+                                        }
+                                        await pool.query("UPDATE citas_whatsapp SET fecha_cita = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
+                                        fRes = { success: true, message: "Cita reagendada exitosamente." };
+                                        console.log(`[WA Tool] Cita ${cita.id} reagendada exitosamente.`);
                                     }
-                                    await pool.query("UPDATE citas_whatsapp SET fecha_cita = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
-                                    fRes = { success: true, message: "Cita reagendada exitosamente." };
-                                    console.log(`[WA Tool] Cita ${cita.id} reagendada exitosamente.`);
                                 }
                             }
                         } catch (err) {

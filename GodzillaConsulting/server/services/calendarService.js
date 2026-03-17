@@ -1,3 +1,4 @@
+/* global process */
 export const agendarEnGoogleCalendar = async (datosCita) => {
     console.log("\n=================================");
     console.log("📅 [Google Calendar] Iniciando agendamiento...");

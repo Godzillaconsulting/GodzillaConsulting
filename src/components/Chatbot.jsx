@@ -6,6 +6,7 @@ import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [showTooltip, setShowTooltip] = useState(false);
     const [messages, setMessages] = useState([
         { role: 'model', text: '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' }
     ]);
@@ -14,6 +15,21 @@ const Chatbot = () => {
     const messagesEndRef = useRef(null);
 
     const API_URL = import.meta.env.VITE_API_URL || '';
+
+    useEffect(() => {
+        // Initial delay before showing the tooltip for the first time
+        const initialTimer = setTimeout(() => setShowTooltip(true), 8000);
+
+        // Cycle showing and hiding the tooltip
+        const cycleInterval = setInterval(() => {
+            setShowTooltip(prev => !prev);
+        }, 15000); // Toggle every 15 seconds
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(cycleInterval);
+        };
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,16 +75,24 @@ const Chatbot = () => {
     return (
         <>
             {/* Chatbot Toggle Button */}
-            <div className="fixed bottom-6 right-6 z-50">
-                <motion.button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none bg-[#CC0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
-                    animate={isOpen ? { scale: 1 } : { scale: [1, 1.08, 1] }}
-                    transition={isOpen ? { duration: 0.2 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-                    whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
+                <div
+                    className={`relative mb-4 mr-2 bg-white text-black px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold text-center leading-snug w-max max-w-[220px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
-                    {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}
-                </motion.button>
+                    ¡Hola! Soy Zilla.<br />¿Cómo puedo ayudarte?
+                    <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
+                </div>
+                <div className="relative pointer-events-auto">
+                    <motion.button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none bg-[#CC0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
+                        animate={isOpen ? { scale: 1 } : { scale: [1, 1.08, 1] }}
+                        transition={isOpen ? { duration: 0.2 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                        whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
+                    >
+                        {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}
+                    </motion.button>
+                </div>
             </div>
 
             {/* Chatbot Window */}

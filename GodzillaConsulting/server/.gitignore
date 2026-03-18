@@ -1,9 +1,0 @@
-.env
-node_modules/
-logs/
-*.log
-google-credentials.json
-.vercel
-whatsapp-session/
-.wwebjs_cache/
-.wwebjs_auth/

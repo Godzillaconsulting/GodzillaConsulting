@@ -1,8 +1,0 @@
-Fetching projects in godzillas-projects-fbcf3811
-> Projects found under godzillas-projects-fbcf3811  [648ms]
-
-  Project Name   Latest Production URL                      Updated   Node Version   
-  godzilla-app   https://godzillaconsulting.ai              4m        24.x           
-  server         https://server-omega-three-24.vercel.app   1d        24.x           
-  accrual        https://www.accrual.com.mx                 1d        24.x           
-

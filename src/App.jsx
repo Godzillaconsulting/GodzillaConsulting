@@ -178,7 +178,7 @@ function AppLayout() {
           <Route path="/redes" element={<GestionRedesSociales />} />
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
-          <Route path="/admin" element={<AdminStudio />} />
+          {import.meta.env.DEV && <Route path="/admin" element={<AdminStudio />} />}
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />

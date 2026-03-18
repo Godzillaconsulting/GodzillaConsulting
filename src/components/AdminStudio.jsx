@@ -9,6 +9,13 @@ export default function AdminStudio() {
   const [draftData, setDraftData] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      window.location.href = '/';
+    }
+  }, []);
+
   // Column 1: Nodes (Sections)
   const handleSelectNode = (node) => {
     setSelectedNodeId(node.id);

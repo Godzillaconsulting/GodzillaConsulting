@@ -1,11 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Globe, Settings } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Globe } from 'lucide-react';
 import logo from '../assets/Godzilla Consulting.png';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Login Modal State
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [loginError, setLoginError] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                localStorage.setItem('adminToken', data.token);
+                setShowLoginModal(false);
+                setUsername('');
+                setPassword('');
+                setLoginError(false);
+                navigate('/admin');
+                setIsMobileMenuOpen(false);
+            } else {
+                setLoginError(true);
+            }
+        } catch (err) {
+            console.error(err);
+            setLoginError(true);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -50,9 +85,9 @@ const Navbar = () => {
                                     <Globe size={18} />
                                     ESP
                                 </button>
-                                <Link to="/admin" className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors" title="Godzilla Studio">
-                                    <Settings size={18} />
-                                </Link>
+                                <button onClick={() => setShowLoginModal(true)} className="flex items-center justify-center w-6 h-6 rounded-full transition-all opacity-80 hover:opacity-100 hover:scale-110" title="Acceso al Studio">
+                                    <span className="text-xl filter grayscale hover:grayscale-0">🦖</span>
+                                </button>
                             </div>
                         </nav>
 
@@ -86,13 +121,70 @@ const Navbar = () => {
                             <button className="flex items-center gap-2 text-sm font-semibold hover:text-[#CC0000] transition-colors">
                                 <Globe size={20} /> ESP
                             </button>
-                            <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
-                                <Settings size={20} /> Studio
-                            </Link>
+                            <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors">
+                                <span className="text-xl filter grayscale hover:grayscale-0">🦖</span> Studio
+                            </button>
                         </div>
                     </div>
                 </div>
             </header>
+
+            {/* Login Modal */}
+            {showLoginModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#18181b] border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(204,0,0,0.15)] relative animate-in fade-in zoom-in duration-200">
+                        <button 
+                            onClick={() => {setShowLoginModal(false); setLoginError(false);}}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                        
+                        <div className="flex flex-col items-center mb-8">
+                            <img src={logo} alt="Godzilla" className="h-16 object-contain mb-4" />
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Acceso Restringido</h3>
+                            <p className="text-sm text-gray-400 mt-2">Ingresa credenciales de administrador</p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold tracking-wide uppercase text-gray-400 mb-2">Usuario</label>
+                                <input 
+                                    type="text" 
+                                    value={username}
+                                    onChange={(e) => {setUsername(e.target.value); setLoginError(false);}}
+                                    className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors"
+                                    placeholder="ej. admin"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold tracking-wide uppercase text-gray-400 mb-2">Contraseña</label>
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => {setPassword(e.target.value); setLoginError(false);}}
+                                    className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            
+                            {loginError && (
+                                <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-semibold text-center p-3 rounded-lg mt-2">
+                                    Credenciales incorrectas. Intenta de nuevo.
+                                </div>
+                            )}
+                            
+                            <button 
+                                type="submit"
+                                className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.3)] hover:shadow-[0_0_30px_rgba(204,0,0,0.5)] mt-8"
+                            >
+                                Autorizar Acceso
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

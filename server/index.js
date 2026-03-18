@@ -53,6 +53,15 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Rate limit específico para el Chat (más permisivo)
+const chatLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: process.env.NODE_ENV === 'development' ? 1000 : 50,
+    message: { error: 'Demasiados mensajes: espera un momento.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
 app.use(express.json());
 
@@ -65,7 +74,7 @@ import chatRoutes from './routes/chat.js';
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
-app.use('/api/chat', apiLimiter, chatRoutes);
+app.use('/api/chat', chatLimiter, chatRoutes);
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));

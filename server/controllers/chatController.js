@@ -81,24 +81,36 @@ const chatTools = [
     }
 ];
 
+let genAIInstance = null;
+let generativeModel = null;
+
 export const processChatMessage = async (req, res) => {
     const { messages } = req.body;
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: SYSTEM_PROMPT,
-            tools: [{ functionDeclarations: chatTools }]
-        });
+        if (!genAIInstance) {
+            genAIInstance = new GoogleGenerativeAI(apiKey);
+            generativeModel = genAIInstance.getGenerativeModel({
+                model: "gemini-2.0-flash",
+                systemInstruction: SYSTEM_PROMPT,
+                tools: [{ functionDeclarations: chatTools }]
+            });
+        }
+        const model = generativeModel;
 
         let history = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
             parts: [{ text: m.content || m.text }]
         }));
-        while (history.length > 0 && history[0].role !== "user") history.shift();
+        
+        let validIndex = history.findIndex(m => m.role === "user");
+        if (validIndex === -1) {
+            history = [];
+        } else if (validIndex > 0) {
+            history = history.slice(validIndex);
+        }
 
         const chat = model.startChat({ history });
         const lastMsg = messages[messages.length - 1].content || messages[messages.length - 1].text;
@@ -108,6 +120,8 @@ export const processChatMessage = async (req, res) => {
 
         const functionCalls = result.response.functionCalls();
         if (functionCalls && functionCalls.length > 0) {
+            const functionResponses = [];
+            
             for (const call of functionCalls) {
                 let fRes = {};
                 if (call.name === "check_availability") {
@@ -125,9 +139,16 @@ export const processChatMessage = async (req, res) => {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
                 }
-                result = await chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]);
-                responseText = result.response.text();
+                functionResponses.push({
+                    functionResponse: {
+                        name: call.name,
+                        response: fRes
+                    }
+                });
             }
+            
+            result = await chat.sendMessage(functionResponses);
+            responseText = result.response.text();
         }
         res.status(200).json({ reply: responseText });
     } catch (e) {

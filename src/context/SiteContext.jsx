@@ -10,7 +10,7 @@ export function SiteProvider({ children }) {
   const fetchNodes = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/nodes');
+      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes'); // Adaptativo para no crashear en Vercel
       const data = await res.json();
       setNodes(data);
     } catch (err) {

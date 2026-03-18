@@ -15,7 +15,10 @@ import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 const Hero = () => {
     const { getNodeData } = useSiteData();
     const data = getNodeData('hero') || {};
-    const title = data.title || "Construyamos juntos el legado de tu negocio";
+    // Sobrescribimos la data para forzar este copy maestro y evitar el "Hero" default
+    const overline = "Sistemas de crecimiento para negocios en la frontera";
+    const title = "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
+    const subtitle = "El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.";
     const ctaText = data.ctaText || "Ver planes y garantías";
     const ctaLink = data.ctaLink || "#paquetes";
     const logos = [
@@ -28,13 +31,23 @@ const Hero = () => {
             {/* Content Layer */}
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
 
+                {/* Pre-title / Overline */}
+                <span className="text-xs md:text-sm font-bold text-[#CC0000] tracking-[0.3em] uppercase mb-4 drop-shadow-md pointer-events-auto">
+                    {overline}
+                </span>
+
                 {/* Main Headline */}
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-4xl drop-shadow-2xl pointer-events-auto">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-5xl drop-shadow-2xl pointer-events-auto">
                     {title}
                 </h1>
 
-                {/* Subtitle / CTA Area */}
-                <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center pointer-events-auto">
+                {/* Subtitle / Description */}
+                <p className="text-lg md:text-xl text-gray-300 font-medium max-w-3xl mb-12 leading-relaxed pointer-events-auto drop-shadow-lg">
+                    El único sistema de marketing que instala un "Recepcionista Digital" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. <span className="text-white font-bold">Si no cumplimos, no pagas.</span>
+                </p>
+
+                {/* CTA Area */}
+                <div className="mt-4 relative w-full flex justify-center items-center pointer-events-auto">
                     <a href={ctaLink} className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
                         <span className="relative">{ctaText}</span>
                     </a>

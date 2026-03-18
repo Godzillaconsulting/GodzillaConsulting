@@ -1,40 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import ContactForm from './ContactForm';
 import { Link, useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
-import { client } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 import backgroundVideo from '../assets/Particulas Rojas LANDINGS.mp4';
 
 const LandingPaqueteDynamic = () => {
     const { slug } = useParams();
-    const [content, setContent] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { getNodeData } = useSiteData();
+
+    // Map incoming URL slug to Local Node IDs
+    const slugLower = slug ? slug.toLowerCase() : '';
+    let nodeId = '';
+    if (slugLower.includes('posicionamiento')) nodeId = 'paquete-posicionamiento-social';
+    else if (slugLower.includes('control')) nodeId = 'paquete-control-ia';
+    else if (slugLower.includes('expansion')) nodeId = 'paquete-expansion';
+    else if (slugLower.includes('elite')) nodeId = 'paquete-elite';
+    else nodeId = 'paquete-' + slugLower;
+
+    const contentData = getNodeData(nodeId);
+    const content = contentData?.heroTitle ? contentData : null;
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        setLoading(true);
-
-        // Fetch content from Sanity using the slug from the URL
-        client.fetch(`*[_type == "landingPaquete" && lower(slug.current) == lower($slug)][0]{..., "videoFileUrl": videoFile.asset->url}`, { slug })
-            .then((data) => {
-                if (data) {
-                    setContent(data);
-                } else {
-                    setContent(null);
-                }
-            })
-            .catch(err => console.error("Error fetching paquete content:", err))
-            .finally(() => setLoading(false));
     }, [slug]);
 
     // Helper para procesar texto rico o tags primitivos y retornos de carro
     const renderHTML = (rawHTML) => {
         return { __html: (rawHTML || '').replace(/\n/g, '<br />') };
     };
-
-    if (loading) {
-        return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold animate-pulse">Cargando paquete...</div></div>;
-    }
 
     if (!content) {
         return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold">Paquete no encontrado</div></div>;

@@ -1,4 +1,5 @@
 import pool from '../config/db.js';
+import { agendarEnGoogleCalendar } from '../services/calendarService.js';
 
 export const processContactForm = async (req, res) => {
     const client = await pool.connect();
@@ -11,12 +12,24 @@ export const processContactForm = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
         }
 
-        console.log("🛠️ Insertando en DB...");
-        // Insert into citas table (match the real Neon structure)
+        console.log("🛠️ Interfaz Google Calendar (Ejecutando)...");
+        const notasForm = req.body.notas || '';
+        await agendarEnGoogleCalendar({
+            nombre: nombre.trim(),
+            correo: email.trim().toLowerCase(),
+            telefono: telefono.trim(),
+            servicio: preferencia_sesion,
+            fecha,
+            hora,
+            notas: notasForm
+        });
+
+        console.log("🛠️ Insertando en DB (Éxito GCal confirmado)...");
+        // Insert into citas table
         const result = await client.query(
-            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-            [nombre.trim(), email.trim().toLowerCase(), telefono.trim(), preferencia_sesion, fecha, hora]
+            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada') RETURNING id`,
+            [nombre.trim(), email.trim().toLowerCase(), telefono.trim(), preferencia_sesion, fecha, hora, notasForm]
         );
 
         console.log("✅ Cita guardada con ID:", result.rows[0].id);

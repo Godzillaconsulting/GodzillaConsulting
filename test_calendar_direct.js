@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-dotenv.config();
-import { agendarEnGoogleCalendar } from './GodzillaConsulting/server/services/calendarService.js';
+dotenv.config({ path: './server/.env' });
+import { agendarEnGoogleCalendar } from './server/services/calendarService.js';
 
 async function testCalendar() {
     console.log("Probando inserción en Google Calendar...");

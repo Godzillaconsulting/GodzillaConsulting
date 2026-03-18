@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
+import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -130,11 +131,21 @@ export const processChatMessage = async (req, res) => {
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                    const r = await pool.query(
-                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                        [nombre, correo, telefono, servicio, fecha, hora, notas]
-                    );
-                    fRes = { success: true, id: r.rows[0].id };
+                    try {
+                        const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                        if (googleRes) {
+                            const r = await pool.query(
+                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                [nombre, correo, telefono, servicio, fecha, hora, notas]
+                            );
+                            fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
+                        } else {
+                            fRes = { success: false, error: 'Fallo al sincronizar con Google Calendar' };
+                        }
+                    } catch (err) {
+                        console.error('Error insertando cita (Promise Chain):', err.message);
+                        fRes = { success: false, error: 'Fallo crítico al agendar cita: ' + err.message };
+                    }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };

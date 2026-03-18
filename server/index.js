@@ -71,22 +71,25 @@ app.use(express.json());
 
 import chatRoutes from './routes/chat.js';
 import nodesRoutes from './routes/nodes.js';
+import webhookRoutes from './routes/webhook.js';
 
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
 app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
+app.use('/api/webhook', webhookRoutes);
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 
 
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+if (!process.env.VERCEL) {
     app.listen(port, () => {
         console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
         console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);

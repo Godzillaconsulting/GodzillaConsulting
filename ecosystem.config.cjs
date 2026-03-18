@@ -4,8 +4,9 @@ module.exports = {
       name: "godzilla-bot-redes",
       script: "./index.js",
       cwd: "./server",
-      instances: "max",
-      exec_mode: "cluster",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "1G",
       watch: false,
       env: {
         NODE_ENV: "development",
@@ -17,10 +18,19 @@ module.exports = {
       }
     },
     {
-      name: "cloudflare-tunnel",
-      script: "C:\\Users\\JareG\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe\\cloudflared.exe",
-      args: "tunnel --url http://localhost:3000",
-      watch: false,
+      name: "ha-tunnel-monitor",
+      script: "./tunnel_monitor.cjs",
+      watch: false
+    },
+    {
+      name: "ha-health-check",
+      script: "./health_check.cjs",
+      watch: false
+    },
+    {
+      name: "ha-log-cleaner",
+      script: "./log_cleaner.cjs",
+      watch: false
     }
   ]
 };

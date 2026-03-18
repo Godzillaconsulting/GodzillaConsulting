@@ -14,16 +14,30 @@ const Navbar = () => {
     const [loginError, setLoginError] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (username === 'admin' && password === 'Godzilla2026') {
-            setShowLoginModal(false);
-            setUsername('');
-            setPassword('');
-            setLoginError(false);
-            navigate('/admin');
-            setIsMobileMenuOpen(false);
-        } else {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                localStorage.setItem('adminToken', data.token);
+                setShowLoginModal(false);
+                setUsername('');
+                setPassword('');
+                setLoginError(false);
+                navigate('/admin');
+                setIsMobileMenuOpen(false);
+            } else {
+                setLoginError(true);
+            }
+        } catch (err) {
+            console.error(err);
             setLoginError(true);
         }
     };

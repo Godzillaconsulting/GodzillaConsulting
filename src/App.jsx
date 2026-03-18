@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import React, { useState, useEffect, memo } from 'react';
 import ColorBends from './components/ColorBends';
+import AdminStudio from './components/AdminStudio';
+import { SiteProvider } from './context/SiteContext';
 
 // Constantes globales inmutables para no forzar re-renders del fondo animado
 const COLOR_BENDS_PROPS = {
@@ -154,7 +156,7 @@ function Home() {
 
 function AppLayout() {
   const { pathname } = useLocation();
-  const hideChrome = ['/login', '/dashboard'].includes(pathname);
+  const hideChrome = ['/login', '/dashboard', '/admin'].includes(pathname);
 
   return (
     <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">
@@ -180,6 +182,7 @@ function AppLayout() {
           <Route path="/nivel-esencial" element={<NivelEsencial />} />
           <Route path="/nivel-expansion" element={<NivelExpansion />} />
           <Route path="/nivel-elite" element={<NivelElite />} />
+          <Route path="/admin" element={<AdminStudio />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -199,12 +202,14 @@ function AppLayout() {
 
 function App() {
   return (
-    <Router>
-      <ScrollToHash />
-      <ScrollToTop />
-      <PixelTracker />
-      <AppLayout />
-    </Router>
+    <SiteProvider>
+      <Router>
+        <ScrollToHash />
+        <ScrollToTop />
+        <PixelTracker />
+        <AppLayout />
+      </Router>
+    </SiteProvider>
   );
 }
 

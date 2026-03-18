@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSiteData } from '../context/SiteContext';
 import { MessageCircle } from 'lucide-react';
 
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
@@ -12,6 +13,11 @@ import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 
 const Hero = () => {
+    const { getNodeData } = useSiteData();
+    const data = getNodeData('hero') || {};
+    const title = data.title || "Construyamos juntos el legado de tu negocio";
+    const ctaText = data.ctaText || "Ver planes y garantías";
+    const ctaLink = data.ctaLink || "#paquetes";
     const logos = [
         logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker,
         logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika
@@ -24,13 +30,13 @@ const Hero = () => {
 
                 {/* Main Headline */}
                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-4xl drop-shadow-2xl pointer-events-auto">
-                    Construyamos juntos el legado de tu negocio
+                    {title}
                 </h1>
 
                 {/* Subtitle / CTA Area */}
                 <div className="mt-16 md:mt-24 relative w-full flex justify-center items-center pointer-events-auto">
-                    <a href="#paquetes" className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
-                        <span className="relative">Ver planes y garantías</span>
+                    <a href={ctaLink} className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
+                        <span className="relative">{ctaText}</span>
                     </a>
                 </div>
 

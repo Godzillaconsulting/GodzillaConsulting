@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, Settings } from 'lucide-react';
 import logo from '../assets/Godzilla Consulting.png';
 
 const Navbar = () => {
@@ -50,6 +50,9 @@ const Navbar = () => {
                                     <Globe size={18} />
                                     ESP
                                 </button>
+                                <Link to="/admin" className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors" title="Godzilla Studio">
+                                    <Settings size={18} />
+                                </Link>
                             </div>
                         </nav>
 
@@ -83,6 +86,9 @@ const Navbar = () => {
                             <button className="flex items-center gap-2 text-sm font-semibold hover:text-[#CC0000] transition-colors">
                                 <Globe size={20} /> ESP
                             </button>
+                            <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                                <Settings size={20} /> Studio
+                            </Link>
                         </div>
                     </div>
                 </div>

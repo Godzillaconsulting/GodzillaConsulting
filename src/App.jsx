@@ -46,9 +46,6 @@ import EmbudosDeVenta from './components/EmbudosDeVenta';
 import GestionRedesSociales from './components/GestionRedesSociales';
 import OptimizacionWebSeo from './components/OptimizacionWebSeo';
 import CrmSaas from './components/CrmSaas';
-import NivelEsencial from './components/NivelEsencial';
-import NivelExpansion from './components/NivelExpansion';
-import NivelElite from './components/NivelElite';
 import LandingPaqueteDynamic from './components/LandingPaqueteDynamic';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -84,17 +81,19 @@ function ScrollToTop() {
 
 function PixelTracker() {
   const { pathname } = useLocation();
-  const [initialized, setInitialized] = useState(false);
+  const isFirstRender = React.useRef(true);
 
   useEffect(() => {
-    if (!initialized) {
-      setInitialized(true);
+    if (isFirstRender.current) {
+      // El index.html ya mandó el primer PageView, así que lo omitimos
+      isFirstRender.current = false;
       return;
     }
+    // Solo registrará los cambios de ruta reales (SPA)
     if (window.fbq) {
       window.fbq('track', 'PageView');
     }
-  }, [pathname, initialized]);
+  }, [pathname]);
 
   return null;
 }
@@ -179,9 +178,6 @@ function AppLayout() {
           <Route path="/redes" element={<GestionRedesSociales />} />
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
-          <Route path="/nivel-esencial" element={<NivelEsencial />} />
-          <Route path="/nivel-expansion" element={<NivelExpansion />} />
-          <Route path="/nivel-elite" element={<NivelElite />} />
           <Route path="/admin" element={<AdminStudio />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />

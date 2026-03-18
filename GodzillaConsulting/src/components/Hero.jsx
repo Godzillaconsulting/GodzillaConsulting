@@ -9,7 +9,6 @@ import logoMedhaus from '../assets/Logos/Medhaus Logo@2x.png';
 import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
-import ColorBends from './ColorBends';
 
 const Hero = () => {
     const logos = [
@@ -17,25 +16,7 @@ const Hero = () => {
         logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika
     ];
     return (
-        <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-[#111111]">
-
-            {/* Background Layer - ColorBends WebGL Canvas */}
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, overflow: 'hidden' }}>
-                <ColorBends
-                  colors={["#ff0000", "#cc0000", "#990000"]}
-                  rotation={-51}
-                  speed={0.2}
-                  scale={1}
-                  frequency={1}
-                  warpStrength={1}
-                  mouseInfluence={1}
-                  parallax={0.5}
-                  noise={0.1}
-                  transparent
-                  autoRotate={-5}
-                  color="#ff0000"
-                />
-            </div>
+        <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-transparent">
 
             {/* Content Layer */}
             <div style={{ position: 'relative', zIndex: 2 }} className="container mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">

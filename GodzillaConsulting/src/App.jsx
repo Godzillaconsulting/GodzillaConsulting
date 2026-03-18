@@ -1,5 +1,29 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
+import ColorBends from './components/ColorBends';
+
+// Constantes globales inmutables para no forzar re-renders del fondo animado
+const COLOR_BENDS_PROPS = {
+  colors: ["#ff0000", "#cc0000", "#990000"],
+  rotation: -51,
+  speed: 0.2,
+  scale: 1,
+  frequency: 1,
+  warpStrength: 1,
+  mouseInfluence: 1,
+  parallax: 0.5,
+  noise: 0.1,
+  transparent: true,
+  autoRotate: -5,
+  color: "#ff0000"
+};
+
+// Layout fijo aislado (React.memo blinda contra renders del Router)
+const PersistentBackground = memo(() => (
+  <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}>
+    <ColorBends {...COLOR_BENDS_PROPS} />
+  </div>
+));
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Cultura from './components/Cultura';
@@ -133,9 +157,15 @@ function AppLayout() {
   const hideChrome = ['/login', '/dashboard'].includes(pathname);
 
   return (
-    <div className="font-sans text-white bg-brand-black min-h-screen flex flex-col">
-      {!hideChrome && <Navbar />}
-      <div className="flex-grow">
+    <div className="font-sans text-white bg-brand-black min-h-screen flex flex-col relative">
+      <PersistentBackground />
+      
+      {/* Wrapper transparente para eventos del mouse */}
+      <div className="relative z-10 flex flex-col flex-grow pointer-events-none">
+        <div className="pointer-events-auto">
+          {!hideChrome && <Navbar />}
+        </div>
+        <div className="flex-grow pointer-events-auto">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/terminos" element={<TerminosYCondiciones />} />
@@ -157,10 +187,12 @@ function AppLayout() {
         </Routes>
       </div>
 
-      <Chatbot />
-      <FloatingWhatsApp />
-
-      {!hideChrome && <Footer />}
+        <div className="pointer-events-auto">
+          <Chatbot />
+          <FloatingWhatsApp />
+          {!hideChrome && <Footer />}
+        </div>
+      </div>
     </div>
   );
 }

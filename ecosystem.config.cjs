@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "godzilla-bot-redes",
       script: "./index.js",
-      cwd: "./GodzillaConsulting/server",
+      cwd: "./server",
       instances: "max",
       exec_mode: "cluster",
       watch: false,

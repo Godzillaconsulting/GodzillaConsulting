@@ -20,7 +20,7 @@ const COLOR_BENDS_PROPS = {
 
 // Layout fijo aislado (React.memo blinda contra renders del Router)
 const PersistentBackground = memo(() => (
-  <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}>
+  <div className="bg-brand-black" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, overflow: 'hidden' }}>
     <ColorBends {...COLOR_BENDS_PROPS} />
   </div>
 ));
@@ -157,7 +157,7 @@ function AppLayout() {
   const hideChrome = ['/login', '/dashboard'].includes(pathname);
 
   return (
-    <div className="font-sans text-white bg-brand-black min-h-screen flex flex-col relative">
+    <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">
       <PersistentBackground />
       
       {/* Wrapper transparente para eventos del mouse */}

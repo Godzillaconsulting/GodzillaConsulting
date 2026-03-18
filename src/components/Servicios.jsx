@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { client, urlFor } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 import bgVideo from '../assets/Particulas Rojas.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
@@ -20,29 +20,18 @@ const defaultServices = [
 ];
 
 const Servicios = () => {
+    const { getNodeData } = useSiteData();
     const [activeIdx, setActiveIdx] = useState(0);
-    const [services, setServices] = useState(defaultServices);
-
-    useEffect(() => {
-        client
-            .fetch(`*[_type == "servicio"] | order(orden asc)`)
-            .then((data) => {
-                if (data && data.length > 0) {
-                    setServices(data);
-                }
-            })
-            .catch((error) => console.error('Error cargando servicios de Sanity:', error));
-    }, []);
+    
+    const nodeData = getNodeData('servicios') || {};
+    const services = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultServices;
 
     // Obtiene la URL del ícono: desde Sanity o desde el asset local
     const getIconSrc = (srv) => {
-        // 1. Si viene de Sanity con imagen cargada
-        if (srv.icono) return urlFor(srv.icono).width(256).height(256).url();
-
-        // 2. Si es un objeto local (default) ya trae iconSrc
+        // 1. Si viene de BD Local con iconSrc
         if (srv.iconSrc) return srv.iconSrc;
 
-        // 3. Fallback inteligente: buscar en defaults usando slug o palabras clave del título
+        // Fallback inteligente para íconos
         const slug = srv.id?.current || '';
         const title = srv.title || '';
 

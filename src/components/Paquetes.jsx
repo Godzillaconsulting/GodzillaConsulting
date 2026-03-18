@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { client } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 
 import godzillaHover from '../assets/images/Godzilla-Holding.png';
 
@@ -62,7 +63,10 @@ const Paquetes = () => {
         }
     ];
 
-    const [packages, setPackages] = useState(defaultPackages);
+    const { getNodeData } = useSiteData();
+    const nodeData = getNodeData('paquetes') || {};
+    const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
+
     const scrollContainerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
@@ -74,25 +78,9 @@ const Paquetes = () => {
     const checkScroll = () => {
         if (!scrollContainerRef.current) return;
         const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-        // Permite un margen de error de un par de pixeles para distintos dispositivos
         setShowLeftArrow(scrollLeft > 2);
         setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2);
     };
-
-    useEffect(() => {
-        // Consultar el tipo de documento "paquete" desde Sanity
-        client.fetch(`*[_type == "paquete"] | order(id asc)`)
-            .then((data) => {
-                if (data && data.length > 0) {
-                    const finalData = data.map((pkg) => ({
-                        ...pkg,
-                        highlighted: pkg.id === 3
-                    }));
-                    setPackages(finalData);
-                }
-            })
-            .catch((error) => console.error("Error cargando paquetes de Sanity:", error));
-    }, []);
 
     useEffect(() => {
         checkScroll();

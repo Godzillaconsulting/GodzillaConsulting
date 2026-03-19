@@ -23,13 +23,16 @@
     "form-data": "^4.0.5",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "nodemailer": "^8.0.2",
+
     "pdfkit": "^0.17.2",
     "pg": "^8.20.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "resend": "^6.9.3",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "uuid": "^11.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

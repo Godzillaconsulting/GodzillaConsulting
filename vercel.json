@@ -16,15 +16,14 @@
             }
         }
     ],
-    "routes": [
-        { "handle": "filesystem" },
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "/server/index.js"
+            "source": "/api/:path*",
+            "destination": "/server/index.js"
         },
         {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "source": "/:path*",
+            "destination": "/index.html"
         }
     ]
 }

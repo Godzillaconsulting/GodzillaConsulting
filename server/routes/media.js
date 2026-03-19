@@ -8,13 +8,15 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
 
-// ─── Directorios de subida ───────────────────────────────────────────────────
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-const IMAGES_DIR  = path.join(UPLOADS_DIR, 'images');
-const VIDEOS_DIR  = path.join(UPLOADS_DIR, 'videos');
+// ─── Vercel usa /tmp (único dir writable), local usa ./server/uploads ────────
+const IS_VERCEL = !!process.env.VERCEL;
+const UPLOADS_BASE = IS_VERCEL ? '/tmp/uploads' : path.join(__dirname, '..', 'uploads');
+const UPLOADS_DIR  = UPLOADS_BASE;
+const IMAGES_DIR   = path.join(UPLOADS_DIR, 'images');
+const VIDEOS_DIR   = path.join(UPLOADS_DIR, 'videos');
 
 [UPLOADS_DIR, IMAGES_DIR, VIDEOS_DIR].forEach(dir => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); } catch {}
 });
 
 // ─── Multer: guardado inteligente por tipo ───────────────────────────────────

@@ -111,10 +111,19 @@ function ScaledSection({ nodeId }) {
           userSelect: 'none',
         }}
       >
-        {content}
+        {/* Fondo oscuro que simula el App background (para secciones con bg-transparent como Hero) */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #0a0a0a 0%, #110000 40%, #0a0a0a 100%)',
+            minHeight: '100vh',
+          }}
+        >
+          {content}
+        </div>
       </div>
     </div>
   );
+
 }
 
 export default function StudioPreview({ nodeId, draftData }) {

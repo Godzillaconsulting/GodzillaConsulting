@@ -1,6 +1,11 @@
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '../.env') });
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
@@ -83,3 +88,45 @@ export const agendarEnGoogleCalendar = async (datos) => {
         throw error;
     }
 };
+
+/**
+ * Cancela (elimina) un evento de Google Calendar por su ID.
+ */
+export const cancelarEnGoogleCalendar = async (eventId) => {
+    try {
+        const calendar = getCalendarClient();
+        const calendarId = process.env.GOOGLE_CALENDAR_ID;
+        await calendar.events.delete({ calendarId, eventId });
+        console.log(`[Google Calendar] ✅ Evento ${eventId} eliminado.`);
+    } catch (error) {
+        console.error('[Google Calendar] ❌ Error al cancelar evento:', error.message);
+        throw error;
+    }
+};
+
+/**
+ * Actualiza la fecha y hora de un evento en Google Calendar.
+ */
+export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora) => {
+    try {
+        const calendar = getCalendarClient();
+        const calendarId = process.env.GOOGLE_CALENDAR_ID;
+
+        const startDateTime = new Date(`${nuevaFecha}T${nuevaHora}:00-06:00`);
+        const endDateTime   = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+
+        await calendar.events.patch({
+            calendarId,
+            eventId,
+            resource: {
+                start: { dateTime: startDateTime.toISOString(), timeZone: 'America/Ciudad_Juarez' },
+                end:   { dateTime: endDateTime.toISOString(),   timeZone: 'America/Ciudad_Juarez' },
+            },
+        });
+        console.log(`[Google Calendar] ✅ Evento ${eventId} actualizado a ${nuevaFecha} ${nuevaHora}.`);
+    } catch (error) {
+        console.error('[Google Calendar] ❌ Error al actualizar evento:', error.message);
+        throw error;
+    }
+};
+

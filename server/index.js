@@ -88,6 +88,17 @@ app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 
+// Diagnóstico de variables de entorno (sin exponer valores)
+app.get('/api/env-check', (req, res) => {
+    const vars = ['GEMINI_API_KEY','PAGE_ACCESS_TOKEN','WP_ACCESS_TOKEN','MY_VERIFY_TOKEN',
+                  'GOOGLE_CALENDAR_ID','GOOGLE_CLIENT_EMAIL','GOOGLE_PRIVATE_KEY','DATABASE_URL'];
+    const result = {};
+    for (const v of vars) {
+        result[v] = process.env[v] ? `✅ (${process.env[v].length} chars)` : '❌ FALTANTE';
+    }
+    res.json({ env: result, node_env: process.env.NODE_ENV, vercel: !!process.env.VERCEL });
+});
+
 
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)
@@ -96,6 +107,15 @@ if (!process.env.VERCEL) {
     app.listen(port, () => {
         console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
         console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
+    });
+
+    // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo servidor local
+    // Usa Puppeteer/Chrome para mantener sesión aktiva 24/7
+    import('./whatsappBot.js').then(({ initWhatsAppBot }) => {
+        initWhatsAppBot();
+        console.log('📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr');
+    }).catch(err => {
+        console.error('❌ [WhatsApp] Error al iniciar bot:', err.message);
     });
 }
 

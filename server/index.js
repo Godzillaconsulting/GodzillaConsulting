@@ -69,6 +69,15 @@ const chatLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Rate limit para auth (login): 30 intentos por 15 min
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 30,
+    message: { error: 'Demasiados intentos de login: espera 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
 app.use(express.json());
 
@@ -87,7 +96,7 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
-app.use('/api/auth', apiLimiter, authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/media', mediaRoutes);
 
 // Servir archivos subidos como estáticos en /media/*

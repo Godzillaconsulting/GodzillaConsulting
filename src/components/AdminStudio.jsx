@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSiteData } from '../context/SiteContext';
+
+// Orden de secciones tal como aparecen en el sitio web (de arriba hacia abajo)
+const PAGE_SECTION_ORDER = [
+  { id: 'hero',                         label: 'Hero',                    emoji: '🦖' },
+  { id: 'servicios',                    label: 'Servicios',               emoji: '⚡' },
+  { id: 'cultura',                      label: 'Cultura',                 emoji: '🏢' },
+  { id: 'casos',                        label: 'Casos de Éxito',          emoji: '🏆' },
+  { id: 'recursos',                     label: 'Recursos',                emoji: '📚' },
+  { id: 'paquete-posicionamiento-social', label: 'Landing: Posicionamiento', emoji: '📣' },
+  { id: 'paquete-expansion',            label: 'Landing: Expansión',      emoji: '🚀' },
+  { id: 'paquete-control-ia',           label: 'Landing: Control IA',     emoji: '🤖' },
+  { id: 'paquete-elite',               label: 'Landing: Élite',           emoji: '👑' },
+  { id: 'footer',                       label: 'Footer',                  emoji: '📌' },
+];
 
 export default function AdminStudio() {
   const { nodes, fetchNodes } = useSiteData();
@@ -8,6 +22,7 @@ export default function AdminStudio() {
   const [selectedFeatureExtendedIndex, setSelectedFeatureExtendedIndex] = useState(null);
   const [draftData, setDraftData] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showPublishPreview, setShowPublishPreview] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -45,14 +60,18 @@ export default function AdminStudio() {
 
   const handlePublish = async () => {
     if (!selectedNodeId) return;
+    // Primero mostrar la previsualización
+    setShowPublishPreview(true);
+  };
+
+  const handleConfirmPublish = async () => {
     try {
-      if (confirm('¿Estás seguro que deseas publicar estos cambios en la web en vivo?')) {
-        await fetch(`http://localhost:3000/api/nodes/${selectedNodeId}/publish`, {
-          method: 'POST'
-        });
-        await fetchNodes(); // Refresh
-        alert('Web publicada con éxito!');
-      }
+      await fetch(`http://localhost:3000/api/nodes/${selectedNodeId}/publish`, {
+        method: 'POST'
+      });
+      await fetchNodes();
+      setShowPublishPreview(false);
+      alert('✅ Web publicada con éxito!');
     } catch (err) {
       console.error(err);
       alert('Error publicando la web');
@@ -96,23 +115,57 @@ export default function AdminStudio() {
   const activeElement = selectedElementIndex !== null ? draftData?.elements?.[selectedElementIndex] : null;
   const activeFeatureExtended = selectedFeatureExtendedIndex !== null ? draftData?.planFeaturesExtended?.[selectedFeatureExtendedIndex] : null;
 
+  // Ordena los nodos según el orden del sitio web
+  const sortedNodes = [...nodes].sort((a, b) => {
+    const ai = PAGE_SECTION_ORDER.findIndex(s => s.id === a.id);
+    const bi = PAGE_SECTION_ORDER.findIndex(s => s.id === b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
   return (
     <div className="flex h-screen bg-neutral-900 text-white w-full z-50 fixed inset-0 font-sans">
       
-      {/* COLUMNA 1: Secciones (Nodos) */}
-      <div className="w-1/4 border-r border-neutral-700 p-6 overflow-y-auto">
-        <h2 className="text-2xl font-black mb-6 text-[#CC0000]">Godzilla Studio</h2>
-        <p className="text-sm text-gray-400 mb-4">Selecciona la sección a editar:</p>
-        <div className="flex flex-col gap-3">
-          {nodes.map(node => (
-            <button
-              key={node.id}
-              onClick={() => handleSelectNode(node)}
-              className={`p-4 text-left rounded-xl transition-all shadow-md ${selectedNodeId === node.id ? 'bg-[#CC0000] text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-gray-200'}`}
-            >
-              <span className="font-bold block capitalize text-lg">{node.id.replace('paquete-', 'Landing: ')}</span>
-            </button>
-          ))}
+      {/* COLUMNA 1: Secciones ordenadas como la página */}
+      <div className="w-[200px] min-w-[200px] border-r border-neutral-700 p-4 overflow-y-auto flex flex-col">
+        <h2 className="text-xl font-black mb-1 text-[#CC0000]">Godzilla Studio</h2>
+        <p className="text-xs text-gray-500 mb-4">↕ Orden del sitio web</p>
+        <div className="flex flex-col gap-2">
+          {sortedNodes.map((node, index) => {
+            const meta = PAGE_SECTION_ORDER.find(s => s.id === node.id);
+            const label = meta?.label || node.id.replace('paquete-', 'Landing: ');
+            const emoji = meta?.emoji || '📄';
+            const isSelected = selectedNodeId === node.id;
+            return (
+              <button
+                key={node.id}
+                onClick={() => handleSelectNode(node)}
+                className={`p-3 text-left rounded-xl transition-all shadow-md flex items-center gap-2 group ${
+                  isSelected
+                    ? 'bg-[#CC0000] text-white shadow-[0_4px_12px_rgba(204,0,0,0.35)]'
+                    : 'bg-neutral-800 hover:bg-neutral-700 text-gray-300'
+                }`}
+              >
+                <span className="text-base shrink-0">{emoji}</span>
+                <div className="min-w-0">
+                  <span className="font-bold block text-sm leading-tight truncate">{label}</span>
+                  <span className={`text-[10px] ${isSelected ? 'text-red-200' : 'text-neutral-500'}`}>Sección {index + 1}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Botón de cerrar sesión abajo del todo */}
+        <div className="mt-auto pt-4 border-t border-neutral-700">
+          <button
+            onClick={() => { localStorage.removeItem('adminToken'); window.location.href = '/'; }}
+            className="w-full p-2 text-xs text-neutral-500 hover:text-red-400 transition-colors rounded-lg hover:bg-neutral-800"
+          >
+            🚪 Cerrar sesión
+          </button>
         </div>
       </div>
 
@@ -173,8 +226,45 @@ export default function AdminStudio() {
         )}
       </div>
 
-      {/* COLUMNA 3: Formulario de Edición en Lenguaje Natural */}
-      <div className="w-2/4 p-8 bg-[#0D0D0D] overflow-y-auto relative">
+      {/* COLUMNA 3: Editor + Preview */}
+      <div className="flex-1 p-8 bg-[#0D0D0D] overflow-y-auto relative">
+
+        {/* Modal de Previsualización antes de publicar */}
+        {showPublishPreview && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8">
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-neutral-700">
+                <div>
+                  <h3 className="text-xl font-black text-white">Vista Previa — Antes de Publicar</h3>
+                  <p className="text-sm text-gray-400 mt-1">Revisa cómo se ve el sitio. Cuando estés listo, confirma la publicación.</p>
+                </div>
+                <button onClick={() => setShowPublishPreview(false)} className="text-neutral-500 hover:text-white text-2xl">✕</button>
+              </div>
+              <div className="flex-1 overflow-hidden p-4">
+                <iframe
+                  src="https://godzillaconsulting.ai"
+                  title="Vista previa antes de publicar"
+                  className="w-full rounded-xl border border-neutral-700"
+                  style={{ height: '55vh', border: 'none' }}
+                />
+              </div>
+              <div className="flex justify-end gap-4 p-6 border-t border-neutral-700">
+                <button
+                  onClick={() => setShowPublishPreview(false)}
+                  className="px-6 py-3 bg-neutral-700 hover:bg-neutral-600 rounded-full font-bold transition"
+                >
+                  ← Volver a Editar
+                </button>
+                <button
+                  onClick={handleConfirmPublish}
+                  className="px-8 py-3 bg-[#CC0000] hover:bg-red-600 text-white rounded-full font-black transition shadow-[0_4px_20px_rgba(204,0,0,0.5)] text-lg"
+                >
+                  🚀 Confirmar y Publicar Web
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-8 border-b border-neutral-800 pb-6 sticky top-0 bg-[#0D0D0D] z-10">
           <h2 className="text-2xl font-black text-white">Editor Visual</h2>
           <div className="flex gap-4">
@@ -301,9 +391,34 @@ export default function AdminStudio() {
 
           </div>
         ) : (
-           <div className="flex flex-col items-center justify-center h-full text-neutral-600 gap-4 opacity-50">
-             <p className="text-xl font-medium">No hay ninguna sección seleccionada</p>
-           </div>
+          // PREVISUALIZACIÓN del sitio en vivo cuando no hay sección seleccionada
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-3 mb-4 p-2 bg-neutral-900 rounded-xl border border-neutral-800">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="text-sm text-gray-400 font-medium">Vista previa en vivo —</span>
+              <span className="text-sm text-green-400 font-bold">godzillaconsulting.ai</span>
+              <a
+                href="https://godzillaconsulting.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto text-xs text-neutral-500 hover:text-white transition-colors px-3 py-1.5 bg-neutral-800 rounded-lg"
+              >
+                ↗ Abrir sitio
+              </a>
+            </div>
+            <div className="flex-1 rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl relative">
+              <iframe
+                src="https://godzillaconsulting.ai"
+                title="Preview del sitio en vivo"
+                className="w-full h-full"
+                style={{ transformOrigin: 'top left', border: 'none' }}
+              />
+              {/* Overlay instruccional */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full border border-neutral-700 pointer-events-none">
+                👈 Selecciona una sección para editarla
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

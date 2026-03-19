@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // Importaciones lazy de cada sección del sitio
 const Hero            = lazy(() => import('./Hero'));
@@ -8,28 +9,43 @@ const Recursos        = lazy(() => import('./Recursos'));
 const Footer          = lazy(() => import('./Footer'));
 const LandingDynamic  = lazy(() => import('./LandingPaqueteDynamic'));
 
-// Secciones que no dependen de SiteContext (estáticas)
-const STATIC_SECTIONS = ['cultura'];
-
-// Mapa de nodeId → componente a renderizar
-const COMPONENT_MAP = {
-  'hero':                          Hero,
-  'servicios':                     Servicios,
-  'casos':                         CasosExito,
-  'recursos':                      Recursos,
-  'footer':                        Footer,
-  'paquete-posicionamiento-social': LandingDynamic,
-  'paquete-expansion':             LandingDynamic,
-  'paquete-control-ia':            LandingDynamic,
-  'paquete-elite':                 LandingDynamic,
+// Mapa de nodeId a slug de URL (como lo espera LandingPaqueteDynamic via useParams)
+const NODE_TO_SLUG = {
+  'paquete-posicionamiento-social': 'posicionamiento-social',
+  'paquete-expansion':             'expansion',
+  'paquete-control-ia':            'control-ia',
+  'paquete-elite':                 'elite',
 };
 
-// Props adicionales que algunos componentes necesitan
-const EXTRA_PROPS = {
-  'paquete-posicionamiento-social': { nodeId: 'paquete-posicionamiento-social' },
-  'paquete-expansion':             { nodeId: 'paquete-expansion' },
-  'paquete-control-ia':            { nodeId: 'paquete-control-ia' },
-  'paquete-elite':                 { nodeId: 'paquete-elite' },
+// IDs que necesitan el LandingPreviewWrapper (con MemoryRouter)
+const LANDING_IDS = new Set(Object.keys(NODE_TO_SLUG));
+
+// Wrapper para Landing que inyecta el slug correcto vía MemoryRouter
+function LandingPreviewWrapper({ nodeId }) {
+  const slug = NODE_TO_SLUG[nodeId] || nodeId.replace('paquete-', '');
+  return (
+    <MemoryRouter initialEntries={[`/paquetes/${slug}`]}>
+      <Routes>
+        <Route
+          path="/paquetes/:slug"
+          element={
+            <Suspense fallback={<div className="text-white p-8 text-center">Cargando paquete...</div>}>
+              <LandingDynamic />
+            </Suspense>
+          }
+        />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+// Mapa de nodeId → componente (para secciones normales)
+const COMPONENT_MAP = {
+  'hero':      Hero,
+  'servicios': Servicios,
+  'casos':     CasosExito,
+  'recursos':  Recursos,
+  'footer':    Footer,
 };
 
 function ScaledSection({ nodeId }) {
@@ -40,7 +56,7 @@ function ScaledSection({ nodeId }) {
     const calculateScale = () => {
       if (wrapperRef.current) {
         const w = wrapperRef.current.clientWidth;
-        setScale(w / 1440); // 1440px = ancho de diseño del sitio
+        setScale(w / 1440); // 1440px = ancho de diseño base del sitio
       }
     };
     calculateScale();
@@ -49,45 +65,53 @@ function ScaledSection({ nodeId }) {
     return () => ro.disconnect();
   }, []);
 
-  const Component = COMPONENT_MAP[nodeId];
-  const extraProps = EXTRA_PROPS[nodeId] || {};
+  const isLanding  = LANDING_IDS.has(nodeId);
+  const Component  = !isLanding ? COMPONENT_MAP[nodeId] : null;
 
-  if (!Component) {
+  // Sección sin componente y sin landing → es estática (ej: Cultura)
+  if (!isLanding && !Component) {
     return (
       <div className="flex items-center justify-center h-full text-neutral-500 text-sm text-center p-8">
         <div>
           <div className="text-4xl mb-3">🔒</div>
-          <p className="font-medium">Preview no disponible para esta sección</p>
+          <p className="font-medium">Preview no disponible</p>
           <p className="text-xs mt-2 text-neutral-600">Esta sección tiene contenido estático</p>
         </div>
       </div>
     );
   }
 
+  const content = isLanding
+    ? <LandingPreviewWrapper nodeId={nodeId} />
+    : (
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-64 text-neutral-500 gap-3">
+          <div className="w-4 h-4 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
+          Cargando preview...
+        </div>
+      }>
+        <Component />
+      </Suspense>
+    );
+
   return (
     <div ref={wrapperRef} className="w-full h-full overflow-hidden relative">
-      {/* Overlay que bloquea interacciones en la preview */}
-      <div className="absolute inset-0 z-10 cursor-not-allowed" title="Vista previa — no interactiva" />
-      
+      {/* Overlay que bloquea interacciones — la preview no es clickeable */}
+      <div
+        className="absolute inset-0 z-10 cursor-not-allowed"
+        title="Vista previa — solo lectura"
+      />
       <div
         style={{
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
           width: `${100 / scale}%`,
-          // Altura ajustada para que quepa en el panel
           minHeight: `${100 / scale}%`,
           pointerEvents: 'none',
           userSelect: 'none',
         }}
       >
-        <Suspense fallback={
-          <div className="flex items-center justify-center h-64 text-neutral-500 gap-3">
-            <div className="w-4 h-4 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
-            Cargando preview...
-          </div>
-        }>
-          <Component {...extraProps} />
-        </Suspense>
+        {content}
       </div>
     </div>
   );
@@ -112,7 +136,7 @@ export default function StudioPreview({ nodeId, draftData }) {
       </div>
 
       {/* Área de preview escalada */}
-      <div className="flex-1 overflow-hidden bg-white relative">
+      <div className="flex-1 overflow-hidden bg-[#111] relative">
         <ScaledSection nodeId={nodeId} />
       </div>
     </div>

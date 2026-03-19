@@ -40,9 +40,14 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 - **TikTok**: https://tiktok.com/@godzillaconsulting.ai
 - **Sitio Web**: https://godzillaconsulting.ai
 
-## PROTOCOLO DE AGENDAMIENTO
-Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
-**SIEMPRE** usa 'check_availability' antes de confirmar una cita.
+## PROTOCOLO DE AGENDAMIENTO — OBLIGATORIO Y EN ORDEN ESTRICTO
+PASO 1: Recopila TODOS estos datos del usuario: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM en formato 24h), Notas.
+PASO 2: Llama a 'check_availability' con la fecha y hora proporcionadas.
+PASO 3: Si check_availability devuelve disponible=true, debes INMEDIATAMENTE llamar a 'save_appointment' con TODOS los datos recopilados. NO respondas con texto antes de ejecutar save_appointment.
+PASO 4: Solo después de que save_appointment regrese success=true, confirma la cita al usuario con el link de Google Calendar.
+PASO 5: Si save_appointment falla, disculpate y pide intentarlo de nuevo.
+
+⚠️ REGLA CRÍTICA: Nunca digas 'cita confirmada' o 'agendada' sin haber ejecutado save_appointment exitosamente. Siempre ejecuta los tools en orden: check_availability → save_appointment → respuesta al usuario.
 `;
 
 const chatTools = [
@@ -117,7 +122,57 @@ export const processChatMessage = async (req, res) => {
                 if (call.name === "check_availability") {
                     const { fecha, hora } = call.args;
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                    fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    const disponible = parseInt(r.rows[0].count) === 0;
+                    fRes = { disponible };
+
+                    // ── SEGURO DE GUARDADO AUTOMÁTICO ──────────────────────────────────
+                    // Si está disponible, buscamos los datos de la cita en el historial
+                    // y guardamos sin esperar a que Gemini llame save_appointment
+                    if (disponible) {
+                        const fullText = messages.map(m => m.content || m.text || '').join(' ');
+                        const emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+                        const phoneMatch = fullText.match(/\b(\+?52)?\s?\d{10}\b/);
+                        const namePatterns = [
+                            /(?:soy|me llamo|mi nombre es|nombre[:\s]+)([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\s]{2,30})/i,
+                            /(?:nombre[:\s*•]+)([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\s]{2,30})/i,
+                        ];
+                        let nombre = null;
+                        for (const p of namePatterns) {
+                            const m = fullText.match(p);
+                            if (m) { nombre = m[1].trim(); break; }
+                        }
+
+                        if (emailMatch && phoneMatch && nombre) {
+                            const correo = emailMatch[0];
+                            const telefono = phoneMatch[0].replace(/\s/g, '');
+                            // Detectar servicio mencionado
+                            const servicios = ['Automatizacion de Bots','Automatización de Bots','Bots','Produccion Audiovisual','Embudos de Venta','Gestion de Redes','SEO','CRM'];
+                            let servicio = 'Consultoría General';
+                            for (const s of servicios) {
+                                if (fullText.toLowerCase().includes(s.toLowerCase())) { servicio = s; break; }
+                            }
+                            // Detectar notas
+                            const notasMatch = fullText.match(/(?:notas?[:\s]+)(.{5,100})/i);
+                            const notas = notasMatch ? notasMatch[1].trim() : 'Sin notas adicionales';
+
+                            console.log(`[AutoSave] Guardado automático activado para ${nombre} (${correo}) - ${fecha} ${hora}`);
+                            try {
+                                const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                                if (googleRes && googleRes.id) {
+                                    const saved = await pool.query(
+                                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                        [nombre, correo, telefono, servicio, fecha, hora, notas]
+                                    );
+                                    console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada en BD y Calendar: ${googleRes.htmlLink}`);
+                                    // Sobre-escribir la respuesta para que Gemini sepa que ya se guardó
+                                    fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, google_link: googleRes.htmlLink };
+                                }
+                            } catch (autoErr) {
+                                console.error('[AutoSave] Error en guardado automático:', autoErr.message);
+                                // No bloqueamos el flujo, Gemini intentará save_appointment normalmente
+                            }
+                        }
+                    }
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {

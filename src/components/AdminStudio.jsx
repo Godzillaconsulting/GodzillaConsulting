@@ -84,10 +84,14 @@ export default function AdminStudio() {
   }, []);
 
   // Sync draftData → preview en tiempo real
+  // IMPORTANTE: El cleanup limpia el override cuando el admin se desmonta,
+  // evitando que las páginas públicas (paquetes) reciban datos del borrador.
   useEffect(() => {
     if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
     else setPreviewOverride(null, null);
+    return () => { setPreviewOverride(null, null); }; // cleanup en desmontaje
   }, [draftData, selectedNodeId]);
+
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
 

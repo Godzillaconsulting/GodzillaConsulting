@@ -87,6 +87,46 @@ const chatTools = [
     }
 ];
 
+// Helper: extrae datos de cita del texto de la conversación
+function extractAppointmentData(fullText) {
+    const emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    const phoneMatch = fullText.match(/(?:\+?52)?\s?\d{3}[\s\-]?\d{3}[\s\-]?\d{4}/);
+
+    // Intentar extraer nombre con varios patrones
+    const namePatterns = [
+        /(?:soy|me llamo|mi nombre es)\s+([A-Za-z][A-Za-z\s]{2,35}?)(?=\s*,|\s*correo|\s*email|\s*cel|\s*tel|\s*quiero|$)/i,
+        /(?:nombre[:\s]+)([A-Za-z][A-Za-z\s]{2,35}?)(?=,|\.|$)/i,
+    ];
+    let nombre = null;
+    for (const p of namePatterns) {
+        const m = fullText.match(p);
+        if (m) { nombre = m[1].trim(); break; }
+    }
+
+    const servicios = [
+        'Automatizacion de Bots', 'Automatización de Bots',
+        'Produccion Audiovisual', 'Producción Audiovisual',
+        'Embudos de Venta', 'Gestion de Redes', 'Gestión de Redes',
+        'SEO', 'CRM'
+    ];
+    let servicio = 'Consultoría General';
+    for (const s of servicios) {
+        if (fullText.toLowerCase().includes(s.toLowerCase())) { servicio = s; break; }
+    }
+
+    const notasMatch = fullText.match(/(?:notas?[:\s]+)(.{5,120})/i);
+    const notas = notasMatch ? notasMatch[1].trim() : 'Sin notas adicionales';
+
+    return {
+        nombre,
+        correo: emailMatch ? emailMatch[0] : null,
+        telefono: phoneMatch ? phoneMatch[0].replace(/[\s\-]/g, '') : null,
+        servicio,
+        notas,
+        hasAll: !!(nombre && emailMatch && phoneMatch)
+    };
+}
+
 export const processChatMessage = async (req, res) => {
     const { messages } = req.body;
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -125,71 +165,62 @@ export const processChatMessage = async (req, res) => {
                     const disponible = parseInt(r.rows[0].count) === 0;
                     fRes = { disponible };
 
-                    // ── SEGURO DE GUARDADO AUTOMÁTICO ──────────────────────────────────
-                    // Si está disponible, buscamos los datos de la cita en el historial
-                    // y guardamos sin esperar a que Gemini llame save_appointment
+                    // ── GUARDADO AUTOMÁTICO ────────────────────────────────────────────────
+                    // Si hay disponibilidad Y tenemos todos los datos del usuario, guardamos
+                    // sin esperar a que Gemini llame save_appointment por separado
                     if (disponible) {
                         const fullText = messages.map(m => m.content || m.text || '').join(' ');
-                        const emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
-                        const phoneMatch = fullText.match(/\b(\+?52)?\s?\d{10}\b/);
-                        const namePatterns = [
-                            /(?:soy|me llamo|mi nombre es|nombre[:\s]+)([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\s]{2,30})/i,
-                            /(?:nombre[:\s*•]+)([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\s]{2,30})/i,
-                        ];
-                        let nombre = null;
-                        for (const p of namePatterns) {
-                            const m = fullText.match(p);
-                            if (m) { nombre = m[1].trim(); break; }
-                        }
+                        const appt = extractAppointmentData(fullText);
 
-                        if (emailMatch && phoneMatch && nombre) {
-                            const correo = emailMatch[0];
-                            const telefono = phoneMatch[0].replace(/\s/g, '');
-                            // Detectar servicio mencionado
-                            const servicios = ['Automatizacion de Bots','Automatización de Bots','Bots','Produccion Audiovisual','Embudos de Venta','Gestion de Redes','SEO','CRM'];
-                            let servicio = 'Consultoría General';
-                            for (const s of servicios) {
-                                if (fullText.toLowerCase().includes(s.toLowerCase())) { servicio = s; break; }
-                            }
-                            // Detectar notas
-                            const notasMatch = fullText.match(/(?:notas?[:\s]+)(.{5,100})/i);
-                            const notas = notasMatch ? notasMatch[1].trim() : 'Sin notas adicionales';
-
-                            console.log(`[AutoSave] Guardado automático activado para ${nombre} (${correo}) - ${fecha} ${hora}`);
+                        if (appt.hasAll) {
+                            console.log(`[AutoSave] Activado para ${appt.nombre} (${appt.correo}) - ${fecha} ${hora}`);
                             try {
-                                const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                                const googleRes = await agendarEnGoogleCalendar({
+                                    nombre: appt.nombre,
+                                    correo: appt.correo,
+                                    telefono: appt.telefono,
+                                    servicio: appt.servicio,
+                                    fecha, hora,
+                                    notas: appt.notas
+                                });
                                 if (googleRes && googleRes.id) {
                                     const saved = await pool.query(
                                         "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                        [nombre, correo, telefono, servicio, fecha, hora, notas]
+                                        [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas]
                                     );
-                                    console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada en BD y Calendar: ${googleRes.htmlLink}`);
-                                    // Sobre-escribir la respuesta para que Gemini sepa que ya se guardó
+                                    console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.htmlLink}`);
                                     fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, google_link: googleRes.htmlLink };
                                 }
                             } catch (autoErr) {
-                                console.error('[AutoSave] Error en guardado automático:', autoErr.message);
-                                // No bloqueamos el flujo, Gemini intentará save_appointment normalmente
+                                console.error('[AutoSave] ❌ Error:', autoErr.message);
                             }
                         }
                     }
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {
-                        const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                        // Lista Enlazada de Validación (Puntero de Verificación Estricta Status 201)
-                        if (googleRes && googleRes.id && googleRes.htmlLink) {
-                            const r = await pool.query(
-                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                [nombre, correo, telefono, servicio, fecha, hora, notas]
-                            );
-                            fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
+                        // Si ya fue guardado por AutoSave, evitar duplicado
+                        const dup = await pool.query(
+                            "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
+                            [correo, fecha, hora]
+                        );
+                        if (dup.rows.length > 0) {
+                            fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada previamente' };
                         } else {
-                            fRes = { success: false, error: 'Validación fallida: Google Calendar falló al retornar la confirmación 201' };
+                            const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                            if (googleRes && googleRes.id) {
+                                const r = await pool.query(
+                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
+                                    [nombre, correo, telefono, servicio, fecha, hora, notas]
+                                );
+                                fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
+                            } else {
+                                fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
+                            }
                         }
                     } catch (err) {
-                        console.error('Error insertando cita (Cadena de Validación):', err.message);
-                        fRes = { success: false, error: 'Fallo crítico al agendar: ' + err.message };
+                        console.error('Error en save_appointment:', err.message);
+                        fRes = { success: false, error: err.message };
                     }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

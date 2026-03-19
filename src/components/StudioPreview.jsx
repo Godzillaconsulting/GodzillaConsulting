@@ -4,9 +4,11 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // ── Componentes del sitio (lazy) ──────────────────────────────────────────────
 const Hero      = lazy(() => import('./Hero'));
 const Servicios = lazy(() => import('./Servicios'));
+const Cultura   = lazy(() => import('./Cultura'));
 const CasosExito = lazy(() => import('./CasosExito'));
 const Recursos   = lazy(() => import('./Recursos'));
 const Footer     = lazy(() => import('./Footer'));
+
 
 // ── ErrorBoundary: evita que un crash del preview derrumbe todo el admin ──────
 class PreviewErrorBoundary extends Component {
@@ -212,10 +214,13 @@ function useHighlightInjector(nodeId, hoveredField, previewContainerId) {
 const COMPONENT_MAP = {
   'hero':      Hero,
   'servicios': Servicios,
+  'cultura':   Cultura,
+  'portafolio':CasosExito,
   'casos':     CasosExito,
   'recursos':  Recursos,
   'footer':    Footer,
 };
+
 
 // ── ScaledSection ─────────────────────────────────────────────────────────────
 const PREVIEW_ID = 'studio-preview-scaled';

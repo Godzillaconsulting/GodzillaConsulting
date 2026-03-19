@@ -19,16 +19,26 @@ const Hero = () => {
     const overline = "Sistemas de crecimiento para negocios en la frontera";
     const title = "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
     const subtitle = "El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.";
-    const ctaText = data.ctaText || "Ver planes y garantías";
-    const ctaLink = data.ctaLink || "#paquetes";
+    const ctaText  = data.ctaText  || "Ver planes y garantías";
+    const ctaLink  = data.ctaLink  || "#paquetes";
+    // Fondo editable desde CMS (se superpone al ColorBends animado)
+    const bgVideoUrl = data.bgVideoUrl || data.videoUrl   || null;
+    const bgImageUrl = data.imageUrl   || data.bgImageUrl || null;
+
     const logos = [
         logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker,
         logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika
     ];
     return (
         <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-transparent">
-
-            {/* Content Layer */}
+            {/* Fondo editable desde CMS (sobre ColorBends) */}
+            {bgVideoUrl && (
+                <video src={bgVideoUrl} autoPlay muted loop playsInline
+                    className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />
+            )}
+            {!bgVideoUrl && bgImageUrl && (
+                <img src={bgImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0" />
+            )}
             <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
 
                 {/* Pre-title / Overline */}

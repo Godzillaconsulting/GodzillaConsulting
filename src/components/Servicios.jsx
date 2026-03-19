@@ -26,37 +26,40 @@ const Servicios = () => {
     const nodeData = getNodeData('servicios') || {};
     const services = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultServices;
 
-    // Obtiene la URL del ícono: desde Sanity o desde el asset local
-    const getIconSrc = (srv) => {
-        // 1. Si viene de BD Local con iconSrc
+    // Obtiene la URL del ícono: 1°CMS individual, 2°srv.iconSrc, 3°fallback local
+    const getIconSrc = (srv, idx) => {
+        // 1. Ícono individual desde CMS (service1IconUrl, service2IconUrl, ...)
+        const cmsKey = `service${idx + 1}IconUrl`;
+        if (nodeData[cmsKey]) return nodeData[cmsKey];
+
+        // 2. Si viene de BD con iconSrc directo
         if (srv.iconSrc) return srv.iconSrc;
 
-        // Fallback inteligente para íconos
-        const slug = srv.id?.current || '';
+        // 3. Fallback inteligente a gif local por coincidencia de título
+        const slug  = srv.id?.current || '';
         const title = srv.title || '';
-
         const fallback = defaultServices.find(d => {
-            const dSlug = d.id?.current || '';
+            const dSlug  = d.id?.current || '';
             const dTitle = d.title || '';
             return (slug && dSlug && slug === dSlug) ||
                 (title && dTitle && title.toLowerCase().includes(dTitle.toLowerCase())) ||
                 (title && dTitle && dTitle.toLowerCase().includes(title.toLowerCase()));
         });
-
         return fallback ? fallback.iconSrc : null;
     };
 
     // Obtiene el enlace: desde Sanity o desde el default
     const getEnlace = (srv) => srv.enlace || '#servicios';
 
-    const renderIconImg = (srv, isActive = false) => (
+    const renderIconImg = (srv, isActive = false, idx = 0) => (
         <img
-            src={getIconSrc(srv)}
+            src={getIconSrc(srv, idx)}
             alt={srv.title}
             className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"
             style={isActive ? { filter: 'brightness(0) invert(1)' } : {}}
         />
     );
+
 
     return (
         <section id="servicios" className="relative bg-[#F4F4F4] pb-24">

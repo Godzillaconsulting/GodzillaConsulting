@@ -3,6 +3,21 @@ import { useSiteData } from '../context/SiteContext';
 import StudioPreview from './StudioPreview';
 import MediaPicker from './MediaPicker';
 
+// Wrapper que emite el campo al que se hace hover → activa resaltado en preview
+function EditorField({ fieldKey, onHover, children }) {
+  return (
+    <div
+      onMouseEnter={() => onHover(fieldKey)}
+      onMouseLeave={() => onHover(null)}
+      className="relative group/field"
+    >
+      {/* Indicador de campo destacable */}
+      <div className="absolute -left-2 top-0 bottom-0 w-0.5 bg-[#CC0000]/0 group-hover/field:bg-[#CC0000]/60 rounded-full transition-all duration-150" />
+      {children}
+    </div>
+  );
+}
+
 // Orden de secciones como aparecen en el sitio (de arriba hacia abajo)
 const PAGE_SECTIONS = [
   { id: 'hero',                          label: 'Hero',                emoji: '🦖', tag: 'INICIO' },
@@ -60,6 +75,8 @@ export default function AdminStudio() {
   const [saving, setSaving] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [hoveredField, setHoveredField] = useState(null);
+
 
   // Auth
   useEffect(() => {
@@ -373,38 +390,22 @@ export default function AdminStudio() {
                   {/* ─────── TAB: MEDIA ─────── */}
                   {activeTab === 'media' && (
                     <div className="space-y-5">
-                      <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Imágenes, Videos & Logos</h3>
-
-                      <MediaPicker
-                        label="🖼️ Imagen Principal (Hero / Portada)"
-                        value={draftData.imageUrl || ''}
-                        onChange={url => change('imageUrl', url)}
-                        accept="image"
-                      />
-                      <MediaPicker
-                        label="🏷️ Logo de la Sección"
-                        value={draftData.logoUrl || ''}
-                        onChange={url => change('logoUrl', url)}
-                        accept="image"
-                      />
-                      <MediaPicker
-                        label="🎬 Video de Fondo"
-                        value={draftData.videoUrl || draftData.bgVideoUrl || ''}
-                        onChange={url => change(draftData.bgVideoUrl !== undefined ? 'bgVideoUrl' : 'videoUrl', url)}
-                        accept="video"
-                      />
-                      <MediaPicker
-                        label="🌄 Imagen de Fondo"
-                        value={draftData.bgImageUrl || ''}
-                        onChange={url => change('bgImageUrl', url)}
-                        accept="image"
-                      />
-                      <MediaPicker
-                        label="🖼️ Imagen Secundaria / Demo"
-                        value={draftData.videoFileUrl || ''}
-                        onChange={url => change('videoFileUrl', url)}
-                        accept="all"
-                      />
+                      <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Imágenes, Videos &amp; Logos</h3>
+                      <EditorField fieldKey="imageUrl" onHover={setHoveredField}>
+                        <MediaPicker label="🖼️ Imagen Principal (Hero / Portada)" value={draftData.imageUrl || ''} onChange={url => change('imageUrl', url)} accept="image" />
+                      </EditorField>
+                      <EditorField fieldKey="logoUrl" onHover={setHoveredField}>
+                        <MediaPicker label="🏷️ Logo de la Sección" value={draftData.logoUrl || ''} onChange={url => change('logoUrl', url)} accept="image" />
+                      </EditorField>
+                      <EditorField fieldKey="videoUrl" onHover={setHoveredField}>
+                        <MediaPicker label="🎦 Video de Fondo" value={draftData.videoUrl || draftData.bgVideoUrl || ''} onChange={url => change(draftData.bgVideoUrl !== undefined ? 'bgVideoUrl' : 'videoUrl', url)} accept="video" />
+                      </EditorField>
+                      <EditorField fieldKey="bgImageUrl" onHover={setHoveredField}>
+                        <MediaPicker label="🌄 Imagen de Fondo" value={draftData.bgImageUrl || ''} onChange={url => change('bgImageUrl', url)} accept="image" />
+                      </EditorField>
+                      <EditorField fieldKey="videoFileUrl" onHover={setHoveredField}>
+                        <MediaPicker label="🖼️ Imagen Secundaria / Demo" value={draftData.videoFileUrl || ''} onChange={url => change('videoFileUrl', url)} accept="all" />
+                      </EditorField>
                     </div>
                   )}
 
@@ -538,7 +539,7 @@ export default function AdminStudio() {
           {/* ─ PANEL PREVIEW ─ */}
           {showPreview && (
             <div className="flex-1 overflow-hidden border-l border-neutral-800">
-              <StudioPreview nodeId={selectedNodeId} draftData={draftData} />
+              <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
             </div>
           )}
 

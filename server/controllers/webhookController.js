@@ -105,38 +105,52 @@ export const verifyWebhook = (req, res) => {
 export const receiveMessage = async (req, res) => {
     const body = req.body;
     
-    if (body.object) {
-        res.sendStatus(200);
+    if (!body.object) {
+        return res.sendStatus(404);
+    }
 
+    try {
         // Lógica para Facebook Messenger
         if (body.object === 'page') {
-            body.entry.forEach(async (entry) => {
-                const webhook_event = entry.messaging[0];
+            // ✅ FIX: usar for...of en lugar de forEach+async
+            // forEach NO espera callbacks async — Vercel mata el proceso antes de responder
+            for (const entry of body.entry) {
+                const webhook_event = entry.messaging?.[0];
+                if (!webhook_event) continue;
+
                 const sender_psid = webhook_event.sender.id;
-                
-                if (webhook_event.message && webhook_event.message.text) {
+                const page_id     = webhook_event.recipient.id;
+
+                // Ignorar mensajes enviados por la propia página (eco)
+                if (sender_psid === page_id) continue;
+
+                if (webhook_event.message && webhook_event.message.text && !webhook_event.message.is_echo) {
                     const msgBody = webhook_event.message.text;
-                    console.log(`[Messenger] Mensaje de ${sender_psid}: ${msgBody}`);
+                    console.log(`[Messenger] Mensaje de PSID ${sender_psid.substring(0,6)}****: ${msgBody.substring(0,50)}`);
                     await processAndReply(sender_psid, msgBody, null, 'messenger');
                 }
-            });
-        } 
-        // Lógica para WhatsApp
-        else if (body.entry && body.entry[0].changes && body.entry[0].changes[0] && body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
-            const message = body.entry[0].changes[0].value.messages[0];
+            }
+        }
+        // Lógica para WhatsApp Business API (oficial)
+        else if (body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+            const message       = body.entry[0].changes[0].value.messages[0];
             const phoneNumberId = body.entry[0].changes[0].value.metadata.phone_number_id;
-            const from = message.from;
-            const msgBody = message.text && message.text.body ? message.text.body : '';
+            const from          = message.from;
+            const msgBody       = message.text?.body || '';
 
             if (msgBody) {
-                console.log(`[WhatsApp] Mensaje de ${from}: ${msgBody}`);
+                console.log(`[WhatsApp API] Mensaje de ${from.substring(0,4)}****: ${msgBody.substring(0,50)}`);
                 await processAndReply(from, msgBody, phoneNumberId, 'whatsapp');
             }
         }
-    } else {
-        res.sendStatus(404);
+    } catch (err) {
+        console.error('[Webhook] Error procesando evento:', err.message);
     }
+
+    // ✅ Meta requiere 200 dentro de 20s — lo enviamos al final del procesamiento
+    res.sendStatus(200);
 };
+
 
 async function processAndReply(from, text, phoneNumberId, platform) {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();

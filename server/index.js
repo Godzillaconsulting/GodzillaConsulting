@@ -3,9 +3,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
+import mediaRoutes from './routes/media.js';
 import { connectDB } from './config/db.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 
 // Inicializar variables de entorno (.env)
 dotenv.config();
@@ -34,16 +40,16 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // En POSTMAN/local origin puede ser undefined. 
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app') || origin.includes('localhost')) {
             callback(null, true);
         } else {
             callback(new Error('Bloqueado por CORS: Origen no permitido.'));
         }
     },
-    methods: ['POST', 'GET', 'OPTIONS'],
+    methods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
     credentials: true
 }));
+
 
 // Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)
 const apiLimiter = rateLimit({
@@ -82,6 +88,10 @@ app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/auth', apiLimiter, authRoutes);
+app.use('/api/media', mediaRoutes);
+
+// Servir archivos subidos como estáticos en /media/*
+app.use('/media', express.static(path.join(__dirname, 'uploads')));
 
 // Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
 app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));

@@ -1,52 +1,61 @@
-import https from 'https';
+import dotenv from 'dotenv';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
-const postData = JSON.stringify({
-  "object": "page",
-  "entry": [
-    {
-      "id": "123456789_page_id",
-      "time": 1458692752478,
-      "messaging": [
-        {
-          "sender": {
-            "id": "987654321_user_id"
-          },
-          "recipient": {
-            "id": "123456789_page_id"
-          },
-          "timestamp": 1458692752478,
-          "message": {
-            "mid": "mid.1457764197618:41d102a3e1ae206a38",
-            "text": "Hola Zilla, estoy probando si el servidor oficial de Vercel recibe y contesta mis mensajes. (Test de Producción)"
-          }
-        }
-      ]
-    }
-  ]
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '../server/.env') });
+
+const PROD_URL = 'https://godzillaconsulting.ai';
+
+console.log('🌐 Probando API en producción:', PROD_URL);
+console.log('');
+
+// Test 1: Health
+console.log('1️⃣  GET /api/health...');
+const h = await fetch(`${PROD_URL}/api/health`);
+const hData = await h.json();
+console.log('   Status:', h.status, hData);
+console.log('');
+
+// Test 2: Chat simple
+console.log('2️⃣  POST /api/chat con mensaje de barbería...');
+const r = await fetch(`${PROD_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        messages: [
+            { role: 'user', content: 'Hola, tengo una barbería de caballeros, quiero agendar' }
+        ]
+    })
 });
 
-const options = {
-  hostname: 'godzillaconsulting.ai',
-  port: 443,
-  path: '/api/webhook',
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(postData)
-  }
-};
+console.log('   HTTP Status:', r.status);
+if (r.status === 200) {
+    const data = await r.json();
+    console.log('   ✅ Respuesta del bot:', data.reply?.substring(0, 150) + '...');
+} else {
+    const txt = await r.text();
+    console.log('   ❌ Error:', txt.substring(0, 300));
+}
+console.log('');
 
-const req = https.request(options, (res) => {
-  console.log(`STATUS (Producción): ${res.statusCode}`);
-  res.setEncoding('utf8');
-  res.on('data', (chunk) => {
-    console.log(`BODY: ${chunk}`);
-  });
+// Test 3: Agendamiento completo
+console.log('3️⃣  POST /api/chat con datos completos de cita...');
+const r2 = await fetch(`${PROD_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        messages: [
+            { role: 'user', content: 'Hola, quiero agendar. Soy Roberto Garcia, correo roberto@barberking.mx, cel 6564321987, servicio Automatizacion de Bots, fecha 2026-03-27, hora 11:00. Notas: barberia con 3 estilistas.' }
+        ]
+    })
 });
 
-req.on('error', (e) => {
-  console.error(`Error de conexión al servidor de Vercel: ${e.message}`);
-});
-
-req.write(postData);
-req.end();
+console.log('   HTTP Status:', r2.status);
+if (r2.status === 200) {
+    const data2 = await r2.json();
+    console.log('   ✅ Bot respondió:', data2.reply?.substring(0, 200));
+} else {
+    const txt2 = await r2.text();
+    console.log('   ❌ Error en producción:', txt2.substring(0, 500));
+}

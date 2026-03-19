@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSiteData } from '../context/SiteContext';
 import StudioPreview from './StudioPreview';
+import MediaPicker from './MediaPicker';
+
 
 // Orden de secciones tal como aparecen en el sitio web (de arriba hacia abajo)
 const PAGE_SECTION_ORDER = [
@@ -335,6 +337,7 @@ export default function AdminStudio() {
                       Ajustes Globales del Nodo
                     </h3>
 
+                    {/* ── TEXTO ── */}
                     {draftData.title !== undefined && (
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-gray-400 block">Título / Frase Principal</label>
@@ -347,9 +350,161 @@ export default function AdminStudio() {
                       </div>
                     )}
 
-                    {/* Campos específicos de Landing Paquete */}
+                    {/* Subtítulo / descripción */}
+                    {(draftData.subtitle !== undefined || draftData.desc !== undefined) && (
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-gray-400 block">Subtítulo / Descripción</label>
+                        <textarea
+                          rows="3"
+                          value={draftData.subtitle ?? draftData.desc ?? ''}
+                          onChange={(e) => handleDraftChange(draftData.subtitle !== undefined ? 'subtitle' : 'desc', e.target.value)}
+                          className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#CC0000] transition-colors resize-none"
+                        />
+                      </div>
+                    )}
+
+                    {/* CTA */}
+                    {draftData.ctaText !== undefined && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Texto del botón CTA</label>
+                          <input type="text" value={draftData.ctaText || ''} onChange={(e) => handleDraftChange('ctaText', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000]" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Link del CTA</label>
+                          <input type="text" value={draftData.ctaLink || ''} onChange={(e) => handleDraftChange('ctaLink', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000]" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── MEDIA: Imágenes y Videos ── */}
+                    <div className="border-t border-neutral-700 pt-4 mt-2">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">🖼️ Imágenes &amp; Videos</h4>
+                      <div className="grid grid-cols-1 gap-4">
+
+                        {/* Imagen principal / hero */}
+                        <MediaPicker
+                          label="Imagen Principal (Hero/Portada)"
+                          value={draftData.imageUrl || ''}
+                          onChange={(url) => handleDraftChange('imageUrl', url)}
+                          accept="image"
+                        />
+
+                        {/* Logo */}
+                        <MediaPicker
+                          label="Logo de la Sección"
+                          value={draftData.logoUrl || ''}
+                          onChange={(url) => handleDraftChange('logoUrl', url)}
+                          accept="image"
+                        />
+
+                        {/* Video de fondo */}
+                        <MediaPicker
+                          label="Video de Fondo"
+                          value={draftData.videoUrl || draftData.bgVideoUrl || ''}
+                          onChange={(url) => handleDraftChange(draftData.bgVideoUrl !== undefined ? 'bgVideoUrl' : 'videoUrl', url)}
+                          accept="video"
+                        />
+
+                        {/* Imagen de fondo */}
+                        <MediaPicker
+                          label="Imagen de Fondo"
+                          value={draftData.bgImageUrl || ''}
+                          onChange={(url) => handleDraftChange('bgImageUrl', url)}
+                          accept="image"
+                        />
+
+                      </div>
+                    </div>
+
+                    {/* ── COLORES ── */}
+                    <div className="border-t border-neutral-700 pt-4 mt-2">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">🎨 Colores</h4>
+                      <div className="grid grid-cols-2 gap-3">
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Color de Acento</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={draftData.accentColor || '#CC0000'}
+                              onChange={(e) => handleDraftChange('accentColor', e.target.value)}
+                              className="w-10 h-10 rounded-lg border border-neutral-600 cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={draftData.accentColor || '#CC0000'}
+                              onChange={(e) => handleDraftChange('accentColor', e.target.value)}
+                              className="flex-1 p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs font-mono focus:border-[#CC0000]"
+                              placeholder="#CC0000"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Color de Fondo</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={draftData.bgColor || '#111111'}
+                              onChange={(e) => handleDraftChange('bgColor', e.target.value)}
+                              className="w-10 h-10 rounded-lg border border-neutral-600 cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={draftData.bgColor || '#111111'}
+                              onChange={(e) => handleDraftChange('bgColor', e.target.value)}
+                              className="flex-1 p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs font-mono focus:border-[#CC0000]"
+                              placeholder="#111111"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Color de Texto Principal</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={draftData.textColor || '#FFFFFF'}
+                              onChange={(e) => handleDraftChange('textColor', e.target.value)}
+                              className="w-10 h-10 rounded-lg border border-neutral-600 cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={draftData.textColor || '#FFFFFF'}
+                              onChange={(e) => handleDraftChange('textColor', e.target.value)}
+                              className="flex-1 p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs font-mono focus:border-[#CC0000]"
+                              placeholder="#FFFFFF"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-400 block">Color de Texto Secundario</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={draftData.subtextColor || '#9CA3AF'}
+                              onChange={(e) => handleDraftChange('subtextColor', e.target.value)}
+                              className="w-10 h-10 rounded-lg border border-neutral-600 cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={draftData.subtextColor || '#9CA3AF'}
+                              onChange={(e) => handleDraftChange('subtextColor', e.target.value)}
+                              className="flex-1 p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs font-mono focus:border-[#CC0000]"
+                              placeholder="#9CA3AF"
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* ── CAMPOS ESPECÍFICOS DE LANDING PAQUETE ── */}
                     {draftData.heroTitle !== undefined && (
-                      <div className="space-y-4 mt-4">
+                      <div className="border-t border-neutral-700 pt-4 space-y-4">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">📦 Datos del Plan</h4>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-gray-400 block">Nombre del Plan (Hero)</label>
@@ -360,12 +515,6 @@ export default function AdminStudio() {
                             <input type="text" value={draftData.heroTopText || ''} onChange={(e) => handleDraftChange('heroTopText', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000]" />
                           </div>
                         </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-gray-400 block">URL de Video (Fondo)</label>
-                          <input type="text" value={draftData.videoUrl || ''} onChange={(e) => handleDraftChange('videoUrl', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000]" placeholder="https://..." />
-                        </div>
-
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-gray-400 block">Precio del Plan</label>
@@ -376,7 +525,6 @@ export default function AdminStudio() {
                             <input type="text" value={draftData.planPeriod || ''} onChange={(e) => handleDraftChange('planPeriod', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000]" />
                           </div>
                         </div>
-
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-gray-400 block">Texto de Garantía</label>
                           <textarea rows="2" value={draftData.guaranteeText || ''} onChange={(e) => handleDraftChange('guaranteeText', e.target.value)} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] resize-none" />

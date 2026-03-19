@@ -50,7 +50,7 @@ export const agendarEnGoogleCalendar = async (datos) => {
 
         const event = {
             summary: `Cita: ${servicio} - ${nombre}`,
-            description: `Teléfono: ${telefono}\nEmail: ${correo}\nNotas: ${notas || 'N/A'}\n\nAgendado por: Godzilla Consulting Bot`,
+            description: `📞 Teléfono: ${telefono}\n📧 Email: ${correo}\n📝 Notas: ${notas || 'N/A'}\n\n✅ Agendado por: Godzilla Consulting Bot`,
             start: {
                 dateTime: startDateTime.toISOString(),
                 timeZone: 'America/Ciudad_Juarez',
@@ -59,9 +59,8 @@ export const agendarEnGoogleCalendar = async (datos) => {
                 dateTime: endDateTime.toISOString(),
                 timeZone: 'America/Ciudad_Juarez',
             },
-            attendees: [
-                { email: correo }
-            ],
+            // attendees removido: las Service Accounts no pueden invitar sin Domain-Wide Delegation
+            // El correo del cliente queda en la descripción para seguimiento manual
             reminders: {
                 useDefault: false,
                 overrides: [

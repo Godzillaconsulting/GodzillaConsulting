@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
+import { getGeminiModel } from "../config/geminiGlobal.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -82,9 +82,6 @@ const chatTools = [
     }
 ];
 
-let genAIInstance = null;
-let generativeModel = null;
-const userSessions = new Map();
 
 export const verifyWebhook = (req, res) => {
     const mode = req.query['hub.mode'];
@@ -145,19 +142,15 @@ async function processAndReply(from, text, phoneNumberId, platform) {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return console.error(`[${platform}] Error: No Gemini API KEY`);
 
-    if (!generativeModel) {
-        genAIInstance = new GoogleGenerativeAI(apiKey);
-        generativeModel = genAIInstance.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: SYSTEM_PROMPT,
-            tools: [{ functionDeclarations: chatTools }]
-        });
-    }
+    const { model, sessions } = getGeminiModel(apiKey, SYSTEM_PROMPT, chatTools);
 
-    if (!userSessions.has(from)) {
-        userSessions.set(from, generativeModel.startChat({ history: [] }));
+    let chat;
+    if (!sessions.has(from)) {
+        chat = model.startChat({ history: [] });
+        sessions.set(from, chat);
+    } else {
+        chat = sessions.get(from);
     }
-    const chat = userSessions.get(from);
 
     try {
         let result = await chat.sendMessage(text);
@@ -176,14 +169,15 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {
                         const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                        if (googleRes) {
+                        // Lista Enlazada de Validación: Status 201 Strict Check
+                        if (googleRes && googleRes.id && googleRes.htmlLink) {
                             const r = await pool.query(
                                 "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
                                 [nombre, correo, telefono, servicio, fecha, hora, notas]
                             );
                             fRes = { success: true, id: r.rows[0].id };
                         } else {
-                            fRes = { success: false, error: 'Fallo al agendar en Google' };
+                            fRes = { success: false, error: 'Validación fallida: Google Calendar no confirmó 201' };
                         }
                     } catch (err) {
                         console.error('Error integrando cita:', err.message);

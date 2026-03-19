@@ -28,7 +28,8 @@ app.use(helmet());
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     'https://godzillaconsulting.ai',
-    'https://www.godzillaconsulting.ai'
+    'https://www.godzillaconsulting.ai',
+    'https://bot.godzillaconsulting.ai',
 ];
 
 app.use(cors({

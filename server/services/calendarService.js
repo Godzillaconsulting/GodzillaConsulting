@@ -12,15 +12,15 @@ const getCalendarClient = () => {
         throw new Error('Variables de entorno de Google Calendar (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY) no configuradas.');
     }
 
-    // Asegurarse de que los saltos de línea se formen correctamente
+    // Normalizar saltos de línea
     privateKey = privateKey.replace(/\\n/g, '\n');
 
-    const auth = new google.auth.JWT(
-        clientEmail,
-        null,
-        privateKey,
-        SCOPES
-    );
+    // Usar objeto de configuración JWT (más robusto que parámetros posicionales)
+    const auth = new google.auth.JWT({
+        email: clientEmail,
+        key: privateKey,
+        scopes: SCOPES,
+    });
 
     return google.calendar({ version: 'v3', auth });
 };

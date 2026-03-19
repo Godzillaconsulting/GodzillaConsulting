@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
+import { getGeminiModel } from "../config/geminiGlobal.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -82,24 +82,13 @@ const chatTools = [
     }
 ];
 
-let genAIInstance = null;
-let generativeModel = null;
-
 export const processChatMessage = async (req, res) => {
     const { messages } = req.body;
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
     try {
-        if (!genAIInstance) {
-            genAIInstance = new GoogleGenerativeAI(apiKey);
-            generativeModel = genAIInstance.getGenerativeModel({
-                model: "gemini-2.0-flash",
-                systemInstruction: SYSTEM_PROMPT,
-                tools: [{ functionDeclarations: chatTools }]
-            });
-        }
-        const model = generativeModel;
+        const { model, sessions } = getGeminiModel(apiKey, SYSTEM_PROMPT, chatTools);
 
         let history = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
@@ -133,18 +122,19 @@ export const processChatMessage = async (req, res) => {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {
                         const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                        if (googleRes) {
+                        // Lista Enlazada de Validación (Puntero de Verificación Estricta Status 201)
+                        if (googleRes && googleRes.id && googleRes.htmlLink) {
                             const r = await pool.query(
                                 "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
                                 [nombre, correo, telefono, servicio, fecha, hora, notas]
                             );
                             fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
                         } else {
-                            fRes = { success: false, error: 'Fallo al sincronizar con Google Calendar' };
+                            fRes = { success: false, error: 'Validación fallida: Google Calendar falló al retornar la confirmación 201' };
                         }
                     } catch (err) {
-                        console.error('Error insertando cita (Promise Chain):', err.message);
-                        fRes = { success: false, error: 'Fallo crítico al agendar cita: ' + err.message };
+                        console.error('Error insertando cita (Cadena de Validación):', err.message);
+                        fRes = { success: false, error: 'Fallo crítico al agendar: ' + err.message };
                     }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

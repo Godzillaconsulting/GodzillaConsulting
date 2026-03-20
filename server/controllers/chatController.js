@@ -163,64 +163,45 @@ export const processChatMessage = async (req, res) => {
                     const { fecha, hora } = call.args;
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
                     const disponible = parseInt(r.rows[0].count) === 0;
+                    // ✅ Solo retorna disponibilidad — NUNCA guarda aquí (previene race condition)
                     fRes = { disponible };
-
-                    // ── GUARDADO AUTOMÁTICO ────────────────────────────────────────────────
-                    // Si hay disponibilidad Y tenemos todos los datos del usuario, guardamos
-                    // sin esperar a que Gemini llame save_appointment por separado
-                    if (disponible) {
-                        const fullText = messages.map(m => m.content || m.text || '').join(' ');
-                        const appt = extractAppointmentData(fullText);
-
-                        if (appt.hasAll) {
-                            console.log(`[AutoSave] Activado para ${appt.nombre} (${appt.correo}) - ${fecha} ${hora}`);
-                            try {
-                                const googleRes = await agendarEnGoogleCalendar({
-                                    nombre: appt.nombre,
-                                    correo: appt.correo,
-                                    telefono: appt.telefono,
-                                    servicio: appt.servicio,
-                                    fecha, hora,
-                                    notas: appt.notas
-                                });
-                                if (googleRes && googleRes.id) {
-                                    const saved = await pool.query(
-                                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                        [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas]
-                                    );
-                                    console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.htmlLink}`);
-                                    fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, google_link: googleRes.htmlLink };
-                                }
-                            } catch (autoErr) {
-                                console.error('[AutoSave] ❌ Error:', autoErr.message);
-                            }
-                        }
-                    }
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {
-                        // Si ya fue guardado por AutoSave, evitar duplicado
+                        // ── TRANSACCIÓN ALL-OR-NOTHING ─────────────────────────────────────
+                        // PASO 1: Verificar duplicado (idempotencia)
                         const dup = await pool.query(
-                            "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
+                            "SELECT id, google_calendar_event_id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
                             [correo, fecha, hora]
                         );
                         if (dup.rows.length > 0) {
+                            console.log(`[Save] Cita duplicada detectada para ${correo} - retornando existente`);
                             fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada previamente' };
                         } else {
+                            // PASO 2: Google Calendar PRIMERO — puntero obligatorio
+                            console.log(`[Save] 📅 Intentando agendar en Google Calendar: ${nombre} - ${fecha} ${hora}`);
                             const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                            if (googleRes && googleRes.id) {
+
+                            // PASO 3: Solo si Google confirma con ID válido → insertar en Neon
+                            if (googleRes && googleRes.id && googleRes.htmlLink) {
                                 const r = await pool.query(
-                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                    [nombre, correo, telefono, servicio, fecha, hora, notas]
+                                    `INSERT INTO citas 
+                                     (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id) 
+                                     VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
+                                    [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
                                 );
-                                fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
+                                console.log(`[Save] ✅ Cita #${r.rows[0].id} en Neon. Calendar ID: ${googleRes.id}`);
+                                fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink, google_id: googleRes.id };
                             } else {
-                                fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
+                                // PASO 4: Google falló → Rollback implícito (nunca tocamos Neon)
+                                console.error(`[Save] ❌ Google Calendar no devolvió ID válido — Neon NO modificado`);
+                                fRes = { success: false, error: 'Google Calendar no confirmó el evento. Intenta de nuevo.' };
                             }
                         }
                     } catch (err) {
-                        console.error('Error en save_appointment:', err.message);
-                        fRes = { success: false, error: err.message };
+                        // PASO 4b: Excepción → Rollback total
+                        console.error('[Save] ❌ EXCEPCIÓN en cadena All-or-Nothing:', err.message);
+                        fRes = { success: false, error: 'Error crítico al agendar: ' + err.message };
                     }
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

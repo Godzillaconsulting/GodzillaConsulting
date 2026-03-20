@@ -82,8 +82,25 @@ export const agendarEnGoogleCalendar = async (datos) => {
         });
 
         if (response.status === 200 || response.status === 201) {
-            console.log(`[Google Calendar] ✅ Cita agendada con éxito: ${response.data.htmlLink}`);
-            return response.data;
+            // Link a NUESTRO calendario (interno, para auditoría)
+            const internalLink = response.data.htmlLink;
+
+            // Link para que el USUARIO guarde en SU calendario personal (Google Calendar TEMPLATE)
+            // Formato de fechas: YYYYMMDDTHHMMSSZ (UTC)
+            const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            const personalCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+                `&text=${encodeURIComponent(`Consultoría Godzilla Consulting - ${servicio}`)}` +
+                `&dates=${fmt(startDateTime)}/${fmt(endDateTime)}` +
+                `&details=${encodeURIComponent(`📋 Servicio: ${servicio}\n📞 Contacto Godzilla: +52 656 581 8912\n🌐 Web: https://godzillaconsulting.ai\n\n✅ Cita confirmada por Oscar Villanueva`)}` +
+                `&ctz=America%2FCiudad_Juarez` +
+                `&sf=true&output=xml`;
+
+            console.log(`[Google Calendar] ✅ Cita agendada: ${internalLink}`);
+            return {
+                ...response.data,
+                htmlLink: internalLink,
+                personalCalendarLink,
+            };
         } else {
             throw new Error(`Google Calendar devolvió status: ${response.status}`);
         }

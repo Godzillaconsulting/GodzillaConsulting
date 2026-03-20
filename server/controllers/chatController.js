@@ -44,8 +44,8 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 PASO 1: Recopila TODOS estos datos del usuario: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM en formato 24h), Notas.
 PASO 2: Llama a 'check_availability' con la fecha y hora proporcionadas.
 PASO 3: Si check_availability devuelve disponible=true, debes INMEDIATAMENTE llamar a 'save_appointment' con TODOS los datos recopilados. NO respondas con texto antes de ejecutar save_appointment.
-PASO 4: Solo después de que save_appointment regrese success=true, confirma la cita al usuario con el link de Google Calendar.
-PASO 5: Si save_appointment falla, disculpate y pide intentarlo de nuevo.
+PASO 4: Solo después de que save_appointment regrese success=true, confirma la cita al usuario mostrando el 'personal_calendar_link' del resultado para que pueda guardarla en SU Google Calendar personal. Preséntalo como un enlace clicable con texto 'Agregar a mi Google Calendar 📅'. El 'google_link' es para auditoría interna, NO lo muestres al usuario.
+PASO 5: Si save_appointment falla, discúlpate y pide intentarlo de nuevo.
 
 ⚠️ REGLA CRÍTICA: Nunca digas 'cita confirmada' o 'agendada' sin haber ejecutado save_appointment exitosamente. Siempre ejecuta los tools en orden: check_availability → save_appointment → respuesta al usuario.
 `;
@@ -190,7 +190,7 @@ export const processChatMessage = async (req, res) => {
                                         [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas, googleRes.id]
                                     );
                                     console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.id}`);
-                                    fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, google_link: googleRes.htmlLink };
+                                    fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
                                 }
                             } catch (autoErr) {
                                 console.error('[AutoSave] ❌ Error:', autoErr.message);
@@ -217,7 +217,7 @@ export const processChatMessage = async (req, res) => {
                                     [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
                                 );
                                 console.log(`[Save] ✅ Cita #${r.rows[0].id} guardada. Calendar: ${googleRes.id}`);
-                                fRes = { success: true, id: r.rows[0].id, google_link: googleRes.htmlLink };
+                                fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
                             } else {
                                 fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
                             }

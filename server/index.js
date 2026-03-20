@@ -123,15 +123,26 @@ app.get('/api/env-check', (req, res) => {
 
 // 🔬 Diagnóstico de Google Calendar (temporal)
 app.get('/api/test-calendar', async (req, res) => {
+    // Diagnóstico previo de la llave
+    const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    const keyDiag = {
+        length: rawKey.length,
+        first50: JSON.stringify(rawKey.substring(0, 50)),
+        last50: JSON.stringify(rawKey.substring(rawKey.length - 50)),
+        hasLiteralN: rawKey.includes('\\n'),
+        hasRealN: rawKey.includes('\n'),
+        hasCR: rawKey.includes('\r'),
+        startsCorrect: rawKey.trimStart().startsWith('-----BEGIN'),
+    };
     try {
         const { agendarEnGoogleCalendar } = await import('./services/calendarService.js');
         const result = await agendarEnGoogleCalendar({
             nombre: 'Test Diagnostico', correo: 'diag@test.com', telefono: '6560000000',
             servicio: 'Prueba', fecha: '2026-03-30', hora: '09:00', notas: 'Test diagnóstico'
         });
-        res.json({ success: true, eventId: result.id, link: result.htmlLink });
+        res.json({ success: true, eventId: result.id, link: result.htmlLink, keyDiag });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message, code: err.code || err.status });
+        res.status(500).json({ success: false, error: err.message, code: err.code, keyDiag });
     }
 });
 

@@ -170,9 +170,6 @@ export default function AdminStudio() {
     combinedData.logoUrl7 = logoNutrisa;
     combinedData.logoUrl8 = logoSanAntonio;
     combinedData.logoUrl9 = logoArtika;
-    combinedData.logoUrl10 = '';
-    combinedData.logoUrl11 = '';
-    combinedData.logoUrl12 = '';
   }
  
  setDraftData(combinedData);
@@ -446,6 +443,24 @@ export default function AdminStudio() {
  />
  </EditorField>
  ))}
+
+ {selectedNodeId === 'hero' && (
+      <button 
+          onClick={() => {
+              let max = 0;
+              Object.keys(draftData).forEach(k => {
+                  if(k.startsWith('logoUrl')) {
+                      const num = parseInt(k.replace('logoUrl', '')) || 0;
+                      if (num > max) max = num;
+                  }
+              });
+              change(`logoUrl${max + 1}`, '');
+          }}
+          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
+      >
+          ➕ Añadir nuevo logo
+      </button>
+  )}
 
  {/* Slots de media en elementos */}
  {hasElements && draftData.elements.some(el =>

@@ -101,14 +101,14 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
             {/* Preview del valor actual */}
             <div
-                className="relative w-full h-32 bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden cursor-pointer group hover:border-[#CC0000] transition-colors"
+                className="relative w-32 h-32 bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden cursor-pointer group hover:border-[#CC0000] p-2 flex items-center justify-center transition-colors"
                 onClick={() => setIsOpen(true)}
             >
                 {value ? (
                     value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
-                        <video src={value} className="w-full h-full object-cover" muted />
+                        <video src={value} className="w-full h-full object-contain" muted />
                     ) : (
-                        <img src={value} alt="preview" className="w-full h-full object-cover" />
+                        <img src={value} alt="preview" className="w-full h-full object-contain" />
                     )
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-2">

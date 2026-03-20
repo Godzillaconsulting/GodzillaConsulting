@@ -142,7 +142,15 @@ export default function AdminStudio() {
     setActiveTab('textos');
     setSelectedElementIndex(null);
     setSelectedFeatureIndex(null);
-    setDraftData({ ...(node.published_data || {}), ...(node.draft_data || {}) });
+    
+    const combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
+    
+    // Autoinject videoUrl field for landing packages so it appears in Media automatically
+    if (node.id.startsWith('paquete-') && combinedData.videoUrl === undefined) {
+      combinedData.videoUrl = '';
+    }
+    
+    setDraftData(combinedData);
   };
 
   const change    = (key, val) => setDraftData(p => ({ ...p, [key]: val }));

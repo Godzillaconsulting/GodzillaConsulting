@@ -53,7 +53,7 @@ const Hero = () => {
 
  {/* Subtitle / Description */}
  <p className="text-lg md:text-xl text-gray-300 font-medium max-w-3xl mb-12 leading-relaxed pointer-events-auto drop-shadow-lg">
- El único sistema de marketing que instala un"Recepcionista Digital" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. <span className="text-white font-bold">Si no cumplimos, no pagas.</span>
+ {subtitle}
  </p>
 
  {/* CTA Area */}

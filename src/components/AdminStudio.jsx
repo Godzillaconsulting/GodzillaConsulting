@@ -14,6 +14,15 @@ import logoMedhaus from'../assets/Logos/Medhaus Logo@2x.png';
 import logoNutrisa from'../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from'../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from'../assets/Logos/Artika Logo@2x.png';
+
+import bgVideoServicios from '../assets/Particulas Rojas.mp4';
+import gifBot from '../assets/Gifs/Bot.gif';
+import gifVideo from '../assets/Gifs/Video.gif';
+import gifEmbudo from '../assets/Gifs/Embudo.gif';
+import gifRedes from '../assets/Gifs/Redes Sociales.gif';
+import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
+import gifCrm from '../assets/Gifs/Estadistica.gif';
+
 function EditorField({ fieldKey, onHover, children }) {
  return (
  <div
@@ -170,6 +179,17 @@ export default function AdminStudio() {
     combinedData.logoUrl7 = logoNutrisa;
     combinedData.logoUrl8 = logoSanAntonio;
     combinedData.logoUrl9 = logoArtika;
+  }
+
+  // Inject video and gifs for Servicios section so they can be modified
+  if (node.id === 'servicios') {
+      if (combinedData.videoUrl === undefined) combinedData.videoUrl = bgVideoServicios;
+      if (combinedData.service1IconUrl === undefined) combinedData.service1IconUrl = gifBot;
+      if (combinedData.service2IconUrl === undefined) combinedData.service2IconUrl = gifVideo;
+      if (combinedData.service3IconUrl === undefined) combinedData.service3IconUrl = gifEmbudo;
+      if (combinedData.service4IconUrl === undefined) combinedData.service4IconUrl = gifRedes;
+      if (combinedData.service5IconUrl === undefined) combinedData.service5IconUrl = gifSeo;
+      if (combinedData.service6IconUrl === undefined) combinedData.service6IconUrl = gifCrm;
   }
  
  setDraftData(combinedData);

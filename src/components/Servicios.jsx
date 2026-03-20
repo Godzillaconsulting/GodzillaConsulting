@@ -68,7 +68,7 @@ const Servicios = () => {
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
                 {/* Video de fondo - partículas */}
                 <video
-                    src={bgVideo}
+                    src={nodeData.videoUrl || bgVideo}
                     autoPlay
                     loop
                     muted

@@ -114,46 +114,57 @@ export const receiveMessage = async (req, res) => {
         return res.sendStatus(404);
     }
 
+    // Meta REQUIERE respuesta 200 antes de 20s
+    res.sendStatus(200);
+
     try {
-        // Lógica para Facebook Messenger
+        // ── FACEBOOK MESSENGER ─────────────────────────────────────────────────
         if (body.object === 'page') {
-            // ✅ FIX: usar for...of en lugar de forEach+async
-            // forEach NO espera callbacks async — Vercel mata el proceso antes de responder
             for (const entry of body.entry) {
                 const webhook_event = entry.messaging?.[0];
                 if (!webhook_event) continue;
-
                 const sender_psid = webhook_event.sender.id;
                 const page_id     = webhook_event.recipient.id;
-
-                // Ignorar mensajes enviados por la propia página (eco)
-                if (sender_psid === page_id) continue;
-
-                if (webhook_event.message && webhook_event.message.text && !webhook_event.message.is_echo) {
-                    const msgBody = webhook_event.message.text;
-                    console.log(`[Messenger] Mensaje de PSID ${sender_psid.substring(0,6)}****: ${msgBody.substring(0,50)}`);
-                    await processAndReply(sender_psid, msgBody, null, 'messenger');
+                if (sender_psid === page_id) continue; // ignorar eco
+                if (webhook_event.message?.text && !webhook_event.message?.is_echo) {
+                    console.log(`[Messenger] Msg de ${sender_psid.substring(0,6)}***`);
+                    await processAndReply(sender_psid, webhook_event.message.text, null, 'messenger');
                 }
             }
-        }
-        // Lógica para WhatsApp Business API (oficial)
-        else if (body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+
+        // ── INSTAGRAM DMs ────────────────────────────────────────────────────
+        } else if (body.object === 'instagram') {
+            for (const entry of body.entry) {
+                const webhook_event = entry.messaging?.[0];
+                if (!webhook_event) continue;
+                const sender_igsid  = webhook_event.sender.id;
+                const ig_account_id = webhook_event.recipient.id;
+                if (sender_igsid === ig_account_id) continue; // ignorar eco propio
+                if (webhook_event.message?.text && !webhook_event.message?.is_echo) {
+                    const msgText = webhook_event.message.text;
+                    console.log(`[Instagram] 📸 Mensaje de IGSID ${sender_igsid.substring(0,6)}***: ${msgText.substring(0,50)}`);
+                    await processAndReply(sender_igsid, msgText, null, 'instagram');
+                } else if (webhook_event.message?.attachments) {
+                    // Imagen / sticker — responder genéricamente
+                    console.log(`[Instagram] 📸 Adjunto recibido de ${sender_igsid.substring(0,6)}***`);
+                    await processAndReply(sender_igsid, '(imagen/adjunto)', null, 'instagram');
+                }
+            }
+
+        // ── WHATSAPP BUSINESS API ────────────────────────────────────────────
+        } else if (body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
             const message       = body.entry[0].changes[0].value.messages[0];
             const phoneNumberId = body.entry[0].changes[0].value.metadata.phone_number_id;
             const from          = message.from;
             const msgBody       = message.text?.body || '';
-
             if (msgBody) {
-                console.log(`[WhatsApp API] Mensaje de ${from.substring(0,4)}****: ${msgBody.substring(0,50)}`);
+                console.log(`[WhatsApp API] Mensaje de ${from.substring(0,4)}***`);
                 await processAndReply(from, msgBody, phoneNumberId, 'whatsapp');
             }
         }
     } catch (err) {
         console.error('[Webhook] Error procesando evento:', err.message);
     }
-
-    // ✅ Meta requiere 200 dentro de 20s — lo enviamos al final del procesamiento
-    res.sendStatus(200);
 };
 
 
@@ -227,6 +238,8 @@ async function processAndReply(from, text, phoneNumberId, platform) {
             await sendWhatsAppMessage(phoneNumberId, from, responseText);
         } else if (platform === 'messenger') {
             await sendMessengerMessage(from, responseText);
+        } else if (platform === 'instagram') {
+            await sendInstagramMessage(from, responseText);
         }
 
     } catch(err) {
@@ -280,5 +293,33 @@ async function sendMessengerMessage(sender_psid, text) {
         else console.log(`[Messenger] Respuesta enviada satisfactoriamente a ${sender_psid}`);
     } catch(e) {
         console.error("[Messenger] Fallo de conexión con Meta API:", e);
+    }
+}
+
+async function sendInstagramMessage(ig_recipient_id, text) {
+    const token = process.env.PAGE_ACCESS_TOKEN;
+    if (!token) return console.error("[Instagram] ❌ PAGE_ACCESS_TOKEN no configurado");
+
+    try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/me/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipient: { id: ig_recipient_id },
+                message: { text: text }
+            })
+        });
+        const data = await response.json();
+        if (data.error) {
+            console.error(`[Instagram] ❌ Error ${data.error.code}: ${data.error.message}`);
+            console.error(`[Instagram] Subcode: ${data.error.error_subcode} | Type: ${data.error.type}`);
+        } else {
+            console.log(`[Instagram] ✅ Respuesta enviada a ${ig_recipient_id.substring(0,6)}***`);
+        }
+    } catch(e) {
+        console.error("[Instagram] ❌ Fallo de conexión:", e.message);
     }
 }

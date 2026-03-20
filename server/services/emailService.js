@@ -56,8 +56,10 @@ const createTransporter = () => {
         };
     }
 
-    // DKIM se aplica en todos los modos
-    if (dkim) config.dkim = dkim;
+    // DKIM propio SOLO en modo directo.
+    // Con relay (Brevo) NO agregamos DKIM propio — el relay maneja su propia firma
+    // y la doble firma invalida la entrega.
+    if (dkim && process.env.EMAIL_DIRECT === 'true') config.dkim = dkim;
 
     return nodemailer.createTransport(config);
 };

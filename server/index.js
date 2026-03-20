@@ -121,6 +121,20 @@ app.get('/api/env-check', (req, res) => {
     res.json({ env: result, node_env: process.env.NODE_ENV, vercel: !!process.env.VERCEL });
 });
 
+// 🔬 Diagnóstico de Google Calendar (temporal)
+app.get('/api/test-calendar', async (req, res) => {
+    try {
+        const { agendarEnGoogleCalendar } = await import('./services/calendarService.js');
+        const result = await agendarEnGoogleCalendar({
+            nombre: 'Test Diagnostico', correo: 'diag@test.com', telefono: '6560000000',
+            servicio: 'Prueba', fecha: '2026-03-30', hora: '09:00', notas: 'Test diagnóstico'
+        });
+        res.json({ success: true, eventId: result.id, link: result.htmlLink });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message, code: err.code || err.status });
+    }
+});
+
 
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)

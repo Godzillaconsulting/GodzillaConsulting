@@ -2,14 +2,31 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// ── Transporter compartido ───────────────────────────────────────────────────
-const createTransporter = () => nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
+// ── Transporter compartido — soporta Gmail y Brevo (o cualquier SMTP) ────────
+const createTransporter = () => {
+    // Si se define EMAIL_SMTP_HOST, usa SMTP genérico (Brevo, Mailgun, etc.)
+    // Si no, usa Gmail como fallback
+    if (process.env.EMAIL_SMTP_HOST) {
+        return nodemailer.createTransport({
+            host:   process.env.EMAIL_SMTP_HOST,
+            port:   parseInt(process.env.EMAIL_SMTP_PORT || '587'),
+            secure: process.env.EMAIL_SMTP_PORT === '465', // true solo para puerto 465
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_APP_PASSWORD
+            }
+        });
     }
-});
+    // Fallback: Gmail
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_APP_PASSWORD
+        }
+    });
+};
+
 
 /**
  * Envío de Lead Magnet (recurso descargable)

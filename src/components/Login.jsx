@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, ArrowRight, AlertCircle, Loader } from 'lucide-react';
 import logo from '../assets/Godzilla Consulting.png';
@@ -10,7 +10,38 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError]       = useState('');
     const [loading, setLoading]   = useState(false);
+    const [checking, setChecking] = useState(true); // Verificar sesión existente
     const navigate = useNavigate();
+
+    // Al cargar: verificar si ya hay una sesión JWT válida
+    useEffect(() => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) { setChecking(false); return; }
+
+        fetch(`${API_BASE}/api/auth/verify`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    navigate('/admin', { replace: true });
+                } else {
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminUser');
+                    setChecking(false);
+                }
+            })
+            .catch(() => setChecking(false));
+    }, []);
+
+    if (checking) {
+        return (
+            <div className="fixed inset-0 bg-[#111111] flex flex-col items-center justify-center gap-4">
+                <span className="text-5xl animate-bounce">🦖</span>
+                <p className="text-neutral-400 text-sm font-bold tracking-widest uppercase">Cargando...</p>
+            </div>
+        );
+    }
 
     const handleLogin = async (e) => {
         e.preventDefault();

@@ -39,4 +39,21 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// ── Verificar token activo ────────────────────────────────────────────────────
+router.get('/verify', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Token no proporcionado.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'godzilla_temp_secret_key_2026');
+        res.json({ success: true, username: decoded.username, id: decoded.id });
+    } catch (err) {
+        res.status(401).json({ success: false, message: 'Token inválido o expirado.' });
+    }
+});
+
 export default router;

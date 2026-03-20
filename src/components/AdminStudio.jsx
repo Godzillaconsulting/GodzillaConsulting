@@ -124,10 +124,7 @@ export default function AdminStudio() {
   const [showPreview,          setShowPreview]          = useState(true);
   const [hoveredField,         setHoveredField]         = useState(null);
 
-  // Auth check
-  useEffect(() => {
-    if (!localStorage.getItem('adminToken')) window.location.href = '/login';
-  }, []);
+  // Auth check delegado a PrivateRoute (ver App.jsx)
 
   // Sync draftData → preview
   useEffect(() => {

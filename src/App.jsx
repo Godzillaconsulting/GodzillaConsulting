@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import React, { useState, useEffect, memo } from 'react';
 import ColorBends from './components/ColorBends';
 import AdminStudio from './components/AdminStudio';
+import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider } from './context/SiteContext';
 
 // Constantes globales inmutables para no forzar re-renders del fondo animado
@@ -178,10 +179,10 @@ function AppLayout() {
           <Route path="/redes" element={<GestionRedesSociales />} />
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
-          <Route path="/admin" element={<AdminStudio />} />
+          <Route path="/admin" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/faq" element={<PreguntasFrecuentes />} />
         </Routes>
       </div>

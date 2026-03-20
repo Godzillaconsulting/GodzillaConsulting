@@ -2,30 +2,59 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// ── Transporter compartido — soporta Gmail y Brevo (o cualquier SMTP) ────────
+// ── DKIM propio — firma criptográfica sin terceros ───────────────────────────
+// La llave privada vive en .env (DKIM_PRIVATE_KEY).
+// La llave pública está en Cloudflare DNS: godzilla._domainkey.godzillaconsulting.ai
+const getDkimConfig = () => {
+    const privateKey = process.env.DKIM_PRIVATE_KEY;
+    if (!privateKey) return undefined;
+
+    return {
+        domainName:  process.env.DKIM_DOMAIN    || 'godzillaconsulting.ai',
+        keySelector: process.env.DKIM_SELECTOR  || 'godzilla',
+        privateKey:  privateKey.replace(/\\n/g, '\n'), // restaurar saltos reales
+    };
+};
+
+// ── Transporter compartido — SMTP configurable + DKIM ────────────────────────
 const createTransporter = () => {
-    // Si se define EMAIL_SMTP_HOST, usa SMTP genérico (Brevo, Mailgun, etc.)
-    // Si no, usa Gmail como fallback
-    if (process.env.EMAIL_SMTP_HOST) {
-        return nodemailer.createTransport({
+    const dkim = getDkimConfig();
+
+    const config = process.env.EMAIL_SMTP_HOST
+        ? {
             host:   process.env.EMAIL_SMTP_HOST,
             port:   parseInt(process.env.EMAIL_SMTP_PORT || '587'),
-            secure: process.env.EMAIL_SMTP_PORT === '465', // true solo para puerto 465
+            secure: process.env.EMAIL_SMTP_PORT === '465',
             auth: {
                 user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_APP_PASSWORD
-            }
-        });
-    }
-    // Fallback: Gmail
-    return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_APP_PASSWORD
-        }
-    });
+                pass: process.env.EMAIL_APP_PASSWORD,
+            },
+          }
+        : {
+            // Fallback Gmail
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_APP_PASSWORD,
+            },
+          };
+
+    // DKIM se aplica al transporter si la llave está configurada
+    if (dkim) config.dkim = dkim;
+
+    return nodemailer.createTransport(config);
 };
+
+// ── Cabeceras anti-spam estándar (ingeniería de Brevo aplicada) ──────────────
+// List-Unsubscribe: Gmail/Outlook muestran botón de desuscripción nativo
+// Precedence: bulk → clasifica como boletín, no spam
+// X-Mailer: firma del servidor
+const bulkHeaders = (unsubUrl) => ({
+    'List-Unsubscribe':      `<${unsubUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'Precedence':            'bulk',
+    'X-Mailer':              'GodzillaConsulting-Mailer/1.0',
+});
 
 
 /**
@@ -59,7 +88,7 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
         try {
             const transporter = createTransporter();
             const result = await transporter.sendMail({
-                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_USER}>`,
+                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
                 to,
                 subject,
                 html: htmlTemplate
@@ -125,10 +154,11 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     try {
         const transporter = createTransporter();
         const result = await transporter.sendMail({
-            from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_USER}>`,
+            from:    `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
             to,
             subject,
-            html
+            html,
+            headers: bulkHeaders(unsubUrl),
         });
         return !!result.messageId;
     } catch (err) {

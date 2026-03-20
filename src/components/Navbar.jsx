@@ -17,8 +17,8 @@ const Navbar = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const res = await fetch(`${API_URL}/api/auth/login`, {
+            const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const res = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -27,6 +27,7 @@ const Navbar = () => {
             
             if (data.success) {
                 localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('adminUser', data.username || username);
                 setShowLoginModal(false);
                 setUsername('');
                 setPassword('');
@@ -41,6 +42,7 @@ const Navbar = () => {
             setLoginError(true);
         }
     };
+
 
     useEffect(() => {
         const handleScroll = () => {

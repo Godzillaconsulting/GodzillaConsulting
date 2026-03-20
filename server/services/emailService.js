@@ -16,12 +16,27 @@ const getDkimConfig = () => {
     };
 };
 
-// ── Transporter compartido — SMTP configurable + DKIM ────────────────────────
+// ── Transporter — 3 modos posibles ──────────────────────────────────────────
+// 1. EMAIL_DIRECT=true  → Entrega directa al servidor MX del destinatario (sin relay)
+// 2. EMAIL_SMTP_HOST    → Relay SMTP externo (Brevo, etc.)
+// 3. Fallback           → Gmail
 const createTransporter = () => {
     const dkim = getDkimConfig();
 
-    const config = process.env.EMAIL_SMTP_HOST
-        ? {
+    let config;
+
+    if (process.env.EMAIL_DIRECT === 'true') {
+        // ── Modo Self-hosted: entrega directa por puerto 25 sin relay ──────
+        // Nodemailer resuelve el MX del destinatario y conecta directo
+        config = {
+            direct: true,                                    // sin relay
+            port:   25,
+            name:   process.env.DKIM_DOMAIN || 'godzillaconsulting.ai', // HELO hostname
+            // Sin auth — nos identificamos solo con DKIM + SPF
+        };
+    } else if (process.env.EMAIL_SMTP_HOST) {
+        // ── Modo Relay SMTP (Brevo, etc.) ──────────────────────────────────
+        config = {
             host:   process.env.EMAIL_SMTP_HOST,
             port:   parseInt(process.env.EMAIL_SMTP_PORT || '587'),
             secure: process.env.EMAIL_SMTP_PORT === '465',
@@ -29,21 +44,24 @@ const createTransporter = () => {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_APP_PASSWORD,
             },
-          }
-        : {
-            // Fallback Gmail
+        };
+    } else {
+        // ── Fallback: Gmail ────────────────────────────────────────────────
+        config = {
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_APP_PASSWORD,
             },
-          };
+        };
+    }
 
-    // DKIM se aplica al transporter si la llave está configurada
+    // DKIM se aplica en todos los modos
     if (dkim) config.dkim = dkim;
 
     return nodemailer.createTransport(config);
 };
+
 
 // ── Cabeceras anti-spam estándar (ingeniería de Brevo aplicada) ──────────────
 // List-Unsubscribe: Gmail/Outlook muestran botón de desuscripción nativo

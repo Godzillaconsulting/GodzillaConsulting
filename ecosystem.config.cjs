@@ -18,6 +18,23 @@ module.exports = {
       }
     },
     {
+      name: "godzilla-bot-ig",
+      script: "./instagram_bot.cjs",
+      cwd: "./server",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "512M",
+      max_restarts: 3,
+      restart_delay: 15000,
+      min_uptime: "20s",
+      watch: false,
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+
+    {
       name: "ha-tunnel-monitor",
       script: "./tunnel_monitor.cjs",
       watch: false

@@ -35,4 +35,18 @@ dist-ssr
 .env
 server/.env
 server/.env.local
-server/uploads/ 
+server/uploads/
+
+# Instagram bot — session & cache (generados localmente)
+server/.wwebjs_auth/
+server/.wwebjs_cache/
+
+# Scripts de diagnóstico temporales (no son parte del servicio)
+server/check_*.cjs
+server/check_*.js
+server/test_*.cjs
+server/test_*.js
+server/diag_*.js
+server/send_test_*.js
+ig_setup.mjs
+server/ig_setup.mjs

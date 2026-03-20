@@ -96,7 +96,10 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
-app.use('/api/auth', authLimiter, authRoutes);
+// Auth limiter SOLO para login (evita brute-force).
+// /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 
 // Servir archivos subidos como estáticos en /media/*

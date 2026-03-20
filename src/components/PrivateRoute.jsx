@@ -7,7 +7,11 @@ const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : '';
  * PrivateRoute — Protege rutas que requieren autenticación.
  * Verifica el token JWT contra el backend antes de renderizar.
  * Mientras verifica muestra una pantalla de carga.
- * Si el token es inválido o no existe → redirige a /login.
+ *
+ * Lógica de fallo:
+ *  - 401 (Unauthorized) → token realmente inválido → borra sesión → /login
+ *  - 429 / 500 / error de red → NO borrar sesión → dejar pasar con token local
+ *    (evitar que un rate-limit o cold-start bloquee usuarios legítimos)
  */
 export default function PrivateRoute({ children }) {
     const [status, setStatus] = useState('checking'); // 'checking' | 'ok' | 'denied'
@@ -20,27 +24,35 @@ export default function PrivateRoute({ children }) {
             return;
         }
 
-        // Verificar contra el backend que el token sea válido y no esté expirado
         fetch(`${API_BASE}/api/auth/verify`, {
             headers: { Authorization: `Bearer ${token}` },
         })
-            .then((res) => res.json())
+            .then((res) => {
+                // Solo el 401 significa que el token es genuinamente inválido
+                if (res.status === 401) {
+                    return res.json().then(data => ({ ...data, _authFail: true }));
+                }
+                // 429 rate-limit, 500 server error, etc → no es fallo de auth
+                if (!res.ok) {
+                    return { success: true, _serverError: true };
+                }
+                return res.json();
+            })
             .then((data) => {
-                if (data.success) {
-                    setStatus('ok');
-                } else {
-                    // Token inválido o expirado → limpiar y negar acceso
+                if (data._authFail) {
+                    // Token expirado o inválido → limpiar y redirigir
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminUser');
                     setStatus('denied');
+                } else {
+                    // Válido, o error de servidor que no es de auth → dejar pasar
+                    setStatus('ok');
                 }
             })
             .catch(() => {
-                // Si el servidor no responde en dev, permitir con token local
-                // En producción sería más estricto; aquí optamos por denegar.
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminUser');
-                setStatus('denied');
+                // Error de red / timeout → dejar pasar con token local
+                console.warn('[PrivateRoute] Error de red al verificar token. Usando token local.');
+                setStatus('ok');
             });
     }, []);
 

@@ -5,6 +5,15 @@ import MediaPicker from'./MediaPicker';
 import NewsletterPanel from'./NewsletterPanel';
 
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
+import logoCeoCuts from'../assets/Logos/CEO Cuts Logo@2x.png';
+import logoCircleOne from'../assets/Logos/Circle One Logo@2x.png';
+import logoDonElote from'../assets/Logos/Don Elote Logo@2x.png';
+import logoFacemaker from'../assets/Logos/Facemaker Logo@2x.png';
+import logoGrupoMrg from'../assets/Logos/Grupo MRG Logo@2x.png';
+import logoMedhaus from'../assets/Logos/Medhaus Logo@2x.png';
+import logoNutrisa from'../assets/Logos/Nutrisa Logo@2x.png';
+import logoSanAntonio from'../assets/Logos/San Antonio Logo@2x.png';
+import logoArtika from'../assets/Logos/Artika Logo@2x.png';
 function EditorField({ fieldKey, onHover, children }) {
  return (
  <div
@@ -149,6 +158,22 @@ export default function AdminStudio() {
  if (node.id.startsWith('paquete-') && combinedData.videoUrl === undefined) {
  combinedData.videoUrl ='';
  }
+
+  // Inject logos for Hero section so they can be modified
+  if (node.id === 'hero' && combinedData.logoUrl1 === undefined) {
+    combinedData.logoUrl1 = logoCeoCuts;
+    combinedData.logoUrl2 = logoCircleOne;
+    combinedData.logoUrl3 = logoDonElote;
+    combinedData.logoUrl4 = logoFacemaker;
+    combinedData.logoUrl5 = logoGrupoMrg;
+    combinedData.logoUrl6 = logoMedhaus;
+    combinedData.logoUrl7 = logoNutrisa;
+    combinedData.logoUrl8 = logoSanAntonio;
+    combinedData.logoUrl9 = logoArtika;
+    combinedData.logoUrl10 = '';
+    combinedData.logoUrl11 = '';
+    combinedData.logoUrl12 = '';
+  }
  
  setDraftData(combinedData);
  };

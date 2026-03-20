@@ -25,10 +25,21 @@ const Hero = () => {
  const bgVideoUrl = data.bgVideoUrl || data.videoUrl || null;
  const bgImageUrl = data.imageUrl || data.bgImageUrl || null;
 
- const logos = [
- logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker,
- logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika
- ];
+    let logos = [];
+    if (data.logoUrl1 !== undefined) {
+        // Load dynamically from CMS
+        for (let i = 1; i <= 20; i++) {
+            if (data[`logoUrl${i}`]) {
+                logos.push(data[`logoUrl${i}`]);
+            }
+        }
+    } else {
+        // Static fallback if not configured in CMS yet
+        logos = [
+            logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker,
+            logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika
+        ];
+    }
  return (
  <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-transparent">
  {/* Fondo editable desde CMS (sobre ColorBends) */}

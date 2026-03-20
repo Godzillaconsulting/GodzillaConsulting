@@ -14,13 +14,13 @@ import logoArtika from'../assets/Logos/Artika Logo@2x.png';
 
 const Hero = () => {
  const { getNodeData } = useSiteData();
- const data = getNodeData('hero') || {};
- // Sobrescribimos la data para forzar este copy maestro y evitar el"Hero" default
- const overline ="Sistemas de crecimiento para negocios en la frontera";
- const title ="DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
- const subtitle ="El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.";
- const ctaText = data.ctaText ||"Ver planes y garantías";
- const ctaLink = data.ctaLink ||"#paquetes";
+    const data = getNodeData('hero') || {};
+    // Fallbacks si la data del CMS está vacía
+    const overline = data.overline || "Sistemas de crecimiento para negocios en la frontera";
+    const title = data.title || "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
+    const subtitle = data.subtitle || "El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.";
+    const ctaText = data.ctaText || "Ver planes y garantías";
+    const ctaLink = data.ctaLink || "#paquetes";
  // Fondo editable desde CMS (se superpone al ColorBends animado)
  const bgVideoUrl = data.bgVideoUrl || data.videoUrl || null;
  const bgImageUrl = data.imageUrl || data.bgImageUrl || null;

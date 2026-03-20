@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MessageSquare, X, Send, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import zillaIcon from '../assets/Icono de chatbot.jpeg';
 import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 
 const Chatbot = () => {
+    const { pathname } = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [messages, setMessages] = useState([
@@ -71,6 +73,13 @@ const Chatbot = () => {
             setIsLoading(false);
         }
     };
+
+    const hiddenRoutes = ['/admin', '/dashboard', '/login'];
+    const isHidden = hiddenRoutes.some(route => pathname.startsWith(route) || window.location.pathname.startsWith(route));
+
+    if (isHidden) {
+        return null;
+    }
 
     return (
         <>

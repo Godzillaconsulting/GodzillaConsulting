@@ -4,18 +4,25 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 const getCalendarClient = () => {
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim();
-    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
-    if (!clientEmail || !privateKey) {
-        throw new Error('Variables de entorno de Google Calendar (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY) no configuradas.');
+    // Estrategia dual para la llave:
+    // • GOOGLE_PRIVATE_KEY_B64 → Base64 del PEM completo (Vercel: sin problemas de newlines)
+    // • GOOGLE_PRIVATE_KEY     → PEM directo con normalización (servidor local / PM2)
+    let privateKey;
+    if (process.env.GOOGLE_PRIVATE_KEY_B64) {
+        privateKey = Buffer.from(process.env.GOOGLE_PRIVATE_KEY_B64, 'base64').toString('utf8');
+        console.log('[Cal] B64 key decodificada. Longitud:', privateKey.length);
+    } else if (process.env.GOOGLE_PRIVATE_KEY) {
+        privateKey = process.env.GOOGLE_PRIVATE_KEY
+            .replace(/\\n/g, '\n')
+            .replace(/\r/g, '')
+            .trim();
+        console.log('[Cal] Raw key. Longitud:', privateKey.length);
+    } else {
+        throw new Error('Falta GOOGLE_PRIVATE_KEY o GOOGLE_PRIVATE_KEY_B64 en variables de entorno.');
     }
 
-    // Normalizar la llave: maneja tanto \n literales como newlines reales
-    // y elimina posibles \r (CRLF de Windows)
-    privateKey = privateKey
-        .replace(/\\n/g, '\n')  // convierte \n literal → newline real
-        .replace(/\r/g, '')      // elimina \r (Windows CRLF)
-        .trim();
+    if (!clientEmail) throw new Error('Falta GOOGLE_CLIENT_EMAIL en variables de entorno.');
 
 
     // Usar objeto de configuración JWT (más robusto que parámetros posicionales)

@@ -4,46 +4,52 @@ import { agendarEnGoogleCalendar } from '../services/calendarService.js';
 export const processContactForm = async (req, res) => {
     const client = await pool.connect();
     try {
-        console.log("📩 Recibiendo solicitud de Cita:", req.body);
+        console.log("📩 Cita recibida del formulario:", req.body);
         const { nombre, email, telefono, preferencia_sesion, fecha, hora } = req.body;
+        const notas = req.body.notas || '';
 
         if (!nombre || !email || !telefono || !preferencia_sesion || !fecha || !hora) {
-            console.log("⚠️ Validación fallida: Faltan campos obligatorios.");
             return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
         }
 
-        console.log("🛠️ Interfaz Google Calendar (Ejecutando)...");
-        const notasForm = req.body.notas || '';
-        await agendarEnGoogleCalendar({
+        // PASO 1: Google Calendar PRIMERO (all-or-nothing)
+        console.log("📅 Agendando en Google Calendar...");
+        const googleRes = await agendarEnGoogleCalendar({
             nombre: nombre.trim(),
             correo: email.trim().toLowerCase(),
             telefono: telefono.trim(),
             servicio: preferencia_sesion,
             fecha,
             hora,
-            notas: notasForm
+            notas
         });
 
-        console.log("🛠️ Insertando en DB (Éxito GCal confirmado)...");
-        // Insert into citas table
+        if (!googleRes || !googleRes.id) {
+            throw new Error('Google Calendar no confirmó el evento — no se guardó en DB.');
+        }
+
+        // PASO 2: Solo si Google confirmó → insertar en Neon (con google_calendar_event_id)
+        console.log("🛠️ Insertando en Neon con Calendar ID:", googleRes.id);
         const result = await client.query(
-            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada') RETURNING id`,
-            [nombre.trim(), email.trim().toLowerCase(), telefono.trim(), preferencia_sesion, fecha, hora, notasForm]
+            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8) RETURNING id`,
+            [nombre.trim(), email.trim().toLowerCase(), telefono.trim(), preferencia_sesion, fecha, hora, notas, googleRes.id]
         );
 
-        console.log("✅ Cita guardada con ID:", result.rows[0].id);
+        console.log("✅ Cita #" + result.rows[0].id + " guardada. Calendar:", googleRes.id);
 
         return res.status(200).json({
             success: true,
-            message: `¡Registro exitoso (ID: ${result.rows[0].id})! Godzilla Consulting te enviará información pronto.`
+            message: `¡Cita confirmada! Te contactaremos pronto.`,
+            cita_id: result.rows[0].id,
+            personal_calendar_link: googleRes.personalCalendarLink,
         });
 
     } catch (error) {
-        console.error("❌ Controlador Error (Contact):", error.message);
+        console.error("❌ Error en contactController:", error.message);
         return res.status(500).json({
             success: false,
-            message: `Error en servidor: ${error.message}`
+            message: `Error al agendar: ${error.message}`
         });
     } finally {
         client.release();

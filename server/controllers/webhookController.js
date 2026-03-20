@@ -40,9 +40,14 @@ Eres Zilla, Consultor Senior en Godzilla Consulting, agencia liderada por **Osca
 - **TikTok**: https://tiktok.com/@godzillaconsulting.ai
 - **Sitio Web**: https://godzillaconsulting.ai
 
-## PROTOCOLO DE AGENDAMIENTO
-Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
-**SIEMPRE** usa 'check_availability' antes de confirmar una cita.
+## PROTOCOLO DE AGENDAMIENTO — OBLIGATORIO Y EN ORDEN ESTRICTO
+PASO 1: Recopila TODOS estos datos del usuario: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM en formato 24h), Notas.
+PASO 2: Llama a 'check_availability' con la fecha y hora proporcionadas.
+PASO 3: Si check_availability devuelve disponible=true, llama a 'save_appointment' con TODOS los datos.
+PASO 4: Después de que save_appointment regrese success=true, confirma la cita y comparte el 'personal_calendar_link' para que el usuario la guarde en SU Google Calendar.
+PASO 5: Si save_appointment falla, discúlpate y pide intentarlo de nuevo.
+
+⚠️ REGLA CRÍTICA: Nunca confirmes la cita sin haber ejecutado save_appointment exitosamente.
 `;
 
 const chatTools = [
@@ -182,19 +187,29 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
                     try {
-                        const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                        // Lista Enlazada de Validación: Status 201 Strict Check
-                        if (googleRes && googleRes.id && googleRes.htmlLink) {
-                            const r = await pool.query(
-                                "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada') RETURNING id",
-                                [nombre, correo, telefono, servicio, fecha, hora, notas]
-                            );
-                            fRes = { success: true, id: r.rows[0].id };
+                        // Verificar duplicado primero
+                        const dup = await pool.query(
+                            "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
+                            [correo, fecha, hora]
+                        );
+                        if (dup.rows.length > 0) {
+                            fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada' };
                         } else {
-                            fRes = { success: false, error: 'Validación fallida: Google Calendar no confirmó 201' };
+                            const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                            if (googleRes && googleRes.id) {
+                                const r = await pool.query(
+                                    `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
+                                     VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
+                                    [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
+                                );
+                                console.log(`[${platform}] ✅ Cita #${r.rows[0].id} en Neon. Calendar: ${googleRes.id}`);
+                                fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink };
+                            } else {
+                                fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
+                            }
                         }
                     } catch (err) {
-                        console.error('Error integrando cita:', err.message);
+                        console.error(`[${platform}] Error en save_appointment:`, err.message);
                         fRes = { success: false, error: err.message };
                     }
                 } else if (call.name === "get_available_downloads") {

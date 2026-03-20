@@ -10,6 +10,7 @@ import linkedinIcon from '../assets/icons/1715491568linkedin-icon-png.png';
 const ContactForm = ({ showNewsletter = true }) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [sessionType, setSessionType] = useState('video'); // 'video' | 'presencial'
+    const [calendarLink, setCalendarLink] = useState('');
 
     // Estados para los campos de captura
     const [nombre, setNombre] = useState('');
@@ -62,6 +63,10 @@ const ContactForm = ({ showNewsletter = true }) => {
             if (data.success) {
                 if (window.fbq) {
                     window.fbq('track', 'Lead');
+                }
+                // Guardar link personal del calendario si vino en la respuesta
+                if (data.personal_calendar_link) {
+                    setCalendarLink(data.personal_calendar_link);
                 }
                 fallbackSilent();
             } else {
@@ -282,14 +287,24 @@ const ContactForm = ({ showNewsletter = true }) => {
                                 <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
                                     <CheckCircle size={80} className="text-[#25D366] mb-8 animate-bounce" />
                                     <p className="text-[#25D366] font-bold text-sm tracking-widest uppercase mb-4">
-                                        ¡REGISTRO EXITOSO!
+                                        ¡CITA CONFIRMADA!
                                     </p>
                                     <h3 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
                                         ¡MUCHAS GRACIAS<br />POR TU TIEMPO!
                                     </h3>
-                                    <p className="text-gray-300 text-lg mb-12 max-w-sm mx-auto">
-                                        Estamos agendando tu sesión, en breve recibirás un correo.
+                                    <p className="text-gray-300 text-lg mb-8 max-w-sm mx-auto">
+                                        Tu cita quedó agendada. Pronto te contactaremos.
                                     </p>
+                                    {calendarLink && (
+                                        <a
+                                            href={calendarLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 bg-[#CC0000] text-white px-8 py-4 rounded-full font-bold text-base mb-8 hover:bg-white hover:text-[#CC0000] transition-all shadow-lg"
+                                        >
+                                            📅 Agregar a mi Google Calendar
+                                        </a>
+                                    )}
                                     <button onClick={resetForm} className="bg-transparent text-white border-2 border-white px-10 py-3 rounded-full font-bold hover:bg-white hover:text-[#111111] transition-colors">
                                         Regresar al formulario
                                     </button>

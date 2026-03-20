@@ -123,22 +123,28 @@ app.get('/api/env-check', (req, res) => {
 
 // 🔬 Diagnóstico de Google Calendar (temporal)
 app.get('/api/test-calendar', async (req, res) => {
-    // Diagnóstico previo de la llave
     const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    const rawB64 = process.env.GOOGLE_PRIVATE_KEY_B64 || '';
+    let decodedB64 = '';
+    try { decodedB64 = rawB64 ? Buffer.from(rawB64, 'base64').toString('utf8') : ''; } catch {}
+
     const keyDiag = {
-        length: rawKey.length,
-        first50: JSON.stringify(rawKey.substring(0, 50)),
-        last50: JSON.stringify(rawKey.substring(rawKey.length - 50)),
-        hasLiteralN: rawKey.includes('\\n'),
-        hasRealN: rawKey.includes('\n'),
-        hasCR: rawKey.includes('\r'),
-        startsCorrect: rawKey.trimStart().startsWith('-----BEGIN'),
+        // Clave raw
+        raw_length: rawKey.length,
+        raw_first30: JSON.stringify(rawKey.substring(0, 30)),
+        raw_startsCorrect: rawKey.trimStart().startsWith('-----BEGIN'),
+        // Clave B64
+        b64_present: rawB64.length > 0,
+        b64_length: rawB64.length,
+        b64_decoded_len: decodedB64.length,
+        b64_decoded_starts: JSON.stringify(decodedB64.substring(0, 30)),
+        b64_decoded_valid: decodedB64.trimStart().startsWith('-----BEGIN'),
     };
     try {
         const { agendarEnGoogleCalendar } = await import('./services/calendarService.js');
         const result = await agendarEnGoogleCalendar({
             nombre: 'Test Diagnostico', correo: 'diag@test.com', telefono: '6560000000',
-            servicio: 'Prueba', fecha: '2026-03-30', hora: '09:00', notas: 'Test diagnóstico'
+            servicio: 'Prueba', fecha: '2026-03-31', hora: '09:00', notas: 'Test'
         });
         res.json({ success: true, eventId: result.id, link: result.htmlLink, keyDiag });
     } catch (err) {

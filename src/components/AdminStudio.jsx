@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSiteData } from '../context/SiteContext';
 import StudioPreview from './StudioPreview';
 import MediaPicker from './MediaPicker';
+import NewsletterPanel from './NewsletterPanel';
 
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 function EditorField({ fieldKey, onHover, children }) {
@@ -115,6 +116,7 @@ const GOOGLE_FONTS = ['Inter','Roboto','Outfit','Poppins','Montserrat','Lato','P
 export default function AdminStudio() {
   const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
   const [selectedNodeId,       setSelectedNodeId]       = useState(null);
+  const [activeSection,        setActiveSection]        = useState('editor'); // 'editor' | 'newsletter'
   const [activeTab,            setActiveTab]            = useState('textos');
   const [draftData,            setDraftData]            = useState(null);
   const [selectedElementIndex, setSelectedElementIndex] = useState(null);
@@ -260,7 +262,13 @@ export default function AdminStudio() {
           })}
         </div>
 
-        <div className="p-3 border-t border-neutral-800">
+        <div className="p-3 border-t border-neutral-800 space-y-1">
+          <button onClick={() => { setActiveSection(s => s === 'newsletter' ? 'editor' : 'newsletter'); setSelectedNodeId(null); }}
+            className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${
+              activeSection === 'newsletter' ? 'bg-[#CC0000]/20 text-[#CC0000]' : 'text-neutral-500 hover:text-white hover:bg-neutral-900'
+            }`}>
+            📧 Newsletter
+          </button>
           <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
             className="w-full text-[10px] text-neutral-600 hover:text-red-400 py-2 rounded-lg hover:bg-neutral-900 transition-colors">
             🚪 Cerrar sesión
@@ -270,6 +278,11 @@ export default function AdminStudio() {
 
       {/* ██ ÁREA PRINCIPAL ███████████████████████████████████████████████████ */}
       <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Newsletter Panel */}
+        {activeSection === 'newsletter' ? (
+          <NewsletterPanel />
+        ) : (<>
 
         {/* Barra superior */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 bg-[#0d0d0d] shrink-0">
@@ -654,8 +667,10 @@ export default function AdminStudio() {
           )}
 
         </div>
+        </>)}
       </div>
 
     </div>
   );
 }
+

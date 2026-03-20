@@ -31,6 +31,22 @@ module.exports = {
       name: "ha-log-cleaner",
       script: "./log_cleaner.cjs",
       watch: false
+    },
+    {
+      name: "email-worker",
+      script: "./emailWorker.js",
+      cwd: "./server",
+      instances: 1,
+      exec_mode: "fork",
+      watch: false,
+      restart_delay: 5000,        // espera 5s antes de reintentar
+      max_restarts: 10,           // máximo 10 reinicios en ventana
+      min_uptime: "10s",          // debe vivir al menos 10s para contar como estable
+      exp_backoff_restart_delay: 100,
+      env: {
+        NODE_ENV: "production",
+        QUEUE_DELAY_MS: "2000"    // 2 segundos entre correos
+      }
     }
   ]
 };

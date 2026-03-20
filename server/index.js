@@ -96,11 +96,15 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
+import newsletterRoutes from './routes/newsletter.js';
+
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+
 
 // Servir archivos subidos como estáticos en /media/*
 app.use('/media', express.static(path.join(__dirname, 'uploads')));

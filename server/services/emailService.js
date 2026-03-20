@@ -2,18 +2,21 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// ── Transporter compartido ───────────────────────────────────────────────────
+const createTransporter = () => nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+    }
+});
+
 /**
- * Función central para envíos de correo de Lead Magnets
- * @param {object} params
- * @param {string} params.to - Correo electrónico del cliente
- * @param {string} params.subject - Asunto del correo
- * @param {string} params.body - Texto o HTML a enviar
- * @param {string} params.fileUrl - Link de descarga desde Supabase Storage
+ * Envío de Lead Magnet (recurso descargable)
  */
 export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
     let retries = 1;
 
-    // Plantilla Wrapper HTML para todos los correos de la empresa
     const htmlTemplate = `
         <div style="font-family: Arial, sans-serif; color: #111111; line-height: 1.6;">
             <div>${body}</div>
@@ -37,35 +40,83 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
 
     while (retries >= 0) {
         try {
-            // Configurar el transporter de Nodemailer con la clave de aplicación de Gmail
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_APP_PASSWORD
-                }
-            });
-
-            // Opciones del correo
-            const mailOptions = {
-                from: `"Godzilla Consulting \uD83E\uDD96" <${process.env.EMAIL_USER}>`,
-                to: to,
-                subject: subject,
+            const transporter = createTransporter();
+            const result = await transporter.sendMail({
+                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_USER}>`,
+                to,
+                subject,
                 html: htmlTemplate
-            };
-
-            const result = await transporter.sendMail(mailOptions);
-            
-            // Si funciona retorna true
-            if (!result.messageId) throw new Error("No messageId returned from transporter");
+            });
+            if (!result.messageId) throw new Error('No messageId returned from transporter');
             return true;
         } catch (error) {
-            console.error(`❌ [Email Service] Fallo al enviar al correo: ${to}. Intentos restantes: ${retries}`, error);
-            if (retries === 0) {
-                // Si ya no quedan reintentos, retornamos false
-                return false;
-            }
+            console.error(`❌ [Email Service] Fallo lead magnet → ${to}. Intentos: ${retries}`, error.message);
+            if (retries === 0) return false;
             retries--;
         }
     }
 };
+
+/**
+ * Envío de Newsletter (boletín periódico)
+ * Usado por emailQueue.js para envío masivo escalonado
+ */
+export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl }) => {
+    const unsubUrl = `https://godzillaconsulting.ai/api/newsletter/unsubscribe?email=${encodeURIComponent(to)}`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+            <!-- Header -->
+            <tr>
+              <td style="background:#111111;padding:28px 40px;text-align:center;">
+                <span style="color:#CC0000;font-size:24px;font-weight:900;letter-spacing:-1px;">GODZILLA</span>
+                <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:-1px;"> CONSULTING</span>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding:40px;color:#111111;font-size:15px;line-height:1.7;">
+                ${bodyHtml}
+                ${attachmentUrl ? `
+                <div style="text-align:center;margin:32px 0;">
+                  <a href="${attachmentUrl}" style="background:#CC0000;color:#fff;font-weight:bold;padding:14px 32px;text-decoration:none;border-radius:30px;display:inline-block;">
+                    📎 Descargar Adjunto
+                  </a>
+                </div>` : ''}
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f9f9f9;padding:24px 40px;border-top:1px solid #eee;text-align:center;">
+                <p style="font-size:12px;color:#888;margin:0;">
+                  © ${new Date().getFullYear()} Godzilla Consulting — Ciudad Juárez, Chih.<br/>
+                  <a href="${unsubUrl}" style="color:#CC0000;text-decoration:none;">Cancelar suscripción</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>`;
+
+    try {
+        const transporter = createTransporter();
+        const result = await transporter.sendMail({
+            from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            html
+        });
+        return !!result.messageId;
+    } catch (err) {
+        console.error(`❌ [Newsletter Email] → ${to}:`, err.message);
+        return false;
+    }
+};
+

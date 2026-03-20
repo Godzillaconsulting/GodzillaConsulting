@@ -1,24 +1,22 @@
 import { google } from 'googleapis';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, '../.env') });
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 const getCalendarClient = () => {
-    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim();
     let privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
     if (!clientEmail || !privateKey) {
         throw new Error('Variables de entorno de Google Calendar (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY) no configuradas.');
     }
 
-    // Normalizar saltos de línea
-    privateKey = privateKey.replace(/\\n/g, '\n');
+    // Normalizar la llave: maneja tanto \n literales como newlines reales
+    // y elimina posibles \r (CRLF de Windows)
+    privateKey = privateKey
+        .replace(/\\n/g, '\n')  // convierte \n literal → newline real
+        .replace(/\r/g, '')      // elimina \r (Windows CRLF)
+        .trim();
+
 
     // Usar objeto de configuración JWT (más robusto que parámetros posicionales)
     const auth = new google.auth.JWT({

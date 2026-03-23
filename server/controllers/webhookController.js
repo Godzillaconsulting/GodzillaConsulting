@@ -109,15 +109,14 @@ export const verifyWebhook = (req, res) => {
 
 export const receiveMessage = async (req, res) => {
     const body = req.body;
-    
+
     if (!body.object) {
         return res.sendStatus(404);
     }
 
-    // Meta REQUIERE respuesta 200 antes de 20s
-    res.sendStatus(200);
-
-    try {
+    // Procesamos primero (Gemini ~2-5s), luego respondemos 200 a Meta.
+    // Si el proceso tarda más de 15s, respondemos 200 igual (Meta espera hasta 20s).
+    const process = async () => {
         // ── FACEBOOK MESSENGER ─────────────────────────────────────────────────
         if (body.object === 'page') {
             for (const entry of body.entry) {
@@ -145,7 +144,6 @@ export const receiveMessage = async (req, res) => {
                     console.log(`[Instagram] 📸 Mensaje de IGSID ${sender_igsid.substring(0,6)}***: ${msgText.substring(0,50)}`);
                     await processAndReply(sender_igsid, msgText, null, 'instagram');
                 } else if (webhook_event.message?.attachments) {
-                    // Imagen / sticker — responder genéricamente
                     console.log(`[Instagram] 📸 Adjunto recibido de ${sender_igsid.substring(0,6)}***`);
                     await processAndReply(sender_igsid, '(imagen/adjunto)', null, 'instagram');
                 }
@@ -162,9 +160,18 @@ export const receiveMessage = async (req, res) => {
                 await processAndReply(from, msgBody, phoneNumberId, 'whatsapp');
             }
         }
+    };
+
+    // Timeout de 15s para garantizar respuesta dentro de la ventana de Meta (20s)
+    const timeout = new Promise(resolve => setTimeout(resolve, 15000));
+
+    try {
+        await Promise.race([process(), timeout]);
     } catch (err) {
         console.error('[Webhook] Error procesando evento:', err.message);
     }
+
+    res.sendStatus(200);
 };
 
 

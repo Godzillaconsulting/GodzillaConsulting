@@ -22,6 +22,7 @@ import gifEmbudo from '../assets/Gifs/Embudo.gif';
 import gifRedes from '../assets/Gifs/Redes Sociales.gif';
 import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
 import gifCrm from '../assets/Gifs/Estadistica.gif';
+import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 
 function EditorField({ fieldKey, onHover, children }) {
  return (
@@ -223,6 +224,21 @@ export default function AdminStudio() {
       combinedData.caso6LogoUrl = logoGrupoMrg;
       combinedData.caso6Nombre = 'Grupo MRG';
       combinedData.caso6Category = 'Banquetes y Eventos';
+  }
+
+  // Inject defaults for Recursos
+  if (node.id === 'recursos' && combinedData.recurso1ImageUrl === undefined) {
+      combinedData.recurso1Nombre = '7 prompts de IA para marketing que sí funcionan';
+      combinedData.recurso1Desc = 'El contenido de calidad ya no tiene que consumir horas de tu equipo. Esta colección de 7 prompts especializados te da las herramientas exactas que necesitas para crear copy, estrategias y análisis de nivel profesional en minutos. Acelera tu producción sin sacrificar calidad.';
+      combinedData.recurso1ImageUrl = 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80';
+
+      combinedData.recurso2Nombre = 'Cómo generar leads en WhatsApp sin spam';
+      combinedData.recurso2Desc = 'WhatsApp se ha consolidado como el canal de comunicación preferido en México, con más de 90 millones de usuarios activos. Esta guía te muestra cómo aprovechar esta plataforma de manera profesional y efectiva para hacer crecer tu negocio. Domina el canal de comunicación más poderoso del país.';
+      combinedData.recurso2ImageUrl = whatsapp3d;
+
+      combinedData.recurso3Nombre = 'Plantilla de CRM Personalizable';
+      combinedData.recurso3Desc = 'Llevar un seguimiento de tus leads en libretas u hojas caóticas te hace perder ventas a diario. Con este CRM en Excel totalmente personalizable y fácil de usar, podrás organizar a tus prospectos de forma clara, priorizar tus seguimientos y maximizar tu porcentaje de cierre. Simplifica tu proceso de ventas hoy mismo.';
+      combinedData.recurso3ImageUrl = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80';
   }
  
  setDraftData(combinedData);
@@ -536,6 +552,30 @@ export default function AdminStudio() {
           className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
       >
           ➕ Añadir nuevo caso
+      </button>
+  )}
+
+  {selectedNodeId === 'recursos' && (
+      <button 
+          onClick={() => {
+              let max = 0;
+              Object.keys(draftData).forEach(k => {
+                  if(k.startsWith('recurso') && k.endsWith('ImageUrl')) {
+                      const num = parseInt(k.replace('recurso', '').replace('ImageUrl', '')) || 0;
+                      if (num > max) max = num;
+                  }
+              });
+              const next = max + 1;
+              setDraftData(p => ({
+                  ...p,
+                  [`recurso${next}ImageUrl`]: '',
+                  [`recurso${next}Nombre`]: `Recurso ${next}`,
+                  [`recurso${next}Desc`]: 'Descripción del nuevo recurso'
+              }));
+          }}
+          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
+      >
+          ➕ Añadir nuevo recurso
       </button>
   )}
 

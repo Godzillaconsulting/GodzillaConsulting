@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 
 const defaultMagnets = [
     {
@@ -29,6 +30,9 @@ const defaultMagnets = [
 ];
 
 const Recursos = () => {
+    const { getNodeData } = useSiteData();
+    const nodeData = getNodeData('recursos') || {};
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [email, setEmail] = useState('');
     const [website, setWebsite] = useState(''); // Honeypot trap
@@ -57,20 +61,55 @@ const Recursos = () => {
         return item.image; // fallback url o imagen importada
     };
 
+    const displayMagnets = useMemo(() => {
+        const mappedCases = [];
+        let maxIdx = 0;
+        Object.keys(nodeData).forEach(k => {
+            if (k.startsWith('recurso') && k.endsWith('ImageUrl')) {
+                const num = parseInt(k.replace('recurso', '').replace('ImageUrl', ''));
+                if (num > maxIdx) maxIdx = num;
+            }
+        });
+
+        if (maxIdx > 0) {
+            for (let i = 1; i <= maxIdx; i++) {
+                if (nodeData[`recurso${i}Nombre`]) {
+                    mappedCases.push({
+                        _id: `rec-${i}`,
+                        id: i,
+                        orden: i,
+                        image: nodeData[`recurso${i}ImageUrl`],
+                        title: nodeData[`recurso${i}Nombre`] || '',
+                        description: nodeData[`recurso${i}Desc`] || ''
+                    });
+                }
+            }
+            return mappedCases;
+        }
+
+        if (magnetsState !== defaultMagnets && magnetsState.length > 0) return magnetsState;
+        return defaultMagnets;
+    }, [nodeData, magnetsState]);
+
     return (
         <section id="recursos" className="py-24 bg-[#111111] overflow-hidden">
             <div className="container mx-auto px-6 max-w-6xl">
                 <div className="text-center mb-20">
+                    {nodeData.overline && (
+                        <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
+                            {nodeData.overline}
+                        </span>
+                    )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
-                        RECURSOS
+                        {nodeData.title || 'RECURSOS'}
                     </h2>
                     <p className="text-xl text-gray-300 font-medium max-w-2xl mx-auto">
-                        Accede a recursos de IA y marketing listos para usar en tu día a día.
+                        {nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.'}
                     </p>
                 </div>
 
                 <div className="space-y-16">
-                    {magnetsState.map((item, index) => (
+                    {displayMagnets.map((item, index) => (
                         <div key={item._id || item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 md:gap-16 items-center group`}>
 
                             {/* Image Container with Custom Frame */}
@@ -88,7 +127,7 @@ const Recursos = () => {
                                             }}
                                             className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500"
                                         >
-                                            DESCARGAR <Download size={18} />
+                                            {nodeData.ctaText || 'DESCARGAR'} <Download size={18} />
                                         </button>
                                     </div>
                                 </div>

@@ -9,6 +9,12 @@ const CasosExito = lazy(() => import('./CasosExito'));
 const Recursos = lazy(() => import('./Recursos'));
 const Paquetes = lazy(() => import('./Paquetes'));
 const Footer = lazy(() => import('./Footer'));
+const Bots = lazy(() => import('./Bots'));
+const ProduccionAudiovisual = lazy(() => import('./ProduccionAudiovisual'));
+const EmbudosDeVenta = lazy(() => import('./EmbudosDeVenta'));
+const GestionRedesSociales = lazy(() => import('./GestionRedesSociales'));
+const OptimizacionWebSeo = lazy(() => import('./OptimizacionWebSeo'));
+const CrmSaas = lazy(() => import('./CrmSaas'));
 
 
 // ── ErrorBoundary: evita que un crash del preview derrumbe todo el admin ──────
@@ -159,7 +165,14 @@ function useHighlightInjector(nodeId, hoveredField, previewContainerId) {
 }
 
 // ── Componentes mapa ──────────────────────────────────────────────────────────
-const COMPONENT_MAP = {'hero': Hero,'servicios': Servicios,'cultura': Cultura,'portafolio':CasosExito,'casos': CasosExito,'recursos': Recursos,'paquetes': Paquetes,'footer': Footer,
+const COMPONENT_MAP = {
+  'hero': Hero, 'servicios': Servicios, 'cultura': Cultura, 'portafolio': CasosExito, 'casos': CasosExito, 'recursos': Recursos, 'paquetes': Paquetes, 'footer': Footer,
+  'servicio-bots': Bots,
+  'servicio-audiovisual': ProduccionAudiovisual,
+  'servicio-embudos': EmbudosDeVenta,
+  'servicio-redes': GestionRedesSociales,
+  'servicio-seo': OptimizacionWebSeo,
+  'servicio-crm': CrmSaas
 };
 
 

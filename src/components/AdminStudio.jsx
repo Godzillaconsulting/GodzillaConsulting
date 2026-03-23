@@ -45,11 +45,17 @@ const PAGE_SECTIONS = [
  { id:'portafolio', label:'Casos de Éxito', emoji:'🏆', tag:'PORTAFOLIO'},
  { id:'recursos', label:'Recursos', emoji:'📚', tag:'RECURSOS' },
  { id:'paquetes', label:'Paquetes Grid', emoji:'📦', tag:'PAQUETES' },
- { id:'paquete-posicionamiento-social', label:'Posicionamiento', emoji:'📣', tag:'LANDING' },
- { id:'paquete-expansion', label:'Expansión', emoji:'🚀', tag:'LANDING' },
- { id:'paquete-control-ia', label:'Control IA', emoji:'🤖', tag:'LANDING' },
- { id:'paquete-elite', label:'Élite', emoji:'👑', tag:'LANDING' },
- { id:'footer', label:'Footer', emoji:'📌', tag:'PIE' },
+    { id: 'paquete-posicionamiento-social', label: 'Posicionamiento', emoji: '📣', tag: 'LANDING' },
+    { id: 'paquete-expansion', label: 'Expansión', emoji: '🚀', tag: 'LANDING' },
+    { id: 'paquete-control-ia', label: 'Control IA', emoji: '🤖', tag: 'LANDING' },
+    { id: 'paquete-elite', label: 'Élite', emoji: '👑', tag: 'LANDING' },
+    { id: 'servicio-bots', label: 'S. Bots', emoji: '🤖', tag: 'SERVICIO' },
+    { id: 'servicio-audiovisual', label: 'S. Video', emoji: '🎥', tag: 'SERVICIO' },
+    { id: 'servicio-embudos', label: 'S. Embudos', emoji: '🧲', tag: 'SERVICIO' },
+    { id: 'servicio-redes', label: 'S. Redes', emoji: '📱', tag: 'SERVICIO' },
+    { id: 'servicio-seo', label: 'S. SEO', emoji: '🔍', tag: 'SERVICIO' },
+    { id: 'servicio-crm', label: 'S. CRM', emoji: '📊', tag: 'SERVICIO' },
+    { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
 ];
 
 // ── Detección automática de campos de texto en draftData ───────────────────
@@ -278,6 +284,19 @@ export default function AdminStudio() {
               features: 'Estrategia Godfather Completa\nReactivación de Base de Datos\nConsultoría Mensual y Cierre'
           }
       ];
+  }
+
+  // Inject defaults for Servicios Landings
+  if (node.id.startsWith('servicio-') && combinedData.title === undefined) {
+      combinedData.subtitle = 'Cambiamos tus likes por ventas con nuestro enfoque especializado.';
+      combinedData.ctaText = 'Agendar cita';
+      combinedData.videoUrl = ''; // Permite slot Media
+      if (node.id === 'servicio-bots') combinedData.title = 'Automatización de bots';
+      else if (node.id === 'servicio-audiovisual') combinedData.title = 'Producción audiovisual';
+      else if (node.id === 'servicio-embudos') combinedData.title = 'Embudos de venta';
+      else if (node.id === 'servicio-redes') combinedData.title = 'Gestión de redes sociales';
+      else if (node.id === 'servicio-seo') combinedData.title = 'Optimización web y SEO';
+      else if (node.id === 'servicio-crm') combinedData.title = 'CRM con SaaS personalizado';
   }
  
  setDraftData(combinedData);

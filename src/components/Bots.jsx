@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
-import { client } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
@@ -25,18 +25,15 @@ const Bots = () => {
     const [isMuted, setIsMuted] = useState(true);
     const [content, setContent] = useState(defaultContent);
 
+    const { getNodeData } = useSiteData();
+    const nodeData = getNodeData('servicio-bots');
+
     useEffect(() => {
         window.scrollTo(0, 0);
-
-        // Fetch content from Sanity
-        client.fetch(`*[_type == "landingServicio" && slug.current == "bots"][0]{..., "videoFileUrl": videoFile.asset->url}`)
-            .then((data) => {
-                if (data) {
-                    setContent(Object.assign({}, defaultContent, data));
-                }
-            })
-            .catch(err => console.error("Error fetching bots content:", err));
-    }, []);
+        if (nodeData && Object.keys(nodeData).length > 0) {
+            setContent(Object.assign({}, defaultContent, nodeData));
+        }
+    }, [nodeData]);
 
     const togglePlay = () => {
         if (videoRef.current) {

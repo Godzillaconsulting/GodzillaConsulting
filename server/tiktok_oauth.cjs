@@ -13,7 +13,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const CLIENT_KEY    = process.env.TIKTOK_CLIENT_KEY;
 const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;
-const REDIRECT_URI  = 'http://localhost:3001/tiktok/callback';
+const REDIRECT_URI  = 'http://localhost:3003/tiktok/callback';
 const SCOPES        = 'comment.read,comment.write,video.list';
 const ENV_PATH      = path.join(__dirname, '.env');
 
@@ -109,4 +109,4 @@ const server = http.createServer(async (req, res) => {
     server.close();
 });
 
-server.listen(3001);
+server.listen(3003);

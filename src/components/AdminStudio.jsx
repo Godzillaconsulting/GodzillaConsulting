@@ -320,15 +320,16 @@ export default function AdminStudio() {
  } catch { alert('❌ Error al publicar'); }
  };
 
- // Orden de nodos por PAGE_SECTIONS
- const sortedNodes = useMemo(() => [...nodes].sort((a, b) => {
- const ai = PAGE_SECTIONS.findIndex(s => s.id === a.id);
- const bi = PAGE_SECTIONS.findIndex(s => s.id === b.id);
- if (ai === -1 && bi === -1) return a.id.localeCompare(b.id);
- if (ai === -1) return 1;
- if (bi === -1) return -1;
- return ai - bi;
- }), [nodes]);
+  // Orden de nodos por PAGE_SECTIONS (Oculta nodos legacy no definidos en PAGE_SECTIONS)
+  const sortedNodes = useMemo(() => {
+      return nodes
+          .filter(n => PAGE_SECTIONS.some(s => s.id === n.id))
+          .sort((a, b) => {
+              const ai = PAGE_SECTIONS.findIndex(s => s.id === a.id);
+              const bi = PAGE_SECTIONS.findIndex(s => s.id === b.id);
+              return ai - bi;
+          });
+  }, [nodes]);
 
  // Derived data detections
  const textFields = useMemo(() => detectTextFields(draftData), [draftData]);

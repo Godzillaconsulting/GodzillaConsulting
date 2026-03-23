@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { client, urlFor } from '../sanityClient';
+import { useSiteData } from '../context/SiteContext';
 
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from '../assets/Logos/Circle One Logo@2x.png';
@@ -21,6 +22,9 @@ const CARD_WIDTH = 350 + 24; // w-[350px] + gap-6
 const SPEED = 0.6; // px por frame
 
 const CasosExito = () => {
+    const { getNodeData } = useSiteData();
+    const nodeData = getNodeData('portafolio') || {};
+
     const scrollContainerRef = useRef(null);
     const animFrameRef = useRef(null);
     const isPausedRef = useRef(false);
@@ -116,8 +120,38 @@ const CasosExito = () => {
         scrollContainerRef.current.scrollLeft = touchScrollLeft.current + walk;
     };
 
+    const displayCases = useMemo(() => {
+        // Gather dynamic cases from nodeData overrides
+        const mappedCases = [];
+        let maxIdx = 0;
+        Object.keys(nodeData).forEach(k => {
+            if (k.startsWith('caso') && k.endsWith('LogoUrl')) {
+                const num = parseInt(k.replace('caso', '').replace('LogoUrl', ''));
+                if (num > maxIdx) maxIdx = num;
+            }
+        });
+
+        if (maxIdx > 0) {
+            for (let i = 1; i <= maxIdx; i++) {
+                if (nodeData[`caso${i}LogoUrl`]) {
+                    mappedCases.push({
+                        _id: `node-${i}`,
+                        orden: i,
+                        logoSrc: nodeData[`caso${i}LogoUrl`],
+                        nombre: nodeData[`caso${i}Nombre`] || '',
+                        category: nodeData[`caso${i}Category`] || ''
+                    });
+                }
+            }
+            return mappedCases;
+        }
+
+        if (cases !== defaultCases && cases.length > 0) return cases;
+        return defaultCases;
+    }, [nodeData, cases]);
+
     // Duplicamos las tarjetas para el loop infinito
-    const allCases = [...cases, ...cases];
+    const allCases = [...displayCases, ...displayCases];
 
     return (
         <section id="portafolio" className="py-24 bg-[#111111] relative overflow-hidden">
@@ -126,11 +160,16 @@ const CasosExito = () => {
 
             <div className="container mx-auto px-6 max-w-7xl relative z-10">
                 <div className="text-center mb-16">
+                    {nodeData.overline && (
+                        <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
+                            {nodeData.overline}
+                        </span>
+                    )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter">
-                        CASOS DE ÉXITO
+                        {nodeData.title || 'CASOS DE ÉXITO'}
                     </h2>
-                    <p className="text-xl text-gray-400 font-medium">
-                        No hacemos solo campañas, construimos sistemas
+                    <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
+                        {nodeData.subtitle || 'No hacemos solo campañas, construimos sistemas'}
                     </p>
                 </div>
 

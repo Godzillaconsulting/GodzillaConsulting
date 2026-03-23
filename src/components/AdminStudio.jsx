@@ -197,6 +197,33 @@ export default function AdminStudio() {
       if (combinedData.service5IconUrl === undefined) combinedData.service5IconUrl = gifSeo;
       if (combinedData.service6IconUrl === undefined) combinedData.service6IconUrl = gifCrm;
   }
+
+  // Inject defaults for Portafolio / Casos de Éxito
+  if (node.id === 'portafolio' && combinedData.caso1LogoUrl === undefined) {
+      combinedData.caso1LogoUrl = logoFacemaker;
+      combinedData.caso1Nombre = 'Facemaker';
+      combinedData.caso1Category = 'Clínica Estética';
+
+      combinedData.caso2LogoUrl = logoCircleOne;
+      combinedData.caso2Nombre = 'Circle One';
+      combinedData.caso2Category = 'Hotelería';
+
+      combinedData.caso3LogoUrl = logoCeoCuts;
+      combinedData.caso3Nombre = 'CEO Cuts';
+      combinedData.caso3Category = 'Barbería';
+
+      combinedData.caso4LogoUrl = logoMedhaus;
+      combinedData.caso4Nombre = 'Medhaus';
+      combinedData.caso4Category = 'Sector Médico';
+
+      combinedData.caso5LogoUrl = logoArtika;
+      combinedData.caso5Nombre = 'Artika';
+      combinedData.caso5Category = 'Heladerías';
+
+      combinedData.caso6LogoUrl = logoGrupoMrg;
+      combinedData.caso6Nombre = 'Grupo MRG';
+      combinedData.caso6Category = 'Banquetes y Eventos';
+  }
  
  setDraftData(combinedData);
  };
@@ -485,6 +512,30 @@ export default function AdminStudio() {
           className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
       >
           ➕ Añadir nuevo logo
+      </button>
+  )}
+
+  {selectedNodeId === 'portafolio' && (
+      <button 
+          onClick={() => {
+              let max = 0;
+              Object.keys(draftData).forEach(k => {
+                  if(k.startsWith('caso') && k.endsWith('LogoUrl')) {
+                      const num = parseInt(k.replace('caso', '').replace('LogoUrl', '')) || 0;
+                      if (num > max) max = num;
+                  }
+              });
+              const next = max + 1;
+              setDraftData(p => ({
+                  ...p,
+                  [`caso${next}LogoUrl`]: '',
+                  [`caso${next}Nombre`]: `Caso ${next}`,
+                  [`caso${next}Category`]: 'Nueva Categoría'
+              }));
+          }}
+          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
+      >
+          ➕ Añadir nuevo caso
       </button>
   )}
 

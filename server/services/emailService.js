@@ -104,6 +104,9 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
         </div>
     `;
 
+    // Extraer texto plano del HTML para mejorar el ratio texto/HTML (anti-spam)
+    const textPlain = htmlTemplate.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
     while (retries >= 0) {
         try {
             const transporter = createTransporter();
@@ -111,6 +114,7 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
                 from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
                 to,
                 subject,
+                text: textPlain,  // versión texto plano — requerida para no ir a spam
                 html: htmlTemplate
             });
             if (!result.messageId) throw new Error('No messageId returned from transporter');
@@ -171,12 +175,16 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     </body>
     </html>`;
 
+    // Texto plano extraído del HTML — mejora ratio texto/HTML y evita spam
+    const textPlain = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
     try {
         const transporter = createTransporter();
         const result = await transporter.sendMail({
             from:    `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
             to,
             subject,
+            text: textPlain,  // versión texto plano — crítico para entregabilidad
             html,
             headers: bulkHeaders(unsubUrl),
         });

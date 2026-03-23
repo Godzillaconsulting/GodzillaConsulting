@@ -240,6 +240,46 @@ export default function AdminStudio() {
       combinedData.recurso3Desc = 'Llevar un seguimiento de tus leads en libretas u hojas caóticas te hace perder ventas a diario. Con este CRM en Excel totalmente personalizable y fácil de usar, podrás organizar a tus prospectos de forma clara, priorizar tus seguimientos y maximizar tu porcentaje de cierre. Simplifica tu proceso de ventas hoy mismo.';
       combinedData.recurso3ImageUrl = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80';
   }
+
+  // Inject defaults for Paquetes
+  if (node.id === 'paquetes' && combinedData.title === undefined) {
+      combinedData.title = 'PAQUETES';
+      combinedData.subtitle = 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.';
+      combinedData.elements = [
+          {
+              title: 'Posicionamiento Social',
+              price: '$7,900',
+              period: 'al mes',
+              highlighted: false,
+              guarantee: 'GARANTÍA: Si en 14 días no ves un incremento real en el engagement, el siguiente mes es GRATIS.',
+              features: 'Estrategia de Contenido Omnicanal\nCopywriting de Respuesta Directa\nCommunity Management'
+          },
+          {
+              title: 'Control IA',
+              price: '$7,900',
+              period: 'al mes',
+              highlighted: false,
+              guarantee: 'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.',
+              features: 'Agente IA (Web + WhatsApp)\nRespuesta en menos de 5 segundos 24/7\nCaptura de datos automática'
+          },
+          {
+              title: 'Expansión',
+              price: '$29,900',
+              period: 'al mes',
+              highlighted: true,
+              guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.',
+              features: 'Todo lo del Nivel Esencial\nTráfico Bilingüe (Ads Meta/Google)\nLanding Page de Alta Conversión'
+          },
+          {
+              title: 'Élite',
+              price: '$39,500',
+              period: 'al mes',
+              highlighted: false,
+              guarantee: 'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS.',
+              features: 'Estrategia Godfather Completa\nReactivación de Base de Datos\nConsultoría Mensual y Cierre'
+          }
+      ];
+  }
  
  setDraftData(combinedData);
  };

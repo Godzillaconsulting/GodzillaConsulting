@@ -7,6 +7,7 @@ const Servicios = lazy(() => import('./Servicios'));
 const Cultura = lazy(() => import('./Cultura'));
 const CasosExito = lazy(() => import('./CasosExito'));
 const Recursos = lazy(() => import('./Recursos'));
+const Paquetes = lazy(() => import('./Paquetes'));
 const Footer = lazy(() => import('./Footer'));
 
 
@@ -96,7 +97,7 @@ function LandingCardPreview({ nodeId, draftData }) {
 
 // ── Mapa correcto de nodeId → ID del section en el DOM real ──────────────────
 // (verificado mirando cada componente)
-const SECTION_IDS = {'hero':'inicio','servicios':'servicios','casos':'portafolio', // CasosExito usa id="portafolio"'recursos':'recursos','footer':'footer-section',
+const SECTION_IDS = {'hero':'inicio','servicios':'servicios','casos':'portafolio', // CasosExito usa id="portafolio"'recursos':'recursos','paquetes':'paquetes','footer':'footer-section',
 };
 
 // ── Mapa de resaltado: fieldKey → selectores CSS dentro de la sección ──────
@@ -158,7 +159,7 @@ function useHighlightInjector(nodeId, hoveredField, previewContainerId) {
 }
 
 // ── Componentes mapa ──────────────────────────────────────────────────────────
-const COMPONENT_MAP = {'hero': Hero,'servicios': Servicios,'cultura': Cultura,'portafolio':CasosExito,'casos': CasosExito,'recursos': Recursos,'footer': Footer,
+const COMPONENT_MAP = {'hero': Hero,'servicios': Servicios,'cultura': Cultura,'portafolio':CasosExito,'casos': CasosExito,'recursos': Recursos,'paquetes': Paquetes,'footer': Footer,
 };
 
 

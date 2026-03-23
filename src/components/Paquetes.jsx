@@ -110,10 +110,10 @@ const Paquetes = () => {
  <div className="container mx-auto px-4 max-w-7xl">
  <div className="text-center mb-16">
  <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
- PAQUETES
+ {nodeData.title || 'PAQUETES'}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
- Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.
+ {nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.'}
  </p>
  </div>
 
@@ -163,7 +163,7 @@ const Paquetes = () => {
  </p>
 
  <ul className="space-y-4">
- {pkg.features?.map((feature, i) => (
+ {(Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : [])).map((feature, i) => (
  <li key={i} className="flex items-start gap-3">
  <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-[#25D366]" />
  <span className="text-sm leading-tight text-gray-300">

@@ -18,9 +18,9 @@ const Hero = () => {
     // Fallbacks si la data del CMS está vacía
     const overline = data.overline || "Sistemas de crecimiento para negocios en la frontera";
     const title = data.title || "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
-    const subtitle = data.subtitle || "El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.";
+    const subtitle = data.subtitle || 'El único sistema de marketing que instala un "Recepcionista Digital" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.';
     const ctaText = data.ctaText || "Ver planes y garantías";
-    const ctaLink = data.ctaLink || "#paquetes";
+    const ctaLink = data.ctaLink || "/#paquetes";
  // Fondo editable desde CMS (se superpone al ColorBends animado)
  const bgVideoUrl = data.bgVideoUrl || data.videoUrl || null;
  const bgImageUrl = data.imageUrl || data.bgImageUrl || null;

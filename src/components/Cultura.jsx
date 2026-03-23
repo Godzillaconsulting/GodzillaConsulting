@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
+import { useSiteData } from '../context/SiteContext';
 import culturaImage from'../assets/images/Nuestra cultura image.jpg';
 import culturaVideo from'../assets/Particulas Rojas.mp4';
 
 const Cultura = () => {
+ const { getNodeData } = useSiteData();
+ const nodeData = getNodeData('cultura') || {};
  const [currentSlide, setCurrentSlide] = useState(0);
  const [isPaused, setIsPaused] = useState(false);
 
@@ -78,8 +81,8 @@ const Cultura = () => {
  <div className="space-y-12">
  <div>
  <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-none">
- <span className="block text-gray-500">NUESTRA</span>
- CULTURA
+ <span className="block text-gray-500">{nodeData.overline || 'NUESTRA'}</span>
+ {nodeData.title || 'CULTURA'}
  </h2>
  <div className="w-24 h-2 bg-[#CC0000] mb-8"></div>
 
@@ -100,7 +103,9 @@ const Cultura = () => {
 
  {/* Slide 1: Description */}
  <div className="w-full flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
- <div className="space-y-6 text-xl md:text-3xl text-gray-300 font-light leading-relaxed">
+ <div className="space-y-6 text-xl md:text-3xl text-gray-300 font-light leading-relaxed whitespace-pre-line">
+ {nodeData.description ? <p>{nodeData.description}</p> : (
+ <>
  <p>
  Somos una agencia de marketing digital ubicada en <strong className="text-white font-medium">Ciudad Juárez, Chihuahua</strong>.
  </p>
@@ -110,6 +115,8 @@ const Cultura = () => {
  <p>
  Diseñamos campañas y sistemas que priorizan <strong className="text-white font-medium border-b-2 border-[#CC0000]">ventas y rentabilidad</strong>.
  </p>
+ </>
+ )}
  </div>
  </div>
 
@@ -118,15 +125,15 @@ const Cultura = () => {
  <div className="space-y-12">
  <div className="group">
  <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">MISIÓN</h3>
- <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light">
- Ayudar a empresas mexicanas a crecer usando tecnología y estrategias digitales. Creemos que todos los negocios merecen las herramientas para competir y prosperar en el mundo actual.
+ <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light whitespace-pre-line">
+ {nodeData.missionText || 'Ayudar a empresas mexicanas a crecer usando tecnología y estrategias digitales. Creemos que todos los negocios merecen las herramientas para competir y prosperar en el mundo actual.'}
  </p>
  </div>
 
  <div className="group">
  <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">VISIÓN</h3>
- <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light">
- Multiplicar el 15% de negocios digitalizados en México y elevar ese 4% de éxito, convirtiéndonos en el motor del crecimiento digital del país.
+ <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light whitespace-pre-line">
+ {nodeData.visionText || 'Multiplicar el 15% de negocios digitalizados en México y elevar ese 4% de éxito, convirtiéndonos en el motor del crecimiento digital del país.'}
  </p>
  </div>
  </div>
@@ -156,8 +163,8 @@ const Cultura = () => {
  <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
  <div className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl">
  <img
- src={culturaImage}
- alt="Oscar Villanueva - CEO"
+ src={nodeData.imageUrl || culturaImage}
+ alt="Nuestra Cultura"
  className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"
  />
  </div>

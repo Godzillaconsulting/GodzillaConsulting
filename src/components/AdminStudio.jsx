@@ -164,10 +164,15 @@ export default function AdminStudio() {
  
  const combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
  
- // Autoinject videoUrl field for landing packages so it appears in Media automatically
- if (node.id.startsWith('paquete-') && combinedData.videoUrl === undefined) {
- combinedData.videoUrl ='';
- }
+  // Autoinject videoUrl field for landing packages so it appears in Media automatically
+  if (node.id.startsWith('paquete-') && combinedData.videoUrl === undefined) {
+  combinedData.videoUrl ='';
+  }
+
+  // Inject imageUrl field for Cultura node to allow media editing
+  if (node.id === 'cultura' && combinedData.imageUrl === undefined) {
+      combinedData.imageUrl = '';
+  }
 
   // Inject logos for Hero section so they can be modified
   if (node.id === 'hero' && combinedData.logoUrl1 === undefined) {

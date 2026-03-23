@@ -24,7 +24,17 @@ const Servicios = () => {
     const [activeIdx, setActiveIdx] = useState(0);
     
     const nodeData = getNodeData('servicios') || {};
-    const services = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultServices;
+    
+    // Mezcla los datos por defecto o de elements con las variables planas (service1Title, service1Desc...)
+    const baseServices = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultServices;
+    const services = baseServices.map((srv, i) => {
+        const num = i + 1;
+        return {
+            ...srv,
+            title: nodeData[`service${num}Title`] || srv.title,
+            desc: nodeData[`service${num}Desc`] || srv.desc,
+        };
+    });
 
     // Obtiene la URL del ícono: 1°CMS individual, 2°srv.iconSrc, 3°fallback local
     const getIconSrc = (srv, idx) => {
@@ -77,9 +87,21 @@ const Servicios = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
-                <h2 className="relative z-20 text-5xl md:text-7xl font-black text-center text-white mt-10 tracking-tighter drop-shadow-2xl">
-                    SERVICIOS
-                </h2>
+                <div className="relative z-20 flex flex-col items-center justify-center mt-10">
+                    {nodeData.overline && (
+                        <span className="text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
+                            {nodeData.overline}
+                        </span>
+                    )}
+                    <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl">
+                        {nodeData.title || 'SERVICIOS'}
+                    </h2>
+                    {nodeData.subtitle && (
+                        <p className="text-gray-200 mt-4 max-w-2xl text-center text-base md:text-lg drop-shadow-lg px-4">
+                            {nodeData.subtitle}
+                        </p>
+                    )}
+                </div>
             </div>
 
             <div className="container relative z-30 mx-auto px-6 max-w-7xl -mt-[60px]">

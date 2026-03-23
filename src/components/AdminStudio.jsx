@@ -59,10 +59,11 @@ const SKIP_MEDIA = new Set(['ctaLink','enlace','link','href']);
 
 function detectTextFields(data) {
  return Object.entries(data || {}).filter(([key, val]) =>
- typeof val ==='string' &&
+ typeof val === 'string' &&
  !MEDIA_PATTERNS.test(key) &&
  !NON_TEXT_KEYS.has(key) &&
- !key.startsWith('#')
+ !key.startsWith('#') &&
+ !/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/.test(key)
  );
 }
 

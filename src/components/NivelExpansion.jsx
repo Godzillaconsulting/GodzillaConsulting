@@ -11,7 +11,7 @@ const defaultContent = {
     heroDisclaimer: 'Si en <span className="font-bold text-white not-italic">30 días hábiles</span>, no generamos ningún lead, te devolvemos el <span className="font-bold text-white not-italic">100%</span> de tu dinero.',
     planTarget: 'Ideal para el que ya tiene experiencia, pero teme tirar el dinero a la basura.',
     planFeaturesExtended: [
-        { title: 'Todo lo que incluye el nivel esencial', desc: '• Agente IA (Web + WhatsApp)\n• Respuestas en menos de 5 segundos 24/7\n• Captura de datos automática' },
+        { title: 'Todo lo que incluye Posicionamiento Social', desc: '• Agente IA (Web + WhatsApp)\n• Respuestas en menos de 5 segundos 24/7\n• Captura de datos automática' },
         { title: 'Tráfico Bilingüe (Ads Meta/Google)', desc: '' },
         { title: 'Landing page de alta conversión', desc: '' }
     ],

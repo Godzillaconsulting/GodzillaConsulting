@@ -45,7 +45,6 @@ const PAGE_SECTIONS = [
  { id:'portafolio', label:'Casos de Éxito', emoji:'🏆', tag:'PORTAFOLIO'},
  { id:'recursos', label:'Recursos', emoji:'📚', tag:'RECURSOS' },
  { id:'paquetes', label:'Paquetes Grid', emoji:'📦', tag:'PAQUETES' },
- { id:'paquete-esencial', label:'Esencial', emoji:'⭐', tag:'LANDING' },
  { id:'paquete-posicionamiento-social', label:'Posicionamiento', emoji:'📣', tag:'LANDING' },
  { id:'paquete-expansion', label:'Expansión', emoji:'🚀', tag:'LANDING' },
  { id:'paquete-control-ia', label:'Control IA', emoji:'🤖', tag:'LANDING' },

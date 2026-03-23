@@ -4,7 +4,6 @@ import { Link, useParams } from'react-router-dom';
 import { Check } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
 import backgroundVideo from'../assets/Particulas Rojas LANDINGS.mp4';
-import NivelEsencial from'./NivelEsencial';
 import NivelExpansion from'./NivelExpansion';
 import NivelElite from'./NivelElite';
 import Bots from'./Bots';
@@ -36,7 +35,7 @@ const LandingPaqueteDynamic = () => {
 
  if (!content) {
  // Fallbacks estáticos para Producción donde el Dashboard aún no envía datos a Vercel
- if (slugLower.includes('posicionamiento') || slugLower.includes('esencial')) return <NivelEsencial />;
+ 
  if (slugLower.includes('control') || slugLower.includes('bot')) return <Bots />;
  if (slugLower.includes('expansion')) return <NivelExpansion />;
  if (slugLower.includes('elite')) return <NivelElite />;

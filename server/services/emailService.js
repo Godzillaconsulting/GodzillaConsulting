@@ -195,3 +195,104 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     }
 };
 
+
+/**
+ * Correo de confirmación de cita con link de Google Calendar
+ * Se llama automáticamente al crear una cita desde cualquier canal
+ */
+export const sendCitaConfirmationEmail = async ({ nombre, email, fecha, hora, tipoSesion, personalCalendarLink }) => {
+    if (!email) return false;
+
+    // Formatear fecha legible en español
+    const fechaObj = new Date(fecha + 'T12:00:00');
+    const fechaLabel = fechaObj.toLocaleDateString('es-MX', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+            <!-- Header -->
+            <tr>
+              <td style="background:#111111;padding:28px 40px;text-align:center;">
+                <span style="color:#CC0000;font-size:24px;font-weight:900;letter-spacing:-1px;">GODZILLA</span>
+                <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:-1px;"> CONSULTING</span>
+              </td>
+            </tr>
+            <!-- Contenido -->
+            <tr>
+              <td style="padding:40px;color:#111111;font-size:15px;line-height:1.7;">
+                <h2 style="margin:0 0 8px 0;color:#111;">✅ ¡Cita confirmada, ${nombre}!</h2>
+                <p style="color:#555;margin:0 0 24px 0;">Tu sesión ha sido agendada con éxito. Aquí están los detalles:</p>
+
+                <table style="background:#f9f9f9;border-radius:10px;padding:20px;width:100%;margin-bottom:24px;" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:6px 0;color:#888;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Tipo de sesión</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 16px 0;font-size:17px;font-weight:bold;color:#CC0000;">${tipoSesion}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 0;color:#888;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Fecha</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 16px 0;font-size:16px;font-weight:bold;color:#111;">📅 ${fechaLabel}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 0;color:#888;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Hora</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:16px;font-weight:bold;color:#111;">🕐 ${hora}</td>
+                  </tr>
+                </table>
+
+                ${personalCalendarLink ? `
+                <div style="text-align:center;margin:24px 0;">
+                  <a href="${personalCalendarLink}"
+                     style="background:#CC0000;color:#ffffff;font-weight:bold;padding:14px 32px;text-decoration:none;border-radius:30px;display:inline-block;font-size:15px;">
+                    📅 Agregar a mi Google Calendar
+                  </a>
+                  <p style="color:#888;font-size:12px;margin:12px 0 0 0;">Guarda la cita en tu teléfono para no olvidarla</p>
+                </div>` : ''}
+
+                <p style="margin-top:24px;">Nos comunicaremos contigo para confirmar los detalles de la reunión. Si necesitas reagendar, responde a este correo.</p>
+                <p>¡Nos vemos pronto! 🦖</p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f9f9f9;padding:20px 40px;border-top:1px solid #eee;text-align:center;">
+                <p style="font-size:12px;color:#888;margin:0;">
+                  © ${new Date().getFullYear()} Godzilla Consulting — Ciudad Juárez, Chih.<br/>
+                  <a href="https://godzillaconsulting.ai" style="color:#CC0000;text-decoration:none;">godzillaconsulting.ai</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>`;
+
+    const textPlain = `¡Cita confirmada, ${nombre}!\n\nTipo: ${tipoSesion}\nFecha: ${fechaLabel}\nHora: ${hora}\n\n${personalCalendarLink ? 'Agrega la cita a tu calendario: ' + personalCalendarLink : ''}\n\nGodzilla Consulting — godzillaconsulting.ai`;
+
+    try {
+        const transporter = createTransporter();
+        const result = await transporter.sendMail({
+            from:    `"Godzilla Consulting 🦖" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
+            to:      email,
+            subject: `✅ Cita confirmada — ${tipoSesion} | Godzilla Consulting`,
+            text:    textPlain,
+            html,
+        });
+        console.log(`📅 [Cita Confirmation] Enviado a ${email} — messageId: ${result.messageId}`);
+        return !!result.messageId;
+    } catch (err) {
+        console.error(`❌ [Cita Confirmation] → ${email}:`, err.message);
+        return false;
+    }
+};

@@ -1,5 +1,6 @@
 import pool from '../config/db.js';
 import { agendarEnGoogleCalendar } from '../services/calendarService.js';
+import { sendCitaConfirmationEmail } from '../services/emailService.js';
 
 export const processContactForm = async (req, res) => {
     const client = await pool.connect();
@@ -37,6 +38,16 @@ export const processContactForm = async (req, res) => {
         );
 
         console.log("✅ Cita #" + result.rows[0].id + " guardada. Calendar:", googleRes.id);
+
+        // Enviar correo de confirmación con link de Google Calendar (fire & forget)
+        sendCitaConfirmationEmail({
+            nombre,
+            email: email.trim().toLowerCase(),
+            fecha,
+            hora,
+            tipoSesion: preferencia_sesion,
+            personalCalendarLink: googleRes.personalCalendarLink,
+        }).catch(err => console.error('❌ [ContactController] Email confirmación falló:', err.message));
 
         return res.status(200).json({
             success: true,

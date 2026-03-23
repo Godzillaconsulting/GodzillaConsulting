@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 import { getGeminiModel } from "../config/geminiGlobal.js";
+import { sendCitaConfirmationEmail } from "../services/emailService.js";
 
 const SYSTEM_PROMPT = `
 # Zilla - Especialista en Performance Marketing IA (Godzilla Consulting)
@@ -188,9 +189,15 @@ export const processChatMessage = async (req, res) => {
                                         `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
                                          VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
                                         [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas, googleRes.id]
-                                    );
-                                    console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.id}`);
-                                    fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
+                                     );
+                                     console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.id}`);
+                                     // Enviar confirmación por email (fire & forget)
+                                     sendCitaConfirmationEmail({
+                                         nombre: appt.nombre, email: appt.correo,
+                                         fecha, hora, tipoSesion: appt.servicio,
+                                         personalCalendarLink: googleRes.personalCalendarLink,
+                                     }).catch(e => console.error('[AutoSave] Email falló:', e.message));
+                                     fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
                                 }
                             } catch (autoErr) {
                                 console.error('[AutoSave] ❌ Error:', autoErr.message);
@@ -217,6 +224,11 @@ export const processChatMessage = async (req, res) => {
                                     [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
                                 );
                                 console.log(`[Save] ✅ Cita #${r.rows[0].id} guardada. Calendar: ${googleRes.id}`);
+                                // Enviar confirmación por email (fire & forget)
+                                sendCitaConfirmationEmail({
+                                    nombre, email: correo, fecha, hora, tipoSesion: servicio,
+                                    personalCalendarLink: googleRes.personalCalendarLink,
+                                }).catch(e => console.error('[Save] Email falló:', e.message));
                                 fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
                             } else {
                                 fRes = { success: false, error: 'Google Calendar no confirmó el evento' };

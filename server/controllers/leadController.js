@@ -62,6 +62,14 @@ export const processLead = async (req, res) => {
         if (emailSuccess) {
             // 7. Si fue exitoso, marcamos como enviado
             await client.query('UPDATE downloads SET sent = true WHERE id = $1', [downloadId]);
+
+            // 8. Agregar a subscribers para retargeting (ON CONFLICT = ignorar si ya existe)
+            await client.query(
+                `INSERT INTO subscribers (email, name, source, status)
+                 VALUES ($1, $2, 'lead_magnet', 'active')
+                 ON CONFLICT (email) DO NOTHING`,
+                [email, email.split('@')[0]]  // nombre provisional = parte antes del @
+            );
         }
 
         await client.query('COMMIT');

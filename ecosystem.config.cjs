@@ -35,6 +35,23 @@ module.exports = {
     },
 
     {
+      name: "tiktok-bot",
+      script: "./tiktok_bot.cjs",
+      cwd: "./server",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "512M",
+      max_restarts: 5,
+      restart_delay: 30000,
+      min_uptime: "15s",
+      watch: false,
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+
+    {
       name: "ha-tunnel-monitor",
       script: "./tunnel_monitor.cjs",
       watch: false

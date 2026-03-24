@@ -51,13 +51,23 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                 }
             };
             xhr.onload = async () => {
-                const result = JSON.parse(xhr.responseText);
-                if (result.success) {
-                    await fetchMedia();
-                    onChange(result.url);
-                    setIsOpen(false);
+                try {
+                    if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success) {
+                        await fetchMedia();
+                        onChange(result.url);
+                        setIsOpen(false);
+                    } else {
+                        alert(result.error || 'Error al subir');
+                    }
+                } catch (err) {
+                    console.error('Upload process error:', err);
+                    alert('Error en la subida: Archivo muy pesado o error de red (Vercel limita a 4.5MB). Usa la pestaña "Pegar URL" para videos en Vercel.');
+                } finally {
+                    setUploading(false);
+                    setUploadProgress(0);
                 }
-                setUploading(false);
             };
             xhr.onerror = () => { setUploading(false); };
             xhr.open('POST', `${API}/api/media/upload`);
@@ -269,7 +279,6 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     e.stopPropagation();
                                                     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                                                         const file = e.dataTransfer.files[0];
-                                                        fileInputRef.current.files = e.dataTransfer.files;
                                                         handleFileUpload({ target: { files: [file] } });
                                                     }
                                                 }}

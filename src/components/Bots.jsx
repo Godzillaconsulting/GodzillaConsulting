@@ -27,11 +27,11 @@ const Bots = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const accordionItems = [
-        { icon: <Filter size={20} className="shrink-0" />, title: "Cualificación de leads en tiempo real", desc: "Filtra curiosos de clientes con presupuesto real automáticamente." },
-        { icon: <Calendar size={20} className="shrink-0" />, title: "Agendamiento directo sin intervención", desc: "Sincronización total con tu calendario para llenar tu agenda de citas." },
-        { icon: <MessageSquare size={20} className="shrink-0" />, title: "Soporte de IA multicanal", desc: "Atención en WhatsApp, Instagram y Web de forma simultánea." },
-        { icon: <RefreshCw size={20} className="shrink-0" />, title: "Nurturing automatizado", desc: "Seguimiento inteligente a prospectos que no compraron al primer contacto." },
-        { icon: <Database size={20} className="shrink-0" />, title: "Integración nativa con tu CRM", desc: "Los datos de cada conversación van directo a tu base de datos." },
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: content.accTitle1 || "Cualificación de leads en tiempo real", desc: content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente." },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: content.accTitle2 || "Agendamiento directo sin intervención", desc: content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas." },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: content.accTitle3 || "Soporte de IA multicanal", desc: content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea." },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="Icon 4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <RefreshCw size={20} className="shrink-0" />, title: content.accTitle4 || "Nurturing automatizado", desc: content.accDesc4 || "Seguimiento inteligente a prospectos que no compraron al primer contacto." },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: content.accTitle5 || "Integración nativa con tu CRM", desc: content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos." },
     ];
 
     const { getNodeData } = useSiteData();
@@ -136,7 +136,9 @@ const Bots = () => {
                                 dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
                             />
                             {/* SUBTITLE REPLACED BY ACCORDION */}
-                            <p className="hidden">{content.subtitle}</p>
+                            <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
+                                {content.subtitle}
+                            </p>
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
                                 {accordionItems.map((item, index) => {
                                     const isOpen = openAccordion === index;

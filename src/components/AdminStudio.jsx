@@ -291,7 +291,30 @@ export default function AdminStudio() {
       combinedData.subtitle = 'Cambiamos tus likes por ventas con nuestro enfoque especializado.';
       combinedData.ctaText = 'Agendar cita';
       combinedData.videoUrl = ''; // Permite slot Media
-      if (node.id === 'servicio-bots') combinedData.title = 'Automatización de bots';
+      if (node.id === 'servicio-bots') {
+          combinedData.title = 'Automatización de bots';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Cualificación de leads en tiempo real';
+              combinedData.accDesc1 = 'Filtra curiosos de clientes con presupuesto real automáticamente.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'Agendamiento directo sin intervención';
+              combinedData.accDesc2 = 'Sincronización total con tu calendario para llenar tu agenda de citas.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Soporte de IA multicanal';
+              combinedData.accDesc3 = 'Atención en WhatsApp, Instagram y Web de forma simultánea.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Nurturing automatizado';
+              combinedData.accDesc4 = 'Seguimiento inteligente a prospectos que no compraron al primer contacto.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'Integración nativa con tu CRM';
+              combinedData.accDesc5 = 'Los datos de cada conversación van directo a tu base de datos.';
+              combinedData.accIcon5Url = '';
+          }
+      }
       else if (node.id === 'servicio-audiovisual') combinedData.title = 'Producción audiovisual';
       else if (node.id === 'servicio-embudos') combinedData.title = 'Embudos de venta';
       else if (node.id === 'servicio-redes') combinedData.title = 'Gestión de redes sociales';

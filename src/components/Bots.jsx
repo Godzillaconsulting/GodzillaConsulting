@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
-import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, ArrowRight, Filter, Calendar, MessageSquare, RefreshCw, Database, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 
 import gifBot from '../assets/Gifs/Bot.gif';

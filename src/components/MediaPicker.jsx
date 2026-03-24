@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const API = 'http://localhost:3000';
+const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
 
 /**
  * MediaPicker — Componente para subir y seleccionar imágenes/videos.
@@ -263,7 +263,17 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                         <>
                                             <div
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="w-full max-w-sm border-2 border-dashed border-neutral-600 hover:border-[#CC0000] rounded-2xl p-10 cursor-pointer transition-all text-center group"
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                                        const file = e.dataTransfer.files[0];
+                                                        fileInputRef.current.files = e.dataTransfer.files;
+                                                        handleFileUpload({ target: { files: [file] } });
+                                                    }
+                                                }}
+                                                className="w-full max-w-sm border-2 border-dashed border-neutral-600 hover:border-[#CC0000] hover:bg-[#CC0000]/10 rounded-2xl p-10 cursor-pointer transition-all text-center group"
                                             >
                                                 <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📤</div>
                                                 <p className="text-white font-bold mb-1">Arrastra o haz clic para subir</p>

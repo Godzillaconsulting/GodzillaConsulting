@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
-import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, ArrowRight, Kanban, Zap, PieChart, Inbox, UserPlus, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 
 import gifBot from '../assets/Gifs/Bot.gif';
@@ -24,6 +24,15 @@ const CrmSaas = () => {
     const [isPlaying, setIsPlaying] = useState(true);
     const [isMuted, setIsMuted] = useState(true);
     const [content, setContent] = useState(defaultContent);
+    const [openAccordion, setOpenAccordion] = useState(0);
+
+    const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Kanban size={20} className="shrink-0" />, title: content.accTitle1 || "Pipeline de Ventas Visual", desc: content.accDesc1 || "Control total de en qué etapa se encuentra cada cliente potencial." },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Zap size={20} className="shrink-0" />, title: content.accTitle2 || "Automatización de Workflows", desc: content.accDesc2 || "Disparadores automáticos de correos, SMS y tareas para tu equipo." },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PieChart size={20} className="shrink-0" />, title: content.accTitle3 || "Dashboard de Métricas Real-Time", desc: content.accDesc3 || "Visualiza tu CAC, LTV y tasa de cierre al instante y sin demoras." },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Inbox size={20} className="shrink-0" />, title: content.accTitle4 || "Centralización de Canales", desc: content.accDesc4 || "Responde WhatsApp, Instagram y Correo desde una sola bandeja de entrada." },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <UserPlus size={20} className="shrink-0" />, title: content.accTitle5 || "Asignación Inteligente de Leads", desc: content.accDesc5 || "Distribución automática de prospectos a tus mejores vendedores." }
+    ];
 
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-crm');
@@ -120,15 +129,43 @@ const CrmSaas = () => {
                     </div>
 
                     {/* Right Side: Red Area with Content */}
-                    <div className="w-full md:w-1/3 bg-[#CC0000] flex flex-col justify-center items-center py-16 md:py-0 px-8 lg:px-12">
-                        <div className="max-w-xs flex flex-col items-center text-center">
+                    <div className="w-full md:w-1/3 bg-[#CC0000] flex flex-col justify-center items-center py-16 md:py-24 px-8 lg:px-12">
+                        <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
                                 dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
                             />
-                            <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
+                                                        {/* SUBTITLE REPLACED BY ACCORDION */}
+                            <p className="text-white text-lg md:text-xl mb-6 leading-relaxed font-medium hidden">
                                 {content.subtitle}
                             </p>
+                            
+                            <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
+                                {accordionItems.map((item, index) => {
+                                    const isOpen = openAccordion === index;
+                                    return (
+                                        <div key={index} className="border-b border-white/10 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
+                                            <button
+                                                onClick={() => setOpenAccordion(isOpen ? -1 : index)}
+                                                className="w-full flex items-center justify-between py-2 text-white hover:text-white/80 transition-colors gap-3"
+                                            >
+                                                <div className="flex items-center gap-3 font-bold text-sm md:text-base leading-tight">
+                                                    <span className="text-[#FACC15] shrink-0">{item.icon}</span>
+                                                    <span className="text-left">{item.title}</span>
+                                                </div>
+                                                <ChevronDown size={18} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#FACC15]' : 'text-gray-400'}`} />
+                                            </button>
+                                            <div
+                                                className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
+                                            >
+                                                <p className="text-gray-200 text-xs md:text-sm leading-relaxed pl-8 pb-3 text-left">
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                             <button
                                 onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"

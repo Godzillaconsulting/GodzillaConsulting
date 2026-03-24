@@ -315,11 +315,126 @@ export default function AdminStudio() {
               combinedData.accIcon5Url = '';
           }
       }
-      else if (node.id === 'servicio-audiovisual') combinedData.title = 'Producción audiovisual';
-      else if (node.id === 'servicio-embudos') combinedData.title = 'Embudos de venta';
-      else if (node.id === 'servicio-redes') combinedData.title = 'Gestión de redes sociales';
-      else if (node.id === 'servicio-seo') combinedData.title = 'Optimización web y SEO';
-      else if (node.id === 'servicio-crm') combinedData.title = 'CRM con SaaS personalizado';
+      else if (node.id === 'servicio-audiovisual') {
+          combinedData.title = 'Producción audiovisual';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Storytelling Estratégico';
+              combinedData.accDesc1 = 'Guiones diseñados con el "Epiphany Bridge" para conectar emocionalmente.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'Edición de Alto Retener';
+              combinedData.accDesc2 = 'Contenido optimizado para captar la atención en los primeros 3 segundos.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Estética de Cine';
+              combinedData.accDesc3 = 'Calidad visual que justifica precios premium y atrae clientes de alto valor.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Video Sales Letters (VSL)';
+              combinedData.accDesc4 = 'Producción enfocada 100% en la conversión de tu embudo de ventas.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'Micro-Contenido Viral';
+              combinedData.accDesc5 = 'Fragmentos optimizados para Reels, TikTok y YouTube Shorts.';
+              combinedData.accIcon5Url = '';
+          }
+      }
+      else if (node.id === 'servicio-embudos') {
+          combinedData.title = 'Embudos de venta';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Arquitectura de Value Ladder';
+              combinedData.accDesc1 = 'Diseño de escalones desde el imán de leads hasta tu oferta premium.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'Páginas de Aterrizaje Optimizadas';
+              combinedData.accDesc2 = 'Optimizadas con principios de neuro-marketing para Alta Conversión.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Email Marketing de Seguimiento';
+              combinedData.accDesc3 = 'Secuencias "Soap Opera" para nutrir y convertir.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Integración de Pasarelas de Pago';
+              combinedData.accDesc4 = 'Experiencia de compra fluida y segura en un clic.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'A/B Testing Continuo';
+              combinedData.accDesc5 = 'Pruebas constantes de encabezados y ofertas para maximizar tu ROI.';
+              combinedData.accIcon5Url = '';
+          }
+      }
+      else if (node.id === 'servicio-redes') {
+          combinedData.title = 'Gestión de redes sociales';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Estrategia de Contenido Omnicanal';
+              combinedData.accDesc1 = 'Presencia donde tu "Dream 100" interactúa diariamente.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'Copywriting de Respuesta Directa';
+              combinedData.accDesc2 = 'Textos que incitan a la acción, no solo al like.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Gestión de Comunidad Activa';
+              combinedData.accDesc3 = 'Convertimos comentarios y DMs en oportunidades de venta reales.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Growth Hacking Orgánico';
+              combinedData.accDesc4 = 'Tácticas para escalar tu alcance sin depender únicamente de pauta.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'Análisis de Sentimiento y KPIs';
+              combinedData.accDesc5 = 'Reportes mensuales de crecimiento de audiencia y engagement real.';
+              combinedData.accIcon5Url = '';
+          }
+      }
+      else if (node.id === 'servicio-seo') {
+          combinedData.title = 'Optimización web y SEO';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Auditoría de Palabras Clave';
+              combinedData.accDesc1 = 'Identificamos los términos que generan transacciones, no solo volumen.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'SEO On-Page y Técnico';
+              combinedData.accDesc2 = 'Optimización de velocidad y estructura para que Google te ame.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Estrategia de Link Building';
+              combinedData.accDesc3 = 'Backlinks de calidad que elevan tu relevancia competitiva.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Marketing de Contenidos';
+              combinedData.accDesc4 = 'Artículos temáticos que responden dudas y posicionan tu expertise.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'Google Business Profile';
+              combinedData.accDesc5 = 'Dominio del mapa local para captar clientes cercanos y listos para comprar.';
+              combinedData.accIcon5Url = '';
+          }
+      }
+      else if (node.id === 'servicio-crm') {
+          combinedData.title = 'CRM con SaaS personalizado';
+          if(combinedData.accTitle1 === undefined) {
+              combinedData.accTitle1 = 'Pipeline de Ventas Visual';
+              combinedData.accDesc1 = 'Control total de en qué etapa se encuentra cada cliente potencial.';
+              combinedData.accIcon1Url = '';
+
+              combinedData.accTitle2 = 'Automatización de Workflows';
+              combinedData.accDesc2 = 'Disparadores automáticos de correos, SMS y tareas para tu equipo.';
+              combinedData.accIcon2Url = '';
+
+              combinedData.accTitle3 = 'Dashboard de Métricas Real-Time';
+              combinedData.accDesc3 = 'Visualiza tu CAC, LTV y tasa de cierre al instante y sin demoras.';
+              combinedData.accIcon3Url = '';
+
+              combinedData.accTitle4 = 'Centralización de Canales';
+              combinedData.accDesc4 = 'Responde WhatsApp, Instagram y Correo desde una sola bandeja de entrada.';
+              combinedData.accIcon4Url = '';
+
+              combinedData.accTitle5 = 'Asignación Inteligente de Leads';
+              combinedData.accDesc5 = 'Distribución automática de prospectos a tus mejores vendedores.';
+              combinedData.accIcon5Url = '';
+          }
+      }
   }
  
  setDraftData(combinedData);

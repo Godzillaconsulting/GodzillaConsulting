@@ -136,7 +136,7 @@ const OptimizacionWebSeo = () => {
                                 dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
                             />
                                                         {/* SUBTITLE REPLACED BY ACCORDION */}
-                            <p className="text-white text-lg md:text-xl mb-6 leading-relaxed font-medium hidden">
+                            <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
                                 {content.subtitle}
                             </p>
                             

@@ -52,10 +52,9 @@ function LandingCardPreview({ nodeId, draftData }) {
  <div className="text-center mb-12">
  {d.heroTopText && <p className="text-lg text-gray-300 mb-4 font-medium">{d.heroTopText}</p>}
  <h1 className="text-5xl md:text-7xl font-black leading-tight mb-6 tracking-tighter" dangerouslySetInnerHTML={{ __html: d.heroTitle ||'Plan' }} />
- {d.videoFileUrl && (
- <video src={d.videoFileUrl} autoPlay muted loop playsInline className="w-full max-w-md mx-auto rounded-3xl shadow-2xl mb-6 object-cover" style={{ maxHeight:'300px' }} />
- )}
- {!d.videoFileUrl && <div className="w-full max-w-md mx-auto h-48 bg-neutral-900 rounded-3xl mb-6 border border-neutral-800 flex items-center justify-center text-neutral-700 text-sm">Sin video</div>}
+ {d.videoFileUrl || d.videoUrl ? (
+ <video src={d.videoFileUrl || d.videoUrl} autoPlay muted loop playsInline className="w-full max-w-md mx-auto rounded-3xl shadow-2xl mb-6 object-cover" style={{ maxHeight:'300px' }} />
+ ) : ( <div className="w-full max-w-md mx-auto h-48 bg-neutral-900 rounded-3xl mb-6 border border-neutral-800 flex items-center justify-center text-neutral-700 text-sm">Sin video</div> )}
  </div>
 
  {/* Details card */}

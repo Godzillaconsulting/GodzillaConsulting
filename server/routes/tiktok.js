@@ -17,7 +17,7 @@ const pool   = new Pool({ connectionString: process.env.DATABASE_URL });
 const CLIENT_KEY    = process.env.TIKTOK_CLIENT_KEY;
 const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;
 const REDIRECT_URI  = 'https://godzillaconsulting.ai/api/tiktok/callback';
-const SCOPES        = 'video.list';   // solo lo que está aprobado en sandbox
+const SCOPES        = 'user.info.basic';  // único scope disponible en Sandbox (Login Kit)
 
 // Tabla temporal para almacenar pkce state ↔ code_verifier
 async function ensureTable() {

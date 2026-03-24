@@ -24,6 +24,15 @@ const Bots = () => {
     const [isPlaying, setIsPlaying] = useState(true);
     const [isMuted, setIsMuted] = useState(true);
     const [content, setContent] = useState(defaultContent);
+    const [openAccordion, setOpenAccordion] = useState(0);
+
+    const accordionItems = [
+        { icon: <Filter size={20} className="shrink-0" />, title: "Cualificación de leads en tiempo real", desc: "Filtra curiosos de clientes con presupuesto real automáticamente." },
+        { icon: <Calendar size={20} className="shrink-0" />, title: "Agendamiento directo sin intervención", desc: "Sincronización total con tu calendario para llenar tu agenda de citas." },
+        { icon: <MessageSquare size={20} className="shrink-0" />, title: "Soporte de IA multicanal", desc: "Atención en WhatsApp, Instagram y Web de forma simultánea." },
+        { icon: <RefreshCw size={20} className="shrink-0" />, title: "Nurturing automatizado", desc: "Seguimiento inteligente a prospectos que no compraron al primer contacto." },
+        { icon: <Database size={20} className="shrink-0" />, title: "Integración nativa con tu CRM", desc: "Los datos de cada conversación van directo a tu base de datos." },
+    ];
 
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-bots');
@@ -126,9 +135,34 @@ const Bots = () => {
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
                                 dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
                             />
-                            <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {content.subtitle}
-                            </p>
+                            {/* SUBTITLE REPLACED BY ACCORDION */}
+                            <p className="hidden">{content.subtitle}</p>
+                            <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
+                                {accordionItems.map((item, index) => {
+                                    const isOpen = openAccordion === index;
+                                    return (
+                                        <div key={index} className="border-b border-white/10 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
+                                            <button
+                                                onClick={() => setOpenAccordion(isOpen ? -1 : index)}
+                                                className="w-full flex items-center justify-between py-2 text-white hover:text-white/80 transition-colors gap-3"
+                                            >
+                                                <div className="flex items-center gap-3 font-bold text-sm md:text-base leading-tight">
+                                                    <span className="text-[#FACC15] shrink-0">{item.icon}</span>
+                                                    <span className="text-left">{item.title}</span>
+                                                </div>
+                                                <ChevronDown size={18} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#FACC15]' : 'text-gray-400'}`} />
+                                            </button>
+                                            <div
+                                                className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
+                                            >
+                                                <p className="text-gray-200 text-xs md:text-sm leading-relaxed pl-8 pb-3 text-left">
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                             <button
                                 onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"

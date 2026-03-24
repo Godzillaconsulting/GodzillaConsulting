@@ -129,8 +129,8 @@ const Bots = () => {
                     </div>
 
                     {/* Right Side: Red Area with Content */}
-                    <div className="w-full md:w-1/3 bg-[#CC0000] flex flex-col justify-center items-center py-16 md:py-0 px-8 lg:px-12">
-                        <div className="max-w-xs flex flex-col items-center text-center">
+                    <div className="w-full md:w-1/3 bg-[#CC0000] flex flex-col justify-center items-center py-16 md:py-24 px-8 lg:px-12">
+                        <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
                                 dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}

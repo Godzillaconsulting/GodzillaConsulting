@@ -53,10 +53,6 @@ const Hero = () => {
  )}
  <div className="container relative z-20 mx-auto px-6 pb-24 md:pb-28 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
 
- <span className="text-xs md:text-sm font-bold text-white tracking-[0.3em] mb-6 drop-shadow-md pointer-events-auto">
- {overline}
- </span>
-
 
  {/* Main Headline — animated ColorBends shader through letter shapes */}
  <AnimatedHeadline

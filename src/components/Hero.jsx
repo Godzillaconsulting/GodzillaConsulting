@@ -1,6 +1,7 @@
 import React from'react';
 import { useSiteData } from'../context/SiteContext';
 import { MessageCircle } from'lucide-react';
+import AnimatedHeadline from'./AnimatedHeadline';
 
 import logoCeoCuts from'../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from'../assets/Logos/Circle One Logo@2x.png';
@@ -41,7 +42,7 @@ const Hero = () => {
         ];
     }
  return (
- <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-transparent">
+ <section id="inicio" className="relative flex items-center justify-center pt-20 pb-4 overflow-hidden bg-transparent">
  {/* Fondo editable desde CMS (sobre ColorBends) */}
  {bgVideoUrl && (
  <video src={bgVideoUrl} autoPlay muted loop playsInline
@@ -50,31 +51,42 @@ const Hero = () => {
  {!bgVideoUrl && bgImageUrl && (
  <img src={bgImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0" />
  )}
- <div className="container relative z-20 mx-auto px-6 pb-32 md:pb-40 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
+ <div className="container relative z-20 mx-auto px-6 pb-24 md:pb-28 max-w-7xl flex flex-col items-center justify-center text-center pointer-events-none">
 
- {/* Pre-title / Overline */}
- <span className="text-xs md:text-sm font-bold text-[#CC0000] tracking-[0.3em] mb-4 drop-shadow-md pointer-events-auto">
+ <span className="text-xs md:text-sm font-bold text-white tracking-[0.3em] mb-6 drop-shadow-md pointer-events-auto">
  {overline}
  </span>
 
- {/* Main Headline */}
- <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight leading-tight max-w-5xl drop-shadow-2xl pointer-events-auto">
- {title}
- </h1>
 
- {/* Subtitle / Description */}
- <p className="text-lg md:text-xl text-gray-300 font-medium max-w-3xl mb-12 leading-relaxed pointer-events-auto drop-shadow-lg">
- {subtitle}
+ {/* Main Headline — animated ColorBends shader through letter shapes */}
+ <AnimatedHeadline
+  text={title}
+  className="mb-0"
+  style={{ marginTop: '-12%', marginBottom: '-4%' }}
+  colors={['#CC0000', '#FF2200', '#FF6600', '#8B0000', '#FF4400']}
+ />
+
+
+
+
+
+
+ {/* Subtitle */}
+ <p className="text-sm md:text-base text-white/80 max-w-xl text-center -mt-2 mb-2 pointer-events-auto leading-relaxed drop-shadow">
+  {subtitle}
  </p>
 
  {/* CTA Area */}
- <div className="mt-4 relative w-full flex justify-center items-center pointer-events-auto">
+ <div className="-mt-2 relative w-full flex justify-center items-center pointer-events-auto">
+
+
  <a href={ctaLink} className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">
  <span className="relative">{ctaText}</span>
  </a>
  </div>
 
  </div>
+
 
  {/* Logos Strip Showcase */}
  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#111111] to-transparent py-6 z-20 overflow-hidden">

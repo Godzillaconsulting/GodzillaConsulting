@@ -144,31 +144,50 @@ async function processComment(comment, videoId) {
 // ── Main polling loop ─────────────────────────────────────────────────────────
 async function poll() {
     try {
-        // 1. Obtener lista de videos propios
-        const videosRes = await ttGet('/v2/video/list/', {
-            fields: 'id,title',
+        // 1. Obtener lista de videos propios (TikTok v2 usa POST)
+        const videosRes = await ttPost('/v2/video/list/', {
+            fields: ['id', 'title'],
             max_count: VIDEOS_MAX
         });
 
+        // Manejar respuesta no-JSON (ej. "Unsupported" si scopes no aprobados)
+        if (typeof videosRes === 'string') {
+            console.log('[TikTok] ⏳ API no disponible aún (scopes pendientes de aprobación). Esperando...');
+            return;
+        }
+
         if (videosRes.error?.code && videosRes.error.code !== 'ok') {
-            if (videosRes.error.code === 'access_token_invalid') {
+            const errCode = videosRes.error.code;
+            if (errCode === 'access_token_invalid') {
                 await refreshAccessToken();
-                return; // siguiente ciclo usará token nuevo
+                return;
+            }
+            // Scopes no aprobados — solo loguear una vez, no cada minuto
+            if (errCode === 'scope_not_authorized' || errCode === 'permission_denied') {
+                console.log('[TikTok] ⏳ Scopes pendientes de aprobación TikTok. Reintentaré en 1 hora...');
+                await new Promise(r => setTimeout(r, 3600000)); // espera 1 hora
+                return;
             }
             console.error('[TikTok] Error al obtener videos:', videosRes.error.message);
             return;
         }
 
         const videos = videosRes.data?.videos || [];
-        console.log(`[TikTok] 📹 Chequeando ${videos.length} videos...`);
+        if (videos.length === 0) {
+            console.log('[TikTok] 📹 Sin videos disponibles en la cuenta.');
+            return;
+        }
+        console.log(`[TikTok] 📹 Chequeando comentarios en ${videos.length} videos...`);
 
         for (const video of videos) {
-            // 2. Obtener comentarios de cada video
-            const commentsRes = await ttGet('/v2/video/comment/list/', {
+            // 2. Obtener comentarios de cada video (también POST en v2)
+            const commentsRes = await ttPost('/v2/video/comment/list/', {
                 video_id: video.id,
-                fields: 'id,text,username,create_time,like_count',
+                fields: ['id', 'text', 'username', 'create_time', 'like_count'],
                 max_count: 20
             });
+
+            if (typeof commentsRes === 'string') continue;
 
             if (commentsRes.error?.code && commentsRes.error.code !== 'ok') {
                 console.error(`[TikTok] Error comentarios video ${video.id}:`, commentsRes.error.message);
@@ -185,15 +204,22 @@ async function poll() {
 
                 console.log(`[TikTok] 💬 Nuevo comentario de @${comment.username}: "${comment.text?.substring(0, 60)}"`);
                 await processComment(comment, video.id);
-                await new Promise(r => setTimeout(r, 2000)); // pausa entre replies
+                await new Promise(r => setTimeout(r, 2000));
             }
         }
         saveSeen();
 
     } catch(err) {
-        console.error('[TikTok] Error en polling:', err.message);
+        // Solo loguea si NO es el JSON parse error de "Unsupported"
+        if (!err.message?.includes('Unsupporte')) {
+            console.error('[TikTok] Error en polling:', err.message);
+        } else {
+            console.log('[TikTok] ⏳ API scopes pendientes de aprobación. Bot en espera...');
+            await new Promise(r => setTimeout(r, 3600000)); // wait 1h
+        }
     }
 }
+
 
 // ── Inicio ───────────────────────────────────────────────────────────────────
 async function main() {

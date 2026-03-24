@@ -58,7 +58,7 @@ const Hero = () => {
  <AnimatedHeadline
   text={title}
   className="mb-0"
-  style={{ marginTop: '-12%', marginBottom: '-4%' }}
+  style={{ marginTop: '-4%', marginBottom: '-4%' }}
   colors={['#CC0000', '#FF2200', '#FF6600', '#8B0000', '#FF4400']}
  />
 

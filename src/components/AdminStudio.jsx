@@ -288,11 +288,11 @@ export default function AdminStudio() {
 
   // Inject defaults for Servicios Landings
   if (node.id.startsWith('servicio-') && combinedData.title === undefined) {
-      combinedData.subtitle = 'Cambiamos tus likes por ventas con nuestro enfoque especializado.';
       combinedData.ctaText = 'Agendar cita';
       combinedData.videoUrl = ''; // Permite slot Media
       if (node.id === 'servicio-bots') {
           combinedData.title = 'Automatización de bots';
+          combinedData.subtitle = 'Creamos agentes automatizados que responden, califican y venden por ti de manera ininterrumpida.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Cualificación de leads en tiempo real';
               combinedData.accDesc1 = 'Filtra curiosos de clientes con presupuesto real automáticamente.';
@@ -317,6 +317,7 @@ export default function AdminStudio() {
       }
       else if (node.id === 'servicio-audiovisual') {
           combinedData.title = 'Producción audiovisual';
+          combinedData.subtitle = 'Creamos contenido visual persuasivo diseñado específicamente para retener la atención y detonar ventas.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Storytelling Estratégico';
               combinedData.accDesc1 = 'Guiones diseñados con el "Epiphany Bridge" para conectar emocionalmente.';
@@ -341,6 +342,7 @@ export default function AdminStudio() {
       }
       else if (node.id === 'servicio-embudos') {
           combinedData.title = 'Embudos de venta';
+          combinedData.subtitle = 'Sistemas diseñados psicológicamente para guiar al usuario hasta la compra final sin fricciones.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Arquitectura de Value Ladder';
               combinedData.accDesc1 = 'Diseño de escalones desde el imán de leads hasta tu oferta premium.';
@@ -365,6 +367,7 @@ export default function AdminStudio() {
       }
       else if (node.id === 'servicio-redes') {
           combinedData.title = 'Gestión de redes sociales';
+          combinedData.subtitle = 'Cambiamos tus likes por ventas con nuestro enfoque especializado.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Estrategia de Contenido Omnicanal';
               combinedData.accDesc1 = 'Presencia donde tu "Dream 100" interactúa diariamente.';
@@ -389,6 +392,7 @@ export default function AdminStudio() {
       }
       else if (node.id === 'servicio-seo') {
           combinedData.title = 'Optimización web y SEO';
+          combinedData.subtitle = 'Google ama a los que se optimizan. Nosotros lo hacemos por ti.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Auditoría de Palabras Clave';
               combinedData.accDesc1 = 'Identificamos los términos que generan transacciones, no solo volumen.';
@@ -413,6 +417,7 @@ export default function AdminStudio() {
       }
       else if (node.id === 'servicio-crm') {
           combinedData.title = 'CRM con SaaS personalizado';
+          combinedData.subtitle = 'Controla leads, clientes, citas y seguimientos desde una sola plataforma.';
           if(combinedData.accTitle1 === undefined) {
               combinedData.accTitle1 = 'Pipeline de Ventas Visual';
               combinedData.accDesc1 = 'Control total de en qué etapa se encuentra cada cliente potencial.';

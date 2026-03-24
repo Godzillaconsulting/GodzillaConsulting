@@ -37,9 +37,10 @@ router.put('/:id/draft', async (req, res) => {
         const { draft_data } = req.body;
         
         const result = await pool.query(`
-            UPDATE site_nodes
-            SET draft_data = $1, updated_at = NOW()
-            WHERE id = $2
+            INSERT INTO site_nodes (id, draft_data, updated_at)
+            VALUES ($2, $1, NOW())
+            ON CONFLICT (id) DO UPDATE 
+            SET draft_data = EXCLUDED.draft_data, updated_at = EXCLUDED.updated_at
             RETURNING *
         `, [draft_data, id]);
 

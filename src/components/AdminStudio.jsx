@@ -475,6 +475,7 @@ export default function AdminStudio() {
  const handlePublish = async () => {
  const base = import.meta.env.DEV ?'http://localhost:3000' :'';
  try {
+ await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft_data: draftData }) });
  await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST' });
  await fetchNodes();
  setShowPublishModal(false);

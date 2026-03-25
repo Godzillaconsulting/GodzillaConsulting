@@ -86,7 +86,7 @@ const Chatbot = () => {
             {/* Chatbot Toggle Button */}
             <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
                 <div
-                    className={`relative mb-4 mr-2 bg-white text-black px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold text-center leading-snug w-max max-w-[220px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
+                    className={`relative mb-4 mr-2 bg-white text-black px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
                     ¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>

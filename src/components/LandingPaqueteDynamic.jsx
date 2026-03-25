@@ -90,7 +90,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {/* Details Section */}
  <section id="detalles" className="py-24 bg-black relative">
  <div className="container mx-auto px-6 max-w-6xl">
- <div className="flex flex-col lg:flex-row gap-16 lg:gap-16 items-center">
+ <div className="flex flex-col-reverse lg:flex-row gap-16 lg:gap-16 items-center">
 
  {/* Left Card */}
  <div className="w-full lg:w-[55%] bg-[#1c1c1c] border border-red-600 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative">

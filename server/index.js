@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import mediaRoutes from './routes/media.js';
+import blobRoutes from './routes/blob.js';
 import tiktokRoutes from './routes/tiktok.js';
 import { connectDB } from './config/db.js';
 
@@ -106,6 +107,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/tiktok', tiktokRoutes);
+app.use('/api/blob', blobRoutes);
 
 
 // Servir archivos subidos como estáticos en /media/*

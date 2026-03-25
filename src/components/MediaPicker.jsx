@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+const IS_PROD = !import.meta.env.DEV;
 
 /**
  * MediaPicker — Componente para subir y seleccionar imágenes/videos.
- * Props:
- *   value      {string}   URL actual del campo
- *   onChange   {fn}       Callback cuando se selecciona/sube un archivo
- *   accept     {string}   'image' | 'video' | 'all'  (default: 'all')
- *   label      {string}   Label del campo
+ * En producción usa Vercel Blob Store (/api/blob); en dev usa /api/media local.
  */
 export default function MediaPicker({ value, onChange, accept = 'all', label = 'Imagen / Media' }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -26,7 +23,9 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
     const fetchMedia = async () => {
         try {
-            const r = await fetch(`${API}/api/media`);
+            // Producción: Blob Store | Dev: local media
+            const endpoint = IS_PROD ? `${API}/api/blob/list` : `${API}/api/media`;
+            const r = await fetch(endpoint);
             const d = await r.json();
             setMedia(d);
         } catch (e) {
@@ -40,47 +39,104 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         
         setUploading(true);
         setUploadProgress(0);
-        const formData = new FormData();
-        formData.append('file', file);
 
-        try {
-            const xhr = new XMLHttpRequest();
-            xhr.upload.onprogress = (ev) => {
-                if (ev.lengthComputable) {
-                    setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-                }
-            };
-            xhr.onload = async () => {
-                try {
-                    if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
-                    const result = JSON.parse(xhr.responseText);
-                    if (result.success) {
-                        await fetchMedia();
-                        onChange(result.url);
-                        setIsOpen(false);
-                    } else {
-                        alert(result.error || 'Error al subir');
+        if (IS_PROD) {
+            // ─── PRODUCCIÓN: Subir a Vercel Blob Store ───────────────
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.upload.onprogress = (ev) => {
+                    if (ev.lengthComputable) {
+                        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
                     }
-                } catch (err) {
-                    console.error('Upload process error:', err);
-                    alert('Error en la subida: Archivo muy pesado o error de red (Vercel limita a 4.5MB). Usa la pestaña "Pegar URL" para videos en Vercel.');
-                } finally {
+                };
+                xhr.onload = async () => {
+                    try {
+                        if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success || result.url) {
+                            await fetchMedia();
+                            onChange(result.url);
+                            setIsOpen(false);
+                        } else {
+                            alert(result.error || 'Error al subir al Blob Store');
+                        }
+                    } catch (err) {
+                        console.error('Blob upload error:', err);
+                        alert('Error en la subida al Blob Store. Revisa la consola para más detalles.');
+                    } finally {
+                        setUploading(false);
+                        setUploadProgress(0);
+                    }
+                };
+                xhr.onerror = () => {
                     setUploading(false);
                     setUploadProgress(0);
-                }
-            };
-            xhr.onerror = () => { setUploading(false); };
-            xhr.open('POST', `${API}/api/media/upload`);
-            xhr.send(formData);
-        } catch (e) {
-            setUploading(false);
+                    alert('Error de red al subir archivo.');
+                };
+                xhr.open('POST', `${API}/api/blob/upload`);
+                xhr.setRequestHeader('x-filename', file.name);
+                xhr.setRequestHeader('x-content-type', file.type);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.send(file);
+            } catch (err) {
+                setUploading(false);
+                setUploadProgress(0);
+            }
+        } else {
+            // ─── DESARROLLO: Subir a /api/media local ────────────────
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.upload.onprogress = (ev) => {
+                    if (ev.lengthComputable) {
+                        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                    }
+                };
+                xhr.onload = async () => {
+                    try {
+                        if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            await fetchMedia();
+                            onChange(result.url);
+                            setIsOpen(false);
+                        } else {
+                            alert(result.error || 'Error al subir');
+                        }
+                    } catch (err) {
+                        console.error('Upload error:', err);
+                        alert('Error al subir archivo.');
+                    } finally {
+                        setUploading(false);
+                        setUploadProgress(0);
+                    }
+                };
+                xhr.onerror = () => { setUploading(false); };
+                xhr.open('POST', `${API}/api/media/upload`);
+                xhr.send(formData);
+            } catch (e) {
+                setUploading(false);
+            }
         }
     };
 
     const handleDelete = async (type, filename, e) => {
         e.stopPropagation();
         if (!confirm(`¿Eliminar ${filename}?`)) return;
-        await fetch(`${API}/api/media/${type}/${filename}`, { method: 'DELETE' });
+        if (IS_PROD) {
+            // Blob Store: necesita la URL completa
+            const url = typeof filename === 'string' && filename.startsWith('http') ? filename : '';
+            if (url) {
+                await fetch(`${API}/api/blob/delete`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+            }
+        } else {
+            await fetch(`${API}/api/media/${type}/${filename}`, { method: 'DELETE' });
+        }
         fetchMedia();
     };
 
@@ -224,7 +280,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     </div>
                                                     {/* Botón eliminar */}
                                                     <button
-                                                        onClick={(e) => handleDelete(item.type, item.filename, e)}
+                                                        onClick={(e) => handleDelete(item.type, IS_PROD ? item.url : item.filename, e)}
                                                         className="absolute top-1 right-1 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
                                                     >
                                                         ✕

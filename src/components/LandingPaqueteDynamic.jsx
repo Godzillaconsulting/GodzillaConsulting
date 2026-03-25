@@ -8,18 +8,20 @@ import NivelExpansion from'./NivelExpansion';
 import NivelElite from'./NivelElite';
 import Bots from'./Bots';
 
-const LandingPaqueteDynamic = () => {
+const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
  const { getNodeData } = useSiteData();
 
- // Map incoming URL slug to Local Node IDs
+ // Map incoming URL slug or Admin Studio prop to Local Node IDs
  const slugLower = slug ? slug.toLowerCase() :'';
- let nodeId ='';
- if (slugLower.includes('posicionamiento')) nodeId ='paquete-posicionamiento-social';
- else if (slugLower.includes('control')) nodeId ='paquete-control-ia';
- else if (slugLower.includes('expansion')) nodeId ='paquete-expansion';
- else if (slugLower.includes('elite')) nodeId ='paquete-elite';
- else nodeId ='paquete-' + slugLower;
+ let nodeId = previewNodeId || '';
+ if (!previewNodeId) {
+     if (slugLower.includes('posicionamiento')) nodeId ='paquete-posicionamiento-social';
+     else if (slugLower.includes('control')) nodeId ='paquete-control-ia';
+     else if (slugLower.includes('expansion')) nodeId ='paquete-expansion';
+     else if (slugLower.includes('elite')) nodeId ='paquete-elite';
+     else nodeId ='paquete-' + slugLower;
+ }
 
  const contentData = getNodeData(nodeId);
  const content = contentData?.heroTitle ? contentData : null;

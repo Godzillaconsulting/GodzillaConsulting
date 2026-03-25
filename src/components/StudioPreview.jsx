@@ -122,6 +122,8 @@ const LANDING_HIGHLIGHT = {'heroTitle': ['h1'],'heroTopText': ['p.text-lg'],'pla
 const LANDING_IDS = new Set(['paquete-posicionamiento-social','paquete-expansion','paquete-control-ia','paquete-elite',
 ]);
 
+const LandingPaqueteDynamic = lazy(() => import('./LandingPaqueteDynamic'));
+
 // ── Hook: inyecta CSS de resaltado en el head ─────────────────────────────────
 function useHighlightInjector(nodeId, hoveredField, previewContainerId) {
  useEffect(() => {
@@ -171,7 +173,11 @@ const COMPONENT_MAP = {
   'servicio-embudos': EmbudosDeVenta,
   'servicio-redes': GestionRedesSociales,
   'servicio-seo': OptimizacionWebSeo,
-  'servicio-crm': CrmSaas
+  'servicio-crm': CrmSaas,
+  'paquete-posicionamiento-social': () => <LandingPaqueteDynamic previewNodeId="paquete-posicionamiento-social" />,
+  'paquete-expansion': () => <LandingPaqueteDynamic previewNodeId="paquete-expansion" />,
+  'paquete-control-ia': () => <LandingPaqueteDynamic previewNodeId="paquete-control-ia" />,
+  'paquete-elite': () => <LandingPaqueteDynamic previewNodeId="paquete-elite" />
 };
 
 
@@ -192,12 +198,9 @@ function ScaledSection({ nodeId, draftData }) {
  return () => ro.disconnect();
  }, []);
 
- const isLanding = LANDING_IDS.has(nodeId);
- const Component = !isLanding ? COMPONENT_MAP[nodeId] : null;
+ const Component = COMPONENT_MAP[nodeId];
 
- const inner = isLanding
- ? <LandingCardPreview nodeId={nodeId} draftData={draftData} />
- : Component
+ const inner = Component
  ? (
  <Suspense fallback={
  <div className="flex items-center justify-center h-64 gap-3 text-neutral-500">

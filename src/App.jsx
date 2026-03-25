@@ -102,6 +102,7 @@ function PixelTracker() {
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
   const [showTooltip, setShowTooltip] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies'];
 
   useEffect(() => {
@@ -124,9 +125,10 @@ function FloatingWhatsApp() {
   return (
     <div className="fixed bottom-20 md:bottom-6 left-6 z-40 flex flex-col items-start pointer-events-none">
       <div
-        className={`relative mb-4 ml-2 bg-white text-black px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[160px] border border-gray-100 transition-all duration-1000 transform origin-bottom-left ${showTooltip ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
+        className={`relative mb-4 ml-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[160px] border border-gray-100 transition-all duration-1000 transform origin-bottom-left ${showTooltip && !dismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
       >
         Mándanos mensaje
+        <button onClick={() => setDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">✕</button>
         <div className="absolute -bottom-2 left-4 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
       </div>
       <div className="relative pointer-events-auto">

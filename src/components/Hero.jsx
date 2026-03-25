@@ -68,12 +68,12 @@ const Hero = () => {
 
 
  {/* Subtitle */}
- <p className="text-sm md:text-base text-white/80 max-w-xl text-center -mt-2 mb-2 pointer-events-auto leading-relaxed drop-shadow">
+ <p className="text-sm md:text-base text-white/80 max-w-xl text-center -mt-2 mb-8 pointer-events-auto leading-relaxed drop-shadow">
   {subtitle}
  </p>
 
  {/* CTA Area */}
- <div className="-mt-2 relative w-full flex justify-center items-center pointer-events-auto">
+ <div className="relative w-full flex justify-center items-center pointer-events-auto">
 
 
  <a href={ctaLink} className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-4 rounded-[30px] text-lg font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2 w-full sm:w-auto">

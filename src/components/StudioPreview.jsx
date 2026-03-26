@@ -220,9 +220,9 @@ function ScaledSection({ nodeId, draftData }) {
  );
 
  return (
- <div ref={wrapperRef} className="w-full h-full overflow-hidden relative">
+ <div ref={wrapperRef} className="w-full h-full overflow-y-auto relative">
  {/* Overlay interacción bloqueada */}
- <div className="absolute inset-0 z-10 cursor-not-allowed" title="Vista previa — solo lectura" />
+ <div className="absolute inset-0 z-10 pointer-events-none" title="Vista previa — solo lectura" />
  <div
  id={PREVIEW_ID}
  style={{

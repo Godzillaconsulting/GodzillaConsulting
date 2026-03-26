@@ -33,6 +33,7 @@ dist-ssr
 *.mkv
 .env*.local
 .env
+.env.vercel
 server/.env
 server/.env.local
 server/uploads/

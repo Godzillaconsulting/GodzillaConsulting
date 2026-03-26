@@ -731,6 +731,19 @@ export default function AdminStudio() {
  {f.price && <span className="text-[10px] text-green-400">{f.price}</span>}
  </button>
  ))}
+ <button
+ onClick={() => {
+ setDraftData(p => ({
+ ...p,
+ planFeaturesExtended: [...(p.planFeaturesExtended || []), { title: 'Nueva característica', desc: '', price: '' }]
+ }));
+ setSelectedFeatureIndex((draftData.planFeaturesExtended || []).length);
+ setSelectedElementIndex(null);
+ }}
+ className="w-full mt-2 px-2.5 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all flex items-center justify-center gap-1"
+ >
+ ➕ Añadir característica
+ </button>
  </>}
  </div>
 
@@ -775,6 +788,19 @@ export default function AdminStudio() {
  </EditorField>
  );
  })}
+ <button
+ onClick={() => {
+ setDraftData(p => {
+ const arr = [...(p.planFeaturesExtended || [])];
+ arr.splice(selectedFeatureIndex, 1);
+ return { ...p, planFeaturesExtended: arr };
+ });
+ setSelectedFeatureIndex(null);
+ }}
+ className="w-full mt-3 px-3 py-2 bg-red-900/20 text-red-400 border border-red-800/40 text-xs font-bold rounded-xl hover:bg-red-600 hover:text-white transition-all"
+ >
+ 🗑️ Eliminar característica
+ </button>
  </>
  )}
 

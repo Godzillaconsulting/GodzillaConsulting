@@ -114,8 +114,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <table className="w-full text-left border-collapse">
  <thead>
  <tr className="border-b border-gray-600">
- <th className="py-3 pr-4 text-sm font-bold text-gray-300">El Entregable (Lo que recibes)</th>
- <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">Valor Real Mensual</th>
+ <th className="py-3 pr-4 text-sm font-bold text-gray-300">{content.tableHeaderLeft || 'El Entregable (Lo que recibes)'}</th>
+ <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">{content.tableHeaderRight || 'Valor Real Mensual'}</th>
  </tr>
  </thead>
  <tbody>

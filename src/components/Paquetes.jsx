@@ -163,21 +163,31 @@ const Paquetes = () => {
  </p>
 
  <ul className="space-y-4">
- {(Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : [])).map((feature, i) => (
+ {(Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : [])).map((feature, i) => {
+ const colonIdx = typeof feature === 'string' ? feature.indexOf(':') : -1;
+ return (
  <li key={i} className="flex items-start gap-3">
  <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-[#25D366]" />
  <span className="text-sm leading-tight text-gray-300">
- {feature}
+ {colonIdx > 0 ? (
+ <><strong className="text-white font-semibold">{feature.slice(0, colonIdx)}:</strong>{feature.slice(colonIdx + 1)}</>
+ ) : feature}
  </span>
  </li>
- ))}
+ );
+ })}
  </ul>
  </div>
 
  <div className="relative z-10 mt-8">
  {pkg.guarantee && (
  <p className="text-[10px] text-center font-medium mb-6 px-1 leading-relaxed text-gray-400">
- {pkg.guarantee}
+ {(() => {
+ const g = pkg.guarantee || '';
+ const ci = g.indexOf(':');
+ if (ci > 0) return <><strong className="text-gray-200 font-bold">{g.slice(0, ci)}:</strong>{g.slice(ci + 1)}</>;
+ return g;
+ })()}
  </p>
  )}
  <Link

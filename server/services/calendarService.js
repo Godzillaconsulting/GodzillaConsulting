@@ -48,20 +48,24 @@ export const agendarEnGoogleCalendar = async (datos) => {
         }
 
         const { nombre, correo, telefono, servicio, fecha, hora, notas } = datos;
+
+        if (!nombre || !correo || !fecha || !hora || !servicio) {
+            throw new Error('Faltan datos obligatorios para agendar (nombre, correo, fecha, hora, servicio).');
+        }
         
-        // Crear start date & end date. Supongamos que duran 1 hora
-        const startDateTime = new Date(`${fecha}T${hora}:00-06:00`); // Asegurando UTC-6 (Cd. Juárez)
-        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+        // Calcular fin usando manipulación básica de strings (duración 1 hora)
+        const [, h, m] = hora.match(/^(\d{1,2}):(\d{2})$/) || [null, '12', '00'];
+        const horaFin = `${String(Number(h) + 1).padStart(2, '0')}:${m}`;
 
         const event = {
             summary: `Cita: ${servicio} - ${nombre}`,
             description: `📞 Teléfono: ${telefono}\n📧 Email: ${correo}\n📝 Notas: ${notas || 'N/A'}\n\n✅ Agendado por: Godzilla Consulting Bot`,
             start: {
-                dateTime: startDateTime.toISOString(),
+                dateTime: `${fecha}T${hora}:00`,
                 timeZone: 'America/Ciudad_Juarez',
             },
             end: {
-                dateTime: endDateTime.toISOString(),
+                dateTime: `${fecha}T${horaFin}:00`,
                 timeZone: 'America/Ciudad_Juarez',
             },
             // attendees removido: las Service Accounts no pueden invitar sin Domain-Wide Delegation
@@ -86,11 +90,10 @@ export const agendarEnGoogleCalendar = async (datos) => {
             const internalLink = response.data.htmlLink;
 
             // Link para que el USUARIO guarde en SU calendario personal (Google Calendar TEMPLATE)
-            // Formato de fechas: YYYYMMDDTHHMMSSZ (UTC)
-            const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            const fmt = (f, hStr) => `${f.replace(/-/g, '')}T${hStr.replace(':', '')}00`;
             const personalCalendarLink = `https://calendar.google.com/calendar/render?action=TEMPLATE` +
                 `&text=${encodeURIComponent(`Consultoría Godzilla Consulting - ${servicio}`)}` +
-                `&dates=${fmt(startDateTime)}/${fmt(endDateTime)}` +
+                `&dates=${fmt(fecha, hora)}/${fmt(fecha, horaFin)}` +
                 `&details=${encodeURIComponent(`📋 Servicio: ${servicio}\n📞 Contacto Godzilla: +52 656 581 8912\n🌐 Web: https://godzillaconsulting.ai\n\n✅ Cita confirmada por Oscar Villanueva`)}` +
                 `&ctz=America%2FCiudad_Juarez` +
                 `&sf=true&output=xml`;
@@ -133,15 +136,15 @@ export const actualizarEnGoogleCalendar = async (eventId, nuevaFecha, nuevaHora)
         const calendar = getCalendarClient();
         const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
-        const startDateTime = new Date(`${nuevaFecha}T${nuevaHora}:00-06:00`);
-        const endDateTime   = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+        const [, h, m] = nuevaHora.match(/^(\d{1,2}):(\d{2})$/) || [null, '12', '00'];
+        const horaFin = `${String(Number(h) + 1).padStart(2, '0')}:${m}`;
 
         await calendar.events.patch({
             calendarId,
             eventId,
             resource: {
-                start: { dateTime: startDateTime.toISOString(), timeZone: 'America/Ciudad_Juarez' },
-                end:   { dateTime: endDateTime.toISOString(),   timeZone: 'America/Ciudad_Juarez' },
+                start: { dateTime: `${nuevaFecha}T${nuevaHora}:00`, timeZone: 'America/Ciudad_Juarez' },
+                end:   { dateTime: `${nuevaFecha}T${horaFin}:00`,   timeZone: 'America/Ciudad_Juarez' },
             },
         });
         console.log(`[Google Calendar] ✅ Evento ${eventId} actualizado a ${nuevaFecha} ${nuevaHora}.`);

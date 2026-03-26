@@ -4,7 +4,7 @@ import { useLeadCapture } from '../hooks/useLeadCapture';
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
-
+import DynamicMedia from './DynamicMedia';
 const defaultMagnets = [
     {
         id: 1,
@@ -115,7 +115,7 @@ const Recursos = () => {
                             {/* Image Container with Custom Frame */}
                             <div className="w-full md:w-1/3 flex-shrink-0">
                                 <div className="relative aspect-square rounded-[3rem] border bg-gray-900 border-gray-800 p-2 shadow-2xl overflow-hidden group-hover:border-[#CC0000] transition-colors duration-500">
-                                    <img src={getImageSrc(item)} alt={item.title} className="w-full h-full object-cover rounded-[2.5rem] opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                                    <DynamicMedia src={getImageSrc(item)} alt={item.title} className="w-full h-full object-cover rounded-[2.5rem] opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
 
                                     {/* Hover Download Overlay */}
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-[2.5rem]">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+import DynamicMedia from './DynamicMedia';
 import bgVideo from '../assets/Particulas Rojas.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
@@ -62,7 +63,7 @@ const Servicios = () => {
     const getEnlace = (srv) => srv.enlace || '#servicios';
 
     const renderIconImg = (srv, isActive = false, idx = 0) => (
-        <img
+        <DynamicMedia
             src={getIconSrc(srv, idx)}
             alt={srv.title}
             className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-300 group-hover:scale-110"

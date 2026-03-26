@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
-
+import DynamicMedia from './DynamicMedia';
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from '../assets/Logos/Circle One Logo@2x.png';
 import logoFacemaker from '../assets/Logos/Facemaker Logo@2x.png';
@@ -199,7 +199,7 @@ const CasosExito = () => {
 
                                     <div className="relative z-10 h-full flex flex-col items-center justify-center p-8 gap-6 pointer-events-none">
                                         <div className="flex-1 flex items-center justify-center w-full">
-                                            <img
+                                            <DynamicMedia
                                                 src={getLogoSrc(item)}
                                                 alt={item.nombre || 'Caso de Éxito'}
                                                 className="max-h-36 w-full object-contain opacity-60 group-hover/card:opacity-100 group-hover/card:scale-110 transition-all duration-300 px-4"

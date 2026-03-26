@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+import DynamicMedia from './DynamicMedia';
 import culturaImage from'../assets/images/Nuestra cultura image.jpg';
 import culturaVideo from'../assets/Particulas Rojas.mp4';
 
@@ -162,7 +163,7 @@ const Cultura = () => {
  <div className="relative group">
  <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
  <div className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl">
- <img
+ <DynamicMedia
  src={nodeData.imageUrl || culturaImage}
  alt="Nuestra Cultura"
  className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"

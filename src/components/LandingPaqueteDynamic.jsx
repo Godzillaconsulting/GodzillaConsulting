@@ -145,17 +145,15 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <td className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{content.normalPrice}</td>
  </tr>
  )}
- {content.offerPrice && (
- <tr className="border-b border-red-600 border-b-2">
- <td className="py-3 pr-4 text-sm font-black text-[#CC0000] uppercase tracking-wide">{content.offerLabel || 'PRECIO OFERTA GODFATHER:'}</td>
- <td className="py-3 pl-4 text-right text-sm font-black text-[#CC0000] whitespace-nowrap">{content.offerPrice}</td>
- </tr>
- )}
+
  </tbody>
  </table>
  </div>
 
- <div className="text-center pt-2">
+ <div className="text-center pt-6">
+ {content.offerLabel && (
+ <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
+ )}
  <div className="flex justify-center items-baseline gap-2 mb-8">
  <span className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ||'Consúltalo'}</span>
  {content.planPrice && content.planPeriod && (

@@ -649,6 +649,7 @@ export default function AdminStudio() {
  selectedFeatureIndex === idx ?'bg-neutral-700 border-[#CC0000] text-white' :'bg-neutral-800 border-transparent text-neutral-400 hover:text-white'
  }`}>
  <span className="block font-bold truncate">{f.title || `Feature ${idx+1}`}</span>
+ {f.price && <span className="text-[10px] text-green-400">{f.price}</span>}
  </button>
  ))}
  </>}

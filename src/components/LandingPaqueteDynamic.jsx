@@ -109,26 +109,50 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.planTarget}
  </div>
 
- <div className="space-y-6 mb-10 w-full md:pr-4">
+ {/* Pricing Table */}
+ <div className="w-full mb-10 overflow-x-auto">
+ <table className="w-full text-left border-collapse">
+ <thead>
+ <tr className="border-b border-gray-600">
+ <th className="py-3 pr-4 text-sm font-bold text-gray-300">El Entregable (Lo que recibes)</th>
+ <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">Valor Real Mensual</th>
+ </tr>
+ </thead>
+ <tbody>
  {content.planFeaturesExtended && content.planFeaturesExtended.map((feature, idx) => (
- <div key={idx} className="flex items-start gap-4 pb-6 border-b border-gray-700">
- <div className="shrink-0 mt-1 bg-[#25D366] rounded-full w-6 h-6 flex items-center justify-center">
- <Check size={16} className="text-white" strokeWidth={4} />
- </div>
- <div className="flex flex-col justify-center min-h-[24px]">
- <span
- className="font-bold text-lg text-white leading-tight mb-0.5"
- dangerouslySetInnerHTML={renderHTML(feature.title)}
- />
+ <tr key={idx} className="border-b border-gray-700">
+ <td className="py-4 pr-4 align-top">
+ <span className="font-bold text-white text-sm leading-tight" dangerouslySetInnerHTML={renderHTML(feature.title + (feature.desc ? ':' : ''))} />
  {feature.desc && (
- <span
- className="text-gray-300 text-sm leading-relaxed"
- dangerouslySetInnerHTML={renderHTML(feature.desc)}
- />
+ <span className="text-gray-300 text-sm leading-relaxed"> <span dangerouslySetInnerHTML={renderHTML(feature.desc)} /></span>
  )}
- </div>
- </div>
+ </td>
+ <td className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
+ {feature.price || ''}
+ </td>
+ </tr>
  ))}
+ {/* Summary rows */}
+ {content.totalValue && (
+ <tr className="border-b border-gray-600">
+ <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.totalLabel || 'VALOR TOTAL DEL SISTEMA:'}</td>
+ <td className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{content.totalValue}</td>
+ </tr>
+ )}
+ {content.normalPrice && (
+ <tr className="border-b border-gray-600">
+ <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.normalLabel || 'INVERSIÓN NORMAL:'}</td>
+ <td className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{content.normalPrice}</td>
+ </tr>
+ )}
+ {content.offerPrice && (
+ <tr className="border-b border-red-600 border-b-2">
+ <td className="py-3 pr-4 text-sm font-black text-[#CC0000] uppercase tracking-wide">{content.offerLabel || 'PRECIO OFERTA GODFATHER:'}</td>
+ <td className="py-3 pl-4 text-right text-sm font-black text-[#CC0000] whitespace-nowrap">{content.offerPrice}</td>
+ </tr>
+ )}
+ </tbody>
+ </table>
  </div>
 
  <div className="text-center pt-2">

@@ -106,7 +106,7 @@ function FloatingWhatsApp() {
   if (hiddenRoutes.includes(pathname)) return null;
 
   return (
-    <div className="fixed bottom-[100px] right-6 z-40 pointer-events-auto">
+    <div className="fixed bottom-6 right-6 z-40 pointer-events-auto">
       <div className="relative">
         <div className="absolute inset-0 bg-[#25D366] rounded-full blur-md animate-pulse opacity-70"></div>
         <a href="https://wa.me/526565818912?text=Hola,%20me%20gustaría%20saber%20más%20sobre%20sus%20servicios" target="_blank" rel="noopener noreferrer" className="relative bg-[#25D366] hover:bg-green-600 p-4 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center">

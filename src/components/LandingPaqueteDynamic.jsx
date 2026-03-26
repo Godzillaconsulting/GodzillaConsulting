@@ -102,7 +102,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  className="text-[1.8rem] sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight break-words max-w-full"
  style={{ wordBreak:'break-word', hyphens:'auto' }}
  >
- {content.heroTitle && content.heroTitle.replace('\n','')}
+ {(content.cardTitle || content.heroTitle || '').replace('\n',' ')}
  </h2>
 
  <div className="bg-[#FACC15] text-black font-bold text-sm px-4 py-2 rounded-lg inline-block mb-10 w-fit">

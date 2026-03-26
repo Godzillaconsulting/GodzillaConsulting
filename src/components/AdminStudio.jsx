@@ -338,8 +338,82 @@ export default function AdminStudio() {
  <div className="space-y-4">
  <p className="text-xs font-bold text-neutral-500 tracking-widest">Textos detectados</p>
 
- {/* Campos planos de texto */}
- {textFields.map(([key, val]) => (
+  {/* Campos de texto — con secciones para landings */}
+ {(() => {
+ const isLanding = selectedNodeId?.startsWith('paquete-');
+ if (!isLanding) {
+ // Non-landing nodes: auto-detect as before
+ return textFields.map(([key, val]) => (
+ <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+ <div className="space-y-1.5">
+ <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+ <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
+ {toLabel(key)}
+ </label>
+ <textarea rows={val.length > 80 ? 3 : 2} value={val}
+ onChange={e => change(key, e.target.value)}
+ className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors" />
+ </div>
+ </EditorField>
+ ));
+ }
+ // Landing page: organized sections
+ const sections = [
+ { title: '🎬 Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
+ { title: '📋 Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
+ { title: '💰 Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
+ { title: '🛡️ Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
+ ];
+ const usedKeys = new Set(sections.flatMap(s => s.fields));
+ const remaining = textFields.filter(([k]) => !usedKeys.has(k));
+ 
+ const renderField = (key) => {
+ const val = draftData[key];
+ if (val === undefined || val === null) {
+ // Field doesn't exist yet, create it with empty string
+ return (
+ <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+ <div className="space-y-1.5">
+ <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+ <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
+ {toLabel(key)}
+ </label>
+ <textarea rows={1} value={''}
+ onChange={e => change(key, e.target.value)}
+ placeholder={`Añadir ${toLabel(key).toLowerCase()}...`}
+ className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors placeholder:text-neutral-600" />
+ </div>
+ </EditorField>
+ );
+ }
+ if (typeof val !== 'string') return null;
+ return (
+ <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+ <div className="space-y-1.5">
+ <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+ <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
+ {toLabel(key)}
+ </label>
+ <textarea rows={val.length > 80 ? 3 : 2} value={val}
+ onChange={e => change(key, e.target.value)}
+ className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors" />
+ </div>
+ </EditorField>
+ );
+ };
+
+ return (
+ <>
+ {sections.map(section => (
+ <div key={section.title} className="space-y-3 pb-4 border-b border-neutral-800">
+ <p className="text-xs font-bold text-yellow-400 tracking-widest pt-1">{section.title}</p>
+ {section.fields.map(key => renderField(key))}
+ </div>
+ ))}
+ {remaining.length > 0 && (
+ <div className="space-y-3 pb-4">
+ <p className="text-xs font-bold text-neutral-500 tracking-widest pt-1">📝 Otros campos</p>
+ {remaining.map(([key, val]) => (
  <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
  <div className="space-y-1.5">
  <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
@@ -352,6 +426,11 @@ export default function AdminStudio() {
  </div>
  </EditorField>
  ))}
+ </div>
+ )}
+ </>
+ );
+ })()}
 
  {/* Campos agrupados (service1Title, service2Desc...) */}
  {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (

@@ -189,9 +189,12 @@ async function startBot() {
     }
 
     const ig = new IgApiClient();
-    ig.state.generateDevice(USERNAME);
 
-    // Cargar sesión
+    // ┌─────────────────────────────────────────────────────────────────────────┐
+    // │ CRÍTICO: Deserializar PRIMERO para restaurar el device fingerprint      │
+    // │ exacto con el que se hizo login. Si llamamos generateDevice() antes,    │
+    // │ Instagram detecta un "nuevo dispositivo" y lanza checkpoint_required.   │
+    // └─────────────────────────────────────────────────────────────────────────┘
     const saved = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
     await ig.state.deserialize(saved);
 
@@ -200,7 +203,13 @@ async function startBot() {
         const me = await ig.account.currentUser();
         console.log(`[Instagram] ✅ Sesión activa como @${me.username} (${me.full_name})`);
     } catch(err) {
-        console.error('[Instagram] ❌ Sesión inválida (error', err.message, '). Ejecuta ig_setup.cjs de nuevo.');
+        const isCheckpoint = err.message?.includes('checkpoint_required') || err.response?.body?.checkpoint_url;
+        if (isCheckpoint) {
+            console.error('[Instagram] ❌ Sesión inválida — Instagram pide verificación de nuevo dispositivo.');
+            console.error('[Instagram]    Abre Instagram en tu celular → aprueba el inicio de sesión → ejecuta ig_setup.cjs');
+        } else {
+            console.error('[Instagram] ❌ Sesión inválida (error', err.message, '). Ejecuta ig_setup.cjs de nuevo.');
+        }
         process.exit(1);
     }
 

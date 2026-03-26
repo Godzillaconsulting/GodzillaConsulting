@@ -41,6 +41,8 @@ async function setup() {
     try {
         console.log('🔐 Intentando login...');
         await ig.account.login(USERNAME, PASSWORD);
+        console.log('✅ Login... haciendo warmup para verificar checkpoint...');
+        await ig.account.currentUser();
         console.log('✅ Login directo exitoso (sin 2FA ni checkpoint).\n');
     } catch(err) {
 
@@ -104,6 +106,50 @@ async function setup() {
                 console.log('\n✅ Dispositivo verificado!\n');
             } catch(chkErr) {
                 console.error('\n❌ Código incorrecto:', chkErr.message);
+                process.exit(1);
+            }
+
+        // ── CASO 2b: IgResponseError con checkpoint_required (diferido) ──────────
+        } else if (
+            err.message?.includes('checkpoint_required') ||
+            err.response?.body?.checkpoint_url ||
+            err.response?.body?.message === 'checkpoint_required'
+        ) {
+            console.log('');
+            console.log('🚨 Instagram bloqueó el acceso (checkpoint_required).');
+            console.log('');
+
+            // Extraer checkpoint URL del body del error
+            const checkpointUrl = err.response?.body?.checkpoint_url;
+            console.log('   URL del checkpoint:', checkpointUrl || '(no disponible)');
+            console.log('');
+
+            // Inyectar el checkpoint en el state para que challenge.auto() pueda usarlo
+            if (checkpointUrl) {
+                ig.state.checkpoint = err.response.body;
+                ig.state.challengeUrl = checkpointUrl;
+            }
+
+            try {
+                console.log('   Intentando resolver automáticamente...');
+                await ig.challenge.auto(true); // true = preferir email
+                console.log('📩 Código enviado a tu email o teléfono registrado.');
+                console.log('');
+                const code = await ask('   ➤ Ingresa el código de 6 dígitos: ');
+                await ig.challenge.sendSecurityCode(code.replace(/\s/g, ''));
+                console.log('\n✅ Verificación completada!\n');
+            } catch(chkErr) {
+                console.error('\n❌ Error en challenge:', chkErr.message);
+                console.log('');
+                console.log('💡 Solución manual requerida:');
+                console.log('   1. Abre Instagram en tu CELULAR');
+                console.log('   2. Ve a Ajustes → Seguridad → Actividad de inicio de sesión');
+                console.log('   3. Busca el intento reciente y presiona "Fui yo"');
+                console.log('   4. Espera 2 minutos y ejecuta este script de nuevo');
+                if (checkpointUrl) {
+                    console.log('');
+                    console.log('   O ve directamente a:', 'https://www.instagram.com' + checkpointUrl);
+                }
                 process.exit(1);
             }
 

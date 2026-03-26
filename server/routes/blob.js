@@ -1,7 +1,39 @@
 import express from 'express';
 import { put, list, del } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 
 const router = express.Router();
+
+// ─── POST /api/blob/upload-client ────────────────────────────────────────────
+// Endpoint para gestionar tokens de subida directa desde el navegador.
+// Esto permite subir archivos grandes (>4.5MB) directamente a Vercel Blob.
+router.post('/upload-client', async (req, res) => {
+    try {
+        const body = req.body;
+        const jsonResponse = await handleUpload({
+            body,
+            request: req,
+            onBeforeGenerateToken: async (pathname, clientPayload) => {
+                return {
+                    allowedContentTypes: [
+                        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+                        'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+                    ],
+                    tokenPayload: JSON.stringify({ source: 'godzilla-admin' })
+                };
+            },
+            onUploadCompleted: async ({ blob, tokenPayload }) => {
+                console.log(`[Blob] Client Upload Completado: ${blob.pathname} → ${blob.url}`);
+            },
+            token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+
+        res.status(200).json(jsonResponse);
+    } catch (error) {
+        console.error('[Blob] Error en upload-client:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
 
 // ─── POST /api/blob/upload ───────────────────────────────────────────────────
 // Recibe un archivo via multipart form-data y lo sube al Vercel Blob Store.

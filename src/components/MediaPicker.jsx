@@ -41,44 +41,26 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploadProgress(0);
 
         if (IS_PROD) {
-            // ─── PRODUCCIÓN: Subir a Vercel Blob Store ───────────────
+            // ─── PRODUCCIÓN: Subir a Vercel Blob Store (Client Upload) ───────────────
             try {
-                const xhr = new XMLHttpRequest();
-                xhr.upload.onprogress = (ev) => {
-                    if (ev.lengthComputable) {
-                        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                // Importación dinámica de la librería del cliente para Vercel Blob
+                const { upload } = await import('@vercel/blob/client');
+
+                const newBlob = await upload(file.name, file, {
+                    access: 'public',
+                    handleUploadUrl: `${API}/api/blob/upload-client`,
+                    onUploadProgress: (progressEvent) => {
+                        setUploadProgress(progressEvent.percentage);
                     }
-                };
-                xhr.onload = async () => {
-                    try {
-                        if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
-                        const result = JSON.parse(xhr.responseText);
-                        if (result.success || result.url) {
-                            await fetchMedia();
-                            onChange(result.url);
-                            setIsOpen(false);
-                        } else {
-                            alert(result.error || 'Error al subir al Blob Store');
-                        }
-                    } catch (err) {
-                        console.error('Blob upload error:', err);
-                        alert('Error en la subida al Blob Store. Revisa la consola para más detalles.');
-                    } finally {
-                        setUploading(false);
-                        setUploadProgress(0);
-                    }
-                };
-                xhr.onerror = () => {
-                    setUploading(false);
-                    setUploadProgress(0);
-                    alert('Error de red al subir archivo.');
-                };
-                xhr.open('POST', `${API}/api/blob/upload`);
-                xhr.setRequestHeader('x-filename', file.name);
-                xhr.setRequestHeader('x-content-type', file.type);
-                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-                xhr.send(file);
+                });
+
+                await fetchMedia();
+                onChange(newBlob.url);
+                setIsOpen(false);
             } catch (err) {
+                console.error('Blob upload error:', err);
+                alert('Error en la subida al Blob Store. Revisa la consola para más detalles.');
+            } finally {
                 setUploading(false);
                 setUploadProgress(0);
             }

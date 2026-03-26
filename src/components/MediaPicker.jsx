@@ -23,9 +23,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
     const fetchMedia = async () => {
         try {
-            // Producción: Blob Store | Dev: local media
-            const endpoint = IS_PROD ? `${API}/api/blob/list` : `${API}/api/media`;
-            const r = await fetch(endpoint);
+            const r = await fetch(`${API}/api/blob/list`);
             const d = await r.json();
             setMedia(d);
         } catch (e) {
@@ -65,9 +63,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                 setUploadProgress(0);
             }
         } else {
-            // ─── DESARROLLO: Subir a /api/media local ────────────────
-            const formData = new FormData();
-            formData.append('file', file);
+            // ─── DESARROLLO: Subir a /api/blob local (envío binario) ────────────────
             try {
                 const xhr = new XMLHttpRequest();
                 xhr.upload.onprogress = (ev) => {
@@ -94,31 +90,27 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                         setUploadProgress(0);
                     }
                 };
-                xhr.onerror = () => { setUploading(false); };
-                xhr.open('POST', `${API}/api/media/upload`);
-                xhr.send(formData);
+                xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo'); };
+                xhr.open('POST', `${API}/api/blob/upload`);
+                xhr.setRequestHeader('x-filename', encodeURIComponent(file.name));
+                xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream');
+                xhr.send(file);
             } catch (e) {
                 setUploading(false);
+                console.error('XHR setup error:', e);
+                alert('Error al preparar la subida del archivo.');
             }
         }
     };
 
-    const handleDelete = async (type, filename, e) => {
+    const handleDelete = async (type, filename, e, url) => {
         e.stopPropagation();
         if (!confirm(`¿Eliminar ${filename}?`)) return;
-        if (IS_PROD) {
-            // Blob Store: necesita la URL completa
-            const url = typeof filename === 'string' && filename.startsWith('http') ? filename : '';
-            if (url) {
-                await fetch(`${API}/api/blob/delete`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url }),
-                });
-            }
-        } else {
-            await fetch(`${API}/api/media/${type}/${filename}`, { method: 'DELETE' });
-        }
+        await fetch(`${API}/api/blob/delete`, { 
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
         fetchMedia();
     };
 
@@ -262,7 +254,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     </div>
                                                     {/* Botón eliminar */}
                                                     <button
-                                                        onClick={(e) => handleDelete(item.type, IS_PROD ? item.url : item.filename, e)}
+                                                        onClick={(e) => handleDelete(item.type, item.filename, e, item.url)}
                                                         className="absolute top-1 right-1 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
                                                     >
                                                         ✕

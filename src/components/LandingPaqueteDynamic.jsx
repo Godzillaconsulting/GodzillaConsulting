@@ -66,8 +66,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.heroTopText}
  </p>
  <h1
- className="text-[2rem] sm:text-[3rem] md:text-8xl lg:text-[7rem] font-bold leading-[1.1] md:leading-[0.9] tracking-tight mb-8 md:mb-16 drop-shadow-2xl w-full break-words max-w-full"
- style={{ wordBreak:'break-word', hyphens:'auto' }}
+ className="text-[2rem] sm:text-[3rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] font-bold leading-[1.1] md:leading-[0.95] tracking-tight mb-8 md:mb-16 drop-shadow-2xl w-full max-w-full"
+ style={{ overflowWrap: 'normal', wordBreak: 'normal' }}
  dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
  />
 

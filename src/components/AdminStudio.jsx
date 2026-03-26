@@ -774,13 +774,13 @@ export default function AdminStudio() {
  {activeFeature && (
  <>
  <p className="text-xs font-bold text-[#CC0000]">Editando característica</p>
- {Object.entries(activeFeature).map(([k, v]) => {
- if (typeof v !=='string') return null;
+ {['title', 'desc', 'price'].map(k => {
+ const v = activeFeature[k] || '';
  return (
  <EditorField key={k} fieldKey={`ft_${k}`} onHover={setHoveredField}>
  <div className="space-y-1">
  <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
- <textarea rows={v.length > 60 ? 4 : 2} value={v ||''} onChange={e => changeFt(k, e.target.value)}
+ <textarea rows={v.length > 60 ? 4 : 2} value={v} onChange={e => changeFt(k, e.target.value)}
  className="w-full p-2.5 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none" />
  </div>
  </EditorField>

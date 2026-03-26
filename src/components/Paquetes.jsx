@@ -192,7 +192,7 @@ const Paquetes = () => {
  )}
  <Link
  to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'')}`}
- className="block text-center w-full py-3.5 rounded-full font-black text-sm tracking-widest transition-all duration-300 shadow-xl bg-white text-[#CC0000] hover:bg-black hover:text-white hover:scale-105"
+ className="block text-center w-full py-3.5 rounded-full font-black text-sm tracking-widest transition-all duration-300 shadow-xl bg-[#CC0000] text-white hover:bg-white hover:text-[#CC0000] hover:scale-105"
  >
  Ver Garantía
  </Link>

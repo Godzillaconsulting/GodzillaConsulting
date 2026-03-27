@@ -148,13 +148,13 @@ export default function AnalyticsDashboard() {
   const [selectedSource, setSelectedSource] = useState(null); 
   const [expandedPost, setExpandedPost] = useState(null);
   const [liveTrafficSources, setLiveTrafficSources] = useState(trafficSources);
-  const [liveSankeyData, setLiveSankeyData] = useState(sankeyData);
-  const [liveRoiData, setLiveRoiData] = useState(roiData);
+  const [liveSankeyData, setLiveSankeyData] = useState([["From", "To", "Weight"], ["Cargando red...", "Obteniendo datos", 1]]);
+  const [liveRoiData, setLiveRoiData] = useState([]);
   const [liveKpis, setLiveKpis] = useState({
-     totalSpend: '$34,900',
-     totalRevenue: '$126,000',
-     globalROI: '361%',
-     avgCac: '$153.33'
+     totalSpend: '$0',
+     totalRevenue: '$0',
+     globalROI: '0%',
+     avgCac: '$0'
   });
 
   useEffect(() => {

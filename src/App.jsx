@@ -51,6 +51,7 @@ import LandingPaqueteDynamic from './components/LandingPaqueteDynamic';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import PreguntasFrecuentes from './components/PreguntasFrecuentes';
+import RecursoPage from './components/RecursoPage';
 import whatsappIcon from './assets/icons/WhatsApp (white).png';
 
 function ScrollToHash() {
@@ -158,6 +159,7 @@ function AppLayout() {
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
           <Route path="/admin" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
+          <Route path="/recursos/:recursoId" element={<RecursoPage />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

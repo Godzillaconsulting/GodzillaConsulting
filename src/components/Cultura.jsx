@@ -1,65 +1,120 @@
 import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
-import DynamicMedia from './DynamicMedia';
 import culturaImage from'../assets/images/Nuestra cultura image.jpg';
 import culturaVideo from'../assets/Particulas Rojas.mp4';
 
 const Cultura = () => {
  const { getNodeData } = useSiteData();
- const nodeData = getNodeData('cultura') || {};
- const [currentSlide, setCurrentSlide] = useState(0);
- const [isPaused, setIsPaused] = useState(false);
+  const nodeData = getNodeData('cultura') || {};
 
- useEffect(() => {
- if (isPaused) return;
- const timer = setInterval(() => {
- setCurrentSlide((prev) => (prev === 0 ? 1 : 0));
- }, 6000); // 6 seconds auto-slide
- return () => clearInterval(timer);
- }, [isPaused]);
+  const mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.length > 0
+    ? nodeData.mediaGallery
+    : [
+        { type: (nodeData.imageUrl || '').match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image', url: nodeData.imageUrl || culturaImage },
+        { type: 'video', url: culturaVideo }
+      ];
 
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
+  const [rightSlide, setRightSlide] = useState(0);
+  const [rightIsPaused, setRightIsPaused] = useState(false);
 
- const [touchStart, setTouchStart] = useState(null);
- const [touchEnd, setTouchEnd] = useState(null);
- const [isDragging, setIsDragging] = useState(false);
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev === 0 ? 1 : 0));
+    }, 6000); // 6 seconds auto-slide
+    return () => clearInterval(timer);
+  }, [isPaused]);
 
- // Minimum swipe distance (in px) reduced for faster response
- const minSwipeDistance = 30;
+  useEffect(() => {
+    if (rightIsPaused) return;
+    const timer = setInterval(() => {
+      setRightSlide((prev) => (prev === mediaGallery.length - 1 ? 0 : prev + 1));
+    }, 6000); // 6 seconds auto-slide
+    return () => clearInterval(timer);
+  }, [rightIsPaused, mediaGallery.length]);
 
- const onTouchStart = (e) => {
- setTouchEnd(null);
- setTouchStart(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
- setIsPaused(true);
- setIsDragging(true);
- };
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
- const onTouchMove = (e) => {
- if (!isDragging) return;
- setIsPaused(true);
- setTouchEnd(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
- };
+  const [rightTouchStart, setRightTouchStart] = useState(null);
+  const [rightTouchEnd, setRightTouchEnd] = useState(null);
+  const [rightIsDragging, setRightIsDragging] = useState(false);
 
- const onTouchEnd = () => {
- if (!touchStart || !touchEnd) {
- setIsDragging(false);
- setIsPaused(false);
- return;
- }
- const distance = touchStart - touchEnd;
- const isLeftSwipe = distance > minSwipeDistance;
- const isRightSwipe = distance < -minSwipeDistance;
+  // Minimum swipe distance (in px) reduced for faster response
+  const minSwipeDistance = 30;
 
- if (isLeftSwipe || isRightSwipe) {
- setCurrentSlide((prev) => (prev === 0 ? 1 : 0));
- }
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
+    setIsPaused(true);
+    setIsDragging(true);
+  };
 
- setIsDragging(false);
- setIsPaused(false);
- setTouchStart(null);
- setTouchEnd(null);
- };
+  const onTouchMove = (e) => {
+    if (!isDragging) return;
+    setIsPaused(true);
+    setTouchEnd(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      setIsDragging(false);
+      setIsPaused(false);
+      return;
+    }
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      setCurrentSlide((prev) => (prev === 0 ? 1 : 0));
+    }
+
+    setIsDragging(false);
+    setIsPaused(false);
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const onRightTouchStart = (e) => {
+    setRightTouchEnd(null);
+    setRightTouchStart(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
+    setRightIsPaused(true);
+    setRightIsDragging(true);
+  };
+
+  const onRightTouchMove = (e) => {
+    if (!rightIsDragging) return;
+    setRightIsPaused(true);
+    setRightTouchEnd(e.targetTouches ? e.targetTouches[0].clientX : e.clientX);
+  };
+
+  const onRightTouchEnd = () => {
+    if (!rightTouchStart || !rightTouchEnd) {
+      setRightIsDragging(false);
+      setRightIsPaused(false);
+      return;
+    }
+    const distance = rightTouchStart - rightTouchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      setRightSlide((prev) => (prev === mediaGallery.length - 1 ? 0 : prev + 1));
+    } else if (isRightSwipe) {
+      setRightSlide((prev) => (prev === 0 ? mediaGallery.length - 1 : prev - 1));
+    }
+
+    setRightIsDragging(false);
+    setRightIsPaused(false);
+    setRightTouchStart(null);
+    setRightTouchEnd(null);
+  };
  return (
  <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
  {/* Video de fondo */}
@@ -159,17 +214,65 @@ const Cultura = () => {
  </div>
  </div>
 
- {/* CEO Image */}
- <div className="relative group">
- <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
- <div className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl">
- <DynamicMedia
- src={nodeData.imageUrl || culturaImage}
- alt="Nuestra Cultura"
- className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"
- />
- </div>
- </div>
+        {/* Right Slider */}
+        <div className="relative group h-full">
+          <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
+          <div 
+            className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl cursor-grab active:cursor-grabbing"
+            onMouseEnter={() => setRightIsPaused(true)}
+            onMouseLeave={() => { setRightIsPaused(false); setRightIsDragging(false); }}
+            onTouchStart={onRightTouchStart}
+            onTouchMove={onRightTouchMove}
+            onTouchEnd={onRightTouchEnd}
+            onMouseDown={onRightTouchStart}
+            onMouseMove={rightIsDragging ? onRightTouchMove : undefined}
+            onMouseUp={onRightTouchEnd}
+            onMouseLeaveCapture={onRightTouchEnd}
+          >
+            <div 
+              className="flex h-full transition-transform duration-700 ease-in-out" 
+              style={{ transform: `translateX(-${rightSlide * 100}%)` }}
+            >
+              {mediaGallery.map((media, idx) => (
+                <div key={idx} className="w-full h-full flex-shrink-0 relative pointer-events-none select-none">
+                  {media.type === 'video' ? (
+                    <video
+                      src={media.url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover object-center grayscale transition-all duration-700 hover:scale-105"
+                    />
+                  ) : (
+                    <img
+                      src={media.url}
+                      alt="Nuestra Cultura Media"
+                      className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Dots for Right Slider */}
+            {mediaGallery.length > 1 && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 z-20">
+                {mediaGallery.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRightSlide(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${rightSlide === idx ? 'bg-[#CC0000] w-8' : 'bg-white/50 hover:bg-white w-2'}`}
+                    aria-label={`Ver media ${idx + 1}`}
+                  ></button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
  </div>
  </div>

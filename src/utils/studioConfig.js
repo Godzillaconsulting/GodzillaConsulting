@@ -74,30 +74,52 @@ export function injectSectionDefaults(nodeId, draftSource) {
   }
 
   // Inject defaults for Portafolio / Casos de Éxito
-  if (nodeId === 'portafolio' && combinedData.caso1LogoUrl === undefined) {
-      combinedData.caso1LogoUrl = logoFacemaker;
-      combinedData.caso1Nombre = 'Facemaker';
-      combinedData.caso1Category = 'Clínica Estética';
-
-      combinedData.caso2LogoUrl = logoCircleOne;
-      combinedData.caso2Nombre = 'Circle One';
-      combinedData.caso2Category = 'Hotelería';
-
-      combinedData.caso3LogoUrl = logoCeoCuts;
-      combinedData.caso3Nombre = 'CEO Cuts';
-      combinedData.caso3Category = 'Barbería';
-
-      combinedData.caso4LogoUrl = logoMedhaus;
-      combinedData.caso4Nombre = 'Medhaus';
-      combinedData.caso4Category = 'Sector Médico';
-
-      combinedData.caso5LogoUrl = logoArtika;
-      combinedData.caso5Nombre = 'Artika';
-      combinedData.caso5Category = 'Heladerías';
-
-      combinedData.caso6LogoUrl = logoGrupoMrg;
-      combinedData.caso6Nombre = 'Grupo MRG';
-      combinedData.caso6Category = 'Banquetes y Eventos';
+  if (nodeId === 'portafolio') {
+      if (combinedData.caso1LogoUrl === undefined) {
+          combinedData.caso1LogoUrl = logoFacemaker;
+          combinedData.caso1Nombre = 'Facemaker';
+          combinedData.caso1Category = 'Clínica Estética';
+      }
+      if (combinedData.caso2LogoUrl === undefined) {
+          combinedData.caso2LogoUrl = logoCircleOne;
+          combinedData.caso2Nombre = 'Circle One';
+          combinedData.caso2Category = 'Hotelería';
+      }
+      if (combinedData.caso3LogoUrl === undefined) {
+          combinedData.caso3LogoUrl = logoCeoCuts;
+          combinedData.caso3Nombre = 'CEO Cuts';
+          combinedData.caso3Category = 'Barbería';
+      }
+      if (combinedData.caso4LogoUrl === undefined) {
+          combinedData.caso4LogoUrl = logoMedhaus;
+          combinedData.caso4Nombre = 'Medhaus';
+          combinedData.caso4Category = 'Sector Médico';
+      }
+      if (combinedData.caso5LogoUrl === undefined) {
+          combinedData.caso5LogoUrl = logoArtika;
+          combinedData.caso5Nombre = 'Artika';
+          combinedData.caso5Category = 'Heladerías';
+      }
+      if (combinedData.caso6LogoUrl === undefined) {
+          combinedData.caso6LogoUrl = logoGrupoMrg;
+          combinedData.caso6Nombre = 'Grupo MRG';
+          combinedData.caso6Category = 'Banquetes y Eventos';
+      }
+      if (combinedData.caso7LogoUrl === undefined) {
+          combinedData.caso7LogoUrl = logoNutrisa;
+          combinedData.caso7Nombre = 'Nutrisa';
+          combinedData.caso7Category = 'Sector Alimenticio';
+      }
+      if (combinedData.caso8LogoUrl === undefined) {
+          combinedData.caso8LogoUrl = logoSanAntonio;
+          combinedData.caso8Nombre = 'San Antonio';
+          combinedData.caso8Category = 'Sector Médico';
+      }
+      if (combinedData.caso9LogoUrl === undefined) {
+          combinedData.caso9LogoUrl = logoDonElote;
+          combinedData.caso9Nombre = 'Don Elote';
+          combinedData.caso9Category = 'Sector Alimenticio';
+      }
   }
 
   // Inject defaults for Recursos

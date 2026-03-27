@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import { useSiteData } from '../context/SiteContext';
 
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 
@@ -30,12 +31,30 @@ const RECURSOS_DATA = {
 
 const RecursoPage = () => {
   const { recursoId } = useParams();
-  const data = RECURSOS_DATA[recursoId];
+  const { getNodeData, loading } = useSiteData();
+  
+  const nodeId = `landing-recurso-${recursoId}`;
+  const nodeData = getNodeData(nodeId);
+  const defaultData = RECURSOS_DATA[recursoId];
+
+  // Merge the dynamically pulled node data with our base RECURSOS_DATA fallback
+  const data = React.useMemo(() => {
+      if (!defaultData) return null;
+      return {
+          title: nodeData?.title || defaultData.title,
+          description: nodeData?.description || defaultData.description,
+          bottomText: nodeData?.bottomText || defaultData.bottomText,
+          buttonText: nodeData?.buttonText || 'Download Resource',
+          buttonDestination: nodeData?.buttonDestination || defaultData.downloadUrl || '#',
+          imageUrl: nodeData?.mainImageUrl || defaultData.imageUrl
+      };
+  }, [nodeData, defaultData]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [recursoId]);
 
+  if (loading && !data) return <div className="min-h-screen bg-black"></div>;
   if (!data) return <div className="text-white text-center py-32 text-2xl font-bold bg-black min-h-screen pt-40">Recurso no encontrado.</div>;
 
   return (
@@ -51,11 +70,11 @@ const RecursoPage = () => {
             </p>
             <div className="pt-2">
               <a 
-                href={data.downloadUrl} 
+                href={data.buttonDestination}
                 className="inline-flex items-center justify-center bg-[#FA4A54] hover:bg-[#e03a43] text-white px-8 py-3.5 md:py-4 rounded-[1.5rem] font-bold text-[15px] md:text-base transition-all gap-3 shadow-[0_0_15px_rgba(250,74,84,0.2)] hover:shadow-[0_0_25px_rgba(250,74,84,0.4)]"
               >
                 <Download size={20} strokeWidth={2.5} />
-                Download Resource
+                {data.buttonText}
               </a>
             </div>
           </div>

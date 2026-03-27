@@ -34,6 +34,9 @@ export const PAGE_SECTIONS = [
  { id: 'servicio-redes', label: 'S. Redes', emoji: '📱', tag: 'SERVICIO' },
  { id: 'servicio-seo', label: 'S. SEO', emoji: '🔍', tag: 'SERVICIO' },
  { id: 'servicio-crm', label: 'S. CRM', emoji: '📊', tag: 'SERVICIO' },
+ { id: 'landing-recurso-prompts', label: 'L. Protocolo Lázaro', emoji: '🔗', tag: 'LANDING' },
+ { id: 'landing-recurso-whatsapp', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
+ { id: 'landing-recurso-crm', label: 'L. Tablero Control', emoji: '🔗', tag: 'LANDING' },
  { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
 ];
 
@@ -337,6 +340,32 @@ export function injectSectionDefaults(nodeId, draftSource) {
               combinedData.accIcon5Url = '';
           }
       }
+  }
+
+  // Inject defaults for Landing Recursos
+  if (nodeId === 'landing-recurso-prompts') {
+      if (combinedData.title === undefined) combinedData.title = '7 prompts de IA para marketing que sí funcionan';
+      if (combinedData.description === undefined) combinedData.description = 'Dale a tu negocio las herramientas para extraer dinero de su base de datos antigua (contactos de hace 3, 6 o 12 meses que nunca compraron).';
+      if (combinedData.bottomText === undefined) combinedData.bottomText = 'Instrucciones para el Usuario: Donde veas [PARÉNTESIS EN NEGRITA], inserta lo que corresponda a tu negocio (ej. tu servicio, el problema que resuelves o tu nombre). Regla de Oro: Estos mensajes funcionan porque parecen escritos por un humano, no por un robot de marketing. No los adornes. Mantenlos cortos.';
+      if (combinedData.buttonText === undefined) combinedData.buttonText = 'Download Resource';
+      if (combinedData.buttonDestination === undefined) combinedData.buttonDestination = '#';
+      if (combinedData.mainImageUrl === undefined) combinedData.mainImageUrl = 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80';
+  }
+  if (nodeId === 'landing-recurso-whatsapp') {
+      if (combinedData.title === undefined) combinedData.title = 'Cómo generar leads en WhatsApp sin spam';
+      if (combinedData.description === undefined) combinedData.description = '¿Cómo clonar a tu mejor vendedor y hacerlo trabajar 24/7 sin pagarle sueldo extra? ¡Deja de perder clientes por no contestar rápido!';
+      if (combinedData.bottomText === undefined) combinedData.bottomText = 'Enseñar al dueño del negocio cómo configurar respuestas automáticas (ya sea en WhatsApp Business, Instagram DM o SMS) que conviertan preguntas en citas, incluso mientras duermen.';
+      if (combinedData.buttonText === undefined) combinedData.buttonText = 'Download Resource';
+      if (combinedData.buttonDestination === undefined) combinedData.buttonDestination = '#';
+      if (combinedData.mainImageUrl === undefined) combinedData.mainImageUrl = whatsapp3d;
+  }
+  if (nodeId === 'landing-recurso-crm') {
+      if (combinedData.title === undefined) combinedData.title = 'Plantilla de CRM Personalizable';
+      if (combinedData.description === undefined) combinedData.description = 'Lo que no se mide, no se puede mejorar. Deja de perder dinero en servilletas y cuadernos. Organiza tus prospectos, visualiza tus ventas y toma el control de tu negocio.';
+      if (combinedData.bottomText === undefined) combinedData.bottomText = 'Proporcionar una herramienta visual simple para que el dueño (o su recepcionista) deje de usar cuadernos de papel y post-its. Es la \'Digitalización Nivel 1\'.';
+      if (combinedData.buttonText === undefined) combinedData.buttonText = 'Download Resource';
+      if (combinedData.buttonDestination === undefined) combinedData.buttonDestination = '#';
+      if (combinedData.mainImageUrl === undefined) combinedData.mainImageUrl = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80';
   }
 
   return combinedData;

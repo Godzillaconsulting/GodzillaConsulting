@@ -15,6 +15,7 @@ const EmbudosDeVenta = lazy(() => import('./EmbudosDeVenta'));
 const GestionRedesSociales = lazy(() => import('./GestionRedesSociales'));
 const OptimizacionWebSeo = lazy(() => import('./OptimizacionWebSeo'));
 const CrmSaas = lazy(() => import('./CrmSaas'));
+const RecursoPage = lazy(() => import('./RecursoPage'));
 
 
 // ── ErrorBoundary: evita que un crash del preview derrumbe todo el admin ──────
@@ -113,6 +114,9 @@ const HIGHLIGHT_MAP = {'hero': {'section': ['#inicio'],'title': ['#inicio h1','#
  },'recursos': {'section': ['#recursos, section'],'title': ['h2'],'elements': ['.grid'],'imageUrl': ['img'],
  },'footer': {'section': ['footer, [id*="footer"]'],'title': ['footer h2, footer h3'],'logoUrl': ['footer img'],'textColor': ['footer p'],'accentColor':['footer a'],
  },
+ 'landing-recurso-prompts': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
+ 'landing-recurso-whatsapp': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
+ 'landing-recurso-crm': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
 };
 
 // Para paquetes, el resaltado es más simple ya que renderizamos nuestro propio preview
@@ -177,7 +181,10 @@ const COMPONENT_MAP = {
   'paquete-posicionamiento-social': () => <LandingPaqueteDynamic previewNodeId="paquete-posicionamiento-social" />,
   'paquete-expansion': () => <LandingPaqueteDynamic previewNodeId="paquete-expansion" />,
   'paquete-control-ia': () => <LandingPaqueteDynamic previewNodeId="paquete-control-ia" />,
-  'paquete-elite': () => <LandingPaqueteDynamic previewNodeId="paquete-elite" />
+  'paquete-elite': () => <LandingPaqueteDynamic previewNodeId="paquete-elite" />,
+  'landing-recurso-prompts': () => <MemoryRouter initialEntries={['/recursos/prompts']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>,
+  'landing-recurso-whatsapp': () => <MemoryRouter initialEntries={['/recursos/whatsapp']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>,
+  'landing-recurso-crm': () => <MemoryRouter initialEntries={['/recursos/crm']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>
 };
 
 

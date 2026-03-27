@@ -29,8 +29,9 @@ const RECURSOS_DATA = {
   }
 };
 
-const RecursoPage = () => {
-  const { recursoId } = useParams();
+const RecursoPage = ({ previewRecursoId }) => {
+  const { recursoId: urlRecursoId } = useParams();
+  const recursoId = previewRecursoId || urlRecursoId;
   const { getNodeData, loading } = useSiteData();
   
   const nodeId = `landing-recurso-${recursoId}`;

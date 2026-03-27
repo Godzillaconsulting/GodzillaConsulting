@@ -182,9 +182,9 @@ const COMPONENT_MAP = {
   'paquete-expansion': () => <LandingPaqueteDynamic previewNodeId="paquete-expansion" />,
   'paquete-control-ia': () => <LandingPaqueteDynamic previewNodeId="paquete-control-ia" />,
   'paquete-elite': () => <LandingPaqueteDynamic previewNodeId="paquete-elite" />,
-  'landing-recurso-prompts': () => <MemoryRouter initialEntries={['/recursos/prompts']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>,
-  'landing-recurso-whatsapp': () => <MemoryRouter initialEntries={['/recursos/whatsapp']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>,
-  'landing-recurso-crm': () => <MemoryRouter initialEntries={['/recursos/crm']}><Routes><Route path="/recursos/:recursoId" element={<RecursoPage />} /></Routes></MemoryRouter>
+  'landing-recurso-prompts': () => <RecursoPage previewRecursoId="prompts" />,
+  'landing-recurso-whatsapp': () => <RecursoPage previewRecursoId="whatsapp" />,
+  'landing-recurso-crm': () => <RecursoPage previewRecursoId="crm" />
 };
 
 

@@ -139,7 +139,8 @@ const CasosExito = () => {
                         orden: i,
                         logoSrc: nodeData[`caso${i}LogoUrl`],
                         nombre: nodeData[`caso${i}Nombre`] || '',
-                        category: nodeData[`caso${i}Category`] || ''
+                        category: nodeData[`caso${i}Category`] || '',
+                        link: nodeData[`caso${i}Link`] || (cases !== defaultCases ? cases.find(c => c.nombre && c.nombre === nodeData[`caso${i}Nombre`])?.link || '' : '')
                     });
                 }
             }

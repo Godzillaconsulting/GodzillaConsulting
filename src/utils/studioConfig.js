@@ -60,6 +60,7 @@ export function injectSectionDefaults(nodeId, draftSource) {
     combinedData.logoUrl7 = logoNutrisa;
     combinedData.logoUrl8 = logoSanAntonio;
     combinedData.logoUrl9 = logoArtika;
+    combinedData.logoUrl10 = '';
   }
 
   // Inject video and gifs for Servicios section so they can be modified
@@ -119,6 +120,11 @@ export function injectSectionDefaults(nodeId, draftSource) {
           combinedData.caso9LogoUrl = logoDonElote;
           combinedData.caso9Nombre = 'Don Elote';
           combinedData.caso9Category = 'Sector Alimenticio';
+      }
+      if (combinedData.caso10LogoUrl === undefined) {
+          combinedData.caso10LogoUrl = '';
+          combinedData.caso10Nombre = 'EP Lighting';
+          combinedData.caso10Category = 'Iluminación / Arquitectura';
       }
   }
 

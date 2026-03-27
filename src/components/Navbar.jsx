@@ -53,13 +53,13 @@ const Navbar = () => {
  }, []);
 
  const navLinks = [
- { name:'INICIO', href:'/#inicio' },
- { name:'CULTURA', href:'/#cultura' },
- { name:'SERVICIOS', href:'/#servicios' },
- { name:'PAQUETES', href:'/#paquetes' },
- { name:'PORTAFOLIO', href:'/#portafolio' },
- { name:'RECURSOS', href:'/#recursos' },
- ];
+		{ name:'INICIO', href:'/#inicio' },
+		{ name:'CULTURA', href:'/#cultura' },
+		{ name:'SERVICIOS', href:'/#servicios' },
+		{ name:'PORTAFOLIO', href:'/#portafolio' },
+		{ name:'RECURSOS', href:'/#recursos' },
+		{ name:'PAQUETES', href:'/#paquetes' },
+	];
 
  return (
  <>

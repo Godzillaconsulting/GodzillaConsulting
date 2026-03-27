@@ -158,9 +158,11 @@ const Paquetes = () => {
  </div>
 
  {/*"Ideal para" section */}
- <p className="text-[11px] text-center text-gray-400 mb-6 italic leading-relaxed">
- Ideal para: {pkg.title ==='Expansión' ?'Conseguir volumen de prospectos nuevos cada semana.' :'Impulsar el crecimiento y la presencia digital.'}
- </p>
+  <div className="text-center mb-6">
+    <div className="bg-[#FACC15] text-black font-bold text-[11px] md:text-sm px-4 py-2 rounded-lg inline-block w-fit text-balance leading-tight">
+      Ideal para: {pkg.planTarget || (pkg.title ==='Expansión' ?'Conseguir volumen de prospectos nuevos cada semana.' :'Impulsar el crecimiento y la presencia digital.')}
+    </div>
+  </div>
 
  <ul className="space-y-4">
  {(Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : [])).map((feature, i) => {

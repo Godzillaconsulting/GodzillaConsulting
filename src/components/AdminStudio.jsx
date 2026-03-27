@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from'react';
 import { useSiteData } from'../context/SiteContext';
 import StudioPreview from'./StudioPreview';
 import MediaPicker from'./MediaPicker';
-import NewsletterPanel from'./NewsletterPanel';
-
+import NewsletterPanel from './NewsletterPanel';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import CorreosInbox from './CorreosInbox';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 function EditorField({ fieldKey, onHover, children }) {
@@ -113,6 +114,7 @@ export default function AdminStudio() {
  const [showPublishModal, setShowPublishModal] = useState(false);
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
+ const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
 
@@ -126,6 +128,7 @@ export default function AdminStudio() {
  const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
  const handleSelectSection = (node) => {
+ setIsAnalyticsMode(false);
  setSelectedNodeId(node.id);
  setActiveTab('textos');
  setSelectedElementIndex(null);
@@ -191,10 +194,33 @@ export default function AdminStudio() {
  const hasFeatures = (draftData?.planFeaturesExtended?.length || 0) > 0;
  const showElemTab = hasElements || hasFeatures;
 
+ // Validación: No permitir guardar/publicar si existen Recursos pero falta configurar sus correos
+ const isRecursosValid = useMemo(() => {
+     if (selectedNodeId !== 'recursos') return true;
+     let max = 0;
+     Object.keys(draftData || {}).forEach(k => {
+         if (k.startsWith('recurso') && k.endsWith('Nombre')) {
+             const num = parseInt(k.replace('recurso', '').replace('Nombre', '')) || 0;
+             if (num > max) max = num;
+         }
+     });
+     for (let i = 1; i <= max; i++) {
+         if (draftData[`recurso${i}Nombre`]) {
+             if (!draftData[`recurso${i}EmailSubject`] || !draftData[`recurso${i}EmailBody`] || !draftData[`recurso${i}FileUrl`]) {
+                 return false;
+             }
+         }
+     }
+     return true;
+ }, [draftData, selectedNodeId]);
+
  const activeElement = selectedElementIndex !== null ? draftData?.elements?.[selectedElementIndex] : null;
  const activeFeature = selectedFeatureIndex !== null ? draftData?.planFeaturesExtended?.[selectedFeatureIndex] : null;
 
- const tabs = TABS_DEF.filter(t => t.id !=='elementos' || showElemTab);
+ const tabs = [
+  ...TABS_DEF, 
+  ...(selectedNodeId === 'recursos' ? [{ id: 'correos', label: '💌 Correos' }] : [])
+ ].filter(t => t.id !=='elementos' || showElemTab);
 
  return (
  <div className="fixed inset-0 z-50 flex bg-[#0a0a0a] text-white font-sans overflow-hidden">
@@ -223,9 +249,16 @@ export default function AdminStudio() {
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className="w-[200px] min-w-[200px] flex flex-col border-r border-neutral-800 bg-[#0d0d0d]">
- <div className="px-4 pt-5 pb-3 border-b border-neutral-800">
+ <div className="px-3 pt-5 pb-3 border-b border-neutral-800 flex items-center justify-between">
+ <div>
  <p className="text-base font-black text-[#CC0000] leading-none">Godzilla</p>
  <p className="text-[10px] text-neutral-500 mt-0.5">Admin Studio</p>
+ </div>
+ <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
+ isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-neutral-800 text-neutral-400 hover:text-white'
+ }`}>
+ 📊 Analytics
+ </button>
  </div>
 
  <div className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
@@ -253,13 +286,11 @@ export default function AdminStudio() {
  </div>
 
  <div className="p-3 border-t border-neutral-800 space-y-1">
- <button onClick={() => { setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
- className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${
- activeSection ==='newsletter' ?'bg-[#CC0000]/20 text-[#CC0000]' :'text-neutral-500 hover:text-white hover:bg-neutral-900'
- }`}>
- 📧 Newsletter
- </button>
- <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
+  className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${ activeSection ==='newsletter' ?'bg-[#CC0000]/20 text-[#CC0000]' :'text-neutral-500 hover:text-white hover:bg-neutral-900' }`}>
+  📧 Newsletter
+  </button>
+  <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
  className="w-full text-[10px] text-neutral-600 hover:text-red-400 py-2 rounded-lg hover:bg-neutral-900 transition-colors">
  🚪 Cerrar sesión
  </button>
@@ -269,10 +300,13 @@ export default function AdminStudio() {
  {/* ██ ÁREA PRINCIPAL ███████████████████████████████████████████████████ */}
  <div className="flex-1 flex flex-col overflow-hidden">
 
- {/* Newsletter Panel */}
- {activeSection ==='newsletter' ? (
- <NewsletterPanel />
- ) : (<>
+ {/* Content Layer */}
+ {isAnalyticsMode ? (
+ <AnalyticsDashboard />
+ 
+ ) : activeSection ==='newsletter' ? (
+  <NewsletterPanel />
+  ) : (<>
 
  {/* Barra superior */}
  <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 bg-[#0d0d0d] shrink-0">
@@ -297,11 +331,11 @@ export default function AdminStudio() {
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Preview'}
  </button>
- <button onClick={handleSave} disabled={saving || !selectedNodeId}
+ <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid}
  className="px-4 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-xs font-bold rounded-full transition disabled:opacity-40">
  {saving ?'...' :'💾 Guardar'}
  </button>
- <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId}
+ <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid}
  className="px-4 py-1.5 bg-[#CC0000] hover:bg-red-600 text-white text-xs font-black rounded-full transition shadow-[0_4px_12px_rgba(204,0,0,0.4)] disabled:opacity-40">
  🚀 Publicar
  </button>
@@ -313,7 +347,7 @@ export default function AdminStudio() {
 
  {/* ─ PANEL EDITOR ─ */}
  <div className="flex flex-col overflow-hidden border-r border-neutral-800 transition-all duration-300"
- style={{ width: showPreview ?'45%' :'100%' }}>
+ style={{ width: (showPreview && activeTab !== 'correos') ?'45%' :'100%' }}>
 
  {selectedNodeId && draftData ? (
  <>
@@ -656,6 +690,11 @@ export default function AdminStudio() {
  </div>
  )}
 
+ {/* ══ TAB CORREOS (RECURSOS) ══ */}
+ {activeTab === 'correos' && selectedNodeId === 'recursos' && (
+    <CorreosInbox draftData={draftData} change={change} />
+ )}
+
  {/* ══ TAB COLORES ══ */}
  {activeTab ==='colores' && (
  <div className="space-y-5">
@@ -883,7 +922,7 @@ export default function AdminStudio() {
  </div>
 
  {/* ─ PANEL PREVIEW ─ */}
- {showPreview && (
+  {(showPreview && activeTab !== 'correos') && (
  <div className="flex-1 overflow-hidden border-l border-neutral-800">
  <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
  </div>

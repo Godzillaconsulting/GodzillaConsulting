@@ -100,6 +100,43 @@ function PixelTracker() {
   return null;
 }
 
+function GodzillaTracker() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(search);
+      const utmSource = params.get('utm_source');
+      if (utmSource) {
+        sessionStorage.setItem('gz_utm_source', utmSource);
+        sessionStorage.setItem('gz_utm_medium', params.get('utm_medium') || '');
+        sessionStorage.setItem('gz_utm_campaign', params.get('utm_campaign') || '');
+      }
+
+      let sessionId = sessionStorage.getItem('gz_session_id');
+      if (!sessionId) {
+        sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('gz_session_id', sessionId);
+      }
+
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      fetch(`${backendUrl}/api/analytics/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          url: window.location.href,
+          utm_source: sessionStorage.getItem('gz_utm_source') || null,
+          utm_medium: sessionStorage.getItem('gz_utm_medium') || null,
+          utm_campaign: sessionStorage.getItem('gz_utm_campaign') || null
+        })
+      }).catch(err => console.debug('Tracker err', err.message));
+    } catch (e) { }
+  }, [pathname, search]);
+
+  return null;
+}
+
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
   const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies'];
@@ -184,6 +221,7 @@ function App() {
         <ScrollToHash />
         <ScrollToTop />
         <PixelTracker />
+        <GodzillaTracker />
         <AppLayout />
       </Router>
     </SiteProvider>

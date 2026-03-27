@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { getLeadMagnetTemplate } from '../utils/leadMagnetTemplates.js';
 dotenv.config();
 
 // ── DKIM propio — firma criptográfica sin terceros ───────────────────────────
@@ -83,39 +84,18 @@ const bulkHeaders = (unsubUrl) => ({
 export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
     let retries = 1;
 
-    const htmlTemplate = `
-        <div style="font-family: Arial, sans-serif; color: #111111; line-height: 1.6;">
-            <div>${body}</div>
-            <br/><br/>
-            <div style="text-align: center;">
-                <a href="${fileUrl}" 
-                   style="background-color: #CC0000; color: #FFFFFF; font-weight: bold; 
-                          padding: 14px 28px; text-decoration: none; border-radius: 30px; 
-                          display: inline-block;">
-                    Descargar tu recurso aquí
-                </a>
-            </div>
-            <br/><br/>
-            <hr style="border: 0; border-top: 1px solid #EAEAEA;" />
-            <p style="font-size: 12px; color: #888; text-align: center;">
-                Has recibido este correo porque solicitaste contenido gratuito de GodzillaConsulting.<br/>
-                Si no fuiste tú, puedes ignorarlo o responder a este correo para darte de baja. 🦖
-            </p>
-        </div>
-    `;
-
-    // Extraer texto plano del HTML para mejorar el ratio texto/HTML (anti-spam)
-    const textPlain = htmlTemplate.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    // Inyectar datos en la envoltura HTML corporativa
+    const templateData = getLeadMagnetTemplate(subject, body || 'Aquí tienes tu recurso descargable.', fileUrl);
 
     while (retries >= 0) {
         try {
             const transporter = createTransporter();
             const result = await transporter.sendMail({
-                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
+                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
                 to,
-                subject,
-                text: textPlain,  // versión texto plano — requerida para no ir a spam
-                html: htmlTemplate
+                subject: templateData.subject,
+                text: templateData.text,
+                html: templateData.html
             });
             if (!result.messageId) throw new Error('No messageId returned from transporter');
             return true;

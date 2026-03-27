@@ -219,28 +219,26 @@ const Recursos = () => {
                                     // Para que esto funcione 100% el .env debe apuntar al servidor.
                                     // AHORA conectaremos el click con nuestro servidor real (Node.js)
                                     // Determinar slug para API basado en el ID
-                                    let slug = '';
-                                    if (activeItem?.orden === 1 || activeItem?.id === 1) slug = 'prompts-ia-marketing';
-                                    else if (activeItem?.orden === 2 || activeItem?.id === 2) slug = 'leads-whatsapp';
-                                    else if (activeItem?.orden === 3 || activeItem?.id === 3) slug = 'crm-template';
+                                    let slug = `recurso${activeItem?.id || activeItem?.orden || 1}`;
                                     
                                     if (activeItem?.slug) slug = activeItem.slug; // override from Sanity
 
                                     // DESCARGA DIRECTA (Inmediata para mejor UX)
-                                    let fileName = '';
-                                    if (activeItem?.orden === 1 || activeItem?.id === 1) fileName = 'prompts-ia.pdf';
-                                    else if (activeItem?.orden === 2 || activeItem?.id === 2) fileName = 'whatsapp-guia.pdf';
-                                    else if (activeItem?.orden === 3 || activeItem?.id === 3) fileName = 'crm-template.xlsx';
+                                    let fileName = nodeData[`${slug}FileUrl`] || '';
 
                                     if (activeItem?.fileName) fileName = activeItem.fileName; // override from Sanity
 
                                     if (fileName) {
-                                        const link = document.createElement('a');
-                                        link.href = `/lead-magnets/${fileName}`;
-                                        link.download = fileName;
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
+                                        if (fileName.startsWith('http')) {
+                                            window.open(fileName, '_blank');
+                                        } else {
+                                            const link = document.createElement('a');
+                                            link.href = fileName.startsWith('/') ? fileName : `/lead-magnets/${fileName}`;
+                                            link.download = fileName.split('/').pop() || 'recurso.pdf';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }
                                     }
 
                                     if (slug) {

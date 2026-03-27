@@ -1,6 +1,7 @@
 import pool from '../config/db.js';
 import { agendarEnGoogleCalendar } from '../services/calendarService.js';
 import { sendCitaConfirmationEmail } from '../services/emailService.js';
+import { sendServerEvent } from '../services/metaCapiService.js';
 
 export const processContactForm = async (req, res) => {
     const client = await pool.connect();
@@ -38,6 +39,14 @@ export const processContactForm = async (req, res) => {
         );
 
         console.log("✅ Cita #" + result.rows[0].id + " guardada. Calendar:", googleRes.id);
+
+        // Enviar evento CAPI de servidor a Meta Pixel (fire & forget)
+        sendServerEvent('Schedule', {
+            email: email.trim().toLowerCase(),
+            phone: telefono.trim(),
+            client_ip: req.ip,
+            client_user_agent: req.headers['user-agent']
+        });
 
         // Enviar correo de confirmación con link de Google Calendar (fire & forget)
         sendCitaConfirmationEmail({

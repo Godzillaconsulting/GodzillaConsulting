@@ -99,6 +99,8 @@ app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
 import newsletterRoutes from './routes/newsletter.js';
+import leadMagnetsRoutes from './routes/leadMagnets.js';
+import analyticsRoutes from './routes/analytics.js';
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
@@ -106,8 +108,10 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/lead-magnets', leadMagnetsRoutes);
 app.use('/api/tiktok', tiktokRoutes);
 app.use('/api/blob', blobRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 
 // Servir archivos subidos como estáticos en /media/*

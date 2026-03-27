@@ -1,0 +1,48 @@
+--- REMOTE DIFF ---
+M	src/App.jsx
+M	src/components/AdminStudio.jsx
+M	src/components/CasosExito.jsx
+M	src/components/Cultura.jsx
+M	src/components/LandingPaqueteDynamic.jsx
+M	src/components/Navbar.jsx
+M	src/components/Paquetes.jsx
+A	src/components/RecursoPage.jsx
+M	src/components/StudioPreview.jsx
+M	src/utils/studioConfig.js
+
+
+--- LOCAL STATUS ---
+ M health_check.cjs
+ M package-lock.json
+ M package.json
+ M server/controllers/contactController.js
+ M server/controllers/leadController.js
+ M server/index.js
+ M server/services/emailService.js
+ M src/App.jsx
+ M src/components/AdminStudio.jsx
+ M src/components/ContactForm.jsx
+ M src/components/DynamicMedia.jsx
+ M src/components/Recursos.jsx
+ M src/utils/studioConfig.js
+ M tunnel_monitor.cjs
+?? check_git.cjs
+?? check_git.js
+?? fix.js
+?? fix_emails.js
+?? patch_admin_studio.mjs
+?? patch_leadController.mjs
+?? patch_leadController2.mjs
+?? patch_leadController_trycatch.mjs
+?? patch_recursos.js
+?? patch_recursos.mjs
+?? server/alter_downloads.js
+?? server/patch_db.js
+?? server/routes/analytics.js
+?? server/routes/leadMagnets.js
+?? server/services/metaCapiService.js
+?? server/setup_analytics_db.js
+?? server/utils/
+?? src/components/AnalyticsDashboard.jsx
+?? src/components/CorreosInbox.jsx
+?? src/components/LeadMagnetsPanel.jsx

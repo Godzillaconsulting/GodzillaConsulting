@@ -63,6 +63,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  if (data.success) {
  if (window.fbq) {
  window.fbq('track','Lead');
+ window.fbq('track','Schedule');
  }
  // Guardar link personal del calendario si vino en la respuesta
  if (data.personal_calendar_link) {

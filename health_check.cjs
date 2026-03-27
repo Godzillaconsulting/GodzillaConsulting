@@ -16,7 +16,7 @@ function checkHealth() {
 }
 
 function restartBot() {
-    exec('pm2.cmd restart godzilla-bot-redes', (err, stdout, stderr) => {
+    exec('pm2.cmd restart godzilla-bot-redes', { windowsHide: true }, (err, stdout, stderr) => {
         if (err) {
             console.error('[Health Check] Failed to restart bot:', err);
             return;

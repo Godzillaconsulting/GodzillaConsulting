@@ -42,6 +42,8 @@ const sankeyOptions = {
     }
   },
   backgroundColor: 'transparent',
+  tooltip: { isHtml: true },
+  enableInteractivity: true
 };
 
 // --- (Global) Financial ROI Mock Data ---
@@ -231,10 +233,60 @@ export default function AnalyticsDashboard() {
         {!selectedSource && (
           <>
             <div className="flex flex-col xl:flex-row gap-6 min-h-[400px]">
-              {/* Sankey */}
-              <div className="flex-[4] bg-[#0d0d0d] rounded-2xl border border-neutral-800 p-6 flex flex-col relative">
-                <h3 className="text-sm font-black text-[#CC0000] tracking-widest mb-4">GLOBAL ATTRIBUTION</h3>
-                <div className="flex-1 relative flex flex-col justify-center bg-black/50 rounded-xl p-2 border border-neutral-800/50 min-h-[300px]">
+              {/* Sankey / Embudo de Atribución */}
+              <div className="flex-[4] bg-gradient-to-b from-[#111111] to-[#050505] rounded-[2rem] border border-neutral-800 shadow-[0_8px_30px_rgba(0,0,0,0.5)] p-6 flex flex-col relative overflow-hidden group">
+                {/* Glow decorativo de fondo */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#CC0000]/20 blur-[60px] rounded-full pointer-events-none transition-opacity duration-700 opacity-50 group-hover:opacity-100" />
+                
+                <div className="mb-5 relative z-10">
+                  <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-[#CC0000] to-red-400 tracking-widest uppercase flex items-center gap-2">
+                    <span className="text-lg">🎯</span> Embudo de Atribución Global
+                  </h3>
+                  <p className="text-[10px] text-neutral-400 mt-2 leading-relaxed font-medium max-w-[90%]">
+                    Rastrea el recorrido exacto de tus clientes. El grosor de las líneas representa el volumen de personas fluyendo de izquierda (Anuncios) a derecha (Ventas).
+                  </p>
+                </div>
+
+                {/* Leyenda Visual de Pasos */}
+                <div className="flex items-center gap-1.5 mb-5 relative z-10 overflow-x-auto pb-2 scrollbar-hide">
+                   <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase px-2 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
+                     1. Atracción (Ads)
+                   </div>
+                   <span className="text-neutral-700 text-[10px] uppercase font-black shrink-0">→</span>
+                   <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[9px] font-black uppercase px-2 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
+                     2. Captación (Web)
+                   </div>
+                   <span className="text-neutral-700 text-[10px] uppercase font-black shrink-0">→</span>
+                   <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-[9px] font-black uppercase px-2 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
+                     3. Cierre (Citas/Pagos)
+                   </div>
+                </div>
+
+                <div className="flex-1 relative flex flex-col justify-center bg-black/60 backdrop-blur-sm rounded-2xl p-4 border border-neutral-800/60 min-h-[300px] shadow-inner transition-colors group-hover:border-neutral-700/60">
+                   {liveSankeyData.length <= 2 && liveSankeyData[1] && liveSankeyData[1][0] === "A la espera de tráfico" ? (
+                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-black/40 rounded-2xl z-20">
+                        <span className="text-4xl mb-3 opacity-50">📡</span>
+                        <h4 className="text-white font-bold text-sm mb-1">Radar encendido</h4>
+                        <p className="text-xs text-neutral-500">Aún no hay suficiente tráfico para dibujar el flujo. Comienza a enviar visitas a tus enlaces.</p>
+                     </div>
+                   ) : null}
+                   <style>{`
+                     .google-visualization-tooltip {
+                         background-color: rgba(13, 13, 13, 0.95) !important;
+                         backdrop-filter: blur(10px) !important;
+                         border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                         border-radius: 12px !important;
+                         padding: 12px 16px !important;
+                         box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
+                         pointer-events: none !important;
+                     }
+                     .google-visualization-tooltip-item span {
+                         color: #ffffff !important;
+                         font-family: 'Inter', sans-serif !important;
+                         font-weight: 700 !important;
+                         font-size: 13px !important;
+                     }
+                   `}</style>
                    <Chart chartType="Sankey" width="100%" height="100%" data={liveSankeyData} options={sankeyOptions} />
                 </div>
               </div>

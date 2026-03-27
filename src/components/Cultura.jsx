@@ -8,12 +8,16 @@ const Cultura = () => {
  const { getNodeData } = useSiteData();
   const nodeData = getNodeData('cultura') || {};
 
-  const mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.length > 0
-    ? nodeData.mediaGallery
+  let mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.filter(m => m.url).length > 0
+    ? nodeData.mediaGallery.filter(m => m.url)
     : [
         { type: (nodeData.imageUrl || '').match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image', url: nodeData.imageUrl || culturaImage },
         { type: 'video', url: culturaVideo }
       ];
+
+  if (mediaGallery.length === 1) {
+      mediaGallery.push({ type: 'video', url: culturaVideo });
+  }
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -155,10 +159,10 @@ const Cultura = () => {
  onMouseUp={onTouchEnd}
  onMouseLeaveCapture={onTouchEnd}
  >
- <div className="flex transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+ <div className="flex transition-transform duration-700 ease-in-out" style={{ width: '200%', transform: `translateX(-${(currentSlide * 100) / 2}%)` }}>
 
  {/* Slide 1: Description */}
- <div className="w-full flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
+ <div style={{ width: '50%' }} className="flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
  <div className="space-y-6 text-xl md:text-3xl text-gray-300 font-light leading-relaxed whitespace-pre-line">
  {nodeData.description ? <p>{nodeData.description}</p> : (
  <>
@@ -177,7 +181,7 @@ const Cultura = () => {
  </div>
 
  {/* Slide 2: Mission & Vision */}
- <div className="w-full flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
+ <div style={{ width: '50%' }} className="flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
  <div className="space-y-12">
  <div className="group">
  <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">MISIÓN</h3>
@@ -219,8 +223,6 @@ const Cultura = () => {
           <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
           <div 
             className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl cursor-grab active:cursor-grabbing"
-            onMouseEnter={() => setRightIsPaused(true)}
-            onMouseLeave={() => { setRightIsPaused(false); setRightIsDragging(false); }}
             onTouchStart={onRightTouchStart}
             onTouchMove={onRightTouchMove}
             onTouchEnd={onRightTouchEnd}
@@ -231,10 +233,10 @@ const Cultura = () => {
           >
             <div 
               className="flex h-full transition-transform duration-700 ease-in-out" 
-              style={{ transform: `translateX(-${rightSlide * 100}%)` }}
+              style={{ width: `${mediaGallery.length * 100}%`, transform: `translateX(-${(rightSlide * 100) / mediaGallery.length}%)` }}
             >
               {mediaGallery.map((media, idx) => (
-                <div key={idx} className="w-full h-full flex-shrink-0 relative pointer-events-none select-none">
+                <div key={idx} style={{ width: `${100 / mediaGallery.length}%` }} className="h-full flex-shrink-0 relative pointer-events-none select-none">
                   {media.type === 'video' ? (
                     <video
                       src={media.url}

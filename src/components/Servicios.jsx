@@ -37,14 +37,13 @@ const Servicios = () => {
         };
     });
 
-    // Obtiene la URL del ícono: 1°CMS individual, 2°srv.iconSrc, 3°fallback local
     const getIconSrc = (srv, idx) => {
-        // 1. Ícono individual desde CMS (service1IconUrl, service2IconUrl, ...)
+        // 1. Ícono individual desde CMS
         const cmsKey = `service${idx + 1}IconUrl`;
-        if (nodeData[cmsKey]) return nodeData[cmsKey];
+        if (nodeData[cmsKey] && typeof nodeData[cmsKey] === 'string' && nodeData[cmsKey].startsWith('http')) return nodeData[cmsKey];
 
-        // 2. Si viene de BD con iconSrc directo
-        if (srv.iconSrc) return srv.iconSrc;
+        // 2. Si viene de BD con iconSrc directo y es un link válido subido
+        if (srv.iconSrc && typeof srv.iconSrc === 'string' && srv.iconSrc.startsWith('http')) return srv.iconSrc;
 
         // 3. Fallback inteligente a gif local por coincidencia de título
         const slug  = srv.id?.current || '';
@@ -79,7 +78,7 @@ const Servicios = () => {
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
                 {/* Video de fondo - partículas */}
                 <video
-                    src={nodeData.videoUrl || bgVideo}
+                    src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http')) ? nodeData.videoUrl : bgVideo}
                     autoPlay
                     loop
                     muted

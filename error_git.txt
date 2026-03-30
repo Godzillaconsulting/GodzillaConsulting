@@ -1,0 +1,8 @@
+remote: warning: File src/assets/GRACIAS_Esp.mp4 is 65.44 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB        
+remote: error: Trace: a714f1c7aa672326f8f4e02f99c120e790115a20d8618f1e84b2a0ee7e75847b        
+remote: error: See https://gh.io/lfs for more information.        
+remote: error: File src/assets/SabiaQueVolverias_Esp.mp4 is 113.16 MB; this exceeds GitHub's file size limit of 100.00 MB        
+remote: error: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.        
+To https://github.com/GodzillaConsulting/GodzillaConsulting.git
+ ! [remote rejected] main -> main (pre-receive hook declined)
+error: failed to push some refs to 'https://github.com/GodzillaConsulting/GodzillaConsulting.git'

@@ -35,7 +35,7 @@ export const PAGE_SECTIONS = [
  { id: 'servicio-seo', label: 'S. SEO', emoji: '🔍', tag: 'SERVICIO' },
  { id: 'servicio-crm', label: 'S. CRM', emoji: '📊', tag: 'SERVICIO' },
  { id: 'landing-recurso-prompts', label: 'L. Protocolo Lázaro', emoji: '🔗', tag: 'LANDING' },
- { id: 'landing-recurso-whatsapp', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
+ { id: 'landing-recurso-boveda-scripts', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
  { id: 'landing-recurso-crm', label: 'L. Tablero Control', emoji: '🔗', tag: 'LANDING' },
  { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
 ];
@@ -391,7 +391,7 @@ export function injectSectionDefaults(nodeId, draftSource) {
       if (combinedData.buttonDestination === undefined) combinedData.buttonDestination = '#';
       if (combinedData.mainImageUrl === undefined) combinedData.mainImageUrl = 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80';
   }
-  if (nodeId === 'landing-recurso-whatsapp') {
+  if (nodeId === 'landing-recurso-boveda-scripts') {
       if (combinedData.title === undefined) combinedData.title = 'Cómo generar leads en WhatsApp sin spam';
       if (combinedData.description === undefined) combinedData.description = '¿Cómo clonar a tu mejor vendedor y hacerlo trabajar 24/7 sin pagarle sueldo extra? ¡Deja de perder clientes por no contestar rápido!';
       if (combinedData.bottomText === undefined) combinedData.bottomText = 'Enseñar al dueño del negocio cómo configurar respuestas automáticas (ya sea en WhatsApp Business, Instagram DM o SMS) que conviertan preguntas en citas, incluso mientras duermen.';

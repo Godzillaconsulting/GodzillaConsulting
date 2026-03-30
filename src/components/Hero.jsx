@@ -31,7 +31,21 @@ const Hero = () => {
         // Load dynamically from CMS
         for (let i = 1; i <= 20; i++) {
             if (data[`logoUrl${i}`]) {
-                logos.push(data[`logoUrl${i}`]);
+                const url = data[`logoUrl${i}`];
+                const isUploaded = typeof url === 'string' && url.startsWith('http');
+                if (isUploaded) {
+                    logos.push(url);
+                } else {
+                    const list = [logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker, logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika];
+                    const decoded = decodeURIComponent(url).toLowerCase();
+                    const match = list.find(src => {
+                        if(!src) return false;
+                        const dSrc = decodeURIComponent(src).toLowerCase();
+                        const terms = ['ceo cuts', 'circle one', 'don elote', 'facemaker', 'grupo mrg', 'medhaus', 'nutrisa', 'san antonio', 'artika'];
+                        return terms.some(t => dSrc.includes(t) && decoded.includes(t));
+                    });
+                    logos.push(match || url);
+                }
             }
         }
     } else {

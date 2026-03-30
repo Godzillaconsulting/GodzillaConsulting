@@ -115,7 +115,7 @@ const HIGHLIGHT_MAP = {'hero': {'section': ['#inicio'],'title': ['#inicio h1','#
  },'footer': {'section': ['footer, [id*="footer"]'],'title': ['footer h2, footer h3'],'logoUrl': ['footer img'],'textColor': ['footer p'],'accentColor':['footer a'],
  },
  'landing-recurso-prompts': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
- 'landing-recurso-whatsapp': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
+ 'landing-recurso-boveda-scripts': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
  'landing-recurso-crm': { 'title': ['h1'], 'description': ['p.text-gray-300'], 'bottomText': ['.bg-\\[\\#0a0a0a\\] p'], 'buttonText': ['a'], 'mainImageUrl': ['img'] },
 };
 
@@ -183,7 +183,7 @@ const COMPONENT_MAP = {
   'paquete-control-ia': () => <LandingPaqueteDynamic previewNodeId="paquete-control-ia" />,
   'paquete-elite': () => <LandingPaqueteDynamic previewNodeId="paquete-elite" />,
   'landing-recurso-prompts': () => <RecursoPage previewRecursoId="prompts" />,
-  'landing-recurso-whatsapp': () => <RecursoPage previewRecursoId="whatsapp" />,
+  'landing-recurso-boveda-scripts': () => <RecursoPage previewRecursoId="boveda-scripts" />,
   'landing-recurso-crm': () => <RecursoPage previewRecursoId="crm" />
 };
 

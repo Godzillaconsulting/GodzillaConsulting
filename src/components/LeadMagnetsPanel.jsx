@@ -226,7 +226,7 @@ export default function LeadMagnetsPanel() {
                                         }`}
                                         placeholder="ej: prompts-ia-marketing"
                                     />
-                                    {isCreating && <p className="text-[9px] text-neutral-500">Debe coincidir EXACTAMENTE con el slug de Recursos.jsx ("prompts-ia-marketing", "leads-whatsapp", etc)</p>}
+                                    {isCreating && <p className="text-[9px] text-neutral-500">Debe coincidir EXACTAMENTE con el slug de Recursos.jsx ("prompts-ia-marketing", "boveda-scripts", etc)</p>}
                                 </div>
                             </div>
 

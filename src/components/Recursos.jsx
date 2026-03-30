@@ -58,7 +58,12 @@ const Recursos = () => {
         if (item.image && typeof item.image === 'object' && item.image.asset) {
             return urlFor(item.image).width(800).url();
         }
-        return item.image; // fallback url o imagen importada
+        const isUploaded = typeof item.image === 'string' && item.image.startsWith('http');
+        if (isUploaded) return item.image;
+        
+        // Fallback for stale local string hashes
+        const fallback = defaultMagnets.find(m => m.id === item.id);
+        return fallback ? fallback.image : item.image;
     };
 
     const displayMagnets = useMemo(() => {

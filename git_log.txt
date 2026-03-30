@@ -1,0 +1,5 @@
+849fb4a Update FAB tooltips
+d59573b fix(ui): inject ColorBends with precise z-index structure to overwrite deployment cache
+59d67cb fix(app): fix ColorBends render issue and migrate IG to official webhooks
+d5d254c fix(ui): include Hero.jsx changes to render ColorBends instead of mp4 video
+0867dfa fix(webhook): inject dummy user message if history starts with model to prevent gemini crash validation

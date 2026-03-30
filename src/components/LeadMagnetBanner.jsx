@@ -4,7 +4,7 @@ import { useLeadCapture } from '../hooks/useLeadCapture';
 /**
  * Ejemplo Funcional de cómo utilizar tu Hook de Leads
  * Este componente es 100% reutilizable.
- * @param slug - El identificador ('prompts-ia-marketing' o 'leads-whatsapp') 
+ * @param slug - El identificador ('prompts-ia-marketing' o 'boveda-scripts') 
  */
 const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de IA comprobados", subtitle = "Déjanos tu correo y recíbelos al instante." }) => {
 

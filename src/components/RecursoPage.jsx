@@ -13,7 +13,7 @@ const RECURSOS_DATA = {
     imageUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80',
     downloadUrl: '#'
   },
-  whatsapp: {
+  'boveda-scripts': {
     title: 'Cómo generar leads en WhatsApp sin spam',
     description: '¿Cómo clonar a tu mejor vendedor y hacerlo trabajar 24/7 sin pagarle sueldo extra? ¡Deja de perder clientes por no contestar rápido!',
     bottomText: 'Enseñar al dueño del negocio cómo configurar respuestas automáticas (ya sea en WhatsApp Business, Instagram DM o SMS) que conviertan preguntas en citas, incluso mientras duermen.',
@@ -31,7 +31,8 @@ const RECURSOS_DATA = {
 
 const RecursoPage = ({ previewRecursoId }) => {
   const { recursoId: urlRecursoId } = useParams();
-  const recursoId = previewRecursoId || urlRecursoId;
+  const rawId = previewRecursoId || urlRecursoId;
+  const recursoId = (rawId === 'whatsapp') ? 'boveda-scripts' : rawId;
   const { getNodeData, loading } = useSiteData();
   
   const nodeId = `landing-recurso-${recursoId}`;
@@ -47,7 +48,9 @@ const RecursoPage = ({ previewRecursoId }) => {
           bottomText: nodeData?.bottomText || defaultData.bottomText,
           buttonText: nodeData?.buttonText || 'Download Resource',
           buttonDestination: nodeData?.buttonDestination || defaultData.downloadUrl || '#',
-          imageUrl: nodeData?.mainImageUrl || defaultData.imageUrl
+          imageUrl: (nodeData?.mainImageUrl && nodeData.mainImageUrl.startsWith('http')) 
+                       ? nodeData.mainImageUrl 
+                       : (defaultData?.imageUrl || nodeData?.mainImageUrl)
       };
   }, [nodeData, defaultData]);
 
@@ -85,7 +88,7 @@ const RecursoPage = ({ previewRecursoId }) => {
               <img 
                 src={data.imageUrl} 
                 alt={data.title} 
-                className={`w-full h-full object-cover rounded-3xl ${recursoId === 'whatsapp' ? 'p-8 object-contain' : 'p-0'}`}
+                className={`w-full h-full object-cover rounded-3xl ${recursoId === 'boveda-scripts' ? 'p-8 object-contain' : 'p-0'}`}
               />
             </div>
           </div>

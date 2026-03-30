@@ -28,6 +28,7 @@ dist-ssr
 # Large media files (exceed GitHub's 100MB limit)
 # *.mp4 — permitidos (< 100MB)
 # *.mov — permitidos (< 100MB)
+src/assets/SabiaQueVolverias_Esp.mp4
 *.avi
 *.webm
 *.mkv

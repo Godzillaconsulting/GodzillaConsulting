@@ -40,10 +40,10 @@ const Servicios = () => {
     const getIconSrc = (srv, idx) => {
         // 1. Ícono individual desde CMS
         const cmsKey = `service${idx + 1}IconUrl`;
-        if (nodeData[cmsKey] && typeof nodeData[cmsKey] === 'string' && nodeData[cmsKey].startsWith('http')) return nodeData[cmsKey];
+        if (nodeData[cmsKey] && typeof nodeData[cmsKey] === 'string' && nodeData[cmsKey].startsWith('http') && !nodeData[cmsKey].includes('/assets/')) return nodeData[cmsKey];
 
         // 2. Si viene de BD con iconSrc directo y es un link válido subido
-        if (srv.iconSrc && typeof srv.iconSrc === 'string' && srv.iconSrc.startsWith('http')) return srv.iconSrc;
+        if (srv.iconSrc && typeof srv.iconSrc === 'string' && srv.iconSrc.startsWith('http') && !srv.iconSrc.includes('/assets/')) return srv.iconSrc;
 
         // 3. Fallback inteligente a gif local por coincidencia de título
         const slug  = srv.id?.current || '';
@@ -78,7 +78,7 @@ const Servicios = () => {
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
                 {/* Video de fondo - partículas */}
                 <video
-                    src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http')) ? nodeData.videoUrl : bgVideo}
+                    src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http') && !nodeData.videoUrl.includes('/assets/')) ? nodeData.videoUrl : bgVideo}
                     autoPlay
                     loop
                     muted

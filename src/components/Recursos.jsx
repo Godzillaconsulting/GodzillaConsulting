@@ -58,7 +58,7 @@ const Recursos = () => {
         if (item.image && typeof item.image === 'object' && item.image.asset) {
             return urlFor(item.image).width(800).url();
         }
-        const isUploaded = typeof item.image === 'string' && item.image.startsWith('http');
+        const isUploaded = typeof item.image === 'string' && item.image.startsWith('http') && !item.image.includes('/assets/');
         if (isUploaded) return item.image;
         
         // Fallback for stale local string hashes

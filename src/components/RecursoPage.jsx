@@ -48,7 +48,7 @@ const RecursoPage = ({ previewRecursoId }) => {
           bottomText: nodeData?.bottomText || defaultData.bottomText,
           buttonText: nodeData?.buttonText || 'Download Resource',
           buttonDestination: nodeData?.buttonDestination || defaultData.downloadUrl || '#',
-          imageUrl: (nodeData?.mainImageUrl && nodeData.mainImageUrl.startsWith('http')) 
+          imageUrl: (nodeData?.mainImageUrl && nodeData.mainImageUrl.startsWith('http') && !nodeData.mainImageUrl.includes('/assets/')) 
                        ? nodeData.mainImageUrl 
                        : (defaultData?.imageUrl || nodeData?.mainImageUrl)
       };

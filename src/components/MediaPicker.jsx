@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-const IS_PROD = !import.meta.env.DEV;
 
 /**
  * MediaPicker — Componente para subir y seleccionar imágenes/videos.
@@ -23,7 +22,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
     const fetchMedia = async () => {
         try {
-            const r = await fetch(`${API}/api/blob/list`);
+            const r = await fetch(`${API}/api/media`);
             const d = await r.json();
             setMedia(d);
         } catch (e) {
@@ -38,78 +37,50 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploading(true);
         setUploadProgress(0);
 
-        if (IS_PROD) {
-            // ─── PRODUCCIÓN: Subir a Vercel Blob Store (Client Upload) ───────────────
-            try {
-                // Importación dinámica de la librería del cliente para Vercel Blob
-                const { upload } = await import('@vercel/blob/client');
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
 
-                const newBlob = await upload(file.name, file, {
-                    access: 'public',
-                    handleUploadUrl: `${API}/api/blob/upload-client`,
-                    onUploadProgress: (progressEvent) => {
-                        setUploadProgress(progressEvent.percentage);
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (ev) => {
+                if (ev.lengthComputable) {
+                    setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                }
+            };
+            xhr.onload = async () => {
+                try {
+                    if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success) {
+                        await fetchMedia();
+                        onChange(result.url);
+                        setIsOpen(false);
+                    } else {
+                        alert(result.error || 'Error al subir: ' + JSON.stringify(result));
                     }
-                });
-
-                await fetchMedia();
-                onChange(newBlob.url);
-                setIsOpen(false);
-            } catch (err) {
-                console.error('Blob upload error:', err);
-                alert('Error en la subida al Blob Store. Revisa la consola para más detalles.');
-            } finally {
-                setUploading(false);
-                setUploadProgress(0);
-            }
-        } else {
-            // ─── DESARROLLO: Subir a /api/blob local (envío binario) ────────────────
-            try {
-                const xhr = new XMLHttpRequest();
-                xhr.upload.onprogress = (ev) => {
-                    if (ev.lengthComputable) {
-                        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-                    }
-                };
-                xhr.onload = async () => {
-                    try {
-                        if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
-                        const result = JSON.parse(xhr.responseText);
-                        if (result.success) {
-                            await fetchMedia();
-                            onChange(result.url);
-                            setIsOpen(false);
-                        } else {
-                            alert(result.error || 'Error al subir');
-                        }
-                    } catch (err) {
-                        console.error('Upload error:', err);
-                        alert('Error al subir archivo.');
-                    } finally {
-                        setUploading(false);
-                        setUploadProgress(0);
-                    }
-                };
-                xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo'); };
-                xhr.open('POST', `${API}/api/blob/upload`);
-                xhr.setRequestHeader('x-filename', encodeURIComponent(file.name));
-                xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream');
-                xhr.send(file);
-            } catch (e) {
-                setUploading(false);
-                console.error('XHR setup error:', e);
-                alert('Error al preparar la subida del archivo.');
-            }
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    alert('Error al subir archivo o parsear la respuesta.');
+                } finally {
+                    setUploading(false);
+                    setUploadProgress(0);
+                }
+            };
+            xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo.'); };
+            xhr.open('POST', `${API}/api/media/upload`);
+            xhr.send(formData);
+        } catch (e) {
+            setUploading(false);
+            console.error('XHR setup error:', e);
+            alert('Error al preparar la subida del archivo.');
         }
     };
 
     const handleDelete = async (type, filename, e, url) => {
         e.stopPropagation();
         if (!confirm(`¿Eliminar ${filename}?`)) return;
-        await fetch(`${API}/api/blob/delete`, { 
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
+        await fetch(`${API}/api/media/${type}/${filename}`, { 
+            method: 'DELETE'
         });
         fetchMedia();
     };

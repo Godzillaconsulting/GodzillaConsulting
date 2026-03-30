@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import React, { useState, useEffect, memo } from 'react';
 import ColorBends from './components/ColorBends';
-import AdminStudio from './components/AdminStudio';
+const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
 import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider } from './context/SiteContext';
 
@@ -49,7 +49,7 @@ import OptimizacionWebSeo from './components/OptimizacionWebSeo';
 import CrmSaas from './components/CrmSaas';
 import LandingPaqueteDynamic from './components/LandingPaqueteDynamic';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
 import PreguntasFrecuentes from './components/PreguntasFrecuentes';
 import RecursoPage from './components/RecursoPage';
 import whatsappIcon from './assets/icons/WhatsApp (white).png';
@@ -195,11 +195,11 @@ function AppLayout() {
           <Route path="/redes" element={<GestionRedesSociales />} />
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
-          <Route path="/admin" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
+          <Route path="/admin" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO GODZILLA STUDIO...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
           <Route path="/recursos/:recursoId" element={<RecursoPage />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard" element={<React.Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#0a0a0a] text-white">Cargando panel...</div>}><PrivateRoute><Dashboard /></PrivateRoute></React.Suspense>} />
           <Route path="/faq" element={<PreguntasFrecuentes />} />
         </Routes>
       </div>

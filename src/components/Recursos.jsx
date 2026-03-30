@@ -224,28 +224,9 @@ const Recursos = () => {
                                     // Para que esto funcione 100% el .env debe apuntar al servidor.
                                     // AHORA conectaremos el click con nuestro servidor real (Node.js)
                                     // Determinar slug para API basado en el ID
-                                    let slug = `recurso${activeItem?.id || activeItem?.orden || 1}`;
-                                    
-                                    if (activeItem?.slug) slug = activeItem.slug; // override from Sanity
+                                    let slug = `recurso${activeItem?.id || activeItem?.orden || 1}`; // Forzamos que siempre sea recursoX para Node.js // override from Sanity
 
-                                    // DESCARGA DIRECTA (Inmediata para mejor UX)
-                                    let fileName = nodeData[`${slug}FileUrl`] || '';
-
-                                    if (activeItem?.fileName) fileName = activeItem.fileName; // override from Sanity
-
-                                    if (fileName) {
-                                        if (fileName.startsWith('http')) {
-                                            window.open(fileName, '_blank');
-                                        } else {
-                                            const link = document.createElement('a');
-                                            link.href = fileName.startsWith('/') ? fileName : `/lead-magnets/${fileName}`;
-                                            link.download = fileName.split('/').pop() || 'recurso.pdf';
-                                            document.body.appendChild(link);
-                                            link.click();
-                                            document.body.removeChild(link);
-                                        }
-                                    }
-
+                                    // EVITAMOS DESCARGA INMEDIATA AQUÍ, SE MOSTRARÁ EN EL MENSAJE DE ÉXITO
                                     if (slug) {
                                         // Mandamos al back el Lead para que mande el CORREO real (en segundo plano)
                                         captureLead(email, slug, website);

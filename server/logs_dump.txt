@@ -1,0 +1,184 @@
+[TAILING] Tailing last 100 lines for [godzilla-bot-redes] process (change the value with --lines option)
+C:\Users\GODZILLA.IA\.pm2\logs\godzilla-bot-redes-error-12.log last 100 lines:
+1|godzilla | (node:6532) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:11468) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:13600) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:12880) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:10228) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:10472) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:8032) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | (node:5824) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+1|godzilla | [Blob] Error listando: BlobAccessError: Vercel Blob: Access denied, please provide a valid token for this resource.
+1|godzilla |     at getBlobError (file:///C:/Users/GODZILLA.IA/GodzillaConsulting/server/node_modules/@vercel/blob/dist/chunk-UG4PCJMA.js:539:15)
+1|godzilla |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+1|godzilla |     at async file:///C:/Users/GODZILLA.IA/GodzillaConsulting/server/node_modules/@vercel/blob/dist/chunk-UG4PCJMA.js:655:31
+1|godzilla |     at async requestApi (file:///C:/Users/GODZILLA.IA/GodzillaConsulting/server/node_modules/@vercel/blob/dist/chunk-UG4PCJMA.js:601:23)
+1|godzilla |     at async list (file:///C:/Users/GODZILLA.IA/GodzillaConsulting/server/node_modules/@vercel/blob/dist/index.js:224:20)
+1|godzilla |     at async file:///C:/Users/GODZILLA.IA/GodzillaConsulting/server/routes/blob.js:71:27
+1|godzilla | (node:6420) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+1|godzilla | In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+1|godzilla | 
+1|godzilla | To prepare for this change:
+1|godzilla | - If you want the current behavior, explicitly use 'sslmode=verify-full'
+1|godzilla | - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+1|godzilla | 
+1|godzilla | See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+1|godzilla | (Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\GODZILLA.IA\.pm2\logs\godzilla-bot-redes-out-12.log last 100 lines:
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+1|godzilla | [DEBUG] .env cargado. GEMINI_API_KEY: Presente
+1|godzilla | ⏳ Intentando conectar a PostgreSQL (Vercel Node ENV: development )...
+1|godzilla | 🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...
+1|godzilla | 🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.
+1|godzilla | 📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr
+1|godzilla | 🚀 Servidor backend encendido en el puerto 3000
+1|godzilla | 🔒 Dominio frontend autorizado: http://localhost:5173
+1|godzilla | 🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:3002/qr
+1|godzilla | ✅ PostgreSQL Conectado a Neon
+1|godzilla | ✅ ZillaBot (WhatsApp Web) está conectado y listo!
+
+

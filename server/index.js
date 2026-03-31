@@ -28,8 +28,8 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
-// Helmet: Añade headers de seguridad (previene ataques XSS y Clickjacking básicos)
-app.use(helmet());
+// Helmet: Añade headers de seguridad. Desactivamos CSP para no bloquear a Sanity ni archivos estáticos de React.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS: Define qué dominios pueden hacer peticiones a este servidor
 const allowedOrigins = [
@@ -115,8 +115,12 @@ app.use('/api/analytics', analyticsRoutes);
 // Servir archivos subidos como estáticos en /media/*
 app.use('/media', express.static(path.join(__dirname, 'uploads')));
 
-// Endpoint de prueba ("Ping/Healthcheck") para ver si el server está vivo
-app.get('/', (req, res) => res.send('Godzilla Backend Activo 🦖'));
+// Configuración para servir el Front-End compilado (React/Vite)
+// Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)
+const distPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
+
+// Endpoint de prueba para estado backend
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
 
@@ -160,6 +164,17 @@ app.get('/api/test-calendar', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, error: err.message, code: err.code, keyDiag });
     }
+});
+
+// Catch-All (React Router): Todo lo que no sea API o archivos estáticos
+// será redirigido al Front-End sin pedirselo a Vercel.
+app.get('*', (req, res) => {
+    // Excluir errores de rutas API internas que no existan para que no rompa JSON apps
+    if (req.path.startsWith('/api') || req.path.startsWith('/media')) {
+        return res.status(404).json({ error: 'Endpoint no encontrado' });
+    }
+    // Servir la vista de Diseño / Admin Panels / Landing Pages desde el PC!
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 

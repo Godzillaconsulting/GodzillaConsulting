@@ -64,6 +64,26 @@ router.post('/video', async (req, res) => {
 });
 
 /**
+ * POST /api/analytics/event
+ * Registra eventos dinámicos web (Pixel custom events)
+ */
+router.post('/event', async (req, res) => {
+    const { session_id, event_name, event_data } = req.body;
+    if (!event_name) return res.status(400).json({ error: 'Missing event_name' });
+
+    try {
+        await pool.query(
+            `INSERT INTO pixel_events (session_id, event_name, event_data) VALUES ($1, $2, $3)`,
+            [session_id || 'anonymous', event_name, event_data ? JSON.stringify(event_data) : null]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Error tracking event', e.message);
+        res.status(500).json({ error: 'DB_ERROR' });
+    }
+});
+
+/**
  * GET /api/analytics/dashboard
  * Retorna los datos agregados para el dashboard maestro.
  */
@@ -94,21 +114,42 @@ router.get('/dashboard', async (req, res) => {
         const callsResult = await pool.query(`SELECT COUNT(*) as total FROM citas`);
         const totalCalls = parseInt(callsResult.rows[0].total, 10);
 
+        // 4. Custom Events del Pixel
+        let pixelEventCounts = {
+            totalInteractions: 0,
+            events: []
+        };
+        try {
+            const eventsRes = await pool.query(`
+                SELECT event_name, COUNT(*) as cc 
+                FROM pixel_events 
+                GROUP BY event_name 
+                ORDER BY cc DESC
+            `);
+            let total = 0;
+            const eventDataList = eventsRes.rows.map(r => {
+                const count = parseInt(r.cc, 10);
+                total += count;
+                return { name: r.event_name, count: count };
+            });
+            pixelEventCounts = { totalInteractions: total, events: eventDataList };
+        } catch(e) { console.error('No se pudo leer pixel_events (tabla nueva o error)', e.message); }
+
         // --- Traffic Sources (Datos Duros) ---
         // Como aún no tenemos UTMs anidados en la tabla users/citas, 
         // mostraremos las visitas reales por utm y 0 leads/llamadas atribuidas (hasta implementar UTM en captura)
         const trafficSources = [
-          { id: 'ig_reels', name: 'Meta Ads (IG Reels)', emoji: '📱', visitors: visitorsMap['ig_reels'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'fb_feed', name: 'Meta Ads (FB Feed)', emoji: '📘', visitors: visitorsMap['fb_feed'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'google_ads', name: 'Google Ads', emoji: '🔍', visitors: visitorsMap['google_ads'] || visitorsMap['google'] || visitorsMap['adwords'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'tiktok_org', name: 'Organic (TikTok)', emoji: '🎵', visitors: visitorsMap['tiktok_org'] || visitorsMap['tiktok'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'organic', name: 'Trafico Directo', emoji: '🌍', visitors: visitorsMap['organic'] || visitorsMap['direct'] || visitorsMap[''] || 0, leads: totalLeads, calls: totalCalls, cac: '$0.00', roi: '0%' }
+          { id: 'ig', name: 'Instagram', emoji: '📸', visitors: visitorsMap['ig'] || visitorsMap['ig_reels'] || visitorsMap['instagram'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
+          { id: 'fb', name: 'Facebook', emoji: '📘', visitors: visitorsMap['fb'] || visitorsMap['fb_feed'] || visitorsMap['facebook'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
+          { id: 'messenger', name: 'Messenger', emoji: '💬', visitors: visitorsMap['messenger'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
+          { id: 'tiktok', name: 'TikTok', emoji: '🎵', visitors: visitorsMap['tiktok'] || visitorsMap['tiktok_org'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
+          { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: totalVisitors, leads: totalLeads, calls: pixelEventCounts.totalInteractions, cac: '$0.00', roi: 'Tracking' }
         ];
 
         // --- Sankey Data Dinámico ---
-        const metaTraffic = (visitorsMap['ig_reels'] || 0) + (visitorsMap['fb_feed'] || 0);
+        const metaTraffic = (visitorsMap['ig_reels'] || 0) + (visitorsMap['fb_feed'] || 0) + (visitorsMap['ig'] || 0) + (visitorsMap['fb'] || 0);
         const googleTraffic = visitorsMap['google_ads'] || visitorsMap['google'] || 0;
-        const orgTraffic = (visitorsMap['tiktok_org'] || 0) + (visitorsMap['organic'] || 0);
+        const orgTraffic = (visitorsMap['tiktok_org'] || 0) + (visitorsMap['organic'] || 0) + (visitorsMap['tiktok'] || 0);
         
         // Calcular "Bounced" dinámicamente: Si hay X visitantes pero solo Y leads, los demás rebotaron
         const landingVisitors = totalVisitors > 0 ? totalVisitors : 1; // evitar /0
@@ -144,6 +185,7 @@ router.get('/dashboard', async (req, res) => {
             trafficSources,
             sankeyData,
             roiData,
+            pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
             kpis: {
                 totalSpend: '$0',
                 totalRevenue: '$0',

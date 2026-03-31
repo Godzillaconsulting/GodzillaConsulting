@@ -3,6 +3,7 @@ import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import culturaImage from'../assets/images/Nuestra cultura image.jpg';
 import culturaVideo from'../assets/Particulas Rojas.mp4';
+import { trackGodzillaEvent } from '../utils/analyticsHelper';
 
 const Cultura = () => {
  const { getNodeData } = useSiteData();
@@ -80,6 +81,7 @@ const Cultura = () => {
 
     if (isLeftSwipe || isRightSwipe) {
       setCurrentSlide((prev) => (prev === 0 ? 1 : 0));
+      trackGodzillaEvent('Cultura_Bio_Swipe');
     }
 
     setIsDragging(false);
@@ -113,8 +115,10 @@ const Cultura = () => {
 
     if (isLeftSwipe) {
       setRightSlide((prev) => (prev === mediaGallery.length - 1 ? 0 : prev + 1));
+      trackGodzillaEvent('Cultura_Gallery_Swipe_Next');
     } else if (isRightSwipe) {
       setRightSlide((prev) => (prev === 0 ? mediaGallery.length - 1 : prev - 1));
+      trackGodzillaEvent('Cultura_Gallery_Swipe_Prev');
     }
 
     setRightIsDragging(false);
@@ -270,6 +274,7 @@ const Cultura = () => {
                       e.stopPropagation();
                       setRightIsPaused(true);
                       setRightSlide((prev) => (prev === 0 ? mediaGallery.length - 1 : prev - 1));
+                      trackGodzillaEvent('Cultura_Gallery_Click_Prev');
                     }}
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all z-20 shadow-lg border border-white/10"
                     aria-label="Anterior"
@@ -282,6 +287,7 @@ const Cultura = () => {
                       e.stopPropagation();
                       setRightIsPaused(true);
                       setRightSlide((prev) => (prev === mediaGallery.length - 1 ? 0 : prev + 1));
+                      trackGodzillaEvent('Cultura_Gallery_Click_Next');
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#CC0000]/80 hover:bg-[#CC0000] text-white p-3 rounded-full backdrop-blur-md transition-all z-20 shadow-lg border border-white/10"
                     aria-label="Siguiente"

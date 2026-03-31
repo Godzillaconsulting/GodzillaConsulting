@@ -5,27 +5,31 @@ import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
+import gifBot from '../assets/Gifs/Bot.gif';
+import gifEmbudo from '../assets/Gifs/Embudo.gif';
+import gifCrm from '../assets/Gifs/Crm.gif';
+
 const defaultMagnets = [
     {
         id: 1,
         orden: 1,
-        title: '7 prompts de IA para marketing que sí funcionan',
-        description: 'El contenido de calidad ya no tiene que consumir horas de tu equipo. Esta colección de 7 prompts especializados te da las herramientas exactas que necesitas para crear copy, estrategias y análisis de nivel profesional en minutos. Acelera tu producción sin sacrificar calidad.',
-        image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80',
+        title: 'La bóveda de scripts de IA',
+        description: 'Acceso a los 7 pasos estructurales que te permitirán automatizar tus respuestas y gestionar la atención de tus prospectos en segundos. Incluye pautas fundamentales y la técnica de "Doble Opción" para incrementar considerablemente tus tasas de agendamiento sin perder la naturalidad humana.',
+        image: gifBot,
     },
     {
         id: 2,
         orden: 2,
-        title: 'Cómo generar leads en WhatsApp sin spam',
-        description: 'WhatsApp se ha consolidado como el canal de comunicación preferido en México, con más de 90 millones de usuarios activos. Esta guía te muestra cómo aprovechar esta plataforma de manera profesional y efectiva para hacer crecer tu negocio. Domina el canal de comunicación más poderoso del país.',
-        image: whatsapp3d,
+        title: 'El Protocolo Lázaro (resurrección de leads)',
+        description: 'Accede a los 7 guiones estratégicos diseñados para reactivar prospectos inactivos en menos de 7 días. Aplica una psicología defensiva de riesgo nulo que facilita retomar conversaciones atrapadas en el limbo de manera natural y sin fricciones.',
+        image: gifEmbudo,
     },
     {
         id: 3,
         orden: 3,
-        title: 'Plantilla de CRM Personalizable',
-        description: 'Llevar un seguimiento de tus leads en libretas u hojas caóticas te hace perder ventas a diario. Con este CRM en Excel totalmente personalizable y fácil de usar, podrás organizar a tus prospectos de forma clara, priorizar tus seguimientos y maximizar tu porcentaje de cierre. Simplifica tu proceso de ventas hoy mismo.',
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80',
+        title: 'El Tablero de control de ventas',
+        description: 'Este documento ha sido estructurado meticulosamente para ayudarte a detectar fugas operativas en tu embudo y recuperar hasta el 30% de tus ventas perdidas. Incluye herramientas como el Semáforo de Leads para gestionar contactos oportunos antes de que se enfríen.',
+        image: gifCrm,
     }
 ];
 

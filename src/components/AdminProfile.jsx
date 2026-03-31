@@ -55,6 +55,8 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
     const handleSavePersonal = async (e) => {
         e.preventDefault();
+        if(!window.confirm("⚠️ ¿Estás totalmente seguro de aplicar los cambios a tu perfil maestro en la base de datos?")) return;
+        
         setSaving(true);
         setPersonalMsg({ text: '', type: '' });
         try {
@@ -81,8 +83,41 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setSaving(false);
     };
 
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setSaving(true);
+        setPersonalMsg({ text: 'Subiendo foto a la bóveda. No cierres...', type: '' });
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/media/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }, // REQUISITO DE SEGURIDAD
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                setPhotoUrl(data.url);
+                setPersonalMsg({ text: 'Foto incrustada exitosamente. PRESIONA GUARDAR CAMBIOS.', type: 'success' });
+            } else {
+                setPersonalMsg({ text: data.error || 'Fallo de subida de seguridad.', type: 'error' });
+            }
+        } catch (err) {
+            setPersonalMsg({ text: 'Falló la subida (Conexión)', type: 'error' });
+        }
+        setSaving(false);
+    };
+
     const handleCreateUser = async (e) => {
         e.preventDefault();
+        if(!window.confirm("⚠️ ¿Confirmas la adición de un nuevo operario al sistema central?")) return;
+
         if (!masterPass) return alert("Se requiere tu Contraseña Maestra");
         setSaving(true);
         try {
@@ -115,6 +150,8 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     };
 
     const handleDeleteUser = async (targetId) => {
+        if(!window.confirm("⚠️ PELIGRO: ¿Estás seguro de ELIMINAR permanentemente a este usuario? Esto destruirá su cuenta.")) return;
+        
         const pass = prompt('Por seguridad, ingresa tu Contraseña Maestra para ELIMINAR este usuario:');
         if (!pass) return;
 
@@ -206,15 +243,15 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                     )}
                                 </div>
                                 <div className="flex-1 space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">URL de Foto de Perfil</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Foto de Perfil Oficial</label>
                                     <input 
-                                        type="text" 
-                                        value={photoUrl} 
-                                        onChange={e => setPhotoUrl(e.target.value)}
-                                        placeholder="https://i.imgur.com/..."
-                                        className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-3 text-white text-sm focus:border-[#CC0000] focus:ring-1 focus:ring-[#CC0000] outline-none transition"
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={handlePhotoUpload}
+                                        disabled={saving}
+                                        className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-2.5 text-white text-sm focus:border-[#CC0000] focus:ring-1 focus:ring-[#CC0000] outline-none transition file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-neutral-800 file:text-white hover:file:bg-neutral-700 file:cursor-pointer disabled:opacity-50"
                                     />
-                                    <p className="text-[10px] text-neutral-500">Pega un enlace de imagen. Se recortará en círculo de forma automática.</p>
+                                    <p className="text-[10px] text-neutral-500">Selecciona una imagen de tu computadora. Se subirá automáticamente y será encriptada.</p>
                                 </div>
                             </div>
 

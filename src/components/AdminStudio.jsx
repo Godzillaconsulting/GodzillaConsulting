@@ -169,6 +169,7 @@ export default function AdminStudio() {
 
  const handleSave = async () => {
  if (!selectedNodeId) return;
+ if (!window.confirm("⚠️ ¿Estás totalmente seguro de guardar estos cambios como tu nuevo borrador?")) return;
  setSaving(true);
  try {
  const base = import.meta.env.DEV ?'http://localhost:3000' :'';
@@ -184,6 +185,7 @@ export default function AdminStudio() {
  };
 
  const handlePublish = async () => {
+ if (!window.confirm("🚨 PELIGRO 🚨: Este botón lanzará los cambios a la PÁGINA PÚBLICA EN VIVO.\n¿Estás absoluta y definitivamente seguro?")) return;
  const base = import.meta.env.DEV ?'http://localhost:3000' :'';
  const token = localStorage.getItem('adminToken');
  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };

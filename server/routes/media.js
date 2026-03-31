@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import pool from '../config/db.js';
+import { requireAdmin } from '../middlewares/adminAuth.js';
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ const getPublicUrl = (req, relativePath) => {
 };
 
 // ─── POST /api/media/upload (Guardar a Neon BYTEA) ──────────────────────────
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No se recibió ningún archivo.' });
     }
@@ -121,7 +122,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── DELETE /api/media/:type/:filename (Borrar registro de DB) ──────────────
-router.delete('/:type/:filename', async (req, res) => {
+router.delete('/:type/:filename', requireAdmin, async (req, res) => {
     // req.params.filename es en realidad el UUID
     const { filename: uuid } = req.params; 
 

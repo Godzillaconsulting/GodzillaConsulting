@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { requireAdmin } from '../middlewares/adminAuth.js';
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST new lead magnet
-router.post('/', async (req, res) => {
+// POST new lead magnet - RESTRINGIDO A ADMINS
+router.post('/', requireAdmin, async (req, res) => {
     const { slug, name, email_subject, email_body, file_url } = req.body;
     
     if (!slug || !name || !email_subject || !email_body || !file_url) {
@@ -39,8 +40,8 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT update lead magnet
-router.put('/:id', async (req, res) => {
+// PUT update lead magnet - RESTRINGIDO A ADMINS
+router.put('/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { email_subject, email_body, file_url } = req.body;
 

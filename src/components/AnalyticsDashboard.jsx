@@ -150,11 +150,14 @@ export default function AnalyticsDashboard() {
     const fetchDashboardData = async () => {
       try {
         const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const token = localStorage.getItem('adminToken');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
         // Peticiones paralelas: Analíticas internas y API de Redes Sociales (Meta Graph)
+        // Se añade el header de Authorization ya que la ruta está protegida por requireAdmin
         const [dashRes, metaRes] = await Promise.all([
-           fetch(`${base}/api/analytics/dashboard`).catch(() => null),
-           fetch(`${base}/api/social/meta`).catch(() => null)
+           fetch(`${base}/api/analytics/dashboard`, { headers }).catch(() => null),
+           fetch(`${base}/api/social/meta`, { headers }).catch(() => null)
         ]);
         
         const data = dashRes ? await dashRes.json() : { success: false };
@@ -187,8 +190,8 @@ export default function AnalyticsDashboard() {
               });
 
               setLiveSocialPosts({
-                  ig: igStats?.posts || [],
-                  fb: fbStats?.posts || []
+                  ig: Array.isArray(igStats?.posts) ? igStats.posts : [],
+                  fb: Array.isArray(fbStats?.posts) ? fbStats.posts : []
               });
           }
 
@@ -258,24 +261,27 @@ export default function AnalyticsDashboard() {
   };
 
   if (['ig', 'fb'].includes(selectedSource) && currentDetails) {
-      const rawPosts = liveSocialPosts[selectedSource] || [];
+      const rawPosts = Array.isArray(liveSocialPosts[selectedSource]) ? liveSocialPosts[selectedSource] : [];
       const filteredPosts = filterPostsByTime(rawPosts, timeFilter);
       
       currentDetails = {
           ...currentDetails,
-          topPosts: filteredPosts.map(post => ({
-              id: post.id,
-              thumb: post.media_type === 'VIDEO' ? '🎥' : '📸',
-              title: post.caption.substring(0, 45) + (post.caption.length > 45 ? '...' : ''),
-              views: 'Stats Internas',
-              likes: post.likes,
-              comments: post.comments,
-              completion: 100,
-              drops: new Date(post.timestamp).toLocaleDateString('es-MX'),
-              badge: 'Real',
-              url: post.url,
-              retention: { reached: post.likes, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
-          }))
+          topPosts: filteredPosts.map(post => {
+              const safeCaption = post.caption || 'Sin título';
+              return {
+                  id: post.id,
+                  thumb: post.media_type === 'VIDEO' ? '🎥' : '📸',
+                  title: safeCaption.substring(0, 45) + (safeCaption.length > 45 ? '...' : ''),
+                  views: 'Stats Internas',
+                  likes: post.likes || 0,
+                  comments: post.comments || 0,
+                  completion: 100,
+                  drops: post.timestamp ? new Date(post.timestamp).toLocaleDateString('es-MX') : '-',
+                  badge: 'Real',
+                  url: post.url || '#',
+                  retention: { reached: post.likes || 0, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
+              };
+          })
       };
 
       // Si hay posts, sobreescribir la Evolución Diaria (Gráfica Lineal) para que use datos Reales basados en el Filtro

@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { requireAdmin } from '../middlewares/adminAuth.js';
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.post('/event', async (req, res) => {
  * GET /api/analytics/dashboard
  * Retorna los datos agregados para el dashboard maestro.
  */
-router.get('/dashboard', async (req, res) => {
+router.get('/dashboard', requireAdmin, async (req, res) => {
     try {
         // 1. Visitantes reales desde page_views agrupados por utm_source
         const pageViewsResult = await pool.query(`
@@ -177,6 +178,39 @@ router.get('/dashboard', async (req, res) => {
           { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: totalVisitors, leads: totalLeads, calls: pixelEventCounts.totalInteractions, cac: '$0.00', roi: 'Tracking' }
         ];
 
+        // --- Gráfica Web de Vistas y Clics Diarios ---
+        // Agrupamos page_views por fecha y pixel_events por fecha para la gráfica de 7 días
+        try {
+            const webGraphResult = await pool.query(`
+                SELECT 
+                    TO_CHAR(DATE(created_at), 'DD-Mon') as date,
+                    COUNT(id) as views 
+                FROM page_views 
+                WHERE created_at >= NOW() - INTERVAL '7 days'
+                GROUP BY DATE(created_at)
+                ORDER BY DATE(created_at) ASC
+            `);
+            
+            const interactionsResult = await pool.query(`
+                SELECT 
+                    TO_CHAR(DATE(created_at), 'DD-Mon') as date,
+                    COUNT(id) as interactions 
+                FROM pixel_events 
+                WHERE created_at >= NOW() - INTERVAL '7 days'
+                GROUP BY DATE(created_at)
+            `);
+
+            // Fusionamos ambas fuentes en un solo array
+            let webGraphMap = {};
+            webGraphResult.rows.forEach(r => webGraphMap[r.date] = { date: r.date, views: parseInt(r.views, 10), interactions: 0 });
+            interactionsResult.rows.forEach(r => {
+                if (!webGraphMap[r.date]) webGraphMap[r.date] = { date: r.date, views: 0, interactions: 0 };
+                webGraphMap[r.date].interactions = parseInt(r.interactions, 10);
+            });
+
+            webGraphData = Object.values(webGraphMap).sort((a,b) => new Date(a.date) - new Date(b.date));
+        } catch(e) { console.warn('Error fetching web graph metrics:', e.message); }
+
         // --- Sankey Data Dinámico ---
         const metaTraffic = (visitorsMap['ig_reels'] || 0) + (visitorsMap['fb_feed'] || 0) + (visitorsMap['ig'] || 0) + (visitorsMap['fb'] || 0);
         const googleTraffic = visitorsMap['google_ads'] || visitorsMap['google'] || 0;
@@ -216,6 +250,7 @@ router.get('/dashboard', async (req, res) => {
             trafficSources,
             sankeyData,
             roiData,
+            webGraphData,
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
             webGraphData,
             kpis: {

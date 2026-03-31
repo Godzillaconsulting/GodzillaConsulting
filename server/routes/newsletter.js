@@ -7,15 +7,17 @@ import {
     getHistory,
 } from '../controllers/newsletterController.js';
 
+import { requireAdmin } from '../middlewares/adminAuth.js';
+
 const router = express.Router();
 
 // Públicas
 router.post('/subscribe',     subscribe);
 router.get ('/unsubscribe',   unsubscribe);
 
-// Privadas (solo desde admin — autenticadas por JWT en el frontend)
-router.get ('/subscribers',   getSubscribers);
-router.post('/send',          sendNewsletter);
-router.get ('/history',       getHistory);
+// Privadas (protegidas por JWT en Backend)
+router.get ('/subscribers',   requireAdmin, getSubscribers);
+router.post('/send',          requireAdmin, sendNewsletter);
+router.get ('/history',       requireAdmin, getHistory);
 
 export default router;

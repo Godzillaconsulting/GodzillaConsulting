@@ -68,6 +68,8 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
             };
             xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo.'); };
             xhr.open('POST', `${API}/api/media/upload`);
+            const token = localStorage.getItem('adminToken');
+            if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.send(formData);
         } catch (e) {
             setUploading(false);
@@ -78,9 +80,12 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
     const handleDelete = async (type, filename, e, url) => {
         e.stopPropagation();
-        if (!confirm(`¿Eliminar ${filename}?`)) return;
+        if (!confirm(`⚠️ ALERTA: ¿Seguro que quieres eliminar permanentemente ${filename} de la base de datos? Esto no se puede deshacer.`)) return;
+        
+        const token = localStorage.getItem('adminToken');
         await fetch(`${API}/api/media/${type}/${filename}`, { 
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         fetchMedia();
     };

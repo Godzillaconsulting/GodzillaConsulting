@@ -20,10 +20,10 @@ router.get('/meta', async (req, res) => {
             return res.json({ success: true, fromCache: true, data: metaCache });
         }
 
-        console.log('[SOCIAL API] Contactando servidores de Meta Graph...');
+        console.log('[SOCIAL API] Contactando servidores de Meta Graph para métricas profundas...');
         
-        // Petición a Graph API V19
-        const url = `https://graph.facebook.com/v19.0/me?fields=id,name,fan_count,followers_count,instagram_business_account{id,username,followers_count,media_count}&access_token=${token}`;
+        // Petición a Graph API V19 - Sacamos KPIs Generales + 100 Posts recientes (FB/IG)
+        const url = `https://graph.facebook.com/v19.0/me?fields=id,name,fan_count,followers_count,published_posts.limit(100){id,created_time,message,likes.summary(true),comments.summary(true),permalink_url},instagram_business_account{id,username,followers_count,media_count,media.limit(100){id,timestamp,caption,media_type,media_url,thumbnail_url,like_count,comments_count,permalink}}&access_token=${token}`;
         
         const graphRes = await fetch(url);
         const fbData = await graphRes.json();
@@ -38,9 +38,23 @@ router.get('/meta', async (req, res) => {
                 id: fbData.id,
                 name: fbData.name,
                 followers: fbData.followers_count || fbData.fan_count || 0,
+                posts: []
             },
             ig: null
         };
+
+        // Extraer posts de FB
+        if (fbData.published_posts && fbData.published_posts.data) {
+            stats.fb.posts = fbData.published_posts.data.map(p => ({
+                id: p.id,
+                timestamp: p.created_time,
+                caption: p.message || 'Sin título',
+                likes: p.likes?.summary?.total_count || 0,
+                comments: p.comments?.summary?.total_count || 0,
+                url: p.permalink_url,
+                media_type: 'POST'
+            }));
+        }
 
         if (fbData.instagram_business_account) {
             const igData = fbData.instagram_business_account;
@@ -48,8 +62,23 @@ router.get('/meta', async (req, res) => {
                 id: igData.id,
                 username: igData.username,
                 followers: igData.followers_count || 0,
-                posts: igData.media_count || 0
+                postsCount: igData.media_count || 0,
+                posts: []
             };
+
+            // Extraer posts IG
+            if (igData.media && igData.media.data) {
+                stats.ig.posts = igData.media.data.map(m => ({
+                    id: m.id,
+                    timestamp: m.timestamp,
+                    caption: m.caption || 'Sin título',
+                    media_type: m.media_type,
+                    media_url: m.thumbnail_url || m.media_url, // Preferir thumbnail si es video
+                    likes: m.like_count || 0,
+                    comments: m.comments_count || 0,
+                    url: m.permalink
+                }));
+            }
         }
 
         // Renovar el Caché

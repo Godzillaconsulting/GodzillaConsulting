@@ -135,11 +135,10 @@ export default function AnalyticsDashboard() {
   const [liveRoiData, setLiveRoiData] = useState([]);
   const [livePixelEvents, setLivePixelEvents] = useState([]);
   const [liveKpis, setLiveKpis] = useState({
-     totalSpend: '$0',
-     totalRevenue: '$0',
-     globalROI: '0%',
-     avgCac: '$0'
+     totalSpend: '$0', totalRevenue: '$0', globalROI: '0%', avgCac: '$0'
   });
+  const [liveSocialPosts, setLiveSocialPosts] = useState({ ig: [], fb: [] });
+  const [timeFilter, setTimeFilter] = useState('all'); // '1', '7', '30', 'all'
 
   useEffect(() => {
     const timer = setTimeout(() => setPixelStatus('active'), 1500);
@@ -185,6 +184,11 @@ export default function AnalyticsDashboard() {
                   }
                   return s;
               });
+
+              setLiveSocialPosts({
+                  ig: igStats?.posts || [],
+                  fb: fbStats?.posts || []
+              });
           }
 
           setLiveTrafficSources(sources);
@@ -226,6 +230,55 @@ export default function AnalyticsDashboard() {
            retention: { reached: ev.count, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
         })) : []
      };
+  }
+
+  // --- Lógica del Filtro Temporal para Redes (Meta) ---
+  const filterPostsByTime = (posts, filterMode) => {
+      if (filterMode === 'all' || !posts) return posts;
+      const limitDate = new Date(Date.now() - parseInt(filterMode) * 24 * 60 * 60 * 1000);
+      return posts.filter(p => new Date(p.timestamp) >= limitDate);
+  };
+
+  if (['ig', 'fb'].includes(selectedSource) && currentDetails) {
+      const rawPosts = liveSocialPosts[selectedSource] || [];
+      const filteredPosts = filterPostsByTime(rawPosts, timeFilter);
+      
+      currentDetails = {
+          ...currentDetails,
+          topPosts: filteredPosts.map(post => ({
+              id: post.id,
+              thumb: post.media_type === 'VIDEO' ? '🎥' : '📸',
+              title: post.caption.substring(0, 45) + (post.caption.length > 45 ? '...' : ''),
+              views: 'Stats Internas',
+              likes: post.likes,
+              comments: post.comments,
+              completion: 100,
+              drops: new Date(post.timestamp).toLocaleDateString('es-MX'),
+              badge: 'Real',
+              url: post.url,
+              retention: { reached: post.likes, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
+          }))
+      };
+
+      // Si hay posts, sobreescribir la Evolución Diaria (Gráfica Lineal) para que use datos Reales basados en el Filtro
+      if (filteredPosts.length > 0) {
+          const graphMap = {};
+          filteredPosts.forEach(p => {
+              const d = new Date(p.timestamp).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
+              if (!graphMap[d]) graphMap[d] = { date: d, likes: 0, comments: 0 };
+              graphMap[d].likes += p.likes;
+              graphMap[d].comments += p.comments;
+          });
+          // Asegurar que estén en orden cronológico ascendente para recharts (de más viejo a más nuevo en el chart)
+          // La API de graph lo suele devolver reverse cron. Así que un reverse es sano.
+          const graphArr = Object.values(graphMap).reverse();
+
+          currentDetails.engagementGraph = graphArr;
+          currentDetails.metrics = [
+              { key: 'likes', name: 'Likes', color: '#ff2a5f', isArea: true },
+              { key: 'comments', name: 'Comments', color: '#00e5ff', isArea: false }
+          ];
+      }
   }
 
   return (
@@ -545,10 +598,34 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* Tabla de Rendimiento de Publicaciones y VSLs */}
-            <div className="bg-[#0d0d0d] rounded-2xl border border-neutral-800 p-6 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black text-white tracking-widest uppercase">Rendimiento Creador & Retención Real</h3>
-                <span className="text-[10px] text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded font-bold">⚡ Haz clic en el porcentaje para ver el Breakdown Funnel</span>
+            <div className="bg-[#0A0F1A]/80 backdrop-blur-xl border border-cyan-500/20 shadow-[inset_0_0_20px_rgba(0,255,255,0.02)] rounded-[1.5rem] p-6 flex flex-col relative overflow-hidden group hover:border-cyan-400/50 transition-colors">
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cyan-400/10 rounded-full blur-[50px] pointer-events-none" />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-black text-white tracking-widest uppercase">Rendimiento Creador & Retención Real</h3>
+                  <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold mt-1">
+                    {['ig', 'fb'].includes(selectedSource) ? 'Mostrando publicaciones reales (Meta API)' : 'Desglose dinámico de eventos web'}
+                  </span>
+                </div>
+                
+                {/* Botonera de Filtro de Tiempo Frutiger Aero (Solo Redes) */}
+                {['ig', 'fb'].includes(selectedSource) && (
+                  <div className="flex p-1 bg-neutral-900/60 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-white/5 backdrop-blur-md">
+                    {[ { id: '1', label: '1 Día' }, { id: '7', label: '1 Sem' }, { id: '30', label: '1 Mes' }, { id: 'all', label: 'Todo' } ].map(tf => (
+                      <button
+                        key={tf.id}
+                        onClick={() => setTimeFilter(tf.id)}
+                        className={`px-4 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest transition-all duration-300 ${
+                          timeFilter === tf.id 
+                          ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-[0_0_15px_rgba(34,211,238,0.5)] border border-cyan-300/50' 
+                          : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-transparent'
+                        }`}
+                      >
+                        {tf.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs whitespace-nowrap">

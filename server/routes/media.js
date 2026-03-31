@@ -2,101 +2,27 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
-import { fileURLToPath } from 'url';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffmpeg from 'fluent-ffmpeg';
-import sharp from 'sharp';
+import { v2 as cloudinary } from 'cloudinary';
 
-// Apuntar ffmpeg al binario incluido en el paquete
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
 
-// ─── Directorios ─────────────────────────────────────────────────────────────
-const IS_VERCEL = !!process.env.VERCEL;
-const UPLOADS_BASE = IS_VERCEL ? '/tmp/uploads' : path.join(__dirname, '..', 'uploads');
-const UPLOADS_DIR  = UPLOADS_BASE;
-const IMAGES_DIR   = path.join(UPLOADS_DIR, 'images');
-const VIDEOS_DIR   = path.join(UPLOADS_DIR, 'videos');
-const TEMP_DIR     = path.join(UPLOADS_DIR, 'temp');
-
-[UPLOADS_DIR, IMAGES_DIR, VIDEOS_DIR, TEMP_DIR].forEach(dir => {
-    try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); } catch {}
+// ─── Configuración de Cloudinary ──────────────────────────────────────────────
+// Asegúrate de definir estas credenciales en tu backend (.env) y en Vercel.
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-// ─── Tipos de archivos que se aceptan ────────────────────────────────────────
-// Imágenes: cualquier cosa que sharp pueda procesar (jpeg, png, gif, webp, avif, heic, heif, tiff, bmp, jfif...)
-// Vídeos: cualquier contenedor que ffmpeg pueda convertir (mp4, mov, avi, mkv, webm, ts, flv...)
-const IMAGE_MIMES = [
-    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-    'image/avif', 'image/heic', 'image/heif', 'image/tiff', 'image/bmp',
-    'image/svg+xml', 'image/x-jfif', 'image/jfif', 'image/pjpeg',
-];
-const VIDEO_MIMES = [
-    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-    'video/x-msvideo', 'video/x-matroska', 'video/x-flv', 'video/avi',
-    'video/mpeg', 'video/3gpp', 'video/3gpp2', 'video/x-ms-wmv',
-    'video/hevc', 'video/mov',
-];
-// Extensiones de fallback cuando el MIME no coincide exactamente
-const VIDEO_EXTS = ['.mp4','.webm','.mov','.avi','.mkv','.flv','.wmv','.ts','.m4v','.3gp','.mpeg','.mpg','.hevc'];
+// ─── Directorio Temporal (Solo para recibir antes de subir) ──────────────────
+const TEMP_DIR = '/tmp/uploads';
+try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
 
-const isVideoFile = (mimetype, originalname) => {
-    if (VIDEO_MIMES.includes(mimetype)) return true;
-    const ext = path.extname(originalname).toLowerCase();
-    return VIDEO_EXTS.includes(ext);
-};
-
-// ─── Multer: guarda siempre en /temp con nombre UUID ─────────────────────────
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, TEMP_DIR),
-    filename: (_req, file, cb) => {
-        const ext  = path.extname(file.originalname).toLowerCase() || '.bin';
-        cb(null, `${Date.now()}-${uuidv4().substring(0, 8)}${ext}`);
-    }
-});
-
+// ─── Multer ──────────────────────────────────────────────────────────────────
 const upload = multer({
-    storage,
-    limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
-    // Aceptamos TODO — la validación se hace en el handler
-    fileFilter: (_req, _file, cb) => cb(null, true),
+    dest: TEMP_DIR,
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB límite por precaución
 });
-
-// ─── URL pública ──────────────────────────────────────────────────────────────
-const getPublicUrl = (req, relativePath) => {
-    const base = process.env.PUBLIC_MEDIA_URL || `${req.protocol}://${req.get('host')}`;
-    return `${base}/media/${relativePath}`;
-};
-
-// ─── Convertir imagen a WebP con sharp ───────────────────────────────────────
-function convertImageToWebp(inputPath, outputPath) {
-    return sharp(inputPath)
-        .webp({ quality: 88 })
-        .toFile(outputPath);
-}
-
-// ─── Convertir video a MP4 (h264) con ffmpeg ─────────────────────────────────
-function convertVideoToMp4(inputPath, outputPath) {
-    return new Promise((resolve, reject) => {
-        ffmpeg(inputPath)
-            .outputOptions([
-                '-c:v libx264',
-                '-preset fast',
-                '-crf 23',
-                '-c:a aac',
-                '-b:a 128k',
-                '-movflags +faststart',
-                '-pix_fmt yuv420p',
-            ])
-            .output(outputPath)
-            .on('end', resolve)
-            .on('error', reject)
-            .run();
-    });
-}
 
 // ─── POST /api/media/upload ───────────────────────────────────────────────────
 router.post('/upload', upload.single('file'), async (req, res) => {
@@ -104,82 +30,110 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         return res.status(400).json({ error: 'No se recibió ningún archivo.' });
     }
 
-    const tempPath  = req.file.path;
-    const mimetype  = req.file.mimetype;
-    const origName  = req.file.originalname;
-    const isVideo   = isVideoFile(mimetype, origName);
-
-    const uid       = `${Date.now()}-${uuidv4().substring(0, 8)}`;
-    let finalPath, relPath, fileType;
+    const tempPath = req.file.path;
+    const isVideo  = req.file.mimetype.startsWith('video/');
 
     try {
-        if (isVideo) {
-            // ── Video → MP4 ──────────────────────────────────────────────────
-            const outName = `${uid}.mp4`;
-            finalPath     = path.join(VIDEOS_DIR, outName);
-            relPath       = `videos/${outName}`;
-            fileType      = 'video';
+        console.log(`[Media] Subiendo a Cloudinary: ${req.file.originalname}`);
+        // Subir a Cloudinary (resource_type: 'auto' autodetecta imágenes o videos)
+        const result = await cloudinary.uploader.upload(tempPath, {
+            folder: 'godzilla_media',
+            resource_type: 'auto',
+            use_filename: true,
+            unique_filename: true,
+        });
 
-            console.log(`[Media] Convirtiendo video: ${origName} → ${outName}`);
-            await convertVideoToMp4(tempPath, finalPath);
-            console.log(`[Media] Conversión de video completada.`);
-        } else {
-            // ── Imagen → WebP ────────────────────────────────────────────────
-            const outName = `${uid}.webp`;
-            finalPath     = path.join(IMAGES_DIR, outName);
-            relPath       = `images/${outName}`;
-            fileType      = 'image';
-
-            console.log(`[Media] Convirtiendo imagen: ${origName} → ${outName}`);
-            await convertImageToWebp(tempPath, finalPath);
-            console.log(`[Media] Conversión de imagen completada.`);
-        }
+        console.log(`[Media] Éxito: ${result.secure_url}`);
 
         // Limpiar archivo temporal
-        fs.unlink(tempPath, () => {});
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 
-        const url = getPublicUrl(req, relPath);
-        const size = fs.statSync(finalPath).size;
-
-        res.json({ success: true, url, filename: path.basename(finalPath), type: fileType, size, mimetype: isVideo ? 'video/mp4' : 'image/webp' });
+        res.json({ 
+            success: true, 
+            url: result.secure_url, 
+            filename: result.public_id, // Usamos public_id como filename para poder borrarlo luego
+            type: isVideo ? 'video' : 'image', 
+            size: result.bytes, 
+            mimetype: req.file.mimetype 
+        });
 
     } catch (err) {
-        console.error('[Media] Error en conversión:', err.message);
-        // Limpiar temporales
-        fs.unlink(tempPath, () => {});
-        if (finalPath) fs.unlink(finalPath, () => {});
-        res.status(500).json({ error: `Error al procesar el archivo: ${err.message}` });
+        console.error('[Media] Error al subir a Cloudinary:', err);
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        res.status(500).json({ error: `Fallo Cloudinary: ${err.message}` });
     }
 });
 
 // ─── GET /api/media ───────────────────────────────────────────────────────────
-router.get('/', (req, res) => {
-    const listDir = (dir, type) => {
-        if (!fs.existsSync(dir)) return [];
-        return fs.readdirSync(dir)
-            .filter(f => !f.startsWith('.'))
-            .map(f => {
-                const stat = fs.statSync(path.join(dir, f));
-                return { filename: f, url: getPublicUrl(req, `${type}/${f}`), type, size: stat.size, createdAt: stat.birthtime };
-            })
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    };
+router.get('/', async (req, res) => {
+    try {
+        // Validar que las credenciales existan para no crashear
+        if (!process.env.CLOUDINARY_API_KEY) {
+            return res.json({ images: [], videos: [], total: 0, warning: 'Cloudinary no configurado' });
+        }
 
-    const images = listDir(IMAGES_DIR, 'images');
-    const videos = listDir(VIDEOS_DIR, 'videos');
-    res.json({ images, videos, total: images.length + videos.length });
+        // Buscar todos los recursos en la carpeta godzilla_media
+        const searchResult = await cloudinary.search
+            .expression('folder:godzilla_media')
+            .sort_by('created_at', 'desc')
+            .max_results(500)
+            .execute();
+
+        const items = searchResult.resources || [];
+        
+        const images = [];
+        const videos = [];
+
+        items.forEach(item => {
+            const isVideo = item.resource_type === 'video';
+            const mappedItem = {
+                filename: item.public_id, // Identificador único necesario para el DELETE
+                url: item.secure_url,
+                type: isVideo ? 'videos' : 'images', // Plural por compatibilidad preexistente
+                size: item.bytes,
+                createdAt: item.created_at
+            };
+
+            if (isVideo) videos.push(mappedItem);
+            else images.push(mappedItem);
+        });
+
+        res.json({ images, videos, total: images.length + videos.length });
+    } catch (err) {
+        console.error('[Media] Error leyendo Cloudinary:', err);
+        res.status(500).json({ error: 'Error al consultar archivos' });
+    }
 });
 
 // ─── DELETE /api/media/:type/:filename ───────────────────────────────────────
-router.delete('/:type/:filename', (req, res) => {
-    const { type, filename } = req.params;
-    if (!['images', 'videos'].includes(type)) return res.status(400).json({ error: 'Tipo inválido.' });
-    const safe = path.basename(filename);
-    const filePath = path.join(UPLOADS_DIR, type, safe);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado.' });
-    fs.unlinkSync(filePath);
-    console.log(`[Media] Archivo eliminado: ${type}/${safe}`);
-    res.json({ success: true, deleted: `${type}/${safe}` });
+router.delete('/:type/:filename(*)', async (req, res) => {
+    // El filename aquí en realidad debe ser el `public_id` de Cloudinary.
+    // Usamos (.*) por si tiene barras /godzilla_media/nombre
+    const public_id = req.params.filename;
+    const type = req.params.type; 
+
+    if (!public_id) {
+        return res.status(400).json({ error: 'Falta el public_id (filename).' });
+    }
+
+    try {
+        const isVideo = type === 'videos';
+        // En Cloudinary hay que especificar el resource_type exacto para destruir un video
+        const result = await cloudinary.uploader.destroy(public_id, {
+            resource_type: isVideo ? 'video' : 'image'
+        });
+
+        if (result.result !== 'ok') {
+            console.log(`[Media] Aviso: No se eliminó (Cloudinary devolvió ${result.result})`);
+        } else {
+            console.log(`[Media] Archivo destruido: ${public_id}`);
+        }
+
+        res.json({ success: true, deleted: public_id, status: result.result });
+    } catch (err) {
+        console.error('[Media] Error eliminando en Cloudinary:', err);
+        res.status(500).json({ error: 'Fallo al eliminar archivo en Cloudinary' });
+    }
 });
 
 export default router;

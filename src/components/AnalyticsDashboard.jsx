@@ -150,10 +150,44 @@ export default function AnalyticsDashboard() {
     const fetchDashboardData = async () => {
       try {
         const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/analytics/dashboard`);
-        const data = await res.json();
+        
+        // Peticiones paralelas: Analíticas internas y API de Redes Sociales (Meta Graph)
+        const [dashRes, metaRes] = await Promise.all([
+           fetch(`${base}/api/analytics/dashboard`).catch(() => null),
+           fetch(`${base}/api/social/meta`).catch(() => null)
+        ]);
+        
+        const data = dashRes ? await dashRes.json() : { success: false };
+        const metaData = metaRes ? await metaRes.json() : { success: false };
+
         if (data.success) {
-          if (data.trafficSources) setLiveTrafficSources(data.trafficSources);
+          let sources = data.trafficSources || trafficSources;
+          
+          // INYECCIÓN DE DATOS REALES DE FACEBOOK E INSTAGRAM
+          if (metaData && metaData.success && metaData.data) {
+              const fbStats = metaData.data.fb;
+              const igStats = metaData.data.ig;
+              sources = sources.map(s => {
+                  if (s.id === 'ig' && igStats) {
+                      return { ...s, 
+                          visitors: igStats.followers, /* Interceptamos para Followers */
+                          leads: igStats.posts,        /* Total Posts */
+                          cac: 'Orgánico',
+                          roi: 'Real-Time'
+                      };
+                  }
+                  if (s.id === 'fb' && fbStats) {
+                      return { ...s, 
+                          visitors: fbStats.followers, 
+                          cac: 'Orgánico',
+                          roi: 'Real-Time'
+                      };
+                  }
+                  return s;
+              });
+          }
+
+          setLiveTrafficSources(sources);
           if (data.sankeyData) setLiveSankeyData(data.sankeyData);
           if (data.roiData) setLiveRoiData(data.roiData);
           if (data.pixelEvents) setLivePixelEvents(data.pixelEvents);
@@ -364,7 +398,9 @@ export default function AnalyticsDashboard() {
                       {/* Main Metric + Sparkline */}
                       <div className="flex justify-between items-end mb-4 relative z-10 w-full mt-2">
                         <div className="flex flex-col">
-                           <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-1">Visualizaciones / Visitas</span>
+                           <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-1">
+                             {src.id === 'ig' || src.id === 'fb' ? 'Seguidores Orgánicos (En Vivo)' : 'Visualizaciones / Visitas'}
+                           </span>
                            <div className="flex items-baseline gap-2">
                              <span className="text-3xl font-black text-white">{src.visitors.toLocaleString()}</span>
                              <span className={`text-xs font-bold ${trendGreen ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -383,7 +419,7 @@ export default function AnalyticsDashboard() {
                       {/* Sub-metrics */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 relative z-10 w-full mt-1">
                          <div className="flex justify-between items-center text-[11px] font-bold">
-                           <span className="text-neutral-500">Leads Generados</span>
+                           <span className="text-neutral-500">{src.id === 'ig' ? 'Publicaciones Totales' : 'Leads Generados'}</span>
                            <span className="text-white">{src.leads.toLocaleString()}</span>
                          </div>
                          <div className="flex justify-between items-center text-[11px] font-bold">

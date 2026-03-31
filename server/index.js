@@ -9,6 +9,7 @@ import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import mediaRoutes from './routes/media.js';
 import tiktokRoutes from './routes/tiktok.js';
+import socialRoutes from './routes/social.js';
 import { connectDB } from './config/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -97,6 +98,7 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api/social', socialRoutes);
 import newsletterRoutes from './routes/newsletter.js';
 import leadMagnetsRoutes from './routes/leadMagnets.js';
 import analyticsRoutes from './routes/analytics.js';

@@ -8,13 +8,19 @@ const Cultura = () => {
  const { getNodeData } = useSiteData();
   const nodeData = getNodeData('cultura') || {};
 
+  // Si mediaGallery está vacío, muestra un placeholder transparente
   let mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.filter(m => m.url).length > 0
     ? nodeData.mediaGallery.filter(m => m.url)
-    : [ { type: 'video', url: culturaVideo } ];
+    : [ { type: 'image', url: 'https://placehold.co/800x600/111111/333333?text=Agrega+tus+fotos+en+Admin+Studio' } ];
 
-  if (mediaGallery.length === 1) {
-      mediaGallery.push({ type: 'video', url: culturaVideo });
+  if (mediaGallery.length === 1 && mediaGallery[0].url.includes('placehold.co')) {
+      mediaGallery.push({ type: 'image', url: 'https://placehold.co/800x600/111111/333333?text=Haz+clic+en+Añadir+Medio' });
   }
+
+  // Prevenir que un string vacío reviva a Godzilla en el fondo:
+  const finalBgVideo = nodeData.bgVideoUrl !== undefined && nodeData.bgVideoUrl !== '' 
+      ? nodeData.bgVideoUrl 
+      : (nodeData.bgVideoUrl === '' ? '' : culturaVideo);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -119,14 +125,16 @@ const Cultura = () => {
  return (
  <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
  {/* Video de fondo — editable desde Admin Studio (bgVideoUrl) */}
+ {finalBgVideo ? (
  <video
- src={nodeData.bgVideoUrl || culturaVideo}
+ src={finalBgVideo}
  autoPlay
  loop
  muted
  playsInline
  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
  />
+ ) : null}
  {/* Overlay oscuro para legibilidad */}
  <div className="absolute inset-0 bg-[#111111]/60 pointer-events-none" />
  <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-[#CC0000]/10 to-transparent blur-[100px] pointer-events-none"></div>

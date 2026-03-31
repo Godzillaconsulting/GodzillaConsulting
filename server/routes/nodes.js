@@ -1,6 +1,9 @@
 import express from 'express';
 import pool from '../config/db.js';
 
+import { requireAdmin } from '../middlewares/adminAuth.js';
+import { logAction } from './users.js';
+
 const router = express.Router();
 
 // GET /api/nodes -> Fetch all nodes in the linked list
@@ -13,8 +16,6 @@ router.get('/', async (req, res) => {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        // We can optionally sort the nodes here as a linked list if needed,
-        // but it's often easier to just return the array and let the frontend link them.
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching nodes:', err);
@@ -36,7 +37,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/nodes/:id/draft -> Save draft data to the DB (Double Pointer)
-router.put('/:id/draft', async (req, res) => {
+router.put('/:id/draft', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { draft_data } = req.body;
@@ -50,6 +51,9 @@ router.put('/:id/draft', async (req, res) => {
         `, [draft_data, id]);
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
+        
+        await logAction(req.admin.id, 'SAVE_DRAFT', { section: id });
+        
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Error saving draft:', err);
@@ -58,7 +62,7 @@ router.put('/:id/draft', async (req, res) => {
 });
 
 // POST /api/nodes/:id/publish -> Swap draft to published
-router.post('/:id/publish', async (req, res) => {
+router.post('/:id/publish', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -71,6 +75,9 @@ router.post('/:id/publish', async (req, res) => {
         `, [id]);
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
+        
+        await logAction(req.admin.id, 'PUBLISH_SECTION', { section: id });
+        
         res.json({ success: true, node: result.rows[0] });
     } catch (err) {
         console.error('Error publishing node:', err);
@@ -79,7 +86,7 @@ router.post('/:id/publish', async (req, res) => {
 });
 
 // PUT /api/nodes/:id/reorder -> Modify next_node_id pointer
-router.put('/:id/reorder', async (req, res) => {
+router.put('/:id/reorder', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { next_node_id } = req.body;

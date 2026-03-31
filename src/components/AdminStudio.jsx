@@ -5,6 +5,7 @@ import MediaPicker from'./MediaPicker';
 import NewsletterPanel from './NewsletterPanel';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import CorreosInbox from './CorreosInbox';
+import AdminProfile from './AdminProfile';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 function EditorField({ fieldKey, onHover, children }) {
@@ -105,8 +106,9 @@ const GOOGLE_FONTS = ['Inter','Roboto','Outfit','Poppins','Montserrat','Lato','P
 export default function AdminStudio() {
  const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
  const [selectedNodeId, setSelectedNodeId] = useState(null);
- const [activeSection, setActiveSection] = useState('editor'); //'editor' |'newsletter'
+ const [activeSection, setActiveSection] = useState('editor'); //'editor' |'newsletter' | 'profile'
  const [activeTab, setActiveTab] = useState('textos');
+ const [adminProfile, setAdminProfile] = useState(null);
  const [draftData, setDraftData] = useState(null);
  const [selectedElementIndex, setSelectedElementIndex] = useState(null);
  const [selectedFeatureIndex, setSelectedFeatureIndex] = useState(null);
@@ -117,6 +119,19 @@ export default function AdminStudio() {
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
+
+ // Configurar perfil admin global
+ useEffect(() => {
+     const token = localStorage.getItem('adminToken');
+     if (token) {
+         fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/profile`, {
+             headers: { 'Authorization': `Bearer ${token}` }
+         })
+         .then(r => r.json())
+         .then(data => { if(data.success) setAdminProfile(data.profile); })
+         .catch(err => console.error('Error al cargar perfil', err));
+     }
+ }, []);
 
  // Sync draftData → preview
  useEffect(() => {
@@ -157,8 +172,9 @@ export default function AdminStudio() {
  setSaving(true);
  try {
  const base = import.meta.env.DEV ?'http://localhost:3000' :'';
+ const token = localStorage.getItem('adminToken');
  await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, {
- method:'PUT', headers: {'Content-Type':'application/json' },
+ method:'PUT', headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
  body: JSON.stringify({ draft_data: draftData })
  });
  await fetchNodes();
@@ -169,9 +185,11 @@ export default function AdminStudio() {
 
  const handlePublish = async () => {
  const base = import.meta.env.DEV ?'http://localhost:3000' :'';
+ const token = localStorage.getItem('adminToken');
+ const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
  try {
- await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft_data: draftData }) });
- await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST' });
+ await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers, body: JSON.stringify({ draft_data: draftData }) });
+ await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers });
  await fetchNodes();
  setShowPublishModal(false);
  alert('🚀 Publicado');
@@ -286,6 +304,18 @@ export default function AdminStudio() {
  </div>
 
  <div className="p-3 border-t border-neutral-800 space-y-1">
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
+   className={`w-full p-2 rounded-lg transition-colors flex items-center gap-3 ${ activeSection ==='profile' ?'bg-neutral-800' :'hover:bg-neutral-900' }`}>
+       <div className="w-6 h-6 rounded-full bg-neutral-800 overflow-hidden shrink-0">
+           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full">🦖</span>}
+       </div>
+       <div className="flex-1 text-left min-w-0">
+           <p className="text-xs font-bold text-white truncate">{adminProfile?.username || 'Usuario'}</p>
+           <p className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-wider">
+               <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)] animate-pulse"></span> Activo
+           </p>
+       </div>
+   </button>
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
   className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${ activeSection ==='newsletter' ?'bg-[#CC0000]/20 text-[#CC0000]' :'text-neutral-500 hover:text-white hover:bg-neutral-900' }`}>
   📧 Newsletter
@@ -303,7 +333,8 @@ export default function AdminStudio() {
  {/* Content Layer */}
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
- 
+ ) : activeSection ==='profile' ? (
+ <AdminProfile profile={adminProfile} onProfileUpdate={setAdminProfile} />
  ) : activeSection ==='newsletter' ? (
   <NewsletterPanel />
   ) : (<>

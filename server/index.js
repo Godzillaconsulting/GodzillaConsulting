@@ -102,6 +102,7 @@ app.use('/api/social', socialRoutes);
 import newsletterRoutes from './routes/newsletter.js';
 import leadMagnetsRoutes from './routes/leadMagnets.js';
 import analyticsRoutes from './routes/analytics.js';
+import usersRoutes from './routes/users.js';
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
@@ -112,6 +113,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/lead-magnets', leadMagnetsRoutes);
 app.use('/api/tiktok', tiktokRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', usersRoutes);
 
 
 // Servir archivos subidos como estáticos en /media/*

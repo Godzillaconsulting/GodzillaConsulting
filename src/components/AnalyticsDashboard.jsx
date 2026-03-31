@@ -4,7 +4,22 @@ import {
   ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 
-// --- (Global) Sankey Mock Data ---
+// --- (SVG Simple Sparkline component) ---
+const SparkLine = ({ data, color = '#38bdf8', width='100px', height='25px', className }) => {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data.map((d, i) => `${(i / (data.length - 1)) * 100},${30 - ((d - min) / range) * 25}`).join(' ');
+  const pathData = `M ${points.replace(/,/g, ' ').replace(/ (\d+)/g, ',$1')}`;
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 100 30" preserveAspectRatio="none" className={className}>
+      <path d={pathData} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
 const sankeyData = [
   ["From", "To", "Weight"],
   ["Meta Ads", "Landing Page", 9000],
@@ -56,93 +71,59 @@ const roiData = [
   { name: 'Mar', spend: 8500, revenue: 35000, cac: 120 },
 ];
 
-// --- Traffic Sources (Master View Cards) ---
+// --- Mock Data ---
+// Nodos Globales (Tráfico)
 const trafficSources = [
-  { id: 'ig_reels', name: 'Meta Ads (IG Reels)', emoji: '📱', visitors: 6500, leads: 1200, calls: 250, cac: '$45.00', roi: '450%' },
-  { id: 'fb_feed', name: 'Meta Ads (FB Feed)', emoji: '📘', visitors: 2500, leads: 350, calls: 60, cac: '$65.00', roi: '210%' },
-  { id: 'google_ads', name: 'Google Search Ads', emoji: '🔍', visitors: 4500, leads: 1150, calls: 400, cac: '$85.00', roi: '380%' },
-  { id: 'tiktok_org', name: 'Organic (TikTok)', emoji: '🎵', visitors: 1500, leads: 300, calls: 90, cac: '$0.00', roi: 'INF' },
+  { id: 'ig', name: 'Instagram', emoji: '📸', visitors: 6500, leads: 1200, calls: 250, cac: '$45.00', roi: '450%' },
+  { id: 'fb', name: 'Facebook', emoji: '📘', visitors: 2500, leads: 350, calls: 60, cac: '$65.00', roi: '210%' },
+  { id: 'messenger', name: 'Messenger', emoji: '💬', visitors: 1150, leads: 400, calls: 120, cac: '$15.00', roi: '380%' },
+  { id: 'tiktok', name: 'TikTok', emoji: '🎵', visitors: 1500, leads: 300, calls: 90, cac: '$0.00', roi: 'INF' },
+  { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: 0, leads: 0, calls: 0, cac: '$0.00', roi: 'Tracking' }
 ];
 
-// --- Specific Network Detail Data (Creator Studio Drill-down) ---
-const detailData = {
-  ig_reels: {
-    metrics: [
-      { key: 'likes', name: 'Likes', color: '#E1306C', isArea: true },
-      { key: 'comments', name: 'Comments', color: '#833AB4' },
-      { key: 'shares', name: 'Shares', color: '#F56040' },
-      { key: 'saves', name: 'Saves', color: '#FCAF45' },
-    ],
-    kpis: { reach: '1.2M', impressions: '1.5M', followers: '+4,500', engagementRate: '5.2%' },
-    engagementGraph: [
-      { date: '01/Mar', likes: 450, comments: 20, shares: 15, saves: 50 },
-      { date: '05/Mar', likes: 800, comments: 45, shares: 35, saves: 120 },
-      { date: '10/Mar', likes: 650, comments: 30, shares: 25, saves: 80 },
-      { date: '15/Mar', likes: 1200, comments: 85, shares: 90, saves: 210 },
-      { date: '20/Mar', likes: 950, comments: 55, shares: 45, saves: 160 },
-      { date: '25/Mar', likes: 1500, comments: 120, shares: 150, saves: 300 }
-    ],
-    topPosts: [
-      { id: 1, thumb: '🎬', title: 'Cómo escalar tu negocio B2B', views: '250', likes: '3.2K', comments: '1.3K', completion: 65, drops: 'Al minuto 0:45', badge: '🔥 Más Visto', retention: { reached: '800K', thruplay: '150K', p25: '120K', p50: '100K', p75: '80K', p100: '65K' } },
-      { id: 2, thumb: '💡', title: 'El secreto de los leads', views: '180', likes: '5.1K', comments: '1.1K', completion: 72, drops: 'Al minuto 0:55', badge: '❤️ Más Gustado', retention: { reached: '500K', thruplay: '100K', p25: '90K', p50: '85K', p75: '78K', p100: '72K' } },
-      { id: 3, thumb: '⚠️', title: '5 Errores al usar Ads', views: '45', likes: '600', comments: '200', completion: 12, drops: 'A los 5 seg', badge: '📉 Menor Retención', retention: { reached: '200K', thruplay: '40K', p25: '12K', p50: '8K', p75: '6K', p100: '2K' } },
-      { id: 4, thumb: '💎', title: 'Estudio de Caso: Neon', views: '95', likes: '2.5K', comments: '600', completion: 85, drops: 'Al final', badge: '💬 Más Comentado', retention: { reached: '300K', thruplay: '80K', p25: '78K', p50: '75K', p75: '70K', p100: '65K' } },
-    ]
+// Generador de sparklines
+const getRandomSparkline = () => Array.from({length: 10}, () => Math.floor(Math.random() * 50) + 10);
+
+// Nodos de Detalle (Frutiger Aero / Meta Clone Setup)
+const metaKpiTemplate = (nameType) => [
+  { 
+    title: 'Visualizaciones', 
+    value: '1.2K', 
+    trend: '↑ 14.2%', trendGreen: true,
+    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '45%', followerTrend: '↑ 5%',
+    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '55%', nonFollowerTrend: '↓ 1%',
+    extraLabel: nameType === 'web' ? 'Usuarios Únicos' : 'Espectadores', extraValue: '800', extraTrend: '↑ 10%',
+    sparkline: getRandomSparkline()
   },
-  fb_feed: {
-    metrics: [
-      { key: 'likes', name: 'Reactions', color: '#1877F2', isArea: true },
-      { key: 'comments', name: 'Comments', color: '#89CFF0' },
-      { key: 'shares', name: 'Shares', color: '#3b5998' }
-    ],
-    kpis: { reach: '800K', impressions: '1.1M', followers: '+1,200', engagementRate: '3.8%' },
-    engagementGraph: [
-      { date: '01/Mar', likes: 300, comments: 15, shares: 10 },
-      { date: '05/Mar', likes: 600, comments: 40, shares: 30 },
-      { date: '15/Mar', likes: 900, comments: 70, shares: 50 }
-    ],
-    topPosts: [
-      { id: 1, thumb: '📰', title: 'Noticia: Nuevo framework', views: '120', likes: '1.2K', comments: '300', completion: 45, drops: '10 seg', badge: '🔥 Viral', retention: { reached: '300K', thruplay: '90K', p25: '60K', p50: '45K', p75: '30K', p100: '20K' } },
-      { id: 2, thumb: '🖼️', title: 'Infografía Funnel', views: '80', likes: '3.5K', comments: '450', completion: 80, drops: 'N/A', badge: '❤️ Más Compartido', retention: { reached: '150K', thruplay: '100K', p25: '95K', p50: '90K', p75: '85K', p100: '80K' } },
-    ]
+  { 
+    title: 'Interacciones', 
+    value: '450', 
+    trend: '↓ 2.1%', trendGreen: false,
+    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '60%', followerTrend: '-',
+    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '40%', nonFollowerTrend: '-',
+    sparkline: getRandomSparkline()
   },
-  google_ads: {
-    metrics: [
-      { key: 'clicks', name: 'Clics', color: '#4285F4', isArea: true },
-      { key: 'conversions', name: 'Conversiones', color: '#EA4335' },
-      { key: 'impressions', name: 'Impresiones (x1000)', color: '#FBBC05' },
-    ],
-    kpis: { reach: '350K Clics', impressions: '4M Impr', followers: '$1.22 CPC', engagementRate: '8.5% CTR' },
-    engagementGraph: [
-      { date: '01/Mar', clicks: 1200, conversions: 45, impressions: 15 },
-      { date: '05/Mar', clicks: 1800, conversions: 60, impressions: 22 },
-      { date: '10/Mar', clicks: 1400, conversions: 50, impressions: 18 },
-      { date: '15/Mar', clicks: 2500, conversions: 110, impressions: 30 },
-      { date: '20/Mar', clicks: 2100, conversions: 80, impressions: 25 },
-      { date: '25/Mar', clicks: 3200, conversions: 150, impressions: 40 }
-    ],
-    topPosts: [
-      { id: 1, thumb: '🔍', title: 'Search: "Consultoría IT"', views: '20', likes: '1.5K', comments: '0', completion: 15, drops: 'Bounce 40%', badge: '🔥 Mayor CTR', retention: { reached: '5M Impr', thruplay: 'N/A', p25: '20K Clics', p50: '5K Landing', p75: '2K Form', p100: '1.5K Lead' } },
-      { id: 2, thumb: '📈', title: 'PMax: "Automatización Neon"', views: '15', likes: '800', comments: '0', completion: 8, drops: 'Bounce 35%', badge: '💎 Mejor ROAS', retention: { reached: '2M Impr', thruplay: 'N/A', p25: '15K Clics', p50: '4K Landing', p75: '1K Form', p100: '800 Lead' } },
-    ]
+  { 
+    title: 'Visitas', 
+    value: '8,400', 
+    trend: '↑ 40.5%', trendGreen: true,
+    sparkline: getRandomSparkline()
   },
-  tiktok_org: {
-    metrics: [
-      { key: 'views', name: 'Views (k)', color: '#00f2fe', isArea: true },
-      { key: 'likes', name: 'Likes', color: '#ff0844' },
-      { key: 'shares', name: 'Shares', color: '#ffffff' }
-    ],
-    kpis: { reach: '3.5M', impressions: '4.2M', followers: '+12,000', engagementRate: '12.4%' },
-    engagementGraph: [
-      { date: '01/Mar', views: 50, likes: 500, shares: 100 },
-      { date: '15/Mar', views: 500, likes: 5000, shares: 1200 },
-      { date: '25/Mar', views: 250, likes: 2500, shares: 600 }
-    ],
-    topPosts: [
-      { id: 1, thumb: '🕺', title: 'Trend: Oficina Juárez', views: '1500', likes: '150K', comments: '2K', completion: 45, drops: '3 seg', badge: '🔥 Viral', retention: { reached: '2M', thruplay: '1.5M', p25: '900K', p50: '600K', p75: '400K', p100: '200K' } },
-      { id: 2, thumb: '🎤', title: 'POV: Cliente feliz', views: '300', likes: '35K', comments: '500', completion: 60, drops: '8 seg', badge: '💸 Atrajo Leads', retention: { reached: '500K', thruplay: '300K', p25: '250K', p50: '200K', p75: '180K', p100: '150K' } },
-    ]
+  { 
+    title: nameType === 'web' ? 'Conversiones' : 'Seguimientos', 
+    value: '124', 
+    trend: '↑ 12%', trendGreen: true,
+    extraLabel: nameType === 'web' ? 'Tasa de Conv.' : 'Seguimientos netos', extraValue: nameType === 'web' ? '3.2%' : '110', extraTrend: '↑ 5%',
+    sparkline: getRandomSparkline()
   }
+];
+
+const detailData = {
+  ig: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', likes: 10}], topPosts: [] },
+  fb: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', likes: 10}], topPosts: [] },
+  messenger: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'msgs', name: 'Messages', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', msgs: 10}], topPosts: [] },
+  tiktok: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'views', name: 'Views', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', views: 10}], topPosts: [] },
+  web: { kpiCards: metaKpiTemplate('web'), metrics: [{key: 'events', name: 'Events', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', events: 10}], topPosts: [] }
 };
 
 export default function AnalyticsDashboard() {
@@ -152,6 +133,7 @@ export default function AnalyticsDashboard() {
   const [liveTrafficSources, setLiveTrafficSources] = useState(trafficSources);
   const [liveSankeyData, setLiveSankeyData] = useState([["From", "To", "Weight"], ["Cargando red...", "Obteniendo datos", 1]]);
   const [liveRoiData, setLiveRoiData] = useState([]);
+  const [livePixelEvents, setLivePixelEvents] = useState([]);
   const [liveKpis, setLiveKpis] = useState({
      totalSpend: '$0',
      totalRevenue: '$0',
@@ -174,6 +156,7 @@ export default function AnalyticsDashboard() {
           if (data.trafficSources) setLiveTrafficSources(data.trafficSources);
           if (data.sankeyData) setLiveSankeyData(data.sankeyData);
           if (data.roiData) setLiveRoiData(data.roiData);
+          if (data.pixelEvents) setLivePixelEvents(data.pixelEvents);
           if (data.kpis) setLiveKpis(data.kpis);
         }
       } catch (e) {
@@ -191,7 +174,25 @@ export default function AnalyticsDashboard() {
   };
 
   const currentSource = liveTrafficSources.find(s => s.id === selectedSource);
-  const currentDetails = detailData[selectedSource];
+  let currentDetails = detailData[selectedSource];
+  
+  if (selectedSource === 'web' && currentDetails) {
+     currentDetails = {
+        ...currentDetails,
+        topPosts: livePixelEvents.length > 0 ? livePixelEvents.map((ev, i) => ({
+           id: i,
+           thumb: '⚡',
+           title: ev.name,
+           views: '-',
+           likes: ev.count,
+           comments: '-',
+           completion: 100,
+           drops: 'N/A',
+           badge: '🔥 Activo',
+           retention: { reached: ev.count, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
+        })) : []
+     };
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0a0a0a] text-white overflow-hidden">
@@ -330,37 +331,73 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* ROW 2: Network Source Cards */}
+            {/* ROW 2: Network Source Cards (Frutiger Aero / Meta Clone Master Cards) */}
             <div>
               <div className="flex items-center justify-between mb-4 mt-2">
-                <h3 className="text-sm font-black text-white tracking-widest uppercase">Nodos de Tráfico (Drill-down)</h3>
-                <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded font-bold hidden sm:inline">● Haz clic en una red para desglosar su rendimiento exacto</span>
+                <h3 className="text-sm font-black text-white tracking-widest uppercase">Panorama Visual por Plataforma</h3>
+                <span className="text-[10px] text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-2 py-1 rounded font-bold hidden sm:inline shadow-[0_0_10px_rgba(34,211,238,0.2)]">● Haz clic en una red para profundizar</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {trafficSources.map(src => (
-                  <button 
-                    key={src.id} 
-                    onClick={() => handleSourceClick(src.id)}
-                    className="bg-[#0d0d0d] hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-600 rounded-2xl p-5 text-left transition-all duration-300 group flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-3xl">{src.emoji}</span>
-                        <h4 className="font-bold text-sm text-gray-200 group-hover:text-white">{src.name}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {trafficSources.map((src, idx) => {
+                  // Generamos un sparkline pseudo-aleatorio para el demo
+                  const trendGreen = idx % 2 === 0;
+                  const sparkData = getRandomSparkline();
+                  
+                  return (
+                    <button 
+                      key={src.id} 
+                      onClick={() => handleSourceClick(src.id)}
+                      className="relative overflow-hidden bg-[#0A0F1A]/80 backdrop-blur-xl border border-blue-500/20 shadow-[inset_0_0_20px_rgba(0,100,255,0.05)] p-5 text-left group hover:border-cyan-400/60 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-300 rounded-[1.5rem] flex flex-col justify-between min-h-[160px]"
+                    >
+                      {/* Ambient Glow */}
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-cyan-400/20 transition-colors" />
+
+                      {/* Header */}
+                      <div className="flex justify-between items-center mb-2 relative z-10 w-full">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{src.emoji}</span>
+                          <h4 className="font-bold text-sm text-gray-200 group-hover:text-white transition-colors">{src.name}</h4>
+                        </div>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center bg-blue-900/40 text-blue-400 text-[10px] font-black group-hover:bg-cyan-900/40 group-hover:text-cyan-400 transition-colors">→</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs mb-6">
-                        <div className="flex flex-col"><span className="text-neutral-500 font-bold text-[10px]">Visitas</span><span className="text-white font-bold">{src.visitors.toLocaleString()}</span></div>
-                        <div className="flex flex-col"><span className="text-neutral-500 font-bold text-[10px]">Leads</span><span className="text-white font-bold">{src.leads.toLocaleString()}</span></div>
-                        <div className="flex flex-col"><span className="text-neutral-500 font-bold text-[10px]">{src.id === 'google_ads' ? 'Conversiones' : 'Llamadas'}</span><span className="text-[#CC0000] font-bold">{src.calls}</span></div>
-                        <div className="flex flex-col"><span className="text-neutral-500 font-bold text-[10px]">CAC</span><span className="text-gray-400 font-bold">{src.cac}</span></div>
+
+                      {/* Main Metric + Sparkline */}
+                      <div className="flex justify-between items-end mb-4 relative z-10 w-full mt-2">
+                        <div className="flex flex-col">
+                           <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-1">Visualizaciones / Visitas</span>
+                           <div className="flex items-baseline gap-2">
+                             <span className="text-3xl font-black text-white">{src.visitors.toLocaleString()}</span>
+                             <span className={`text-xs font-bold ${trendGreen ? 'text-emerald-400' : 'text-rose-400'}`}>
+                               {trendGreen ? '↑ 12.3%' : '↓ 2.4%'}
+                             </span>
+                           </div>
+                        </div>
+                        <div className="w-[80px] h-[30px] opacity-70 group-hover:opacity-100 transition-opacity">
+                          <SparkLine data={sparkData} color={trendGreen ? '#34d399' : '#38bdf8'} width="100%" height="100%" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="pt-4 border-t border-neutral-800/80 flex items-center justify-between">
-                      <span className="text-green-400 font-black text-sm">ROI: {src.roi}</span>
-                      <span className="text-[10px] text-blue-400 group-hover:text-blue-300 font-bold flex items-center gap-1">Auditar Retención <span className="group-hover:translate-x-1 transition-transform">→</span></span>
-                    </div>
-                  </button>
-                ))}
+
+                      {/* Divider */}
+                      <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent my-3 relative z-10" />
+
+                      {/* Sub-metrics */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 relative z-10 w-full mt-1">
+                         <div className="flex justify-between items-center text-[11px] font-bold">
+                           <span className="text-neutral-500">Leads Generados</span>
+                           <span className="text-white">{src.leads.toLocaleString()}</span>
+                         </div>
+                         <div className="flex justify-between items-center text-[11px] font-bold">
+                           <span className="text-neutral-500">CAC Estimado</span>
+                           <span className="text-white">{src.cac}</span>
+                         </div>
+                         <div className="flex justify-between items-center text-[11px] font-bold">
+                           <span className="text-neutral-500">Retorno (ROI)</span>
+                           <span className="text-cyan-400">{src.roi}</span>
+                         </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </>
@@ -371,24 +408,65 @@ export default function AnalyticsDashboard() {
         {/* ======================= */}
         {selectedSource && currentDetails && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-            {/* KPI Row (Creator) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800 flex flex-col gap-1 text-center">
-                <span className="text-[10px] text-neutral-500 uppercase font-bold">Alcance / Impresiones Totales</span>
-                <span className="text-2xl font-black text-white">{currentDetails.kpis.reach}</span>
-              </div>
-              <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800 flex flex-col gap-1 text-center">
-                <span className="text-[10px] text-neutral-500 uppercase font-bold">Costo o Impresiones Netas</span>
-                <span className="text-2xl font-black text-white">{currentDetails.kpis.impressions}</span>
-              </div>
-              <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800 flex flex-col gap-1 text-center">
-                <span className="text-[10px] text-neutral-500 uppercase font-bold">Variación Actuante (Subs/CPC)</span>
-                <span className="text-2xl font-black text-green-400">{currentDetails.kpis.followers}</span>
-              </div>
-              <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800 flex flex-col gap-1 text-center">
-                <span className="text-[10px] text-neutral-500 uppercase font-bold">Engagement / Conversion Rate</span>
-                <span className="text-2xl font-black text-blue-400">{currentDetails.kpis.engagementRate}</span>
-              </div>
+            {/* KPI Row (Meta Business Suite Clone - Y2K Frutiger Aero Dark) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {currentDetails.kpiCards.map((kpi, idx) => (
+                <div key={idx} className="relative overflow-hidden bg-[#0A0F1A]/80 backdrop-blur-xl rounded-[1.5rem] border border-cyan-500/20 shadow-[inset_0_0_20px_rgba(0,255,255,0.05)] p-5 flex flex-col group hover:border-cyan-400/50 transition-colors">
+                  {/* Y2K Ambient Glow */}
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-400/20 rounded-full blur-[40px] pointer-events-none group-hover:bg-cyan-400/30 transition-colors" />
+                  
+                  {/* Tooltip trigger for info */}
+                  <div className="flex justify-between items-center mb-1 relative z-10">
+                    <h4 className="text-white font-bold text-[15px] tracking-tight">{kpi.title}</h4>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-cyan-900/40 text-cyan-400 text-[10px] font-black cursor-help">i</span>
+                  </div>
+
+                  {/* Main Value & Sparkline */}
+                  <div className="flex justify-between items-end mb-4 relative z-10">
+                    <div className="flex items-baseline gap-2">
+                       <span className="text-3xl font-black text-white">{kpi.value}</span>
+                       <span className={`text-xs font-bold ${kpi.trendGreen ? 'text-emerald-400' : 'text-rose-400'}`}>{kpi.trend}</span>
+                    </div>
+                    <SparkLine data={kpi.sparkline} color={kpi.trendGreen ? '#34d399' : '#38bdf8'} width="80px" height="30px" className="opacity-80" />
+                  </div>
+
+                  {/* Divider */}
+                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent mb-4" />
+
+                  {/* Breakdown Followers/Non-Followers */}
+                  <div className="space-y-3 relative z-10 flex-col">
+                    {kpi.followerLabel && (
+                       <div className="flex flex-col gap-1.5">
+                         <div className="flex justify-between text-[11px] font-bold">
+                           <span className="text-neutral-400">{kpi.followerLabel}</span>
+                           <span className="text-white">{kpi.followerShare} <span className="text-cyan-400 ml-1 font-normal">{kpi.followerTrend}</span></span>
+                         </div>
+                         <div className="w-full h-1 bg-cyan-950 rounded-full overflow-hidden">
+                           <div className="h-full bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" style={{width: kpi.followerShare}} />
+                         </div>
+                       </div>
+                    )}
+                    {kpi.nonFollowerLabel && (
+                       <div className="flex flex-col gap-1.5 pt-1">
+                         <div className="flex justify-between text-[11px] font-bold">
+                           <span className="text-neutral-400">{kpi.nonFollowerLabel}</span>
+                           <span className="text-white">{kpi.nonFollowerShare} <span className="text-rose-400 ml-1 font-normal">{kpi.nonFollowerTrend}</span></span>
+                         </div>
+                         <div className="w-full h-1 bg-cyan-950 rounded-full overflow-hidden">
+                           <div className="h-full bg-neutral-500 rounded-full" style={{width: kpi.nonFollowerShare}} />
+                         </div>
+                       </div>
+                    )}
+                    {/* Extra Label (For views/net follows) */}
+                    {kpi.extraLabel && (
+                       <div className="flex justify-between items-center text-[11px] font-bold pt-1 border-t border-white/5 mt-1">
+                          <span className="text-white">{kpi.extraLabel}</span>
+                          <span className="text-white">{kpi.extraValue} <span className="text-cyan-400 font-normal">{kpi.extraTrend}</span></span>
+                       </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Gráfica de Engagement (Theme Colored) */}
@@ -443,9 +521,9 @@ export default function AnalyticsDashboard() {
                       <th className="font-semibold pb-3 px-2">Video/Campaña</th>
                       <th className="font-semibold pb-3 px-2 text-center">Rendimiento</th>
                       <th className="font-semibold pb-3 px-2 text-right">Vistas (K)</th>
-                      <th className="font-semibold pb-3 px-2 text-right text-blue-400">{selectedSource === 'google_ads' ? 'Clicks/Leads' : 'Likes'}</th>
-                      <th className="font-semibold pb-3 px-2 text-right text-purple-400">{selectedSource === 'google_ads' ? 'Cost' : 'Comments'}</th>
-                      <th className="font-semibold pb-3 px-2 text-right border-l border-neutral-800">Punto de Fuga Frecuente</th>
+                      <th className="font-semibold pb-3 px-2 text-right text-blue-400">{selectedSource === 'google_ads' ? 'Clicks/Leads' : selectedSource === 'web' ? 'Apariciones' : 'Likes'}</th>
+                      <th className="font-semibold pb-3 px-2 text-right text-purple-400">{selectedSource === 'google_ads' ? 'Cost' : selectedSource === 'web' ? 'Datos Info' : 'Comments'}</th>
+                      <th className="font-semibold pb-3 px-2 text-right border-l border-neutral-800">{selectedSource === 'web' ? 'Nota' : 'Punto de Fuga Frecuente'}</th>
                       <th className="font-semibold pb-3 px-2 text-right w-40">Retención Real (Play To End)</th>
                     </tr>
                   </thead>

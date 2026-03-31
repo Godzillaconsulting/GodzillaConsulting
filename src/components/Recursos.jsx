@@ -7,7 +7,7 @@ import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';
-import gifCrm from '../assets/Gifs/Crm.gif';
+import gifCrm from '../assets/Gifs/Estadistica.gif';
 
 const defaultMagnets = [
     {

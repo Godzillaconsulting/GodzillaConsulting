@@ -88,33 +88,33 @@ const getRandomSparkline = () => Array.from({length: 10}, () => Math.floor(Math.
 const metaKpiTemplate = (nameType) => [
   { 
     title: 'Visualizaciones', 
-    value: '1.2K', 
-    trend: '↑ 14.2%', trendGreen: true,
-    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '45%', followerTrend: '↑ 5%',
-    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '55%', nonFollowerTrend: '↓ 1%',
-    extraLabel: nameType === 'web' ? 'Usuarios Únicos' : 'Espectadores', extraValue: '800', extraTrend: '↑ 10%',
-    sparkline: getRandomSparkline()
+    value: '-', 
+    trend: '-', trendGreen: true,
+    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '-', followerTrend: '-',
+    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '-', nonFollowerTrend: '-',
+    extraLabel: nameType === 'web' ? 'Usuarios Únicos' : 'Espectadores', extraValue: '-', extraTrend: '-',
+    sparkline: []
   },
   { 
     title: 'Interacciones', 
-    value: '450', 
-    trend: '↓ 2.1%', trendGreen: false,
-    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '60%', followerTrend: '-',
-    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '40%', nonFollowerTrend: '-',
-    sparkline: getRandomSparkline()
+    value: '-', 
+    trend: '-', trendGreen: false,
+    followerLabel: nameType === 'web' ? 'Nuevos' : 'De seguidores', followerShare: '-', followerTrend: '-',
+    nonFollowerLabel: nameType === 'web' ? 'Recurrentes' : 'De no seguidores', nonFollowerShare: '-', nonFollowerTrend: '-',
+    sparkline: []
   },
   { 
     title: 'Visitas', 
-    value: '8,400', 
-    trend: '↑ 40.5%', trendGreen: true,
-    sparkline: getRandomSparkline()
+    value: '-', 
+    trend: '-', trendGreen: true,
+    sparkline: []
   },
   { 
     title: nameType === 'web' ? 'Conversiones' : 'Seguimientos', 
-    value: '124', 
-    trend: '↑ 12%', trendGreen: true,
-    extraLabel: nameType === 'web' ? 'Tasa de Conv.' : 'Seguimientos netos', extraValue: nameType === 'web' ? '3.2%' : '110', extraTrend: '↑ 5%',
-    sparkline: getRandomSparkline()
+    value: '-', 
+    trend: '-', trendGreen: true,
+    extraLabel: nameType === 'web' ? 'Tasa de Conv.' : 'Seguimientos netos', extraValue: '-', extraTrend: '-',
+    sparkline: []
   }
 ];
 
@@ -135,7 +135,7 @@ export default function AnalyticsDashboard() {
   const [liveRoiData, setLiveRoiData] = useState([]);
   const [livePixelEvents, setLivePixelEvents] = useState([]);
   const [liveKpis, setLiveKpis] = useState({
-     totalSpend: '$0', totalRevenue: '$0', globalROI: '0%', avgCac: '$0'
+     totalSpend: '-', totalRevenue: '-', globalROI: '-', avgCac: '-'
   });
   const [liveWebGraph, setLiveWebGraph] = useState([]);
   const [liveSocialPosts, setLiveSocialPosts] = useState({ ig: [], fb: [] });
@@ -263,9 +263,19 @@ export default function AnalyticsDashboard() {
   if (['ig', 'fb'].includes(selectedSource) && currentDetails) {
       const rawPosts = Array.isArray(liveSocialPosts[selectedSource]) ? liveSocialPosts[selectedSource] : [];
       const filteredPosts = filterPostsByTime(rawPosts, timeFilter);
+      const socialKpiSource = liveTrafficSources.find(s => s.id === selectedSource);
+      
+      const sumLikes = filteredPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
+      const sumComments = filteredPosts.reduce((acc, p) => acc + (p.comments || 0), 0);
       
       currentDetails = {
           ...currentDetails,
+          kpiCards: [
+             { ...currentDetails.kpiCards[0], title: 'Seguidores Reales', value: socialKpiSource?.visitors || '-', trend: 'En Vivo', sparkline: [] },
+             { ...currentDetails.kpiCards[1], title: 'Interacciones Totales', value: sumLikes + sumComments, trend: 'En Filtro', sparkline: [] },
+             { ...currentDetails.kpiCards[2], title: 'Likes (Corazones)', value: sumLikes, trend: '-', sparkline: [] },
+             { ...currentDetails.kpiCards[3], title: 'Comentarios Recibidos', value: sumComments, trend: '-', extraLabel: 'Ratio de Resp.', extraValue: '-', sparkline: [] }
+          ],
           topPosts: filteredPosts.map(post => {
               const safeCaption = post.caption || 'Sin título';
               return {

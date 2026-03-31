@@ -136,6 +136,11 @@ router.put('/:id', requireAdmin, requireSuperAdmin, async (req, res) => {
         if (curRes.rows.length === 0) return res.status(404).json({ success: false, message: 'No encontrado' });
         const cur = curRes.rows[0];
 
+        // Evitar degradar al fundador JareG, excepto para el dueño supremo (ID 2 - godzilla_admin)
+        if (cur.username === 'JareG' && isSuperadmin === false && parseInt(req.admin.id) !== 2) {
+            return res.status(403).json({ success: false, message: 'El perfil de Fundador (JareG) solo puede ser degradado por el CEO (godzilla_admin).' });
+        }
+
         let hash = cur.password_hash;
         if (newPassword && newPassword.trim() !== '') {
             const salt = await bcrypt.genSalt(10);
@@ -173,10 +178,14 @@ router.delete('/:id', requireAdmin, requireSuperAdmin, async (req, res) => {
 
     try {
         const curRes = await pool.query('SELECT username FROM admins WHERE id = $1', [targetId]);
-        if (curRes.rows.length > 0) {
-            await pool.query('DELETE FROM admins WHERE id = $1', [targetId]);
-            await logAction(req.admin.id, 'DELETE_USER', { deleted_user: curRes.rows[0].username });
+        if (curRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+        
+        if (curRes.rows[0].username === 'JareG' && parseInt(req.admin.id) !== 2) {
+            return res.status(403).json({ success: false, message: 'Infranqueable: Solo el CEO (godzilla_admin) puede eliminar al perfil Fundador (JareG).' });
         }
+
+        await pool.query('DELETE FROM admins WHERE id = $1', [targetId]);
+        await logAction(req.admin.id, 'DELETE_USER', { deleted_user: curRes.rows[0].username });
         res.json({ success: true, message: 'Usuario eliminado.' });
     } catch (e) {
         res.status(500).json({ success: false, message: 'Error eliminando.' });

@@ -171,11 +171,11 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
         // Como aún no tenemos UTMs anidados en la tabla users/citas, 
         // mostraremos las visitas reales por utm y 0 leads/llamadas atribuidas (hasta implementar UTM en captura)
         const trafficSources = [
-          { id: 'ig', name: 'Instagram', emoji: '📸', visitors: visitorsMap['ig'] || visitorsMap['ig_reels'] || visitorsMap['instagram'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'fb', name: 'Facebook', emoji: '📘', visitors: visitorsMap['fb'] || visitorsMap['fb_feed'] || visitorsMap['facebook'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'messenger', name: 'Messenger', emoji: '💬', visitors: visitorsMap['messenger'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'tiktok', name: 'TikTok', emoji: '🎵', visitors: visitorsMap['tiktok'] || visitorsMap['tiktok_org'] || 0, leads: 0, calls: 0, cac: '$0.00', roi: '0%' },
-          { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: totalVisitors, leads: totalLeads, calls: pixelEventCounts.totalInteractions, cac: '$0.00', roi: 'Tracking' }
+          { id: 'ig', name: 'Instagram', emoji: '📸', visitors: visitorsMap['ig'] || visitorsMap['ig_reels'] || visitorsMap['instagram'] || '-', leads: '-', calls: '-', cac: '-', roi: '-' },
+          { id: 'fb', name: 'Facebook', emoji: '📘', visitors: visitorsMap['fb'] || visitorsMap['fb_feed'] || visitorsMap['facebook'] || '-', leads: '-', calls: '-', cac: '-', roi: '-' },
+          { id: 'messenger', name: 'Messenger', emoji: '💬', visitors: visitorsMap['messenger'] || '-', leads: '-', calls: '-', cac: '-', roi: '-' },
+          { id: 'tiktok', name: 'TikTok', emoji: '🎵', visitors: visitorsMap['tiktok'] || visitorsMap['tiktok_org'] || '-', leads: '-', calls: '-', cac: '-', roi: '-' },
+          { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: totalVisitors > 0 ? totalVisitors : '-', leads: totalLeads > 0 ? totalLeads : '-', calls: pixelEventCounts.totalInteractions > 0 ? pixelEventCounts.totalInteractions : '-', cac: '-', roi: '-' }
         ];
 
         // --- Gráfica Web de Vistas y Clics Diarios ---
@@ -254,10 +254,10 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
             webGraphData,
             kpis: {
-                totalSpend: '$0',
-                totalRevenue: '$0',
-                globalROI: '0%',
-                avgCac: '$0'
+                totalSpend: '-',
+                totalRevenue: '-',
+                globalROI: '-',
+                avgCac: '-'
             }
         });
     } catch (e) {

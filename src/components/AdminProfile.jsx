@@ -200,6 +200,33 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         }
     };
 
+    const handleToggleRole = async (targetId, currentUsername, currentIsSuper, newIsSuper) => {
+        if (currentIsSuper === newIsSuper) return;
+        const actionText = newIsSuper ? 'ASCENDER a 👑 SuperAdmin' : 'DEGRADAR a Empleado';
+        const pass = prompt(`Estás a punto de ${actionText} a ${currentUsername}.\nIngresa tu Contraseña Maestra actual para autorizar el nombramiento:`);
+        if (!pass) return fetchTeamData(); // Restaurar select visual si cancela
+
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${targetId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ superadminPassword: pass, isSuperadmin: newIsSuper })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Jerarquía actualizada exitosamente. ${currentUsername} ahora es ${newIsSuper ? '👑 SuperAdmin' : 'Empleado'}.`);
+                fetchTeamData();
+            } else {
+                alert(data.message || 'Error al actualizar jerarquía');
+                fetchTeamData(); // Restaurar select
+            }
+        } catch (e) {
+            alert('Error en conexión');
+            fetchTeamData();
+        }
+    };
+
     if (!profile) return <div className="p-10 flex justify-center"><p className="text-white">Cargando perfil...</p></div>;
 
     return (
@@ -376,17 +403,26 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {u.is_superadmin ? 
-                                                        <span className="text-amber-500 font-bold bg-amber-500/10 px-2 py-1 rounded text-[10px] uppercase">👑 SuperAdmin</span> : 
-                                                        <span className="text-gray-400 font-bold bg-neutral-800 px-2 py-1 rounded text-[10px] uppercase">Empleado</span>
-                                                    }
+                                                    {u.username === 'JareG' && profile.id !== 2 ? (
+                                                        <span className="text-amber-500 font-bold bg-amber-500/10 px-3 py-1.5 rounded text-[10px] uppercase w-[120px] inline-block text-center shrink-0 border border-amber-500/30">👑 Fundador</span>
+                                                    ) : (
+                                                        <select 
+                                                            value={u.is_superadmin ? 'super' : 'emp'}
+                                                            onChange={(e) => handleToggleRole(u.id, u.username, u.is_superadmin, e.target.value === 'super')}
+                                                            disabled={u.id === profile.id || (u.username === 'JareG' && profile.id !== 2)}
+                                                            className={`text-[10px] font-bold px-2 py-1.5 rounded uppercase outline-none cursor-pointer border transition ${u.is_superadmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-neutral-800 text-gray-400 border-neutral-700 hover:border-neutral-500'}`}
+                                                        >
+                                                            <option value="super">👑 SuperAdmin</option>
+                                                            <option value="emp">Empleado</option>
+                                                        </select>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="flex items-center gap-2 text-green-500 font-bold text-xs"><span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></span> Activo</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right space-x-2">
                                                     <button onClick={() => handleResetPassword(u.id, u.username)} className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-blue-400 rounded-md font-bold text-xs transition">Reset Pass</button>
-                                                    {u.id !== profile.id && (
+                                                    {u.id !== profile.id && (u.username !== 'JareG' || profile.id === 2) && (
                                                         <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-md font-bold text-xs transition">Eliminar</button>
                                                     )}
                                                 </td>

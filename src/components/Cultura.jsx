@@ -10,10 +10,7 @@ const Cultura = () => {
 
   let mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.filter(m => m.url).length > 0
     ? nodeData.mediaGallery.filter(m => m.url)
-    : [
-        { type: 'video', url: culturaVideo },
-        { type: 'image', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop' }
-      ];
+    : [ { type: 'video', url: culturaVideo } ];
 
   if (mediaGallery.length === 1) {
       mediaGallery.push({ type: 'video', url: culturaVideo });

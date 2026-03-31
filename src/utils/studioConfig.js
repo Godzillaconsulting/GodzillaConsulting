@@ -47,10 +47,6 @@ export function injectSectionDefaults(nodeId, draftSource) {
   combinedData.videoUrl ='';
   }
 
-  // Inject imageUrl field for Cultura node to allow media editing
-  if (nodeId === 'cultura' && combinedData.imageUrl === undefined) {
-      combinedData.imageUrl = '';
-  }
 
   // Inject logos for Hero section so they can be modified
   if (nodeId === 'hero' && combinedData.logoUrl1 === undefined) {

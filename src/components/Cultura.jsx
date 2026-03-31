@@ -118,9 +118,9 @@ const Cultura = () => {
   };
  return (
  <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
- {/* Video de fondo */}
+ {/* Video de fondo — editable desde Admin Studio (bgVideoUrl) */}
  <video
- src={culturaVideo}
+ src={nodeData.bgVideoUrl || culturaVideo}
  autoPlay
  loop
  muted

@@ -8,6 +8,11 @@ router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM site_nodes');
         
+        // Anti-Caché para que Vercel y el navegador siempre sirvan el cambio fresco
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
         // We can optionally sort the nodes here as a linked list if needed,
         // but it's often easier to just return the array and let the frontend link them.
         res.json(result.rows);

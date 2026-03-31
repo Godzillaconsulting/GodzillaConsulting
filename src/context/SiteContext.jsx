@@ -14,7 +14,13 @@ export function SiteProvider({ children }) {
   const fetchNodes = async () => {
     try {
       setLoading(true);
-      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes');
+      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes', {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       const data = await res.json();
       setNodes(data);
     } catch (err) {

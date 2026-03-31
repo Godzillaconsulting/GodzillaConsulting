@@ -9,6 +9,7 @@ import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 
 import bgVideoServicios from '../assets/Particulas Rojas.mp4';
+import bgVideoCultura from '../assets/Particulas Rojas.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';
@@ -71,6 +72,11 @@ export function injectSectionDefaults(nodeId, draftSource) {
       if (combinedData.service4IconUrl === undefined) combinedData.service4IconUrl = gifRedes;
       if (combinedData.service5IconUrl === undefined) combinedData.service5IconUrl = gifSeo;
       if (combinedData.service6IconUrl === undefined) combinedData.service6IconUrl = gifCrm;
+  }
+
+  // Inject bgVideoUrl for Cultura so it appears in Admin Studio Media tab
+  if (nodeId === 'cultura') {
+      if (combinedData.bgVideoUrl === undefined) combinedData.bgVideoUrl = bgVideoCultura;
   }
 
   // Inject defaults for Portafolio / Casos de Éxito

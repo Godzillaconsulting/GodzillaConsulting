@@ -76,15 +76,23 @@ const Servicios = () => {
 
             {/* Header with Video Background */}
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
-                {/* Video de fondo - partículas */}
-                <video
-                    src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http') && !nodeData.videoUrl.includes('/assets/')) ? nodeData.videoUrl : bgVideo}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
-                />
+                {/* Video o Imagen de fondo - Inteligente */}
+                {((nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http') && !nodeData.videoUrl.includes('/assets/')) ? nodeData.videoUrl : bgVideo).match(/\.(mp4|webm|ogg)$/i) ? (
+                    <video
+                        src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http') && !nodeData.videoUrl.includes('/assets/')) ? nodeData.videoUrl : bgVideo}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
+                    />
+                ) : (
+                    <img
+                        src={(nodeData.videoUrl && typeof nodeData.videoUrl === 'string' && nodeData.videoUrl.startsWith('http') && !nodeData.videoUrl.includes('/assets/')) ? nodeData.videoUrl : bgVideo}
+                        alt="Background Servicios"
+                        className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
+                    />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
                 <div className="relative z-20 flex flex-col items-center justify-center mt-10">

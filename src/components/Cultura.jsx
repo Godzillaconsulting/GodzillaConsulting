@@ -11,8 +11,8 @@ const Cultura = () => {
   let mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.filter(m => m.url).length > 0
     ? nodeData.mediaGallery.filter(m => m.url)
     : [
-        { type: (nodeData.imageUrl || '').match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image', url: nodeData.imageUrl || culturaImage },
-        { type: 'video', url: culturaVideo }
+        { type: 'video', url: culturaVideo },
+        { type: 'image', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop' }
       ];
 
   if (mediaGallery.length === 1) {
@@ -257,6 +257,35 @@ const Cultura = () => {
               ))}
             </div>
 
+              {/* Flechas de Navegación Manual (Nodos) */}
+              {mediaGallery.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRightIsPaused(true);
+                      setRightSlide((prev) => (prev === 0 ? mediaGallery.length - 1 : prev - 1));
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all z-20 shadow-lg border border-white/10"
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRightIsPaused(true);
+                      setRightSlide((prev) => (prev === mediaGallery.length - 1 ? 0 : prev + 1));
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#CC0000]/80 hover:bg-[#CC0000] text-white p-3 rounded-full backdrop-blur-md transition-all z-20 shadow-lg border border-white/10"
+                    aria-label="Siguiente"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </>
+              )}
+
             {/* Pagination Dots for Right Slider */}
             {mediaGallery.length > 1 && (
               <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 z-20">
@@ -265,6 +294,7 @@ const Cultura = () => {
                     key={idx}
                     onClick={(e) => {
                       e.stopPropagation();
+                      setRightIsPaused(true);
                       setRightSlide(idx);
                     }}
                     className={`h-2 rounded-full transition-all duration-300 ${rightSlide === idx ? 'bg-[#CC0000] w-8' : 'bg-white/50 hover:bg-white w-2'}`}

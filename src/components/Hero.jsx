@@ -32,7 +32,7 @@ const Hero = () => {
         for (let i = 1; i <= 20; i++) {
             if (data[`logoUrl${i}`]) {
                 const url = data[`logoUrl${i}`];
-                const isUploaded = typeof url === 'string' && url.startsWith('http') && !url.includes('/assets/');
+                const isUploaded = typeof url === 'string' && (url.startsWith('http') || url.startsWith('/api/media')) && !url.includes('/assets/');
                 if (isUploaded) {
                     logos.push(url);
                 } else {

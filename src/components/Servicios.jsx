@@ -40,10 +40,10 @@ const Servicios = () => {
     const getIconSrc = (srv, idx) => {
         // 1. Ícono individual desde CMS
         const cmsKey = `service${idx + 1}IconUrl`;
-        if (nodeData[cmsKey] && typeof nodeData[cmsKey] === 'string' && nodeData[cmsKey].startsWith('http') && !nodeData[cmsKey].includes('/assets/')) return nodeData[cmsKey];
+        if (nodeData[cmsKey] && typeof nodeData[cmsKey] === 'string' && (nodeData[cmsKey].startsWith('http') || nodeData[cmsKey].startsWith('/api/media')) && !nodeData[cmsKey].includes('/assets/')) return nodeData[cmsKey];
 
         // 2. Si viene de BD con iconSrc directo y es un link válido subido
-        if (srv.iconSrc && typeof srv.iconSrc === 'string' && srv.iconSrc.startsWith('http') && !srv.iconSrc.includes('/assets/')) return srv.iconSrc;
+        if (srv.iconSrc && typeof srv.iconSrc === 'string' && (srv.iconSrc.startsWith('http') || srv.iconSrc.startsWith('/api/media')) && !srv.iconSrc.includes('/assets/')) return srv.iconSrc;
 
         // 3. Fallback inteligente a gif local por coincidencia de título
         const slug  = srv.id?.current || '';

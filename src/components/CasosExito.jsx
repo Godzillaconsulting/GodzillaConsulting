@@ -48,7 +48,7 @@ const CasosExito = () => {
         if (item.logo) return urlFor(item.logo).width(500).url();
 
         // 2. Check if the logoSrc is a valid absolute uploaded URL (Vercel blob, etc)
-        const isUploaded = item.logoSrc && item.logoSrc.startsWith('http') && !item.logoSrc.includes('/assets/');
+        const isUploaded = item.logoSrc && (item.logoSrc.startsWith('http') || item.logoSrc.startsWith('/api/media')) && !item.logoSrc.includes('/assets/');
         if (isUploaded) return item.logoSrc;
 
         // 3. Fallback: Si es una ruta local vieja (/assets/...) se rompe en producción debido a los hashes de Vite.

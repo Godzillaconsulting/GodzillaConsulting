@@ -135,6 +135,37 @@ router.get('/dashboard', async (req, res) => {
             pixelEventCounts = { totalInteractions: total, events: eventDataList };
         } catch(e) { console.error('No se pudo leer pixel_events (tabla nueva o error)', e.message); }
 
+        // 5. Historial Diario Web (Evolución)
+        let webGraphData = [];
+        try {
+            const historyRes = await pool.query(`
+                SELECT DATE(created_at) as date_val, COUNT(DISTINCT session_id) as views
+                FROM page_views
+                GROUP BY DATE(created_at)
+                ORDER BY date_val ASC
+            `);
+            
+            const eventsHistoryRes = await pool.query(`
+                SELECT DATE(created_at) as date_val, COUNT(*) as interactions
+                FROM pixel_events
+                GROUP BY DATE(created_at)
+            `);
+            
+            const historyMap = {};
+            historyRes.rows.forEach(r => {
+                const d = new Date(r.date_val).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                historyMap[d] = { date: d, views: parseInt(r.views), interactions: 0 };
+            });
+            
+            eventsHistoryRes.rows.forEach(r => {
+                const d = new Date(r.date_val).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                if (!historyMap[d]) historyMap[d] = { date: d, views: 0, interactions: 0 };
+                historyMap[d].interactions += parseInt(r.interactions);
+            });
+            
+            webGraphData = Object.values(historyMap);
+        } catch(e) { console.warn('Error fetching web graph data', e.message); }
+
         // --- Traffic Sources (Datos Duros) ---
         // Como aún no tenemos UTMs anidados en la tabla users/citas, 
         // mostraremos las visitas reales por utm y 0 leads/llamadas atribuidas (hasta implementar UTM en captura)
@@ -186,6 +217,7 @@ router.get('/dashboard', async (req, res) => {
             sankeyData,
             roiData,
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
+            webGraphData,
             kpis: {
                 totalSpend: '$0',
                 totalRevenue: '$0',

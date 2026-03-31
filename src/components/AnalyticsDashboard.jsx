@@ -137,6 +137,7 @@ export default function AnalyticsDashboard() {
   const [liveKpis, setLiveKpis] = useState({
      totalSpend: '$0', totalRevenue: '$0', globalROI: '0%', avgCac: '$0'
   });
+  const [liveWebGraph, setLiveWebGraph] = useState([]);
   const [liveSocialPosts, setLiveSocialPosts] = useState({ ig: [], fb: [] });
   const [timeFilter, setTimeFilter] = useState('all'); // '1', '7', '30', 'all'
 
@@ -195,6 +196,7 @@ export default function AnalyticsDashboard() {
           if (data.sankeyData) setLiveSankeyData(data.sankeyData);
           if (data.roiData) setLiveRoiData(data.roiData);
           if (data.pixelEvents) setLivePixelEvents(data.pixelEvents);
+          if (data.webGraphData) setLiveWebGraph(data.webGraphData);
           if (data.kpis) setLiveKpis(data.kpis);
         }
       } catch (e) {
@@ -215,8 +217,23 @@ export default function AnalyticsDashboard() {
   let currentDetails = detailData[selectedSource];
   
   if (selectedSource === 'web' && currentDetails) {
+     const webSource = liveTrafficSources.find(s => s.id === 'web');
+     const totalVisitas = liveWebGraph.reduce((sum, d) => sum + d.views, 0);
+     const totalClics = liveWebGraph.reduce((sum, d) => sum + d.interactions, 0);
+
      currentDetails = {
         ...currentDetails,
+        kpiCards: [
+          { title: 'Visitas de Página', value: totalVisitas.toLocaleString(), trend: 'En Vivo', trendGreen: true, sparkline: liveWebGraph.map(g => g.views) },
+          { title: 'Botones Clickeados', value: totalClics.toLocaleString(), trend: 'Pixel Fires', trendGreen: true, sparkline: liveWebGraph.map(g => g.interactions) },
+          { title: 'Conversiones (Leads)', value: (webSource?.leads || 0).toLocaleString(), trend: 'Registrados', trendGreen: true, sparkline: [1,2,5] },
+          { title: 'Puntos de Fuga', value: 'N/A', trend: 'Requiere GTM', trendGreen: false, sparkline: [5,4,1] }
+        ],
+        engagementGraph: liveWebGraph.length > 0 ? liveWebGraph : [{date: 'Hoy', views: 0, interactions: 0}],
+        metrics: [
+           { key: 'views', name: 'Vistas a la Web', color: '#38bdf8', isArea: true },
+           { key: 'interactions', name: 'Clics Rastreados', color: '#34d399', isArea: false }
+        ],
         topPosts: livePixelEvents.length > 0 ? livePixelEvents.map((ev, i) => ({
            id: i,
            thumb: '⚡',
@@ -225,9 +242,10 @@ export default function AnalyticsDashboard() {
            likes: ev.count,
            comments: '-',
            completion: 100,
-           drops: 'N/A',
-           badge: '🔥 Activo',
-           retention: { reached: ev.count, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' }
+           drops: '-',
+           badge: '🔥 Interacción',
+           retention: { reached: ev.count, thruplay: 'N/A', p25: '-', p50: '-', p75: '-', p100: '-' },
+           url: '#'
         })) : []
      };
   }

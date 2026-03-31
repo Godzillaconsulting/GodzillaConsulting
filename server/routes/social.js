@@ -20,16 +20,16 @@ router.get('/meta', async (req, res) => {
             return res.json({ success: true, fromCache: true, data: metaCache });
         }
 
-        console.log('[SOCIAL API] Contactando servidores de Meta Graph para métricas profundas...');
+        console.log('[SOCIAL API] Contactando servidores de Meta Graph para métricas profundas (Modo Seguro)...');
         
-        // Petición a Graph API V19 - Sacamos KPIs Generales + 100 Posts recientes (FB/IG)
-        const url = `https://graph.facebook.com/v19.0/me?fields=id,name,fan_count,followers_count,published_posts.limit(100){id,created_time,message,likes.summary(true),comments.summary(true),permalink_url},instagram_business_account{id,username,followers_count,media_count,media.limit(100){id,timestamp,caption,media_type,media_url,thumbnail_url,like_count,comments_count,permalink}}&access_token=${token}`;
+        // Paso 1: Petición segurísima a Graph API V19 (Datos Base)
+        const baseUrl = `https://graph.facebook.com/v19.0/me?fields=id,name,fan_count,followers_count,instagram_business_account{id,username,followers_count,media_count}&access_token=${token}`;
         
-        const graphRes = await fetch(url);
+        const graphRes = await fetch(baseUrl);
         const fbData = await graphRes.json();
 
         if (fbData.error) {
-            console.error('[SOCIAL API] Error desde Meta:', fbData.error.message);
+            console.error('[SOCIAL API] Error Crítico desde Meta (Token base):', fbData.error.message);
             return res.status(502).json({ success: false, error: fbData.error.message });
         }
 
@@ -43,19 +43,6 @@ router.get('/meta', async (req, res) => {
             ig: null
         };
 
-        // Extraer posts de FB
-        if (fbData.published_posts && fbData.published_posts.data) {
-            stats.fb.posts = fbData.published_posts.data.map(p => ({
-                id: p.id,
-                timestamp: p.created_time,
-                caption: p.message || 'Sin título',
-                likes: p.likes?.summary?.total_count || 0,
-                comments: p.comments?.summary?.total_count || 0,
-                url: p.permalink_url,
-                media_type: 'POST'
-            }));
-        }
-
         if (fbData.instagram_business_account) {
             const igData = fbData.instagram_business_account;
             stats.ig = {
@@ -65,20 +52,51 @@ router.get('/meta', async (req, res) => {
                 postsCount: igData.media_count || 0,
                 posts: []
             };
+        }
 
-            // Extraer posts IG
-            if (igData.media && igData.media.data) {
-                stats.ig.posts = igData.media.data.map(m => ({
-                    id: m.id,
-                    timestamp: m.timestamp,
-                    caption: m.caption || 'Sin título',
-                    media_type: m.media_type,
-                    media_url: m.thumbnail_url || m.media_url, // Preferir thumbnail si es video
-                    likes: m.like_count || 0,
-                    comments: m.comments_count || 0,
-                    url: m.permalink
+        // Paso 2: Extraer posts de FB (Protegido contra Error #283 pages_read_engagement)
+        try {
+            const fbPostsUrl = `https://graph.facebook.com/v19.0/${fbData.id}/published_posts?limit=100&fields=id,created_time,message,likes.summary(true),comments.summary(true),permalink_url&access_token=${token}`;
+            const fbPostsRes = await fetch(fbPostsUrl);
+            const fbPostsData = await fbPostsRes.json();
+            
+            if (fbPostsData.data) {
+                stats.fb.posts = fbPostsData.data.map(p => ({
+                    id: p.id,
+                    timestamp: p.created_time,
+                    caption: p.message || 'Sin título',
+                    likes: p.likes?.summary?.total_count || 0,
+                    comments: p.comments?.summary?.total_count || 0,
+                    url: p.permalink_url,
+                    media_type: 'POST'
                 }));
+            } else if(fbPostsData.error) {
+                 console.warn('[SOCIAL API - FB Posts] Permisos insuficientes o error:', fbPostsData.error.message);
             }
+        } catch(e) { console.warn('[SOCIAL API] No se pudieron cargar los posts FB', e.message); }
+
+        // Paso 3: Extraer posts IG (Protegido contra Error #10 / insights permissions)
+        if (stats.ig?.id) {
+             try {
+                 const igPostsUrl = `https://graph.facebook.com/v19.0/${stats.ig.id}/media?limit=100&fields=id,timestamp,caption,media_type,media_url,thumbnail_url,like_count,comments_count,permalink&access_token=${token}`;
+                 const igPostsRes = await fetch(igPostsUrl);
+                 const igPostsData = await igPostsRes.json();
+                 
+                 if (igPostsData.data) {
+                     stats.ig.posts = igPostsData.data.map(m => ({
+                         id: m.id,
+                         timestamp: m.timestamp,
+                         caption: m.caption || 'Sin título',
+                         media_type: m.media_type,
+                         media_url: m.thumbnail_url || m.media_url, // Preferir thumbnail si es video
+                         likes: m.like_count || 0,
+                         comments: m.comments_count || 0,
+                         url: m.permalink
+                     }));
+                 } else if(igPostsData.error) {
+                      console.warn('[SOCIAL API - IG Posts] Permisos insuficientes o error:', igPostsData.error.message);
+                 }
+             } catch(e) { console.warn('[SOCIAL API] No se pudieron cargar los posts IG', e.message); }
         }
 
         // Renovar el Caché

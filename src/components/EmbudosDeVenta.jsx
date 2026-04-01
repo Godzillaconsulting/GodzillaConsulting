@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Layers, LayoutTemplate, Mail, CreditCard, SplitSquareHorizontal, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 
-import gifBot from '../assets/Gifs/Bot.gif';
-import gifVideo from '../assets/Gifs/Video.gif';
-import gifEmbudo from '../assets/Gifs/Embudo.gif';
-import gifRedes from '../assets/Gifs/Redes Sociales.gif';
-import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
-import gifCrm from '../assets/Gifs/Estadistica.gif';
+const gifBot = 'https://bot.godzillaconsulting.ai/api/media/assets/Bot.gif';
+const gifVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Video.gif';
+const gifEmbudo = 'https://bot.godzillaconsulting.ai/api/media/assets/Embudo.gif';
+const gifRedes = 'https://bot.godzillaconsulting.ai/api/media/assets/Redes Sociales.gif';
+const gifSeo = 'https://bot.godzillaconsulting.ai/api/media/assets/Red Social Optimizar.gif';
+const gifCrm = 'https://bot.godzillaconsulting.ai/api/media/assets/Estadistica.gif';
 // const embudosVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/GC_EMBUDOSWebPage_AM161225.mp4'; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {

@@ -3,7 +3,7 @@ import ContactForm from'./ContactForm';
 import { Link, useParams } from'react-router-dom';
 import { Check } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
-import backgroundVideo from'../assets/Particulas Rojas LANDINGS.mp4';
+const backgroundVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas LANDINGS.mp4';
 import NivelExpansion from'./NivelExpansion';
 import NivelElite from'./NivelElite';
 import Bots from'./Bots';

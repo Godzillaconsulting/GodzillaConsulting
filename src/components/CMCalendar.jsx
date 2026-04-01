@@ -209,10 +209,56 @@ export default function CMCalendar({ adminProfile }) {
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        <img src={selectedEvent.media_url} className="w-full h-48 object-cover rounded-xl border border-white/10" />
+                        {/* Mockup de Red Social */}
+                        <div className="bg-white rounded-xl overflow-hidden shadow-xl text-black font-sans relative border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                            {selectedEvent.platform === 'instagram' && (
+                                <div>
+                                    <div className="flex items-center gap-3 p-3 border-b border-gray-100">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-[2px]">
+                                            <div className="w-full h-full rounded-full bg-white border-2 border-white overflow-hidden"><img src="/logo192.png" alt="Godzilla" className="w-full h-full object-cover bg-black" /></div>
+                                        </div>
+                                        <p className="font-bold text-sm">godzillaconsulting</p>
+                                    </div>
+                                    <img src={selectedEvent.media_url} className="w-full aspect-square object-cover" />
+                                    <div className="p-3">
+                                        <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
+                                        <p className="font-bold text-sm mb-1">1,234 Me gusta</p>
+                                        <p className="text-sm"><span className="font-bold mr-1">godzillaconsulting</span><span className="text-gray-700">{selectedEvent.caption.length > 50 ? selectedEvent.caption.substring(0, 50) + '...' : selectedEvent.caption}</span></p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedEvent.platform === 'facebook' && (
+                                <div>
+                                    <div className="flex items-center gap-3 p-3">
+                                        <div className="w-10 h-10 rounded-full bg-black overflow-hidden relative"><img src="/logo192.png" alt="Godzilla" className="w-full h-full object-cover absolute top-0 left-0" /></div>
+                                        <div><p className="font-bold text-[15px] leading-tight">Godzilla Consulting</p><p className="text-xs text-gray-500">Publicado por Judith • Hace 2 min • 🌎</p></div>
+                                    </div>
+                                    <div className="px-3 pb-3 text-[14px] text-gray-800"><p className="whitespace-pre-wrap line-clamp-3">{selectedEvent.caption}</p></div>
+                                    <img src={selectedEvent.media_url} className="w-full h-64 object-cover" />
+                                    <div className="p-3 border-t border-gray-200 mt-2 flex justify-between text-gray-500 text-sm font-semibold"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↪️ Compartir</span></div>
+                                </div>
+                            )}
+
+                            {selectedEvent.platform === 'tiktok' && (
+                                <div className="relative bg-black text-white h-[400px] flex items-center justify-center overflow-hidden">
+                                    <img src={selectedEvent.media_url} className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                                    <div className="absolute right-2 bottom-12 flex flex-col items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden shadow-lg"><img src="/logo192.png" className="w-full h-full object-cover bg-black"/></div>
+                                        <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">❤️</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
+                                        <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">💬</span><span className="text-xs font-bold drop-shadow-md">1,024</span></div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 right-16">
+                                        <p className="font-bold text-sm drop-shadow-md">@godzillaconsulting</p>
+                                        <p className="text-xs mt-1 line-clamp-2 drop-shadow-md leading-tight">{selectedEvent.caption}</p>
+                                        <p className="text-xs font-bold mt-2 drop-shadow-md">🎵 Sonido original - Misión B2B</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         
                         <div>
-                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption (Modificable por ti):</p>
+                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption Original (Modificable):</p>
                             <textarea defaultValue={selectedEvent.caption} className="w-full bg-black/60 backdrop-blur-xl border-white/10 shadow-md hover:bg-white/80 border border-white/10 p-4 rounded-xl text-sm whitespace-pre-line text-white shadow-inner font-bold outline-none focus:border-yellow-500 transition-colors" rows="4"></textarea>
                         </div>
 

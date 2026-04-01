@@ -13,6 +13,24 @@ export default function CockersStudio() {
     const [finalPrompt, setFinalPrompt] = useState('');
     const [refImage, setRefImage] = useState('');
 
+    // Bóveda de Prompts Maestros (S-Tier) recopilados de la red.
+    const elitePrompts = [
+        "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight, rain splashing on the glass, neon blue and magenta reflections, 8k resolution, unreal engine 5 render, raytracing, dynamic motion blur, ultra-detailed textures.",
+        "Extreme macro close-up of a glowing glowing server rack cable snapping, sparks flying in explosive super slow motion (1000 fps), dark background, cinematic volumetric lighting, high contrast, vividly realistic, ARRI Alexa 65.",
+        "A gargantuan silhouette of a kaiju destroying a slow-moving physical spreadsheet in a foggy urban city, cinematic lighting, dramatic low angle, shot on 35mm lens, f/1.8, color grading by Roger Deakins, photorealistic, cinematic atmosphere.",
+        "Slow camera pan over an abstract glassmorphism holographic UI floating in mid-air above a premium mahogany desk, fluid dynamics, refraction of light through prisms, corporate dark mode aesthetic, deep depth of field, 8k.",
+        "Portrait of a stressed tech CEO suddenly exhaling and turning into digital neon particles ascending, cinematic studio lighting, rim light, highly detailed skin pores, volumetric fog, cyberpunk aesthetic, incredibly detailed.",
+        "Hyper-lapse shot of a skyscraper being built instantly using glowing blue neon lines, dark futuristic city background, volumetric light rays, hyper-realistic, photoreal, highly detailed CGI, 8k resolution.",
+        "A businessman falling backward into a pool of black liquid that instantly solidifies into a server room floor, surreal cinematic transition, dramatic lighting, shot on 50mm f/1.4, slow motion, surrealism, highly detailed."
+    ];
+    // Fórmula para elegir 3 prompts diferentes que roten cada día (24 hrs)
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+    const dailyTrendingPrompts = [
+        elitePrompts[dayOfYear % elitePrompts.length],
+        elitePrompts[(dayOfYear + 2) % elitePrompts.length],
+        elitePrompts[(dayOfYear + 4) % elitePrompts.length]
+    ];
+
     useEffect(() => {
         fetchQueue();
     }, []);
@@ -183,8 +201,20 @@ export default function CockersStudio() {
                         <div className="w-full md:w-1/2 flex flex-col space-y-4">
                             <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex-1 flex flex-col">
                                 <h3 className="text-yellow-500 font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
-                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Tienes libertad absoluta. Ignora a la IA y escribe o pega aquí el código en inglés exacto que irán a los servidores.</p>
-                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe aquí el director's cut... (Ej: Cinematic wide shot, modern corporate office at night, neon, highly detailed, unreal engine 5)" className="w-full flex-1 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none shadow-inner leading-relaxed" />
+                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Tienes libertad absoluta. Ingresa el código en inglés exacto que irá a los servidores.</p>
+                                
+                                <div className="mb-4">
+                                    <h4 className="text-[10px] text-white font-black uppercase tracking-widest bg-[#CC0000] inline-block px-2 py-0.5 rounded mb-2">🔥 Trends del Día en la Red</h4>
+                                    <div className="flex flex-col gap-2">
+                                        {dailyTrendingPrompts.map((p, i) => (
+                                            <button key={i} onClick={() => setFinalPrompt(p)} className="text-left text-[10px] bg-neutral-900 border border-neutral-800 hover:border-yellow-500 text-neutral-400 hover:text-white p-2 text-ellipsis overflow-hidden whitespace-nowrap rounded font-mono transition-colors">
+                                                {p.substring(0, 70)}...
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none shadow-inner leading-relaxed" />
                             </div>
 
                             <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl">

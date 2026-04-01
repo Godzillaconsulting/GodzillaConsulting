@@ -4,6 +4,7 @@ export default function CMCalendar({ adminProfile }) {
     const [queue, setQueue] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
     const [comment, setComment] = useState('');
+    const [activePlatform, setActivePlatform] = useState('facebook');
 
     useEffect(() => {
         // En un entorno real hacemos fetch a /api/social/queue
@@ -16,7 +17,18 @@ export default function CMCalendar({ adminProfile }) {
                 caption: '🚀 El boca a boca no te va a pagar la nómina el mes que viene...',
                 media_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80',
                 provider: 'Nano Banana',
-                media_type: 'image'
+                media_type: 'image',
+                platform: 'facebook'
+            },
+            {
+                id: 2,
+                status: 'pending_cm_approval',
+                scheduled_for: '2026-04-11T12:00:00Z',
+                caption: '🎶 Si tu backend hace esto en 2026... (Baila) 🦖',
+                media_url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
+                provider: 'Kling AI',
+                media_type: 'video',
+                platform: 'tiktok'
             }
         ]);
     }, []);
@@ -35,11 +47,35 @@ export default function CMCalendar({ adminProfile }) {
     if (!selectedTask) {
         return (
             <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Calendario Editorial (Asana)</h2>
+                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Calendario Editorial</h2>
                         <p className="text-neutral-500 font-bold text-sm mt-1">Supervisión, Tareas y Programación de Redes</p>
                     </div>
+                </div>
+
+                {/* Tabs de Plataformas (FB, IG, TikTok) */}
+                <div className="flex gap-4 mb-8 border-b border-neutral-800 pb-4 overflow-x-auto">
+                    {[
+                        { id: 'facebook', label: '🔵 Facebook', count: queue.filter(q => q.platform === 'facebook').length },
+                        { id: 'instagram', label: '🟣 Instagram', count: queue.filter(q => q.platform === 'instagram').length },
+                        { id: 'tiktok', label: '⚫ TikTok', count: queue.filter(q => q.platform === 'tiktok').length }
+                    ].map(tab => (
+                        <button 
+                            key={tab.id}
+                            onClick={() => setActivePlatform(tab.id)}
+                            className={`px-5 py-2.5 rounded-full font-black text-sm transition-all flex items-center gap-2 ${
+                                activePlatform === tab.id 
+                                ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
+                                : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white'
+                            }`}
+                        >
+                            {tab.label}
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${activePlatform === tab.id ? 'bg-black text-white' : 'bg-neutral-800 text-white'}`}>
+                                {tab.count}
+                            </span>
+                        </button>
+                    ))}
                 </div>
 
                 {/* Panel Estilo Kanban / Trello */}
@@ -47,10 +83,10 @@ export default function CMCalendar({ adminProfile }) {
                     {/* Columna Pendientes */}
                     <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4">
                         <h3 className="text-yellow-500 font-black text-xs uppercase tracking-widest mb-4 flex justify-between">
-                            1. Revisión Pendiente <span>({queue.filter(q => q.status === 'pending_cm_approval').length})</span>
+                            1. Revisión Pendiente
                         </h3>
                         <div className="space-y-4">
-                            {queue.filter(q => q.status === 'pending_cm_approval').map(post => (
+                            {queue.filter(q => q.status === 'pending_cm_approval' && q.platform === activePlatform).map(post => (
                                 <div key={post.id} onClick={() => setSelectedTask(post)} className="bg-black border border-neutral-700 hover:border-[#CC0000] p-3 rounded-xl cursor-pointer group transition-all">
                                     <img src={post.media_url} className="w-full h-32 object-cover rounded-lg mb-3 opacity-80 group-hover:opacity-100 transition-all"/>
                                     <p className="text-xs text-white font-bold line-clamp-2">{post.caption}</p>

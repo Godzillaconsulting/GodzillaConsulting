@@ -141,7 +141,7 @@ function FloatingWhatsApp() {
   const { pathname } = useLocation();
   const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio'];
 
-  if (hiddenRoutes.includes(pathname)) return null;
+  if (hiddenRoutes.some(route => pathname.startsWith(route))) return null;
 
   return (
     <div className="fixed bottom-20 md:bottom-6 right-6 z-40 pointer-events-auto">
@@ -172,7 +172,7 @@ function Home() {
 
 function AppLayout() {
   const { pathname } = useLocation();
-  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio'].includes(pathname);
+  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio'].some(route => pathname.startsWith(route));
 
   return (
     <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">

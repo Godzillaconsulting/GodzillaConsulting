@@ -7,6 +7,13 @@ export default function CockersStudio() {
     const [isLoading, setIsLoading] = useState(true);
     const [renderingAI, setRenderingAI] = useState(false);
     const [manualUrl, setManualUrl] = useState('');
+    const [showPromptBuilder, setShowPromptBuilder] = useState(false);
+    const [builderData, setBuilderData] = useState({
+        tema: '',
+        estilo: 'Cinemático, realista',
+        luces: 'Iluminación dramática, neón sutil',
+        refImage: ''
+    });
 
     useEffect(() => {
         fetchQueue();
@@ -59,7 +66,7 @@ export default function CockersStudio() {
                         ...post,
                         media_options: [
                             { provider: 'Nano Banana (Google)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false },
-                            { provider: 'Kling AI (Video)', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', isVideo: true }
+                            { provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true }
                         ]
                     };
                 }
@@ -69,7 +76,7 @@ export default function CockersStudio() {
                 ...prev,
                 media_options: [
                     { provider: 'Nano Banana (Google)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
-                    { provider: 'Kling AI (Video)', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', isVideo: true }
+                    { provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true }
                 ]
             }));
             setRenderingAI(false);
@@ -78,7 +85,7 @@ export default function CockersStudio() {
 
     if (isLoading) return <div className="p-10 text-center text-neutral-500 font-bold">Iniciando Estudio...</div>;
 
-    if (!selectedDraft) {
+    if (!selectedDraft && !showPromptBuilder) {
         return (
             <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto">
                 <div className="flex justify-between items-center mb-8">
@@ -112,6 +119,100 @@ export default function CockersStudio() {
                             <p className="text-neutral-500 font-bold text-sm">No hay guiones nuevos del Cerebro hoy.</p>
                         </div>
                     )}
+                    <div className="col-span-full mt-6 bg-gradient-to-r from-[#111] to-[#1a1a1a] border border-neutral-800 p-8 rounded-2xl shadow-xl">
+                        <div className="flex flex-col md:flex-row justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">Pausa Comercial: Modo Director de Arte</h3>
+                                <p className="text-neutral-400 text-sm max-w-xl">La automatización la pusimos en pausa. Ahora puedes construir los Prompts manualmente respondiendo un par de preguntas y dándole imágenes de referencia a las IAs para que copien el estilo.</p>
+                            </div>
+                            <button onClick={() => setShowPromptBuilder(true)} className="mt-4 md:mt-0 bg-[#CC0000] hover:bg-red-600 border border-[#CC0000]/50 text-white px-8 py-4 rounded-xl font-black uppercase text-sm transition-all shadow-[0_0_20px_rgba(204,0,0,0.3)]">
+                                + Crear Prompt Guiado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (showPromptBuilder) {
+        return (
+            <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto flex flex-col items-center">
+                <div className="w-full max-w-3xl">
+                    <button onClick={() => setShowPromptBuilder(false)} className="text-neutral-400 hover:text-white font-bold mb-6 transition-colors">
+                        ← Volver al Menú
+                    </button>
+                    
+                    <h2 className="text-3xl font-black text-white tracking-widest uppercase mb-2">Constructor de Prompts</h2>
+                    <p className="text-neutral-500 font-bold mb-8">Responde estas preguntas para que el Cerebro arme el copy y la instrucción visual perfecta.</p>
+
+                    <div className="space-y-6 bg-[#0d0d0d] p-8 rounded-2xl border border-neutral-800">
+                        <div>
+                            <label className="block text-[#CC0000] text-xs font-black uppercase tracking-wider mb-2">1. ¿Cuál es el tema o el mensaje principal gancho?</label>
+                            <textarea 
+                                value={builderData.tema}
+                                onChange={(e) => setBuilderData({...builderData, tema: e.target.value})}
+                                placeholder="Ej: Las empresas Tech pierden 40% de ingresos por no usar I.A..."
+                                className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-red-500 outline-none min-h-[100px]"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-blue-500 text-xs font-black uppercase tracking-wider mb-2">2. Estilo Visual Principal</label>
+                                <input 
+                                    type="text" 
+                                    value={builderData.estilo}
+                                    onChange={(e) => setBuilderData({...builderData, estilo: e.target.value})}
+                                    className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-white text-sm focus:border-blue-500 outline-none" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-yellow-500 text-xs font-black uppercase tracking-wider mb-2">3. Atmósfera de Iluminación</label>
+                                <input 
+                                    type="text" 
+                                    value={builderData.luces}
+                                    onChange={(e) => setBuilderData({...builderData, luces: e.target.value})}
+                                    className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-white text-sm focus:border-yellow-500 outline-none" 
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-green-500 text-xs font-black uppercase tracking-wider mb-2">4. Imagen de Referencia (Style/Face Match)</label>
+                            <p className="text-neutral-600 text-[10px] uppercase font-bold mb-3">La IA usará esta foto como base para clonar la composición o el estilo visual.</p>
+                            <div className="border-2 border-dashed border-neutral-800 rounded-xl p-4 bg-black">
+                                <MediaPicker 
+                                    label="Subir Referencia" 
+                                    value={builderData.refImage} 
+                                    onChange={(url) => setBuilderData({...builderData, refImage: url})} 
+                                    accept="image/*" 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-neutral-800">
+                            <button 
+                                onClick={() => {
+                                    // Genera el borrador ficticio usando los datos ingresados
+                                    const newPost = {
+                                        id: Date.now(),
+                                        status: 'cockers_review',
+                                        scheduled_for: new Date(Date.now() + 86400000).toISOString(),
+                                        caption: builderData.tema ? `🔥🔥 [Borrador AI]\n\n${builderData.tema}\n\n👉 Manda un DM` : 'Escribe un tema para autogenerar caption...',
+                                        visual_prompt: `[Estilo: ${builderData.estilo}]. [Iluminación: ${builderData.luces}]. Tema: ${builderData.tema || 'Corporativo'}.${builderData.refImage ? ' ***USAR IMAGEN DE REFERENCIA ADJUNTA COMO BASE ESTRICTA DE COMPOSICIÓN Y LOOK***' : ''}`,
+                                        reference_image: builderData.refImage,
+                                        media_options: []
+                                    };
+                                    setSelectedDraft(newPost);
+                                    setShowPromptBuilder(false);
+                                }}
+                                className="w-full bg-white text-black hover:bg-neutral-200 py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg"
+                            >
+                                Fabricar Prompt & Ir a la Fase de Renderizado ➔
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -143,14 +244,23 @@ export default function CockersStudio() {
 
                     <div>
                         <h4 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">2. Instrucción a Visuales</h4>
-                        <div className="bg-black/50 border border-neutral-800 p-3 rounded-xl text-[11px] font-mono text-green-400/80 break-words leading-tight">
+                        <div className="bg-black/50 border border-neutral-800 p-3 rounded-xl text-[11px] font-mono text-green-400/80 break-words leading-tight shadow-inner">
                             {selectedDraft.visual_prompt}
                         </div>
                     </div>
 
+                    {selectedDraft.reference_image && (
+                        <div>
+                            <h4 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">📂 Imagen de Referencia Atada</h4>
+                            <div className="bg-black border border-neutral-800 p-2 rounded-xl">
+                                <img src={selectedDraft.reference_image} alt="Referencia" className="w-full h-32 object-cover rounded-lg opacity-80" />
+                            </div>
+                        </div>
+                    )}
+
                     {!selectedDraft.media_options?.length && !renderingAI && (
                         <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-blue-900 to-purple-900 hover:from-blue-800 hover:to-purple-800 border border-blue-500/30 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
-                            💥 Generar Opciones I.A. Dual
+                            💥 Lanzar Prompt a Nano Banana & Kling
                         </button>
                     )}
 
@@ -180,7 +290,7 @@ export default function CockersStudio() {
                                     </div>
                                     <div className="flex-1 bg-black rounded-xl overflow-hidden border border-neutral-900 min-h-[250px] relative group-hover:border-[#CC0000]/30 transition-colors">
                                         {opt.isVideo ? (
-                                            <video src={opt.url} autoPlay loop muted className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                            <video src={opt.url} autoPlay loop muted controls playsInline className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                         ) : (
                                             <img src={opt.url} alt="opción" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                         )}

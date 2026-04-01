@@ -1,191 +1,250 @@
 import React, { useState, useEffect } from 'react';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
+import startOfWeek from 'date-fns/startOfWeek';
+import getDay from 'date-fns/getDay';
+import es from 'date-fns/locale/es';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// Configuración de localización en Español con Date-Fns
+const locales = {
+  'es': es,
+}
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+})
 
 export default function CMCalendar({ adminProfile }) {
-    const [queue, setQueue] = useState([]);
-    const [selectedTask, setSelectedTask] = useState(null);
-    const [comment, setComment] = useState('');
-    const [activePlatform, setActivePlatform] = useState('facebook');
+    const [events, setEvents] = useState([]);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [activePlatform, setActivePlatform] = useState('ALL');
 
     useEffect(() => {
-        // En un entorno real hacemos fetch a /api/social/queue
-        // Mostramos contenido Demostrativo para el diseño
-        setQueue([
+        // En un entorno real haríamos fetch a /api/social/queue
+        // Estos son los eventos de prueba mapeados al formato del calendario
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 5);
+
+        setEvents([
             {
                 id: 1,
-                status: 'pending_cm_approval',
-                scheduled_for: '2026-04-10T10:00:00Z',
-                caption: '🚀 El boca a boca no te va a pagar la nómina el mes que viene...',
+                title: '🔵 FB: El boca a boca no sirve',
+                start: today,
+                end: today,
+                status: 'urgent', // urgent = rojo, warning = amarillo, success = verde
+                caption: '🚀 El boca a boca no te va a pagar la nómina el mes que viene. Si tu empresa Tech sigue dependiendo de referidos, estás cediendo el control a la "suerte".',
                 media_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80',
                 provider: 'Nano Banana',
-                media_type: 'image',
                 platform: 'facebook'
             },
             {
                 id: 2,
-                status: 'pending_cm_approval',
-                scheduled_for: '2026-04-11T12:00:00Z',
+                title: '⚫ TK: Trend de Programación',
+                start: tomorrow,
+                end: tomorrow,
+                status: 'warning',
                 caption: '🎶 Si tu backend hace esto en 2026... (Baila) 🦖',
                 media_url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
                 provider: 'Kling AI',
-                media_type: 'video',
                 platform: 'tiktok'
+            },
+            {
+                id: 3,
+                title: '🟣 IG: Portafolio de Éxito',
+                start: nextWeek,
+                end: nextWeek,
+                status: 'success',
+                caption: 'Así escamos el B2B en Godzilla Consulting. Conoce el caso.',
+                media_url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80',
+                provider: 'Cockers Manual',
+                platform: 'instagram'
             }
         ]);
     }, []);
 
+    // Aplicar colores de Urgencia en el Calendario
+    const eventStyleGetter = (event) => {
+        let backgroundColor = '#333333'; // Default neutral
+        let border = '1px solid #111111';
+
+        if (event.status === 'urgent') {
+            backgroundColor = '#CC0000'; // Rojo urgente (No aprobado)
+            border = '1px solid #ff4444';
+        } else if (event.status === 'warning') {
+            backgroundColor = '#d97706'; // Naranja/Amarillo (Agendado pero cercano)
+            border = '1px solid #f59e0b';
+        } else if (event.status === 'success') {
+            backgroundColor = '#15803d'; // Verde (Ya publicado o agendado seguro)
+            border = '1px solid #22c55e';
+        }
+
+        return {
+            style: {
+                backgroundColor,
+                border,
+                borderRadius: '8px',
+                opacity: 0.9,
+                color: 'white',
+                borderLeft: '4px solid white',
+                display: 'block',
+                fontWeight: 'bold',
+                fontSize: '11px',
+                padding: '2px 5px',
+                textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+            }
+        };
+    };
+
+    // Estilos forzados oscuros para el calendario vía CSS inyectado
+    const hackerCalendarStyles = `
+      .rbc-calendar { font-family: 'Inter', sans-serif; min-height: 60vh; }
+      .rbc-month-view, .rbc-time-view, .rbc-agenda-view { border-color: #333; background: #0a0a0a; border-radius: 12px; overflow: hidden; }
+      .rbc-header { padding: 10px 0; border-bottom: 1px solid #333 !important; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+      .rbc-header + .rbc-header { border-left: 1px solid #333 !important; }
+      .rbc-day-bg { border-left: 1px solid #222 !important; }
+      .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #222 !important; }
+      .rbc-month-row + .rbc-month-row { border-top: 1px solid #222 !important; }
+      .rbc-off-range-bg { background-color: #050505; }
+      .rbc-today { background-color: rgba(204, 0, 0, 0.05); }
+      .rbc-date-cell { padding: 5px; font-weight: bold; color: #aaa; }
+      .rbc-btn-group button { background: #111; color: #fff; border: 1px solid #333; padding: 5px 15px; font-weight: bold; transition: 0.3s; }
+      .rbc-btn-group button:hover { background: #333; }
+      .rbc-btn-group button.rbc-active { background: #CC0000; border-color: #CC0000; box-shadow: none; }
+      .rbc-toolbar-label { color: white; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+      .rbc-time-content { border-top: 1px solid #333; }
+      .rbc-timeslot-group { border-bottom: 1px solid #222; }
+      .rbc-time-header.rbc-overflowing { border-right: 1px solid #222; }
+    `;
+
     const handleApprove = () => {
-        alert('📅 ¡Post agendado! Se publicará automáticamente el 10 de Abril mediante Meta Graph API.');
-        setSelectedTask(null);
+        alert('📅 ¡Estatus Actualizado! Se movió a la cola de publicación verde.');
+        setSelectedEvent(null);
     };
 
-    const handleAddComment = () => {
-        if(!comment.trim()) return;
-        alert(`🔔 Notificación enviada a @Alex(Cockers) / @JareG: "${comment}"`);
-        setComment('');
-    };
+    // Filtrar eventos por la pestaña activa
+    const filteredEvents = activePlatform === 'ALL' 
+        ? events 
+        : events.filter(e => e.platform === activePlatform);
 
-    if (!selectedTask) {
-        return (
-            <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto">
+    return (
+        <div className="h-full bg-[#0a0a0a] overflow-hidden flex flex-col relative text-white">
+            <style>{hackerCalendarStyles}</style>
+
+            {/* Cabecera & Pestañas */}
+            <div className="px-8 py-6 bg-[#000000] border-b border-neutral-800 shrink-0">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Calendario Editorial</h2>
-                        <p className="text-neutral-500 font-bold text-sm mt-1">Supervisión, Tareas y Programación de Redes</p>
+                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Calendario Omnicanal</h2>
+                        <p className="text-neutral-500 font-bold text-sm mt-1">
+                            <span className="text-[#CC0000]">Rojo (Urgente / Pendiente)</span> • <span className="text-yellow-500">Amarillo (Agendado)</span> • <span className="text-green-500">Verde (Publicado)</span>
+                        </p>
                     </div>
                 </div>
 
-                {/* Tabs de Plataformas (FB, IG, TikTok) */}
-                <div className="flex gap-4 mb-8 border-b border-neutral-800 pb-4 overflow-x-auto">
+                <div className="flex gap-3">
                     {[
-                        { id: 'facebook', label: '🔵 Facebook', count: queue.filter(q => q.platform === 'facebook').length },
-                        { id: 'instagram', label: '🟣 Instagram', count: queue.filter(q => q.platform === 'instagram').length },
-                        { id: 'tiktok', label: '⚫ TikTok', count: queue.filter(q => q.platform === 'tiktok').length }
+                        { id: 'ALL', label: 'Toda la Red' },
+                        { id: 'facebook', label: '🔵 Facebook' },
+                        { id: 'instagram', label: '🟣 Instagram' },
+                        { id: 'tiktok', label: '⚫ TikTok' }
                     ].map(tab => (
                         <button 
                             key={tab.id}
                             onClick={() => setActivePlatform(tab.id)}
-                            className={`px-5 py-2.5 rounded-full font-black text-sm transition-all flex items-center gap-2 ${
+                            className={`px-5 py-2.5 rounded-full font-black text-xs transition-all flex items-center gap-2 ${
                                 activePlatform === tab.id 
-                                ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
+                                ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
                                 : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white'
                             }`}
                         >
                             {tab.label}
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${activePlatform === tab.id ? 'bg-black text-white' : 'bg-neutral-800 text-white'}`}>
-                                {tab.count}
-                            </span>
                         </button>
                     ))}
                 </div>
-
-                {/* Panel Estilo Kanban / Trello */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Columna Pendientes */}
-                    <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4">
-                        <h3 className="text-yellow-500 font-black text-xs uppercase tracking-widest mb-4 flex justify-between">
-                            1. Revisión Pendiente
-                        </h3>
-                        <div className="space-y-4">
-                            {queue.filter(q => q.status === 'pending_cm_approval' && q.platform === activePlatform).map(post => (
-                                <div key={post.id} onClick={() => setSelectedTask(post)} className="bg-black border border-neutral-700 hover:border-[#CC0000] p-3 rounded-xl cursor-pointer group transition-all">
-                                    <img src={post.media_url} className="w-full h-32 object-cover rounded-lg mb-3 opacity-80 group-hover:opacity-100 transition-all"/>
-                                    <p className="text-xs text-white font-bold line-clamp-2">{post.caption}</p>
-                                    <div className="flex justify-between mt-3 text-[10px] text-neutral-500 font-bold">
-                                        <span>⚙️ Hecho por: {post.provider}</span>
-                                        <span className="text-red-400">Sin agendar</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Columna Agendados */}
-                    <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4">
-                        <h3 className="text-green-500 font-black text-xs uppercase tracking-widest mb-4 flex justify-between">
-                            2. Agendados (Auto-Post) <span>(0)</span>
-                        </h3>
-                        <div className="border-2 border-dashed border-neutral-800 rounded-xl h-32 flex items-center justify-center">
-                            <p className="text-neutral-600 text-xs font-bold">No hay posts agendados</p>
-                        </div>
-                    </div>
-
-                    {/* Columna Publicados */}
-                    <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4">
-                        <h3 className="text-neutral-500 font-black text-xs uppercase tracking-widest mb-4 flex justify-between">
-                            3. Historial Publicado <span>(0)</span>
-                        </h3>
-                        <div className="border border-neutral-800 rounded-xl h-32 flex items-center justify-center opacity-50">
-                            <p className="text-neutral-600 text-xs font-bold">Sin historial reciente</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="h-full bg-[#0a0a0a] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 bg-[#0d0d0d] border-b border-neutral-800 flex justify-between items-center shrink-0">
-                <button onClick={() => setSelectedTask(null)} className="text-neutral-400 hover:text-white font-bold px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-colors">
-                    ← Volver al Tablero
-                </button>
-                <div className="text-right">
-                    <p className="text-[#CC0000] font-black text-sm uppercase tracking-widest">Inspección de Contenido</p>
-                    <p className="text-neutral-500 font-bold text-[10px] uppercase">Modo Community Manager</p>
-                </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                {/* Panel Central: Media & Copy */}
-                <div className="flex-1 p-6 overflow-y-auto bg-black flex justify-center">
-                    <div className="max-w-md w-full border border-neutral-800 rounded-2xl bg-[#0d0d0d] overflow-hidden shadow-2xl">
-                        <img src={selectedTask.media_url} className="w-full h-auto aspect-square object-cover" />
-                        <div className="p-5 space-y-4">
-                            <p className="text-sm text-neutral-200 whitespace-pre-line">{selectedTask.caption}</p>
-                            <a href="#" className="text-[#CC0000] text-xs font-bold">#GodzillaConsulting #Tech #Software</a>
-                        </div>
-                    </div>
-                </div>
+            {/* Vista Central: El Calendario Gigante */}
+            <div className="flex-1 p-8 overflow-hidden bg-[#050505]">
+                <Calendar
+                    localizer={localizer}
+                    events={filteredEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: '100%' }}
+                    messages={{
+                        next: "Sig",
+                        previous: "Ant",
+                        today: "Hoy",
+                        month: "Mes",
+                        week: "Semana",
+                        day: "Día",
+                        agenda: "Agenda",
+                        date: "Fecha",
+                        time: "Hora",
+                        event: "Publicación",
+                        noEventsInRange: "No hay posts planificados en este rango."
+                    }}
+                    culture="es"
+                    eventPropGetter={eventStyleGetter}
+                    onSelectEvent={(event) => setSelectedEvent(event)}
+                    views={['month', 'week', 'day', 'agenda']}
+                    defaultView="month"
+                    popup={true}
+                />
+            </div>
 
-                {/* Sidebar Derecho: Calendario & Asana Comments */}
-                <div className="w-[350px] min-w-[350px] bg-[#0d0d0d] border-l border-neutral-800 p-6 overflow-y-auto flex flex-col">
+            {/* Modal Lateral / Popup Integrado al dar clic a un Post */}
+            {selectedEvent && (
+                <div className="absolute top-0 right-0 h-full w-[400px] bg-[#0d0d0d] border-l border-neutral-800 shadow-2xl flex flex-col z-50 transform transition-transform">
+                    <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-black">
+                        <h3 className="font-black text-sm uppercase">{selectedEvent.title}</h3>
+                        <button onClick={() => setSelectedEvent(null)} className="text-neutral-500 hover:text-white pb-1 font-bold text-xl">×</button>
+                    </div>
                     
-                    <div className="space-y-4 mb-8">
-                        <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                            <span>📅 Configurar Lanzamiento</span>
-                        </h4>
-                        <input type="datetime-local" className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-3 text-sm text-white focus:border-[#CC0000] outline-none" defaultValue="2026-04-10T10:00" />
-                        <button onClick={handleApprove} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all">
-                            APROBAR Y AGENDAR POST ✔️
-                        </button>
-                    </div>
-
-                    <div className="flex-1 flex flex-col border-t border-neutral-800 pt-6">
-                        <h4 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <span>💬 Tareas y Correcciones (Asana)</span>
-                        </h4>
-                        
-                        <div className="flex-1 border border-neutral-800 bg-black rounded-xl p-4 overflow-y-auto mb-4 opacity-50 flex items-center justify-center">
-                            <p className="text-[10px] text-neutral-500 font-bold text-center">Inicia un hilo etiquetando a<br/>@Alex o @Jareg</p>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div className="rounded-xl overflow-hidden border border-neutral-800 bg-black">
+                            <img src={selectedEvent.media_url} className="w-full h-auto aspect-video object-cover" />
                         </div>
-
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3">
-                            <textarea 
-                                value={comment}
-                                onChange={e => setComment(e.target.value)}
-                                placeholder="Ej: @Alex cambia el filtro de la foto a uno más rojo..." 
-                                className="w-full bg-transparent border-none text-white text-xs resize-none outline-none mb-2" 
-                                rows="3"
-                            ></textarea>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] bg-[#CC0000]/20 text-[#CC0000] px-2 py-1 rounded font-bold">@ Etiquetar</span>
-                                <button onClick={handleAddComment} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Asignar Tarea</button>
+                        
+                        <div>
+                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Caption a Publicar:</p>
+                            <div className="bg-neutral-900 p-4 rounded-xl text-sm whitespace-pre-line text-neutral-300">
+                                {selectedEvent.caption}
                             </div>
                         </div>
-                    </div>
 
+                        <div>
+                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Modificar Fecha/Hora:</p>
+                            <input type="datetime-local" className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-3 text-sm text-white focus:border-[#CC0000] outline-none" defaultValue="2026-04-10T10:00" />
+                        </div>
+
+                        {selectedEvent.status === 'urgent' && (
+                            <button onClick={handleApprove} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase">
+                                Aprobar / Eliminar Urgencia ✔️
+                            </button>
+                        )}
+                        
+                        <div className="pt-6 border-t border-neutral-800">
+                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Dejar Corrección a Cockers:</p>
+                            <textarea 
+                                placeholder="Ej: @Alex cambia el texto a algo más agresivo..." 
+                                className="w-full bg-black border border-neutral-800 p-3 text-white text-sm rounded-xl resize-none outline-none focus:border-blue-500 transition-colors mb-2" 
+                                rows="3"
+                            ></textarea>
+                            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs transition-all uppercase">Enviar Tarea al Diseñador</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

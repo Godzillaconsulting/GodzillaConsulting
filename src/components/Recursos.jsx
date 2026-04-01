@@ -5,9 +5,10 @@ import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
-const gifBot = 'https://bot.godzillaconsulting.ai/api/media/assets/Bot.gif';
-const gifEmbudo = 'https://bot.godzillaconsulting.ai/api/media/assets/Embudo.gif';
-const gifCrm = 'https://bot.godzillaconsulting.ai/api/media/assets/Estadistica.gif';
+const API_URL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || '';
+const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
+const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
+const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
 
 const defaultMagnets = [
     {

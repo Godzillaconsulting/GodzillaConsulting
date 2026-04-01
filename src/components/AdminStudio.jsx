@@ -297,7 +297,8 @@ export default function AdminStudio() {
  <span className="text-[#CC0000] drop-shadow-sm">{isLandingMenuOpen ? '▲' : '▼'}</span>
  </button>
 
- <div className={`space-y-0.5 transition-all duration-300 overflow-hidden ${isLandingMenuOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+ {isLandingMenuOpen && (
+ <div className="space-y-0.5 mt-2 animate-in fade-in duration-200">
  {sortedNodes.map((node, idx) => {
  const meta = PAGE_SECTIONS.find(s => s.id === node.id);
  const isSelected = selectedNodeId === node.id;
@@ -320,6 +321,7 @@ export default function AdminStudio() {
  );
  })}
  </div>
+ )}
  </div>
 
  <div className="p-3 border-t border-[#CC0000]/40 space-y-1 bg-black/30">

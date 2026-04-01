@@ -189,43 +189,55 @@ export function injectSectionDefaults(nodeId, draftSource) {
 
   // Inject defaults for Paquetes
 
-  if (nodeId === 'paquetes' && combinedData.title === undefined) {
-      combinedData.title = 'PAQUETES';
-      combinedData.subtitle = 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.';
-      combinedData.elements = [
-          {
-              title: 'Posicionamiento Social',
-              price: '$7,900',
-              period: 'al mes',
-              highlighted: false,
-              guarantee: 'GARANTÍA: Si en 14 días no ves un incremento real en el engagement, el siguiente mes es GRATIS.',
-              features: 'Estrategia de Contenido Omnicanal\nCopywriting de Respuesta Directa\nCommunity Management'
-          },
-          {
-              title: 'Control IA',
-              price: '$7,900',
-              period: 'al mes',
-              highlighted: false,
-              guarantee: 'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.',
-              features: 'Agente IA (Web + WhatsApp)\nRespuesta en menos de 5 segundos 24/7\nCaptura de datos automática'
-          },
-          {
-              title: 'Expansión',
-              price: '$29,900',
-              period: 'al mes',
-              highlighted: true,
-              guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.',
-              features: 'Todo lo del Nivel Esencial\nTráfico Bilingüe (Ads Meta/Google)\nLanding Page de Alta Conversión'
-          },
-          {
-              title: 'Élite',
-              price: '$39,500',
-              period: 'al mes',
-              highlighted: false,
-              guarantee: 'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS.',
-              features: 'Estrategia Godfather Completa\nReactivación de Base de Datos\nConsultoría Mensual y Cierre'
-          }
-      ];
+  if (nodeId === 'paquetes') {
+      if (combinedData.title === undefined) {
+          combinedData.title = 'PAQUETES';
+          combinedData.subtitle = 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.';
+          combinedData.elements = [
+              {
+                  title: 'Posicionamiento Social',
+                  price: '$7,900',
+                  period: 'al mes',
+                  highlighted: false,
+                  buttonText: 'Ver Garantía',
+                  guarantee: 'GARANTÍA: Si en 14 días no ves un incremento real en el engagement, el siguiente mes es GRATIS.',
+                  features: 'Estrategia de Contenido Omnicanal\nCopywriting de Respuesta Directa\nCommunity Management'
+              },
+              {
+                  title: 'Control IA',
+                  price: '$7,900',
+                  period: 'al mes',
+                  highlighted: false,
+                  buttonText: 'Ver Garantía',
+                  guarantee: 'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.',
+                  features: 'Agente IA (Web + WhatsApp)\nRespuesta en menos de 5 segundos 24/7\nCaptura de datos automática'
+              },
+              {
+                  title: 'Expansión',
+                  price: '$29,900',
+                  period: 'al mes',
+                  highlighted: true,
+                  buttonText: 'Ver Garantía',
+                  guarantee: 'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.',
+                  features: 'Todo lo del Nivel Esencial\nTráfico Bilingüe (Ads Meta/Google)\nLanding Page de Alta Conversión'
+              },
+              {
+                  title: 'Élite',
+                  price: '$39,500',
+                  period: 'al mes',
+                  highlighted: false,
+                  buttonText: 'Ver Garantía',
+                  guarantee: 'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS.',
+                  features: 'Estrategia Godfather Completa\nReactivación de Base de Datos\nConsultoría Mensual y Cierre'
+              }
+          ];
+      }
+      if (Array.isArray(combinedData.elements)) {
+          combinedData.elements = combinedData.elements.map(el => ({
+              ...el,
+              buttonText: el.buttonText || 'Ver Garantía'
+          }));
+      }
   }
 
   // Inject defaults for Servicios Landings

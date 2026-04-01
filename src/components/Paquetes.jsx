@@ -17,6 +17,7 @@ const Paquetes = () => {
  highlighted: false,
  features: ['Estrategia de Contenido Omnicanal','Copywriting de Respuesta Directa','Community Management'
  ],
+ buttonText: 'Ver Garantía',
  guarantee:'GARANTÍA: Si en 14 días no ves un incremento real en el engagement, el siguiente mes es GRATIS.'
  },
  {
@@ -27,6 +28,7 @@ const Paquetes = () => {
  highlighted: false,
  features: ['Agente IA (Web + WhatsApp)','Respuesta en menos de 5 segundos 24/7','Captura de datos automática'
  ],
+ buttonText: 'Ver Garantía',
  guarantee:'GARANTÍA: Si no está funcionando en 7 días, el siguiente mes es GRATIS.'
  },
  {
@@ -37,6 +39,7 @@ const Paquetes = () => {
  highlighted: true,
  features: ['Todo lo del Nivel Esencial','Tráfico Bilingüe (Ads Meta/Google)','Landing Page de Alta Conversión'
  ],
+ buttonText: 'Ver Garantía',
  guarantee:'GARANTÍA: Si no generamos leads en 30 días, te devolvemos tu DINERO.'
  },
  {
@@ -47,6 +50,7 @@ const Paquetes = () => {
  highlighted: false,
  features: ['Estrategia Godfather Completa','Reactivación de Base de Datos','Consultoría Mensual y Cierre'
  ],
+ buttonText: 'Ver Garantía',
  guarantee:'GARANTÍA: Si no aumentamos tus citas un 20% en 90 días, trabajamos GRATIS.'
  }
  ];
@@ -196,7 +200,7 @@ const Paquetes = () => {
  to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'')}`}
  className="block text-center w-full py-3.5 rounded-full font-black text-sm tracking-widest transition-all duration-300 shadow-xl bg-[#CC0000] text-white hover:bg-white hover:text-[#CC0000] hover:scale-105"
  >
- Ver Garantía
+ {pkg.buttonText || 'Ver Garantía'}
  </Link>
  </div>
  </div>

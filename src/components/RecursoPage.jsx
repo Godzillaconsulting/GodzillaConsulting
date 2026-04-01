@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Download } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useSiteData } from '../context/SiteContext';
 
@@ -35,6 +35,10 @@ const RecursoPage = ({ previewRecursoId }) => {
   const recursoId = (rawId === 'whatsapp') ? 'boveda-scripts' : rawId;
   const { getNodeData, loading } = useSiteData();
   
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
   const nodeId = `landing-recurso-${recursoId}`;
   const nodeData = getNodeData(nodeId);
   const defaultData = RECURSOS_DATA[recursoId];
@@ -73,13 +77,76 @@ const RecursoPage = ({ previewRecursoId }) => {
               {data.description}
             </p>
             <div className="pt-2">
-              <a 
-                href={data.buttonDestination}
-                className="inline-flex items-center justify-center bg-[#FA4A54] hover:bg-[#e03a43] text-white px-8 py-3.5 md:py-4 rounded-[1.5rem] font-bold text-[15px] md:text-base transition-all gap-3 shadow-[0_0_15px_rgba(250,74,84,0.2)] hover:shadow-[0_0_25px_rgba(250,74,84,0.4)]"
-              >
-                <Download size={20} strokeWidth={2.5} />
-                {data.buttonText}
-              </a>
+              {status === 'success' ? (
+                  <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-6 py-4 rounded-2xl flex items-center gap-4 shadow-lg shadow-green-500/5">
+                      <CheckCircle className="shrink-0 text-green-500" size={28} />
+                      <div>
+                          <p className="font-bold text-lg leading-tight">¡Recurso enviado a tu correo!</p>
+                          <p className="text-[13px] opacity-80 mt-1">Revisa tu bandeja de entrada o la carpeta de spam.</p>
+                      </div>
+                  </div>
+              ) : (
+                  <form 
+                      onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!email) return;
+                          setStatus('loading');
+                          setErrorMessage('');
+                          try {
+                              const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/resources/send`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ email, recursoId })
+                              });
+                              const resData = await res.json();
+                              if (res.ok && resData.success) {
+                                  setStatus('success');
+                              } else {
+                                  setStatus('error');
+                                  setErrorMessage(resData.error || 'Hubo un error al enviar el recurso.');
+                              }
+                          } catch (err) {
+                              setStatus('error');
+                              setErrorMessage('No pudimos conectar con el servidor.');
+                          }
+                      }}
+                      className="flex flex-col gap-3 max-w-sm"
+                  >
+                      <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                              <Mail size={18} className="text-gray-400" />
+                          </div>
+                          <input 
+                              type="email" 
+                              required
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              placeholder="Ingresa tu mejor correo"
+                              className="w-full pl-12 pr-5 py-3.5 bg-[#0d1627]/80 border border-gray-700/60 rounded-[1.25rem] text-white text-sm focus:outline-none focus:border-[#FA4A54] focus:ring-1 focus:ring-[#FA4A54] transition-all"
+                              disabled={status === 'loading'}
+                          />
+                      </div>
+                      <button 
+                          type="submit"
+                          disabled={status === 'loading' || !email}
+                          className="w-full inline-flex items-center justify-center bg-[#FA4A54] hover:bg-[#e03a43] disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3.5 rounded-[1.25rem] font-bold text-[15px] md:text-base transition-all gap-2.5 shadow-[0_0_15px_rgba(250,74,84,0.2)] hover:shadow-[0_0_25px_rgba(250,74,84,0.4)]"
+                      >
+                          {status === 'loading' ? (
+                              <Loader2 size={18} strokeWidth={2.5} className="animate-spin" />
+                          ) : (
+                              <Download size={18} strokeWidth={2.5} />
+                          )}
+                          {status === 'loading' ? 'Enviando...' : (data.buttonText || 'Enviar a mi correo')}
+                      </button>
+                      
+                      {status === 'error' && (
+                          <div className="flex items-center gap-2 text-red-400 text-xs mt-1 px-2">
+                              <AlertCircle size={14} />
+                              <p>{errorMessage}</p>
+                          </div>
+                      )}
+                  </form>
+              )}
             </div>
           </div>
           

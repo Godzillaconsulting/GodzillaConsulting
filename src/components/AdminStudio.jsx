@@ -6,6 +6,7 @@ import NewsletterPanel from './NewsletterPanel';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import CorreosInbox from './CorreosInbox';
 import AdminProfile from './AdminProfile';
+import CockersStudio from './CockersStudio';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 function EditorField({ fieldKey, onHover, children }) {
@@ -322,6 +323,10 @@ export default function AdminStudio() {
   className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${ activeSection ==='newsletter' ?'bg-[#CC0000]/20 text-[#CC0000]' :'text-neutral-500 hover:text-white hover:bg-neutral-900' }`}>
   📧 Newsletter
   </button>
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); }}
+   className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-[#CC0000]/10 text-[#CC0000] border-[#CC0000]/30 shadow-[0_0_15px_rgba(204,0,0,0.2)]' :'text-yellow-600 border-yellow-900/40 hover:text-yellow-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(202,138,4,0.1)]' }`}>
+   <span className="text-sm mr-2">🤖</span> Estudio IAs
+   </button>
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
  className="w-full text-[10px] text-neutral-600 hover:text-red-400 py-2 rounded-lg hover:bg-neutral-900 transition-colors">
  🚪 Cerrar sesión
@@ -339,6 +344,8 @@ export default function AdminStudio() {
  <AdminProfile profile={adminProfile} onProfileUpdate={setAdminProfile} />
  ) : activeSection ==='newsletter' ? (
   <NewsletterPanel />
+  ) : activeSection ==='social' ? (
+   <CockersStudio />
   ) : (<>
 
  {/* Barra superior */}

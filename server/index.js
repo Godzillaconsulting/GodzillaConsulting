@@ -10,6 +10,7 @@ import contactRoutes from './routes/contact.js';
 import mediaRoutes from './routes/media.js';
 import tiktokRoutes from './routes/tiktok.js';
 import socialRoutes from './routes/social.js';
+import resourcesRoutes from './routes/resources.js';
 import { connectDB } from './config/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -130,6 +131,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/newsletter', downloadSubLimiter, newsletterRoutes);
 app.use('/api/lead-magnets', downloadSubLimiter, leadMagnetsRoutes);
+app.use('/api/resources', downloadSubLimiter, resourcesRoutes);
 app.use('/api/tiktok', tiktokRoutes);
 app.use('/api/analytics', analyticsLimiter, analyticsRoutes);
 app.use('/api/users', usersRoutes);

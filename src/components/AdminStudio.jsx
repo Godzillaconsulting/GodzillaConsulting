@@ -247,7 +247,7 @@ export default function AdminStudio() {
  ].filter(t => t.id !=='elementos' || showElemTab);
 
  return (
- <div className="fixed inset-0 z-50 flex bg-gradient-to-br from-sky-200 via-cyan-100 to-white text-white font-sans overflow-hidden relative">
+ <div className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative">
    {/* Frutiger Aero Orbs/Gloss */}
    <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-white/70 rounded-full blur-[120px] pointer-events-none"></div>
    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-300/40 rounded-full blur-[100px] pointer-events-none"></div>
@@ -255,7 +255,7 @@ export default function AdminStudio() {
 
  {/* ── MODAL PUBLICAR ── */}
  {showPublishModal && (
- <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-8">
+ <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
  <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
  <div className="flex items-center justify-between p-6 border-b border-neutral-700">
  <div>
@@ -283,7 +283,7 @@ export default function AdminStudio() {
  <p className="text-[10px] text-white/60 font-bold mt-0.5">Admin Studio</p>
  </div>
  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
- isAnalyticsMode ? 'bg-sky-500 text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'
+ isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'
  }`}>
  📊 Analytics
  </button>
@@ -321,13 +321,13 @@ export default function AdminStudio() {
        </div>
        <div className="flex-1 text-left min-w-0">
            <p className="text-xs font-black text-white truncate drop-shadow-sm">{adminProfile?.username || 'Usuario'}</p>
-           <p className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-wider">
+           <p className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-wider">
                <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] border border-[#CC0000]/50 shadow-[0_0_5px_rgba(52,211,153,0.8)] animate-pulse"></span> Activo
            </p>
        </div>
    </button>
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
-  className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-sky-500 text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'bg-[#CC0000]/5 text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
+  className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-[#CC0000] text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'bg-[#CC0000]/5 text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
   📧 Newsletter
   </button>
    {adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith' ? (
@@ -338,7 +338,7 @@ export default function AdminStudio() {
    ) : (
        <>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
-       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-emerald-400 to-cyan-400 text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-white hover:text-white' }`}>
+       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-red-500 to-cyan-400 text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-white hover:text-white' }`}>
        <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
        </button>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
@@ -399,7 +399,7 @@ export default function AdminStudio() {
  {saving ?'...' :'💾 Guardar Borrador'}
  </button>
  <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-6 py-2 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-red-900/30 active:scale-95 disabled:opacity-50">
+ className="px-6 py-2 bg-gradient-to-r from-red-500 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-red-900/30 active:scale-95 disabled:opacity-50">
  🚀 Emisión Pública
  </button>
  </div>

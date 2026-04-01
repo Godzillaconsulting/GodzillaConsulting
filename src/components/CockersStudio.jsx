@@ -104,11 +104,11 @@ export default function CockersStudio() {
 
     if (!selectedDraft && !showPromptBuilder) {
         return (
-            <div className="p-8 h-full bg-gradient-to-br from-[#0a0a0a] via-[#1a0a0a] to-[#220505] overflow-y-auto relative">
+            <div className="p-4 md:p-6 h-full bg-gradient-to-br from-[#0a0a0a] via-[#1a0a0a] to-[#220505] overflow-y-auto relative">
                 {/* Aero Glare */}
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-black/50 blur-[100px] pointer-events-none"></div>
 
-                <div className="flex justify-between items-center mb-8 relative z-10">
+                <div className="flex justify-between items-center mb-4 relative z-10">
                     <div>
                         <h2 className="text-4xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] tracking-widest uppercase">Estudio Óptico</h2>
                         <p className="text-white font-bold text-sm mt-1 drop-shadow-sm">Duelo de Renderizados para Cockers (Diseño Final)</p>
@@ -120,7 +120,7 @@ export default function CockersStudio() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                     {queue.map(post => (
                         <div key={post.id} className="bg-black/30 backdrop-blur-xl border border-red-900/30 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:bg-[#CC0000]/5 hover:scale-105 transition-all cursor-pointer" onClick={() => setSelectedDraft(post)}>
                             <div className="flex justify-between items-start mb-4">
@@ -135,11 +135,11 @@ export default function CockersStudio() {
                         </div>
                     ))}
                     {queue.length === 0 && (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-red-900/30 bg-black/20 rounded-3xl backdrop-blur-sm">
+                        <div className="col-span-full py-10 text-center border-2 border-dashed border-red-900/30 bg-black/20 rounded-3xl backdrop-blur-sm">
                             <p className="text-white font-black text-sm drop-shadow-sm">No hay guiones nuevos del Cerebro hoy.</p>
                         </div>
                     )}
-                    <div className="col-span-full mt-6 bg-black/30 backdrop-blur-2xl border border-[#CC0000]/20 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden">
+                    <div className="col-span-full mt-6 bg-black/30 backdrop-blur-2xl border border-[#CC0000]/20 p-4 md:p-6 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden">
                         <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-[#CC0000]/20 rounded-full blur-3xl pointer-events-none"></div>
                         <div className="flex flex-col md:flex-row justify-between items-center relative z-10">
                             <div>
@@ -158,12 +158,12 @@ export default function CockersStudio() {
 
     if (showPromptBuilder) {
         return (
-            <div className="p-8 h-full bg-gradient-to-br from-[#050505] via-[#111111] to-[#1a0a0a] relative overflow-y-auto flex flex-col items-center">
+            <div className="p-4 md:p-6 h-full bg-gradient-to-br from-[#050505] via-[#111111] to-[#1a0a0a] relative overflow-y-auto flex flex-col items-center">
                 <div className="w-full max-w-6xl flex flex-col min-h-[900px]">
                     <button onClick={() => setShowPromptBuilder(false)} className="text-[#CC0000] hover:text-white font-bold mb-4 self-start transition-colors">← Volver al Menú</button>
                     <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-4">Chat Copiloto & Libertad Creativa</h2>
                     
-                    <div className="flex-1 flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 flex flex-col md:flex-row gap-4">
                         {/* Panel Izquierdo: Chat Integrado para mejorar ideas */}
                         <div className="w-full md:w-1/2 flex flex-col bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg border border-red-900/30 rounded-2xl overflow-hidden shadow-2xl">
                             <div className="bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 border-b border-red-900/30 p-4">
@@ -326,7 +326,7 @@ export default function CockersStudio() {
 
                     {/* Las Dos Opciones IAs */}
                     {selectedDraft.media_options?.length > 0 && (
-                        <div className="grid grid-cols-2 gap-6 mb-10">
+                        <div className="grid grid-cols-2 gap-4 mb-10">
                             {selectedDraft.media_options.map((opt, i) => (
                                 <div key={i} className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg border border-red-900/30 rounded-2xl p-4 flex flex-col group hover:border-[#CC0000]/50 transition-colors">
                                     <div className="flex justify-between items-center mb-3">

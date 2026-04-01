@@ -97,8 +97,8 @@ const Chatbot = () => {
                     <motion.button
                         onClick={() => setIsOpen(!isOpen)}
                         className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none bg-[#CC0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
-                        animate={isOpen ? { scale: 1 } : { scale: [1, 1.08, 1] }}
-                        transition={isOpen ? { duration: 0.2 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                        animate={isOpen ? { scale: 1 } : { scale: 1 }}
+                        transition={isOpen ? { duration: 0.2 } : { duration: 0.2 }}
                         whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
                     >
                         {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}

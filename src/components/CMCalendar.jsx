@@ -12,7 +12,7 @@ const locales = { 'es': es }
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales })
 
 export default function CMCalendar({ adminProfile }) {
-    const isJudith = adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith';
+    const isJudith = adminProfile?.role === 'cm' || adminProfile?.id === 4 || adminProfile?.username?.toLowerCase() === 'judith';
     const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -185,7 +185,7 @@ export default function CMCalendar({ adminProfile }) {
                             <h2 className="text-3xl font-black text-white tracking-widest uppercase">
                                 {isJudith ? "Control de Emisión CM" : "Seguimiento y Campañas (Editor)"}
                             </h2>
-                            <p className="text-neutral-500 font-bold text-sm mt-1">Conexión en Tiempo Real: Cockers ⇄ Judith</p>
+                            <p className="text-neutral-500 font-bold text-sm mt-1">Conexión en Tiempo Real: {isJudith ? `Editor ⇄ ${adminProfile?.username || 'CM'}` : `${adminProfile?.username || 'Editor'} ⇄ CM`}</p>
                         </div>
                         {isJudith && (
                             <button onClick={() => setShowNewTaskModal(true)} className="px-6 py-2.5 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.5)] border border-red-900/50 uppercase tracking-widest flex items-center gap-2">

@@ -419,7 +419,7 @@ export default function AdminStudio() {
   ) : activeSection ==='social' ? (
       <CMCalendar adminProfile={adminProfile} />
   ) : activeSection === 'social_studio' ? (
-      <CockersStudio />
+      <CockersStudio adminProfile={adminProfile} />
   ) : (<>
 
  {/* Barra superior del editor */}

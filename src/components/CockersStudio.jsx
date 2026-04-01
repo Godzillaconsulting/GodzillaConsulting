@@ -8,12 +8,10 @@ export default function CockersStudio() {
     const [renderingAI, setRenderingAI] = useState(false);
     const [manualUrl, setManualUrl] = useState('');
     const [showPromptBuilder, setShowPromptBuilder] = useState(false);
-    const [builderData, setBuilderData] = useState({
-        tema: '',
-        estilo: 'Cinemático, realista',
-        luces: 'Iluminación dramática, neón sutil',
-        refImage: ''
-    });
+    const [chatHistory, setChatHistory] = useState([{ role: 'ai', text: '¡Modo Creador Libre! Cuéntame tu idea cruda (ej. "Un monstruo tecnológico haciendo home office") y yo le agregaré vocabulario cinemático. ¡También puedes subir tu foto de referencia a la derecha y escribir el prompt por ti mismo!' }]);
+    const [chatInput, setChatInput] = useState('');
+    const [finalPrompt, setFinalPrompt] = useState('');
+    const [refImage, setRefImage] = useState('');
 
     useEffect(() => {
         fetchQueue();
@@ -137,79 +135,72 @@ export default function CockersStudio() {
 
     if (showPromptBuilder) {
         return (
-            <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto flex flex-col items-center">
-                <div className="w-full max-w-3xl">
-                    <button onClick={() => setShowPromptBuilder(false)} className="text-neutral-400 hover:text-white font-bold mb-6 transition-colors">
-                        ← Volver al Menú
-                    </button>
+            <div className="p-8 h-full bg-[#0a0a0a] overflow-hidden flex flex-col items-center">
+                <div className="w-full h-full max-w-6xl flex flex-col">
+                    <button onClick={() => setShowPromptBuilder(false)} className="text-neutral-400 hover:text-white font-bold mb-4 self-start transition-colors">← Volver al Menú</button>
+                    <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-4">Chat Copiloto & Libertad Creativa</h2>
                     
-                    <h2 className="text-3xl font-black text-white tracking-widest uppercase mb-2">Constructor de Prompts</h2>
-                    <p className="text-neutral-500 font-bold mb-8">Responde estas preguntas para que el Cerebro arme el copy y la instrucción visual perfecta.</p>
-
-                    <div className="space-y-6 bg-[#0d0d0d] p-8 rounded-2xl border border-neutral-800">
-                        <div>
-                            <label className="block text-[#CC0000] text-xs font-black uppercase tracking-wider mb-2">1. ¿Cuál es el tema o el mensaje principal gancho?</label>
-                            <textarea 
-                                value={builderData.tema}
-                                onChange={(e) => setBuilderData({...builderData, tema: e.target.value})}
-                                placeholder="Ej: Las empresas Tech pierden 40% de ingresos por no usar I.A..."
-                                className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-red-500 outline-none min-h-[100px]"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-blue-500 text-xs font-black uppercase tracking-wider mb-2">2. Estilo Visual Principal</label>
-                                <input 
-                                    type="text" 
-                                    value={builderData.estilo}
-                                    onChange={(e) => setBuilderData({...builderData, estilo: e.target.value})}
-                                    className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-white text-sm focus:border-blue-500 outline-none" 
-                                />
+                    <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+                        {/* Panel Izquierdo: Chat Integrado para mejorar ideas */}
+                        <div className="w-full md:w-1/2 flex flex-col bg-[#0d0d0d] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
+                            <div className="bg-neutral-900 border-b border-neutral-800 p-4">
+                                <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">🤖 Asistente de Prompting</h3>
+                                <p className="text-xs text-neutral-500 font-bold mt-1">Chatea conmigo si tu idea está bloqueada. Yo te hago preguntas de color e iluminación para lograr renders perfectos en Nano/Kling.</p>
                             </div>
-                            <div>
-                                <label className="block text-yellow-500 text-xs font-black uppercase tracking-wider mb-2">3. Atmósfera de Iluminación</label>
-                                <input 
-                                    type="text" 
-                                    value={builderData.luces}
-                                    onChange={(e) => setBuilderData({...builderData, luces: e.target.value})}
-                                    className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-white text-sm focus:border-yellow-500 outline-none" 
-                                />
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {chatHistory.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
+                                        <div className={`p-4 rounded-2xl max-w-[85%] text-sm font-bold shadow-lg ${msg.role === 'ai' ? 'bg-neutral-800 text-white rounded-tl-sm' : 'bg-gradient-to-r from-blue-900 to-purple-900 border border-blue-500/30 text-white rounded-tr-sm'}`}>
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-green-500 text-xs font-black uppercase tracking-wider mb-2">4. Imagen de Referencia (Style/Face Match)</label>
-                            <p className="text-neutral-600 text-[10px] uppercase font-bold mb-3">La IA usará esta foto como base para clonar la composición o el estilo visual.</p>
-                            <div className="border-2 border-dashed border-neutral-800 rounded-xl p-4 bg-black">
-                                <MediaPicker 
-                                    label="Subir Referencia" 
-                                    value={builderData.refImage} 
-                                    onChange={(url) => setBuilderData({...builderData, refImage: url})} 
-                                    accept="image/*" 
-                                />
+                            <div className="p-4 bg-black border-t border-neutral-800 flex gap-2">
+                                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} 
+                                    onKeyDown={(e) => {
+                                        if(e.key === 'Enter' && chatInput.trim() !== '') {
+                                            const val = chatInput; setChatInput('');
+                                            setChatHistory(h => [...h, {role:'user', text:val}]);
+                                            setTimeout(() => {
+                                                setChatHistory(h => [...h, {role:'ai', text: `Entendido. "${val}" suena épico. ¿Te gustaría mantenerlo fotorealista (35mm), o buscamos algo más cyberpunk/abstracto con neones azules?` }]);
+                                                setFinalPrompt(prev => prev ? prev + ', ' + val : val); // Auto append to prompt
+                                            }, 800);
+                                        }
+                                    }} 
+                                    placeholder="Habla con la IA aquí o arroja tu idea cruda..." className="flex-1 bg-neutral-900 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#CC0000] border border-neutral-800" />
+                                <button onClick={() => {
+                                    if(chatInput.trim() !== '') {
+                                        const val = chatInput; setChatInput('');
+                                        setChatHistory(h => [...h, {role:'user', text:val}]);
+                                        setTimeout(() => { setChatHistory(h => [...h, {role:'ai', text: `¡Genial! Lo he integrado a tu caja de Prompt a la derecha. ¿Qué lente de cámara le ponemos?`}]); setFinalPrompt(prev => prev ? prev + ', ' + val : val); }, 800);
+                                    }
+                                }} className="bg-neutral-800 hover:bg-[#CC0000] text-white font-black uppercase px-6 rounded-xl text-xs transition-colors shadow-lg">Enviar</button>
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-neutral-800">
-                            <button 
-                                onClick={() => {
-                                    // Genera el borrador ficticio usando los datos ingresados
-                                    const newPost = {
-                                        id: Date.now(),
-                                        status: 'cockers_review',
-                                        scheduled_for: new Date(Date.now() + 86400000).toISOString(),
-                                        caption: builderData.tema ? `🔥🔥 [Borrador AI]\n\n${builderData.tema}\n\n👉 Manda un DM` : 'Escribe un tema para autogenerar caption...',
-                                        visual_prompt: `[Estilo: ${builderData.estilo}]. [Iluminación: ${builderData.luces}]. Tema: ${builderData.tema || 'Corporativo'}.${builderData.refImage ? ' ***USAR IMAGEN DE REFERENCIA ADJUNTA COMO BASE ESTRICTA DE COMPOSICIÓN Y LOOK***' : ''}`,
-                                        reference_image: builderData.refImage,
-                                        media_options: []
-                                    };
-                                    setSelectedDraft(newPost);
-                                    setShowPromptBuilder(false);
-                                }}
-                                className="w-full bg-white text-black hover:bg-neutral-200 py-4 rounded-xl font-black uppercase tracking-widest transition-colors shadow-lg"
-                            >
-                                Fabricar Prompt & Ir a la Fase de Renderizado ➔
+                        {/* Panel Derecho: Total Control Manual & Ref Image */}
+                        <div className="w-full md:w-1/2 flex flex-col space-y-4">
+                            <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex-1 flex flex-col">
+                                <h3 className="text-yellow-500 font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
+                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Tienes libertad absoluta. Ignora a la IA y escribe o pega aquí el código en inglés exacto que irán a los servidores.</p>
+                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe aquí el director's cut... (Ej: Cinematic wide shot, modern corporate office at night, neon, highly detailed, unreal engine 5)" className="w-full flex-1 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none shadow-inner leading-relaxed" />
+                            </div>
+
+                            <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl">
+                                <h3 className="text-green-500 font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">🖼️ 2. Foto de Referencia (Upload Libre)</h3>
+                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Kling y Nano usarán la silueta e iluminación de esta imagen. Opcional.</p>
+                                <div className="border border-dashed border-neutral-700 bg-black p-4 rounded-xl hover:border-green-500/50 transition-colors">
+                                    <MediaPicker label="Adjuntar Base Visual (Style Match)" value={refImage} onChange={setRefImage} accept="image/*,video/*" />
+                                </div>
+                            </div>
+
+                            <button onClick={() => {
+                                const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació de una intervención manual y creativa de Cockers en el Asistente)', visual_prompt: finalPrompt || 'Cinematic corporate scene', reference_image: refImage, media_options: [] };
+                                setSelectedDraft(newPost);
+                                setShowPromptBuilder(false);
+                            }} className="w-full bg-white text-black hover:bg-neutral-200 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] mt-auto hover:scale-[1.02]">
+                                Enviar a Renderizar ➔
                             </button>
                         </div>
                     </div>

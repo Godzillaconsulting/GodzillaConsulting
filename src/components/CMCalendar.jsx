@@ -17,6 +17,8 @@ export default function CMCalendar({ adminProfile }) {
     const [events, setEvents] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [activePlatform, setActivePlatform] = useState('ALL');
+    const [activeHashtag, setActiveHashtag] = useState(null);
+    const [showNewTaskModal, setShowNewTaskModal] = useState(false);
 
     useEffect(() => {
         const today = new Date();
@@ -120,9 +122,20 @@ export default function CMCalendar({ adminProfile }) {
                             <h4 className="text-[#CC0000] font-black text-xs uppercase mb-3">Trending B2B Tech hoy:</h4>
                             <div className="flex flex-wrap gap-2">
                                 {['#AI', '#TechAgency', '#B2BGrowth', '#VentasB2B', '#SaaS', '#EscalarNegocios'].map(tag => (
-                                    <span key={tag} className="text-xs font-bold text-neural-300 bg-black/60 backdrop-blur-xl border-white/10 shadow-md hover:bg-white/80 px-2 py-1 rounded cursor-pointer hover:bg-gradient-to-r from-[#CC0000] to-red-800 transition-colors">{tag}</span>
+                                    <span key={tag} onClick={() => setActiveHashtag(activeHashtag === tag ? null : tag)} className={`text-xs font-bold px-2 py-1 rounded cursor-pointer transition-colors shadow-md ${activeHashtag === tag ? 'bg-gradient-to-r from-[#CC0000] to-red-800 text-white' : 'text-neutral-300 bg-black/60 backdrop-blur-xl border border-white/10 hover:bg-white/20'}`}>{tag}</span>
                                 ))}
                             </div>
+                            {activeHashtag && (
+                                <div className="mt-4 p-3 bg-black/80 border border-[#CC0000]/50 shadow-[0_0_15px_rgba(204,0,0,0.2)] rounded-xl text-[10px] animate-in fade-in zoom-in duration-200">
+                                    <p className="text-white font-black mb-2 uppercase tracking-wide border-b border-white/10 pb-1 flex justify-between">Impacto de {activeHashtag} <span className="text-blue-400">Datos IA</span></p>
+                                    <div className="space-y-1.5 font-bold">
+                                        <div className="flex justify-between items-center"><span className="text-neutral-300">⚫ TikTok (Vertical)</span><span className="text-green-500">🔥 Viral Optimo</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-neutral-300">🟣 Instagram (Reels)</span><span className="text-green-500">Alto Rango</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-neutral-300">🔵 FB / Link (Imagen)</span><span className="text-red-500">Poco Tráfico</span></div>
+                                    </div>
+                                    <p className="text-neutral-500 mt-2 border-t border-white/10 pt-2 font-semibold leading-tight">Nota IA: El algoritmo lo prioriza en videos. En Carruseles, cambia por de 'Casos de Estudio'.</p>
+                                </div>
+                            )}
                         </div>
                         <div className="bg-black/50 backdrop-blur-xl border border-white/10 focus:bg-black/70 focus:border-[#CC0000]/50 shadow-inner text-white focus:bg-white p-4 rounded-xl">
                             <h4 className="text-neutral-500 font-black text-xs uppercase mb-3">Hooks Sugeridos:</h4>
@@ -167,13 +180,18 @@ export default function CMCalendar({ adminProfile }) {
             {/* Zona Principal: Tracker & Calendario */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="px-8 py-6 bg-[#000000] border-b border-white/10 shrink-0">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-start mb-6">
                         <div>
                             <h2 className="text-3xl font-black text-white tracking-widest uppercase">
                                 {isJudith ? "Control de Emisión CM" : "Seguimiento y Campañas (Editor)"}
                             </h2>
                             <p className="text-neutral-500 font-bold text-sm mt-1">Conexión en Tiempo Real: Cockers ⇄ Judith</p>
                         </div>
+                        {isJudith && (
+                            <button onClick={() => setShowNewTaskModal(true)} className="px-6 py-2.5 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.5)] border border-red-900/50 uppercase tracking-widest flex items-center gap-2">
+                                <span className="text-lg">➕</span> Programar Obra
+                            </button>
+                        )}
                     </div>
                     <div className="flex gap-3">
                         {[{ id: 'ALL', label: 'Todas las Campañas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
@@ -273,6 +291,45 @@ export default function CMCalendar({ adminProfile }) {
                         {/* Controles Compartidos */}
                         <div className="pt-4 border-t border-white/10">
                             <button className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-sm tracking-widest">Aprobar y Agendar ✔️</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* POPUP DE NUEVA TAREA / CAMPAÑA */}
+            {showNewTaskModal && isJudith && (
+                <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#111111] border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.2)] relative animate-in fade-in zoom-in duration-200">
+                        <button onClick={() => setShowNewTaskModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-2xl font-black">×</button>
+                        <h3 className="text-2xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">🎯</span> Crear Campaña</h3>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Título Interno</label>
+                                <input type="text" placeholder="Ej: Video explicativo Godzilla SAAS..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Fecha Estimada</label>
+                                    <input type="date" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma</label>
+                                    <select className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors appearance-none">
+                                        <option value="ALL">Multicanal (Global)</option>
+                                        <option value="tiktok">⚫ TikTok</option>
+                                        <option value="instagram">🟣 Instagram</option>
+                                        <option value="facebook">🔵 Facebook</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Briefing para el Editor (Cockers)</label>
+                                <textarea placeholder="Explica la visión, tono, y activos necesarios..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors resize-none"></textarea>
+                            </div>
+                            <div className="pt-2">
+                                <button onClick={() => { setShowNewTaskModal(false); alert("Campaña guardada y enviada al diseñador."); }} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(204,0,0,0.3)] hover:shadow-[0_0_30px_rgba(204,0,0,0.5)]">Agregar al Calendario ✔️</button>
+                            </div>
                         </div>
                     </div>
                 </div>

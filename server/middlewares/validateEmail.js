@@ -32,7 +32,9 @@ export const validateEmailRequest = (req, res, next) => {
     // 3. Validación de Slugs Permitidos (whitelisting previene ataques SQL Injections 
     // lógicos o llamadas a recursos inexistentes)
     const validSlugs = ['prompts-ia-marketing', 'leads-whatsapp'];
-    if (!validSlugs.includes(lead_magnet_slug)) {
+    const isDynamicRecurso = /^recurso\d+$/.test(lead_magnet_slug);
+    
+    if (!validSlugs.includes(lead_magnet_slug) && !isDynamicRecurso) {
         return res.status(400).json({
             success: false,
             message: 'El recurso solicitado no es válido o está inactivo.'

@@ -326,14 +326,20 @@ export default function AdminStudio() {
   </button>
    {adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith' ? (
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-blue-900/40 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :'text-blue-600 border-blue-900/40 hover:text-blue-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(59,130,246,0.1)]' }`}>
+       className={`w-full text-[10px] py-3 mt-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-blue-900/40 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :'text-blue-600 border-blue-900/40 hover:text-blue-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(59,130,246,0.1)]' }`}>
        <span className="text-sm mr-2">📅</span> Panel CM (Judith)
        </button>
    ) : (
-       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-[#CC0000]/10 text-[#CC0000] border-[#CC0000]/30 shadow-[0_0_15px_rgba(204,0,0,0.2)]' :'text-yellow-600 border-yellow-900/40 hover:text-yellow-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(202,138,4,0.1)]' }`}>
-       <span className="text-sm mr-2">🤖</span> Estudio IA (Cockers)
+       <>
+       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-[#CC0000]/10 text-[#CC0000] border-[#CC0000]/30 shadow-[0_0_15px_rgba(204,0,0,0.2)]' :'text-yellow-600 border-yellow-900/40 hover:text-yellow-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(202,138,4,0.1)]' }`}>
+       <span className="text-sm mr-2">🤖</span> Estudio IA
        </button>
+       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-lg mb-2 rounded-lg transition-colors font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-blue-900/40 text-blue-400 border-blue-500/50' :'text-blue-600 border-neutral-800 hover:text-blue-400 hover:bg-neutral-900/80' }`}>
+       <span className="text-xs mr-2">📅</span> Calendario Global
+       </button>
+       </>
    )}
    
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
@@ -354,7 +360,9 @@ export default function AdminStudio() {
  ) : activeSection ==='newsletter' ? (
   <NewsletterPanel />
   ) : activeSection ==='social' ? (
-      adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith' ? <CMCalendar adminProfile={adminProfile} /> : <CockersStudio />
+      <CMCalendar adminProfile={adminProfile} />
+  ) : activeSection === 'social_studio' ? (
+      <CockersStudio />
   ) : (<>
 
  {/* Barra superior */}

@@ -10,7 +10,7 @@ import gifEmbudo from '../assets/Gifs/Embudo.gif';
 import gifRedes from '../assets/Gifs/Redes Sociales.gif';
 import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
 import gifCrm from '../assets/Gifs/Estadistica.gif';
-// // import crmVideo from '../assets/GC_CRMWebPage_250226.mov'; // TEMP: Comentado por falta de archivo // TEMP: Comentado por falta de archivo
+// // const crmVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/GC_CRMWebPage_250226.mov'; // TEMP: Comentado por falta de archivo // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
     title: 'CRM con SAAS\npersonalizado',

@@ -10,7 +10,7 @@ import gifEmbudo from '../assets/Gifs/Embudo.gif';
 import gifRedes from '../assets/Gifs/Redes Sociales.gif';
 import gifSeo from '../assets/Gifs/Red Social Optimizar.gif';
 import gifCrm from '../assets/Gifs/Estadistica.gif';
-// import seoVideo from '../assets/GC_SEOWebpage_AM_161225.mp4'; // TEMP: Comentado por falta de archivo
+// const seoVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/GC_SEOWebpage_AM_161225.mp4'; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
     title: 'Optimización web y\nSEO',

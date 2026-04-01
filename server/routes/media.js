@@ -11,6 +11,17 @@ const router = express.Router();
 const TEMP_DIR = '/tmp/uploads';
 try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
 
+// ─── Directorio Constante para Archivos Pesados (Bypass Vercel) ───────────
+const ARCHIVOS_PESADOS_DIR = path.join(process.cwd(), 'server', 'uploads', 'assets');
+try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch {}
+
+// ─── Servir Archivos Pesados Locales Estáticamente (Bypass Vercel) ────────
+// Cache Infinito de Cloudflare
+router.use('/assets', express.static(ARCHIVOS_PESADOS_DIR, {
+    maxAge: '1y',
+    immutable: true
+}));
+
 // ─── Multer (Límite estricto de 10MB para proteger Neon DB) ─────────────────
 const upload = multer({
     dest: TEMP_DIR,

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
-import bgVideo from '../assets/Particulas Rojas.mp4';
+const bgVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';

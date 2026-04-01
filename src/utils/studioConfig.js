@@ -8,8 +8,8 @@ import logoNutrisa from '../assets/Logos/Nutrisa Logo@2x.png';
 import logoSanAntonio from '../assets/Logos/San Antonio Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
 
-import bgVideoServicios from '../assets/Particulas Rojas.mp4';
-import bgVideoCultura from '../assets/Particulas Rojas.mp4';
+const bgVideoServicios = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas.mp4';
+const bgVideoCultura = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas.mp4';
 import gifBot from '../assets/Gifs/Bot.gif';
 import gifVideo from '../assets/Gifs/Video.gif';
 import gifEmbudo from '../assets/Gifs/Embudo.gif';

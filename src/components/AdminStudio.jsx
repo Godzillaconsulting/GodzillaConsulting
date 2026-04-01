@@ -249,8 +249,8 @@ export default function AdminStudio() {
  return (
  <div className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative">
    {/* Frutiger Aero Orbs/Gloss */}
-   <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-white/70 rounded-full blur-[120px] pointer-events-none"></div>
-   <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-300/40 rounded-full blur-[100px] pointer-events-none"></div>
+   <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#CC0000]/10 rounded-full blur-[120px] pointer-events-none"></div>
+   <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/50 rounded-full blur-[100px] pointer-events-none"></div>
 
 
  {/* ── MODAL PUBLICAR ── */}
@@ -338,7 +338,7 @@ export default function AdminStudio() {
    ) : (
        <>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
-       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-red-500 to-cyan-400 text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-white hover:text-white' }`}>
+       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-white hover:text-white' }`}>
        <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
        </button>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
@@ -399,7 +399,7 @@ export default function AdminStudio() {
  {saving ?'...' :'💾 Guardar Borrador'}
  </button>
  <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-6 py-2 bg-gradient-to-r from-red-500 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-red-900/30 active:scale-95 disabled:opacity-50">
+ className="px-6 py-2 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-red-900/30 active:scale-95 disabled:opacity-50">
  🚀 Emisión Pública
  </button>
  </div>

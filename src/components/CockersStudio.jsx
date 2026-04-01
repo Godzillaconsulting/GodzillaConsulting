@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MediaPicker from './MediaPicker';
 
-export default function CockersStudio() {
+export default function CockersStudio({ adminProfile }) {
     const [queue, setQueue] = useState([]);
     const [selectedDraft, setSelectedDraft] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -83,8 +83,8 @@ export default function CockersStudio() {
             ];
             
             if (generateVideo) {
-                options.push({ provider: 'Nano Banana (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true });
-                options.push({ provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true });
+                options.push({ provider: 'FlowVeo 3 (Google)', url: 'https://godzillaconsulting.ai/api/media/assets/Particulas%20Rojas.mp4', isVideo: true });
+                options.push({ provider: 'Kling AI (Strict Match)', url: 'https://godzillaconsulting.ai/api/media/assets/Particulas%20Rojas.mp4', isVideo: true });
             }
 
             setQueue(q => q.map(post => {
@@ -112,7 +112,7 @@ export default function CockersStudio() {
                 <div className="flex justify-between items-center mb-4 relative z-10">
                     <div>
                         <h2 className="text-4xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] tracking-widest uppercase">Estudio Óptico</h2>
-                        <p className="text-white font-bold text-sm mt-1 drop-shadow-sm">Duelo de Renderizados para Cockers (Diseño Final)</p>
+                        <p className="text-white font-bold text-sm mt-1 drop-shadow-sm">Duelo de Renderizados para {adminProfile?.username || 'Editor'} (Diseño Final)</p>
                     </div>
                     <div className="text-right">
                         <span className="bg-[#CC0000]/5 text-white border border-red-900/30 backdrop-blur-md px-4 py-2 font-black rounded-xl shadow-lg text-xs">
@@ -251,7 +251,7 @@ export default function CockersStudio() {
                             </div>
 
                             <button onClick={() => {
-                                const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació de una intervención manual y creativa de Cockers en el Asistente)', visual_prompt: finalPrompt || 'Cinematic corporate scene', reference_image: refImage, media_options: [] };
+                                const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació de una intervención manual y creativa de ' + (adminProfile?.username || 'Editor') + ' en el Asistente)', visual_prompt: finalPrompt || 'Cinematic corporate scene', reference_image: refImage, media_options: [] };
                                 setSelectedDraft(newPost);
                                 setShowPromptBuilder(false);
                             }} className="w-full bg-gradient-to-r from-[#CC0000] to-[#880000] text-white hover:bg-red-600 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(204,0,0,0.3)] mt-auto hover:scale-[1.02]">
@@ -273,7 +273,7 @@ export default function CockersStudio() {
                 </button>
                 <div className="text-right">
                     <p className="text-[#CC0000] font-black text-sm uppercase tracking-widest">Estudio de Refinamiento</p>
-                    <p className="text-neutral-400 font-bold text-[10px] uppercase">Control Manual de Cockers</p>
+                    <p className="text-neutral-400 font-bold text-[10px] uppercase">Control Manual de {adminProfile?.username || 'Editor'}</p>
                 </div>
             </div>
 
@@ -281,11 +281,18 @@ export default function CockersStudio() {
             <div className="flex-1 flex overflow-hidden">
                 {/* Panel Izquierdo: Copy & Prompt */}
                 <div className="w-1/3 min-w-[300px] max-w-[400px] border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-6 overflow-y-auto space-y-6">
-                    <div>
-                        <h4 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">1. Guión Creado (Copy)</h4>
-                        <div className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-white p-4 rounded-xl text-sm text-white whitespace-pre-line leading-relaxed">
-                            {selectedDraft.caption}
-                        </div>
+                    <div className="flex flex-col">
+                        <h4 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                            <span>1. Guión Creado (Copy)</span>
+                            <a href="https://gemini.google.com/gem/55a9f7b451c7" target="_blank" rel="noopener noreferrer" className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded">
+                                ✨ Gem IA de Guiones ↗
+                            </a>
+                        </h4>
+                        <textarea 
+                            value={selectedDraft.caption} 
+                            onChange={(e) => setSelectedDraft({...selectedDraft, caption: e.target.value})}
+                            className="w-full min-h-[250px] bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner hover:bg-white/5 focus:bg-white/10 p-4 rounded-xl text-sm text-white whitespace-pre-line leading-relaxed focus:border-[#CC0000] outline-none resize-none transition-colors"
+                        />
                     </div>
 
                     <div>

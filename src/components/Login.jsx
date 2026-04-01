@@ -64,8 +64,14 @@ const Login = () => {
 
  if (res.ok && data.success && data.token) {
  localStorage.setItem('adminToken', data.token);
- localStorage.setItem('adminUser', data.username || username);
+ const loggedUser = data.username || username;
+ localStorage.setItem('adminUser', loggedUser);
+ 
+ if (loggedUser.toLowerCase() === 'judith') {
+ navigate('/cm');
+ } else {
  navigate('/admin');
+ }
  } else {
  setError(data.message ||'Credenciales incorrectas. Intenta de nuevo.');
  }

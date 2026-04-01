@@ -196,6 +196,8 @@ function AppLayout() {
           <Route path="/seo" element={<OptimizacionWebSeo />} />
           <Route path="/crm" element={<CrmSaas />} />
           <Route path="/admin" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO GODZILLA STUDIO...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
+          <Route path="/cm" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-blue-500 font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO ASISTENTE CM...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
+          <Route path="/studio" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO MOTOR IA...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
           <Route path="/recursos/:recursoId" element={<RecursoPage />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />

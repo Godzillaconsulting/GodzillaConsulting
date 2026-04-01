@@ -108,25 +108,25 @@ export default function CMCalendar({ adminProfile }) {
     const renderSidebar = () => {
         if (isJudith) {
             return (
-                <div className="w-[300px] border-l border-neutral-800 bg-[#0d0d0d] flex flex-col">
-                    <div className="p-5 border-b border-neutral-800 bg-neutral-900">
-                        <h3 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <div className="w-[300px] border-l border-white/50 bg-white/30 backdrop-blur-xl border border-white/50 shadow-lg flex flex-col">
+                    <div className="p-5 border-b border-white/50 bg-white/60 backdrop-blur-md shadow-md hover:bg-white/80">
+                        <h3 className="text-sky-900 font-black uppercase text-sm tracking-widest flex items-center gap-2">
                             <span>🔥 Tradings & Hashtags</span>
                         </h3>
-                        <p className="text-xs text-neutral-500 font-bold">Datos en tiempo real para SEO</p>
+                        <p className="text-xs text-sky-800/80 font-bold">Datos en tiempo real para SEO</p>
                     </div>
                     <div className="flex-1 p-5 overflow-y-auto space-y-5">
-                        <div className="bg-black border border-neutral-800 p-4 rounded-xl">
+                        <div className="bg-white/50 backdrop-blur-md border border-white/60 shadow-inner text-sky-900 focus:bg-white p-4 rounded-xl">
                             <h4 className="text-[#CC0000] font-black text-xs uppercase mb-3">Trending B2B Tech hoy:</h4>
                             <div className="flex flex-wrap gap-2">
                                 {['#AI', '#TechAgency', '#B2BGrowth', '#VentasB2B', '#SaaS', '#EscalarNegocios'].map(tag => (
-                                    <span key={tag} className="text-xs font-bold text-neural-300 bg-neutral-900 px-2 py-1 rounded cursor-pointer hover:bg-[#CC0000] transition-colors">{tag}</span>
+                                    <span key={tag} className="text-xs font-bold text-neural-300 bg-white/60 backdrop-blur-md shadow-md hover:bg-white/80 px-2 py-1 rounded cursor-pointer hover:bg-gradient-to-r from-sky-400 to-cyan-400 transition-colors">{tag}</span>
                                 ))}
                             </div>
                         </div>
-                        <div className="bg-black border border-neutral-800 p-4 rounded-xl">
-                            <h4 className="text-yellow-500 font-black text-xs uppercase mb-3">Hooks Sugeridos:</h4>
-                            <ul className="text-xs text-neutral-400 space-y-3 font-bold">
+                        <div className="bg-white/50 backdrop-blur-md border border-white/60 shadow-inner text-sky-900 focus:bg-white p-4 rounded-xl">
+                            <h4 className="text-emerald-600 font-black text-xs uppercase mb-3">Hooks Sugeridos:</h4>
+                            <ul className="text-xs text-sky-700 space-y-3 font-bold">
                                 <li>👉 "3 Errores que tu agencia comete..."</li>
                                 <li>👉 "Cómo pasamos de 0 a 100k con..."</li>
                                 <li>👉 "El secreto del código limpio..."</li>
@@ -137,8 +137,8 @@ export default function CMCalendar({ adminProfile }) {
             );
         } else {
             return (
-                <div className="w-[300px] border-l border-neutral-800 bg-[#0d0d0d] flex flex-col">
-                    <div className="p-5 border-b border-red-900/50 bg-[#CC0000]/10">
+                <div className="w-[300px] border-l border-white/50 bg-white/30 backdrop-blur-xl border border-white/50 shadow-lg flex flex-col">
+                    <div className="p-5 border-b border-red-900/50 bg-gradient-to-r from-sky-400 to-cyan-400/10">
                         <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">
                             <span>🔔 Peticiones de la CM</span>
                         </h3>
@@ -146,11 +146,11 @@ export default function CMCalendar({ adminProfile }) {
                     </div>
                     <div className="flex-1 p-5 overflow-y-auto space-y-4">
                         {events.filter(e => e.judith_task).map(t => (
-                            <div key={t.id} onClick={() => setSelectedEvent(t)} className="bg-black border border-red-900 hover:border-red-500 p-4 rounded-xl cursor-pointer transition-colors shadow-[0_0_15px_rgba(204,0,0,0.1)]">
-                                <p className="text-[10px] text-yellow-500 font-black uppercase mb-1">Para: Hoy • Red: {t.platform}</p>
-                                <p className="text-xs font-bold text-white mb-2">"{t.judith_task}"</p>
+                            <div key={t.id} onClick={() => setSelectedEvent(t)} className="bg-white/40 backdrop-blur border border-white/50 border border-red-900 hover:border-red-500 p-4 rounded-xl cursor-pointer transition-colors shadow-[0_0_15px_rgba(204,0,0,0.1)]">
+                                <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Para: Hoy • Red: {t.platform}</p>
+                                <p className="text-xs font-bold text-sky-900 mb-2">"{t.judith_task}"</p>
                                 <div className="text-right">
-                                    <button onClick={(e) => { e.stopPropagation(); navigate('/studio'); }} className="text-[10px] bg-neutral-900 border border-neutral-700 text-[#CC0000] px-3 py-1.5 rounded-lg font-black hover:bg-[#CC0000] hover:text-white transition-all">Corregir Obra en el Estudio ➔</button>
+                                    <button onClick={(e) => { e.stopPropagation(); navigate('/studio'); }} className="text-[10px] bg-white/60 backdrop-blur-md shadow-md hover:bg-white/80 border border-neutral-700 text-[#CC0000] px-3 py-1.5 rounded-lg font-black hover:bg-gradient-to-r from-sky-400 to-cyan-400 hover:text-sky-900 transition-all">Corregir Obra en el Estudio ➔</button>
                                 </div>
                             </div>
                         ))}
@@ -161,23 +161,23 @@ export default function CMCalendar({ adminProfile }) {
     };
 
     return (
-        <div className="h-full bg-[#0a0a0a] overflow-hidden flex text-white relative">
+        <div className="h-full bg-gradient-to-br from-sky-300 via-cyan-100 to-emerald-200 relative overflow-hidden flex text-sky-900 relative">
             <style>{hackerCalendarStyles}</style>
 
             {/* Zona Principal: Tracker & Calendario */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="px-8 py-6 bg-[#000000] border-b border-neutral-800 shrink-0">
+                <div className="px-8 py-6 bg-[#000000] border-b border-white/50 shrink-0">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h2 className="text-3xl font-black text-white tracking-widest uppercase">
+                            <h2 className="text-3xl font-black text-sky-900 tracking-widest uppercase">
                                 {isJudith ? "Control de Emisión CM" : "Seguimiento y Campañas (Editor)"}
                             </h2>
-                            <p className="text-neutral-500 font-bold text-sm mt-1">Conexión en Tiempo Real: Cockers ⇄ Judith</p>
+                            <p className="text-sky-800/80 font-bold text-sm mt-1">Conexión en Tiempo Real: Cockers ⇄ Judith</p>
                         </div>
                     </div>
                     <div className="flex gap-3">
                         {[{ id: 'ALL', label: 'Todas las Campañas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
-                            <button key={tab.id} onClick={() => setActivePlatform(tab.id)} className={`px-5 py-2 rounded-full font-black text-xs transition-all ${activePlatform === tab.id ? 'bg-white text-black' : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white'}`}>{tab.label}</button>
+                            <button key={tab.id} onClick={() => setActivePlatform(tab.id)} className={`px-5 py-2 rounded-full font-black text-xs transition-all ${activePlatform === tab.id ? 'bg-white text-black' : 'bg-white/60 backdrop-blur-md shadow-md hover:bg-white/80 border border-white/50 text-sky-800/80 hover:text-sky-900'}`}>{tab.label}</button>
                         ))}
                     </div>
                 </div>
@@ -202,31 +202,31 @@ export default function CMCalendar({ adminProfile }) {
 
             {/* POPUP DE INSPECCIÓN */}
             {selectedEvent && (
-                <div className="absolute top-0 right-0 h-full w-[400px] bg-[#0d0d0d] border-l border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col z-50 transform transition-transform">
-                    <div className={`p-4 border-b flex justify-between items-center ${selectedEvent.status === 'urgent' ? 'bg-[#CC0000] border-red-900' : 'bg-black border-neutral-800'}`}>
-                        <h3 className="font-black text-sm uppercase text-white tracking-widest">{selectedEvent.title}</h3>
-                        <button onClick={() => setSelectedEvent(null)} className="text-white hover:text-black font-black text-xl">×</button>
+                <div className="absolute top-0 right-0 h-full w-[400px] bg-white/30 backdrop-blur-xl border border-white/50 shadow-lg border-l border-white/50 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col z-50 transform transition-transform">
+                    <div className={`p-4 border-b flex justify-between items-center ${selectedEvent.status === 'urgent' ? 'bg-gradient-to-r from-sky-400 to-cyan-400 border-red-900' : 'bg-white/40 backdrop-blur border border-white/50 border-white/50'}`}>
+                        <h3 className="font-black text-sm uppercase text-sky-900 tracking-widest">{selectedEvent.title}</h3>
+                        <button onClick={() => setSelectedEvent(null)} className="text-sky-900 hover:text-black font-black text-xl">×</button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        <img src={selectedEvent.media_url} className="w-full h-48 object-cover rounded-xl border border-neutral-800" />
+                        <img src={selectedEvent.media_url} className="w-full h-48 object-cover rounded-xl border border-white/50" />
                         
                         <div>
-                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption (Modificable por ti):</p>
-                            <textarea defaultValue={selectedEvent.caption} className="w-full bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-sm whitespace-pre-line text-white shadow-inner font-bold outline-none focus:border-yellow-500 transition-colors" rows="4"></textarea>
+                            <p className="text-xs font-black text-sky-800/80 uppercase mb-2">Copy / Caption (Modificable por ti):</p>
+                            <textarea defaultValue={selectedEvent.caption} className="w-full bg-white/60 backdrop-blur-md shadow-md hover:bg-white/80 border border-white/50 p-4 rounded-xl text-sm whitespace-pre-line text-sky-900 shadow-inner font-bold outline-none focus:border-yellow-500 transition-colors" rows="4"></textarea>
                         </div>
 
                         {/* Controles para Judith */}
                         {isJudith && selectedEvent.status === 'urgent' && (
-                            <div className="pt-4 border-t border-neutral-800">
-                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Devolver Tarea a Cockers (Diseño):</p>
-                                <textarea placeholder="Ej: @Alex cambia los colores de la foto, ponla más oscura HD..." className="w-full bg-black border border-red-900/50 p-3 text-white text-sm rounded-xl resize-none outline-none focus:border-[#CC0000] mb-2" rows="3"></textarea>
-                                <button className="w-full bg-[#CC0000] hover:bg-red-600 text-white font-black py-3 rounded-xl text-xs transition-all uppercase shadow-[0_4px_15px_rgba(204,0,0,0.4)]">Mandar a Corregir ➔</button>
+                            <div className="pt-4 border-t border-white/50">
+                                <p className="text-xs font-black text-sky-800/80 uppercase mb-2">Devolver Tarea a Cockers (Diseño):</p>
+                                <textarea placeholder="Ej: @Alex cambia los colores de la foto, ponla más oscura HD..." className="w-full bg-white/40 backdrop-blur border border-white/50 border border-red-900/50 p-3 text-sky-900 text-sm rounded-xl resize-none outline-none focus:border-[#CC0000] mb-2" rows="3"></textarea>
+                                <button className="w-full bg-gradient-to-r from-sky-400 to-cyan-400 hover:bg-red-600 text-sky-900 font-black py-3 rounded-xl text-xs transition-all uppercase shadow-[0_4px_15px_rgba(204,0,0,0.4)]">Mandar a Corregir ➔</button>
                             </div>
                         )}
                         {/* Controles Compartidos */}
-                        <div className="pt-4 border-t border-neutral-800">
-                            <button className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-sm tracking-widest">Aprobar y Agendar ✔️</button>
+                        <div className="pt-4 border-t border-white/50">
+                            <button className="w-full bg-green-600 hover:bg-green-500 text-sky-900 font-black py-4 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-sm tracking-widest">Aprobar y Agendar ✔️</button>
                         </div>
                     </div>
                 </div>

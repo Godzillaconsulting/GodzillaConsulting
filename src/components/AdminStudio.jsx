@@ -87,7 +87,7 @@ function ColorField({ label, fieldKey, draftData, onChange }) {
  <input type="color" value={val} onChange={e => onChange(fieldKey, e.target.value)}
  className="w-10 h-10 rounded-lg border border-neutral-600 cursor-pointer bg-transparent shrink-0" />
  <input type="text" value={val} onChange={e => onChange(fieldKey, e.target.value)}
- className="flex-1 p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs font-mono focus:border-[#CC0000] outline-none" />
+ className="flex-1 p-2 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-white text-xs font-mono focus:border-[#CC0000] outline-none" />
  <div className="w-8 h-8 rounded-md border border-neutral-600 shrink-0" style={{ background: val }} />
  </div>
  </div>
@@ -449,7 +449,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  ));
@@ -478,7 +478,7 @@ export default function AdminStudio() {
  <textarea rows={1} value={''}
  onChange={e => change(key, e.target.value)}
  placeholder={`Añadir ${toLabel(key).toLowerCase()}...`}
- className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors placeholder:text-neutral-600" />
+ className="w-full p-3 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none transition-colors placeholder:text-neutral-600" />
  </div>
  </EditorField>
  );
@@ -493,7 +493,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  );
@@ -519,7 +519,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  ))}
@@ -546,7 +546,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">{toLabel(field)}</label>
  <textarea rows={typeof val ==='string' && val.length > 60 ? 3 : 1}
  value={val ||''} onChange={e => change(originalKey, e.target.value)}
- className="w-full p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" />
+ className="w-full p-2 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" />
  </div>
  </EditorField>
  );
@@ -688,7 +688,7 @@ export default function AdminStudio() {
                                       return { ...p, mediaGallery: arr };
                                   });
                             }}
-                            className="w-full p-2 bg-black border border-neutral-700 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none"
+                            className="w-full p-2 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-white text-xs focus:border-[#CC0000] outline-none"
                         >
                             <option value="image">Imagen</option>
                             <option value="video">Vídeo</option>
@@ -790,7 +790,7 @@ export default function AdminStudio() {
  <div className="space-y-1.5">
  <label className="text-xs font-semibold text-gray-400">Familia de fuente</label>
  <select value={draftData.fontFamily ||'Inter'} onChange={e => change('fontFamily', e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none">
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none">
  {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
  </select>
  <p className="text-[10px] text-neutral-600">Requiere importar la fuente en index.html</p>
@@ -806,14 +806,14 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
  <input type="number" min={12} max={120} value={draftData.titleFontSize || 64}
  onChange={e => change('titleFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none" />
  </div>
  </EditorField>
  <EditorField fieldKey="titleFontWeight" onHover={setHoveredField}>
  <div className="space-y-1">
  <label className="text-xs font-semibold text-gray-400">Peso</label>
  <select value={draftData.titleFontWeight ||'900'} onChange={e => change('titleFontWeight', e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none">
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none">
  {['300','400','500','600','700','800','900'].map(w => <option key={w}>{w}</option>)}
  </select>
  </div>
@@ -824,7 +824,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Letter Spacing</label>
  <input type="text" placeholder="-0.05em" value={draftData.titleLetterSpacing ||''}
  onChange={e => change('titleLetterSpacing', e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none" />
  </div>
  </EditorField>
  </div>
@@ -838,7 +838,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
  <input type="number" min={10} max={32} value={draftData.bodyFontSize || 16}
  onChange={e => change('bodyFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none" />
  </div>
  </EditorField>
  <EditorField fieldKey="bodyLineHeight" onHover={setHoveredField}>
@@ -846,7 +846,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Line Height</label>
  <input type="text" placeholder="1.6" value={draftData.bodyLineHeight ||''}
  onChange={e => change('bodyLineHeight', e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-sm focus:border-[#CC0000] outline-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-lg text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none" />
  </div>
  </EditorField>
  </div>
@@ -929,7 +929,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
  <textarea rows={typeof v ==='string' && v.length > 60 ? 3 : 1}
  value={v ||''} onChange={e => changeEl(k, e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none" />
  </div>
  </EditorField>
  );
@@ -947,7 +947,7 @@ export default function AdminStudio() {
  <div className="space-y-1">
  <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
  <textarea rows={v.length > 60 ? 4 : 2} value={v} onChange={e => changeFt(k, e.target.value)}
- className="w-full p-2.5 bg-black border border-neutral-700 rounded-xl text-white text-sm focus:border-[#CC0000] outline-none resize-none" />
+ className="w-full p-2.5 bg-white/40 backdrop-blur-md border border-white/60 shadow-inner rounded-xl text-sky-900 font-bold text-sm focus:bg-white focus:border-white outline-none resize-none" />
  </div>
  </EditorField>
  );

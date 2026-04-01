@@ -323,7 +323,6 @@ export default function AdminStudio() {
  })}
  </div>
  )}
- </div>
 
  <div className="mt-4 pt-4 border-t border-[#CC0000]/20">
     <button onClick={() => setIsOpsMenuOpen(p => !p)} className="w-full text-left px-3 py-2.5 bg-black/40 hover:bg-black/60 text-white/80 hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-between border border-[#CC0000]/20 shadow-sm transition-all mb-2">
@@ -372,6 +371,7 @@ export default function AdminStudio() {
         </button>
       </div>
     )}
+ </div>
  </div>
  </div>
 

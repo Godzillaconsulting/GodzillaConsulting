@@ -78,13 +78,13 @@ export default function CockersStudio({ adminProfile }) {
         // Simulando que Nano Banana y Kling devuelven resultados en 3 segundos
         setTimeout(() => {
             const options = [
-                { provider: 'Nano Banana V2 (Imagen)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
-                { provider: 'Nano Banana Pro (Imagen)', url: 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=600', isVideo: false }
+                { provider: 'Nano Banana V2 (Imagen)', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600', isVideo: false },
+                { provider: 'Nano Banana Pro (Imagen)', url: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=600', isVideo: false }
             ];
             
             if (generateVideo) {
-                options.push({ provider: 'FlowVeo 3 (Google)', url: 'https://godzillaconsulting.ai/api/media/assets/Particulas%20Rojas.mp4', isVideo: true });
-                options.push({ provider: 'Kling AI (Strict Match)', url: 'https://godzillaconsulting.ai/api/media/assets/Particulas%20Rojas.mp4', isVideo: true });
+                options.push({ provider: 'FlowVeo 3 (Google)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', isVideo: true });
+                options.push({ provider: 'Kling AI (Strict Match)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', isVideo: true });
             }
 
             setQueue(q => q.map(post => {

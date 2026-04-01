@@ -329,9 +329,9 @@ export default function AdminStudio() {
  })}
 
  {sortedNodes.length > 3 && (
-     <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-center py-2 mt-2 bg-black/20 hover:bg-black/40 text-neutral-400 hover:text-white font-bold text-[9px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-1 border border-transparent transition-all">
-     <span>{isLandingMenuOpen ? 'Ocultar' : 'Ver las demás ramas'}</span>
-     <span className="text-[#CC0000]">{isLandingMenuOpen ? '▲' : '▼'}</span>
+     <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-center py-2 mt-3 bg-[#CC0000]/10 hover:bg-[#CC0000]/20 text-white font-black text-[9px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-1.5 border border-[#CC0000]/30 shadow-[0_2px_10px_rgba(204,0,0,0.15)] transition-all">
+     <span className="drop-shadow-md">{isLandingMenuOpen ? 'Ocultar ramas extras' : 'Ver las demás ramas'}</span>
+     <span className="text-[#CC0000] drop-shadow-[0_0_5px_rgba(204,0,0,0.8)]">{isLandingMenuOpen ? '▲' : '▼'}</span>
      </button>
  )}
 

@@ -173,7 +173,7 @@ export default function CockersStudio() {
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                 {chatHistory.map((msg, i) => (
                                     <div key={i} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`p-4 rounded-2xl max-w-[85%] text-sm font-bold shadow-lg ${msg.role === 'ai' ? 'bg-neutral-800 text-white rounded-tl-sm' : 'bg-gradient-to-r from-blue-900 to-purple-900 border border-blue-500/30 text-white rounded-tr-sm'}`}>
+                                        <div className={`p-4 rounded-2xl max-w-[85%] text-sm font-bold shadow-lg ${msg.role === 'ai' ? 'bg-neutral-800 text-white rounded-tl-sm' : 'bg-[#CC0000]/20 border border-[#CC0000]/50 text-white rounded-tr-sm'}`}>
                                             {msg.text}
                                         </div>
                                     </div>
@@ -207,23 +207,23 @@ export default function CockersStudio() {
                             
                             {/* Filtros Estructurales */}
                             <div className="bg-[#0d0d0d] p-5 rounded-2xl border border-neutral-800 shadow-2xl">
-                                <h3 className="text-blue-500 font-black uppercase text-xs tracking-widest mb-3">🎛️ Filtros Clásicos (Estructurador)</h3>
+                                <h3 className="text-white font-black uppercase text-xs tracking-widest mb-3">🎛️ Filtros Clásicos (Estructurador)</h3>
                                 <div className="grid grid-cols-3 gap-3 mb-3">
-                                    <input placeholder="Tema..." value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
-                                    <input placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
-                                    <input placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
+                                    <input placeholder="Tema..." value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
+                                    <input placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
+                                    <input placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
                                 </div>
                                 <button onClick={() => {
                                     const combined = `[Theme: ${builderData.tema}] [Style: ${builderData.estilo}] [Lighting: ${builderData.luces}]`.trim();
                                     setFinalPrompt(prev => prev ? prev + ', ' + combined : combined);
-                                }} className="w-full bg-blue-900/50 hover:bg-blue-600 text-blue-100 font-bold text-[10px] uppercase py-2 rounded-lg transition-colors border border-blue-500/50">
+                                }} className="w-full bg-neutral-900 hover:bg-[#CC0000] text-neutral-400 hover:text-white font-black text-[10px] uppercase py-3 rounded-lg transition-colors border border-neutral-800 hover:border-[#CC0000] shadow-sm">
                                     Inyectar a la caja de Prompt Definitivo ↓
                                 </button>
                             </div>
 
                             <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex-1 flex flex-col min-h-[300px]">
                                 <div className="flex justify-between items-end mb-2">
-                                    <h3 className="text-yellow-500 font-black uppercase text-sm tracking-widest flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
+                                    <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
                                 </div>
                                 <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Ingresa el código en inglés exacto que irá a los servidores Nano y Kling.</p>
                                 
@@ -231,20 +231,20 @@ export default function CockersStudio() {
                                     <h4 className="text-[10px] text-white font-black uppercase tracking-widest bg-[#CC0000] inline-block px-2 py-0.5 rounded mb-2">🔥 Trends del Día en la Red</h4>
                                     <div className="flex flex-col gap-2">
                                         {dailyTrendingPrompts.map((p, i) => (
-                                            <button key={i} onClick={() => setFinalPrompt(p)} className="text-left text-[10px] bg-neutral-900 border border-neutral-800 hover:border-yellow-500 text-neutral-400 hover:text-white p-2 text-ellipsis overflow-hidden whitespace-nowrap rounded font-mono transition-colors">
+                                            <button key={i} onClick={() => setFinalPrompt(p)} className="text-left text-[10px] bg-neutral-900 border border-neutral-800 hover:border-[#CC0000] text-neutral-400 hover:text-white p-2 text-ellipsis overflow-hidden whitespace-nowrap rounded font-mono transition-colors">
                                                 {p.substring(0, 70)}...
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none shadow-inner leading-relaxed" />
+                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-[#CC0000] outline-none resize-none shadow-inner leading-relaxed" />
                             </div>
 
                             <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl">
-                                <h3 className="text-green-500 font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">🖼️ 2. Foto de Referencia (Upload Libre)</h3>
+                                <h3 className="text-white font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">🖼️ 2. Foto de Referencia (Upload Libre)</h3>
                                 <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Kling y Nano usarán la silueta e iluminación de esta imagen. Opcional.</p>
-                                <div className="border border-dashed border-neutral-700 bg-black p-4 rounded-xl hover:border-green-500/50 transition-colors">
+                                <div className="border border-dashed border-neutral-700 bg-black p-4 rounded-xl hover:border-[#CC0000]/50 transition-colors">
                                     <MediaPicker label="Adjuntar Base Visual (Style Match)" value={refImage} onChange={setRefImage} accept="image/*,video/*" />
                                 </div>
                             </div>
@@ -253,7 +253,7 @@ export default function CockersStudio() {
                                 const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació de una intervención manual y creativa de Cockers en el Asistente)', visual_prompt: finalPrompt || 'Cinematic corporate scene', reference_image: refImage, media_options: [] };
                                 setSelectedDraft(newPost);
                                 setShowPromptBuilder(false);
-                            }} className="w-full bg-white text-black hover:bg-neutral-200 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] mt-auto hover:scale-[1.02]">
+                            }} className="w-full bg-[#CC0000] text-white hover:bg-red-600 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(204,0,0,0.3)] mt-auto hover:scale-[1.02]">
                                 Enviar a Renderizar ➔
                             </button>
                         </div>

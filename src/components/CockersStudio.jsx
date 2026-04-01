@@ -14,6 +14,13 @@ export default function CockersStudio({ adminProfile }) {
     const [refImage, setRefImage] = useState('');
     const [builderData, setBuilderData] = useState({ tema: '', estilo: '', luces: '' });
     const [generateVideo, setGenerateVideo] = useState(false);
+    const [showScriptGen, setShowScriptGen] = useState(false);
+    
+    // Estados para el generador de Guiones
+    const [scriptChatInput, setScriptChatInput] = useState('');
+    const [scriptChatHistory, setScriptChatHistory] = useState([
+        { role: 'ai', text: '¡Hola! Soy tu IA de Copywriting. Describe el tema principal del post o déjame hacerte un par de preguntas para crear un guion estructurado.' }
+    ]);
     // Bóveda de Prompts Maestros (S-Tier) recopilados de la red.
     const elitePrompts = [
         "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight, rain splashing on the glass, neon blue and magenta reflections, 8k resolution, unreal engine 5 render, raytracing, dynamic motion blur, ultra-detailed textures.",
@@ -284,9 +291,9 @@ export default function CockersStudio({ adminProfile }) {
                     <div className="flex flex-col">
                         <h4 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center justify-between">
                             <span>1. Guión Creado (Copy)</span>
-                            <a href="https://gemini.google.com/gem/55a9f7b451c7" target="_blank" rel="noopener noreferrer" className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded">
-                                ✨ Gem IA de Guiones ↗
-                            </a>
+                            <button onClick={() => setShowScriptGen(true)} className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded focus:outline-none">
+                                ✨ Generar / Refinar Copy IA ↗
+                            </button>
                         </h4>
                         <textarea 
                             value={selectedDraft.caption} 
@@ -396,6 +403,68 @@ export default function CockersStudio({ adminProfile }) {
 
                 </div>
             </div>
+            
+            {/* Modal de Asistente de Guiones / Copywriting */}
+            {showScriptGen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl h-[70vh] bg-[#111111] border border-[#CC0000]/30 shadow-[0_0_50px_rgba(204,0,0,0.2)] rounded-3xl overflow-hidden flex flex-col relative transform scale-100 transition-all">
+                        <div className="bg-[#CC0000]/10 border-b border-red-900/30 p-4 shrink-0 flex justify-between items-center relative">
+                            <div>
+                                <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">✨ Redactor IA</h3>
+                                <p className="text-[10px] text-neutral-400 font-bold mt-1 uppercase">Conversa y obtén el copy definitivo</p>
+                            </div>
+                            <button onClick={() => setShowScriptGen(false)} className="text-white hover:text-[#CC0000] font-black text-xl w-8 h-8 flex items-center justify-center bg-black/30 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 rounded-full outline-none">×</button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-[#0a0a0a] to-[#010101]">
+                            {scriptChatHistory.map((msg, i) => (
+                                <div key={i} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
+                                    <div className={`p-4 rounded-xl max-w-[85%] text-sm font-bold shadow-lg leading-relaxed ${msg.role === 'ai' ? 'bg-[#1a1a1a] text-neutral-300 border border-neutral-800 rounded-tl-sm' : 'bg-[#CC0000]/20 border border-[#CC0000]/40 text-white rounded-tr-sm'}`}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="p-4 bg-black/60 backdrop-blur border-t border-red-900/30 flex gap-2 shrink-0">
+                            <input 
+                                type="text" 
+                                value={scriptChatInput} 
+                                onChange={e => setScriptChatInput(e.target.value)} 
+                                onKeyDown={(e) => {
+                                    if(e.key === 'Enter' && scriptChatInput.trim() !== '') {
+                                        const val = scriptChatInput; setScriptChatInput('');
+                                        setScriptChatHistory(h => [...h, {role:'user', text:val}]);
+                                        setTimeout(() => {
+                                            const response = `Perfecto. Aquí tienes el guion generado para "${val}":\n\n📌 Hook: ¿Estás perdiendo conversiones?\n🔍 Cuerpo: Optimiza tus procesos B2B con tecnología avanzada.\n🎯 CTA: Agenda una auditoría gratis.\n\nLo he inyectado en la caja de Copy detrás de esta ventana.`;
+                                            setScriptChatHistory(h => [...h, {role:'ai', text: response}]);
+                                            setSelectedDraft(prev => ({...prev, caption: `📌 Hook: ¿Estás perdiendo conversiones?\n🔍 Cuerpo: Optimiza tus procesos B2B con tecnología avanzada.\n🎯 CTA: Agenda una auditoría gratis.`}));
+                                        }, 1000);
+                                    }
+                                }} 
+                                placeholder="Ej: Hazme un guion agresivo para vender software..." 
+                                className="flex-1 bg-black/50 backdrop-blur-md border hover:border-[#CC0000]/50 shadow-inner text-white focus:bg-white rounded-xl p-3 text-sm focus:outline-none focus:border-[#CC0000] border-red-900/30" 
+                            />
+                            <button 
+                                onClick={() => {
+                                    if(scriptChatInput.trim() !== '') {
+                                        const val = scriptChatInput; setScriptChatInput('');
+                                        setScriptChatHistory(h => [...h, {role:'user', text:val}]);
+                                        setTimeout(() => {
+                                            const response = `Perfecto. Aquí tienes el guion cerrado para "${val}":\n\n📌 Hook: ¿Sigues operando a ciegas?\n🔍 Cuerpo: Conoce la infraestructura de ventas automatizada.\n🎯 CTA: Comenta IA para tu demo.\n\n(Inyectado al Copy automáticamente).`;
+                                            setScriptChatHistory(h => [...h, {role:'ai', text: response}]);
+                                            setSelectedDraft(prev => ({...prev, caption: `📌 Hook: ¿Sigues operando a ciegas?\n🔍 Cuerpo: Conoce la infraestructura de ventas automatizada.\n🎯 CTA: Comenta IA para tu demo.`}));
+                                        }, 1000);
+                                    }
+                                }} 
+                                className="bg-[#222] hover:bg-gradient-to-r from-[#CC0000] to-[#880000] text-white font-black uppercase px-6 rounded-xl text-xs transition-colors shadow-lg"
+                            >
+                                Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

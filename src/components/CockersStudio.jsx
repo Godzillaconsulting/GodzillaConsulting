@@ -78,8 +78,8 @@ export default function CockersStudio({ adminProfile }) {
         // Simulando que Nano Banana y Kling devuelven resultados en 3 segundos
         setTimeout(() => {
             const options = [
-                { provider: 'Nano Banana (Imagen)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
-                { provider: 'Kling AI (Imagen)', url: 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=600', isVideo: false }
+                { provider: 'Nano Banana V2 (Imagen)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
+                { provider: 'Nano Banana Pro (Imagen)', url: 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=600', isVideo: false }
             ];
             
             if (generateVideo) {

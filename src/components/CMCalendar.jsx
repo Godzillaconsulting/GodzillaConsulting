@@ -217,7 +217,7 @@ export default function CMCalendar({ adminProfile }) {
                         </div>
 
                         {/* Controles para Judith */}
-                        {isJudith && selectedEvent.status === 'urgent' && (
+                        {isJudith && (
                             <div className="pt-4 border-t border-white/10">
                                 <p className="text-xs font-black text-neutral-500 uppercase mb-2">Devolver Tarea a Cockers (Diseño):</p>
                                 <textarea placeholder="Ej: @Alex cambia los colores de la foto, ponla más oscura HD..." className="w-full bg-black/30 backdrop-blur-lg border border-white/5 border border-red-900/50 p-3 text-white text-sm rounded-xl resize-none outline-none focus:border-[#CC0000] mb-2" rows="3"></textarea>

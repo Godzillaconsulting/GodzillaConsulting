@@ -121,6 +121,7 @@ export default function AdminStudio() {
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
+ const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
 
@@ -290,6 +291,13 @@ export default function AdminStudio() {
  </div>
 
  <div className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+ 
+ <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-left px-3 py-2.5 bg-black/40 hover:bg-black/60 text-white/80 hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-between border border-[#CC0000]/20 shadow-sm transition-all mb-2">
+ <span className="flex items-center gap-2">🌲 Ramas Estructurales</span>
+ <span className="text-[#CC0000] drop-shadow-sm">{isLandingMenuOpen ? '▲' : '▼'}</span>
+ </button>
+
+ <div className={`space-y-0.5 transition-all duration-300 overflow-hidden ${isLandingMenuOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
  {sortedNodes.map((node, idx) => {
  const meta = PAGE_SECTIONS.find(s => s.id === node.id);
  const isSelected = selectedNodeId === node.id;
@@ -311,6 +319,7 @@ export default function AdminStudio() {
  </button>
  );
  })}
+ </div>
  </div>
 
  <div className="p-3 border-t border-[#CC0000]/40 space-y-1 bg-black/30">

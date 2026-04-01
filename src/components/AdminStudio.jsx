@@ -126,6 +126,17 @@ export default function AdminStudio() {
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
 
+ // Bloquear zoom accidental (Ctrl + Mouse Scroll / Trackpad Pinch)
+ useEffect(() => {
+     const handleWheel = (e) => {
+         if (e.ctrlKey || e.metaKey) {
+             e.preventDefault();
+         }
+     };
+     window.addEventListener('wheel', handleWheel, { passive: false });
+     return () => window.removeEventListener('wheel', handleWheel);
+ }, []);
+
  // Configurar perfil admin global
  useEffect(() => {
      const token = localStorage.getItem('adminToken');

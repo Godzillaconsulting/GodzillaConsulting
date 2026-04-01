@@ -293,19 +293,14 @@ export default function AdminStudio() {
 
  <div className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
  
- <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-left px-3 py-2.5 bg-black/40 hover:bg-black/60 text-white/80 hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-between border border-[#CC0000]/20 shadow-sm transition-all mb-2">
- <span className="flex items-center gap-2">🌲 Ramas Estructurales</span>
- <span className="text-[#CC0000] drop-shadow-sm">{isLandingMenuOpen ? '▲' : '▼'}</span>
- </button>
-
- {isLandingMenuOpen && (
- <div className="space-y-0.5 mt-2 animate-in fade-in duration-200">
- {sortedNodes.map((node, idx) => {
+ <p className="px-3 text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2 mt-1 drop-shadow-sm">🌲 Ramas de Landing</p>
+ 
+ {sortedNodes.slice(0, 3).map((node, idx) => {
  const meta = PAGE_SECTIONS.find(s => s.id === node.id);
  const isSelected = selectedNodeId === node.id;
  return (
  <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
+ className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
  isSelected ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-red-900/30'
  }`}
  >
@@ -316,6 +311,37 @@ export default function AdminStudio() {
  </span>
  <span className={`text-[9px] font-black ${isSelected ?'text-white/80' :'text-neutral-300/50'}`}>
  §{idx + 1} · {meta?.tag || node.id.toUpperCase()}
+ </span>
+ </div>
+ </button>
+ );
+ })}
+
+ {sortedNodes.length > 3 && (
+     <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-center py-2 mt-2 bg-black/20 hover:bg-black/40 text-neutral-400 hover:text-white font-bold text-[9px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-1 border border-transparent transition-all">
+     <span>{isLandingMenuOpen ? 'Ocultar' : 'Ver las demás ramas'}</span>
+     <span className="text-[#CC0000]">{isLandingMenuOpen ? '▲' : '▼'}</span>
+     </button>
+ )}
+
+ {isLandingMenuOpen && (
+ <div className="space-y-0.5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+ {sortedNodes.slice(3).map((node, idx) => {
+ const meta = PAGE_SECTIONS.find(s => s.id === node.id);
+ const isSelected = selectedNodeId === node.id;
+ return (
+ <button key={node.id} onClick={() => handleSelectSection(node)}
+ className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
+ isSelected ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-red-900/30'
+ }`}
+ >
+ <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
+ <div className="min-w-0 flex-1">
+ <span className={`block text-xs font-black truncate drop-shadow-sm ${isSelected ?'text-neutral-300' :'text-white/80'}`}>
+ {meta?.label || node.id}
+ </span>
+ <span className={`text-[9px] font-black ${isSelected ?'text-white/80' :'text-neutral-300/50'}`}>
+ §{idx + 4} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>
  </button>

@@ -6,12 +6,14 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import es from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useNavigate } from 'react-router-dom';
 
 const locales = { 'es': es }
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales })
 
 export default function CMCalendar({ adminProfile }) {
     const isJudith = adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith';
+    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [activePlatform, setActivePlatform] = useState('ALL');
@@ -148,7 +150,7 @@ export default function CMCalendar({ adminProfile }) {
                                 <p className="text-[10px] text-yellow-500 font-black uppercase mb-1">Para: Hoy • Red: {t.platform}</p>
                                 <p className="text-xs font-bold text-white mb-2">"{t.judith_task}"</p>
                                 <div className="text-right">
-                                    <span className="text-[10px] bg-neutral-900 text-neutral-500 px-2 py-1 rounded font-bold hover:text-white">Corregir Obra ➔</span>
+                                    <button onClick={(e) => { e.stopPropagation(); navigate('/studio'); }} className="text-[10px] bg-neutral-900 border border-neutral-700 text-[#CC0000] px-3 py-1.5 rounded-lg font-black hover:bg-[#CC0000] hover:text-white transition-all">Corregir Obra en el Estudio ➔</button>
                                 </div>
                             </div>
                         ))}

@@ -139,7 +139,7 @@ function GodzillaTracker() {
 
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
-  const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies'];
+  const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio'];
 
   if (hiddenRoutes.includes(pathname)) return null;
 
@@ -172,7 +172,7 @@ function Home() {
 
 function AppLayout() {
   const { pathname } = useLocation();
-  const hideChrome = ['/login', '/dashboard', '/admin'].includes(pathname);
+  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio'].includes(pathname);
 
   return (
     <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">
@@ -207,7 +207,7 @@ function AppLayout() {
       </div>
 
         <div className="pointer-events-auto">
-          <Chatbot />
+          {!hideChrome && <Chatbot />}
           <FloatingWhatsApp />
           {!hideChrome && <Footer />}
         </div>

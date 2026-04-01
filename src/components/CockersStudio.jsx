@@ -13,7 +13,7 @@ export default function CockersStudio() {
     const [finalPrompt, setFinalPrompt] = useState('');
     const [refImage, setRefImage] = useState('');
     const [builderData, setBuilderData] = useState({ tema: '', estilo: '', luces: '' });
-
+    const [generateVideo, setGenerateVideo] = useState(false);
     // Bóveda de Prompts Maestros (S-Tier) recopilados de la red.
     const elitePrompts = [
         "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight, rain splashing on the glass, neon blue and magenta reflections, 8k resolution, unreal engine 5 render, raytracing, dynamic motion blur, ultra-detailed textures.",
@@ -77,24 +77,25 @@ export default function CockersStudio() {
         setRenderingAI(true);
         // Simulando que Nano Banana y Kling devuelven resultados en 3 segundos
         setTimeout(() => {
+            const options = [
+                { provider: 'Nano Banana (Imagen)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
+                { provider: 'Kling AI (Imagen)', url: 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=600', isVideo: false }
+            ];
+            
+            if (generateVideo) {
+                options.push({ provider: 'Nano Banana (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true });
+                options.push({ provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true });
+            }
+
             setQueue(q => q.map(post => {
                 if(post.id === selectedDraft.id) {
-                    return {
-                        ...post,
-                        media_options: [
-                            { provider: 'Nano Banana (Google)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false },
-                            { provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true }
-                        ]
-                    };
+                    return { ...post, media_options: options };
                 }
                 return post;
             }));
             setSelectedDraft(prev => ({
                 ...prev,
-                media_options: [
-                    { provider: 'Nano Banana (Google)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', isVideo: false },
-                    { provider: 'Kling AI (Video)', url: 'https://www.w3schools.com/html/mov_bbb.mp4', isVideo: true }
-                ]
+                media_options: options
             }));
             setRenderingAI(false);
         }, 3000);
@@ -304,9 +305,15 @@ export default function CockersStudio() {
                     )}
 
                     {!selectedDraft.media_options?.length && !renderingAI && (
-                        <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-[#ff2222] to-[#AA0000] hover:from-[#ff4444] hover:to-[#CC0000] border border-[#CC0000]/50 text-white font-black py-4 rounded-2xl shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all">
-                            💥 Lanzar Prompt a Nano Banana & Kling
-                        </button>
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-3 cursor-pointer bg-black/40 p-4 rounded-xl border border-red-900/30 hover:border-[#CC0000]/50 transition-colors">
+                                <input type="checkbox" checked={generateVideo} onChange={e => setGenerateVideo(e.target.checked)} className="accent-[#CC0000] w-5 h-5 cursor-pointer" />
+                                <span className="text-sm font-bold text-white drop-shadow-sm">Incluir Versiones en Video (Opciones C y D)</span>
+                            </label>
+                            <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-[#ff2222] to-[#AA0000] hover:from-[#ff4444] hover:to-[#CC0000] border border-[#CC0000]/50 text-white font-black py-4 rounded-2xl shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all">
+                                💥 Lanzar Prompt ({generateVideo ? 'Imágenes + Video' : 'Solo Imágenes'})
+                            </button>
+                        </div>
                     )}
 
                     {renderingAI && (
@@ -330,7 +337,7 @@ export default function CockersStudio() {
                             {selectedDraft.media_options.map((opt, i) => (
                                 <div key={i} className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg border border-red-900/30 rounded-2xl p-4 flex flex-col group hover:border-[#CC0000]/50 transition-colors">
                                     <div className="flex justify-between items-center mb-3">
-                                        <p className="text-xs font-black text-white uppercase tracking-wider">Opción {i+1}</p>
+                                        <p className="text-xs font-black text-white uppercase tracking-wider">Opción {String.fromCharCode(65 + i)}</p>
                                         <span className="text-[10px] bg-neutral-800 text-[#CC0000] px-2 py-1 rounded font-bold">{opt.provider}</span>
                                     </div>
                                     <div className="flex-1 bg-black/40 backdrop-blur border border-red-900/30 rounded-xl overflow-hidden border border-neutral-900 min-h-[250px] relative group-hover:border-[#CC0000]/30 transition-colors">

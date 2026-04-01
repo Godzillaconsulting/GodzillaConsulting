@@ -130,14 +130,22 @@ const Cultura = () => {
  <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
  {/* Video de fondo — editable desde Admin Studio (bgVideoUrl) */}
  {finalBgVideo ? (
- <video
- src={finalBgVideo}
- autoPlay
- loop
- muted
- playsInline
- className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
- />
+    finalBgVideo.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+        <video
+            src={finalBgVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+        />
+    ) : (
+        <img
+            src={finalBgVideo}
+            alt="Fondo Cultura"
+            className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+        />
+    )
  ) : null}
  {/* Overlay oscuro para legibilidad */}
  <div className="absolute inset-0 bg-[#111111]/60 pointer-events-none" />

@@ -67,6 +67,18 @@ module.exports = {
       watch: false
     },
     {
+      name: "godzilla-db-backup",
+      script: "./scripts/backup_db.js",
+      instances: 1,
+      exec_mode: "fork",
+      watch: false,
+      autorestart: false,
+      cron_restart: "15 17 * * 5",
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
       name: "email-worker",
       script: "./emailWorker.js",
       cwd: "./server",

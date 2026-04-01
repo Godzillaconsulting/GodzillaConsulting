@@ -80,6 +80,24 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Anti-Spam de Competidores (Evita inyección masiva de basura a la Base de Datos)
+const downloadSubLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 10,
+    message: { error: 'Límite de suscripciones alcanzado. Intenta de nuevo más tarde.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Firewall de Minería de Datos (Evita saturación de Logs por raspado automático)
+const analyticsLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutos
+    max: process.env.NODE_ENV === 'development' ? 1000 : 80, // Generoso porque una persona recarga la página
+    message: { error: 'Trafico bloqueado preventivamente por exceso de consultas.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
 app.use(express.json());
 
@@ -108,11 +126,12 @@ import usersRoutes from './routes/users.js';
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
+// Aplicamos limitadores de Descargas y Analíticas Públicas
 app.use('/api/media', mediaRoutes);
-app.use('/api/newsletter', newsletterRoutes);
-app.use('/api/lead-magnets', leadMagnetsRoutes);
+app.use('/api/newsletter', downloadSubLimiter, newsletterRoutes);
+app.use('/api/lead-magnets', downloadSubLimiter, leadMagnetsRoutes);
 app.use('/api/tiktok', tiktokRoutes);
-app.use('/api/analytics', analyticsRoutes);
+app.use('/api/analytics', analyticsLimiter, analyticsRoutes);
 app.use('/api/users', usersRoutes);
 
 

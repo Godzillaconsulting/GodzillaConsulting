@@ -58,10 +58,13 @@ const Hero = () => {
  return (
  <section id="inicio" className="relative flex items-center justify-center pt-20 pb-4 overflow-hidden bg-transparent">
  {/* Fondo editable desde CMS (sobre ColorBends) */}
- {bgVideoUrl && (
- <video src={bgVideoUrl} autoPlay muted loop playsInline
- className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />
- )}
+ {bgVideoUrl ? (
+     bgVideoUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+         <video src={bgVideoUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />
+     ) : (
+         <img src={bgVideoUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />
+     )
+ ) : null}
  {!bgVideoUrl && bgImageUrl && (
  <img src={bgImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0" />
  )}

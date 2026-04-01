@@ -12,6 +12,7 @@ export default function CockersStudio() {
     const [chatInput, setChatInput] = useState('');
     const [finalPrompt, setFinalPrompt] = useState('');
     const [refImage, setRefImage] = useState('');
+    const [builderData, setBuilderData] = useState({ tema: '', estilo: '', luces: '' });
 
     // Bóveda de Prompts Maestros (S-Tier) recopilados de la red.
     const elitePrompts = [
@@ -103,45 +104,49 @@ export default function CockersStudio() {
 
     if (!selectedDraft && !showPromptBuilder) {
         return (
-            <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto">
-                <div className="flex justify-between items-center mb-8">
+            <div className="p-8 h-full bg-gradient-to-br from-sky-400 via-cyan-300 to-emerald-200 overflow-y-auto relative">
+                {/* Aero Glare */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white/60 blur-[100px] pointer-events-none"></div>
+
+                <div className="flex justify-between items-center mb-8 relative z-10">
                     <div>
-                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Estudio Óptico (A/B Test)</h2>
-                        <p className="text-neutral-500 font-bold text-sm mt-1">Duelo de Renderizados para Cockers (Diseño Final)</p>
+                        <h2 className="text-4xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] tracking-widest uppercase">Estudio Óptico</h2>
+                        <p className="text-sky-900 font-bold text-sm mt-1 drop-shadow-sm">Duelo de Renderizados para Cockers (Diseño Final)</p>
                     </div>
                     <div className="text-right">
-                        <span className="bg-[#CC0000]/20 text-[#CC0000] px-3 py-1 font-bold rounded-lg border border-[#CC0000]/30 text-xs">
+                        <span className="bg-white/30 text-sky-900 border border-white/50 backdrop-blur-md px-4 py-2 font-black rounded-xl shadow-lg text-xs">
                             Pendientes de Revisión: {queue.length}
                         </span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
                     {queue.map(post => (
-                        <div key={post.id} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-2xl hover:border-neutral-600 transition-colors cursor-pointer" onClick={() => setSelectedDraft(post)}>
+                        <div key={post.id} className="bg-white/20 backdrop-blur-xl border border-white/50 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:bg-white/30 hover:scale-105 transition-all cursor-pointer" onClick={() => setSelectedDraft(post)}>
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-yellow-500 text-xs font-black uppercase tracking-widest">Post Generado por Gemini</h3>
-                                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+                                <h3 className="text-sky-900 text-xs font-black uppercase tracking-widest drop-shadow-sm">Post Generado por Gemini</h3>
+                                <div className="h-3 w-3 rounded-full bg-emerald-400 border-2 border-white shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse"></div>
                             </div>
-                            <p className="text-neutral-300 text-sm italic line-clamp-3 mb-4">"{post.caption}"</p>
+                            <p className="text-neutral-800 font-medium text-sm italic line-clamp-3 mb-6 bg-white/40 p-4 rounded-xl border border-white/30 shadow-inner">"{post.caption}"</p>
                             
-                            <div className="w-full bg-[#CC0000] hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl text-xs text-center transition-colors">
+                            <div className="w-full bg-gradient-to-r from-sky-500 to-cyan-400 hover:from-sky-400 hover:to-cyan-300 text-white font-black py-3 px-4 rounded-2xl text-xs text-center transition-all shadow-[0_4px_15px_rgba(14,165,233,0.4)] border border-white/40">
                                 Iniciar Duelo de Renderizado 🥊
                             </div>
                         </div>
                     ))}
                     {queue.length === 0 && (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-neutral-800 rounded-2xl">
-                            <p className="text-neutral-500 font-bold text-sm">No hay guiones nuevos del Cerebro hoy.</p>
+                        <div className="col-span-full py-20 text-center border-2 border-dashed border-white/50 bg-white/10 rounded-3xl backdrop-blur-sm">
+                            <p className="text-sky-900 font-black text-sm drop-shadow-sm">No hay guiones nuevos del Cerebro hoy.</p>
                         </div>
                     )}
-                    <div className="col-span-full mt-6 bg-gradient-to-r from-[#111] to-[#1a1a1a] border border-neutral-800 p-8 rounded-2xl shadow-xl">
-                        <div className="flex flex-col md:flex-row justify-between items-center">
+                    <div className="col-span-full mt-6 bg-white/20 backdrop-blur-2xl border border-white/60 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] relative overflow-hidden">
+                        <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-cyan-300/40 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="flex flex-col md:flex-row justify-between items-center relative z-10">
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">Pausa Comercial: Modo Director de Arte</h3>
-                                <p className="text-neutral-400 text-sm max-w-xl">La automatización la pusimos en pausa. Ahora puedes construir los Prompts manualmente respondiendo un par de preguntas y dándole imágenes de referencia a las IAs para que copien el estilo.</p>
+                                <h3 className="text-2xl font-black text-sky-900 uppercase tracking-wider mb-2 drop-shadow-sm">Pausa Comercial: Modo Director de Arte</h3>
+                                <p className="text-neutral-700 font-medium text-sm max-w-xl">La automatización la pusimos en pausa. Ahora puedes construir los Prompts manualmente respondiendo un par de preguntas y dándole imágenes de referencia a las IAs para que copien el estilo.</p>
                             </div>
-                            <button onClick={() => setShowPromptBuilder(true)} className="mt-4 md:mt-0 bg-[#CC0000] hover:bg-red-600 border border-[#CC0000]/50 text-white px-8 py-4 rounded-xl font-black uppercase text-sm transition-all shadow-[0_0_20px_rgba(204,0,0,0.3)]">
+                            <button onClick={() => setShowPromptBuilder(true)} className="mt-4 md:mt-0 bg-white/70 hover:bg-white text-sky-600 border border-white shadow-[0_8px_20px_rgba(255,255,255,0.5)] px-8 py-4 rounded-2xl font-black uppercase text-sm transition-all">
                                 + Crear Prompt Guiado
                             </button>
                         </div>
@@ -153,12 +158,12 @@ export default function CockersStudio() {
 
     if (showPromptBuilder) {
         return (
-            <div className="p-8 h-full bg-[#0a0a0a] overflow-hidden flex flex-col items-center">
-                <div className="w-full h-full max-w-6xl flex flex-col">
+            <div className="p-8 h-full bg-[#0a0a0a] overflow-y-auto flex flex-col items-center">
+                <div className="w-full max-w-6xl flex flex-col min-h-[900px]">
                     <button onClick={() => setShowPromptBuilder(false)} className="text-neutral-400 hover:text-white font-bold mb-4 self-start transition-colors">← Volver al Menú</button>
                     <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-4">Chat Copiloto & Libertad Creativa</h2>
                     
-                    <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+                    <div className="flex-1 flex flex-col md:flex-row gap-6">
                         {/* Panel Izquierdo: Chat Integrado para mejorar ideas */}
                         <div className="w-full md:w-1/2 flex flex-col bg-[#0d0d0d] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
                             <div className="bg-neutral-900 border-b border-neutral-800 p-4">
@@ -199,9 +204,28 @@ export default function CockersStudio() {
 
                         {/* Panel Derecho: Total Control Manual & Ref Image */}
                         <div className="w-full md:w-1/2 flex flex-col space-y-4">
-                            <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex-1 flex flex-col">
-                                <h3 className="text-yellow-500 font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
-                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Tienes libertad absoluta. Ingresa el código en inglés exacto que irá a los servidores.</p>
+                            
+                            {/* Filtros Estructurales */}
+                            <div className="bg-[#0d0d0d] p-5 rounded-2xl border border-neutral-800 shadow-2xl">
+                                <h3 className="text-blue-500 font-black uppercase text-xs tracking-widest mb-3">🎛️ Filtros Clásicos (Estructurador)</h3>
+                                <div className="grid grid-cols-3 gap-3 mb-3">
+                                    <input placeholder="Tema..." value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
+                                    <input placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
+                                    <input placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-black border border-neutral-800 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none" />
+                                </div>
+                                <button onClick={() => {
+                                    const combined = `[Theme: ${builderData.tema}] [Style: ${builderData.estilo}] [Lighting: ${builderData.luces}]`.trim();
+                                    setFinalPrompt(prev => prev ? prev + ', ' + combined : combined);
+                                }} className="w-full bg-blue-900/50 hover:bg-blue-600 text-blue-100 font-bold text-[10px] uppercase py-2 rounded-lg transition-colors border border-blue-500/50">
+                                    Inyectar a la caja de Prompt Definitivo ↓
+                                </button>
+                            </div>
+
+                            <div className="bg-[#0d0d0d] p-6 rounded-2xl border border-neutral-800 shadow-2xl flex-1 flex flex-col min-h-[300px]">
+                                <div className="flex justify-between items-end mb-2">
+                                    <h3 className="text-yellow-500 font-black uppercase text-sm tracking-widest flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
+                                </div>
+                                <p className="text-neutral-500 text-[10px] uppercase font-bold mb-4">Ingresa el código en inglés exacto que irá a los servidores Nano y Kling.</p>
                                 
                                 <div className="mb-4">
                                     <h4 className="text-[10px] text-white font-black uppercase tracking-widest bg-[#CC0000] inline-block px-2 py-0.5 rounded mb-2">🔥 Trends del Día en la Red</h4>
@@ -264,37 +288,37 @@ export default function CockersStudio() {
                     </div>
 
                     <div>
-                        <h4 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">2. Instrucción a Visuales</h4>
-                        <div className="bg-black/50 border border-neutral-800 p-3 rounded-xl text-[11px] font-mono text-green-400/80 break-words leading-tight shadow-inner">
+                        <h4 className="text-xs font-black text-sky-800 uppercase tracking-widest mb-2 drop-shadow-sm">2. Instrucción a Visuales</h4>
+                        <div className="bg-white/60 backdrop-blur-md border border-white/60 p-3 rounded-2xl text-[11px] font-mono text-cyan-800 font-bold break-words leading-tight shadow-inner">
                             {selectedDraft.visual_prompt}
                         </div>
                     </div>
 
                     {selectedDraft.reference_image && (
                         <div>
-                            <h4 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">📂 Imagen de Referencia Atada</h4>
-                            <div className="bg-black border border-neutral-800 p-2 rounded-xl">
-                                <img src={selectedDraft.reference_image} alt="Referencia" className="w-full h-32 object-cover rounded-lg opacity-80" />
+                            <h4 className="text-xs font-black text-sky-800 uppercase tracking-widest mb-2 drop-shadow-sm">📂 Imagen de Referencia Atada</h4>
+                            <div className="bg-white/50 backdrop-blur-md border border-white/60 p-2 rounded-2xl shadow-inner">
+                                <img src={selectedDraft.reference_image} alt="Referencia" className="w-full h-32 object-cover rounded-xl" />
                             </div>
                         </div>
                     )}
 
                     {!selectedDraft.media_options?.length && !renderingAI && (
-                        <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-blue-900 to-purple-900 hover:from-blue-800 hover:to-purple-800 border border-blue-500/30 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
+                        <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-sky-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 border border-white text-white font-black py-4 rounded-2xl shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all">
                             💥 Lanzar Prompt a Nano Banana & Kling
                         </button>
                     )}
 
                     {renderingAI && (
-                        <div className="text-center py-6 border border-neutral-800 rounded-2xl border-dashed">
-                            <div className="animate-spin h-6 w-6 border-2 border-yellow-500 border-t-transparent rounded-full mx-auto mb-3"></div>
-                            <p className="text-xs font-bold text-yellow-500 animate-pulse">Mandando Prompt a Nano Banana & Kling...</p>
+                        <div className="text-center py-6 border-2 border-dashed border-white/60 rounded-2xl bg-white/30 backdrop-blur-sm">
+                            <div className="animate-spin h-6 w-6 border-4 border-sky-400 border-t-white rounded-full mx-auto mb-3 shadow-md"></div>
+                            <p className="text-xs font-black text-sky-700 animate-pulse drop-shadow-sm">Mandando Prompt a Nano Banana & Kling...</p>
                         </div>
                     )}
                 </div>
 
                 {/* Panel Derecho: Área de A/B Testing & Bypass Manual */}
-                <div className="flex-1 bg-[#0a0a0a] p-6 overflow-y-auto">
+                <div className="flex-1 bg-white/10 backdrop-blur-sm p-6 overflow-y-auto">
                     <h3 className="text-sm font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2">
                         <span>3. Resultados Multimodales</span> 
                         <span className="bg-neutral-800 px-2 py-0.5 rounded text-[10px] text-neutral-400">Elige 1 para enviar a Judith</span>

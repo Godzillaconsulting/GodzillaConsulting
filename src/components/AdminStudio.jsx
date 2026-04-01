@@ -247,7 +247,11 @@ export default function AdminStudio() {
  ].filter(t => t.id !=='elementos' || showElemTab);
 
  return (
- <div className="fixed inset-0 z-50 flex bg-[#0a0a0a] text-white font-sans overflow-hidden">
+ <div className="fixed inset-0 z-50 flex bg-gradient-to-br from-sky-200 via-cyan-100 to-white text-sky-900 font-sans overflow-hidden relative">
+   {/* Frutiger Aero Orbs/Gloss */}
+   <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-white/70 rounded-full blur-[120px] pointer-events-none"></div>
+   <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-300/40 rounded-full blur-[100px] pointer-events-none"></div>
+
 
  {/* ── MODAL PUBLICAR ── */}
  {showPublishModal && (
@@ -272,14 +276,14 @@ export default function AdminStudio() {
  )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
- <div className="w-[200px] min-w-[200px] flex flex-col border-r border-neutral-800 bg-[#0d0d0d]">
- <div className="px-3 pt-5 pb-3 border-b border-neutral-800 flex items-center justify-between">
+ <div className="relative z-10 w-[200px] min-w-[200px] flex flex-col border-r border-white/50 bg-white/30 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)]">
+ <div className="px-3 pt-5 pb-3 border-b border-white/40 flex items-center justify-between">
  <div>
- <p className="text-base font-black text-[#CC0000] leading-none">Godzilla</p>
- <p className="text-[10px] text-neutral-500 mt-0.5">Admin Studio</p>
+ <p className="text-base font-black text-sky-700 leading-none drop-shadow-sm">Godzilla</p>
+ <p className="text-[10px] text-sky-900/60 font-bold mt-0.5">Admin Studio</p>
  </div>
  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
- isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-neutral-800 text-neutral-400 hover:text-white'
+ isAnalyticsMode ? 'bg-sky-500 text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-white/40 text-sky-800 hover:bg-white hover:text-sky-600 border border-white/50 shadow-sm'
  }`}>
  📊 Analytics
  </button>
@@ -291,16 +295,16 @@ export default function AdminStudio() {
  const isSelected = selectedNodeId === node.id;
  return (
  <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-2.5 ${
- isSelected ?'bg-[#CC0000] shadow-[0_4px_14px_rgba(204,0,0,0.3)]' :'hover:bg-neutral-800'
+ className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
+ isSelected ?'bg-white/70 border-white shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-white/40 hover:border-white/50'
  }`}
  >
- <span className="text-base leading-none shrink-0">{meta?.emoji ||'📄'}</span>
+ <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
  <div className="min-w-0 flex-1">
- <span className={`block text-xs font-bold truncate ${isSelected ?'text-white' :'text-gray-200'}`}>
+ <span className={`block text-xs font-black truncate drop-shadow-sm ${isSelected ?'text-sky-800' :'text-sky-900/80'}`}>
  {meta?.label || node.id}
  </span>
- <span className={`text-[9px] font-medium ${isSelected ?'text-red-200' :'text-neutral-500'}`}>
+ <span className={`text-[9px] font-black ${isSelected ?'text-sky-600/80' :'text-sky-800/50'}`}>
  §{idx + 1} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>
@@ -309,50 +313,50 @@ export default function AdminStudio() {
  })}
  </div>
 
- <div className="p-3 border-t border-neutral-800 space-y-1">
+ <div className="p-3 border-t border-white/40 space-y-1 bg-white/20">
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
-   className={`w-full p-2 rounded-lg transition-colors flex items-center gap-3 ${ activeSection ==='profile' ?'bg-neutral-800' :'hover:bg-neutral-900' }`}>
-       <div className="w-6 h-6 rounded-full bg-neutral-800 overflow-hidden shrink-0">
-           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full">🦖</span>}
+   className={`w-full p-2 rounded-xl border border-transparent transition-colors flex items-center gap-3 shadow-sm ${ activeSection ==='profile' ?'bg-white/60 border-white' :'hover:bg-white/50 hover:border-white/50 bg-white/30' }`}>
+       <div className="w-6 h-6 rounded-full bg-white/50 overflow-hidden shrink-0 border border-white">
+           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
        </div>
        <div className="flex-1 text-left min-w-0">
-           <p className="text-xs font-bold text-white truncate">{adminProfile?.username || 'Usuario'}</p>
-           <p className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-wider">
-               <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)] animate-pulse"></span> Activo
+           <p className="text-xs font-black text-sky-900 truncate drop-shadow-sm">{adminProfile?.username || 'Usuario'}</p>
+           <p className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-wider">
+               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 border border-white shadow-[0_0_5px_rgba(52,211,153,0.8)] animate-pulse"></span> Activo
            </p>
        </div>
    </button>
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
-  className={`w-full text-[10px] py-2 rounded-lg transition-colors font-bold ${ activeSection ==='newsletter' ?'bg-[#CC0000]/20 text-[#CC0000]' :'text-neutral-500 hover:text-white hover:bg-neutral-900' }`}>
+  className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-sky-500 text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'bg-white/30 text-sky-800 hover:text-sky-900 hover:bg-white/60 hover:border-white/50' }`}>
   📧 Newsletter
   </button>
    {adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith' ? (
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
-       className={`w-full text-[10px] py-3 mt-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-blue-900/40 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :'text-blue-600 border-blue-900/40 hover:text-blue-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(59,130,246,0.1)]' }`}>
-       <span className="text-sm mr-2">📅</span> Panel CM (Judith)
+       className={`w-full text-[10px] py-3 mt-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-gradient-to-r from-sky-400 to-blue-400 text-white border-white/50 shadow-[0_8px_20px_rgba(56,189,248,0.5)]' :'bg-white/40 text-sky-800 border-white/50 hover:bg-white hover:text-sky-600' }`}>
+       <span className="text-sm mr-2 drop-shadow-sm">📅</span> Panel CM (Judith)
        </button>
    ) : (
        <>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
-       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-lg rounded-lg transition-colors font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-[#CC0000]/10 text-[#CC0000] border-[#CC0000]/30 shadow-[0_0_15px_rgba(204,0,0,0.2)]' :'text-yellow-600 border-yellow-900/40 hover:text-yellow-400 hover:bg-neutral-900/80 shadow-[0_0_10px_rgba(202,138,4,0.1)]' }`}>
-       <span className="text-sm mr-2">🤖</span> Estudio IA
+       className={`w-full text-[10px] py-3 mt-1 mb-1 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-emerald-400 to-cyan-400 text-white border-white/50 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'bg-white/40 text-sky-800 border-white/50 hover:bg-white hover:text-sky-600' }`}>
+       <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
        </button>
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
-       className={`w-full text-[10px] py-2 shadow-lg mb-2 rounded-lg transition-colors font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-blue-900/40 text-blue-400 border-blue-500/50' :'text-blue-600 border-neutral-800 hover:text-blue-400 hover:bg-neutral-900/80' }`}>
+       className={`w-full text-[10px] py-2 shadow-sm mb-2 rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-sky-700 border-white' :'bg-white/30 text-sky-800 border-white/40 hover:bg-white/60 hover:text-sky-900' }`}>
        <span className="text-xs mr-2">📅</span> Calendario Global
        </button>
        </>
    )}
    
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
- className="w-full text-[10px] text-neutral-600 hover:text-red-400 py-2 rounded-lg hover:bg-neutral-900 transition-colors">
+ className="w-full text-[10px] text-red-500 font-bold hover:text-red-600 hover:bg-white/50 border border-transparent hover:border-red-200 py-2 rounded-xl transition-all shadow-sm">
  🚪 Cerrar sesión
  </button>
  </div>
  </div>
 
- {/* ██ ÁREA PRINCIPAL ███████████████████████████████████████████████████ */}
- <div className="flex-1 flex flex-col overflow-hidden">
+ {/* ── ÁREA PRINCIPAL ── */}
+ <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-white/20 backdrop-blur-md shadow-inner border-l border-white/50">
 
  {/* Content Layer */}
  {isAnalyticsMode ? (
@@ -367,56 +371,56 @@ export default function AdminStudio() {
       <CockersStudio />
   ) : (<>
 
- {/* Barra superior */}
- <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 bg-[#0d0d0d] shrink-0">
+ {/* Barra superior del editor */}
+ <div className="flex items-center justify-between px-6 py-4 border-b border-white/50 bg-white/40 backdrop-blur-xl shrink-0 shadow-sm">
  {selectedNodeId ? (
  <div className="flex items-center gap-3">
- <span className="text-lg">{PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.emoji ||'📄'}</span>
+ <span className="text-2xl drop-shadow-sm">{PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.emoji ||'📄'}</span>
  <div>
- <h2 className="text-sm font-black text-white leading-none">
+ <h2 className="text-lg font-black text-sky-900 leading-none drop-shadow-sm">
  {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
  </h2>
- <p className="text-[10px] text-neutral-500">Editando · borrador no publicado</p>
+ <p className="text-[10px] font-bold text-sky-700/60 uppercase">Vista de Editor Glassy</p>
  </div>
  </div>
  ) : (
- <h2 className="text-sm font-black text-neutral-400">← Elige una sección</h2>
+ <h2 className="text-sm font-black text-sky-700/50 uppercase tracking-widest drop-shadow-sm">← Elige una rama forestal</h2>
  )}
 
- <div className="flex items-center gap-2">
+ <div className="flex items-center gap-3">
  <button onClick={() => setShowPreview(p => !p)}
- className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
- showPreview ?'bg-[#CC0000]/15 text-[#CC0000] border border-[#CC0000]/30' :'bg-neutral-800 text-neutral-400 hover:text-white'
+ className={`px-4 py-2 rounded-xl text-xs font-black transition-all shadow-sm border border-transparent ${
+ showPreview ?'bg-white/70 text-sky-800 border-white shadow-md' :'bg-white/40 text-sky-700 hover:bg-white hover:border-white'
  }`}>
- {showPreview ?'◧ Ocultar' :'▣ Preview'}
+ {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
  </button>
  <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-4 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-xs font-bold rounded-full transition disabled:opacity-40">
- {saving ?'...' :'💾 Guardar'}
+ className="px-5 py-2 bg-white hover:bg-sky-50 text-sky-600 text-xs font-black rounded-xl border border-white transition-all shadow-md active:scale-95 disabled:opacity-50">
+ {saving ?'...' :'💾 Guardar Borrador'}
  </button>
  <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-4 py-1.5 bg-[#CC0000] hover:bg-red-600 text-white text-xs font-black rounded-full transition shadow-[0_4px_12px_rgba(204,0,0,0.4)] disabled:opacity-40">
- 🚀 Publicar
+ className="px-6 py-2 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-white/50 active:scale-95 disabled:opacity-50">
+ 🚀 Emisión Pública
  </button>
  </div>
  </div>
 
  {/* Cuerpo */}
- <div className="flex-1 flex overflow-hidden">
+ <div className="flex-1 flex overflow-hidden p-4 gap-4">
 
  {/* ─ PANEL EDITOR ─ */}
- <div className="flex flex-col overflow-hidden border-r border-neutral-800 transition-all duration-300"
+ <div className="flex flex-col overflow-hidden bg-white/40 backdrop-blur-xl border border-white/50 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300"
  style={{ width: (showPreview && activeTab !== 'correos') ?'45%' :'100%' }}>
 
  {selectedNodeId && draftData ? (
  <>
  {/* Tabs */}
- <div className="flex gap-1 px-4 py-2 border-b border-neutral-800 bg-[#0d0d0d] shrink-0 overflow-x-auto">
+ <div className="flex gap-2 px-6 py-3 border-b border-white/40 bg-white/30 shrink-0 overflow-x-auto">
  {tabs.map(tab => (
  <button key={tab.id}
  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
- className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
- activeTab === tab.id ?'bg-[#CC0000] text-white' :'bg-neutral-800 text-neutral-400 hover:text-white'
+ className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap border border-transparent shadow-sm transition-all ${
+ activeTab === tab.id ?'bg-white/80 text-sky-800 border-white shadow-md' :'bg-white/30 text-sky-700 hover:bg-white/60 hover:border-white/50'
  }`}>
  {tab.label}
  </button>

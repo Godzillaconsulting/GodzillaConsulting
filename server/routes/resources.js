@@ -41,6 +41,14 @@ router.post('/send', async (req, res) => {
         let body = publishedData[bodyKey];
         let fileUrl = publishedData[urlKey];
 
+        // Reparación de URL relativa: Los correos obligatoriamente necesitan rutas absolutas (https://...)
+        // Si el admin pegó una ruta que empieza con '/' (como /api/media/... ), la transformamos
+        if (fileUrl && fileUrl.startsWith('/')) {
+            const baseUrl = `https://godzillaconsulting.ai`;
+            fileUrl = `${baseUrl}${fileUrl}`;
+        }
+
+
         // Fallbacks si no han publicado en Admin Studio
         if (!subject || !body || !fileUrl) {
             if (idx === 1) {

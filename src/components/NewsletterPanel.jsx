@@ -13,8 +13,8 @@ export default function NewsletterPanel() {
  const [tab, setTab] = useState('compose'); //'compose' |'subscribers' |'history'
 
  // Compose state
- const [subject, setSubject] = useState('');
- const [bodyHtml, setBodyHtml] = useState('');
+ const [subject, setSubject] = useState('Boletín #1 | Actualizaciones Globales de IA');
+ const [bodyHtml, setBodyHtml] = useState('<h2>Saludos,</h2>\\n<p>Aquí tienes la edición de esta semana de nuestro boletín estratégico de <strong>Godzilla Consulting</strong>.</p>\\n<p>En el documento adjunto a este correo encontrarás un reporte consolidado con los anuncios, herramientas y avances más importantes del mundo en Inteligencia Artificial.</p>\\n<p>Toda la información ha sido corroborada y contiene las ligas oficiales para que mantengas a tu negocio siempre un paso adelante.</p>\\n<p>Descarga tu recurso a continuación.</p>');
  const [attachmentUrl, setAttachmentUrl] = useState('');
  const [sending, setSending] = useState(false);
  const [sendResult, setSendResult] = useState(null);
@@ -172,7 +172,7 @@ export default function NewsletterPanel() {
  rows={14}
  value={bodyHtml}
  onChange={e => setBodyHtml(e.target.value)}
- placeholder={`<h2>Hola,</h2>\n<p>Esta semana te compartimos...</p>`}
+ placeholder={`<h2>Saludos,</h2>\n<p>Esta semana te compartimos...</p>`}
  className="w-full p-3 bg-black border border-neutral-700 rounded-xl text-white text-sm font-mono focus:border-[#CC0000] outline-none resize-none"
  />
  </div>

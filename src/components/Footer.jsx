@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone } from 'lucide-react';
 import logo from '../assets/Blanco_Logo.png';
+import { useSiteData } from '../context/SiteContext';
 
 const Footer = () => {
+    const { getNodeData } = useSiteData();
+    const fd = getNodeData('footer') || {};
     return (
         <footer className="bg-gradient-to-t from-[#ba0000] via-[#850000] to-[#4a0000]">
 
@@ -13,31 +16,31 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-12 lg:gap-0 text-white">
 
                     {/* Contact Info */}
-                    <div className="space-y-6 lg:pr-8 xl:pr-12">
-                        <h4 className="text-2xl font-bold tracking-tight mb-8">Información de <br />contacto</h4>
-                        <a href="mailto:info@godzillaconsulting.ai" className="flex items-center gap-3 hover:text-red-200 transition-colors">
+                    <div className="space-y-6 lg:pr-8 xl:pr-12 whitespace-pre-line">
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{fd.contactTitle || 'Información de\ncontacto'}</h4>
+                        <a href={`mailto:${fd.contactEmail || 'info@godzillaconsulting.ai'}`} className="flex items-center gap-3 hover:text-red-200 transition-colors">
                             <Mail size={18} />
-                            <span className="font-medium">info@godzillaconsulting.ai</span>
+                            <span className="font-medium">{fd.contactEmail || 'info@godzillaconsulting.ai'}</span>
                         </a>
-                        <a href="tel:+526565818912" className="flex items-center gap-3 hover:text-red-200 transition-colors">
+                        <a href={`tel:+52${(fd.contactPhone || '6565818912').replace(/\s+/g,'')}`} className="flex items-center gap-3 hover:text-red-200 transition-colors">
                             <Phone size={18} />
-                            <span className="font-medium">656 581 8912</span>
+                            <span className="font-medium">{fd.contactPhone || '656 581 8912'}</span>
                         </a>
                     </div>
 
                     {/* Navigation */}
                     <div className="lg:px-8 xl:px-12 lg:border-l border-white/30">
-                        <h4 className="text-2xl font-bold tracking-tight mb-8">Navegación</h4>
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{fd.navTitle || 'Navegación'}</h4>
                         <div className="grid grid-cols-2 gap-y-4">
                             <div className="flex flex-col gap-4">
-                                <Link to="/#inicio" className="hover:text-red-200 transition-colors font-medium text-sm">Inicio</Link>
-                                <Link to="/#cultura" className="hover:text-red-200 transition-colors font-medium text-sm">Cultura</Link>
-                                <Link to="/#servicios" className="hover:text-red-200 transition-colors font-medium text-sm">Servicios</Link>
+                                <Link to="/#inicio" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink1 || 'Inicio'}</Link>
+                                <Link to="/#cultura" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink2 || 'Cultura'}</Link>
+                                <Link to="/#servicios" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink3 || 'Servicios'}</Link>
                             </div>
                             <div className="flex flex-col gap-4">
-                                <Link to="/#paquetes" className="hover:text-red-200 transition-colors font-medium text-sm">Paquetes</Link>
-                                <Link to="/#portafolio" className="hover:text-red-200 transition-colors font-medium text-sm">Portafolio</Link>
-                                <Link to="/#recursos" className="hover:text-red-200 transition-colors font-medium text-sm">Recursos</Link>
+                                <Link to="/#paquetes" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink4 || 'Paquetes'}</Link>
+                                <Link to="/#portafolio" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink5 || 'Portafolio'}</Link>
+                                <Link to="/#recursos" className="hover:text-red-200 transition-colors font-medium text-sm">{fd.navLink6 || 'Recursos'}</Link>
                             </div>
                         </div>
                     </div>
@@ -45,11 +48,11 @@ const Footer = () => {
                     {/* Legal Links */}
                     <div className="lg:px-8 xl:px-12 lg:border-l border-white/30 flex flex-col justify-end pb-1 pt-12 lg:pt-0">
                         <div className="flex flex-col gap-4">
-                            <Link to="/aviso-privacidad" className="hover:text-red-200 transition-colors font-medium text-sm">Aviso de privacidad</Link>
-                            <Link to="/terminos" className="hover:text-red-200 transition-colors font-medium text-sm">Términos y condiciones</Link>
-                            <Link to="/politica-cookies" className="hover:text-red-200 transition-colors font-medium text-sm">Política de cookies</Link>
-                            <Link to="/faq" className="hover:text-red-200 transition-colors font-medium text-sm">Preguntas frecuentes</Link>
-                            <Link to="/#contacto" className="hover:text-red-200 transition-colors font-medium text-sm">Contacto</Link>
+                            {fd.legalLink1 && fd.legalUrl1 && <Link to={fd.legalUrl1} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink1}</Link>}
+                            {fd.legalLink2 && fd.legalUrl2 && <Link to={fd.legalUrl2} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink2}</Link>}
+                            {fd.legalLink3 && fd.legalUrl3 && <Link to={fd.legalUrl3} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink3}</Link>}
+                            {fd.legalLink4 && fd.legalUrl4 && <Link to={fd.legalUrl4} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink4}</Link>}
+                            {fd.legalLink5 && fd.legalUrl5 && <Link to={fd.legalUrl5} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink5}</Link>}
                         </div>
                     </div>
 
@@ -64,7 +67,7 @@ const Footer = () => {
 
                 {/* Copyright */}
                 <div className="text-center mt-12 pt-8 text-sm font-medium text-white/70">
-                    © {new Date().getFullYear()} Godzilla Co. Todos los derechos reservados.
+                    © {new Date().getFullYear()} {fd.copyrightText || 'Godzilla Co. Todos los derechos reservados.'}
                 </div>
             </div>
         </footer>

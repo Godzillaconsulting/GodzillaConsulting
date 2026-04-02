@@ -50,6 +50,18 @@ export default function CMCalendar({ adminProfile }) {
     const [activeHashtag, setActiveHashtag] = useState(null);
     const [showNewAssignModal, setShowNewAssignModal] = useState(false);
     const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
+    const [newCampaign, setNewCampaign] = useState({
+        empresa: 'godzilla',
+        calendario: 'contenido',
+        asignado: '',
+        titulo: '',
+        fecha: '',
+        plataforma: 'ALL',
+        briefing: '',
+        urlFoto: '',
+        urlVideo: '',
+        urlReferencia: ''
+    });
 
     // ─── Citas (desde DB) ─────────────────────────────────────────────────
     const [citas, setCitas] = useState([]);
@@ -67,6 +79,29 @@ export default function CMCalendar({ adminProfile }) {
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const commentInputRef = useRef(null);
+
+    // ─── Tendencias en Tiempo Real ─────────────────────────────────────────
+    const [trendsNiche, setTrendsNiche] = useState('B2B Tech');
+    const [trendsNetwork, setTrendsNetwork] = useState('Todas');
+    const [realTrends, setRealTrends] = useState(null);
+    const [loadingTrends, setLoadingTrends] = useState(false);
+
+    const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
+        setLoadingTrends(true);
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || '';
+            // Si DEV mode usar /api/trends directo o port 3000
+            const url = import.meta.env.DEV ? `http://localhost:3000/api/trends?network=${network}&filter=${niche}` : `/api/trends?network=${network}&filter=${niche}`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
+            const data = await res.json();
+            if (data.success && data.data) {
+                setRealTrends(data.data);
+            }
+        } catch (e) {
+            console.error('Error fetching trends', e);
+        }
+        setLoadingTrends(false);
+    };
 
     const unreadCount = notifications.filter(n => !n.read && n.to?.toLowerCase() === currentUser.toLowerCase()).length;
 
@@ -134,6 +169,10 @@ export default function CMCalendar({ adminProfile }) {
                     ]);
                 })
                 .finally(() => setLoadingCitas(false));
+        }
+
+        if (canAssign(adminProfile)) {
+            fetchTrends('Todas', 'B2B Tech');
         }
     }, []);
 
@@ -293,29 +332,57 @@ export default function CMCalendar({ adminProfile }) {
             return (
                 <div className="w-[280px] border-l border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col">
                     <div className="p-5 border-b border-white/10 bg-black/60">
-                        <h3 className="text-white font-black uppercase text-sm tracking-widest">🔥 Trends & Hashtags</h3>
-                        <p className="text-xs text-neutral-500 font-bold">Datos en tiempo real</p>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-white font-black uppercase text-sm tracking-widest">🔥 Trends & Hashtags</h3>
+                        </div>
+                        <p className="text-xs text-neutral-500 font-bold mb-3">Datos en tiempo real (IA)</p>
+                        <div className="flex flex-col gap-2">
+                            <select value={trendsNetwork} onChange={e => setTrendsNetwork(e.target.value)} className="w-full bg-black border border-white/20 text-white text-[10px] rounded p-1.5 focus:outline-none focus:border-[#CC0000]">
+                                <option value="Todas">🌐 Todas las redes</option>
+                                <option value="TikTok">⚫ TikTok</option>
+                                <option value="Instagram">🟣 Instagram</option>
+                                <option value="LinkedIn">🔵 LinkedIn</option>
+                            </select>
+                            <input value={trendsNiche} onChange={e => setTrendsNiche(e.target.value)} placeholder="Ej: SaaS, E-commerce, IA..." className="w-full bg-black border border-white/20 text-white text-[10px] rounded p-1.5 focus:outline-none focus:border-[#CC0000]" />
+                            <button onClick={() => fetchTrends(trendsNetwork, trendsNiche)} disabled={loadingTrends} className="w-full bg-[#CC0000] text-white text-[10px] font-black uppercase py-1.5 rounded disabled:opacity-50 hover:bg-white hover:text-[#CC0000] transition-colors">
+                                {loadingTrends ? 'Buscando...' : '🔎 Analizar Trends'}
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 p-5 overflow-y-auto space-y-5">
-                        <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
-                            <h4 className="text-[#CC0000] font-black text-xs uppercase mb-3">Trending B2B Tech hoy:</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {['#AI', '#TechAgency', '#B2BGrowth', '#VentasB2B', '#SaaS'].map(tag => (
-                                    <span key={tag} onClick={() => setActiveHashtag(activeHashtag === tag ? null : tag)}
-                                        className={`text-xs font-bold px-2 py-1 rounded cursor-pointer transition-colors ${activeHashtag === tag ? 'bg-gradient-to-r from-[#CC0000] to-red-800 text-white' : 'text-neutral-300 bg-black/60 border border-white/10 hover:bg-white/20'}`}>
-                                        {tag}
-                                    </span>
-                                ))}
+                        {loadingTrends ? (
+                            <div className="flex flex-col items-center justify-center h-40 opacity-50">
+                                <span className="text-2xl animate-spin mb-2">⏳</span>
+                                <p className="text-[10px] font-bold text-white uppercase tracking-widest">Extrayendo datos de la red...</p>
                             </div>
-                        </div>
-                        <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
-                            <h4 className="text-neutral-500 font-black text-xs uppercase mb-3">Hooks Sugeridos:</h4>
-                            <ul className="text-xs text-neutral-300 space-y-3 font-bold">
-                                <li>👉 "3 Errores que tu agencia comete..."</li>
-                                <li>👉 "Cómo pasamos de 0 a 100k con..."</li>
-                                <li>👉 "El secreto del código limpio..."</li>
-                            </ul>
-                        </div>
+                        ) : realTrends ? (
+                            <>
+                                <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
+                                    <h4 className="text-[#CC0000] font-black text-[10px] uppercase mb-3">Trending {realTrends.niche} hoy:</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(realTrends.hashtags || []).map(tag => (
+                                            <span key={tag} onClick={() => setActiveHashtag(activeHashtag === tag ? null : tag)}
+                                                className={`text-[10px] font-bold px-2 py-1 rounded cursor-pointer transition-colors ${activeHashtag === tag ? 'bg-gradient-to-r from-[#CC0000] to-red-800 text-white' : 'text-neutral-300 bg-black/60 border border-white/10 hover:bg-white/20'}`}>
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
+                                    <h4 className="text-neutral-500 font-black text-[10px] uppercase mb-3">Hooks Sugeridos ({realTrends.network}):</h4>
+                                    <ul className="text-[10px] text-neutral-300 space-y-3 font-bold leading-tight">
+                                        {(realTrends.hooks || []).map((hk, i) => (
+                                            <li key={i} className="flex gap-2">
+                                                <span className="text-[#CC0000] shrink-0">👉</span>
+                                                <span>{hk}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-neutral-500 text-xs font-bold text-center">Haz clic en Analizar Trends para obtener la información de hoy.</p>
+                        )}
                     </div>
                 </div>
             );
@@ -660,36 +727,114 @@ export default function CMCalendar({ adminProfile }) {
 
             {/* ── MODAL: NUEVA CAMPAÑA ── */}
             {showNewCampaignModal && canCreate && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#111111] border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#111111] border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
                         <button onClick={() => setShowNewCampaignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
                         <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">🎯</span> Programar Campaña</h3>
+                        
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Título Interno</label>
-                                <input type="text" placeholder="Ej: Video explicativo Godzilla SaaS..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Fecha Estimada</label>
-                                    <input type="date" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Empresa *</label>
+                                    <select value={newCampaign.empresa} onChange={e => setNewCampaign({...newCampaign, empresa: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
+                                        <option value="godzilla">🦖 Godzilla Consulting</option>
+                                        <option value="accrual" disabled>🏢 Accrual (Próximamente)</option>
+                                        <option value="crein" disabled>🏗️ Crein (Próximamente)</option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma</label>
-                                    <select className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                        <option value="ALL">Multicanal</option>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Calendario Destino *</label>
+                                    <select value={newCampaign.calendario} onChange={e => setNewCampaign({...newCampaign, calendario: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
+                                        <option value="contenido">📣 Calendario de Contenido</option>
+                                        <option value="citas" disabled>📅 Calendario de Citas</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Para quién? (Encargado) *</label>
+                                    <select value={newCampaign.asignado} onChange={e => setNewCampaign({...newCampaign, asignado: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
+                                        <option value="">— Selecciona responsable —</option>
+                                        {TEAM.map(u => <option key={u} value={u}>@{u}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Cuándo? (Fecha) *</label>
+                                    <input type="date" value={newCampaign.fecha} onChange={e => setNewCampaign({...newCampaign, fecha: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Qué? (Título) *</label>
+                                    <input type="text" value={newCampaign.titulo} onChange={e => setNewCampaign({...newCampaign, titulo: e.target.value})} placeholder="Ej: Video explicativo Godzilla..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma *</label>
+                                    <select value={newCampaign.plataforma} onChange={e => setNewCampaign({...newCampaign, plataforma: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
+                                        <option value="ALL">🌐 Multicanal (Todas)</option>
                                         <option value="tiktok">⚫ TikTok</option>
                                         <option value="instagram">🟣 Instagram</option>
                                         <option value="facebook">🔵 Facebook</option>
                                     </select>
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Briefing para el Diseñador</label>
-                                <textarea placeholder="Explica la visión, tono y activos necesarios..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors resize-none" />
+                                <label className="block text-xs font-black text-yellow-500/80 uppercase mb-2 flex items-center gap-2">
+                                    <span>📸 Referencias (Fotos/Videos/URLs recomendadas)</span> 
+                                    <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[9px]">Opcional</span>
+                                </label>
+                                <div className="space-y-2 border border-white/5 p-3 rounded-xl bg-white/[0.02]">
+                                    <div className="flex items-center gap-3">
+                                        <span className="shrink-0 text-base w-6 text-center" title="Foto">🖼️</span>
+                                        <input type="url" value={newCampaign.urlFoto} onChange={e => setNewCampaign({...newCampaign, urlFoto: e.target.value})} placeholder="Ej: URL de referencia a Foto/Drive..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="shrink-0 text-base w-6 text-center" title="Video">🎬</span>
+                                        <input type="url" value={newCampaign.urlVideo} onChange={e => setNewCampaign({...newCampaign, urlVideo: e.target.value})} placeholder="Ej: URL de referencia a TikTok/Reel..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="shrink-0 text-base w-6 text-center" title="URL">🔗</span>
+                                        <input type="url" value={newCampaign.urlReferencia} onChange={e => setNewCampaign({...newCampaign, urlReferencia: e.target.value})} placeholder="Ej: URL al documento o blog..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                    </div>
+                                </div>
                             </div>
-                            <button onClick={() => setShowNewCampaignModal(false)} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all">
-                                Agregar al Calendario ✔️
+
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Briefing detallado *</label>
+                                <textarea value={newCampaign.briefing} onChange={e => setNewCampaign({...newCampaign, briefing: e.target.value})} placeholder="Explica la visión, tono y los activos necesarios para esta campaña..." rows="3" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors resize-none" />
+                            </div>
+
+                            <button onClick={() => {
+                                if (!newCampaign.empresa || !newCampaign.calendario || !newCampaign.asignado || !newCampaign.titulo || !newCampaign.fecha || !newCampaign.briefing) {
+                                    alert('Por favor completa todos los campos obligatorios (*) antes de programar la campaña.');
+                                    return;
+                                }
+                                
+                                const eventInfo = {
+                                    id: Date.now(),
+                                    title: `${newCampaign.plataforma === 'tiktok' ? '⚫ TK' : newCampaign.plataforma === 'instagram' ? '🟣 IG' : newCampaign.plataforma === 'facebook' ? '🔵 FB' : '🌐 Multi'}: ${newCampaign.titulo}`,
+                                    start: new Date(newCampaign.fecha + 'T12:00:00'),
+                                    end: new Date(newCampaign.fecha + 'T12:00:00'),
+                                    status: 'warning',
+                                    caption: newCampaign.briefing,
+                                    media_url: newCampaign.urlFoto || newCampaign.urlVideo || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80',
+                                    provider: newCampaign.empresa, // Guardamos la empresa
+                                    platform: newCampaign.plataforma === 'ALL' ? 'instagram' : newCampaign.plataforma, // Default icon/mockup behavior
+                                    comments: [{ id: Date.now(), author: currentUser, text: `@${newCampaign.asignado} te he asignado esta nueva campaña.`, time: 'ahora' }]
+                                };
+                                
+                                setEvents(prev => [...prev, eventInfo]);
+                                
+                                // Notificar a asignado
+                                setNotifications(prev => [{ id: Date.now()+1, to: newCampaign.asignado, from: currentUser, text: `@${newCampaign.asignado} te han asignado una nueva campaña para ${newCampaign.empresa}: "${newCampaign.titulo}"`, read: false, time: 'ahora', eventTitle: eventInfo.title }, ...prev]);
+                                
+                                setNewCampaign({ empresa: 'godzilla', calendario: 'contenido', asignado: '', titulo: '', fecha: '', plataforma: 'ALL', briefing: '', urlFoto: '', urlVideo: '', urlReferencia: '' });
+                                setShowNewCampaignModal(false);
+                            }} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all mt-4 border border-red-900/50 shadow-[0_4px_15px_rgba(204,0,0,0.5)]">
+                                AGREGAR AL CALENDARIO ✔️
                             </button>
                         </div>
                     </div>

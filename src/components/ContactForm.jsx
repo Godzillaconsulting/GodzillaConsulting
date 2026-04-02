@@ -20,6 +20,11 @@ const ContactForm = ({ showNewsletter = true }) => {
  const [hora, setHora] = useState('');
  const [isLoading, setIsLoading] = useState(false);
 
+ // Estados para el newsletter
+ const [nlEmail, setNlEmail] = useState('');
+ const [nlStatus, setNlStatus] = useState('idle'); // idle, loading, success, error
+ const [nlMsg, setNlMsg] = useState('');
+
  const handleSubmit = async (e) => {
  e.preventDefault();
  setIsLoading(true);
@@ -81,7 +86,35 @@ const ContactForm = ({ showNewsletter = true }) => {
  }
  };
 
- const resetForm = () => {
+ const handleNewsletterSubmit = async (e) => {
+  e.preventDefault();
+  if (!nlEmail.trim()) return;
+  setNlStatus('loading');
+  try {
+  const base = import.meta.env.DEV ? 'http://localhost:3000' : '';
+  const res = await fetch(`${base}/api/newsletter/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: nlEmail, source: 'website' })
+  });
+  const data = await res.json();
+  if (data.success) {
+      setNlStatus('success');
+      setNlMsg('¡Suscrito exitosamente! Revisa tu bandeja pronto.');
+      setNlEmail('');
+  } else {
+      setNlStatus('error');
+      setNlMsg(data.message || 'Error al procesar suscripción.');
+  }
+  } catch (err) {
+      setNlStatus('error');
+      setNlMsg('Error de red. Inténtalo más tarde.');
+  }
+  // Auto-hide success/error message after 5 seconds
+  setTimeout(() => { setNlStatus('idle'); setNlMsg(''); }, 5000);
+  };
+
+  const resetForm = () => {
  setIsSubmitted(false);
  window.scrollTo({ top: 0, behavior:'smooth' });
  };
@@ -318,22 +351,32 @@ const ContactForm = ({ showNewsletter = true }) => {
  {showNewsletter && (
  <div className="mt-28 max-w-[350px] mx-auto flex flex-col items-center justify-center text-center">
  <img src={godzillaLogoCircle} alt="Godzilla Consulting Logo" className="w-[124px] h-[124px] object-contain mb-8" />
- <h4 className="text-3xl font-black text-[#111111] mb-8 leading-tight tracking-tight">
- Suscríbete a <br /> nuestro boletín
- </h4>
- <div className="w-full flex items-center border-b border-gray-400 pb-2 mb-2 group cursor-pointer focus-within:border-[#CC0000] focus-within:border-b-2 transition-all">
- <input
- type="email"
- placeholder="Ingresa tu correo electrónico"
- className="w-full bg-transparent outline-none text-[#111111] placeholder-gray-500 font-medium text-sm"
- />
- <button className="text-[#111111] group-hover:text-[#CC0000] transition-colors focus:outline-none ml-2">
- <ArrowRight size={20} />
- </button>
- </div>
- <p className="text-[10px] text-gray-500 font-medium tracking-wide w-full text-left mb-16">Obtén las últimas noticias sobre marketing e IA.</p>
+  <h4 className="text-3xl font-black text-[#111111] mb-8 leading-tight tracking-tight">
+  Suscríbete a <br /> nuestro boletín
+  </h4>
+  <form onSubmit={handleNewsletterSubmit} className="w-full flex items-center border-b border-gray-400 pb-2 mb-2 group cursor-pointer focus-within:border-[#CC0000] focus-within:border-b-2 transition-all">
+  <input
+  type="email"
+  value={nlEmail}
+  onChange={e => setNlEmail(e.target.value)}
+  required
+  disabled={nlStatus === 'loading'}
+  placeholder="Ingresa tu correo electrónico"
+  className="w-full bg-transparent outline-none text-[#111111] placeholder-gray-500 font-medium text-sm disabled:opacity-50"
+  />
+  <button type="submit" disabled={nlStatus === 'loading'} className="text-[#111111] group-hover:text-[#CC0000] transition-colors focus:outline-none ml-2 disabled:opacity-50">
+  <ArrowRight size={20} />
+  </button>
+  </form>
+  <div className="h-6 w-full text-left">
+    {nlStatus === 'success' && <p className="text-[10px] text-green-600 font-bold tracking-wide">{nlMsg}</p>}
+    {nlStatus === 'error' && <p className="text-[10px] text-red-600 font-bold tracking-wide">{nlMsg}</p>}
+    {nlStatus === 'idle' && <p className="text-[10px] text-gray-500 font-medium tracking-wide">Obtén las últimas noticias sobre marketing e IA.</p>}
+  </div>
 
- <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
+  <div className="mb-16"></div>
+
+  <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
  <div className="flex justify-center items-center gap-8">
  <a href="https://www.instagram.com/godzilla_consulting/" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
  <img src={instagramIcon} alt="Instagram" className="w-10 h-10 object-contain" />

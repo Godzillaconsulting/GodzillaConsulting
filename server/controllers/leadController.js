@@ -23,22 +23,17 @@ export const processLead = async (req, res) => {
             userId = userResult.rows[0].id;
         }
 
-        // 3. Buscar la configuración del Recurso en la página (site_nodes)
-        const nodeResult = await client.query("SELECT published_data FROM site_nodes WHERE id = $1", ["recursos"]);
+        // 3. Buscar la configuración del Recurso en la tabla lead_magnets
+        const magnetResult = await client.query("SELECT email_subject, email_body, file_url FROM lead_magnets WHERE slug = $1", [slug]);
         
-        if (nodeResult.rows.length === 0 || !nodeResult.rows[0].published_data) {
-            throw new Error("La sección de recursos no está configurada o publicada.");
+        if (magnetResult.rows.length === 0) {
+            throw new Error(`El recurso con el identificador '${slug}' no existe o no se ha configurado en el Admin Panel.`);
         }
 
-        const data = nodeResult.rows[0].published_data;
-        
-        // Ahora sí slug será "recurso1", "recurso2", etc.
-        const emailSubject = data[`${slug}EmailSubject`];
-        const emailBody = data[`${slug}EmailBody`];
-        const fileUrl = data[`${slug}FileUrl`];
+        const { email_subject: emailSubject, email_body: emailBody, file_url: fileUrl } = magnetResult.rows[0];
 
         if (!emailSubject || !emailBody || !fileUrl) {
-            throw new Error("El correo de este recurso no se ha configurado completo en Godzilla Studio -> Recursos -> 💌 Correos.");
+            throw new Error("El correo de este recurso no se ha configurado completo en el Admin Panel -> Recursos -> 💌 Correos.");
         }
 
         // 5. Registrar la descarga y obtener ID (try/catch para tracking sin romper el proceso)

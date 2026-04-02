@@ -182,6 +182,7 @@ export default function AdminStudio() {
  setActiveTab('textos');
  setSelectedElementIndex(null);
  setSelectedFeatureIndex(null);
+ setActiveSection(null);
  
   let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
   combinedData = injectSectionDefaults(node.id, combinedData);

@@ -120,24 +120,27 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
         <tr><td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-            <!-- Header -->
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);position:relative;">
+            <!-- Header con Logo Visual -->
             <tr>
-              <td style="background:#111111;padding:28px 40px;text-align:center;">
-                <span style="color:#CC0000;font-size:24px;font-weight:900;letter-spacing:-1px;">GODZILLA</span>
-                <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:-1px;"> CONSULTING</span>
+              <td style="background:#111111;padding:28px 40px;text-align:center;border-bottom:4px solid #CC0000;">
+                 <h1 style="margin:0;color:#CC0000;font-size:28px;font-weight:900;font-family:system-ui,-apple-system,sans-serif;letter-spacing:-1px;">
+                    <span style="color:#CC0000;">GODZILLA</span><span style="color:#ffffff;"> CONSULTING</span>
+                 </h1>
               </td>
             </tr>
-            <!-- Body -->
+            <!-- Body con Marca de Agua -->
             <tr>
-              <td style="padding:40px;color:#111111;font-size:15px;line-height:1.7;">
+              <td style="padding:40px;color:#111111;font-size:15px;line-height:1.7;background-color:#ffffff;background-image:url('https://bot.godzillaconsulting.ai/api/media/assets/Godzilla_Watermark_Op2.png');background-repeat:no-repeat;background-position:center;background-size:200px;">
+                <div style="position:relative;z-index:2;background:rgba(255,255,255,0.85);padding:10px;border-radius:8px;">
                 ${bodyHtml}
                 ${attachmentUrl ? `
                 <div style="text-align:center;margin:32px 0;">
                   <a href="${attachmentUrl}" style="background:#CC0000;color:#fff;font-weight:bold;padding:14px 32px;text-decoration:none;border-radius:30px;display:inline-block;">
-                    📎 Descargar Adjunto
+                    📎 Descargar Recurso
                   </a>
                 </div>` : ''}
+                </div>
               </td>
             </tr>
             <!-- Footer -->

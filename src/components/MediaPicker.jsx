@@ -120,7 +120,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
             {/* Preview del valor actual */}
             <div
-                className="relative w-32 h-32 bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden cursor-pointer group hover:border-[#CC0000] p-2 flex items-center justify-center transition-colors"
+                className="relative shrink-0 w-32 h-32 bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden cursor-pointer group hover:border-[#CC0000] p-2 flex items-center justify-center transition-colors"
                 onClick={() => setIsOpen(true)}
             >
                 {value ? (

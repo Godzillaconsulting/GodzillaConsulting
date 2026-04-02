@@ -422,5 +422,36 @@ export function injectSectionDefaults(nodeId, draftSource) {
       if (combinedData.mainImageUrl === undefined) combinedData.mainImageUrl = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80';
   }
 
+  if (nodeId === 'footer') {
+      if (combinedData.contactTitle === undefined) combinedData.contactTitle = 'Información de\ncontacto';
+      if (combinedData.contactEmail === undefined) combinedData.contactEmail = 'info@godzillaconsulting.ai';
+      if (combinedData.contactPhone === undefined) combinedData.contactPhone = '656 581 8912';
+
+      if (combinedData.navTitle === undefined) combinedData.navTitle = 'Navegación';
+      if (combinedData.navLink1 === undefined) combinedData.navLink1 = 'Inicio';
+      if (combinedData.navLink2 === undefined) combinedData.navLink2 = 'Cultura';
+      if (combinedData.navLink3 === undefined) combinedData.navLink3 = 'Servicios';
+      if (combinedData.navLink4 === undefined) combinedData.navLink4 = 'Paquetes';
+      if (combinedData.navLink5 === undefined) combinedData.navLink5 = 'Portafolio';
+      if (combinedData.navLink6 === undefined) combinedData.navLink6 = 'Recursos';
+
+      if (combinedData.legalLink1 === undefined) combinedData.legalLink1 = 'Aviso de privacidad';
+      if (combinedData.legalUrl1 === undefined) combinedData.legalUrl1 = '/aviso-privacidad';
+      
+      if (combinedData.legalLink2 === undefined) combinedData.legalLink2 = 'Términos y condiciones';
+      if (combinedData.legalUrl2 === undefined) combinedData.legalUrl2 = '/terminos';
+      
+      if (combinedData.legalLink3 === undefined) combinedData.legalLink3 = 'Política de cookies';
+      if (combinedData.legalUrl3 === undefined) combinedData.legalUrl3 = '/politica-cookies';
+      
+      if (combinedData.legalLink4 === undefined) combinedData.legalLink4 = 'Preguntas frecuentes';
+      if (combinedData.legalUrl4 === undefined) combinedData.legalUrl4 = '/faq';
+      
+      if (combinedData.legalLink5 === undefined) combinedData.legalLink5 = 'Contacto';
+      if (combinedData.legalUrl5 === undefined) combinedData.legalUrl5 = '/#contacto';
+      
+      if (combinedData.copyrightText === undefined) combinedData.copyrightText = 'Godzilla Co. Todos los derechos reservados.';
+  }
+
   return combinedData;
 }

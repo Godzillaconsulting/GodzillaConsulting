@@ -143,11 +143,28 @@ async function processAndReply(userId, text, replyFn) {
                             const gRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
                             if (gRes?.id) {
                                 const r = await pool.query(
-                                    `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
-                                     VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
+                                    `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id, origen)
+                                     VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8,'instagram') RETURNING id`,
                                     [nombre, correo, telefono, servicio, fecha, hora, notas, gRes.id]
                                 );
-                                console.log(`[Instagram] ✅ Cita #${r.rows[0].id} guardada.`);
+                                
+                                if (correo && correo !== 'sin-correo@ig.com') {
+                                    try {
+                                        const { sendCitaConfirmationEmail } = await import('./services/emailService.js');
+                                        await sendCitaConfirmationEmail({
+                                            nombre,
+                                            email: correo,
+                                            fecha,
+                                            hora,
+                                            tipoSesion: servicio,
+                                            personalCalendarLink: gRes.personalCalendarLink
+                                        });
+                                    } catch(e) {
+                                        console.error('[Instagram] ❌ Send email error:', e.message);
+                                    }
+                                }
+
+                                console.log(`[Instagram] ✅ Cita #${r.rows[0].id} guardada y correo enviado.`);
                                 fRes = { success: true, id: r.rows[0].id, personal_calendar_link: gRes.personalCalendarLink };
                             } else {
                                 fRes = { success: false, error: 'Google Calendar no confirmó' };

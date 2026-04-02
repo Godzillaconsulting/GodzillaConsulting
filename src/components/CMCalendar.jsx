@@ -12,14 +12,20 @@ const locales = { 'es': es }
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales })
 
 // ─── ROLES ───────────────────────────────────────────────────────────────────
-// canAssign: Oscar (id=1, role=admin) o Judith (id=4, role=cm)
+// canAssign: Oscar, Judith, o el Super Admin absoluto (JareG)
 // canComplete: Todos (marcar como hecha)
-// canCreate: Solo Oscar y Judith
-const canAssign = (profile) =>
-    profile?.role === 'admin' || profile?.role === 'cm' ||
-    profile?.username?.toLowerCase() === 'oscar' ||
-    profile?.username?.toLowerCase() === 'judith' ||
-    profile?.id === 1 || profile?.id === 4;
+// canCreate: Oscar, Judith, JareG
+const canAssign = (profile) => {
+    if (!profile) return false;
+    const usr = profile.username?.toLowerCase() || '';
+    return profile.role === 'admin' || 
+           profile.role === 'cm' ||
+           usr === 'jareg' ||
+           usr === 'oscar' ||
+           usr === 'judith' ||
+           profile.id === 1 || 
+           profile.id === 4;
+};
 
 const isJudithOrAdmin = (profile) => canAssign(profile);
 

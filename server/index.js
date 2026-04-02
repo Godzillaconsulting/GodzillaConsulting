@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -235,9 +235,10 @@ if (!process.env.VERCEL) {
 
     // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo local/PM2
     // Usa Puppeteer/Chrome para mantener sesión activa 24/7
-    // [IMPORTANTE] Escondido de @vercel/nft para evitar empaquetar Puppeteer y exceder el límite de 250MB
-    const botPath = './whatsappBot.js';
-    import(/* @vite-ignore */ /* webpackIgnore: true */ botPath).then(({ initWhatsAppBot }) => {
+    // [IMPORTANTE] Escondido TOTALMENTE de @vercel/nft para evitar empaquetar Puppeteer
+    const w = "whatsapp";
+    const b = "Bot.js";
+    import('./' + w + b).then(({ initWhatsAppBot }) => {
         initWhatsAppBot();
         console.log('📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr');
     }).catch(err => {

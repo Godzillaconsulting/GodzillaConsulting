@@ -20,7 +20,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const [showCreate, setShowCreate] = useState(false);
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
-    const [isSuper, setIsSuper] = useState(false);
+    const [newRole, setNewRole] = useState('admin');
 
     useEffect(() => {
         if (profile) {
@@ -129,7 +129,8 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                     superadminPassword: masterPass, 
                     newUsername, 
                     newPassword, 
-                    isSuperadmin: isSuper 
+                    isSuperadmin: newRole === 'superadmin',
+                    role: newRole
                 })
             });
             const data = await res.json();
@@ -138,7 +139,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                 setShowCreate(false);
                 setNewUsername('');
                 setNewPassword('');
-                setIsSuper(false);
+                setNewRole('admin');
                 fetchTeamData();
             } else {
                 alert(data.message || 'Error al crear');
@@ -200,9 +201,9 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         }
     };
 
-    const handleToggleRole = async (targetId, currentUsername, currentIsSuper, newIsSuper) => {
-        if (currentIsSuper === newIsSuper) return;
-        const actionText = newIsSuper ? 'ASCENDER a 👑 SuperAdmin' : 'DEGRADAR a Empleado';
+    const handleUpdateRole = async (targetId, currentUsername, currentRole, newRole) => {
+        if (currentRole === newRole) return;
+        const actionText = newRole === 'superadmin' ? 'ASCENDER a 👑 SuperAdmin' : (newRole === 'admin' ? 'ASIGNAR a Editor/Admin' : 'DEGRADAR a Community Manager');
         const pass = prompt(`Estás a punto de ${actionText} a ${currentUsername}.\nIngresa tu Contraseña Maestra actual para autorizar el nombramiento:`);
         if (!pass) return fetchTeamData(); // Restaurar select visual si cancela
 
@@ -211,11 +212,11 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
             const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/${targetId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ superadminPassword: pass, isSuperadmin: newIsSuper })
+                body: JSON.stringify({ superadminPassword: pass, isSuperadmin: newRole === 'superadmin', role: newRole })
             });
             const data = await res.json();
             if (data.success) {
-                alert(`Jerarquía actualizada exitosamente. ${currentUsername} ahora es ${newIsSuper ? '👑 SuperAdmin' : 'Empleado'}.`);
+                alert(`Jerarquía actualizada exitosamente.`);
                 fetchTeamData();
             } else {
                 alert(data.message || 'Error al actualizar jerarquía');
@@ -357,11 +358,12 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                         <input type="text" required value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500"/>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Nivel Master</label>
-                                        <div className="flex items-center gap-3 h-[38px] px-3 bg-black border border-neutral-700 rounded-lg">
-                                            <input type="checkbox" checked={isSuper} onChange={e=>setIsSuper(e.target.checked)} className="accent-amber-500" />
-                                            <span className="text-sm font-bold text-gray-300">Es SuperAdmin</span>
-                                        </div>
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Rol / Nivel</label>
+                                        <select value={newRole} onChange={e=>setNewRole(e.target.value)} className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 appearance-none cursor-pointer">
+                                            <option value="superadmin">👑 SuperAdmin</option>
+                                            <option value="admin">📝 Editor/Admin</option>
+                                            <option value="cm">📱 Community Manager</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -407,13 +409,14 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                                         <span className="text-amber-500 font-bold bg-amber-500/10 px-3 py-1.5 rounded text-[10px] uppercase w-[120px] inline-block text-center shrink-0 border border-amber-500/30">👑 Fundador</span>
                                                     ) : (
                                                         <select 
-                                                            value={u.is_superadmin ? 'super' : 'emp'}
-                                                            onChange={(e) => handleToggleRole(u.id, u.username, u.is_superadmin, e.target.value === 'super')}
+                                                            value={u.role || (u.is_superadmin ? 'superadmin' : 'admin')}
+                                                            onChange={(e) => handleUpdateRole(u.id, u.username, u.role || (u.is_superadmin ? 'superadmin' : 'admin'), e.target.value)}
                                                             disabled={u.id === profile.id || (u.username === 'JareG' && profile.id !== 2)}
-                                                            className={`text-[10px] font-bold px-2 py-1.5 rounded uppercase outline-none cursor-pointer border transition ${u.is_superadmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-neutral-800 text-gray-400 border-neutral-700 hover:border-neutral-500'}`}
+                                                            className={`text-[10px] font-bold px-2 py-1.5 rounded uppercase outline-none cursor-pointer border transition ${u.role === 'superadmin' || u.is_superadmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : (u.role === 'cm' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'bg-neutral-800 text-gray-300 border-neutral-700 hover:border-neutral-500')}`}
                                                         >
-                                                            <option value="super">👑 SuperAdmin</option>
-                                                            <option value="emp">Empleado</option>
+                                                            <option value="superadmin">👑 SuperAdmin</option>
+                                                            <option value="admin">📝 Editor Admin</option>
+                                                            <option value="cm">📱 CM</option>
                                                         </select>
                                                     )}
                                                 </td>

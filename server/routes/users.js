@@ -82,7 +82,7 @@ const verifySuperAdminPassword = async (superadminId, providedPassword) => {
 // Obtener todos los usuarios y logs
 router.get('/', requireAdmin, requireSuperAdmin, async (req, res) => {
     try {
-        const usersRes = await pool.query('SELECT id, username, photo_url, is_superadmin, status, created_at FROM admins ORDER BY id ASC');
+        const usersRes = await pool.query('SELECT id, username, photo_url, is_superadmin, role, status, created_at FROM admins ORDER BY id ASC');
         const logsRes = await pool.query(`
             SELECT l.id, l.action, l.details, l.created_at, a.username 
             FROM admin_logs l 
@@ -98,7 +98,7 @@ router.get('/', requireAdmin, requireSuperAdmin, async (req, res) => {
 
 // Crear usuario (Requiere superadminPassword)
 router.post('/', requireAdmin, requireSuperAdmin, async (req, res) => {
-    const { superadminPassword, newUsername, newPassword, isSuperadmin } = req.body;
+    const { superadminPassword, newUsername, newPassword, isSuperadmin, role } = req.body;
     
     if (!await verifySuperAdminPassword(req.admin.id, superadminPassword)) {
         return res.status(403).json({ success: false, message: 'Contraseña maestra incorrecta.' });
@@ -108,9 +108,11 @@ router.post('/', requireAdmin, requireSuperAdmin, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(newPassword || 'Godzilla2026', salt);
         
+        const defaultRole = role || (isSuperadmin ? 'superadmin' : 'editor');
+        
         const r = await pool.query(
-            'INSERT INTO admins (username, password_hash, is_superadmin) VALUES ($1, $2, $3) RETURNING id',
-            [newUsername, hash, isSuperadmin === true]
+            'INSERT INTO admins (username, password_hash, is_superadmin, role) VALUES ($1, $2, $3, $4) RETURNING id',
+            [newUsername, hash, isSuperadmin === true, defaultRole]
         );
         
         await logAction(req.admin.id, 'CREATE_USER', { created_user: newUsername, is_superadmin: isSuperadmin });
@@ -123,7 +125,7 @@ router.post('/', requireAdmin, requireSuperAdmin, async (req, res) => {
 
 // Editar usuario / resetear pass (Requiere superadminPassword)
 router.put('/:id', requireAdmin, requireSuperAdmin, async (req, res) => {
-    const { superadminPassword, username, newPassword, status, isSuperadmin } = req.body;
+    const { superadminPassword, username, newPassword, status, isSuperadmin, role } = req.body;
     const targetId = req.params.id;
 
     if (!await verifySuperAdminPassword(req.admin.id, superadminPassword)) {
@@ -150,10 +152,11 @@ router.put('/:id', requireAdmin, requireSuperAdmin, async (req, res) => {
         const newUname = username || cur.username;
         const newStats = status || cur.status;
         const newIsSup = isSuperadmin !== undefined ? isSuperadmin : cur.is_superadmin;
+        const newRole = role !== undefined ? role : cur.role;
 
         await pool.query(
-            'UPDATE admins SET username=$1, password_hash=$2, status=$3, is_superadmin=$4 WHERE id=$5',
-            [newUname, hash, newStats, newIsSup, targetId]
+            'UPDATE admins SET username=$1, password_hash=$2, status=$3, is_superadmin=$4, role=$5 WHERE id=$6',
+            [newUname, hash, newStats, newIsSup, newRole, targetId]
         );
 
         await logAction(req.admin.id, 'UPDATE_USER', { target_user: cur.username });

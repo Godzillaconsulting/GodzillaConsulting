@@ -15,11 +15,12 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 
 // ─── ROLES ────────────────────────────────────────────────────────────────
+// canAssign: JareG (super), Oscar (godzilla_admin), Judith (CM)
 const canAssign = (profile) => {
     if (!profile) return false;
     const usr = (profile.username || '').toLowerCase();
     return profile.role === 'admin' || profile.role === 'cm' ||
-        usr === 'jareg' || usr === 'oscar' || usr === 'judith' ||
+        usr === 'jareg' || usr === 'oscar' || usr === 'godzilla_admin' || usr === 'judith' ||
         profile.id === 1 || profile.id === 4;
 };
 
@@ -38,13 +39,21 @@ export default function CMCalendar({ adminProfile }) {
     const canCreate = canAssign(adminProfile);
     const currentUser = adminProfile?.username || 'Usuario';
 
-    // ─── Estado del Calendario ─────────────────────────────────────────────
+    // ─── Pestaña activa del Calendario (solo para admins) ─────────────────
+    // 'contenido' | 'citas' | 'pendientes' | 'todos'
+    const [calendarTab, setCalendarTab] = useState('contenido');
+
+    // ─── Estado del Calendario de Contenido ───────────────────────────────
     const [events, setEvents] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [activePlatform, setActivePlatform] = useState('ALL');
     const [activeHashtag, setActiveHashtag] = useState(null);
     const [showNewAssignModal, setShowNewAssignModal] = useState(false);
     const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
+
+    // ─── Citas (desde DB) ─────────────────────────────────────────────────
+    const [citas, setCitas] = useState([]);
+    const [loadingCitas, setLoadingCitas] = useState(false);
 
     // ─── Sistema de Tareas ────────────────────────────────────────────────
     const [tasks, setTasks] = useState([]);
@@ -98,6 +107,34 @@ export default function CMCalendar({ adminProfile }) {
         setNotifications([
             { id: 1, to: currentUser, from: 'Judith', text: '@' + currentUser + ' revisa el post de Facebook, necesita ajuste de color.', read: false, time: 'hace 2h', eventTitle: '🔵 FB: El boca a boca' }
         ]);
+
+        // Cargar citas reales si es admin
+        if (canAssign(adminProfile)) {
+            setLoadingCitas(true);
+            const API_URL = import.meta.env.VITE_API_URL || '';
+            fetch(`${API_URL}/api/citas`)
+                .then(r => r.json())
+                .then(data => {
+                    const citaEvents = (data.citas || data || []).map(c => ({
+                        id: `cita-${c.id}`,
+                        title: `📅 ${c.nombre_completo || c.nombre} — ${c.tipo_sesion || 'Consultoría'}`,
+                        start: new Date(`${c.fecha}T${c.hora || '10:00'}`),
+                        end: new Date(`${c.fecha}T${c.hora || '10:00'}`),
+                        status: c.status === 'confirmada' ? 'success' : 'warning',
+                        tipo: 'cita',
+                        raw: c
+                    }));
+                    setCitas(citaEvents);
+                })
+                .catch(() => {
+                    // Si falla, datos de muestra
+                    setCitas([
+                        { id: 'cita-1', title: '📅 Carlos Mendez — CRM', start: today, end: today, status: 'success', tipo: 'cita', raw: { email: 'carlos@demo.com', telefono: '664-000-0001', notas_adicionales: 'Interesado en plan B2B' } },
+                        { id: 'cita-2', title: '📅 Ana Torres — SEO', start: tomorrow, end: tomorrow, status: 'warning', tipo: 'cita', raw: { email: 'ana@demo.com', telefono: '664-000-0002', notas_adicionales: 'Quiere auditoría SEO completa' } },
+                    ]);
+                })
+                .finally(() => setLoadingCitas(false));
+        }
     }, []);
 
     // ─── DETECTOR DE @menciones EN EL INPUT ──────────────────────────────
@@ -185,6 +222,21 @@ export default function CMCalendar({ adminProfile }) {
     `;
 
     const filteredEvents = activePlatform === 'ALL' ? events : events.filter(e => e.platform === activePlatform);
+    // Eventos a mostrar en el calendario según pestaña
+    const pendingTaskEvents = tasks.filter(t => !t.done).map(t => ({
+        id: `task-${t.id}`,
+        title: `✅ ${t.para}: ${t.que.substring(0, 35)}...`,
+        start: new Date(t.deadline + 'T00:00'),
+        end: new Date(t.deadline + 'T00:00'),
+        status: 'warning', tipo: 'pendiente', raw: t
+    }));
+    const calendarEvents = {
+        contenido: filteredEvents,
+        citas: citas,
+        pendientes: pendingTaskEvents,
+        todos: [...filteredEvents, ...citas, ...pendingTaskEvents]
+    }[calendarTab] || filteredEvents;
+
     const pendingTasks = tasks.filter(t => !t.done);
     const doneTasks = tasks.filter(t => t.done);
 
@@ -394,6 +446,35 @@ export default function CMCalendar({ adminProfile }) {
                         </div>
                     </div>
 
+
+                    {/* Pestañas de Calendario (solo Oscar, Judith, JareG) */}
+                    {canCreate && (
+                        <div className="flex gap-2 mb-4">
+                            {[
+                                { id: 'contenido', label: '📣 Contenido', count: events.length },
+                                { id: 'citas', label: '📅 Citas', count: citas.length },
+                                { id: 'pendientes', label: '✅ Pendientes', count: pendingTaskEvents.length },
+                                { id: 'todos', label: '🗺️ Todo', count: null },
+                            ].map(tab => (
+                                <button key={tab.id} onClick={() => setCalendarTab(tab.id)}
+                                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+                                        calendarTab === tab.id
+                                            ? 'bg-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]'
+                                            : 'bg-black/60 border border-white/10 text-neutral-500 hover:text-white hover:border-white/30'
+                                    }`}>
+                                    {tab.label}
+                                    {tab.count !== null && (
+                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                                            calendarTab === tab.id ? 'bg-white/20' : 'bg-white/10'
+                                        }`}>{tab.count}</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Filtros de Plataforma (solo en pestaña Contenido o Todos) */}
+                    {(calendarTab === 'contenido' || calendarTab === 'todos' || !canCreate) && (
                     <div className="flex gap-3">
                         {[{ id: 'ALL', label: 'Todas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
                             <button key={tab.id} onClick={() => setActivePlatform(tab.id)}
@@ -402,15 +483,31 @@ export default function CMCalendar({ adminProfile }) {
                             </button>
                         ))}
                     </div>
+                    )}
+
+                    {/* Carga de citas */}
+                    {calendarTab === 'citas' && loadingCitas && (
+                        <p className="text-xs text-neutral-500 font-black animate-pulse">Cargando citas desde la base de datos...</p>
+                    )}
                 </div>
 
                 <div className="flex-1 p-4 md:p-6 overflow-hidden bg-[#050505] min-h-[500px]">
                     <Calendar
-                        localizer={localizer} events={filteredEvents}
+                        localizer={localizer} events={calendarEvents}
                         startAccessor="start" endAccessor="end" style={{ height: '100%' }}
                         messages={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", next: "Sig", previous: "Ant" }}
                         culture="es" eventPropGetter={eventStyleGetter}
-                        onSelectEvent={(event) => { setSelectedEvent(event); setCommentText(''); setMentionQuery(null); }}
+                        onSelectEvent={(event) => {
+                            // Para citas y pendientes mostramos panel simplificado
+                            if (event.tipo === 'cita') {
+                                setSelectedEvent({ ...event, isCita: true });
+                            } else if (event.tipo === 'pendiente') {
+                                setSelectedEvent({ ...event, isPendiente: true });
+                            } else {
+                                setSelectedEvent(event);
+                            }
+                            setCommentText(''); setMentionQuery(null);
+                        }}
                     />
                 </div>
             </div>

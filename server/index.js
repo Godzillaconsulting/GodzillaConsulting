@@ -235,7 +235,8 @@ if (!process.env.VERCEL) {
 
     // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo local/PM2
     // Usa Puppeteer/Chrome para mantener sesión activa 24/7
-    // [IMPORTANTE] Escondido TOTALMENTE de @vercel/nft para evitar empaquetar Puppeteer
+    // [IMPORTANTE] Aislado de Vercel y ejecutado como servicio independiente por pm2
+    /*
     const w = "whatsapp";
     const b = "Bot.js";
     import('./' + w + b).then(({ initWhatsAppBot }) => {
@@ -244,6 +245,7 @@ if (!process.env.VERCEL) {
     }).catch(err => {
         console.error('❌ [WhatsApp] Error al iniciar bot:', err.message);
     });
+    */
 }
 
 // Exportar para Vercel

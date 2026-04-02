@@ -101,3 +101,8 @@ export const isIPBlocked = async (ip) => {
         return false; // Si la tabla no existe, no bloqueamos
     }
 };
+
+// ──────────────────────────────────────────────────────────
+// 6. Alias de 'requireAdmin' faltante en las otras rutas
+// ──────────────────────────────────────────────────────────
+export const requireAdmin = verifyAdminToken;

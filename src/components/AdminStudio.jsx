@@ -349,16 +349,16 @@ export default function AdminStudio() {
  const isSelected = selectedNodeId === node.id;
  return (
  <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
- isSelected ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-red-900/30'
+ className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
+ isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
  }`}
  >
- <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
+ <span className="text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 group-hover:scale-110">{meta?.emoji ||'📄'}</span>
  <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors ${isSelected ?'text-[#CC0000]' :'text-white/80'}`}>
+ <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
  {meta?.label || node.id}
  </span>
- <span className={`text-[9px] font-black transition-colors ${isSelected ?'text-black/60' :'text-neutral-300/50'}`}>
+ <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
  §{idx + 1} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>
@@ -380,16 +380,16 @@ export default function AdminStudio() {
  const isSelected = selectedNodeId === node.id;
  return (
  <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-2.5 shadow-sm border border-transparent ${
- isSelected ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-red-900/30'
+ className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
+ isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
  }`}
  >
- <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
+ <span className="text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 group-hover:scale-110">{meta?.emoji ||'📄'}</span>
  <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors ${isSelected ?'text-[#CC0000]' :'text-white/80'}`}>
+ <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
  {meta?.label || node.id}
  </span>
- <span className={`text-[9px] font-black transition-colors ${isSelected ?'text-black/60' :'text-neutral-300/50'}`}>
+ <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
  §{idx + 4} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>

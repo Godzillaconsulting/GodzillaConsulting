@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Credenciales inválidas.' });
         }
 
-        const result = await pool.query('SELECT * FROM admins WHERE username = $1', [username.trim().toLowerCase()]);
+        const result = await pool.query('SELECT * FROM admins WHERE LOWER(username) = $1', [username.trim().toLowerCase()]);
 
         if (result.rows.length === 0) {
             // NO revelamos si el usuario existe o no (timing-safe)

@@ -329,9 +329,12 @@ export default function AdminStudio() {
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className="relative z-10 w-[200px] min-w-[200px] flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)]">
  <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
- <div>
- <p className="text-base font-black text-[#CC0000] leading-none drop-shadow-sm">Godzilla</p>
- <p className="text-[10px] text-white/60 font-bold mt-0.5">Admin Studio</p>
+ <div className="flex items-center gap-2.5">
+ <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
+ <div className="flex flex-col justify-center">
+ <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
+ <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
+ </div>
  </div>
  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
  isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'
@@ -340,64 +343,65 @@ export default function AdminStudio() {
  </button>
  </div>
 
- <div className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
- 
- <p className="px-3 text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2 mt-1 drop-shadow-sm">🌲 Ramas de Landing</p>
- 
- {sortedNodes.slice(0, 3).map((node, idx) => {
- const meta = PAGE_SECTIONS.find(s => s.id === node.id);
- const isSelected = selectedNodeId === node.id;
- return (
- <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
- isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
- }`}
- >
- <span className="text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 group-hover:scale-110">{meta?.emoji ||'📄'}</span>
- <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
- {meta?.label || node.id}
- </span>
- <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
- §{idx + 1} · {meta?.tag || node.id.toUpperCase()}
- </span>
- </div>
- </button>
- );
- })}
+ <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+  {[
+    {
+      title: "Sitio Principal", emoji: "⭐",
+      filter: (n, tag) => ['INICIO', 'CULTURA', 'PORTAFOLIO', 'PIE'].includes(tag)
+    },
+    {
+      title: "Experiencias", emoji: "📦",
+      filter: (n, tag) => tag === 'PAQUETES' || n.id.startsWith('paquete-')
+    },
+    {
+      title: "Soluciones", emoji: "⚡",
+      filter: (n, tag) => tag === 'SERVICIOS' || tag === 'SERVICIO' || n.id.startsWith('servicio-')
+    },
+    {
+      title: "Materiales", emoji: "📚",
+      filter: (n, tag) => tag === 'RECURSOS' || n.id.startsWith('landing-recurso')
+    }
+  ].map((group, gIdx) => {
+    const groupNodes = sortedNodes.filter(n => {
+       const meta = PAGE_SECTIONS.find(s => s.id === n.id);
+       return group.filter(n, meta?.tag);
+    });
+    
+    if (groupNodes.length === 0) return null;
 
- {sortedNodes.length > 3 && (
-     <button onClick={() => setIsLandingMenuOpen(p => !p)} className="w-full text-center py-2 mt-3 bg-[#CC0000]/10 hover:bg-[#CC0000]/20 text-white font-black text-[9px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-1.5 border border-[#CC0000]/30 shadow-[0_2px_10px_rgba(204,0,0,0.15)] transition-all">
-     <span className="drop-shadow-md">{isLandingMenuOpen ? 'Ocultar ramas extras' : 'Ver las demás ramas'}</span>
-     <span className="text-[#CC0000] drop-shadow-[0_0_5px_rgba(204,0,0,0.8)]">{isLandingMenuOpen ? '▲' : '▼'}</span>
-     </button>
- )}
-
- {isLandingMenuOpen && (
- <div className="space-y-0.5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
- {sortedNodes.slice(3).map((node, idx) => {
- const meta = PAGE_SECTIONS.find(s => s.id === node.id);
- const isSelected = selectedNodeId === node.id;
- return (
- <button key={node.id} onClick={() => handleSelectSection(node)}
- className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
- isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
- }`}
- >
- <span className="text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 group-hover:scale-110">{meta?.emoji ||'📄'}</span>
- <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
- {meta?.label || node.id}
- </span>
- <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
- §{idx + 4} · {meta?.tag || node.id.toUpperCase()}
- </span>
+    return (
+      <div key={gIdx} className="space-y-1">
+        <p className="px-3 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 drop-shadow-sm flex items-center gap-1.5">
+            <span className="text-xs">{group.emoji}</span> {group.title}
+        </p>
+        <div className="space-y-0.5 relative">
+          {groupNodes.map((node) => {
+             const meta = PAGE_SECTIONS.find(s => s.id === node.id);
+             const isSelected = selectedNodeId === node.id;
+             const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
+             return (
+             <button key={node.id} onClick={() => handleSelectSection(node)}
+             className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
+             isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
+             }`}
+             >
+             <span className={`text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-[0_2px_10px_rgba(204,0,0,0.4)]' : 'group-hover:scale-110'}`}>{meta?.emoji ||'📄'}</span>
+             <div className="min-w-0 flex-1">
+             <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
+             {meta?.label || node.id}
+             </span>
+             <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
+             §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
+             </span>
+             </div>
+             </button>
+             );
+          })}
+        </div>
+      </div>
+    );
+  })}
  </div>
- </button>
- );
- })}
- </div>
- )}
 
  <div className="mt-auto px-2 pb-4 space-y-1">
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}

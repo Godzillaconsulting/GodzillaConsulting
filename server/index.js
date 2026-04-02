@@ -30,8 +30,18 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
-// Helmet: Añade headers de seguridad. Desactivamos CSP para no bloquear a Sanity ni archivos estáticos de React.
-app.use(helmet({ contentSecurityPolicy: false }));
+// Helmet: Headers de seguridad HTTP — protege clickjacking, sniffing, XSS
+app.use(helmet({
+    contentSecurityPolicy: false, // CSP custom en prod si se necesita
+    crossOriginEmbedderPolicy: false,
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xContentTypeOptions: true,      // Previene MIME sniffing
+    xFrameOptions: { action: 'DENY' }, // Previene clickjacking
+}));
+
+// Cabecera anti-fingerprinting: oculta que es Express
+app.disable('x-powered-by');
 
 // CORS: Define qué dominios pueden hacer peticiones a este servidor
 const allowedOrigins = [
@@ -72,13 +82,20 @@ const chatLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Rate limit para auth (login): 30 intentos por 15 min
+// Rate limit para auth (login): 5 intentos por 15 min — anti brute-force REAL
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'development' ? 1000 : 30,
-    message: { error: 'Demasiados intentos de login: espera 15 minutos.' },
+    windowMs: 15 * 60 * 1000, // 15 min
+    max: process.env.NODE_ENV === 'development' ? 1000 : 5, // Solo 5 intentos en prod
+    message: { error: 'Demasiados intentos de inicio de sesión. Cuenta bloqueada preventivamente 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
+    skipSuccessfulRequests: true, // No contar logins exitosos
+    keyGenerator: (req) => {
+        // Track por IP + username combinado para ser más granular
+        const username = req.body?.username || 'anon';
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+        return `${ip}_${username}`;
+    }
 });
 
 // Anti-Spam de Competidores (Evita inyección masiva de basura a la Base de Datos)

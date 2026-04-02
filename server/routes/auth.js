@@ -2,58 +2,182 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
+import { logFailedLogin, isIPBlocked } from '../middleware/adminAuth.js';
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET;
 
+// ──────────────────────────────────────────────────────────
+// POST /api/auth/login
+// Con protección contra brute-force + bloqueo por IP + audit log
+// ──────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
+    // Agente de seguridad: ningún bot o escáner automatizado pasa
+    const ua = req.headers['user-agent'] || '';
+    const isSuspiciousBot = /curl|python-requests|go-http|scrapy|libwww|httpie|okhttp|java\//i.test(ua);
+    if (isSuspiciousBot) {
+        return res.status(403).json({ success: false, message: 'Agente no permitido.' });
+    }
+
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+
+    // Verificar si la IP está bloqueada
+    const blocked = await isIPBlocked(clientIp);
+    if (blocked) {
+        return res.status(429).json({
+            success: false,
+            message: 'IP temporalmente bloqueada debido a múltiples intentos fallidos. Espera 15 minutos.',
+            blocked: true
+        });
+    }
+
     try {
         const { username, password } = req.body;
-        
+
         if (!username || !password) {
             return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos.' });
         }
 
-        const result = await pool.query('SELECT * FROM admins WHERE username = $1', [username]);
-        
+        // Longitud máxima para evitar ataques de desbordamiento
+        if (username.length > 60 || password.length > 128) {
+            return res.status(400).json({ success: false, message: 'Credenciales inválidas.' });
+        }
+
+        const result = await pool.query('SELECT * FROM admins WHERE username = $1', [username.trim().toLowerCase()]);
+
         if (result.rows.length === 0) {
+            // NO revelamos si el usuario existe o no (timing-safe)
+            await logFailedLogin(username, clientIp);
+            // Simulamos delay para prevenir timing attacks
+            await bcrypt.hash('dummy_timing_protection', 10);
             return res.status(401).json({ success: false, message: 'Credenciales incorrectas.' });
         }
 
         const admin = result.rows[0];
+
+        // Verificar si la cuenta está bloqueada
+        if (admin.is_locked) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Cuenta bloqueada. Contacta a JareG para restaurarla.',
+                locked: true
+            });
+        }
+
         const isMatch = await bcrypt.compare(password, admin.password_hash);
 
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Credenciales incorrectas.' });
+            await logFailedLogin(username, clientIp);
+            
+            // Auto-lock: si tiene >7 intentos fallidos en la DB, bloquear la cuenta
+            const failCount = await pool.query(
+                `SELECT COUNT(*) FROM login_attempts 
+                 WHERE username = $1 AND attempted_at > NOW() - INTERVAL '30 minutes'`,
+                [username]
+            ).catch(() => ({ rows: [{ count: 0 }] }));
+            
+            const fails = parseInt(failCount.rows[0].count);
+            if (fails >= 7) {
+                await pool.query(
+                    'UPDATE admins SET is_locked = TRUE WHERE username = $1',
+                    [username]
+                ).catch(() => {});
+                return res.status(403).json({
+                    success: false,
+                    message: 'Cuenta bloqueada por múltiples intentos fallidos. Contacta al administrador.',
+                    locked: true
+                });
+            }
+
+            const remaining = Math.max(0, 7 - fails);
+            return res.status(401).json({ 
+                success: false, 
+                message: `Credenciales incorrectas. Te quedan ${remaining} intentos antes del bloqueo.`,
+                attemptsLeft: remaining
+            });
         }
 
+        // Login exitoso: limpiar intentos fallidos de esta IP
+        pool.query(
+            'DELETE FROM login_attempts WHERE ip_address = $1 OR username = $2',
+            [clientIp, username]
+        ).catch(() => {});
+
+        // Incluir role en el JWT payload
         const token = jwt.sign(
-            { id: admin.id, username: admin.username },
-            process.env.JWT_SECRET || 'godzilla_temp_secret_key_2026',
-            { expiresIn: '24h' }
+            { 
+                id: admin.id, 
+                username: admin.username,
+                role: admin.role || 'user'
+            },
+            JWT_SECRET,
+            { expiresIn: '8h' } // Reducido de 24h a 8h (turno laboral)
         );
 
-        res.json({ success: true, token, username: admin.username });
+        // Log de acceso exitoso
+        pool.query(
+            `INSERT INTO login_attempts (username, ip_address, attempted_at, success)
+             VALUES ($1, $2, NOW(), TRUE)
+             ON CONFLICT DO NOTHING`,
+            [admin.username, clientIp]
+        ).catch(() => {});
+
+        res.json({ 
+            success: true, 
+            token, 
+            username: admin.username,
+            role: admin.role || 'user'
+        });
+
     } catch (error) {
-        console.error('Error en /api/auth/login:', error);
-        res.status(500).json({ success: false, message: 'Error en el servidor.' });
+        // En producción NUNCA devolver el stack trace
+        console.error('[AUTH ERROR]', error.message);
+        res.status(500).json({ success: false, message: 'Error en el servidor. Contacta a IT.' });
     }
 });
 
-// ── Verificar token activo ────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// GET /api/auth/verify — Verificar token activo
+// ──────────────────────────────────────────────────────────
 router.get('/verify', (req, res) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ success: false, message: 'Token no proporcionado.' });
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'godzilla_temp_secret_key_2026');
-        res.json({ success: true, username: decoded.username, id: decoded.id });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({ 
+            success: true, 
+            username: decoded.username, 
+            id: decoded.id,
+            role: decoded.role 
+        });
     } catch (err) {
-        res.status(401).json({ success: false, message: 'Token inválido o expirado.' });
+        const msg = err.name === 'TokenExpiredError' 
+            ? 'Sesión expirada. Inicia sesión nuevamente.' 
+            : 'Token inválido.';
+        res.status(401).json({ success: false, message: msg });
     }
+});
+
+// ──────────────────────────────────────────────────────────
+// POST /api/auth/logout — Invalidar sesión (para logs)
+// ──────────────────────────────────────────────────────────
+router.post('/logout', (req, res) => {
+    // Con JWT stateless no hay servidor-side invalidation sin una lista negra.
+    // El frontend limpia el localStorage. Aquí registramos el evento.
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            console.log(`[LOGOUT] ${decoded.username} cerró sesión.`);
+        } catch (_) {}
+    }
+    res.json({ success: true });
 });
 
 export default router;

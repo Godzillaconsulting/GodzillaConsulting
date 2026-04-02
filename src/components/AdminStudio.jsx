@@ -329,9 +329,12 @@ export default function AdminStudio() {
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className="relative z-10 w-[200px] min-w-[200px] flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)]">
  <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
- <div>
- <p className="text-base font-black text-[#CC0000] leading-none drop-shadow-sm">Godzilla</p>
- <p className="text-[10px] text-white/60 font-bold mt-0.5">Admin Studio</p>
+ <div className="flex items-center gap-2.5">
+ <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
+ <div className="flex flex-col justify-center">
+ <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
+ <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
+ </div>
  </div>
  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
  isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'

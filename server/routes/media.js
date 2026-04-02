@@ -46,7 +46,20 @@ const upload = multer({
 // ─── Multer para videos (500MB → Disco local, sin límite de DB) ──────────────
 const uploadVideo = multer({
     storage: multer.diskStorage({
-        destination: ARCHIVOS_PESADOS_DIR,
+        // Función asíncrona: previene que multer llame a mkdirSync(string) en el primer ciclo del event loop (Evita Vercel 500)
+        destination: (req, file, cb) => {
+            const dest = process.env.VERCEL ? '/tmp/uploads/assets' : ARCHIVOS_PESADOS_DIR;
+            // Asegurar creación asíncrona sin bloquear el arranque
+            fs.mkdir(dest, { recursive: true }, (err) => {
+                // EROFS / ENOENT fallará aquí pero en ejecución, no en BOOT.
+                if (err && err.code !== 'EEXIST') {
+                    console.error('[Media] No se pudo crear directorio destino:', err);
+                    // Fallback de emergencia
+                    return cb(null, '/tmp');
+                }
+                cb(null, dest);
+            });
+        },
         filename: (req, file, cb) => {
             const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
             const ext = path.extname(file.originalname);

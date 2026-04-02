@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { injectSectionDefaults } from '../utils/studioConfig';
 
 const SiteContext = createContext();
 
@@ -41,7 +42,8 @@ export function SiteProvider({ children }) {
       return previewOverride.data;
     }
     const node = nodes.find(n => n.id === id);
-    return node ? node.published_data : null;
+    if (!node || !node.published_data) return null;
+    return injectSectionDefaults(id, node.published_data);
   };
 
   // Llamado por AdminStudio al seleccionar un nodo y editar el draft

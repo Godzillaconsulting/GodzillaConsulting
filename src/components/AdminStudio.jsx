@@ -39,7 +39,12 @@ function detectTextFields(data) {
  !NON_TEXT_KEYS.has(key) &&
  !key.startsWith('#') &&
  !/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/.test(key)
- );
+ ).sort(([a], [b]) => {
+     const numA = parseInt(a.match(/\d+/) ? a.match(/\d+/)[0] : '0', 10);
+     const numB = parseInt(b.match(/\d+/) ? b.match(/\d+/)[0] : '0', 10);
+     if (numA !== numB) return numA - numB;
+     return a.localeCompare(b);
+ });
 }
 
 function detectMediaFields(data) {
@@ -47,7 +52,12 @@ function detectMediaFields(data) {
  typeof val ==='string' &&
  MEDIA_PATTERNS.test(key) &&
  !SKIP_MEDIA.has(key)
- );
+ ).sort(([a], [b]) => {
+     const numA = parseInt(a.match(/\d+/) ? a.match(/\d+/)[0] : '0', 10);
+     const numB = parseInt(b.match(/\d+/) ? b.match(/\d+/)[0] : '0', 10);
+     if (numA !== numB) return numA - numB;
+     return a.localeCompare(b);
+ });
 }
 
 // Convierte camelCase/snakeCase a label legible

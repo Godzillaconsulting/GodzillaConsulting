@@ -37,6 +37,9 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploading(true);
         setUploadProgress(0);
 
+        const isVideoFile = file.type.startsWith('video/');
+        const endpoint = isVideoFile ? `${API}/api/media/upload-video` : `${API}/api/media/upload`;
+
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -67,7 +70,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                 }
             };
             xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo.'); };
-            xhr.open('POST', `${API}/api/media/upload`);
+            xhr.open('POST', endpoint);
             const token = localStorage.getItem('adminToken');
             if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.send(formData);
@@ -291,8 +294,8 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                 className="w-full max-w-sm border-2 border-dashed border-neutral-600 hover:border-[#CC0000] hover:bg-[#CC0000]/10 rounded-2xl p-10 cursor-pointer transition-all text-center group"
                                             >
                                                 <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📤</div>
-                                                <p className="text-white font-bold mb-1">Arrastra o haz clic para subir</p>
-                                                <p className="text-neutral-500 text-xs">Imágenes: JPG, PNG, GIF, WebP, SVG · Videos: MP4, WebM · Máx. 200 MB</p>
+                        <p className="text-white font-bold mb-1">Arrastra o haz clic para subir</p>
+                                                <p className="text-neutral-500 text-xs">Imágenes: JPG, PNG, GIF, WebP, SVG · Videos: MP4, WebM, MOV (→ servidor local) · Imágenes máx. 10 MB · Videos máx. 500 MB</p>
                                             </div>
                                         </>
                                     )}

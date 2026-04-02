@@ -475,11 +475,17 @@ export default function AdminStudio() {
          : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
  }`}>
  {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-[#CC0000]"></span></span>}
- {saving ?'...' :'💾 Guardar Borrador'}
+ {saving ? '...' : (
+    <span className="flex items-center justify-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Guardar borrador
+    </span>
+ )}
  </button>
  <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-6 py-2 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(204,0,0,0.4)] hover:shadow-[0_4px_15px_rgba(255,255,255,0.6)] border border-red-900/30 hover:border-[#CC0000] active:scale-95 disabled:opacity-50">
- 🚀 Emisión Pública
+ className="px-6 py-2 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(204,0,0,0.4)] hover:shadow-[0_4px_15px_rgba(255,255,255,0.6)] border border-red-900/30 hover:border-[#CC0000] active:scale-95 disabled:opacity-50">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+    Actualizar cambios
  </button>
  </div>
  </div>

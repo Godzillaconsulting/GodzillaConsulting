@@ -15,8 +15,20 @@ try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ARCHIVOS_PESADOS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
-try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch {}
+// [Vercel Fix]: En Vercel, el filesystem es de solo lectura excepto /tmp
+let ARCHIVOS_PESADOS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
+try {
+    if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) {
+        fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true });
+    }
+} catch (e) {
+    if (e.code === 'EROFS' || e.code === 'EACCES' || e.code === 'ENOENT') {
+        ARCHIVOS_PESADOS_DIR = '/tmp/uploads/assets';
+        try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (_) {}
+    } else {
+        console.error("Error creating uploads dir", e);
+    }
+}
 
 // ─── Servir Archivos Pesados Locales Estáticamente (Bypass Vercel) ────────
 // Cache Infinito de Cloudflare
@@ -34,7 +46,20 @@ const upload = multer({
 // ─── Multer para videos (500MB → Disco local, sin límite de DB) ──────────────
 const uploadVideo = multer({
     storage: multer.diskStorage({
-        destination: ARCHIVOS_PESADOS_DIR,
+        // Función asíncrona: previene que multer llame a mkdirSync(string) en el primer ciclo del event loop (Evita Vercel 500)
+        destination: (req, file, cb) => {
+            const dest = process.env.VERCEL ? '/tmp/uploads/assets' : ARCHIVOS_PESADOS_DIR;
+            // Asegurar creación asíncrona sin bloquear el arranque
+            fs.mkdir(dest, { recursive: true }, (err) => {
+                // EROFS / ENOENT fallará aquí pero en ejecución, no en BOOT.
+                if (err && err.code !== 'EEXIST') {
+                    console.error('[Media] No se pudo crear directorio destino:', err);
+                    // Fallback de emergencia
+                    return cb(null, '/tmp');
+                }
+                cb(null, dest);
+            });
+        },
         filename: (req, file, cb) => {
             const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
             const ext = path.extname(file.originalname);

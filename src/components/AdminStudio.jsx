@@ -444,18 +444,14 @@ export default function AdminStudio() {
  className="w-full text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-transparent hover:border-red-900/50 py-2 rounded-xl transition-all shadow-sm">
  🚪 Cerrar sesión
  </button>
- 
   <button onClick={() => setShowFeedbackModal(true)}
  className="w-full text-[10px] text-yellow-500 font-bold hover:text-white hover:bg-yellow-500/10 border border-transparent hover:border-yellow-900/50 py-2 rounded-xl transition-all shadow-sm">
  💡 Sugerencias / Bugs
  </button>
- </div>
- </div>
+  </div>
+  </div>
 
- {/* ── ÁREA PRINCIPAL ── */}
- <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
-
- {/* Content Layer */}
+  <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
  ) : activeSection ==='profile' ? (

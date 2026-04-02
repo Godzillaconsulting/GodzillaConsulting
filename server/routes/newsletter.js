@@ -7,7 +7,7 @@ import {
     getHistory,
 } from '../controllers/newsletterController.js';
 
-import { requireAdmin } from '../middlewares/adminAuth.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 

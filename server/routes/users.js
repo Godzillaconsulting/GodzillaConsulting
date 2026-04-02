@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import pool from '../config/db.js';
-import { requireAdmin, requireSuperAdmin } from '../middlewares/adminAuth.js';
+import { requireAdmin, requireSuperAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 

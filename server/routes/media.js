@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import pool from '../config/db.js';
-import { requireAdmin } from '../middlewares/adminAuth.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 

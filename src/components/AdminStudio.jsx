@@ -8,6 +8,7 @@ import CorreosInbox from './CorreosInbox';
 import AdminProfile from './AdminProfile';
 import CockersStudio from './CockersStudio';
 import CMCalendar from './CMCalendar';
+import GoyiAdmin from './GoyiAdmin';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1103,7 +1104,7 @@ export default function AdminStudio() {
  </div>
  )}
 
- </div>
- );
+ <GoyiAdmin />
+</div>
+);
 }
-

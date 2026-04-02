@@ -4,6 +4,7 @@ import { getGeminiModel } from "../config/geminiGlobal.js";
 import { sendCitaConfirmationEmail } from "../services/emailService.js";
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
+import { GOYI_SYSTEM_PROMPT, goyiChatTools } from "../config/goyi-prompt.js";
 
 // Helper: extrae datos de cita del texto de la conversación
 function extractAppointmentData(fullText) {
@@ -46,12 +47,14 @@ function extractAppointmentData(fullText) {
 }
 
 export const processChatMessage = async (req, res) => {
-    const { messages } = req.body;
+    const { messages, isGoyi } = req.body;
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
     try {
-        const { model, sessions } = getGeminiModel(apiKey, SYSTEM_PROMPT, chatTools);
+        const p_prompt = isGoyi ? GOYI_SYSTEM_PROMPT : SYSTEM_PROMPT;
+        const p_tools = isGoyi ? goyiChatTools : chatTools;
+        const { model, sessions } = getGeminiModel(apiKey, p_prompt, p_tools);
 
         let history = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",

@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
-import { logFailedLogin, isIPBlocked } from '../middleware/adminAuth.js';
+import { logFailedLogin, isIPBlocked } from '../middlewares/adminAuth.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;

@@ -117,6 +117,9 @@ export default function AdminStudio() {
  const [selectedElementIndex, setSelectedElementIndex] = useState(null);
  const [selectedFeatureIndex, setSelectedFeatureIndex] = useState(null);
  const [saving, setSaving] = useState(false);
+ const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+ const [savedDraftKeys, setSavedDraftKeys] = useState(null);
+
  const [showPublishModal, setShowPublishModal] = useState(false);
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
@@ -172,7 +175,10 @@ export default function AdminStudio() {
  setDraftData(combinedData);
  };
 
- const change = (key, val) => setDraftData(p => ({ ...p, [key]: val }));
+ const change = (key, val) => {
+   setDraftData(p => ({ ...p, [key]: val }));
+   setHasUnsavedChanges(true);
+  };
 
  const changeEl = (key, val) => {
  if (selectedElementIndex === null) return;
@@ -196,7 +202,8 @@ export default function AdminStudio() {
  body: JSON.stringify({ draft_data: draftData })
  });
  await fetchNodes();
- alert('✅ Borrador guardado');
+ setHasUnsavedChanges(false);
+ alert('✅ Borrador guardado. Ahora presiona 🚀 Emisión Pública para verlo en el sitio.');
  } catch { alert('❌ Error al guardar'); }
  finally { setSaving(false); }
  };
@@ -224,7 +231,13 @@ export default function AdminStudio() {
 
  // Derived data detections
  const textFields = useMemo(() => detectTextFields(draftData), [draftData]);
- const mediaFields = useMemo(() => detectMediaFields(draftData), [draftData]);
+ const mediaFields = useMemo(() => {
+     let fields = detectMediaFields(draftData);
+     if (selectedNodeId === 'cultura') {
+         fields = fields.filter(([key]) => key !== 'bgVideoUrl');
+     }
+     return fields;
+ }, [draftData, selectedNodeId]);
  const groupedFields = useMemo(() => detectGroupedFields(draftData), [draftData]);
  const hasGrouped = Object.keys(groupedFields).length > 0;
  const hasElements = (draftData?.elements?.length || 0) > 0;
@@ -317,10 +330,10 @@ export default function AdminStudio() {
  >
  <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
  <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm ${isSelected ?'text-neutral-300' :'text-white/80'}`}>
+ <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors ${isSelected ?'text-[#CC0000]' :'text-white/80'}`}>
  {meta?.label || node.id}
  </span>
- <span className={`text-[9px] font-black ${isSelected ?'text-white/80' :'text-neutral-300/50'}`}>
+ <span className={`text-[9px] font-black transition-colors ${isSelected ?'text-black/60' :'text-neutral-300/50'}`}>
  §{idx + 1} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>
@@ -348,10 +361,10 @@ export default function AdminStudio() {
  >
  <span className="text-base leading-none shrink-0 drop-shadow-sm">{meta?.emoji ||'📄'}</span>
  <div className="min-w-0 flex-1">
- <span className={`block text-xs font-black truncate drop-shadow-sm ${isSelected ?'text-neutral-300' :'text-white/80'}`}>
+ <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors ${isSelected ?'text-[#CC0000]' :'text-white/80'}`}>
  {meta?.label || node.id}
  </span>
- <span className={`text-[9px] font-black ${isSelected ?'text-white/80' :'text-neutral-300/50'}`}>
+ <span className={`text-[9px] font-black transition-colors ${isSelected ?'text-black/60' :'text-neutral-300/50'}`}>
  §{idx + 4} · {meta?.tag || node.id.toUpperCase()}
  </span>
  </div>
@@ -368,8 +381,8 @@ export default function AdminStudio() {
            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
        </div>
        <div className="flex-1 text-left min-w-0">
-           <p className="text-xs font-black text-white truncate drop-shadow-sm">{adminProfile?.username || 'Usuario'}</p>
-           <p className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-wider">
+           <p className={`text-xs font-black truncate drop-shadow-sm transition-colors ${ activeSection ==='profile' ?'text-[#CC0000]' :'text-white' }`}>{adminProfile?.username || 'Usuario'}</p>
+           <p className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${ activeSection ==='profile' ?'text-black/60' :'text-neutral-500' }`}>
                <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] border border-[#CC0000] shadow-[0_0_5px_rgba(204,0,0,0.8)] animate-pulse"></span> Activo
            </p>
        </div>
@@ -418,7 +431,7 @@ export default function AdminStudio() {
   <NewsletterPanel />
   ) : activeSection ==='social' ? (
       <CMCalendar adminProfile={adminProfile} />
-  ) : activeSection === 'social_studio' ? (
+) : activeSection === 'social_studio' ? (
       <CockersStudio adminProfile={adminProfile} />
   ) : (<>
 
@@ -441,16 +454,21 @@ export default function AdminStudio() {
  <div className="flex items-center gap-3">
  <button onClick={() => setShowPreview(p => !p)}
  className={`px-4 py-2 rounded-xl text-xs font-black transition-all shadow-sm border border-transparent ${
- showPreview ?'bg-white/70 text-neutral-300 border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
+ showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
  </button>
  <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-5 py-2 bg-white hover:bg-sky-50 text-white text-xs font-black rounded-xl border border-[#CC0000]/50 transition-all shadow-md active:scale-95 disabled:opacity-50">
+ className={`px-5 py-2 text-xs font-black rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 border relative ${
+     hasUnsavedChanges 
+         ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_15px_rgba(204,0,0,0.4)]' 
+         : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
+ }`}>
+ {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-[#CC0000]"></span></span>}
  {saving ?'...' :'💾 Guardar Borrador'}
  </button>
  <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
- className="px-6 py-2 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-emerald-300 hover:to-cyan-300 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(52,211,153,0.4)] border border-red-900/30 active:scale-95 disabled:opacity-50">
+ className="px-6 py-2 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-xs font-black rounded-xl transition-all shadow-[0_4px_15px_rgba(204,0,0,0.4)] hover:shadow-[0_4px_15px_rgba(255,255,255,0.6)] border border-red-900/30 hover:border-[#CC0000] active:scale-95 disabled:opacity-50">
  🚀 Emisión Pública
  </button>
  </div>
@@ -471,7 +489,7 @@ export default function AdminStudio() {
  <button key={tab.id}
  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap border border-transparent shadow-sm transition-all ${
- activeTab === tab.id ?'bg-white/80 text-neutral-300 border-[#CC0000]/50 shadow-md' :'bg-[#CC0000]/5 text-[#CC0000] hover:bg-black/50 hover:border-red-900/30'
+ activeTab === tab.id ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-[#CC0000]/5 text-[#CC0000] hover:bg-black/50 hover:border-red-900/30'
  }`}>
  {tab.label}
  </button>
@@ -500,7 +518,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  ));
@@ -529,7 +547,7 @@ export default function AdminStudio() {
  <textarea rows={1} value={''}
  onChange={e => change(key, e.target.value)}
  placeholder={`Añadir ${toLabel(key).toLowerCase()}...`}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
+ className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
  </div>
  </EditorField>
  );
@@ -544,7 +562,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  );
@@ -570,7 +588,7 @@ export default function AdminStudio() {
  </label>
  <textarea rows={val.length > 80 ? 3 : 2} value={val}
  onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
+ className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
  </div>
  </EditorField>
  ))}
@@ -841,7 +859,7 @@ export default function AdminStudio() {
  <div className="space-y-1.5">
  <label className="text-xs font-semibold text-gray-400">Familia de fuente</label>
  <select value={draftData.fontFamily ||'Inter'} onChange={e => change('fontFamily', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none">
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none">
  {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
  </select>
  <p className="text-[10px] text-neutral-600">Requiere importar la fuente en index.html</p>
@@ -857,14 +875,14 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
  <input type="number" min={12} max={120} value={draftData.titleFontSize || 64}
  onChange={e => change('titleFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
  </div>
  </EditorField>
  <EditorField fieldKey="titleFontWeight" onHover={setHoveredField}>
  <div className="space-y-1">
  <label className="text-xs font-semibold text-gray-400">Peso</label>
  <select value={draftData.titleFontWeight ||'900'} onChange={e => change('titleFontWeight', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none">
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none">
  {['300','400','500','600','700','800','900'].map(w => <option key={w}>{w}</option>)}
  </select>
  </div>
@@ -875,7 +893,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Letter Spacing</label>
  <input type="text" placeholder="-0.05em" value={draftData.titleLetterSpacing ||''}
  onChange={e => change('titleLetterSpacing', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
  </div>
  </EditorField>
  </div>
@@ -889,7 +907,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
  <input type="number" min={10} max={32} value={draftData.bodyFontSize || 16}
  onChange={e => change('bodyFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
  </div>
  </EditorField>
  <EditorField fieldKey="bodyLineHeight" onHover={setHoveredField}>
@@ -897,7 +915,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">Line Height</label>
  <input type="text" placeholder="1.6" value={draftData.bodyLineHeight ||''}
  onChange={e => change('bodyLineHeight', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
  </div>
  </EditorField>
  </div>
@@ -980,7 +998,7 @@ export default function AdminStudio() {
  <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
  <textarea rows={typeof v ==='string' && v.length > 60 ? 3 : 1}
  value={v ||''} onChange={e => changeEl(k, e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none" />
  </div>
  </EditorField>
  );
@@ -998,7 +1016,7 @@ export default function AdminStudio() {
  <div className="space-y-1">
  <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
  <textarea rows={v.length > 60 ? 4 : 2} value={v} onChange={e => changeFt(k, e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-white focus:border-[#CC0000]/50 outline-none resize-none" />
+ className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none" />
  </div>
  </EditorField>
  );

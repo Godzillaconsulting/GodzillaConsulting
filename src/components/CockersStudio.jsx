@@ -291,8 +291,20 @@ export default function CockersStudio({ adminProfile }) {
                     <div className="flex flex-col">
                         <h4 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center justify-between">
                             <span>1. Guión Creado (Copy)</span>
-                            <button onClick={() => setShowScriptGen(true)} className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded focus:outline-none">
-                                ✨ Generar / Refinar Copy IA ↗
+                            <button 
+                                onClick={() => {
+                                    const context = `POST A TRABAJAR:\n- Tema: ${selectedDraft.visual_prompt || 'Sin prompt'}\n- Copy actual:\n${selectedDraft.caption || 'Sin copy'}\n\nPor favor genera o refina el guion/copy para este post.`;
+                                    navigator.clipboard.writeText(context).then(() => {
+                                        window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
+                                    }).catch(() => {
+                                        // Si el clipboard falla, de igual forma abrir el Gem
+                                        window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
+                                    });
+                                }} 
+                                className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded focus:outline-none"
+                                title="Abre tu Gem y copia el contexto del post al portapapeles"
+                            >
+                                ✨ Abrir Gem ↗
                             </button>
                         </h4>
                         <textarea 

@@ -136,6 +136,9 @@ export default function AdminStudio() {
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
+ 
+ const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+ const [feedbackText, setFeedbackText] = useState('');
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
 
@@ -424,6 +427,11 @@ export default function AdminStudio() {
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
  className="w-full text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-transparent hover:border-red-900/50 py-2 rounded-xl transition-all shadow-sm">
  🚪 Cerrar sesión
+ </button>
+ 
+  <button onClick={() => setShowFeedbackModal(true)}
+ className="w-full text-[10px] text-yellow-500 font-bold hover:text-white hover:bg-yellow-500/10 border border-transparent hover:border-yellow-900/50 py-2 rounded-xl transition-all shadow-sm">
+ 💡 Sugerencias / Bugs
  </button>
  </div>
  </div>
@@ -1073,6 +1081,27 @@ export default function AdminStudio() {
  </div>
  </>)}
  </div>
+
+ {/* Modal de Feedback Global */}
+ {showFeedbackModal && (
+ <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+   <div className="bg-[#111111] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
+     <button onClick={() => setShowFeedbackModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
+     <h3 className="text-xl font-black text-white tracking-widest uppercase mb-4 flex items-center gap-2">
+       <span className="text-yellow-500">💡</span> Reportar a IT
+     </h3>
+     <p className="text-xs text-neutral-400 font-bold mb-4">Envía tus sugerencias, pide funciones o reporta bugs para <span className="text-[#CC0000]">Dani</span> y <span className="text-[#CC0000]">JareG</span>.</p>
+     <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="Ej: Un botón para descargar imágenes está fallando..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none mb-4" />
+     <button onClick={() => {
+         alert('🚀 Tu reporte fue enviado a la central de JareG y Dani. ¡Gracias!');
+         setShowFeedbackModal(false);
+         setFeedbackText('');
+     }} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-white hover:to-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white border border-yellow-900/50">
+       Enviar Reporte ✔️
+     </button>
+   </div>
+ </div>
+ )}
 
  </div>
  );

@@ -119,6 +119,7 @@ const GOOGLE_FONTS = ['Inter','Roboto','Outfit','Poppins','Montserrat','Lato','P
 
 // ── Componente principal ────────────────────────────────────────────────────
 export default function AdminStudio() {
+ const navigate = useNavigate();
  const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
  const [selectedNodeId, setSelectedNodeId] = useState(null);
  const [activeSection, setActiveSection] = useState(window.location.pathname.includes('/cm') ? 'social' : window.location.pathname.includes('/studio') ? 'social_studio' : 'editor'); //'editor' |'newsletter' | 'profile'
@@ -167,6 +168,15 @@ export default function AdminStudio() {
      }
  }, []);
 
+ // ── Permisos por Rol ─────────────────────────────────────────────────────
+ // isCM        → role='cm' (Judith): solo calendario/studio
+ // isEditor    → role='admin' (Cockers/Alex/dani/JareG/Oscar): edita todo
+ // isSuperAdmin→ is_superadmin=true (Oscar/JareG): además borra usuarios
+ const isCM        = adminProfile?.role === 'cm';
+ const isEditor    = adminProfile?.role === 'admin' || adminProfile?.is_superadmin === true;
+ const isSuperAdmin= adminProfile?.is_superadmin === true;
+ const canEditSite = isEditor;
+
  // Sync draftData → preview
  useEffect(() => {
  if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
@@ -182,7 +192,7 @@ export default function AdminStudio() {
  setActiveTab('textos');
  setSelectedElementIndex(null);
  setSelectedFeatureIndex(null);
- setActiveSection(null);
+ setActiveSection('editor');
  
   let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
   combinedData = injectSectionDefaults(node.id, combinedData);
@@ -408,10 +418,10 @@ export default function AdminStudio() {
   📧 Newsletter
   </button>
   
-   {adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith' ? (
+   {isCM ? (
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
        className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-gradient-to-r from-[#ff2222] to-[#AA0000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(56,189,248,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
-       <span className="text-sm mr-2 drop-shadow-sm">📅</span> Panel CM (Judith)
+       <span className="text-sm mr-2 drop-shadow-sm">📅</span> Panel CM
        </button>
    ) : (
        <>
@@ -478,7 +488,7 @@ export default function AdminStudio() {
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
  </button>
- <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
+ <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid || isCM}
  className={`group px-5 py-2 text-xs font-black rounded-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 shadow-md active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0 border relative ${
      hasUnsavedChanges 
          ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)]' 
@@ -492,7 +502,7 @@ export default function AdminStudio() {
     </span>
  )}
  </button>
- <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || adminProfile?.role === 'cm' || adminProfile?.username?.toLowerCase() === 'judith'}
+ <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || isCM}
  className="group px-6 py-2 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-xs font-black rounded-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 shadow-[0_4px_15px_rgba(204,0,0,0.4)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.7)] border border-red-900/30 hover:border-[#CC0000] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
     Actualizar cambios

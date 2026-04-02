@@ -13,7 +13,7 @@ export const requireAdmin = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'godzilla_temp_secret_key_2026');
         
         // Cargar admin desde DB para tener is_superadmin fresco
-        const result = await pool.query('SELECT id, username, is_superadmin, photo_url, status FROM admins WHERE id = $1', [decoded.id]);
+        const result = await pool.query('SELECT id, username, is_superadmin, role, photo_url, status FROM admins WHERE id = $1', [decoded.id]);
         if (result.rows.length === 0) {
             return res.status(401).json({ success: false, message: 'Admin no encontrado.' });
         }

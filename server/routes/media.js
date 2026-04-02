@@ -16,9 +16,19 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // [Vercel Fix]: En Vercel, el filesystem es de solo lectura excepto /tmp
-const isVercel = !!process.env.VERCEL;
-const ARCHIVOS_PESADOS_DIR = isVercel ? '/tmp/uploads/assets' : path.join(__dirname, '..', 'uploads', 'assets');
-try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (e) { console.error("Error creating uploads dir", e); }
+let ARCHIVOS_PESADOS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
+try {
+    if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) {
+        fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true });
+    }
+} catch (e) {
+    if (e.code === 'EROFS' || e.code === 'EACCES' || e.code === 'ENOENT') {
+        ARCHIVOS_PESADOS_DIR = '/tmp/uploads/assets';
+        try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (_) {}
+    } else {
+        console.error("Error creating uploads dir", e);
+    }
+}
 
 // ─── Servir Archivos Pesados Locales Estáticamente (Bypass Vercel) ────────
 // Cache Infinito de Cloudflare

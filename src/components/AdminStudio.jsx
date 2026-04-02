@@ -446,7 +446,23 @@ export default function AdminStudio() {
   ) : (<>
 
  {/* Barra superior del editor */}
- <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shad  <button onClick={() => setShowPreview(p => !p)}
+ <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm">
+ {selectedNodeId ? (
+ <div className="flex items-center gap-3">
+ <span className="text-2xl drop-shadow-sm">{PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.emoji ||'📄'}</span>
+ <div>
+ <h2 className="text-lg font-black text-white leading-none drop-shadow-sm">
+ {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
+ </h2>
+ <p className="text-[10px] font-bold text-[#CC0000]/60 uppercase">Vista de Editor Glassy</p>
+ </div>
+ </div>
+ ) : (
+ <h2 className="text-sm font-black text-[#CC0000]/50 uppercase tracking-widest drop-shadow-sm">← Elige una rama forestal</h2>
+ )}
+
+ <div className="flex items-center gap-3">
+ <button onClick={() => setShowPreview(p => !p)}
  className={`px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent ${
  showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
  }`}>

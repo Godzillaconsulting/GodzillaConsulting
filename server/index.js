@@ -93,10 +93,10 @@ const chatLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Rate limit para auth (login): 5 intentos por 15 min — anti brute-force REAL
+// Rate limit para auth (login): 10 intentos por 15 min — anti brute-force REAL
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 min
-    max: process.env.NODE_ENV === 'development' ? 1000 : 5, // Solo 5 intentos en prod
+    max: process.env.NODE_ENV === 'development' ? 1000 : 10,
     message: { error: 'Demasiados intentos de inicio de sesión. Cuenta bloqueada preventivamente 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -140,7 +140,6 @@ app.use('/api/contact', apiLimiter, contactRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
-app.use('/api/social', socialRoutes);
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
@@ -155,6 +154,7 @@ app.use('/api/tiktok', tiktokRoutes);
 app.use('/api/analytics', analyticsLimiter, analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/trends', trendsRoutes);
+app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 
 
@@ -233,9 +233,11 @@ if (!process.env.VERCEL) {
         console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
     });
 
-    // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo servidor local
-    // Usa Puppeteer/Chrome para mantener sesión aktiva 24/7
-    import('./whatsappBot.js').then(({ initWhatsAppBot }) => {
+    // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo local/PM2
+    // Usa Puppeteer/Chrome para mantener sesión activa 24/7
+    // [IMPORTANTE] Escondido de @vercel/nft para evitar empaquetar Puppeteer y exceder el límite de 250MB
+    const botPath = './whatsappBot.js';
+    import(/* @vite-ignore */ /* webpackIgnore: true */ botPath).then(({ initWhatsAppBot }) => {
         initWhatsAppBot();
         console.log('📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr');
     }).catch(err => {

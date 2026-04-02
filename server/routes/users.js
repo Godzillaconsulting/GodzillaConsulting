@@ -1,5 +1,5 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import pool from '../config/db.js';
 import { requireAdmin, requireSuperAdmin } from '../middleware/adminAuth.js';
 

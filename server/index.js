@@ -75,7 +75,8 @@ app.use(cors({
 }));
 
 
-// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)
+// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)/*
+/*
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: process.env.NODE_ENV === 'development' ? 1000 : 5,
@@ -126,6 +127,7 @@ const analyticsLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+*/
 
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
 app.use(express.json());

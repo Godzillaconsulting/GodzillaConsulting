@@ -452,10 +452,7 @@ export default function AdminStudio() {
   </div>
   </div>
 
-  {/* ── ÁREA PRINCIPAL ── */}
- <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
-
- {/* Content Layer */}
+  <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
  ) : activeSection ==='profile' ? (

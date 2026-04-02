@@ -451,7 +451,6 @@ export default function AdminStudio() {
  </button>
  </div>
  </div>
- </div>
 
  {/* ── ÁREA PRINCIPAL ── */}
  <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">

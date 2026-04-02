@@ -1,5 +1,5 @@
 import express from 'express';
-import { validateEmailRequest } from '../middlewares/validateEmail.js';
+import { validateEmailRequest } from '../middleware/validateEmail.js';
 import { processLead } from '../controllers/leadController.js';
 
 const router = express.Router();

@@ -127,6 +127,7 @@ import chatRoutes from './routes/chat.js';
 import nodesRoutes from './routes/nodes.js';
 import webhookRoutes from './routes/webhook.js';
 import authRoutes from './routes/auth.js';
+import adminMigrationRoutes from './routes/adminMigration.js';
 
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', apiLimiter, leadsRoutes);
@@ -139,6 +140,7 @@ import newsletterRoutes from './routes/newsletter.js';
 import leadMagnetsRoutes from './routes/leadMagnets.js';
 import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
+import trendsRoutes from './routes/trends.js';
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
@@ -152,6 +154,8 @@ app.use('/api/resources', downloadSubLimiter, resourcesRoutes);
 app.use('/api/tiktok', tiktokRoutes);
 app.use('/api/analytics', analyticsLimiter, analyticsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/trends', trendsRoutes);
+app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 
 
 // Servir archivos subidos como estáticos en /media/*

@@ -9,20 +9,21 @@ import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import mediaRoutes from './routes/media.js';
 import tiktokRoutes from './routes/tiktok.js';
-import socialRoutes from './routes/social.js';
-import resourcesRoutes from './routes/resources.js';
-import { connectDB } from './config/db.js';
-
-import chatRoutes from './routes/chat.js';
-import nodesRoutes from './routes/nodes.js';
-import webhookRoutes from './routes/webhook.js';
 import authRoutes from './routes/auth.js';
-import adminMigrationRoutes from './routes/adminMigration.js';
 import newsletterRoutes from './routes/newsletter.js';
 import leadMagnetsRoutes from './routes/leadMagnets.js';
 import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
 import trendsRoutes from './routes/trends.js';
+import socialRoutes from './routes/social.js';
+import resourcesRoutes from './routes/resources.js';
+import adminMigrationRoutes from './routes/adminMigration.js';
+import { connectDB } from './config/db.js';
+
+import chatRoutes from './routes/chat.js';
+import nodesRoutes from './routes/nodes.js';
+import webhookRoutes from './routes/webhook.js';
+// Imports duplicados borrados
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

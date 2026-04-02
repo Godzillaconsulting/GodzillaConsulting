@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import { rateLimit } from 'express-rate-limit';
+// import helmet from 'helmet';
+// import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -41,15 +41,15 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
-// Helmet: Headers de seguridad HTTP — protege clickjacking, sniffing, XSS
-app.use(helmet({
-    contentSecurityPolicy: false, // CSP custom en prod si se necesita
-    crossOriginEmbedderPolicy: false,
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    xContentTypeOptions: true,      // Previene MIME sniffing
-    xFrameOptions: { action: 'DENY' }, // Previene clickjacking
-}));
+// [Desactivado temporalmente] Helmet estaba causando crash de FUNCTION_INVOCATION_FAILED en Vercel Serverless Node 18
+// app.use(helmet({
+//     contentSecurityPolicy: false, // CSP custom en prod si se necesita
+//     crossOriginEmbedderPolicy: false,
+//     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+//     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+//     xContentTypeOptions: true,      // Previene MIME sniffing
+//     xFrameOptions: { action: 'DENY' }, // Previene clickjacking
+// }));
 
 // Cabecera anti-fingerprinting: oculta que es Express
 app.disable('x-powered-by');
@@ -135,23 +135,22 @@ app.use(express.json());
 // ==========================================
 
 // Montamos el limitador y el router en el path `/api/leads`
-app.use('/api/leads', apiLimiter, leadsRoutes);
-app.use('/api/contact', apiLimiter, contactRoutes);
-app.use('/api/chat', chatLimiter, chatRoutes);
+app.use('/api/leads', leadsRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
-app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
 // Aplicamos limitadores de Descargas y Analíticas Públicas
 app.use('/api/media', mediaRoutes);
-app.use('/api/newsletter', downloadSubLimiter, newsletterRoutes);
-app.use('/api/lead-magnets', downloadSubLimiter, leadMagnetsRoutes);
-app.use('/api/resources', downloadSubLimiter, resourcesRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/lead-magnets', leadMagnetsRoutes);
+app.use('/api/resources', resourcesRoutes);
 app.use('/api/tiktok', tiktokRoutes);
-app.use('/api/analytics', analyticsLimiter, analyticsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/social', socialRoutes);

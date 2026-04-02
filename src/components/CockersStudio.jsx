@@ -135,7 +135,7 @@ export default function CockersStudio({ adminProfile }) {
                                 <h3 className="text-white text-xs font-black uppercase tracking-widest drop-shadow-sm">Post Generado por Gemini</h3>
                                 <div className="h-3 w-3 rounded-full bg-[#CC0000] border-2 border-[#CC0000]/50 shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse"></div>
                             </div>
-                            <p className="text-neutral-800 font-medium text-sm italic line-clamp-3 mb-6 bg-black/40 p-4 rounded-xl border border-red-900/50 shadow-inner">"{post.caption}"</p>
+                            <p className="text-neutral-300 font-medium text-sm italic line-clamp-3 mb-6 bg-black/40 p-4 rounded-xl border border-red-900/50 shadow-inner">"{post.caption}"</p>
                             
                             <div className="w-full bg-gradient-to-r from-[#ff2222] to-[#AA0000] hover:from-[#ff4444] hover:to-[#CC0000] text-white font-black py-3 px-4 rounded-2xl text-xs text-center transition-all shadow-[0_4px_15px_rgba(14,165,233,0.4)] border border-[#CC0000]/40">
                                 Iniciar Duelo de Renderizado 🥊
@@ -154,7 +154,7 @@ export default function CockersStudio({ adminProfile }) {
                                 <h3 className="text-2xl font-black text-white uppercase tracking-wider mb-2 drop-shadow-sm">Pausa Comercial: Modo Director de Arte</h3>
                                 <p className="text-neutral-700 font-medium text-sm max-w-xl">La automatización la pusimos en pausa. Ahora puedes construir los Prompts manualmente respondiendo un par de preguntas y dándole imágenes de referencia a las IAs para que copien el estilo.</p>
                             </div>
-                            <button onClick={() => setShowPromptBuilder(true)} className="mt-4 md:mt-0 bg-white/70 hover:bg-white text-white border border-[#CC0000]/50 shadow-[0_8px_20px_rgba(255,255,255,0.5)] px-8 py-4 rounded-2xl font-black uppercase text-sm transition-all">
+                            <button onClick={() => setShowPromptBuilder(true)} className="mt-4 md:mt-0 bg-white hover:bg-gray-200 text-[#CC0000] border border-[#CC0000]/50 shadow-[0_8px_20px_rgba(255,255,255,0.5)] px-8 py-4 rounded-2xl font-black uppercase text-sm transition-all">
                                 + Crear Prompt Guiado
                             </button>
                         </div>
@@ -217,9 +217,9 @@ export default function CockersStudio({ adminProfile }) {
                             <div className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-5 rounded-2xl border border-red-900/30 shadow-2xl">
                                 <h3 className="text-white font-black uppercase text-xs tracking-widest mb-3">🎛️ Filtros Clásicos (Estructurador)</h3>
                                 <div className="grid grid-cols-3 gap-3 mb-3">
-                                    <input placeholder="Tema..." value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-white rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
-                                    <input placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-white rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
-                                    <input placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-white rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
+                                    <input placeholder="Tema..." value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
+                                    <input placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
+                                    <input placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-lg p-2 text-xs text-white focus:border-[#CC0000] outline-none" />
                                 </div>
                                 <button onClick={() => {
                                     const combined = `[Theme: ${builderData.tema}] [Style: ${builderData.estilo}] [Lighting: ${builderData.luces}]`.trim();
@@ -246,7 +246,7 @@ export default function CockersStudio({ adminProfile }) {
                                     </div>
                                 </div>
 
-                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-white rounded-xl p-4 text-white text-sm focus:border-[#CC0000] outline-none resize-none shadow-inner leading-relaxed" />
+                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-xl p-4 text-white text-sm focus:border-[#CC0000] outline-none resize-none shadow-inner leading-relaxed" />
                             </div>
 
                             <div className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-6 rounded-2xl border border-red-900/30 shadow-2xl">
@@ -315,10 +315,15 @@ export default function CockersStudio({ adminProfile }) {
                     </div>
 
                     <div>
-                        <h4 className="text-xs font-black text-neutral-300 uppercase tracking-widest mb-2 drop-shadow-sm">2. Instrucción a Visuales</h4>
-                        <div className="bg-black/50 backdrop-blur-md border border-[#CC0000]/20 p-3 rounded-2xl text-[11px] font-mono text-red-400 font-bold break-words leading-tight shadow-inner">
-                            {selectedDraft.visual_prompt}
-                        </div>
+                        <h4 className="text-xs font-black text-neutral-300 uppercase tracking-widest mb-2 drop-shadow-sm flex justify-between items-center">
+                            <span>2. Instrucción a Visuales</span>
+                            <span className="text-[9px] text-[#CC0000] font-normal uppercase tracking-wider bg-black/40 px-2 py-0.5 rounded border border-red-900/30">Editable ✏️</span>
+                        </h4>
+                        <textarea
+                            value={selectedDraft.visual_prompt}
+                            onChange={(e) => setSelectedDraft({...selectedDraft, visual_prompt: e.target.value})}
+                            className="w-full min-h-[100px] bg-black/50 backdrop-blur-md border border-[#CC0000]/20 p-3 rounded-2xl text-[11px] font-mono text-red-500 font-bold break-words leading-tight shadow-inner focus:outline-none focus:border-[#CC0000] hover:bg-black/70 transition-colors resize-y"
+                        />
                     </div>
 
                     {selectedDraft.reference_image && (
@@ -455,7 +460,7 @@ export default function CockersStudio({ adminProfile }) {
                                     }
                                 }} 
                                 placeholder="Ej: Hazme un guion agresivo para vender software..." 
-                                className="flex-1 bg-black/50 backdrop-blur-md border hover:border-[#CC0000]/50 shadow-inner text-white focus:bg-white rounded-xl p-3 text-sm focus:outline-none focus:border-[#CC0000] border-red-900/30" 
+                                className="flex-1 bg-black/50 backdrop-blur-md border hover:border-[#CC0000]/50 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#CC0000] border-red-900/30" 
                             />
                             <button 
                                 onClick={() => {

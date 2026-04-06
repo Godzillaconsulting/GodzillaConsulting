@@ -12,13 +12,13 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
     // --- Estado de Tareas Personales (Mock UI) ---
     const [allTasks, setAllTasks] = useState([
-        { id: 1, title: 'Oscurecer imagen y subir contraste (Post Hero)', deadline: 'Hoy 5:00 PM', source: 'Oscar', asignadoA: 'Alex', done: false },
-        { id: 2, title: 'Corregir copy Accrual para TikTok', deadline: 'Mañana AM', source: 'Judith', asignadoA: 'Judith', done: false },
-        { id: 3, title: 'Renderizar video Kling V3 de Cripto', deadline: 'Ayer', source: 'JareG', asignadoA: 'JareG', done: true },
-        { id: 4, title: 'Crear endpoint para subida de videos en S3', deadline: 'Mañana', source: 'JareG', asignadoA: 'Dani', done: false }
+        { id: 1, title: 'Oscurecer imagen y subir contraste', deadline: 'Hoy 5:00 PM', source: 'Oscar', asignadoA: 'Alex', done: false, why: 'Post Hero para Instagram', references: 'https://pin.it/ejemplo', comments: 'Por favor no olvides quitarle el viñeteado excesivo.' },
+        { id: 2, title: 'Corregir copy Accrual', deadline: 'Mañana AM', source: 'Judith', asignadoA: 'Judith', done: false, why: 'Tiktok de Accrual', references: '', comments: 'Asegúrate de incluir los hashtags.' },
+        { id: 3, title: 'Renderizar video Kling V3 de Cripto', deadline: 'Ayer', source: 'JareG', asignadoA: 'JareG', done: true, why: 'Youtube Shorts', references: '', comments: '' },
+        { id: 4, title: 'Lanzar migración de seguridad', deadline: 'Mañana', source: 'JareG', asignadoA: 'godzilla_admin', done: false, why: 'Protección de plataforma', references: '', comments: 'Urgente.' }
     ]);
 
-    const myTasks = allTasks.filter(t => t.asignadoA?.toLowerCase() === profile?.username?.toLowerCase() || profile?.username === 'godzilla_admin');
+    const myTasks = allTasks.filter(t => t.asignadoA?.toLowerCase() === profile?.username?.toLowerCase());
     const [selectedTask, setSelectedTask] = useState(null);
 
     const toggleTask = (id) => {
@@ -456,11 +456,24 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                                         <span className="ml-6 flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full bg-[#e4dcfb] border border-[#d2c2f9]"></span> Design Group</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-start mt-4">
-                                                    <div className="w-32 text-sm text-[#6D6E6F] mt-1">Description</div>
-                                                    <div className="flex-1 text-sm text-[#1e1e24] cursor-text hover:bg-[#f9f9f9] p-2 rounded -ml-2 min-h-[80px] transition-colors shadow-none whitespace-pre-wrap">
-                                                        Sin brief detallado para esta tarea de momento. 
-                                                        {'\n\n'}Pide más contexto usando los comentarios de abajo o revisa el Calendario Maestro.
+                                                <div className="flex flex-col mt-4 gap-4">
+                                                    <div>
+                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">¿Para qué?</div>
+                                                        <div className="text-sm text-[#1e1e24] bg-[#f9f9f9] p-3 rounded border border-[#e8ecee]">
+                                                            {selectedTask.why || 'Objetivo no especificado'}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">Referencias</div>
+                                                        <div className="text-sm text-[#1e1e24] bg-[#f9f9f9] p-3 rounded border border-[#e8ecee] break-all">
+                                                            {selectedTask.references ? <a href={selectedTask.references} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-medium">{selectedTask.references}</a> : <span className="text-[#b1b1b1] italic">Ninguna referencia visual adjunta.</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">Comentarios / Brief Técnico</div>
+                                                        <div className="text-sm text-[#1e1e24] flex-1 bg-neutral-100 p-3 rounded border border-[#e8ecee] min-h-[80px] whitespace-pre-wrap">
+                                                            {selectedTask.comments || <span className="text-[#b1b1b1] italic">Sin instrucciones extra. Guíate con el "Qué" y "Para qué".</span>}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

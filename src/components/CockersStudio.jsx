@@ -145,10 +145,18 @@ export default function CockersStudio({ adminProfile }) {
                         
                         if (statusData.status === 'succeed') {
                             clearInterval(pollInterval);
-                            const options = [
-                                { provider: builderData.model + ' (Resultado 1)', url: statusData.result_url || 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc', isVideo: genMode === 'video' },
-                                { provider: builderData.model + ' (Resultado 2)', url: statusData.result_url, isVideo: genMode === 'video' },
-                            ];
+                            let options = [];
+                            if (genMode === 'imagen') {
+                                options = [
+                                    { provider: 'Nano Banana 2 (Mejor Opción)', url: statusData.result_url || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80', isVideo: false },
+                                    { provider: 'Kling 3.0 HD (Contrapropuesta)', url: statusData.result_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80', isVideo: false },
+                                ];
+                            } else {
+                                options = [
+                                    { provider: 'Kling 3.0 HD (Motor Principal)', url: statusData.result_url || 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc', isVideo: true },
+                                    { provider: 'Luma Flow (Alternativa)', url: statusData.result_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: true },
+                                ];
+                            }
                             if (selectedDraft) {
                                 setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
                                 setSelectedDraft(prev => ({ ...prev, media_options: options }));
@@ -531,6 +539,27 @@ export default function CockersStudio({ adminProfile }) {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                            
+                            {/* Panel: Mejorar y Regenerar (Goyi Learning Flow) */}
+                            <div className="mt-8 bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-[#CC0000]/20 rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+                                <label className="text-xs font-bold text-neutral-400 flex items-center gap-2 mb-3 tracking-wide">
+                                    <span className="text-yellow-500 text-lg">💡</span> ¿Las IAs no captaron la visión? Mejora el prompt, dale otra oportunidad y alimenta nuestra DB:
+                                </label>
+                                <div className="flex flex-col md:flex-row gap-3">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ej: Haz que la iluminación sea estilo cyberpunk y elimina el ruido de fondo..." 
+                                        className="flex-1 bg-[#161616] border border-neutral-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#CC0000] text-sm transition-colors shadow-inner"
+                                    />
+                                    <button 
+                                        onClick={() => simulateAIGeneration()}
+                                        className="bg-[#CC0000] hover:bg-red-800 text-white font-black px-8 py-4 md:py-0 rounded-xl text-xs uppercase tracking-widest transition-transform active:scale-95 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(204,0,0,0.4)]"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+                                        REGENERAR
+                                    </button>
+                                </div>
                             </div>
                             
                             {/* Copywriting / Info del Draft Ligado */}

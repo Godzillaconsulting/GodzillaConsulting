@@ -457,7 +457,7 @@ export default function AdminStudio() {
    )}
    
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
- className="w-full flex items-center justify-center gap-1.5 text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-transparent hover:border-red-900/50 py-2 rounded-xl transition-all shadow-sm">
+ className="w-full flex items-center justify-center gap-1.5 text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-red-900/40 hover:border-[#CC0000]/60 py-2 rounded-xl transition-all shadow-sm">
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
     <polyline points="16 17 21 12 16 7"></polyline>

@@ -355,14 +355,22 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                 {myTasks.map(task => (
                                     <div 
                                         key={task.id} 
-                                        onClick={() => toggleTask(task.id)}
-                                        className={`group cursor-pointer flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${task.done ? 'bg-black/30 border-neutral-800/50 opacity-50' : 'bg-[#111] border-neutral-700 hover:border-sky-500/50 hover:bg-[#1a1a1a] shadow-lg shadow-sky-900/10'}`}
+                                        className={`group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${task.done ? 'bg-black/30 border-neutral-800/50 opacity-50' : 'bg-[#111] border-neutral-700 hover:border-sky-500/50 hover:bg-[#1a1a1a] shadow-lg hover:shadow-sky-900/10'}`}
                                     >
-                                        <div className={`w-6 h-6 rounded-md flex justify-center items-center shrink-0 border-2 transition-colors ${task.done ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black border-neutral-500 group-hover:border-sky-400 text-transparent'}`}>
+                                        <div 
+                                            onClick={() => toggleTask(task.id)}
+                                            className={`w-6 h-6 rounded-md flex justify-center items-center shrink-0 border-2 transition-colors cursor-pointer ${task.done ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black border-neutral-500 hover:border-sky-400 text-transparent'}`}
+                                        >
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={task.done ? 'scale-100' : 'scale-50 opacity-0'}><polyline points="20 6 9 17 4 12"/></svg>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className={`text-sm font-black tracking-wide transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.title}</p>
+                                        <div 
+                                            className="flex-1 cursor-pointer"
+                                            onClick={() => {
+                                                // Manda a calendario si es CM o al origen del comentario. Por default al Calendar / Inbox
+                                                window.location.href = '/cm'; 
+                                            }}
+                                        >
+                                            <p className={`text-sm font-black tracking-wide transition-colors group-hover:text-sky-400 ${task.done ? 'text-neutral-500 line-through group-hover:text-neutral-400' : 'text-white'}`}>{task.title}</p>
                                             <div className="flex gap-3 mt-1.5 opacity-80">
                                                 <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${task.done ? 'bg-neutral-800 text-neutral-600' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>Ref: {task.source}</span>
                                                 <span className={`text-[10px] font-bold ${task.done ? 'text-neutral-600' : 'text-neutral-400'}`}>🏁 {task.deadline}</span>

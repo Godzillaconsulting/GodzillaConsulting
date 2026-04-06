@@ -121,36 +121,87 @@ export default function CockersStudio({ adminProfile }) {
         setRenderingAI(true);
         try {
             const rawPrompt = finalPrompt || selectedDraft?.visual_prompt || 'cyberpunk cinematic city';
+            const cleanPrompt = rawPrompt.replace(/\[\/?.*?]/g, '').trim();
+            const token = localStorage.getItem('adminToken');
             
-            // Simulación 100% local sin depender de fetch real
-            setTimeout(() => {
-                let options = [];
-                if (genMode === 'imagen') {
-                    options = [
-                        { provider: 'Nano Banana 2 (Mejor Opción)', url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80', isVideo: false },
-                        { provider: 'Kling 3.0 HD (Contrapropuesta)', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80', isVideo: false },
-                    ];
-                } else {
-                    options = [
-                        { provider: 'Kling 3.0 HD (Motor Principal)', url: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc', isVideo: true },
-                        { provider: 'Luma Flow (Alternativa)', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: true },
-                    ];
-                }
+            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: builderData.model })
+            });
 
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error al enviar tarea a la IA');
+
+            if (data.status === 'processing' && data.job_id) {
+                let attempts = 0;
+                const pollInterval = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const statusRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/status/${data.job_id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const statusData = await statusRes.json();
+                        
+                        if (statusData.status === 'succeed') {
+                            clearInterval(pollInterval);
+                            const finalUrls = Array.isArray(statusData.result_url) ? statusData.result_url : [statusData.result_url];
+                            
+                            const options = finalUrls.map((url, idx) => ({ 
+                                provider: `${builderData.model} (Opción ${idx + 1})`, 
+                                url: url, 
+                                isVideo: genMode === 'video' 
+                            }));
+                            
+                            if (selectedDraft) {
+                                setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
+                                setSelectedDraft(prev => ({ ...prev, media_options: options }));
+                            } else {
+                                setSelectedDraft({
+                                    id: Date.now(),
+                                    status: 'generated',
+                                    caption: '',
+                                    visual_prompt: rawPrompt,
+                                    media_options: options
+                                });
+                            }
+                            setRenderingAI(false);
+                        } else if (statusData.status === 'failed' || attempts > 60) {
+                            clearInterval(pollInterval);
+                            throw new Error(statusData.error || 'La Tarea de Inteligencia Artificial falló o dio Timeout tras 10 min.');
+                        }
+                    } catch (pollErr) {
+                        clearInterval(pollInterval);
+                        console.error(pollErr);
+                        alert(`Error esperando el render: ${pollErr.message}`);
+                        setRenderingAI(false);
+                    }
+                }, 10000); 
+            } else if (data.status === 'succeed') {
+                // Generación síncrona / instantánea
+                const finalUrls = Array.isArray(data.result_url) ? data.result_url : [data.result_url];
+                const options = finalUrls.map((url, idx) => ({ 
+                    provider: `${builderData.model} (Opción ${idx + 1})`, 
+                    url: url, 
+                    isVideo: genMode === 'video' 
+                }));
+                
                 if (selectedDraft) {
                     setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
                     setSelectedDraft(prev => ({ ...prev, media_options: options }));
                 } else {
                     setSelectedDraft({
                         id: Date.now(),
-                        status: 'mock_generation',
+                        status: 'generated',
                         caption: '',
                         visual_prompt: rawPrompt,
                         media_options: options
                     });
                 }
                 setRenderingAI(false);
-            }, 3000); // 3 segundos de espera de "renderizado"
+            } else {
+                throw new Error('Respuesta desconocida desde la API');
+            }
         } catch (error) {
             console.error('Error Live Gen', error);
             alert(`Error de Live Mode: ${error.message}`);

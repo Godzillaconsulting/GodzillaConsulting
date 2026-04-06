@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 // Inicializar variables de entorno (.env)
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 console.log('[DEBUG] .env cargado. GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Presente' : 'FALTANTE');
 
 // Inicializar conexión a PostgreSQL (Neon)

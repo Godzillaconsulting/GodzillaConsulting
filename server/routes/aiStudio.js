@@ -1,6 +1,6 @@
 import express from 'express';
 import { generateRenderJob, checkRenderStatus } from '../controllers/aiStudioController.js';
-import { authenticateToken } from '../middleware/adminAuth.js';
+import { verifyAdminToken as authenticateToken } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 

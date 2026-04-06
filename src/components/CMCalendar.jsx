@@ -572,51 +572,51 @@ export default function CMCalendar({ adminProfile }) {
 
                 <div className="flex-1 p-4 md:px-8 md:py-6 overflow-visible bg-[#050505] flex flex-col">
                     {calendarTab === 'pendientes' ? (
-                        <div className="flex bg-white border border-[#e8ecee] rounded-md overflow-hidden h-full min-h-[600px] font-sans">
-                            {/* ASANA LEFT PANE */}
-                            <div className="w-1/2 md:w-5/12 border-r border-[#e8ecee] flex flex-col bg-white">
+                        <div className="flex bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden h-full min-h-[600px] font-sans shadow-2xl">
+                            {/* ASANA LEFT PANE -> Godzilla Dark Mode */}
+                            <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505] text-white">
                                 {/* Toolbar Top Left */}
-                                <div className="flex items-center px-4 py-3 border-b border-[#e8ecee] shrink-0">
-                                    <button onClick={() => setShowNewAssignModal(true)} className="bg-[#4573d2] hover:bg-[#345db5] text-white rounded px-4 py-1.5 text-xs font-semibold flex items-center shadow-sm transition-colors">
-                                        <span className="mr-1 font-bold text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
+                                <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
+                                    <button onClick={() => setShowNewAssignModal(true)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all">
+                                        <span className="mr-2 text-sm">+</span> Nueva Tarea
                                     </button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     {/* Section Header */}
-                                    <div className="px-4 py-2 flex items-center text-xs font-bold text-[#6D6E6F] mt-2 group cursor-pointer hover:bg-gray-50">
-                                        <span className="mr-2 text-[10px]">▼</span> Recently assigned
+                                    <div className="px-4 py-3 flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-500 mt-2">
+                                        <span className="mr-2">▼</span> Asignaciones Recientes
                                     </div>
                                     <div className="flex flex-col mt-1">
                                         {tasks.length === 0 ? (
-                                           <p className="text-[#6D6E6F] text-sm text-center py-6">No tasks found.</p>
+                                           <p className="text-neutral-600 text-xs font-bold text-center py-6 uppercase tracking-widest">No hay tareas pendientes.</p>
                                         ) : tasks.map(task => (
                                             <div 
                                                 key={task.id} 
                                                 onClick={() => setSelectedTaskBoard(task)}
-                                                className={`flex items-center border-b border-[#e8ecee] px-3 py-1.5 cursor-pointer max-h-10 hover:bg-[#f9f9f9] transition-colors ${selectedTaskBoard?.id === task.id ? 'bg-[#e2efff]' : ''}`}
+                                                className={`flex items-center border-b border-neutral-800/50 px-4 py-2 cursor-pointer max-h-12 transition-all ${selectedTaskBoard?.id === task.id ? 'bg-[#CC0000]/10 border-l-[3px] border-l-[#CC0000]' : 'hover:bg-white/5 border-l-[3px] border-l-transparent'}`}
                                             >
                                                 <div 
                                                     onClick={(e) => { e.stopPropagation(); setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t)); }}
-                                                    className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-[#25c862] border-[#25c862] text-white' : 'border-[#b1b1b1] hover:border-[#25c862] hover:text-[#25c862]'}`}
+                                                    className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-600 hover:border-green-500 hover:text-green-500'}`}
                                                 >
-                                                    {task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
-                                                    {!task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-0 hover:opacity-100"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                    {task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                    {!task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-0 hover:opacity-100"><polyline points="20 6 9 17 4 12"/></svg>}
                                                 </div>
-                                                <div className={`flex-1 text-sm font-medium truncate ${task.done ? 'text-[#6D6E6F] line-through' : 'text-[#1e1e24]'}`}>{task.que}</div>
+                                                <div className={`flex-1 text-sm font-bold truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.que}</div>
                                                 
                                                 {/* Project Pills Mock */}
-                                                <div className="hidden lg:flex items-center space-x-2 mr-3">
-                                                    <div className="bg-[#e4dcfb] text-[#553b9a] rounded-full px-2.5 py-0.5 text-[10px] font-medium">Design</div>
+                                                <div className="hidden xl:flex items-center space-x-2 mr-3">
+                                                    <div className="bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">Diseño</div>
                                                 </div>
                                                 
                                                 {/* Assignee Avatar */}
-                                                <div className="w-6 h-6 rounded-full bg-[#fca2b4] flex items-center justify-center text-[10px] font-bold text-[#b51235] mr-3 shrink-0 uppercase" title={task.para}>
+                                                <div className="w-7 h-7 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center text-[10px] font-black text-white mr-3 shrink-0 uppercase shadow-md" title={task.para}>
                                                     {task.para?.[0] || '?'}
                                                 </div>
                                                 
                                                 {/* Date */}
-                                                <div className="text-xs text-[#6D6E6F] w-16 text-right truncate">
-                                                    {task.deadline === new Date().toISOString().split('T')[0] ? <span className="text-[#25c862]">Today</span> : task.deadline}
+                                                <div className="text-[10px] font-black uppercase tracking-wider w-16 text-right truncate">
+                                                    {task.deadline === new Date().toISOString().split('T')[0] ? <span className="text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">Hoy</span> : <span className="text-neutral-500">{task.deadline}</span>}
                                                 </div>
                                             </div>
                                         ))}
@@ -624,96 +624,90 @@ export default function CMCalendar({ adminProfile }) {
                                 </div>
                             </div>
                             
-                            {/* ASANA RIGHT PANE */}
-                            <div className="w-1/2 md:w-7/12 flex flex-col bg-white">
+                            {/* ASANA RIGHT PANE -> Godzilla Dark Mode */}
+                            <div className="w-1/2 md:w-7/12 flex flex-col bg-[#080808] text-white">
                                 {selectedTaskBoard ? (
-                                    <div className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4">
                                         {/* Top Action Bar */}
-                                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#e8ecee] shrink-0 text-[#6D6E6F]">
-                                            <div className="flex items-center space-x-2 text-xs">
+                                        <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
+                                            <div className="flex items-center space-x-3 text-xs">
                                                 <button 
                                                     onClick={() => {
                                                         setTasks(prev => prev.map(t => t.id === selectedTaskBoard.id ? { ...t, done: !t.done } : t));
                                                         setSelectedTaskBoard({...selectedTaskBoard, done: !selectedTaskBoard.done});
                                                     }}
-                                                    className={`border rounded px-3 py-1 font-semibold flex items-center transition-colors ${selectedTaskBoard.done ? 'bg-[#f9f9f9] border-[#e8ecee] text-[#6D6E6F] hover:text-[#1e1e24]' : 'border-[#b1b1b1] hover:border-[#6D6E6F] hover:text-[#1e1e24]'}`}
+                                                    className={`border rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all ${selectedTaskBoard.done ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'border-neutral-700 hover:border-green-500 hover:text-green-500'}`}
                                                 >
-                                                    <span className={`mr-2 ${selectedTaskBoard.done ? 'text-[#25c862]':'text-[#b1b1b1]'}`}>✓</span> {selectedTaskBoard.done ? 'Completed' : 'Mark complete'}
+                                                    <span className={`mr-2 ${selectedTaskBoard.done ? 'text-green-500':'text-neutral-500'}`}>✓</span> {selectedTaskBoard.done ? 'Completado' : 'Marcar Acción'}
                                                 </button>
-                                                <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] text-lg">👍</button>
-                                                <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] text-sm">🔗</button>
+                                                <button className="px-2 py-1.5 rounded hover:bg-white/10 text-lg transition-colors">👍</button>
+                                                <button className="px-2 py-1.5 rounded hover:bg-white/10 text-sm transition-colors">🔗</button>
                                             </div>
                                             <div className="flex items-center space-x-1">
-                                               <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] font-bold">⋯</button>
+                                               <button className="px-3 py-1.5 rounded-lg hover:bg-white/10 font-bold transition-colors">⋯</button>
                                             </div>
                                         </div>
                                         
-                                        <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar relative">
                                             {/* Top notification mock */}
-                                            <div className="flex items-center text-xs text-[#6D6E6F] mb-4">
-                                                <span className="mr-2">🔒</span>
-                                                This task is visible to members of Marketing and team {selectedTaskBoard.asignadoPor}.
-                                                <button className="ml-auto underline hover:text-[#1e1e24]">Make public</button>
+                                            <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 bg-neutral-900/50 w-max px-3 py-1.5 rounded-lg border border-neutral-800">
+                                                <span className="mr-2 text-[#CC0000]">🔒</span>
+                                                Tarea Interna • Reporte asignado por {selectedTaskBoard.asignadoPor}.
                                             </div>
                                             
                                             {/* Big Title */}
-                                            <div className="mb-6">
-                                                <h1 className={`text-3xl font-semibold outline-none w-full bg-transparent ${selectedTaskBoard.done ? 'text-[#6D6E6F] line-through' : 'text-[#1e1e24]'}`}>
+                                            <div className="mb-8">
+                                                <h1 className={`text-3xl md:text-4xl font-black leading-tight selection:bg-[#CC0000]/30 outline-none w-full bg-transparent ${selectedTaskBoard.done ? 'text-neutral-600 line-through' : 'text-white'}`}>
                                                     {selectedTaskBoard.que}
                                                 </h1>
                                             </div>
                                             
                                             {/* Details Grid */}
-                                            <div className="flex flex-col space-y-4 mb-8">
+                                            <div className="flex flex-col space-y-5 mb-10 border-b border-neutral-800 pb-8">
                                                 <div className="flex items-center">
-                                                    <div className="w-32 text-sm text-[#6D6E6F]">Assignee</div>
-                                                    <div className="flex items-center text-sm text-[#1e1e24] cursor-pointer hover:bg-[#f2f2f2] px-2 py-1 rounded -ml-2 transition-colors">
-                                                        <div className="w-6 h-6 rounded-full bg-[#fca2b4] flex items-center justify-center text-[10px] text-[#b51235] uppercase font-bold mr-2">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Asignado a</div>
+                                                    <div className="flex items-center text-sm font-bold text-white cursor-pointer hover:bg-white/5 px-2 py-1.5 rounded -ml-2 transition-colors">
+                                                        <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-[10px] text-white uppercase font-black mr-3 shadow">
                                                             {selectedTaskBoard.para?.[0] || '?'}
                                                         </div>
                                                         {selectedTaskBoard.para}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <div className="w-32 text-sm text-[#6D6E6F]">Due date</div>
-                                                    <div className="flex items-center text-sm text-[#1e1e24] cursor-pointer hover:bg-[#f2f2f2] px-2 py-1 rounded -ml-2 transition-colors">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Deadline</div>
+                                                    <div className="flex items-center text-sm font-bold text-yellow-500 cursor-pointer hover:bg-white/5 px-2 py-1.5 rounded -ml-2 transition-colors">
                                                         {selectedTaskBoard.deadline}
-                                                        <span className="ml-6 flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full bg-[#e4dcfb] border border-[#d2c2f9]"></span> Design Group</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-start mt-4">
-                                                    <div className="w-32 text-sm text-[#6D6E6F] mt-1">Description</div>
-                                                    <div className="flex-1 text-sm text-[#1e1e24] cursor-text hover:bg-[#f9f9f9] p-2 rounded -ml-2 min-h-[80px] transition-colors shadow-none">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500 mt-2">Briefing</div>
+                                                    <div className="flex-1 text-sm text-neutral-300 bg-[#111] hover:bg-[#1a1a1a] border border-neutral-800 p-4 rounded-xl -ml-2 min-h-[100px] transition-colors shadow-inner leading-relaxed whitespace-pre-wrap">
                                                         {selectedTaskBoard.referencias ? (
-                                                            <a href={selectedTaskBoard.referencias} target="_blank" rel="noreferrer" className="text-[#4573d2] hover:text-[#345db5] underline">{selectedTaskBoard.referencias}</a>
+                                                            selectedTaskBoard.referencias.startsWith('http') ? (
+                                                                <a href={selectedTaskBoard.referencias} target="_blank" rel="noreferrer" className="text-sky-400 hover:text-sky-300 underline font-bold">{selectedTaskBoard.referencias}</a>
+                                                            ) : (
+                                                                selectedTaskBoard.referencias
+                                                            )
                                                         ) : (
-                                                            <span className="text-[#6D6E6F]">Add more detail to this task...</span>
+                                                            <span className="text-neutral-500 italic">No hay un brief detallado de la tarea...</span>
                                                         )}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Comments Section */}
-                                            <div className="border-t border-[#e8ecee] pt-6 flex flex-col h-full min-h-[150px]">
+                                            <div className="pt-2 flex flex-col">
+                                                <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Comentarios:</h3>
                                                 {/* Comment Input */}
-                                                <div className="flex space-x-3 mb-4 mt-auto">
-                                                    <div className="w-8 h-8 rounded-full bg-[#cc2944] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
+                                                <div className="flex space-x-4 mb-6">
+                                                    <div className="w-10 h-10 rounded-full bg-[#CC0000] flex items-center justify-center text-sm font-black text-white shrink-0 uppercase border-2 border-red-900 shadow-[0_0_10px_rgba(204,0,0,0.3)]">
                                                         {(currentUser || 'U')[0]}
                                                     </div>
-                                                    <div className="flex-1 border border-[#e8ecee] rounded-lg bg-white p-3 text-sm text-[#6D6E6F] shadow-sm cursor-text hover:border-[#b1b1b1] transition-colors">
-                                                        Ask a question or post an update...
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center justify-between text-xs text-[#6D6E6F] mt-2">
-                                                    <div className="flex items-center gap-2">
-                                                       <span>Collaborators</span>
-                                                       <div className="w-6 h-6 rounded-full bg-[#fca2b4] border-2 border-white -ml-1 text-center flex items-center justify-center font-bold text-[#b51235] text-[10px]">J</div>
-                                                       <div className="w-6 h-6 rounded-full bg-[#bdecd1] border-2 border-white -ml-2 text-center flex items-center justify-center font-bold text-[#146b36] text-[10px]">A</div>
-                                                       <button className="w-6 h-6 rounded-full border border-dashed border-[#b1b1b1] flex items-center justify-center -ml-2 hover:border-[#6D6E6F] hover:text-[#1e1e24] transition-colors bg-white z-10">+</button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 cursor-pointer hover:text-[#1e1e24] transition-colors">
-                                                        <span>🔔</span> Leave Task
+                                                    <div className="flex-1 border border-neutral-800 hover:border-neutral-600 rounded-xl bg-[#111] p-0 shadow-inner flex flex-col focus-within:border-[#CC0000]/50 transition-colors">
+                                                        <textarea className="w-full bg-transparent resize-none outline-none p-3 text-sm text-white placeholder-neutral-600 min-h-[80px]" placeholder="Añadir una actualización o preguntar..."></textarea>
+                                                        <div className="p-2 flex justify-end shrink-0 border-t border-neutral-800">
+                                                            <button className="bg-white text-black text-[10px] uppercase font-black px-4 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors">Comentar</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -751,7 +745,7 @@ export default function CMCalendar({ adminProfile }) {
                 </div>
             </div>
 
-            {renderSidebar()}
+            {calendarTab !== 'pendientes' && renderSidebar()}
 
             {/* ── PANEL DE EVENTO/POST (visible para TODOS) ── */}
             {selectedEvent && (

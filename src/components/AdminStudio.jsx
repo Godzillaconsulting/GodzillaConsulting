@@ -333,7 +333,9 @@ export default function AdminStudio() {
  <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
   <div className="flex items-center gap-2.5">
-  <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
+  <a href="/" target="_blank" rel="noopener noreferrer" className="cursor-pointer hover:scale-110 transition-transform">
+    <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
+  </a>
   <div className="flex flex-col justify-center">
   <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
   <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
@@ -491,7 +493,7 @@ export default function AdminStudio() {
  </div>
  </div>
  ) : (
- <h2 className="text-sm font-black text-[#CC0000]/50 uppercase tracking-widest drop-shadow-sm">← Elige una rama forestal</h2>
+ <div />
  )}
 
  <div className="flex items-center gap-3">

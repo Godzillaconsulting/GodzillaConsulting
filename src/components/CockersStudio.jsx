@@ -291,7 +291,7 @@ export default function CockersStudio({ adminProfile }) {
                                 onChange={e => setBuilderData({...builderData, model: e.target.value})}
                                 className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
                             >
-                                <option value="Gemini 1.5 Pro">✨ Gemini 1.5 Pro (2 CR)</option>
+                                <option value="Gemini Advanced">✨ Gemini Advanced (Cuenta Plus)</option>
                                 <option value="Nano Banana 2">🍌 Nano Banana 2 (0 CR)</option>
                                 <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast (5 CR)</option>
                                 <option value="Kling 3.0">🎬 Kling 3.0 HD (20 CR)</option>

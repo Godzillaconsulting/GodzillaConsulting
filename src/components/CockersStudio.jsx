@@ -12,6 +12,13 @@ export default function CockersStudio({ adminProfile }) {
     const [genMode, setGenMode] = useState('video'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
     
+    // States del Redactor IA (Asistente Copywriting)
+    const [showScriptGen, setShowScriptGen] = useState(false);
+    const [scriptChatHistory, setScriptChatHistory] = useState([
+        { role: 'ai', text: '¡Hola Director! ¿Qué necesitas que escriba o corrija de este post?' }
+    ]);
+    const [scriptChatInput, setScriptChatInput] = useState('');
+    
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
     const [refImage, setRefImage] = useState('');

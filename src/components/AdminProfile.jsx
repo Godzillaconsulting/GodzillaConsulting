@@ -11,14 +11,18 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const [personalMsg, setPersonalMsg] = useState({ text: '', type: '' });
 
     // --- Estado de Tareas Personales (Mock UI) ---
-    const [myTasks, setMyTasks] = useState([
-        { id: 1, title: 'Oscurecer imagen y subir contraste (Post Hero)', deadline: 'Hoy 5:00 PM', source: 'Oscar', done: false },
-        { id: 2, title: 'Corregir copy Accrual para TikTok', deadline: 'Mañana AM', source: 'Judith', done: false },
-        { id: 3, title: 'Renderizar video Kling V3 de Cripto', deadline: 'Ayer', source: 'JareG', done: true }
+    const [allTasks, setAllTasks] = useState([
+        { id: 1, title: 'Oscurecer imagen y subir contraste (Post Hero)', deadline: 'Hoy 5:00 PM', source: 'Oscar', asignadoA: 'Alex', done: false },
+        { id: 2, title: 'Corregir copy Accrual para TikTok', deadline: 'Mañana AM', source: 'Judith', asignadoA: 'Judith', done: false },
+        { id: 3, title: 'Renderizar video Kling V3 de Cripto', deadline: 'Ayer', source: 'JareG', asignadoA: 'JareG', done: true },
+        { id: 4, title: 'Crear endpoint para subida de videos en S3', deadline: 'Mañana', source: 'JareG', asignadoA: 'Dani', done: false }
     ]);
 
+    const myTasks = allTasks.filter(t => t.asignadoA?.toLowerCase() === profile?.username?.toLowerCase() || profile?.username === 'godzilla_admin');
+    const [selectedTask, setSelectedTask] = useState(null);
+
     const toggleTask = (id) => {
-        setMyTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+        setAllTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
     };
 
     // --- Estado Equipo (SuperAdmin) ---
@@ -344,40 +348,118 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                 )}
 
                 {subTab === 'tasks' && (
-                    <div className="animate-in fade-in space-y-6">
+                    <div className="animate-in fade-in space-y-4 flex flex-col">
                         <div>
-                            <h2 className="text-2xl font-black text-white">Bandeja de Tareas</h2>
-                            <p className="text-sm text-neutral-400 mt-1">Checklist de operaciones pendientes asignadas a ti.</p>
+                            <h2 className="text-2xl font-black text-white">Tablero de Tareas</h2>
+                            <p className="text-sm text-neutral-400 mt-1">Distribución y gestión detallada tipo Asana.</p>
                         </div>
                         
-                        <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden p-6">
-                            <div className="space-y-3">
-                                {myTasks.map(task => (
-                                    <div 
-                                        key={task.id} 
-                                        className={`group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${task.done ? 'bg-black/30 border-neutral-800/50 opacity-50' : 'bg-[#111] border-neutral-700 hover:border-sky-500/50 hover:bg-[#1a1a1a] shadow-lg hover:shadow-sky-900/10'}`}
-                                    >
+                        <div className="flex bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl h-[65vh] min-h-[500px]">
+                            {/* PANE IZQUIERDO: LISTA */}
+                            <div className="w-1/2 md:w-2/5 border-r border-neutral-800 flex flex-col bg-[#080808]">
+                                <div className="p-4 border-b border-neutral-800 bg-[#0d0d0d] flex justify-between items-center shrink-0">
+                                    <h3 className="font-bold text-white text-sm flex items-center gap-2"><span>✅</span> Mis Pendientes ({myTasks.filter(t=>!t.done).length})</h3>
+                                    <button onClick={() => alert('Próximamente: Crear tarea desde aquí')} className="text-[10px] bg-[#CC0000] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-white hover:text-[#CC0000] transition-colors shadow-sm">+ Nueva</button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                                    {myTasks.length === 0 ? (
+                                       <p className="text-neutral-600 text-xs text-center mt-10">No hay tareas asignadas</p>
+                                    ) : myTasks.map(task => (
                                         <div 
-                                            onClick={() => toggleTask(task.id)}
-                                            className={`w-6 h-6 rounded-md flex justify-center items-center shrink-0 border-2 transition-colors cursor-pointer ${task.done ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black border-neutral-500 hover:border-sky-400 text-transparent'}`}
+                                            key={task.id} 
+                                            onClick={() => setSelectedTask(task)}
+                                            className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border ${selectedTask?.id === task.id ? 'bg-[#CC0000]/10 border-[#CC0000]/40 shadow-[0_0_15px_rgba(204,0,0,0.1)]' : 'bg-[#111] hover:bg-white/5 border-neutral-800 hover:border-neutral-700'}`}
                                         >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={task.done ? 'scale-100' : 'scale-50 opacity-0'}><polyline points="20 6 9 17 4 12"/></svg>
+                                            <div 
+                                                onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }}
+                                                className={`w-5 h-5 rounded-md flex justify-center items-center shrink-0 border-2 transition-colors cursor-pointer mt-0.5 ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-500 hover:border-green-400 text-transparent'}`}
+                                            >
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className={task.done ? 'scale-100' : 'scale-50 opacity-0'}><polyline points="20 6 9 17 4 12"/></svg>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-bold leading-snug truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.title}</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${task.done ? 'bg-neutral-800 text-neutral-600' : 'bg-[#CC0000]/20 text-[#CC0000]'}`}>Ref: {task.source}</span>
+                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-black text-neutral-400 border border-neutral-800`}>📅 {task.deadline}</span>
+                                                    {profile?.username === 'godzilla_admin' && (
+                                                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20`}>👤 {task.asignadoA}</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div 
-                                            className="flex-1 cursor-pointer"
-                                            onClick={() => {
-                                                // Manda a calendario si es CM o al origen del comentario. Por default al Calendar / Inbox
-                                                window.location.href = '/cm'; 
-                                            }}
-                                        >
-                                            <p className={`text-sm font-black tracking-wide transition-colors group-hover:text-sky-400 ${task.done ? 'text-neutral-500 line-through group-hover:text-neutral-400' : 'text-white'}`}>{task.title}</p>
-                                            <div className="flex gap-3 mt-1.5 opacity-80">
-                                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${task.done ? 'bg-neutral-800 text-neutral-600' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>Ref: {task.source}</span>
-                                                <span className={`text-[10px] font-bold ${task.done ? 'text-neutral-600' : 'text-neutral-400'}`}>🏁 {task.deadline}</span>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* PANE DERECHO: DETALLES */}
+                            <div className="w-1/2 md:w-3/5 flex flex-col bg-[#050505]">
+                                {selectedTask ? (
+                                    <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4">
+                                        <div className="p-4 border-b border-neutral-800 flex justify-between items-center shrink-0">
+                                            <button 
+                                                onClick={() => {
+                                                    toggleTask(selectedTask.id);
+                                                    setSelectedTask({...selectedTask, done: !selectedTask.done});
+                                                }}
+                                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-2 ${selectedTask.done ? 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700' : 'bg-green-600 hover:bg-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]'}`}
+                                            >
+                                                {selectedTask.done ? '☒ Reabrir Tarea' : '☑ Marcar Completada'}
+                                            </button>
+                                            <div className="flex items-center gap-2 text-neutral-500">
+                                               <button className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">🔗</button>
+                                               <button className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors text-lg">⋯</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                                            <div>
+                                                <h1 className={`text-2xl md:text-3xl font-black leading-tight ${selectedTask.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{selectedTask.title}</h1>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-y-6 text-sm">
+                                                <div className="text-neutral-500 font-bold flex items-center">Asignado a</div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex justify-center items-center font-bold text-white text-xs uppercase border-2 border-neutral-600 shadow-sm">{selectedTask.asignadoA?.[0] || '?'}</div>
+                                                    <span className="font-bold text-gray-200">{selectedTask.asignadoA || 'Sin Asignar'}</span>
+                                                </div>
+                                                
+                                                <div className="text-neutral-500 font-bold flex items-center">Fecha de entrega</div>
+                                                <div className="text-yellow-500 font-bold">{selectedTask.deadline}</div>
+                                                
+                                                <div className="text-neutral-500 font-bold flex items-center">Autor / Origen</div>
+                                                <div className="text-sky-400 font-bold p-1 bg-sky-500/10 rounded-lg inline-block w-max px-3 border border-sky-500/20">{selectedTask.source}</div>
+                                            </div>
+
+                                            <div className="pt-6 border-t border-neutral-800">
+                                                <h3 className="text-sm font-bold text-white mb-3 tracking-widest uppercase">Descripción / Briefing</h3>
+                                                <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 text-sm text-gray-400 min-h-[120px] whitespace-pre-wrap leading-relaxed shadow-inner">
+                                                    Sin brief detallado para esta tarea de momento. 
+                                                    {'\n\n'}Pide más contexto usando los comentarios de abajo o revisa el Calendario Maestro.
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="pt-6">
+                                                <h3 className="text-sm font-bold text-neutral-400 mb-4 tracking-widest uppercase">Comentarios</h3>
+                                                <div className="flex gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-[#CC0000] border-2 border-red-900 flex justify-center items-center font-bold text-white text-sm uppercase shrink-0 shadow-[0_0_10px_rgba(204,0,0,0.3)]">
+                                                        {profile?.username?.[0] || 'U'}
+                                                    </div>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Preguntar o dejar un comentario... (Presiona Enter)" 
+                                                        onClick={() => alert("Próximamente: Historial de Comentarios por ID")}
+                                                        className="flex-1 bg-[#111] border border-neutral-700/50 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-[#CC0000] focus:bg-black transition-colors"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="flex-1 flex flex-col items-center justify-center opacity-30 select-none">
+                                        <span className="text-6xl mb-6 grayscale">📋</span>
+                                        <p className="text-xs font-black text-white tracking-[0.2em] uppercase">Selecciona una Tarea para Inspeccionar</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

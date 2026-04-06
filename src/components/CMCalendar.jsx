@@ -138,6 +138,8 @@ export default function CMCalendar({ adminProfile }) {
 
         setTasks([
             { id: 1, que: 'Hacer la imagen menos oscura. Se pierde el logo de Godzilla.', para: 'Alex', referencias: 'https://godzillaconsulting.ai/admin', deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], done: false, asignadoPor: 'Judith', createdAt: new Date().toISOString() },
+            { id: 2, que: 'Crear endpoint para subida de videos en S3 y optimización', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString() },
+            { id: 3, que: 'Revisar logs de memoria y limpiar caché en Neon DB', para: 'JareG', referencias: 'Neon Console', deadline: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], done: false, asignadoPor: 'Oscar', createdAt: new Date().toISOString() },
         ]);
 
         // Notificación de ejemplo para el usuario actual
@@ -278,8 +280,10 @@ export default function CMCalendar({ adminProfile }) {
         todos: [...filteredEvents, ...citas, ...pendingTaskEvents]
     }[calendarTab] || filteredEvents;
 
-    const pendingTasks = tasks.filter(t => !t.done);
-    const doneTasks = tasks.filter(t => t.done);
+    // ─── TAREAS DEL SIDEBAR (Solo muestra las del usuario actual) ───
+    const myFilteredTasks = tasks.filter(t => t.para?.toLowerCase() === currentUser.toLowerCase() || currentUser.toLowerCase() === 'godzilla_admin');
+    const pendingTasks = myFilteredTasks.filter(t => !t.done);
+    const doneTasks = myFilteredTasks.filter(t => t.done);
 
     // ─── Mockup de red social (visible para TODOS) ─────────────────────────
     const renderSocialMockup = (event) => (

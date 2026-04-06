@@ -12,6 +12,9 @@ export default function CockersStudio({ adminProfile }) {
     const [genMode, setGenMode] = useState('video'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
     
+    // Auth & Roles
+    const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
+    
     // States del Redactor IA (Asistente Copywriting)
     const [showScriptGen, setShowScriptGen] = useState(false);
     const [scriptChatHistory, setScriptChatHistory] = useState([
@@ -66,14 +69,27 @@ export default function CockersStudio({ adminProfile }) {
         setIsLoading(false);
     };
 
-    const handleSelectOption = async (optionUrl, providerName) => {
-        if (!window.confirm(`¿Aprobar renderizado de ${providerName} y enviar al Calendario de Judith (CM)?`)) return;
+    const handleAction = async (opt, actionType) => {
+        let msg = '';
+        let newStatus = '';
+        if (actionType === 'review') {
+            msg = `¿Enviar ${opt.provider} a revisión al Jefe/CM?`;
+            newStatus = 'pending_cm_approval';
+        } else if (actionType === 'approve') {
+            msg = `¿Aprobar renderizado de ${opt.provider} y enviarlo al Calendario?`;
+            newStatus = 'approved';
+        } else if (actionType === 'reject') {
+            msg = `¿Devolver este contenido a Cockers (Alex) para corrección?`;
+            newStatus = 'rejected';
+        }
+
+        if (!window.confirm(msg)) return;
         
         try {
             const token = localStorage.getItem('adminToken');
             if (selectedDraft.id === 999) {
-                // Modo prototipo (mock data handling)
-                alert(`✅ Carga simulada finalizada: Opción de ${providerName} seleccionada. El post (DRAFT) fue transferido a la BD de Judith.`);
+                // Modo prototipo
+                alert(`✅ Acción simulada: Contenido marcado como ${newStatus}.`);
                 setQueue(q => q.filter(p => p.id !== selectedDraft.id));
                 setSelectedDraft(null);
                 return;
@@ -84,20 +100,20 @@ export default function CockersStudio({ adminProfile }) {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     id: selectedDraft.id,
-                    selected_media_url: optionUrl,
-                    status: 'pending_cm_approval'
+                    selected_media_url: opt.url,
+                    status: newStatus
                 })
             });
             
             const data = await res.json();
             if (!data.success) throw new Error(data.message || 'Fallo API');
 
-            alert(`✅ Transferencia Exitosa: El video/imagen fue anclado al script y apareció como PENDIENTE en el calendario de Judith.`);
+            alert(`✅ Exito: El contenido se movió a estado: ${newStatus}.`);
             setQueue(q => q.filter(p => p.id !== selectedDraft.id));
             setSelectedDraft(null);
         } catch (error) {
             console.error(error);
-            alert(`⚠️ Error al asignar el post a Judith: ${error.message}`);
+            alert(`⚠️ Error al procesar: ${error.message}`);
         }
     };
 
@@ -275,6 +291,7 @@ export default function CockersStudio({ adminProfile }) {
                                 onChange={e => setBuilderData({...builderData, model: e.target.value})}
                                 className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
                             >
+                                <option value="Gemini 1.5 Pro">✨ Gemini 1.5 Pro (2 CR)</option>
                                 <option value="Nano Banana 2">🍌 Nano Banana 2 (0 CR)</option>
                                 <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast (5 CR)</option>
                                 <option value="Kling 3.0">🎬 Kling 3.0 HD (20 CR)</option>
@@ -487,17 +504,29 @@ export default function CockersStudio({ adminProfile }) {
                                             <div className="flex items-center gap-2">
                                                 <a 
                                                     href={opt.url} 
-                                                    download={`Kling_Var_${i+1}`}
+                                                    download={`Media_Export_${i+1}`}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors"
+                                                    className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-600"
                                                     title="Descargar Asset a tu PC"
                                                 >
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                 </a>
-                                                <button onClick={() => handleSelectOption(opt.url, opt.provider)} className="bg-white hover:bg-neutral-200 text-black font-bold text-[10px] uppercase tracking-wider px-5 py-2.5 rounded-full transition-transform active:scale-95">
-                                                    Elegir
-                                                </button>
+                                                
+                                                {isCockers ? (
+                                                    <button onClick={() => handleAction(opt, 'review')} className="bg-[#CC0000] hover:bg-red-800 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(204,0,0,0.4)] transition-transform active:scale-95">
+                                                        Enviar a Revisión
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex gap-1.5">
+                                                        <button onClick={() => handleAction(opt, 'reject')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center" title="Devolver a Cockers">
+                                                            ↩️ 
+                                                        </button>
+                                                        <button onClick={() => handleAction(opt, 'approve')} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-transform active:scale-95">
+                                                            Aprobar ✔️
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

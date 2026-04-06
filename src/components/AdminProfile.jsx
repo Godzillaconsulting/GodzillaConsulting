@@ -62,11 +62,13 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setLoadingTeam(false);
     };
 
+    const canManageUsers = profile?.is_superadmin || profile?.role === 'admin' || ['jareg', 'oscar', 'godzilla_admin'].includes(profile?.username?.toLowerCase());
+
     useEffect(() => {
-        if (subTab === 'team' && profile?.is_superadmin) {
+        if (subTab === 'team' && canManageUsers) {
             fetchTeamData();
         }
-    }, [subTab, profile]);
+    }, [subTab, profile, canManageUsers]);
 
     const handleSavePersonal = async (e) => {
         e.preventDefault();
@@ -262,7 +264,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                 >
                     ✅ Mis Tareas
                 </button>
-                {profile.is_superadmin && (
+                {canManageUsers && (
                     <button 
                         onClick={() => setSubTab('team')}
                         className={`pb-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${subTab === 'team' ? 'border-amber-500 text-white' : 'border-transparent text-neutral-500 hover:text-gray-300'}`}

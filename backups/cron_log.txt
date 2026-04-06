@@ -1,0 +1,23 @@
+📦 [INIT] Iniciando Respaldo Maestro Local de Godzilla Consulting DB...
+ - Descargando tabla admins... (node:12656) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[OK] (5 registros rescatados)
+ - Descargando tabla media_storage... [OK] (14 registros rescatados)
+ - Descargando tabla nodes... [ERROR o Vacía]: relation "nodes" does not exist
+ - Descargando tabla lead_magnets... [OK] (0 registros rescatados)
+ - Descargando tabla users... [OK] (0 registros rescatados)
+ - Descargando tabla citas... [OK] (0 registros rescatados)
+ - Descargando tabla page_views... [OK] (300 registros rescatados)
+ - Descargando tabla pixel_events... [OK] (4 registros rescatados)
+ - Descargando tabla admin_logs... [OK] (28 registros rescatados)
+
+✅ Respaldo Exitoso: guardado localmente en ./backups/godzilla_db_backup_2026-04-03_23-15-07.json
+📂 Tamaño del Archivo .JSON: 248.88 MB
+📄 Reporte gerencial generado en el Escritorio: C:\Users\GODZILLA.IA\Desktop\REPORTE_RESPALDO_GODZILLA.txt

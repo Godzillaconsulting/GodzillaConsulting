@@ -19,6 +19,7 @@ function EditorField({ fieldKey, onHover, children }) {
  onMouseEnter={() => onHover(fieldKey)}
  onMouseLeave={() => onHover(null)}
  className="relative group/field"
+ title="📝 Edita este valor aquí. Los cambios se verán al instante en la vista previa a tu izquierda."
  >
  <div className="absolute -left-2 top-0 bottom-0 w-0.5 bg-[#CC0000]/0 group-hover/field:bg-[#CC0000]/70 rounded-full transition-all duration-150" />
  {children}
@@ -138,6 +139,8 @@ export default function AdminStudio() {
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
+ const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+ const [expandedGroups, setExpandedGroups] = useState(['Sitio Principal']);
  
  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
  const [feedbackText, setFeedbackText] = useState('');
@@ -327,7 +330,7 @@ export default function AdminStudio() {
  )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
- <div className="relative z-10 w-[200px] min-w-[200px] flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)]">
+ <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
  <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
  <div className="flex items-center gap-2.5">
  <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
@@ -343,7 +346,8 @@ export default function AdminStudio() {
  </button>
  </div>
 
- <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+ <div className="flex-1 overflow-y-auto flex flex-col px-2 py-4">
+  <div className="space-y-6">
   {[
     {
       title: "Sitio Principal", emoji: "⭐",
@@ -371,10 +375,13 @@ export default function AdminStudio() {
 
     return (
       <div key={gIdx} className="space-y-1">
-        <p className="px-3 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-2 drop-shadow-sm flex items-center gap-1.5">
-            <span className="text-xs">{group.emoji}</span> {group.title}
-        </p>
-        <div className="space-y-0.5 relative">
+        <button onClick={() => setExpandedGroups(prev => prev.includes(group.title) ? prev.filter(t => t !== group.title) : [...prev, group.title])}
+                className="w-full text-left px-3 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 flex items-center justify-between hover:text-white/80 transition-colors">
+            <span className="flex items-center gap-1.5"><span className="text-xs">{group.emoji}</span> {group.title}</span>
+            <span className="text-[8px]">{expandedGroups.includes(group.title) ? '▼' : '►'}</span>
+        </button>
+        {expandedGroups.includes(group.title) && (
+        <div className="space-y-0.5 relative pl-2">
           {groupNodes.map((node) => {
              const meta = PAGE_SECTIONS.find(s => s.id === node.id);
              const isSelected = selectedNodeId === node.id;
@@ -398,12 +405,13 @@ export default function AdminStudio() {
              );
           })}
         </div>
+        )}
       </div>
     );
   })}
- </div>
-
- <div className="mt-auto px-2 pb-4 space-y-1">
+  </div>
+  
+  <div className="mt-6 border-t border-red-900/40 pt-4 pb-4 space-y-1 shrink-0">
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
        <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
@@ -450,8 +458,12 @@ export default function AdminStudio() {
  </button>
   </div>
   </div>
+  </div>
 
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
+  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-1/2 left-0 -translate-y-1/2 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
+      <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
+  </button>
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
  ) : activeSection ==='profile' ? (

@@ -41,7 +41,7 @@ export default function GoyiAdmin() {
             const data = await response.json();
             
             // Reemplazar *...* por <b>...</b>
-            const textResponse = (data.response || "No entiendo la solicitud.").replace(/\*(.*?)\*/g, '<b>$1</b>');
+            const textResponse = (data.reply || "No entiendo la solicitud.").replace(/\*(.*?)\*/g, '<b>$1</b>');
             
             setMessages(prev => [...prev, { role: 'model', text: textResponse }]);
         } catch (error) {

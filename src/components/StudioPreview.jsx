@@ -281,7 +281,10 @@ export default function StudioPreview({ nodeId, draftData, hoveredField }) {
  </div>
 
  {/* Preview */}
- <div className="flex-1 overflow-hidden bg-[#0a0a0a] relative">
+ <div 
+    className="flex-1 overflow-hidden bg-[#0a0a0a] relative"
+    title="👁️ Vista Previa en Vivo: Aquí puedes ver cómo quedará la sección final. Los textos e imágenes que cambies en el panel derecho se actualizarán aquí automáticamente."
+ >
  <PreviewErrorBoundary>
  <ScaledSection nodeId={nodeId} draftData={draftData} />
  </PreviewErrorBoundary>

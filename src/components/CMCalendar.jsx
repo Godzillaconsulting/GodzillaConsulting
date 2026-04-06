@@ -42,6 +42,7 @@ export default function CMCalendar({ adminProfile }) {
     // ─── Pestaña activa del Calendario (solo para admins) ─────────────────
     // 'contenido' | 'citas' | 'pendientes' | 'todos'
     const [calendarTab, setCalendarTab] = useState('contenido');
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     // ─── Estado del Calendario de Contenido ───────────────────────────────
     const [events, setEvents] = useState([]);
@@ -444,10 +445,10 @@ export default function CMCalendar({ adminProfile }) {
     };
 
     return (
-        <div className="h-full bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] relative overflow-hidden flex text-white">
+        <div className="h-full w-full bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] relative flex overflow-hidden text-white">
             <style>{hackerCalendarStyles}</style>
 
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col h-full overflow-y-auto overflow-x-hidden">
                 {/* ── HEADER ── */}
                 <div className="px-8 py-5 bg-[#000000] border-b border-white/10 shrink-0">
                     <div className="flex justify-between items-center mb-5">
@@ -541,16 +542,23 @@ export default function CMCalendar({ adminProfile }) {
                     )}
 
                     {/* Filtros de Plataforma (solo en pestaña Contenido o Todos) */}
-                    {(calendarTab === 'contenido' || calendarTab === 'todos' || !canCreate) && (
-                    <div className="flex gap-3">
-                        {[{ id: 'ALL', label: 'Todas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
-                            <button key={tab.id} onClick={() => setActivePlatform(tab.id)}
-                                className={`px-5 py-2 rounded-full font-black text-xs transition-all ${activePlatform === tab.id ? 'bg-white text-black' : 'bg-black/60 border border-white/10 text-neutral-500 hover:text-white'}`}>
-                                {tab.label}
-                            </button>
-                        ))}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        {(calendarTab === 'contenido' || calendarTab === 'todos' || !canCreate) ? (
+                        <div className="flex gap-3">
+                            {[{ id: 'ALL', label: 'Todas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
+                                <button key={tab.id} onClick={() => setActivePlatform(tab.id)}
+                                    className={`px-5 py-2 rounded-full font-black text-xs transition-all ${activePlatform === tab.id ? 'bg-white text-black' : 'bg-black/60 border border-white/10 text-neutral-500 hover:text-white'}`}>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        ) : <div />}
+                        
+                        <div className="flex items-center gap-3">
+                            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none mt-1">Ir a Fecha:</label>
+                            <input type="date" value={currentDate.toISOString().split('T')[0]} onChange={(e) => { if (e.target.value) { const [y,m,d] = e.target.value.split('-'); setCurrentDate(new Date(y, m-1, d)); } }} className="bg-black/60 border border-white/10 rounded-full px-4 py-1.5 text-xs font-black tracking-widest text-[#CC0000] focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
+                        </div>
                     </div>
-                    )}
 
                     {/* Carga de citas */}
                     {calendarTab === 'citas' && loadingCitas && (
@@ -558,12 +566,14 @@ export default function CMCalendar({ adminProfile }) {
                     )}
                 </div>
 
-                <div className="flex-1 p-4 md:p-6 overflow-hidden bg-[#050505] min-h-[500px]">
-                    <Calendar
-                        localizer={localizer} events={calendarEvents}
-                        startAccessor="start" endAccessor="end" style={{ height: '100%' }}
-                        messages={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", next: "Sig", previous: "Ant" }}
-                        culture="es" eventPropGetter={eventStyleGetter}
+                <div className="flex-1 p-4 md:px-8 md:py-6 overflow-visible bg-[#050505]">
+                    <div style={{ minHeight: '750px', height: '100%' }}>
+                        <Calendar
+                            date={currentDate} onNavigate={(newDate) => setCurrentDate(newDate)}
+                            localizer={localizer} events={calendarEvents}
+                            startAccessor="start" endAccessor="end" style={{ height: '100%' }}
+                            messages={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", next: "Sig", previous: "Ant" }}
+                            culture="es" eventPropGetter={eventStyleGetter}
                         onSelectEvent={(event) => {
                             // Para citas y pendientes mostramos panel simplificado
                             if (event.tipo === 'cita') {
@@ -576,6 +586,7 @@ export default function CMCalendar({ adminProfile }) {
                             setCommentText(''); setMentionQuery(null);
                         }}
                     />
+                    </div>
                 </div>
             </div>
 

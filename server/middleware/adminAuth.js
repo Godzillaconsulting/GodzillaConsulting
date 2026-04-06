@@ -23,7 +23,7 @@ export const verifyAdminToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.adminUser = decoded; // { id, username, role }
+        req.admin = decoded; // { id, username, role }
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
@@ -37,7 +37,7 @@ export const verifyAdminToken = (req, res, next) => {
 // 2. Solo Super Admins (JareG / Oscar / godzilla_admin)
 // ──────────────────────────────────────────────────────────
 export const requireSuperAdmin = (req, res, next) => {
-    const user = req.adminUser;
+    const user = req.admin;
     if (!user) return res.status(401).json({ success: false, message: 'No autenticado.' });
     
     const isSuperAdmin = user.role === 'admin' || 
@@ -56,7 +56,7 @@ export const requireSuperAdmin = (req, res, next) => {
 // 3. CM o Admin (Oscar, Judith, JareG)
 // ──────────────────────────────────────────────────────────
 export const requireCM = (req, res, next) => {
-    const user = req.adminUser;
+    const user = req.admin;
     if (!user) return res.status(401).json({ success: false, message: 'No autenticado.' });
     
     const allowed = user.role === 'admin' || user.role === 'cm' ||

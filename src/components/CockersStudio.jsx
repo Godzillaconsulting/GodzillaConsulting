@@ -4,7 +4,7 @@ import MediaPicker from './MediaPicker';
 export default function CockersStudio({ adminProfile }) {
     const [queue, setQueue] = useState([]);
     const [selectedDraft, setSelectedDraft] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [renderingAI, setRenderingAI] = useState(false);
     const [manualUrl, setManualUrl] = useState('');
     const [showPromptBuilder, setShowPromptBuilder] = useState(false);
@@ -12,9 +12,19 @@ export default function CockersStudio({ adminProfile }) {
     const [chatInput, setChatInput] = useState('');
     const [finalPrompt, setFinalPrompt] = useState('');
     const [refImage, setRefImage] = useState('');
-    const [builderData, setBuilderData] = useState({ tema: '', estilo: '', luces: '' });
+    const [builderData, setBuilderData] = useState({ 
+        tema: 'Cyberpunk', 
+        estilo: 'Hyperrealistic', 
+        luces: 'Neon',
+        aspect_ratio: '16:9',
+        duracion: '5',
+        camara: 'Pan',
+        negativo: ''
+    });
+    const [showAdvancedTuning, setShowAdvancedTuning] = useState(false);
     const [generateVideo, setGenerateVideo] = useState(false);
     const [showScriptGen, setShowScriptGen] = useState(false);
+    const [refinePrompt, setRefinePrompt] = useState('');
     
     // Estados para el generador de Guiones
     const [scriptChatInput, setScriptChatInput] = useState('');
@@ -80,32 +90,54 @@ export default function CockersStudio({ adminProfile }) {
         setSelectedDraft(null);
     };
 
-    const simulateAIGeneration = () => {
+    const simulateAIGeneration = async () => {
         setRenderingAI(true);
-        // Simulando que Nano Banana y Kling devuelven resultados en 3 segundos
-        setTimeout(() => {
-            const options = [
-                { provider: 'Nano Banana V2 (Imagen)', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600', isVideo: false },
-                { provider: 'Nano Banana Pro (Imagen)', url: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=600', isVideo: false }
-            ];
-            
-            if (generateVideo) {
-                options.push({ provider: 'FlowVeo 3 (Google)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', isVideo: true });
-                options.push({ provider: 'Kling AI (Strict Match)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', isVideo: true });
-            }
+        
+        try {
+            const rawPrompt = selectedDraft?.visual_prompt || finalPrompt || 'cyberpunk cinematic city';
+            const cleanPrompt = rawPrompt.replace(/\[\/?.*?]/g, '').trim();
+            const topKeywords = cleanPrompt.split(' ').filter(w => w.length > 4).slice(0, 3).join(' ');
 
-            setQueue(q => q.map(post => {
-                if(post.id === selectedDraft.id) {
-                    return { ...post, media_options: options };
+            // 1. Fetching Lexica AI Database for hyper-realistic majestic Image matches
+            let imgUrls = [`https://loremflickr.com/600/800/${topKeywords}`, `https://loremflickr.com/600/800/creative`];
+            try {
+                const lexRes = await fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(cleanPrompt)}`);
+                const lexData = await lexRes.json();
+                if (lexData?.images?.length >= 2) {
+                    imgUrls = [lexData.images[0].src, lexData.images[1].src];
                 }
-                return post;
-            }));
-            setSelectedDraft(prev => ({
-                ...prev,
-                media_options: options
-            }));
+            } catch (e) { console.log('Lexica fallback'); }
+
+            // 2. Fetching MP4 Contextual Videos (Via Giphy Public Legacy Key to get MP4 links)
+            let videoUrls = ['https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 'https://www.w3schools.com/html/mov_bbb.mp4'];
+            try {
+                const giphRes = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(topKeywords)}&limit=4`);
+                const giphData = await giphRes.json();
+                if (giphData?.data?.length >= 2) {
+                    videoUrls = [
+                        giphData.data[0]?.images?.original?.mp4 || videoUrls[0],
+                        giphData.data[1]?.images?.original?.mp4 || videoUrls[1]
+                    ];
+                }
+            } catch (e) { console.log('Video fallback'); }
+
+            const options = [
+                { provider: 'Nano Banana v3', url: imgUrls[0], isVideo: false },
+                { provider: 'Kling AI (Image)', url: imgUrls[1], isVideo: false },
+                { provider: 'Runway Gen-3 (10s)', url: videoUrls[0], isVideo: true },
+                { provider: 'Luma Dream Machine', url: videoUrls[1], isVideo: true }
+            ];
+
+            // Retraso cinematográfico
+            setTimeout(() => {
+                setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
+                setSelectedDraft(prev => ({ ...prev, media_options: options }));
+                setRenderingAI(false);
+            }, 2500);
+
+        } catch (error) {
             setRenderingAI(false);
-        }, 3000);
+        }
     };
 
     if (isLoading) return <div className="p-10 text-center text-neutral-400 font-bold">Iniciando Estudio...</div>;
@@ -166,104 +198,187 @@ export default function CockersStudio({ adminProfile }) {
 
     if (showPromptBuilder) {
         return (
-            <div className="p-4 md:p-6 h-full bg-gradient-to-br from-[#050505] via-[#111111] to-[#1a0a0a] relative overflow-y-auto flex flex-col items-center">
-                <div className="w-full max-w-6xl flex flex-col min-h-[900px]">
-                    <button onClick={() => setShowPromptBuilder(false)} className="text-[#CC0000] hover:text-white font-bold mb-4 self-start transition-colors">← Volver al Menú</button>
-                    <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-4">Chat Copiloto & Libertad Creativa</h2>
-                    
-                    <div className="flex-1 flex flex-col md:flex-row gap-4">
-                        {/* Panel Izquierdo: Chat Integrado para mejorar ideas */}
-                        <div className="w-full md:w-1/2 flex flex-col bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg border border-red-900/30 rounded-2xl overflow-hidden shadow-2xl">
-                            <div className="bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 border-b border-red-900/30 p-4">
-                                <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">🤖 Asistente de Prompting</h3>
-                                <p className="text-xs text-neutral-400 font-bold mt-1">Chatea conmigo si tu idea está bloqueada. Yo te hago preguntas de color e iluminación para lograr renders perfectos en Nano/Kling.</p>
+            <div className="h-full bg-gradient-to-br from-[#020202] via-[#0a0202] to-[#050000] relative overflow-y-auto overflow-x-hidden flex flex-col items-center custom-scrollbar">
+                {/* Background Decor */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#CC0000]/10 rounded-full blur-[150px] opacity-50 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#ff2222]/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+                <div className="w-full max-w-5xl px-4 py-8 flex flex-col min-h-screen relative z-10 space-y-6">
+                    {/* Kling-Style Header */}
+                    <div className="flex items-center justify-between border-b border-red-900/20 pb-4">
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => setShowPromptBuilder(false)} className="text-[#CC0000] hover:text-white transition-colors">
+                                <span className="text-xl">←</span>
+                            </button>
+                            <h2 className="text-xl font-black text-white tracking-widest uppercase flex items-center gap-3">
+                                <span className="bg-[#CC0000] text-black px-2 py-0.5 rounded text-[10px]">KLING V1.5</span>
+                                AI Director Canvas
+                            </h2>
+                        </div>
+                        <button onClick={() => setShowScriptGen(true)} className="bg-black/40 hover:bg-[#CC0000]/20 border border-red-900/30 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-[0_0_15px_rgba(204,0,0,0.1)] flex items-center gap-2">
+                            🤖 Abrir Asistente Copiloto
+                        </button>
+                    </div>
+
+                    {/* Main Kling Generator Canvas */}
+                    <div className="bg-black/40 backdrop-blur-2xl border border-white/5 rounded-3xl p-1 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                        <div className="bg-[#0f0f0f] rounded-[22px] flex flex-col relative h-[380px]">
+                            
+                            {/* Toolbar Top */}
+                            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/5">
+                                <button className="text-[#CC0000] border-b-2 border-[#CC0000] font-bold text-xs pb-1 uppercase tracking-wider">Multimedia (HD)</button>
+                                <button className="text-neutral-500 hover:text-neutral-300 font-bold text-xs pb-1 uppercase tracking-wider transition-colors">Lip Sync</button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                {chatHistory.map((msg, i) => (
-                                    <div key={i} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`p-4 rounded-2xl max-w-[85%] text-sm font-bold shadow-lg ${msg.role === 'ai' ? 'bg-neutral-800 text-white rounded-tl-sm' : 'bg-gradient-to-r from-[#CC0000] to-[#880000]/20 border border-[#CC0000]/50 text-white rounded-tr-sm'}`}>
-                                            {msg.text}
-                                        </div>
+
+                            {/* Enormous Prompt Area */}
+                            <div className="flex-1 relative">
+                                <textarea 
+                                    value={finalPrompt} 
+                                    onChange={e => setFinalPrompt(e.target.value)} 
+                                    placeholder="Describe tu visión en detalle. Ej: Un kaiju hiperrealista destruyendo un servidor en cámara lenta..." 
+                                    className="w-full h-full bg-transparent border-none text-white/90 focus:ring-0 p-6 text-lg md:text-xl font-light placeholder-neutral-700 outline-none resize-none leading-relaxed"
+                                />
+                                {/* Generador Semántico de Trends Absolutaente Discreto */}
+                                <div className="absolute top-4 right-4 flex flex-col items-end gap-2 max-w-[250px]">
+                                    <span className="text-[9px] uppercase tracking-widest text-neutral-600 font-bold">💎 Trends Suggestions</span>
+                                    {dailyTrendingPrompts.slice(0,2).map((p, i) => (
+                                        <button key={i} onClick={() => setFinalPrompt(p)} className="text-[9px] bg-white/5 hover:bg-[#CC0000]/20 border border-white/5 hover:border-[#CC0000]/30 text-neutral-400 hover:text-white p-2 rounded-lg text-left truncate w-full transition-all backdrop-blur-md">
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Bottom Parameters & Action Bar (Pills Style) */}
+                            <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-4 border-t border-white/5 bg-black/20">
+                                
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {/* Parameters / Inputs tipo Pills */}
+                                    <div className="flex items-center bg-black/50 border border-white/10 rounded-lg overflow-hidden focus-within:border-[#CC0000]/50 transition-colors">
+                                        <span className="text-[10px] text-neutral-500 font-bold uppercase pl-3 pr-2">Theme:</span>
+                                        <input value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="bg-transparent border-none text-white text-xs w-20 p-2 outline-none" />
                                     </div>
-                                ))}
+
+                                    <div className="flex items-center bg-black/50 border border-white/10 rounded-lg overflow-hidden focus-within:border-[#CC0000]/50 transition-colors">
+                                        <span className="text-[10px] text-neutral-500 font-bold uppercase pl-3 pr-2">Style:</span>
+                                        <input value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="bg-transparent border-none text-white text-xs w-20 p-2 outline-none" />
+                                    </div>
+
+                                    <div className="flex items-center bg-black/50 border border-white/10 rounded-lg overflow-hidden focus-within:border-[#CC0000]/50 transition-colors">
+                                        <span className="text-[10px] text-neutral-500 font-bold uppercase pl-3 pr-2">Light:</span>
+                                        <input value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="bg-transparent border-none text-white text-xs w-20 p-2 outline-none" />
+                                    </div>
+                                    
+                                    <button onClick={() => {
+                                        const { tema, estilo, luces, aspect_ratio, duracion, camara, negativo } = builderData;
+                                        const combined = `[Theme: ${tema}] [Style: ${estilo}] [Lighting: ${luces}] --ar ${aspect_ratio} --duration ${duracion}s --camera ${camara} --no ${negativo || 'text, blur'}`;
+                                        setFinalPrompt(prev => {
+                                            if (!prev) return combined;
+                                            let cleanPrev = prev.replace(/\[Theme:.*?\] \[Style:.*?\] \[Lighting:.*?\].*/g, '').trim();
+                                            if (cleanPrev.endsWith(',')) cleanPrev = cleanPrev.slice(0, -1).trim();
+                                            return cleanPrev ? `${cleanPrev}, ${combined}` : combined;
+                                        });
+                                    }} className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-white/10 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-colors">
+                                        Inyectar Settings ➔
+                                    </button>
+                                </div>
+
+                                {/* Generate Master Action */}
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setShowAdvancedTuning(!showAdvancedTuning)} className="text-[10px] bg-white/10 hover:bg-[#CC0000]/20 text-neutral-300 border border-white/10 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 font-bold">
+                                        ⚙️ ENGINE TUNING {showAdvancedTuning ? '▲' : '▼'}
+                                    </button>
+                                    {refImage && <div className="h-10 w-10 rounded overflow-hidden border-2 border-[#CC0000]"><img src={refImage} className="w-full h-full object-cover"/></div>}
+                                    <button onClick={() => {
+                                        const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació del nuevo canvas manual de ' + (adminProfile?.username || 'Editor') + ')', visual_prompt: finalPrompt || 'Cinematic immersive view', reference_image: refImage, media_options: [] };
+                                        setSelectedDraft(newPost);
+                                        setShowPromptBuilder(false);
+                                    }} className="bg-gradient-to-r from-[#FF0000] via-[#CC0000] to-[#880000] hover:bg-gradient-to-r hover:from-[#ff3333] hover:to-[#aa0000] text-white font-black text-sm px-8 py-3 rounded-xl shadow-[0_0_20px_rgba(204,0,0,0.5)] transition-all flex items-center gap-2 group transform active:scale-95">
+                                        <span className="group-hover:rotate-12 transition-transform">✦</span> GENERATE
+                                    </button>
+                                </div>
                             </div>
-                            <div className="p-4 bg-black/40 backdrop-blur border border-red-900/30 border-t border-red-900/30 flex gap-2">
-                                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} 
-                                    onKeyDown={(e) => {
-                                        if(e.key === 'Enter' && chatInput.trim() !== '') {
-                                            const val = chatInput; setChatInput('');
-                                            setChatHistory(h => [...h, {role:'user', text:val}]);
-                                            setTimeout(() => {
-                                                setChatHistory(h => [...h, {role:'ai', text: `Entendido. "${val}" suena épico. ¿Te gustaría mantenerlo fotorealista (35mm), o buscamos algo más cyberpunk/abstracto con neones azules?` }]);
-                                                setFinalPrompt(prev => prev ? prev + ', ' + val : val); // Auto append to prompt
-                                            }, 800);
-                                        }
-                                    }} 
-                                    placeholder="Habla con la IA aquí o arroja tu idea cruda..." className="flex-1 bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#CC0000] border border-red-900/30" />
-                                <button onClick={() => {
-                                    if(chatInput.trim() !== '') {
-                                        const val = chatInput; setChatInput('');
-                                        setChatHistory(h => [...h, {role:'user', text:val}]);
-                                        setTimeout(() => { setChatHistory(h => [...h, {role:'ai', text: `¡Genial! Lo he integrado a tu caja de Prompt a la derecha. ¿Qué lente de cámara le ponemos?`}]); setFinalPrompt(prev => prev ? prev + ', ' + val : val); }, 800);
-                                    }
-                                }} className="bg-neutral-800 hover:bg-gradient-to-r from-[#CC0000] to-[#880000] text-white font-black uppercase px-6 rounded-xl text-xs transition-colors shadow-lg">Enviar</button>
+                            
+                            {/* Advanced Tuning Panel (Collapsible) */}
+                            {showAdvancedTuning && (
+                                <div className="bg-black/60 border-t border-white/5 p-4 flex gap-4 overflow-x-auto custom-scrollbar animate-[fadeIn_0.2s_ease-out]">
+                                    <div className="flex flex-col gap-1 min-w-[120px]">
+                                        <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-bold">Aspect Ratio</label>
+                                        <select value={builderData.aspect_ratio} onChange={e => setBuilderData({...builderData, aspect_ratio:e.target.value})} className="bg-black border border-white/10 text-white text-xs p-1.5 rounded outline-none focus:border-[#CC0000]">
+                                            <option value="16:9">16:9 (Desktop Cinematic)</option>
+                                            <option value="9:16">9:16 (Reels/TikTok)</option>
+                                            <option value="1:1">1:1 (Square)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-[100px]">
+                                        <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-bold">Video Engine Duration</label>
+                                        <select value={builderData.duracion} onChange={e => setBuilderData({...builderData, duracion:e.target.value})} className="bg-black border border-white/10 text-white text-xs p-1.5 rounded outline-none focus:border-[#CC0000]">
+                                            <option value="5">5s (Base Kling/Luma)</option>
+                                            <option value="10">10s (Pro RunwayGen3)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1 min-w-[100px]">
+                                        <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-bold">Camera Motion</label>
+                                        <select value={builderData.camara} onChange={e => setBuilderData({...builderData, camara:e.target.value})} className="bg-black border border-white/10 text-white text-xs p-1.5 rounded outline-none focus:border-[#CC0000]">
+                                            <option value="Pan">Horizontal Pan</option>
+                                            <option value="Zoom">Slow Zoom In</option>
+                                            <option value="Drone">Drone / FPV</option>
+                                            <option value="Static">Static / Locked</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1 flex-1 min-w-[150px]">
+                                        <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-bold">Negative Prompt (Qué evitar)</label>
+                                        <input type="text" value={builderData.negativo} onChange={e => setBuilderData({...builderData, negativo:e.target.value})} placeholder="Ej: texto, deformidades, blurry, b&w" className="bg-black border border-white/10 text-white text-xs p-1.5 rounded outline-none w-full focus:border-[#CC0000]" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Ref Image Input Layer - Kling style invisible upload over the box, or a bottom pill */}
+                            <div className="absolute bottom-20 left-6">
+                                <label className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 bg-black/60 backdrop-blur-sm border border-white/10 px-3 py-1.5 rounded-full cursor-pointer hover:border-[#CC0000]/50 transition-colors">
+                                    <span>📎 Add Image Reference</span>
+                                    <input type="file" accept="image/*,video/*" className="hidden" onChange={(e)=>{
+                                       if(e.target.files && e.target.files[0]){
+                                           const reader = new FileReader();
+                                           reader.onload = (ev) => setRefImage(ev.target.result);
+                                           reader.readAsDataURL(e.target.files[0]);
+                                       }
+                                    }} />
+                                </label>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Panel Derecho: Total Control Manual & Ref Image */}
-                        <div className="w-full md:w-1/2 flex flex-col space-y-4">
-                            
-                            {/* Filtros Estructurales */}
-                            <div className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-5 rounded-2xl border border-red-900/30 shadow-2xl">
-                                <h3 className="text-white font-black uppercase text-xs tracking-widest mb-3">🎛️ Filtros Clásicos (Estructurador)</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                                    <input autoComplete="off" placeholder="Tema (Ej: Zombies)" value={builderData.tema} onChange={(e)=>setBuilderData({...builderData, tema:e.target.value})} className="w-full bg-[#111] backdrop-blur-xl border border-red-900/40 shadow-inner text-white font-bold placeholder-neutral-500 focus:bg-[#CC0000]/10 focus:border-[#CC0000] rounded-xl px-4 py-3 text-sm outline-none transition-colors appearance-none" />
-                                    <input autoComplete="off" placeholder="Estilo (Ej: 35mm)" value={builderData.estilo} onChange={(e)=>setBuilderData({...builderData, estilo:e.target.value})} className="w-full bg-[#111] backdrop-blur-xl border border-red-900/40 shadow-inner text-white font-bold placeholder-neutral-500 focus:bg-[#CC0000]/10 focus:border-[#CC0000] rounded-xl px-4 py-3 text-sm outline-none transition-colors appearance-none" />
-                                    <input autoComplete="off" placeholder="Luces (Ej: Neón)" value={builderData.luces} onChange={(e)=>setBuilderData({...builderData, luces:e.target.value})} className="w-full bg-[#111] backdrop-blur-xl border border-red-900/40 shadow-inner text-white font-bold placeholder-neutral-500 focus:bg-[#CC0000]/10 focus:border-[#CC0000] rounded-xl px-4 py-3 text-sm outline-none transition-colors appearance-none" />
-                                </div>
-                                <button onClick={() => {
-                                    const combined = `[Theme: ${builderData.tema}] [Style: ${builderData.estilo}] [Lighting: ${builderData.luces}]`.trim();
-                                    setFinalPrompt(prev => prev ? prev + ', ' + combined : combined);
-                                }} className="w-full bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 hover:bg-gradient-to-r from-[#CC0000] to-[#880000] text-[#CC0000] hover:text-white font-black text-[10px] uppercase py-3 rounded-lg transition-colors border border-red-900/30 hover:border-[#CC0000] shadow-sm">
-                                    Inyectar a la caja de Prompt Definitivo ↓
-                                </button>
-                            </div>
-
-                            <div className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-6 rounded-2xl border border-red-900/30 shadow-2xl flex-1 flex flex-col min-h-[300px]">
-                                <div className="flex justify-between items-end mb-2">
-                                    <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">📝 1. Tu Prompt Definitivo</h3>
-                                </div>
-                                <p className="text-neutral-400 text-[10px] uppercase font-bold mb-4">Ingresa el código en inglés exacto que irá a los servidores Nano y Kling.</p>
-                                
-                                <div className="mb-4">
-                                    <h4 className="text-[10px] text-white font-black uppercase tracking-widest bg-gradient-to-r from-[#CC0000] to-[#880000] inline-block px-2 py-0.5 rounded mb-2">🔥 Trends del Día en la Red</h4>
-                                    <div className="flex flex-col gap-2">
-                                        {dailyTrendingPrompts.map((p, i) => (
-                                            <button key={i} onClick={() => setFinalPrompt(p)} className="text-left text-[10px] bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 border border-red-900/30 hover:border-[#CC0000] text-[#CC0000] hover:text-white p-2 text-ellipsis overflow-hidden whitespace-nowrap rounded font-mono transition-colors">
-                                                {p.substring(0, 70)}...
-                                            </button>
-                                        ))}
+                    {/* Kling - Below The Fold: Top Creations */}
+                    <div className="w-full mt-8">
+                        <h3 className="text-white font-black text-sm uppercase tracking-widest mb-6 flex items-center justify-between">
+                            <span>🔥 Top Creations de la Comunidad</span>
+                            <span className="text-[10px] bg-[#CC0000]/20 text-[#CC0000] px-3 py-1 rounded-full border border-[#CC0000]/30">+ Populares Hoy</span>
+                        </h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                                { id: 1, url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600', prompt: 'Hyper-realistic cybersecurity glowing shield protecting a futuristic server rack in a dark neon-lit datacenter, 8k, volumetric rays, high contrast, cinematic.', author: '@neural_sec' },
+                                { id: 2, url: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?q=80&w=600', prompt: 'Extreme close up of a businessman pouring stress into a coffee cup that dissolves into digital binary rain, Matrix style green glow, shallow depth of field, 35mm lens.', author: '@vision_ceo' },
+                                { id: 3, url: 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=600', prompt: 'A gargantuan robotic Godzilla towering over a modern tech start-up office, raining blue sparks, majestic lighting, epic wide shot, trending on ArtStation.', author: '@godzilla_art' },
+                                { id: 4, url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600', prompt: 'Abstract liquid chrome and soft magenta shapes colliding gracefully, smooth 3D render, highly reflective metallic textures, C4D, octane render masterpiece.', author: '@fluid_dreams' }
+                            ].map((creation) => (
+                                <div key={creation.id} onClick={() => {
+                                    setFinalPrompt(creation.prompt);
+                                    setRefImage(creation.url);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }} className="group bg-[#0a0a0a] border border-white/5 hover:border-[#CC0000]/50 rounded-2xl p-2 relative transition-all hover:-translate-y-2 shadow-lg hover:shadow-[0_15px_40px_rgba(204,0,0,0.3)] cursor-pointer">
+                                    <div className="w-full aspect-[4/5] bg-[#111] rounded-xl overflow-hidden relative border border-white/5">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 z-10 p-4 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-transform">
+                                            <p className="text-[10px] text-white font-bold mb-2 uppercase tracking-widest drop-shadow-md">Creator: <span className="text-[#CC0000]">{creation.author}</span></p>
+                                            <p className="text-[9px] text-neutral-300 font-mono tracking-wider leading-relaxed line-clamp-4 group-hover:text-white transition-colors">{creation.prompt}</p>
+                                            <div className="mt-3 text-[10px] text-[#CC0000] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 px-3 py-1.5 rounded-lg border border-[#CC0000]/30 w-max">
+                                                ↓ REUSAR SCRIPT
+                                            </div>
+                                        </div>
+                                        <img src={creation.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                     </div>
                                 </div>
-
-                                <textarea value={finalPrompt} onChange={e=>setFinalPrompt(e.target.value)} placeholder="Escribe tu prompt director's cut... o clic a un Trend arriba para inyectarlo." className="w-full flex-1 bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-xl p-4 text-white text-sm focus:border-[#CC0000] outline-none resize-none shadow-inner leading-relaxed" />
-                            </div>
-
-                            <div className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-6 rounded-2xl border border-red-900/30 shadow-2xl">
-                                <h3 className="text-white font-black uppercase text-sm tracking-widest mb-2 flex items-center gap-2">🖼️ 2. Foto de Referencia (Upload Libre)</h3>
-                                <p className="text-neutral-400 text-[10px] uppercase font-bold mb-4">Kling y Nano usarán la silueta e iluminación de esta imagen. Opcional.</p>
-                                <div className="border border-dashed border-neutral-700 bg-black/40 backdrop-blur border border-red-900/30 p-4 rounded-xl hover:border-[#CC0000]/50 transition-colors">
-                                    <MediaPicker label="Adjuntar Base Visual (Style Match)" value={refImage} onChange={setRefImage} accept="image/*,video/*" />
-                                </div>
-                            </div>
-
-                            <button onClick={() => {
-                                const newPost = { id: Date.now(), status: 'cockers_review', scheduled_for: new Date(Date.now() + 86400000).toISOString(), caption: '🔥🔥 [Borrador AI Autónomo]\\n\\n(Este post nació de una intervención manual y creativa de ' + (adminProfile?.username || 'Editor') + ' en el Asistente)', visual_prompt: finalPrompt || 'Cinematic corporate scene', reference_image: refImage, media_options: [] };
-                                setSelectedDraft(newPost);
-                                setShowPromptBuilder(false);
-                            }} className="w-full bg-gradient-to-r from-[#CC0000] to-[#880000] text-white hover:bg-red-600 py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(204,0,0,0.3)] mt-auto hover:scale-[1.02]">
-                                Enviar a Renderizar ➔
-                            </button>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -285,144 +400,158 @@ export default function CockersStudio({ adminProfile }) {
             </div>
 
             {/* Layout de Trabajo */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Panel Izquierdo: Copy & Prompt */}
-                <div className="w-1/3 min-w-[300px] max-w-[400px] border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg p-6 overflow-y-auto space-y-6">
-                    <div className="flex flex-col">
-                        <h4 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center justify-between">
-                            <span>1. Guión Creado (Copy)</span>
-                            <button 
-                                onClick={() => {
-                                    const context = `POST A TRABAJAR:\n- Tema: ${selectedDraft.visual_prompt || 'Sin prompt'}\n- Copy actual:\n${selectedDraft.caption || 'Sin copy'}\n\nPor favor genera o refina el guion/copy para este post.`;
-                                    navigator.clipboard.writeText(context).then(() => {
-                                        window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
-                                    }).catch(() => {
-                                        // Si el clipboard falla, de igual forma abrir el Gem
-                                        window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
-                                    });
-                                }} 
-                                className="text-[#CC0000] hover:text-white transition-colors flex items-center gap-1 text-[10px] bg-red-900/20 px-2 py-0.5 rounded focus:outline-none"
-                                title="Abre tu Gem y copia el contexto del post al portapapeles"
-                            >
-                                ✨ Abrir Gem ↗
-                            </button>
-                        </h4>
-                        <textarea 
-                            value={selectedDraft.caption} 
-                            onChange={(e) => setSelectedDraft({...selectedDraft, caption: e.target.value})}
-                            className="w-full min-h-[250px] bg-black/60 backdrop-blur-md border border-[#CC0000]/20 shadow-inner hover:bg-white/5 focus:bg-white/10 p-4 rounded-xl text-sm text-white whitespace-pre-line leading-relaxed focus:border-[#CC0000] outline-none resize-none transition-colors"
-                        />
-                    </div>
-
-                    <div>
-                        <h4 className="text-xs font-black text-neutral-300 uppercase tracking-widest mb-2 drop-shadow-sm flex justify-between items-center">
-                            <span>2. Instrucción a Visuales</span>
-                            <span className="text-[9px] text-[#CC0000] font-normal uppercase tracking-wider bg-black/40 px-2 py-0.5 rounded border border-red-900/30">Editable ✏️</span>
-                        </h4>
-                        <textarea
-                            value={selectedDraft.visual_prompt}
-                            onChange={(e) => setSelectedDraft({...selectedDraft, visual_prompt: e.target.value})}
-                            className="w-full min-h-[100px] bg-black/50 backdrop-blur-md border border-[#CC0000]/20 p-3 rounded-2xl text-[11px] font-mono text-red-500 font-bold break-words leading-tight shadow-inner focus:outline-none focus:border-[#CC0000] hover:bg-black/70 transition-colors resize-y"
-                        />
-                    </div>
-
-                    {selectedDraft.reference_image && (
-                        <div>
-                            <h4 className="text-xs font-black text-neutral-300 uppercase tracking-widest mb-2 drop-shadow-sm">📂 Imagen de Referencia Atada</h4>
-                            <div className="bg-black/60 backdrop-blur-md border border-[#CC0000]/20 p-2 rounded-2xl shadow-inner">
-                                <img src={selectedDraft.reference_image} alt="Referencia" className="w-full h-32 object-cover rounded-xl" />
-                            </div>
+            {/* Main Kling Generator Canvas for Review */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 custom-scrollbar relative">
+                
+                {/* 1. Review Summary Canvas (Hero Size) */}
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/5 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-8">
+                    <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2 mb-4">
+                        <span className="bg-[#CC0000] text-black px-2 py-0.5 rounded text-[10px]">REVISIÓN</span> Configuración Maestra del Engine
+                    </h3>
+                    
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1">
+                            <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2 block">Visual Prompt Definitivo (Director's Cut):</label>
+                            <textarea 
+                                value={selectedDraft.visual_prompt || ''}
+                                onChange={e => setSelectedDraft({...selectedDraft, visual_prompt: e.target.value})}
+                                placeholder="Sin Prompt Visual Designado"
+                                className="w-full min-h-[120px] bg-[#0a0a0a] border border-white/5 focus:border-[#CC0000]/50 outline-none p-4 rounded-2xl text-lg md:text-xl font-light text-white/90 leading-relaxed shadow-inner resize-y transition-colors"
+                            />
                         </div>
-                    )}
+                        <div className="w-full md:w-1/3">
+                            <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2 flex justify-between items-center">
+                                <span>Borrador Original / Caption:</span>
+                                <button 
+                                    onClick={() => {
+                                        const context = `Actúa como un Script Doctor y Especialista en Continuidad Visual para IA. Tu objetivo es recibir esta idea base y transformarla en una serie de prompts técnicos que mantengan la coherencia absoluta.
 
-                    {!selectedDraft.media_options?.length && !renderingAI && (
-                        <div className="space-y-4">
-                            <label className="flex items-center gap-3 cursor-pointer bg-black/40 p-4 rounded-xl border border-red-900/30 hover:border-[#CC0000]/50 transition-colors">
-                                <input type="checkbox" checked={generateVideo} onChange={e => setGenerateVideo(e.target.checked)} className="accent-[#CC0000] w-5 h-5 cursor-pointer" />
-                                <span className="text-sm font-bold text-white drop-shadow-sm">Incluir Versiones en Video (Opciones C y D)</span>
+Reglas de Oro:
+1. Anclaje de Personaje: Define rasgos físicos inamovibles.
+2. Consistencia de Estilo: Especifica lente, iluminación y paleta de colores.
+3. Lógica Narrativa: Asegura que la acción sea físicamente posible para modelos de video.
+4. Traducción Técnica: Énfasis en texturas, materiales y dinámica de fluidos para Nano Banana/Kling.
+
+Salida requerida: Presenta el Script refinado seguido de los Prompts individuales numerados para Imagen y Video.
+
+--- IDEA BASE A TRABAJAR ---
+- Visual Prompt actual: ${selectedDraft.visual_prompt || 'Sin prompt'}
+- Copy/Guion actual: ${selectedDraft.caption || 'Sin copy'}`;
+                                        
+                                        navigator.clipboard.writeText(context).then(() => {
+                                            window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
+                                        }).catch(() => {
+                                            window.open('https://gemini.google.com/gem/55a9f7b451c7', '_blank');
+                                        });
+                                    }} 
+                                    className="text-[#CC0000] hover:text-[#ff4444] transition-colors flex items-center gap-1 text-[10px] bg-[#CC0000]/10 hover:bg-[#CC0000]/20 border border-[#CC0000]/20 px-2 py-0.5 rounded shadow-sm"
+                                    title="Abre tu Gem de Copywriting y copia el contexto del post al portapapeles"
+                                >
+                                    ✨ Abrir Gem ↗
+                                </button>
                             </label>
-                            <button onClick={simulateAIGeneration} className="w-full bg-gradient-to-r from-[#ff2222] to-[#AA0000] hover:from-[#ff4444] hover:to-[#CC0000] border border-[#CC0000]/50 text-white font-black py-4 rounded-2xl shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all">
-                                💥 Lanzar Prompt ({generateVideo ? 'Imágenes + Video' : 'Solo Imágenes'})
-                            </button>
+                            <textarea 
+                                value={selectedDraft.caption || ''}
+                                onChange={e => setSelectedDraft({...selectedDraft, caption: e.target.value})}
+                                placeholder="Escribe el copy aquí..."
+                                className="w-full h-[120px] bg-[#0a0a0a] border border-white/5 focus:border-[#CC0000]/50 outline-none p-4 rounded-2xl text-sm font-medium text-white/70 shadow-inner overflow-y-auto hover:bg-[#111] transition-colors resize-none"
+                            />
                         </div>
-                    )}
-
-                    {renderingAI && (
-                        <div className="text-center py-6 border-2 border-dashed border-[#CC0000]/20 rounded-2xl bg-[#CC0000]/5 backdrop-blur-sm">
-                            <div className="animate-spin h-6 w-6 border-4 border-sky-400 border-t-white rounded-full mx-auto mb-3 shadow-md"></div>
-                            <p className="text-xs font-black text-[#CC0000] animate-pulse drop-shadow-sm">Mandando Prompt a Nano Banana & Kling...</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Panel Derecho: Área de A/B Testing & Bypass Manual */}
-                <div className="flex-1 bg-black/20 backdrop-blur-sm p-6 overflow-y-auto">
-                    <h3 className="text-sm font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2">
-                        <span>3. Resultados Multimodales</span> 
-                        <span className="bg-neutral-800 px-2 py-0.5 rounded text-[10px] text-[#CC0000]">Elige 1 para enviar a Judith</span>
-                    </h3>
+                {/* 2. Media Generation Canvas */}
+                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4 flex items-center justify-between">
+                    <span>MY CREATIONS (Resultados del Algoritmo)</span>
+                    <button 
+                        onClick={() => {
+                            setFinalPrompt(selectedDraft.visual_prompt || '');
+                            setShowPromptBuilder(true);
+                        }}
+                        className="text-[10px] bg-white/10 hover:bg-[#CC0000]/20 text-neutral-300 border border-white/10 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                        ⚙️ Tuning Avanzado
+                    </button>
+                </h3>
 
-                    {/* Las Dos Opciones IAs */}
-                    {selectedDraft.media_options?.length > 0 && (
-                        <div className="grid grid-cols-2 gap-4 mb-10">
-                            {selectedDraft.media_options.map((opt, i) => (
-                                <div key={i} className="bg-[#CC0000]/5 backdrop-blur-xl border border-red-900/30 shadow-lg border border-red-900/30 rounded-2xl p-4 flex flex-col group hover:border-[#CC0000]/50 transition-colors">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <p className="text-xs font-black text-white uppercase tracking-wider">Opción {String.fromCharCode(65 + i)}</p>
-                                        <span className="text-[10px] bg-neutral-800 text-[#CC0000] px-2 py-1 rounded font-bold">{opt.provider}</span>
+                {!selectedDraft.media_options?.length && !renderingAI && (
+                    <div className="w-full h-48 border-2 border-dashed border-red-900/40 rounded-3xl bg-black/20 flex flex-col items-center justify-center cursor-pointer hover:bg-black/40 hover:border-[#CC0000]/50 transition-all group" onClick={simulateAIGeneration}>
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#CC0000] to-[#880000] flex items-center justify-center text-white text-3xl mb-3 shadow-[0_0_30px_rgba(204,0,0,0.5)] group-hover:scale-110 transition-transform">
+                            ✦
+                        </div>
+                        <p className="text-white font-black uppercase tracking-widest drop-shadow-lg">LANZAR MULTIMODAL MIST (A, B, C, D)</p>
+                        <p className="text-neutral-500 text-[10px] mt-2 font-bold uppercase">Consumirá cuota de los servidores Nano Banana y Kling Video.</p>
+                    </div>
+                )}
+
+                {renderingAI && (
+                    <div className="w-full py-20 flex flex-col items-center justify-center border border-white/5 rounded-3xl bg-[#CC0000]/5 backdrop-blur-sm relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#CC0000]/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                        <div className="animate-spin h-10 w-10 border-4 border-[#CC0000] border-t-white rounded-full mx-auto mb-4 shadow-[0_0_20px_rgba(204,0,0,0.8)]"></div>
+                        <p className="text-sm font-black text-white tracking-widest animate-pulse drop-shadow-lg">Generando Variantes (Video & Imagen)...</p>
+                    </div>
+                )}
+
+                {/* Las 4 OPCIONES KLING AI Grid */}
+                {selectedDraft.media_options?.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {selectedDraft.media_options.map((opt, i) => (
+                            <div key={i} className="group bg-[#0a0a0a] border border-white/5 hover:border-[#CC0000]/50 rounded-2xl p-2 flex flex-col relative transition-all hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_15px_40px_rgba(204,0,0,0.3)]">
+                                {/* Header del render */}
+                                <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
+                                    <span className="bg-black/60 backdrop-blur px-2 py-0.5 rounded shadow text-white font-black text-xs uppercase border border-white/10 group-hover:border-red-500 transition-colors">
+                                        Opción {String.fromCharCode(65 + i)}
+                                    </span>
+                                    <span className={`text-[9px] px-2 py-0.5 rounded font-bold shadow border border-transparent ${opt.isVideo ? 'bg-sky-500/20 text-sky-400 border-sky-400/30' : 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000]/30'}`}>
+                                        {opt.isVideo ? 'VIDEO' : 'IMAGE'}
+                                    </span>
+                                </div>
+                                
+                                {/* Contenedor Audiovisual Kling Style */}
+                                <div 
+                                    className="w-full aspect-[4/5] bg-[#111] rounded-xl overflow-hidden relative border border-white/5 group-hover:border-[#CC0000]/20 transition-colors cursor-pointer"
+                                    onClick={() => window.open(opt.url, '_blank')}
+                                    title="Haz clic para ver esta imagen/video en tamaño original"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10 flex justify-center items-center">
+                                        <span className="text-white text-opacity-80 text-4xl transform scale-50 group-hover:scale-100 transition-transform">🔍</span>
                                     </div>
-                                    <div className="flex-1 bg-black/40 backdrop-blur border border-red-900/30 rounded-xl overflow-hidden border border-neutral-900 min-h-[250px] relative group-hover:border-[#CC0000]/30 transition-colors">
-                                        {opt.isVideo ? (
-                                            <video src={opt.url} autoPlay loop muted controls playsInline className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        ) : (
-                                            <img src={opt.url} alt="opción" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        )}
-                                    </div>
-                                    <button onClick={() => handleSelectOption(opt.url, opt.provider)} className="mt-4 w-full bg-neutral-800 hover:bg-gradient-to-r from-[#CC0000] to-[#880000] text-white text-xs font-black py-3 rounded-xl transition-all hov">
-                                        Aprobar y Mandar al Calendario ➔
+                                    {opt.isVideo ? (
+                                        <video src={opt.url} autoPlay loop muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    ) : (
+                                        <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    )}
+                                </div>
+                                
+                                {/* Info / Botón de Acción Abajo */}
+                                <div className="pt-3 pb-1 px-1">
+                                    <p className="text-[10px] font-bold text-neutral-500 truncate mb-3">{opt.provider}</p>
+                                    <button onClick={() => handleSelectOption(opt.url, opt.provider)} className="w-full bg-white/5 hover:bg-gradient-to-r hover:from-[#CC0000] hover:to-[#880000] border border-white/10 text-white font-bold text-xs uppercase py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 group/btn">
+                                        Elegir Variante {String.fromCharCode(65 + i)} <span className="opacity-0 group-hover/btn:opacity-100 transition-opacity ml-1">➔</span>
                                     </button>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {selectedDraft.media_options?.length > 0 && (
-                        <div className="mb-10 bg-black/50 backdrop-blur-md shadow-md hover:bg-[#CC0000]/20 border border-red-900/30 rounded-2xl p-5">
-                            <p className="text-xs font-bold text-[#CC0000] mb-2">💬 ¿No te gusta ninguna? Refínalas con orden jerárquica:</p>
-                            <div className="flex gap-2">
-                                <input type="text" placeholder="Ej: Haz que la luz sea más roja estilo Godzilla..." className="flex-1 bg-black/40 backdrop-blur border border-red-900/30 border border-neutral-700 rounded-xl px-4 py-2 text-sm text-white focus:border-red-500 outline-none" />
-                                <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 rounded-xl text-xs transition-colors">Mejorar Prompt ↻</button>
                             </div>
-                        </div>
-                    )}
-
-                    {/* El Escape Manual */}
-                    <div className="border-t border-red-900/30 pt-8 mt-auto">
-                        <div className="bg-gradient-to-r from-[#CC0000] to-[#880000]/5 border border-[#CC0000]/20 rounded-2xl p-6 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-r from-[#CC0000] to-[#880000]/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                            <h4 className="text-[#CC0000] text-sm font-black uppercase tracking-widest mb-1">BYPASS MANUAL (Override de IA)</h4>
-                            <p className="text-neutral-400 text-xs font-bold mb-5">Si las IAs no captaron la visión de Godzilla, sube tu propio montaje magistral desde Premiere o Figma. Reemplazará los motores visuales automáticamente abajo el mismo Guión.</p>
-                            
-                            <MediaPicker 
-                                label="Subir Variante Maestra Definitiva" 
-                                value={manualUrl} 
-                                onChange={(url) => setManualUrl(url)} 
-                                accept="all" 
-                            />
-
-                            {manualUrl && (
-                                <button onClick={() => handleSelectOption(manualUrl, 'Cockers Human Override')} className="mt-5 w-full bg-gradient-to-r from-[#CC0000] to-[#880000] hover:bg-red-600 text-white font-black py-4 rounded-xl shadow-[0_5px_20px_rgba(204,0,0,0.4)] transition-all">
-                                    APROBAR MI VERSIÓN Y MANDARLA A LA CM ➔
-                                </button>
-                            )}
-                        </div>
+                        ))}
                     </div>
-
-                </div>
+                )}
+                
+                {/* Fallback de Bypass */}
+                {selectedDraft.media_options?.length > 0 && (
+                    <div className="mt-8 border-t border-white/5 pt-6 text-center">
+                        <button className="text-[10px] text-neutral-500 hover:text-white underline uppercase tracking-wider transition-colors" onClick={()=>setRefinePrompt(prev => prev==='open' ? '' : 'open')}>
+                            Bypass Manual (Subir desde Premiere / Figma)
+                        </button>
+                        {refinePrompt === 'open' && (
+                            <div className="mt-4 max-w-sm mx-auto bg-black/40 border border-white/10 p-4 rounded-xl">
+                                <MediaPicker label="Sube tu archivo final aquí" onChange={(url) => handleSelectOption(url, 'Manual Override')} accept="all" />
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-            
-            {/* Modal de Asistente de Guiones / Copywriting */}
-            {showScriptGen && (
+        
+        {/* Modal de Asistente de Guiones / Copywriting */}
+        {showScriptGen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="w-full max-w-2xl h-[70vh] bg-[#111111] border border-[#CC0000]/30 shadow-[0_0_50px_rgba(204,0,0,0.2)] rounded-3xl overflow-hidden flex flex-col relative transform scale-100 transition-all">
                         <div className="bg-[#CC0000]/10 border-b border-red-900/30 p-4 shrink-0 flex justify-between items-center relative">

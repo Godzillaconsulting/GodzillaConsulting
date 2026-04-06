@@ -6,7 +6,7 @@ export const getTrends = async (req, res) => {
     try {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ success: false, message: 'GEMINI_API_KEY no configurada en el servidor' });
+            throw new Error('GEMINI_API_KEY no configurada en el servidor. Activando Fallback.');
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);

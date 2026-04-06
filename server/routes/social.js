@@ -48,4 +48,18 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
+// Flujo Inter-departamental: El Estudio (Arte) aprueba un visual y se lo envía a CM (Calendario)
+router.put('/approve-media', requireAdmin, async (req, res) => {
+    const { id, selected_media_url, status } = req.body;
+    try {
+        await pool.query(
+            'UPDATE social_queue SET status = $1, media_url = $2 WHERE id = $3', 
+            [status || 'pending_cm_approval', selected_media_url, id]
+        );
+        res.json({ success: true, message: 'Media attached and sent to CM inbox.' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 export default router;

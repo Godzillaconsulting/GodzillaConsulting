@@ -53,3 +53,4 @@ server/send_test_*.js
 ig_setup.mjs
 server/ig_setup.mjs
 server/upload_*.mjs
+server/backups/  

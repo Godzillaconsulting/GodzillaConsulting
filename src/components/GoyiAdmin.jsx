@@ -56,11 +56,11 @@ export default function GoyiAdmin() {
         <>
             {/* Goyi Floating Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 shadow-[0_0_20px_rgba(234,179,8,0.5)] border-2 border-yellow-300 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden"
+                onClick={(e) => { e.stopPropagation(); console.log('Goyi Clicked!', !isOpen); setIsOpen(!isOpen); }}
+                className="fixed bottom-6 right-6 z-[999999] w-14 h-14 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 shadow-[0_0_20px_rgba(234,179,8,0.5)] border-2 border-yellow-300 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden pointer-events-auto"
             >
                 {isOpen ? (
-                    <X className="text-black w-6 h-6" strokeWidth={3} />
+                    <span className="text-xl drop-shadow-md text-black">✖</span>
                 ) : (
                     <span className="text-2xl drop-shadow-md">🦖</span>
                 )}
@@ -68,7 +68,7 @@ export default function GoyiAdmin() {
 
             {/* Modal/Ventana de Chat */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 z-[9999] w-[380px] h-[550px] shadow-[0_0_50px_rgba(234,179,8,0.15)] flex flex-col bg-[#111111] border rounded-2xl border-[#CC0000]/30 overflow-hidden font-sans">
+                <div className="fixed bottom-24 right-6 z-[999999] w-[380px] h-[550px] max-h-[75vh] shadow-[0_0_50px_rgba(234,179,8,0.15)] flex flex-col bg-[#111111] border rounded-2xl border-yellow-600/30 overflow-hidden font-sans pointer-events-auto">
                     
                     {/* Header */}
                     <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-4 border-b border-yellow-500/30 flex items-center gap-3 shrink-0 relative overflow-hidden">

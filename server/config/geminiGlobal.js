@@ -5,10 +5,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // corrupto entre llamadas (especialmente tool declarations).
 export const getGeminiModel = (apiKey, systemInstruction, chatTools) => {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+    const config = {
         model: "gemini-2.0-flash",
-        systemInstruction: systemInstruction,
-        tools: [{ functionDeclarations: chatTools }]
-    });
+        systemInstruction: systemInstruction
+    };
+    if (chatTools && chatTools.length > 0) {
+        config.tools = [{ functionDeclarations: chatTools }];
+    }
+    const model = genAI.getGenerativeModel(config);
     return { model, sessions: new Map() };
 };

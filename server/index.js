@@ -18,6 +18,7 @@ import trendsRoutes from './routes/trends.js';
 import socialRoutes from './routes/social.js';
 import resourcesRoutes from './routes/resources.js';
 import adminMigrationRoutes from './routes/adminMigration.js';
+import aiStudioRoutes from './routes/aiStudio.js';
 import { connectDB } from './config/db.js';
 
 import chatRoutes from './routes/chat.js';
@@ -158,6 +159,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
+app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
 
 
 // Servir archivos subidos como estáticos en /media/*

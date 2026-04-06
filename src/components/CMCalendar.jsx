@@ -74,6 +74,7 @@ export default function CMCalendar({ adminProfile }) {
     const [newTask, setNewTask] = useState({ que: '', para: '', referencias: '', deadline: '' });
 
     // ─── Sistema de Comentarios & Notificaciones ───────────────────────────
+    const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
     const [commentText, setCommentText] = useState('');
     const [mentionQuery, setMentionQuery] = useState(null);
     const [mentionDropdownPos, setMentionDropdownPos] = useState({ top: 0, left: 0 });
@@ -623,9 +624,32 @@ export default function CMCalendar({ adminProfile }) {
                         {/* Asignar corrección - SOLO Oscar/Judith/JareG */}
                         {canCreate && (
                             <div className="pt-3 border-t border-white/10">
-                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar corrección al diseñador:</p>
-                                <textarea placeholder="Ej: @Alex oscurece la imagen y sube el contraste..." className="w-full bg-black/30 border border-red-900/50 p-3 text-white text-sm rounded-xl resize-none outline-none focus:border-[#CC0000] mb-2" rows="2" />
-                                <button className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700">Mandar a Corregir ➔</button>
+                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar Tarea / Corrección al diseñador:</p>
+                                <div className="space-y-2 mb-3">
+                                    <input type="text" placeholder="¿El qué? (Ej: Oscurecer imagen y subir contraste)" value={correctionForm.que} onChange={e => setCorrectionForm({...correctionForm, que: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="text" placeholder="¿El cuándo? (Ej: Urgente, Hoy a las 5PM)" value={correctionForm.cuando} onChange={e => setCorrectionForm({...correctionForm, cuando: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="text" placeholder="¿Para qué? (Ej: Post de mañana en Instagram)" value={correctionForm.paraQue} onChange={e => setCorrectionForm({...correctionForm, paraQue: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="url" placeholder="Referencias (URLs, links a Drive, etc.)" value={correctionForm.referencias} onChange={e => setCorrectionForm({...correctionForm, referencias: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <textarea placeholder="Comentarios adicionales / @Menciones..." value={correctionForm.comentarios} onChange={e => setCorrectionForm({...correctionForm, comentarios: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg resize-none outline-none focus:border-[#CC0000]" rows="2" />
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        if(!correctionForm.que) return alert('Debes especificar al menos el ¿Qué?');
+                                        const finalComment = `📌 NUEVO PENDIENTE ASIGNADO:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Referencias: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
+                                        const newComment = { id: Date.now(), author: currentUser, text: finalComment, time: 'ahora' };
+                                        const mentioned = TEAM.filter(u => correctionForm.comentarios.toLowerCase().includes(`@${u.toLowerCase()}`));
+                                        if (mentioned.length > 0) {
+                                            const newNotifs = mentioned.map(u => ({ id: Date.now() + Math.random(), to: u, from: currentUser, text: `Asignación: ${correctionForm.que}`, read: false, time: 'ahora', eventTitle: selectedEvent.title }));
+                                            setNotifications(prev => [...newNotifs, ...prev]);
+                                        }
+                                        setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, status: 'urgent', comments: [...(ev.comments || []), newComment] } : ev));
+                                        setSelectedEvent(prev => ({ ...prev, status: 'urgent', comments: [...(prev.comments || []), newComment] }));
+                                        setCorrectionForm({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
+                                        alert('Tarea de corrección enviada con formato estructurado.');
+                                    }}
+                                    className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700 shadow-md">
+                                    Mandar a Corregir ➔
+                                </button>
                             </div>
                         )}
 

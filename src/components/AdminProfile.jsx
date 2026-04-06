@@ -359,7 +359,9 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                             <div className="w-1/2 md:w-2/5 border-r border-neutral-800 flex flex-col bg-[#080808]">
                                 <div className="p-4 border-b border-neutral-800 bg-[#0d0d0d] flex justify-between items-center shrink-0">
                                     <h3 className="font-bold text-white text-sm flex items-center gap-2"><span>✅</span> Mis Pendientes ({myTasks.filter(t=>!t.done).length})</h3>
-                                    <button onClick={() => alert('Próximamente: Crear tarea desde aquí')} className="text-[10px] bg-[#CC0000] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-white hover:text-[#CC0000] transition-colors shadow-sm">+ Nueva</button>
+                                    {(profile?.username?.toLowerCase() === 'godzilla_admin' || profile?.username?.toLowerCase() === 'judith') && (
+                                        <button onClick={() => alert('Próximamente: Crear tarea desde aquí')} className="text-[10px] bg-[#CC0000] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-white hover:text-[#CC0000] transition-colors shadow-sm">+ Nueva</button>
+                                    )}
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
                                     {myTasks.length === 0 ? (

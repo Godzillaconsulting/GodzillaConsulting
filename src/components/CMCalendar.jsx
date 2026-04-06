@@ -15,13 +15,11 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 
 // ─── ROLES ────────────────────────────────────────────────────────────────
-// canAssign: JareG (super), Oscar (godzilla_admin), Judith (CM)
+// canAssign: godzilla_admin (Boss), judith (CM/SEO). Los demás (Alex, Dani, JareG) NO agregan.
 const canAssign = (profile) => {
     if (!profile) return false;
     const usr = (profile.username || '').toLowerCase();
-    return profile.role === 'admin' || profile.role === 'cm' ||
-        usr === 'jareg' || usr === 'oscar' || usr === 'godzilla_admin' || usr === 'judith' ||
-        profile.id === 1 || profile.id === 4;
+    return usr === 'godzilla_admin' || usr === 'judith';
 };
 
 // ─── PARSEAR MENCIONES para resaltado ─────────────────────────────────────

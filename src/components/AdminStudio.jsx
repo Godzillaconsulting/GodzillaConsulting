@@ -140,7 +140,7 @@ export default function AdminStudio() {
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
- const [expandedGroups, setExpandedGroups] = useState(['Sitio Principal']);
+ const [collapsedGroups, setCollapsedGroups] = useState({});
  
  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
  const [feedbackText, setFeedbackText] = useState('');
@@ -331,87 +331,91 @@ export default function AdminStudio() {
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
- <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
- <div className="flex items-center gap-2.5">
- <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
- <div className="flex flex-col justify-center">
- <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
- <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
- </div>
- </div>
- <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
- isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'
- }`}>
- 📊 Analytics
- </button>
- </div>
-
- <div className="flex-1 overflow-y-auto flex flex-col px-2 py-4">
-  <div className="space-y-6">
-  {[
-    {
-      title: "Sitio Principal", emoji: "⭐",
-      filter: (n, tag) => ['INICIO', 'CULTURA', 'PORTAFOLIO', 'PIE'].includes(tag)
-    },
-    {
-      title: "Experiencias", emoji: "📦",
-      filter: (n, tag) => tag === 'PAQUETES' || n.id.startsWith('paquete-')
-    },
-    {
-      title: "Soluciones", emoji: "⚡",
-      filter: (n, tag) => tag === 'SERVICIOS' || tag === 'SERVICIO' || n.id.startsWith('servicio-')
-    },
-    {
-      title: "Materiales", emoji: "📚",
-      filter: (n, tag) => tag === 'RECURSOS' || n.id.startsWith('landing-recurso')
-    }
-  ].map((group, gIdx) => {
-    const groupNodes = sortedNodes.filter(n => {
-       const meta = PAGE_SECTIONS.find(s => s.id === n.id);
-       return group.filter(n, meta?.tag);
-    });
-    
-    if (groupNodes.length === 0) return null;
-
-    return (
-      <div key={gIdx} className="space-y-1">
-        <button onClick={() => setExpandedGroups(prev => prev.includes(group.title) ? prev.filter(t => t !== group.title) : [...prev, group.title])}
-                className="w-full text-left px-3 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 flex items-center justify-between hover:text-white/80 transition-colors">
-            <span className="flex items-center gap-1.5"><span className="text-xs">{group.emoji}</span> {group.title}</span>
-            <span className="text-[8px]">{expandedGroups.includes(group.title) ? '▼' : '►'}</span>
-        </button>
-        {expandedGroups.includes(group.title) && (
-        <div className="space-y-0.5 relative pl-2">
-          {groupNodes.map((node) => {
-             const meta = PAGE_SECTIONS.find(s => s.id === node.id);
-             const isSelected = selectedNodeId === node.id;
-             const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
-             return (
-             <button key={node.id} onClick={() => handleSelectSection(node)}
-             className={`group w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
-             isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
-             }`}
-             >
-             <span className={`text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-[0_2px_10px_rgba(204,0,0,0.4)]' : 'group-hover:scale-110'}`}>{meta?.emoji ||'📄'}</span>
-             <div className="min-w-0 flex-1">
-             <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover:text-white'}`}>
-             {meta?.label || node.id}
-             </span>
-             <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover:text-white/50'}`}>
-             §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
-             </span>
-             </div>
-             </button>
-             );
-          })}
-        </div>
-        )}
-      </div>
-    );
-  })}
+  <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
+  <div className="flex items-center gap-2.5">
+  <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
+  <div className="flex flex-col justify-center">
+  <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
+  <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
   </div>
-  
-  <div className="mt-6 border-t border-red-900/40 pt-4 pb-4 space-y-1 shrink-0">
+  </div>
+  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1 flex items-center gap-1 rounded font-bold text-[10px] transition-colors ${
+  isAnalyticsMode ? 'bg-[#CC0000] text-white shadow-[0_4px_10px_rgba(14,165,233,0.4)]' : 'bg-black/40 text-neutral-300 hover:bg-white hover:text-white border border-red-900/30 shadow-sm'
+  }`}>
+  📊 Analytics
+  </button>
+  </div>
+
+  <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+   {[
+     {
+       title: "Sitio Principal",
+       filter: (n, tag) => ['INICIO', 'CULTURA', 'PORTAFOLIO', 'PIE'].includes(tag)
+     },
+     {
+       title: "Experiencias",
+       filter: (n, tag) => tag === 'PAQUETES' || n.id.startsWith('paquete-')
+     },
+     {
+       title: "Soluciones",
+       filter: (n, tag) => tag === 'SERVICIOS' || tag === 'SERVICIO' || n.id.startsWith('servicio-')
+     },
+     {
+       title: "Materiales",
+       filter: (n, tag) => tag === 'RECURSOS' || n.id.startsWith('landing-recurso')
+     }
+   ].map((group, gIdx) => {
+     const groupNodes = sortedNodes.filter(n => {
+        const meta = PAGE_SECTIONS.find(s => s.id === n.id);
+        return group.filter(n, meta?.tag);
+     });
+     
+     if (groupNodes.length === 0) return null;
+
+     return (
+       <div key={gIdx} className="space-y-1">
+         <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
+            className="px-3 text-[11px] font-black text-[#CC0000]/80 uppercase tracking-widest mb-3 drop-shadow-sm flex items-center justify-between cursor-pointer hover:text-[#ff4444] transition-colors group">
+             <span>{group.title}</span>
+             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
+                  className={`transition-transform duration-300 text-white/40 group-hover:text-[#ff4444] ${collapsedGroups[gIdx] ? 'rotate-0' : '-rotate-180'}`}>
+               <polyline points="6 9 12 15 18 9"></polyline>
+             </svg>
+         </p>
+         
+         {!collapsedGroups[gIdx] && (
+           <div className="space-y-0.5 relative animate-in fade-in slide-in-from-top-2 duration-300">
+             {groupNodes.map((node) => {
+                const meta = PAGE_SECTIONS.find(s => s.id === node.id);
+                const isSelected = selectedNodeId === node.id;
+                const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
+                return (
+                <button key={node.id} onClick={() => handleSelectSection(node)}
+                className={`group/btn w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
+                isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
+                }`}
+                >
+                <span className={`text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-[0_2px_10px_rgba(204,0,0,0.4)]' : 'group-hover/btn:scale-110'}`}>{meta?.emoji ||'📄'}</span>
+                <div className="min-w-0 flex-1">
+                <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover/btn:text-white'}`}>
+                {meta?.label || node.id}
+                </span>
+                <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover/btn:text-white/50'}`}>
+                §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
+                </span>
+                </div>
+                </button>
+                );
+             })}
+           </div>
+         )}
+       </div>
+     );
+   })}
+  </div>
+
+
+ <div className="mt-auto px-2 pb-4 space-y-1">
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
        <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
@@ -458,8 +462,6 @@ export default function AdminStudio() {
  </button>
   </div>
   </div>
-  </div>
-
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
   <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-1/2 left-0 -translate-y-1/2 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>

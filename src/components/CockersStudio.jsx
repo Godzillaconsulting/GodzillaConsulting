@@ -145,10 +145,26 @@ export default function CockersStudio({ adminProfile }) {
                         
                         if (statusData.status === 'succeed') {
                             clearInterval(pollInterval);
-                            const finalUrls = Array.isArray(statusData.result_url) ? statusData.result_url : [statusData.result_url];
+                            let finalUrls = [];
+                            if (statusData.result_url) {
+                                finalUrls = Array.isArray(statusData.result_url) ? statusData.result_url : [statusData.result_url];
+                            } else {
+                                // Fallback para Simulaciones de backend o Kling sin tokens
+                                if (genMode === 'imagen') {
+                                    finalUrls = [
+                                        'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
+                                        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'
+                                    ];
+                                } else {
+                                    finalUrls = [
+                                        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc',
+                                        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
+                                    ];
+                                }
+                            }
                             
                             const options = finalUrls.map((url, idx) => ({ 
-                                provider: `${builderData.model} (Opción ${idx + 1})`, 
+                                provider: `${builderData.model} (Opción ${idx + 1}${!statusData.result_url ? ' - Modo Simulación' : ''})`, 
                                 url: url, 
                                 isVideo: genMode === 'video' 
                             }));
@@ -179,9 +195,26 @@ export default function CockersStudio({ adminProfile }) {
                 }, 10000); 
             } else if (data.status === 'succeed') {
                 // Generación síncrona / instantánea
-                const finalUrls = Array.isArray(data.result_url) ? data.result_url : [data.result_url];
+                let finalUrls = [];
+                if (data.result_url) {
+                    finalUrls = Array.isArray(data.result_url) ? data.result_url : [data.result_url];
+                } else {
+                    // Fallback local
+                    if (genMode === 'imagen') {
+                        finalUrls = [
+                            'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
+                            'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'
+                        ];
+                    } else {
+                        finalUrls = [
+                            'https://images.unsplash.com/photo-1542626991-cbc4e32524cc',
+                            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
+                        ];
+                    }
+                }
+                
                 const options = finalUrls.map((url, idx) => ({ 
-                    provider: `${builderData.model} (Opción ${idx + 1})`, 
+                    provider: `${builderData.model} (Opción ${idx + 1}${!data.result_url ? ' - Modo Simulación' : ''})`, 
                     url: url, 
                     isVideo: genMode === 'video' 
                 }));

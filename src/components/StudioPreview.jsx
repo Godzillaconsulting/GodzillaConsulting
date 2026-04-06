@@ -258,7 +258,7 @@ export default function StudioPreview({ nodeId, draftData, hoveredField }) {
 
  if (!nodeId || !draftData) {
  return (
- <div className="flex flex-col items-center justify-center h-full gap-4 text-neutral-600">
+ <div className="flex flex-col items-center pt-32 h-full gap-4 text-neutral-600">
  <span className="text-5xl">👁️</span>
  <p className="text-sm font-medium">Selecciona una sección</p>
  <p className="text-xs">La preview aparece aquí</p>

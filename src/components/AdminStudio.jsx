@@ -465,7 +465,7 @@ export default function AdminStudio() {
   </div>
   </div>
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
-  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-1/2 left-0 -translate-y-1/2 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
+  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
   </button>
  {isAnalyticsMode ? (
@@ -1097,7 +1097,7 @@ export default function AdminStudio() {
  </div>
  </>
  ) : (
- <div className="flex-1 flex flex-col items-center justify-center gap-4 text-neutral-700">
+ <div className="flex-1 flex flex-col items-center pt-32 gap-4 text-neutral-700">
  <span className="text-6xl">🦖</span>
  <p className="text-base font-bold">Selecciona una sección</p>
  </div>

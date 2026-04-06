@@ -440,10 +440,45 @@ export default function CockersStudio({ adminProfile }) {
 
                 {/* Si no hay drafts ni generación, Mostramos el Splash principal */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
-                    <div className="flex flex-col items-center text-center opacity-40">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                        <h1 className="text-2xl font-bold tracking-wider mb-2">Awaiting Instructions</h1>
-                        <p className="text-sm font-light max-w-sm">Type your prompt on the left or select a pending script to summon the AI engines.</p>
+                    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto mt-12 pb-12">
+                        <div className="flex flex-col items-center text-center opacity-40 mb-10">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            <h1 className="text-2xl font-bold tracking-wider mb-2">Awaiting Instructions</h1>
+                            <p className="text-sm font-light max-w-sm">Type your prompt on the left or select a pending script to summon the AI engines.</p>
+                        </div>
+                        
+                        <div className="w-full text-left bg-[#0a0a09] border border-neutral-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-neutral-700 to-transparent opacity-20"></div>
+                            
+                            <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span>💡</span> Sugerencias de la Comunidad (Elite Prompts)
+                            </h3>
+                            <div className="flex flex-col gap-3 mb-8">
+                                {elitePrompts.map((p, i) => (
+                                    <button 
+                                        key={i}
+                                        onClick={() => setFinalPrompt(p)}
+                                        className="text-left text-sm font-light text-neutral-300 bg-[#161615] hover:bg-[#1a1a19] border border-neutral-800 hover:border-yellow-500/30 p-4 rounded-xl transition-all shadow-inner"
+                                    >
+                                        "{p}"
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <h3 className="text-xs font-black text-[#CC0000] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span>✨</span> ¿Sin saber qué guion crear?
+                            </h3>
+                            <button 
+                                onClick={() => setShowScriptGen(true)}
+                                className="w-full bg-[#161615] hover:bg-gradient-to-r hover:from-[#CC0000] hover:to-[#880000] border border-neutral-800 hover:border-transparent p-4 rounded-xl transition-all shadow-lg group flex justify-between items-center"
+                            >
+                                <span className="font-bold text-neutral-300 group-hover:text-white transition-colors">Abrir Asistente de Guiones (Gemini)</span>
+                                <span className="text-xs bg-black/50 text-white px-3 py-1.5 rounded-lg border border-neutral-700 flex items-center gap-1.5">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+                                    Chat
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 )}
 

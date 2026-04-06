@@ -353,47 +353,43 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                             <p className="text-sm text-neutral-400 mt-1">Distribución y gestión detallada tipo Asana.</p>
                         </div>
                         
-                        <div className="flex bg-white border border-[#e8ecee] rounded-md overflow-hidden h-[65vh] min-h-[500px] font-sans">
+                        <div className="flex bg-[#050505] border border-neutral-800 rounded-2xl overflow-hidden h-[65vh] min-h-[500px] font-sans shadow-lg">
                             {/* PANE IZQUIERDO: LISTA */}
-                            <div className="w-1/2 md:w-5/12 border-r border-[#e8ecee] flex flex-col bg-white">
+                            <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505]">
                                 {/* Toolbar Top Left */}
-                                <div className="flex items-center px-4 py-3 border-b border-[#e8ecee] shrink-0">
-                                    <button onClick={() => alert('Próximamente: Crear tarea desde aquí')} className="bg-[#4573d2] hover:bg-[#345db5] text-white rounded px-4 py-1.5 text-xs font-semibold flex items-center shadow-sm transition-colors">
-                                        <span className="mr-1 font-bold text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
+                                <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0">
+                                    <button onClick={() => alert('Próximamente: Crear tarea desde aquí')} className="bg-[#CC0000] hover:bg-red-700 text-white rounded-md px-4 py-1.5 text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest">
+                                        <span className="mr-1 text-sm">+</span> Add Task
+
                                     </button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     {/* Section Header */}
-                                    <div className="px-4 py-2 flex items-center text-xs font-bold text-[#6D6E6F] mt-2 group cursor-pointer hover:bg-gray-50">
+                                    <div className="px-4 py-3 flex items-center text-xs font-black uppercase tracking-widest text-neutral-500 mt-2 cursor-pointer hover:text-white transition">
                                         <span className="mr-2 text-[10px]">▼</span> My Tasks
                                     </div>
                                     <div className="flex flex-col mt-1">
                                         {myTasks.length === 0 ? (
-                                           <p className="text-[#6D6E6F] text-sm text-center py-6">No hay tareas asignadas</p>
+                                           <p className="text-neutral-500 text-sm text-center py-6 font-bold uppercase tracking-widest">No hay tareas asignadas</p>
                                         ) : myTasks.map(task => (
                                             <div 
                                                 key={task.id} 
                                                 onClick={() => setSelectedTask(task)}
-                                                className={`flex items-center border-b border-[#e8ecee] px-3 py-1.5 cursor-pointer max-h-10 hover:bg-[#f9f9f9] transition-colors ${selectedTask?.id === task.id ? 'bg-[#e2efff]' : ''}`}
+                                                className={`flex items-center border-b border-neutral-800/50 px-4 py-2.5 cursor-pointer hover:bg-neutral-900 transition-colors ${selectedTask?.id === task.id ? 'bg-neutral-900 border-l-2 border-l-[#CC0000]' : 'border-l-2 border-l-transparent'}`}
                                             >
                                                 <div 
                                                     onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }}
-                                                    className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-[#25c862] border-[#25c862] text-white' : 'border-[#b1b1b1] hover:border-[#25c862] hover:text-[#25c862]'}`}
+                                                    className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 cursor-pointer transition-all ${task.done ? 'bg-[#25c862] border-[#25c862] text-black shadow-[0_0_10px_rgba(37,200,98,0.5)]' : 'border-neutral-600 hover:border-[#CC0000]'}`}
                                                 >
                                                     {task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
-                                                    {!task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-0 hover:opacity-100"><polyline points="20 6 9 17 4 12"/></svg>}
                                                 </div>
-                                                <div className={`flex-1 text-sm font-medium truncate ${task.done ? 'text-[#6D6E6F] line-through' : 'text-[#1e1e24]'}`}>{task.title}</div>
+                                                <div className={`flex-1 text-sm font-bold truncate ${task.done ? 'text-neutral-600 line-through' : 'text-gray-200'}`}>{task.title}</div>
                                                 
-                                                <div className="hidden lg:flex items-center space-x-2 mr-3">
-                                                    <div className="bg-[#e4dcfb] text-[#553b9a] rounded-full px-2.5 py-0.5 text-[10px] font-medium">Design</div>
-                                                </div>
-                                                
-                                                <div className="w-6 h-6 rounded-full bg-[#fca2b4] flex items-center justify-center text-[10px] font-bold text-[#b51235] mr-3 shrink-0 uppercase" title={task.asignadoA}>
+                                                <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-[10px] font-black text-red-500 mr-3 shrink-0 uppercase border border-red-500/30" title={task.asignadoA}>
                                                     {task.asignadoA?.[0] || '?'}
                                                 </div>
                                                 
-                                                <div className="text-xs text-[#6D6E6F] w-16 text-right truncate">
+                                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 w-20 text-right truncate">
                                                     {task.deadline}
                                                 </div>
                                             </div>
@@ -403,109 +399,75 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                             </div>
                             
                             {/* PANE DERECHO: DETALLES */}
-                            <div className="w-1/2 md:w-7/12 flex flex-col bg-white">
+                            <div className="w-1/2 md:w-7/12 flex flex-col bg-[#0a0a0a]">
                                 {selectedTask ? (
                                     <div className="flex-1 flex flex-col overflow-hidden">
                                         {/* Top Action Bar */}
-                                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#e8ecee] shrink-0 text-[#6D6E6F]">
-                                            <div className="flex items-center space-x-2 text-xs">
+                                        <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 shrink-0">
+                                            <div className="flex items-center space-x-3 text-xs">
                                                 <button 
                                                     onClick={() => {
                                                         toggleTask(selectedTask.id);
                                                         setSelectedTask({...selectedTask, done: !selectedTask.done});
                                                     }}
-                                                    className={`border rounded px-3 py-1 font-semibold flex items-center transition-colors ${selectedTask.done ? 'bg-[#f9f9f9] border-[#e8ecee] text-[#6D6E6F] hover:text-[#1e1e24]' : 'border-[#b1b1b1] hover:border-[#6D6E6F] hover:text-[#1e1e24]'}`}
+                                                    className={`border rounded-lg px-4 py-1.5 font-bold uppercase tracking-widest flex items-center transition-all ${selectedTask.done ? 'bg-[#25c862]/10 border-[#25c862]/30 text-[#25c862]' : 'border-neutral-700 hover:border-neutral-500 text-neutral-400 hover:text-white'}`}
                                                 >
-                                                    <span className={`mr-2 ${selectedTask.done ? 'text-[#25c862]':'text-[#b1b1b1]'}`}>✓</span> {selectedTask.done ? 'Completed' : 'Mark complete'}
+                                                    <span className={`mr-2 ${selectedTask.done ? 'text-[#25c862]':'text-neutral-500'}`}>✓</span> {selectedTask.done ? 'Completed' : 'Mark complete'}
                                                 </button>
-                                                <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] text-lg">👍</button>
-                                                <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] text-sm">🔗</button>
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                               <button className="px-2 py-1 rounded hover:bg-[#f2f2f2] font-bold">⋯</button>
                                             </div>
                                         </div>
                                         
-                                        <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-                                            <div className="flex items-center text-xs text-[#6D6E6F] mb-4">
-                                                <span className="mr-2">🔒</span>
-                                                This task is visible to members of Marketing and team {selectedTask.source}.
-                                                <button className="ml-auto underline hover:text-[#1e1e24]">Make public</button>
-                                            </div>
-                                            
-                                            <div className="mb-6">
-                                                <h1 className={`text-3xl font-semibold outline-none w-full bg-transparent ${selectedTask.done ? 'text-[#6D6E6F] line-through' : 'text-[#1e1e24]'}`}>
+                                        <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+                                            <div className="mb-8">
+                                                <h1 className={`text-3xl font-black outline-none w-full bg-transparent ${selectedTask.done ? 'text-neutral-600 line-through' : 'text-white'}`}>
                                                     {selectedTask.title}
                                                 </h1>
                                             </div>
                                             
-                                            <div className="flex flex-col space-y-4 mb-8">
+                                            <div className="flex flex-col space-y-6 mb-8">
                                                 <div className="flex items-center">
-                                                    <div className="w-32 text-sm text-[#6D6E6F]">Assignee</div>
-                                                    <div className="flex items-center text-sm text-[#1e1e24] cursor-pointer hover:bg-[#f2f2f2] px-2 py-1 rounded -ml-2 transition-colors">
-                                                        <div className="w-6 h-6 rounded-full bg-[#fca2b4] flex items-center justify-center text-[10px] text-[#b51235] uppercase font-bold mr-2">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Asignado a</div>
+                                                    <div className="flex items-center text-sm font-bold text-gray-300">
+                                                        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-[10px] text-red-500 border border-red-500/30 uppercase mr-3">
                                                             {selectedTask.asignadoA?.[0] || '?'}
                                                         </div>
                                                         {selectedTask.asignadoA || 'Sin Asignar'}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <div className="w-32 text-sm text-[#6D6E6F]">Due date</div>
-                                                    <div className="flex items-center text-sm text-[#1e1e24] cursor-pointer hover:bg-[#f2f2f2] px-2 py-1 rounded -ml-2 transition-colors">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Cuándo</div>
+                                                    <div className="flex items-center text-sm font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded border border-rose-500/20 uppercase tracking-widest">
                                                         {selectedTask.deadline}
-                                                        <span className="ml-6 flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full bg-[#e4dcfb] border border-[#d2c2f9]"></span> Design Group</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col mt-4 gap-4">
+                                                <div className="flex flex-col mt-6 gap-6">
                                                     <div>
-                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">¿Para qué?</div>
-                                                        <div className="text-sm text-[#1e1e24] bg-[#f9f9f9] p-3 rounded border border-[#e8ecee]">
+                                                        <div className="text-[10px] font-black text-rose-500 mb-2 uppercase tracking-widest">¿Para qué?</div>
+                                                        <div className="text-sm font-medium text-gray-300 bg-[#0d0d0d] p-4 rounded-xl border border-neutral-800 shadow-inner">
                                                             {selectedTask.why || 'Objetivo no especificado'}
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">Referencias</div>
-                                                        <div className="text-sm text-[#1e1e24] bg-[#f9f9f9] p-3 rounded border border-[#e8ecee] break-all">
-                                                            {selectedTask.references ? <a href={selectedTask.references} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-medium">{selectedTask.references}</a> : <span className="text-[#b1b1b1] italic">Ninguna referencia visual adjunta.</span>}
+                                                        <div className="text-[10px] font-black text-rose-500 mb-2 uppercase tracking-widest">Referencias</div>
+                                                        <div className="text-sm font-medium text-gray-300 bg-[#0d0d0d] p-4 rounded-xl border border-neutral-800 break-all shadow-inner">
+                                                            {selectedTask.references ? <a href={selectedTask.references} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">{selectedTask.references}</a> : <span className="text-neutral-600 italic">Ninguna referencia visual adjunta.</span>}
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-black text-[#6D6E6F] mb-1 uppercase tracking-widest">Comentarios / Brief Técnico</div>
-                                                        <div className="text-sm text-[#1e1e24] flex-1 bg-neutral-100 p-3 rounded border border-[#e8ecee] min-h-[80px] whitespace-pre-wrap">
-                                                            {selectedTask.comments || <span className="text-[#b1b1b1] italic">Sin instrucciones extra. Guíate con el "Qué" y "Para qué".</span>}
+                                                        <div className="text-[10px] font-black text-rose-500 mb-2 uppercase tracking-widest">Comentarios / Brief Técnico</div>
+                                                        <div className="text-sm font-medium text-gray-300 flex-1 bg-black p-4 rounded-xl border border-neutral-800 min-h-[100px] whitespace-pre-wrap shadow-inner leading-relaxed">
+                                                            {selectedTask.comments || <span className="text-neutral-600 italic">Sin instrucciones extra. Guíate con el "Qué" y "Para qué".</span>}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="border-t border-[#e8ecee] pt-6 flex flex-col h-full min-h-[150px]">
-                                                <div className="flex space-x-3 mb-4 mt-auto">
-                                                    <div className="w-8 h-8 rounded-full bg-[#cc2944] flex items-center justify-center text-xs font-bold text-white shrink-0 uppercase">
-                                                        {profile?.username?.[0] || 'U'}
-                                                    </div>
-                                                    <div className="flex-1 border border-[#e8ecee] rounded-lg bg-white p-3 text-sm text-[#6D6E6F] shadow-sm cursor-text hover:border-[#b1b1b1] transition-colors">
-                                                        Ask a question or post an update...
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center justify-between text-xs text-[#6D6E6F] mt-2">
-                                                    <div className="flex items-center gap-2">
-                                                       <span>Collaborators</span>
-                                                       <div className="w-6 h-6 rounded-full bg-[#fca2b4] border-2 border-white -ml-1 text-center flex items-center justify-center font-bold text-[#b51235] text-[10px]">J</div>
-                                                       <div className="w-6 h-6 rounded-full bg-[#bdecd1] border-2 border-white -ml-2 text-center flex items-center justify-center font-bold text-[#146b36] text-[10px]">A</div>
-                                                       <button className="w-6 h-6 rounded-full border border-dashed border-[#b1b1b1] flex items-center justify-center -ml-2 hover:border-[#6D6E6F] hover:text-[#1e1e24] transition-colors bg-white z-10">+</button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 cursor-pointer hover:text-[#1e1e24] transition-colors">
-                                                        <span>🔔</span> Leave Task
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-[#6D6E6F] font-sans">
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-4 text-[#e8ecee]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        <p className="text-sm">Click on a task to view details</p>
+                                    <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 font-sans">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-4 text-neutral-800"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        <p className="text-sm font-bold uppercase tracking-widest">Selecciona una tarea para ver el brief</p>
                                     </div>
                                 )}
                             </div>

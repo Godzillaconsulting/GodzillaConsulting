@@ -144,6 +144,38 @@ export default function AdminStudio() {
  
  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
  const [feedbackText, setFeedbackText] = useState('');
+ const [isUploadingFeedbackMedia, setIsUploadingFeedbackMedia] = useState(false);
+
+ const handleUploadFeedbackImage = async (e) => {
+     const file = e.target.files[0];
+     if (!file) return;
+     
+     setIsUploadingFeedbackMedia(true);
+     try {
+         const formData = new FormData();
+         formData.append('file', file);
+         
+         const token = localStorage.getItem('adminToken');
+         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/media/upload`, {
+             method: 'POST',
+             headers: { 'Authorization': `Bearer ${token}` },
+             body: formData
+         });
+         const data = await res.json();
+         
+         if (data.success) {
+             const addedUrl = data.url;
+             const newText = feedbackText ? `${feedbackText}\n\nCaptura adjunta:\n${addedUrl}` : addedUrl;
+             setFeedbackText(newText);
+         } else {
+             alert('Error subiendo imagen: ' + (data.error || 'Server error'));
+         }
+     } catch (err) {
+         console.error('Upload Error:', err);
+         alert('Falló la subida (Conexión)');
+     }
+     setIsUploadingFeedbackMedia(false);
+ };
 
  // Auth check delegado a PrivateRoute (ver App.jsx)
 
@@ -1126,7 +1158,14 @@ export default function AdminStudio() {
        <span className="text-yellow-500">💡</span> Reportar a IT
      </h3>
      <p className="text-xs text-neutral-400 font-bold mb-4">Envía tus sugerencias, pide funciones o reporta bugs para <span className="text-[#CC0000]">Dani</span> y <span className="text-[#CC0000]">JareG</span>.</p>
-     <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="Ej: Un botón para descargar imágenes está fallando..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none mb-4" />
+     <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="Ej: Un botón para descargar imágenes está fallando..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none mb-3" />
+     
+     <label className={`block flex items-center justify-center p-3 mb-6 border border-dashed rounded-lg cursor-pointer transition-all ${isUploadingFeedbackMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/20 hover:border-yellow-500 hover:bg-white/5'}`}>
+         <span className="text-xs font-black text-neutral-300 uppercase tracking-widest flex items-center gap-2">
+             <span className="text-lg">📸</span> {isUploadingFeedbackMedia ? 'Subiendo...' : 'Adjuntar Captura (SS)'}
+         </span>
+         <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingFeedbackMedia} onChange={handleUploadFeedbackImage} />
+     </label>
      <button onClick={() => {
          alert('🚀 Tu reporte fue enviado a la central de JareG y Dani. ¡Gracias!');
          setShowFeedbackModal(false);

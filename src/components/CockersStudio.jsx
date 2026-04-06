@@ -160,6 +160,15 @@ export default function CockersStudio({ adminProfile }) {
                             if (selectedDraft) {
                                 setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
                                 setSelectedDraft(prev => ({ ...prev, media_options: options }));
+                            } else {
+                                // Create abstract draft to hold the generated options
+                                setSelectedDraft({
+                                    id: Date.now(),
+                                    status: 'mock_generation',
+                                    caption: '',
+                                    visual_prompt: rawPrompt,
+                                    media_options: options
+                                });
                             }
                             setRenderingAI(false);
                         } else if (statusData.status === 'failed' || attempts > 30) {

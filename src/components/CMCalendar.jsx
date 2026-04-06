@@ -71,6 +71,7 @@ export default function CMCalendar({ adminProfile }) {
     const [selectedTaskBoard, setSelectedTaskBoard] = useState(null);
     const [taskView, setTaskView] = useState('pendientes');
     const [newTask, setNewTask] = useState({ que: '', para: '', referencias: '', deadline: '' });
+    const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
     // ─── Sistema de Comentarios & Notificaciones ───────────────────────────
     const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
@@ -105,6 +106,37 @@ export default function CMCalendar({ adminProfile }) {
     };
 
     const unreadCount = notifications.filter(n => !n.read && n.to?.toLowerCase() === currentUser.toLowerCase()).length;
+
+    const handleUploadTaskImage = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setIsUploadingMedia(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/media/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                const addedUrl = data.url;
+                const newRef = newTask.referencias ? `${newTask.referencias}\n${addedUrl}` : addedUrl;
+                setNewTask({ ...newTask, referencias: newRef });
+            } else {
+                alert('Error subiendo imagen: ' + (data.error || 'Server error'));
+            }
+        } catch (err) {
+            console.error('Upload Error:', err);
+            alert('Falló la subida (Conexión)');
+        }
+        setIsUploadingMedia(false);
+    };
 
     useEffect(() => {
         const today = new Date();
@@ -892,8 +924,21 @@ export default function CMCalendar({ adminProfile }) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Referencias</label>
-                                <input type="text" value={newTask.referencias} onChange={e => setNewTask({ ...newTask, referencias: e.target.value })} placeholder="Link, brief o nota..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                <label className="block text-xs font-black text-yellow-500/80 uppercase mb-2 flex items-center gap-2">
+                                    <span>📸 Referencias y Capturas</span> 
+                                    <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[9px]">Opcional</span>
+                                </label>
+                                <div className="space-y-3 p-4 border border-white/5 bg-white/[0.02] rounded-xl">
+                                    <input type="text" value={newTask.referencias} onChange={e => setNewTask({ ...newTask, referencias: e.target.value })} placeholder="Link, brief, notas o URL..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                    
+                                    <label className={`w-full flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isUploadingMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-neutral-600 hover:border-yellow-500 hover:bg-white/5'}`}>
+                                        <span className="text-xl mb-1">↑</span>
+                                        <span className="text-xs font-black text-white uppercase tracking-widest text-center">
+                                            {isUploadingMedia ? 'Subiendo...' : 'Subir foto o screenshot del celular'}
+                                        </span>
+                                        <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingMedia} onChange={handleUploadTaskImage} />
+                                    </label>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Para cuándo? *</label>

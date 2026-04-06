@@ -5,7 +5,7 @@
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'Godzilla_Secret_Key_2026_!@#';
 
 // ──────────────────────────────────────────────────────────
 // 1. Verificar token JWT genérico (cualquier admin)

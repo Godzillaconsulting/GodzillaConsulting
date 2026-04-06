@@ -350,7 +350,8 @@ export default function AdminStudio() {
   </button>
   </div>
 
-  <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+  <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
+     <div className="py-4 px-2 space-y-6 shrink-0">
    {[
      {
        title: "Sitio Principal",
@@ -418,8 +419,7 @@ export default function AdminStudio() {
    })}
   </div>
 
-
- <div className="mt-auto px-2 pb-4 space-y-1">
+   <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
        <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
@@ -469,6 +469,7 @@ export default function AdminStudio() {
  className="w-full text-[10px] text-yellow-500 font-bold hover:text-white hover:bg-yellow-500/10 border border-transparent hover:border-yellow-900/50 py-2 rounded-xl transition-all shadow-sm">
  💡 Sugerencias / Bugs
  </button>
+  </div>
   </div>
   </div>
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">

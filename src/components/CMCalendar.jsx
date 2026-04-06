@@ -70,8 +70,9 @@ export default function CMCalendar({ adminProfile }) {
     const [tasks, setTasks] = useState([]);
     const [selectedTaskBoard, setSelectedTaskBoard] = useState(null);
     const [taskView, setTaskView] = useState('pendientes');
-    const [newTask, setNewTask] = useState({ que: '', para: '', referencias: '', deadline: '' });
+    const [newTask, setNewTask] = useState({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' });
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+    const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
     // ─── Sistema de Comentarios & Notificaciones ───────────────────────────
     const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
@@ -168,9 +169,9 @@ export default function CMCalendar({ adminProfile }) {
         ]);
 
         setTasks([
-            { id: 1, que: 'Hacer la imagen menos oscura. Se pierde el logo de Godzilla.', para: 'Alex', referencias: 'https://godzillaconsulting.ai/admin', deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], done: false, asignadoPor: 'Judith', createdAt: new Date().toISOString() },
-            { id: 2, que: 'Crear endpoint para subida de videos en S3 y optimización', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString() },
-            { id: 3, que: 'Revisar logs de memoria y limpiar caché en Neon DB', para: 'JareG', referencias: 'Neon Console', deadline: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], done: false, asignadoPor: 'Oscar', createdAt: new Date().toISOString() },
+            { id: 1, que: 'Hacer la imagen menos oscura. Se pierde el logo de Godzilla.', para: 'Alex', referencias: 'https://godzillaconsulting.ai/admin', deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], done: false, asignadoPor: 'Judith', createdAt: new Date().toISOString(), audience: 'Marketing', priority: 'High', contentType: 'Testing' },
+            { id: 2, que: 'Crear endpoint para subida de videos en S3 y optimización', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString(), audience: 'Product', priority: 'Medium', contentType: 'Launch' },
+            { id: 3, que: 'Revisar logs de memoria y limpiar caché en Neon DB', para: 'JareG', referencias: 'Neon Console', deadline: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], done: false, asignadoPor: 'Oscar', createdAt: new Date().toISOString(), audience: 'Marketing', priority: 'Low', contentType: 'Backlog' },
         ]);
 
         // Notificación de ejemplo para el usuario actual
@@ -535,13 +536,13 @@ export default function CMCalendar({ adminProfile }) {
                                 )}
                             </div>
 
-                            {canCreate && (
+                            {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewAssignModal(true)}
                                     className="px-4 py-2 bg-black/60 border border-[#CC0000]/40 hover:border-[#CC0000] text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest">
                                     📋 Asignar Tarea
                                 </button>
                             )}
-                            {canCreate && (
+                            {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewCampaignModal(true)}
                                     className="px-4 py-2 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.5)] border border-red-900/50 uppercase tracking-widest flex items-center gap-1">
                                     ➕ Campaña
@@ -608,10 +609,35 @@ export default function CMCalendar({ adminProfile }) {
                             {/* ASANA LEFT PANE -> Godzilla Dark Mode */}
                             <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505] text-white">
                                 {/* Toolbar Top Left */}
-                                <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
-                                    <button onClick={() => setShowNewAssignModal(true)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all">
-                                        <span className="mr-2 text-sm">+</span> Nueva Tarea
+                                <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a] relative">
+                                    <button onClick={() => setShowTemplateDropdown(!showTemplateDropdown)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all relative z-10">
+                                        <span className="mr-2 text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
                                     </button>
+                                    {showTemplateDropdown && (
+                                        <div className="absolute top-12 left-4 w-64 bg-[#111] border border-neutral-700 rounded-xl shadow-2xl z-50 overflow-hidden text-white font-sans animate-in fade-in slide-in-from-top-2">
+                                            <button 
+                                                onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' }); setShowNewAssignModal(true); }}
+                                                className="w-full text-left px-4 py-3 text-xs font-bold hover:bg-neutral-800 transition-colors border-b border-neutral-800 flex items-center gap-2"
+                                            >
+                                                <span className="text-[#CC0000] text-sm">+</span> Blank task
+                                            </button>
+                                            <div className="px-4 py-2 text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Task templates</div>
+                                            <div className="flex flex-col">
+                                                <button 
+                                                    onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Rebrand Outreach Campaign', para: 'Alex', referencias: 'Objetivo: Renovación visual de pautas Q4.', deadline: new Date(Date.now() + 86400000*7).toISOString().split('T')[0], audience: 'Social Media', priority: 'High', contentType: 'Launch' }); setShowNewAssignModal(true); }}
+                                                    className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300"
+                                                >
+                                                    <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Rebrand Outreach Campaign
+                                                </button>
+                                                <button 
+                                                    onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Blog Updates Template', para: 'Judith', referencias: 'Revisar y actualizar SEO on-page.', deadline: new Date(Date.now() + 86400000*3).toISOString().split('T')[0], audience: 'Marketing', priority: 'Medium', contentType: 'Testing' }); setShowNewAssignModal(true); }}
+                                                    className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300"
+                                                >
+                                                    <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Blog Updates Template
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     {/* Section Header */}
@@ -636,9 +662,13 @@ export default function CMCalendar({ adminProfile }) {
                                                 </div>
                                                 <div className={`flex-1 text-sm font-bold truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.que}</div>
                                                 
-                                                {/* Project Pills Mock */}
-                                                <div className="hidden xl:flex items-center space-x-2 mr-3">
-                                                    <div className="bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">Diseño</div>
+                                                {/* Labels / Pills */}
+                                                <div className="hidden xl:flex items-center space-x-1.5 mr-3 shrink-0">
+                                                    <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.audience || 'Marketing'}</div>
+                                                    <div className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-14 text-center border ${task.priority === 'High' ? 'bg-red-500/10 text-red-400 border-red-500/20' : task.priority === 'Low' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
+                                                        {task.priority || 'Medium'}
+                                                    </div>
+                                                    <div className="bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.contentType || 'Backlog'}</div>
                                                 </div>
                                                 
                                                 {/* Assignee Avatar */}
@@ -709,6 +739,16 @@ export default function CMCalendar({ adminProfile }) {
                                                     <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Deadline</div>
                                                     <div className="flex items-center text-sm font-bold text-yellow-500 cursor-pointer hover:bg-white/5 px-2 py-1.5 rounded -ml-2 transition-colors">
                                                         {selectedTaskBoard.deadline}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center mt-5">
+                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Tags</div>
+                                                    <div className="flex items-center space-x-2 -ml-2">
+                                                        <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider">{selectedTaskBoard.audience || 'Marketing'}</div>
+                                                        <div className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider border ${selectedTaskBoard.priority === 'High' ? 'bg-red-500/10 text-red-400 border-red-500/20' : selectedTaskBoard.priority === 'Low' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
+                                                            {selectedTaskBoard.priority || 'Medium'}
+                                                        </div>
+                                                        <div className="bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider">{selectedTaskBoard.contentType || 'Backlog'}</div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-start mt-4">
@@ -940,6 +980,34 @@ export default function CMCalendar({ adminProfile }) {
                                     </label>
                                 </div>
                             </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Audience</label>
+                                    <select value={newTask.audience} onChange={e => setNewTask({ ...newTask, audience: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 transition-colors">
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Social Media">Social Media</option>
+                                        <option value="Product">Product</option>
+                                        <option value="Branding">Branding</option>
+                                        <option value="Finance">Finance</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Priority</label>
+                                    <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-orange-400 focus:outline-none focus:border-orange-500 transition-colors">
+                                        <option value="High" className="text-red-400">High</option>
+                                        <option value="Medium" className="text-orange-400">Medium</option>
+                                        <option value="Low" className="text-yellow-500">Low</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Content Type</label>
+                                    <select value={newTask.contentType} onChange={e => setNewTask({ ...newTask, contentType: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-fuchsia-400 focus:outline-none focus:border-fuchsia-500 transition-colors">
+                                        <option value="Backlog">Backlog</option>
+                                        <option value="Launch">Launch</option>
+                                        <option value="Testing">Testing</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div>
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Para cuándo? *</label>
                                 <input type="date" value={newTask.deadline} onChange={e => setNewTask({ ...newTask, deadline: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
@@ -949,7 +1017,7 @@ export default function CMCalendar({ adminProfile }) {
                                 setTasks(prev => [...prev, { id: Date.now(), ...newTask, done: false, asignadoPor: currentUser, createdAt: new Date().toISOString() }]);
                                 // Notificación al asignado
                                 setNotifications(prev => [{ id: Date.now(), to: newTask.para, from: currentUser, text: `@${newTask.para} tienes una nueva tarea asignada: "${newTask.que}"`, read: false, time: 'ahora', eventTitle: 'Tarea directa' }, ...prev]);
-                                setNewTask({ que: '', para: '', referencias: '', deadline: '' });
+                                setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' });
                                 setShowNewAssignModal(false);
                             }} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all">
                                 Asignar Tarea ✔️

@@ -438,23 +438,14 @@ export default function AdminStudio() {
   📧 Newsletter
   </button>
   
-   {isCM ? (
-       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
-       className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social' ?'bg-gradient-to-r from-[#ff2222] to-[#AA0000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(56,189,248,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
-       <span className="text-sm mr-2 drop-shadow-sm">📅</span> Panel CM
-       </button>
-   ) : (
-       <>
-       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
-       className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
-       <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
-       </button>
-       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
-       <span className="text-xs mr-2">📅</span> Calendario Global
-       </button>
-       </>
-   )}
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
+   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
+   <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
+   </button>
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
+   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
+   <span className="text-xs mr-2">📅</span> Calendario Global
+   </button>
    
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
  className="w-full flex items-center justify-center gap-1.5 text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-red-900/40 hover:border-[#CC0000]/60 py-2 rounded-xl transition-all shadow-sm">

@@ -88,8 +88,8 @@ export default function GoyiAdmin() {
                     {/* Messages Area */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-[#0a0a0a] to-[#010101]">
                         {messages.map((msg, index) => (
-                            <div key={index} className={`flex \${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}>
-                                <div className={`p-3.5 rounded-xl max-w-[85%] text-sm font-bold shadow-lg leading-relaxed \${
+                            <div key={index} className={`flex ${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}>
+                                <div className={`p-3.5 rounded-xl max-w-[85%] text-sm font-bold shadow-lg leading-relaxed ${
                                     msg.role === 'model' 
                                         ? 'bg-[#1a1a1a] text-neutral-300 border border-neutral-800 rounded-tl-sm' 
                                         : 'bg-yellow-600/20 border border-yellow-600/40 text-yellow-500 rounded-tr-sm'

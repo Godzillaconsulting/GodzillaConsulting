@@ -336,10 +336,7 @@ export default function AdminStudio() {
   <a href="/" target="_blank" rel="noopener noreferrer" className="cursor-pointer hover:scale-110 transition-transform">
     <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
   </a>
-  <div className="flex flex-col justify-center">
-  <p className="text-[11px] font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
-  <p className="text-[10px] text-[#CC0000] font-bold mt-0.5 tracking-widest uppercase">Studio</p>
-  </div>
+
   </div>
   <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1.5 flex items-center gap-1.5 rounded-lg font-bold text-[10px] transition-all duration-300 border ${
   isAnalyticsMode ? 'bg-[#CC0000] border-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.5)]' : 'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-[#CC0000]/10 hover:border-[#CC0000]/50 hover:text-white shadow-sm'
@@ -498,7 +495,10 @@ export default function AdminStudio() {
  </div>
  </div>
  ) : (
- <div />
+  <div className="flex flex-col justify-center">
+  <p className="text-sm font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
+  <p className="text-xs text-[#CC0000] font-bold mt-1 tracking-widest uppercase">Studio</p>
+  </div>
  )}
 
  <div className="flex items-center gap-3">

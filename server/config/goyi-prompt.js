@@ -37,4 +37,28 @@ EXCEPCIÓN ESTRICTA (PROTOCOLO FANTASMA): Sólo si el [SISTEMA DE SEGURIDAD] (in
 - Eres el guardián de este panel. Asistes administrativamente a todo el flujo creativo.
 `;
 
-export const goyiChatTools = [];
+export const goyiChatTools = [
+    {
+        name: "view_file",
+        description: "Read a file from the server's codebase. Only JareG can authorize this.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                filePath: { type: "STRING", description: "Absolute or relative path to the file (e.g. src/components/CockersStudio.jsx)" }
+            },
+            required: ["filePath"]
+        }
+    },
+    {
+        name: "edit_file",
+        description: "Overwrite an existing file in the server's codebase with new content to fix bugs. Only JareG can authorize this.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                filePath: { type: "STRING", description: "Path to the file" },
+                newContent: { type: "STRING", description: "The complete new source code for the file" }
+            },
+            required: ["filePath", "newContent"]
+        }
+    }
+];

@@ -3,6 +3,8 @@ import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 import { getGeminiModel } from "../config/geminiGlobal.js";
 import { sendCitaConfirmationEmail } from "../services/emailService.js";
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 import { GOYI_SYSTEM_PROMPT, goyiChatTools } from "../config/goyi-prompt.js";
@@ -54,9 +56,9 @@ export const processChatMessage = async (req, res) => {
 
     try {
         let finalGoyiPrompt = GOYI_SYSTEM_PROMPT;
+        let currentUser = "Desconocido"; // Elevated to be accessible in tool execution
         
         if (isGoyi) {
-            let currentUser = "Desconocido";
             if (req.headers.authorization) {
                 const token = req.headers.authorization.split(' ')[1];
                 try {
@@ -176,6 +178,28 @@ export const processChatMessage = async (req, res) => {
                 } else if (call.name === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
+                } else if (call.name === "view_file") {
+                    const isGodMode = ["jareg", "godzilla_admin"].includes(currentUser?.toLowerCase());
+                    if (!isGodMode) {
+                        fRes = { error: "ACCESO DENEGADO. REGLA ESTRICTA DE SEGURIDAD. SOLO JAREG PUEDE OPERAR AGENTES." };
+                    } else {
+                        try {
+                            const fullPath = path.resolve(process.cwd(), call.args.filePath);
+                            const content = fs.readFileSync(fullPath, 'utf-8');
+                            fRes = { content };
+                        } catch(e) { fRes = { error: e.message }; }
+                    }
+                } else if (call.name === "edit_file") {
+                    const isGodMode = ["jareg", "godzilla_admin"].includes(currentUser?.toLowerCase());
+                    if (!isGodMode) {
+                        fRes = { error: "ACCESO DENEGADO. REGLA ESTRICTA DE SEGURIDAD. SOLO JAREG PUEDE OPERAR AGENTES." };
+                    } else {
+                        try {
+                            const fullPath = path.resolve(process.cwd(), call.args.filePath);
+                            fs.writeFileSync(fullPath, call.args.newContent, 'utf-8');
+                            fRes = { success: true, message: `File ${call.args.filePath} updated successfully.` };
+                        } catch(e) { fRes = { error: e.message }; }
+                    }
                 }
                 functionResponses.push({
                     functionResponse: {

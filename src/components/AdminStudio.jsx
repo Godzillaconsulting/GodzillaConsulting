@@ -9,6 +9,7 @@ import AdminProfile from './AdminProfile';
 import CockersStudio from './CockersStudio';
 import CMCalendar from './CMCalendar';
 import GoyiAdmin from './GoyiAdmin';
+import BugReporterModal from './BugReporterModal';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -164,6 +165,7 @@ export default function AdminStudio() {
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
+ const [bugReporterPos, setBugReporterPos] = useState(null);
  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
  const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true });
  
@@ -358,7 +360,24 @@ export default function AdminStudio() {
  ].filter(t => t.id !=='elementos' || showElemTab);
 
  return (
- <div className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative">
+ <div 
+   className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative"
+   onContextMenu={(e) => {
+     if (e.target.tagName !== 'IMG') {
+       e.preventDefault();
+       setBugReporterPos({ x: e.clientX, y: e.clientY });
+     }
+   }}
+ >
+   {/* Modal Reporter Contextual IT */}
+   {bugReporterPos && (
+     <BugReporterModal 
+       x={bugReporterPos.x} 
+       y={bugReporterPos.y} 
+       onClose={() => setBugReporterPos(null)} 
+     />
+   )}
+
    {/* Frutiger Aero Orbs/Gloss */}
    <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#CC0000]/10 rounded-full blur-[120px] pointer-events-none"></div>
    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/50 rounded-full blur-[100px] pointer-events-none"></div>

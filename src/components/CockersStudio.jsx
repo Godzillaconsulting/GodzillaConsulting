@@ -45,22 +45,23 @@ export default function CockersStudio({ adminProfile }) {
         setIsLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/social/queue`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             if (data.success) {
-                if (data.posts.length === 0) {
-                    setQueue([{
-                        id: 999,
-                        status: 'cockers_review',
-                        scheduled_for: '2026-04-05T10:00:00Z',
-                        caption: '🚀 El boca a boca no te va a pagar la nómina...',
-                        visual_prompt: 'Cinematic 35mm wide shot, modern corporate office...',
-                        media_options: []
-                    }]);
+                const mapped = data.tasks.map(t => ({
+                    id: t.id,
+                    status: t.status,
+                    scheduled_for: t.ig_publish_date,
+                    caption: t.title,
+                    visual_prompt: t.prompt,
+                    media_options: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || [])
+                }));
+                if (mapped.length === 0) {
+                    setQueue([{ id: 999, status: 'cockers_review', scheduled_for: '2026-04-05T10:00:00Z', caption: '🚀 El boca a boca no te va a pagar la nómina...', visual_prompt: 'Cinematic 35mm wide shot, modern corporate office...', media_options: [] }]);
                 } else {
-                    setQueue(data.posts);
+                    setQueue(mapped);
                 }
             }
         } catch (e) {
@@ -95,13 +96,12 @@ export default function CockersStudio({ adminProfile }) {
                 return;
             }
 
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/social/approve-media`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks/${selectedDraft.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    id: selectedDraft.id,
-                    selected_media_url: opt.url,
-                    status: newStatus
+                    status: newStatus,
+                    media_payload: [{ url: opt.url, provider: opt.provider, isVideo: opt.isVideo }]
                 })
             });
             
@@ -123,6 +123,19 @@ export default function CockersStudio({ adminProfile }) {
             const rawPrompt = finalPrompt || selectedDraft?.visual_prompt || 'cyberpunk cinematic city';
             const cleanPrompt = rawPrompt.replace(/\[\/?.*?]/g, '').trim();
             const token = localStorage.getItem('adminToken');
+
+            // FEEDBACK LEARNING (Alimentar a Goyi si hubo cambios iterativos)
+            if (finalPrompt && selectedDraft?.visual_prompt && finalPrompt !== selectedDraft.visual_prompt) {
+                fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/learning`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        original_prompt: selectedDraft.visual_prompt,
+                        improved_prompt: finalPrompt,
+                        context_type: 'cockers_regenerate'
+                    })
+                }).catch(e => console.error("Error saving learning:", e));
+            }
             
             const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/generate`, {
                 method: 'POST',

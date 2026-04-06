@@ -25,6 +25,41 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setAllTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
     };
 
+    // --- Estado de IT Bugs (Solo JareG/Dani) ---
+    const [itBugs, setItBugs] = useState([]);
+    const isIT = ['jareg', 'godzilla_admin', 'dani'].includes(profile?.username?.toLowerCase());
+
+    const fetchBugs = async () => {
+        const token = localStorage.getItem('adminToken');
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/bugs`, { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.bugs) setItBugs(data.bugs);
+        } catch (e) {
+            console.error('Error fetching bugs', e);
+        }
+    };
+
+    const resolveBug = async (id, currentStatus) => {
+        const token = localStorage.getItem('adminToken');
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL || ''}/api/bugs/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ resolved: !currentStatus })
+            });
+            fetchBugs();
+        } catch(e) {
+            console.error('Error resolving bug', e);
+        }
+    };
+
+    useEffect(() => {
+        if (subTab === 'tasks' && isIT) {
+            fetchBugs();
+        }
+    }, [subTab, isIT]);
+
     // --- Estado Equipo (SuperAdmin) ---
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
@@ -349,6 +384,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                     </div>
                 )}
                 {subTab === 'tasks' && (
+                    <>
                     <div className="animate-in fade-in space-y-4 flex flex-col">
                         <div>
                             <h2 className="text-2xl font-black text-white">Tablero de Tareas</h2>
@@ -475,6 +511,51 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                             </div>
                         </div>
                     </div>
+                    {isIT && (
+                        <div className="mt-12 animate-in fade-in space-y-4 flex flex-col pt-8 border-t border-neutral-800">
+                            <div>
+                                <h2 className="text-2xl font-black text-rose-500">🚨 IT Bugs & Sugerencias</h2>
+                                <p className="text-sm text-neutral-400 mt-1">Reportes del sistema. Tablero exclusivo de JareG y Dani.</p>
+                            </div>
+                            
+                            <div className="flex flex-col gap-3">
+                                {itBugs.map(bug => (
+                                    <div key={bug.id} className={`bg-[#0a0a0a] border ${bug.resolved ? 'border-green-500/30 opacity-60' : 'border-rose-500/30'} p-4 rounded-xl flex gap-4 items-start shadow-md`}>
+                                        <div onClick={() => resolveBug(bug.id, bug.resolved)} className={`mt-1 cursor-pointer w-6 h-6 rounded border flex items-center justify-center shrink-0 transition-colors ${bug.resolved ? 'bg-green-500 border-green-500 text-black' : 'border-neutral-500 hover:border-rose-500 bg-[#111]'}`}>
+                                            {bug.resolved && <span className="text-[14px] font-black leading-none pb-0.5">✓</span>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                                                <span className={`text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded border ${bug.priority === 'urgente' ? 'bg-rose-500/10 text-rose-500 border-rose-500/30' : bug.priority === 'media' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30'}`}>
+                                                    {bug.priority}
+                                                </span>
+                                                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                                                    Reportado por: <span className="text-white">{bug.reporter_username || '?'}</span>
+                                                </span>
+                                                <span className="text-[10px] text-neutral-500 font-mono truncate max-w-[200px]">
+                                                    {bug.path_url || '/'}
+                                                </span>
+                                            </div>
+                                            <p className={`text-sm font-medium ${bug.resolved ? 'text-neutral-500 line-through' : 'text-gray-200'}`}>
+                                                {bug.description}
+                                            </p>
+                                        </div>
+                                        {bug.screenshot_url && (
+                                            <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden border border-neutral-700 hover:border-rose-500 transition-colors cursor-pointer" onClick={() => window.open(bug.screenshot_url, '_blank')}>
+                                                <img src={bug.screenshot_url} alt="screenshot" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {itBugs.length === 0 && (
+                                    <div className="border border-dashed border-neutral-700 bg-neutral-900/30 rounded-xl p-8 text-center">
+                                        <p className="text-neutral-500 text-sm font-bold uppercase tracking-widest">No hay bugs reportados en este momento</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    </>
                 )}
 
                 {subTab === 'team' && profile?.is_superadmin && (

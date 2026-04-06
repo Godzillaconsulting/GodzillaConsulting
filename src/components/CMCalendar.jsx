@@ -168,11 +168,37 @@ export default function CMCalendar({ adminProfile }) {
             }
         ]);
 
-        setTasks([
-            { id: 1, que: 'Hacer la imagen menos oscura. Se pierde el logo de Godzilla.', para: 'Alex', referencias: 'https://godzillaconsulting.ai/admin', deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], done: false, asignadoPor: 'Judith', createdAt: new Date().toISOString(), audience: 'Marketing', priority: 'High', contentType: 'Testing' },
-            { id: 2, que: 'Crear endpoint para subida de videos en S3 y optimización', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString(), audience: 'Product', priority: 'Medium', contentType: 'Launch' },
-            { id: 3, que: 'Revisar logs de memoria y limpiar caché en Neon DB', para: 'JareG', referencias: 'Neon Console', deadline: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], done: false, asignadoPor: 'Oscar', createdAt: new Date().toISOString(), audience: 'Marketing', priority: 'Low', contentType: 'Backlog' },
-        ]);
+        const token = localStorage.getItem('adminToken');
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.tasks) {
+                const mapped = data.tasks.map(t => ({
+                    id: t.id,
+                    que: t.title,
+                    para: t.assigned_to,
+                    referencias: t.prompt,
+                    deadline: t.ig_publish_date ? new Date(t.ig_publish_date).toISOString().split('T')[0] : '2026-12-31',
+                    done: t.status === 'approved',
+                    asignadoPor: 'Admin',
+                    createdAt: t.created_at,
+                    audience: (typeof t.tags === 'string' ? JSON.parse(t.tags) : t.tags)?.join(', ') || 'Marketing',
+                    priority: t.priority,
+                    contentType: t.content_type || 'Backlog',
+                    status: t.status
+                }));
+                // Si está vacío para dar sensación de uso añadimos unos de demostración (Opcional)
+                if (mapped.length === 0) {
+                    setTasks([
+                        { id: 9991, que: 'Crear endpoint S3', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString(), audience: 'Product', priority: 'Medium', contentType: 'Launch' }
+                    ]);
+                } else {
+                    setTasks(mapped);
+                }
+            }
+        }).catch(err => console.error('Error fetching tasks:', err));
 
         // Notificación de ejemplo para el usuario actual
         setNotifications([
@@ -1012,9 +1038,40 @@ export default function CMCalendar({ adminProfile }) {
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Para cuándo? *</label>
                                 <input type="date" value={newTask.deadline} onChange={e => setNewTask({ ...newTask, deadline: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
                             </div>
-                            <button onClick={() => {
+                            <button onClick={async () => {
                                 if (!newTask.que || !newTask.para || !newTask.deadline) return alert('Completa los campos obligatorios (*)');
-                                setTasks(prev => [...prev, { id: Date.now(), ...newTask, done: false, asignadoPor: currentUser, createdAt: new Date().toISOString() }]);
+                                
+                                try {
+                                    const token = localStorage.getItem('adminToken');
+                                    const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                        body: JSON.stringify({
+                                            title: newTask.que,
+                                            prompt: newTask.referencias || 'No referenciado',
+                                            assigned_to: newTask.para.toLowerCase().replace('@',''),
+                                            tags: [newTask.audience],
+                                            priority: newTask.priority,
+                                            content_type: newTask.contentType,
+                                            ig_publish_date: new Date(newTask.deadline).toISOString()
+                                        })
+                                    });
+                                    const data = await res.json();
+                                    if(data.success) {
+                                        const t = data.task;
+                                        setTasks(prev => [{
+                                            id: t.id, que: t.title, para: t.assigned_to, referencias: t.prompt,
+                                            deadline: newTask.deadline, done: false, asignadoPor: currentUser, createdAt: t.created_at,
+                                            audience: newTask.audience, priority: newTask.priority, contentType: newTask.contentType, status: t.status
+                                        }, ...prev]);
+                                    } else {
+                                        alert('Error al crear tarea: ' + data.message);
+                                    }
+                                } catch (error) {
+                                    console.error("Error creating task", error);
+                                    alert("Fallo de red al asignar tarea.");
+                                }
+
                                 // Notificación al asignado
                                 setNotifications(prev => [{ id: Date.now(), to: newTask.para, from: currentUser, text: `@${newTask.para} tienes una nueva tarea asignada: "${newTask.que}"`, read: false, time: 'ahora', eventTitle: 'Tarea directa' }, ...prev]);
                                 setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' });

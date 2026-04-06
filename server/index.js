@@ -16,9 +16,9 @@ import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
 import trendsRoutes from './routes/trends.js';
 import socialRoutes from './routes/social.js';
-import resourcesRoutes from './routes/resources.js';
 import adminMigrationRoutes from './routes/adminMigration.js';
 import aiStudioRoutes from './routes/aiStudio.js';
+import bugsRoutes from './routes/bugs.js';
 import { connectDB } from './config/db.js';
 
 import chatRoutes from './routes/chat.js';
@@ -141,6 +141,7 @@ app.use(express.json());
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', leadsRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/bugs', bugsRoutes); // IT Bugs Router
 app.use('/api/chat', chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);

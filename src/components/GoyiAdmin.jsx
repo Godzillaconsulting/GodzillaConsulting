@@ -30,9 +30,13 @@ export default function GoyiAdmin() {
         setIsLoading(true);
 
         try {
+            const token = localStorage.getItem('adminToken');
             const response = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ messages: newMessages, isGoyi: true }),
             });
 

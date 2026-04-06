@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
 import { getGeminiModel } from "../config/geminiGlobal.js";
 import { sendCitaConfirmationEmail } from "../services/emailService.js";
+import jwt from 'jsonwebtoken';
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 import { GOYI_SYSTEM_PROMPT, goyiChatTools } from "../config/goyi-prompt.js";
@@ -52,7 +53,21 @@ export const processChatMessage = async (req, res) => {
     if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
     try {
-        const p_prompt = isGoyi ? GOYI_SYSTEM_PROMPT : SYSTEM_PROMPT;
+        let finalGoyiPrompt = GOYI_SYSTEM_PROMPT;
+        
+        if (isGoyi) {
+            let currentUser = "Desconocido";
+            if (req.headers.authorization) {
+                const token = req.headers.authorization.split(' ')[1];
+                try {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Godzilla_Secret_Key_2026_!@#');
+                    currentUser = decoded.username || "Desconocido";
+                } catch(e) {}
+            }
+            finalGoyiPrompt = `\n[SISTEMA DE SEGURIDAD]: ESTÁS HABLANDO CON EL USUARIO AUTENTICADO COMO: "${currentUser}". Usa esto para verificar sus permisos de forma estricta.\n${GOYI_SYSTEM_PROMPT}`;
+        }
+        
+        const p_prompt = isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT;
         const p_tools = isGoyi ? goyiChatTools : chatTools;
         const { model, sessions } = getGeminiModel(apiKey, p_prompt, p_tools);
 

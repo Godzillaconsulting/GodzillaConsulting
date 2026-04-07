@@ -248,11 +248,20 @@ export default function GodzillaSora() {
                     
                     <div className="video-player-mock">
                         {status === 'DONE' ? (
-                            <div className="fake-video-overlay">
-                                <h3>RENDER PREVIEW</h3>
-                                <p>El modelo necesita enlazarse al nodo de ComfyUI/Python físico para mostrar la imagen final.</p>
-                                <div className="glowing-success"></div>
-                            </div>
+                            <>
+                                <video 
+                                    className="video-player-placeholder" 
+                                    autoPlay 
+                                    loop 
+                                    muted 
+                                    playsInline
+                                    src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                                />
+                                <div className="fake-video-overlay">
+                                    <h3>Render Completado</h3>
+                                    <p>Este es un render simulado de demostración. La conexión al GPU físico está preparada.</p>
+                                </div>
+                            </>
                         ) : status === 'RENDERING' ? (
                             <div className="loader-container">
                                 <div className="spinner-glow"></div>

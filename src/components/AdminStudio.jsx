@@ -496,19 +496,6 @@ export default function AdminStudio() {
   </div>
 
    <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">
-   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
-   className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
-       <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
-           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
-       </div>
-       <div className="flex-1 text-left min-w-0">
-           <p className={`text-xs font-black truncate drop-shadow-sm transition-colors ${ activeSection ==='profile' ?'text-[#CC0000]' :'text-white' }`}>{adminProfile?.username || 'Usuario'}</p>
-           <p className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${ activeSection ==='profile' ?'text-black/60' :'text-neutral-500' }`}>
-               <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] border border-[#CC0000] shadow-[0_0_5px_rgba(204,0,0,0.8)] animate-pulse"></span> Activo
-           </p>
-       </div>
-   </button>
-   
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
   className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-[#CC0000] text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
   📧 Newsletter
@@ -521,6 +508,19 @@ export default function AdminStudio() {
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
    <span className="text-xs mr-2">📅</span> Calendario Global
+   </button>
+   
+   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
+   className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
+       <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
+           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
+       </div>
+       <div className="flex-1 text-left min-w-0">
+           <p className={`text-xs font-black truncate drop-shadow-sm transition-colors ${ activeSection ==='profile' ?'text-[#CC0000]' :'text-white' }`}>{adminProfile?.username || 'Usuario'}</p>
+           <p className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${ activeSection ==='profile' ?'text-black/60' :'text-neutral-500' }`}>
+               <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] border border-[#CC0000] shadow-[0_0_5px_rgba(204,0,0,0.8)] animate-pulse"></span> Activo
+           </p>
+       </div>
    </button>
    
   <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}

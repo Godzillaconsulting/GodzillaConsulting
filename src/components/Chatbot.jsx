@@ -97,8 +97,16 @@ const Chatbot = () => {
                     {/* Halos concéntricos (visibles al estar cerrado) */}
                     {!isOpen && (
                         <>
-                            <div className="absolute inset-[-12px] rounded-full bg-gradient-to-br from-[#ff6b6b]/20 to-[#CC0000]/20 pointer-events-none transition-all duration-300" />
-                            <div className="absolute inset-[-24px] rounded-full bg-gradient-to-br from-[#ff6b6b]/10 to-[#CC0000]/10 pointer-events-none transition-all duration-300" />
+                            <motion.div 
+                                animate={{ scale: [1, 1.05, 1], opacity: [0.6, 1, 0.6] }}
+                                transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                                className="absolute inset-[-12px] rounded-full bg-gradient-to-br from-[#ff6b6b]/20 to-[#CC0000]/20 pointer-events-none" 
+                            />
+                            <motion.div 
+                                animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.9, 0.4] }}
+                                transition={{ repeat: Infinity, duration: 2.5, delay: 0.2, ease: "easeInOut" }}
+                                className="absolute inset-[-24px] rounded-full bg-gradient-to-br from-[#ff6b6b]/10 to-[#CC0000]/10 pointer-events-none" 
+                            />
                         </>
                     )}
                     <motion.button

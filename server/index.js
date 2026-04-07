@@ -16,6 +16,7 @@ import analyticsRoutes from './routes/analytics.js';
 import usersRoutes from './routes/users.js';
 import trendsRoutes from './routes/trends.js';
 import socialRoutes from './routes/social.js';
+import resourcesRoutes from './routes/resources.js';
 import adminMigrationRoutes from './routes/adminMigration.js';
 import aiStudioRoutes from './routes/aiStudio.js';
 import bugsRoutes from './routes/bugs.js';

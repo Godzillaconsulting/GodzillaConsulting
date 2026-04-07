@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
 
@@ -156,8 +157,8 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
             )}
 
             {/* Modal */}
-            {isOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+            {isOpen && createPortal(
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" style={{ zIndex: 99999 }}>
                     <div className="bg-neutral-900 rounded-2xl border border-neutral-700 w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
 
                         {/* Header del modal */}
@@ -334,7 +335,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                             )}
                         </div>
                     </div>
-                </div>
+                </div>, document.body
             )}
         </div>
     );

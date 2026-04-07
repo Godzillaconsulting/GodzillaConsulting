@@ -40,15 +40,14 @@ export const generateRenderJob = async (req, res) => {
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
         let response;
-        if (engine.includes('Video') || engine.includes('Kling')) {
+        if (engine.includes('Kling')) {
             // Ejemplo de body para Text-To-Video Kling V1
             const requestBody = {
                 model: "kling-v1",
                 prompt: prompt || "cyberpunk shot",
                 negative_prompt: config.negative || "",
                 ratio: arMapping[config.aspect_ratio] || '16:9',
-                duration: config.duration === '10' ? "10" : "5",
-                mode: "standard" // standard o pro
+                duration: config.duration === '10' ? "10" : "5"
             };
 
             response = await fetch('https://api.klingai.com/v1/videos/text2video', {
@@ -59,6 +58,35 @@ export const generateRenderJob = async (req, res) => {
                 },
                 body: JSON.stringify(requestBody)
             });
+            const data = await response.json();
+            if (!response.ok || data.code !== 0) {
+                 return res.status(400).json({ error: data.message || "Fallo en API Kling" });
+            }
+            return res.status(200).json({ job_id: data.data.task_id, status: "processing", provider: engine });
+
+        } else if (engine.includes('Veo') || engine.includes('Video')) {
+            console.log(`[STUDIO] Generando Video con Google Veo (3.1). Prompt: ${prompt}`);
+            if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            // Map React aspect ratios to Google Veo aspect ratios
+            const googleRatio = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
+
+            const operation = await ai.models.generateVideos({
+                model: 'veo-3.1-fast-generate-preview',
+                prompt: prompt || "Cinematic masterpiece",
+                config: {
+                    numberOfVideos: 1,
+                    aspectRatio: googleRatio
+                }
+            });
+
+            // Retornamos el operation name con un prefijo para que el status checker sepa la ruta
+            return res.status(200).json({ 
+                job_id: "veo_" + operation.name, 
+                status: "processing", 
+                provider: engine 
+            });
         } else {
             // Generador de Imágenes AI NATIVO usando Google GenAI (Imagen 4.0)
             console.log(`[STUDIO] Generando Imagen con Google GenAI (Imagen 4.0). Prompt: ${prompt}`);
@@ -67,18 +95,18 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
             }
 
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const aiImg = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             
             // Map React aspect ratios to Google Imagen aspect ratios
-            const googleRatio = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
+            const googleRatioImg = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
 
-            const responseGenAI = await ai.models.generateImages({
+            const responseGenAI = await aiImg.models.generateImages({
                 model: 'imagen-4.0-fast-generate-001',
                 prompt: prompt || "A sleek cinematic render",
                 config: {
                     numberOfImages: 1,
                     outputMimeType: 'image/jpeg',
-                    aspectRatio: googleRatio
+                    aspectRatio: googleRatioImg
                 }
             });
 
@@ -99,19 +127,6 @@ export const generateRenderJob = async (req, res) => {
             });
         }
 
-        const data = await response.json();
-        
-        if (!response.ok || data.code !== 0) {
-            console.error("[STUDIO ERROR]", data);
-            return res.status(400).json({ error: data.message || "Fallo en API de Proveedor" });
-        }
-
-        // Kling responde con el Task ID para poner en Queue
-        return res.status(200).json({
-            job_id: data.data.task_id,
-            status: "processing",
-            provider: engine
-        });
 
     } catch (error) {
         console.error(error);
@@ -130,6 +145,36 @@ export const checkRenderStatus = async (req, res) => {
                 status: "succeed",
                 progress: 100,
                 result_url: "" // El frontend tiene fallbacks visuales
+            });
+        }
+
+        if (taskId.startsWith("veo_")) {
+            const rawOpName = taskId.replace("veo_", "");
+            
+            // Poll natively via Google REST as operations API is complex via direct fetch
+            const apiKey = process.env.GEMINI_API_KEY;
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${rawOpName}?key=${apiKey}`);
+            const opData = await response.json();
+            
+            if (opData.error) {
+                return res.status(400).json({ error: opData.error.message });
+            }
+
+            let status = 'processing';
+            let outputUrl = '';
+            
+            if (opData.done) {
+                status = 'succeed';
+                if (opData.response && opData.response.generateVideoResponse) {
+                     outputUrl = opData.response.generateVideoResponse.generatedSamples[0].video.uri;
+                }
+            }
+
+            return res.status(200).json({
+                task_id: taskId,
+                status: status,
+                progress: status === 'succeed' ? 100 : 50,
+                result_url: outputUrl
             });
         }
 

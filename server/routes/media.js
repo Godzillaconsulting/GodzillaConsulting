@@ -75,9 +75,9 @@ const uploadVideo = multer({
 
 // ─── URL Pública ─────────────────────────────────────────────────────────────
 const getPublicUrl = (req, relativePath) => {
-    const isDev = process.env.NODE_ENV === 'development';
-    const base = isDev ? `http://localhost:${process.env.PORT || 3000}` : '';
-    return `${base}/api/media/${relativePath}`;
+    // [Vercel Fix] NUNCA quemes un host aquí, usa rutas relativas para las imágenes Neon DB.
+    // Así la landing lo carga transparente en cualquier dominio (localhost o godzillaconsulting.ai).
+    return `/api/media/${relativePath}`;
 };
 
 // URL para assets pesados en disco local (accesibles vía Cloudflare Tunnel)

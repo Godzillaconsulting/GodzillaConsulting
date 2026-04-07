@@ -19,7 +19,7 @@ const gifCrm = 'https://bot.godzillaconsulting.ai/api/media/assets/Estadistica.g
 import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 
 export const PAGE_SECTIONS = [
- { id:'hero', label:'Hero', emoji:'🦖', tag:'INICIO' },
+ { id:'hero', label:'Encabezado principal (Hero)', emoji:'🦖', tag:'INICIO' },
  { id:'servicios', label:'Servicios', emoji:'⚡', tag:'SERVICIOS' },
  { id:'cultura', label:'Cultura', emoji:'🏢', tag:'CULTURA' },
  { id:'portafolio', label:'Casos de Éxito', emoji:'🏆', tag:'PORTAFOLIO'},

@@ -476,7 +476,6 @@ export default function AdminStudio() {
                 isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
                 }`}
                 >
-                <span className={`text-base leading-none shrink-0 drop-shadow-sm transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-[0_2px_10px_rgba(204,0,0,0.4)]' : 'group-hover/btn:scale-110'}`}>{meta?.emoji ||'📄'}</span>
                 <div className="min-w-0 flex-1">
                 <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover/btn:text-white'}`}>
                 {meta?.label || node.id}

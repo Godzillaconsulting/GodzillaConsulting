@@ -98,13 +98,18 @@ const Chatbot = () => {
                     {!isOpen && (
                         <>
                             <motion.div 
-                                animate={{ scale: [1, 1.1, 2.4], opacity: [0, 0.7, 0] }}
-                                transition={{ repeat: Infinity, duration: 3, ease: "easeOut", times: [0, 0.15, 1] }}
+                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
+                                transition={{ repeat: Infinity, duration: 3, ease: "easeOut" }}
                                 className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
                             />
                             <motion.div 
-                                animate={{ scale: [1, 1.1, 2.4], opacity: [0, 0.7, 0] }}
-                                transition={{ repeat: Infinity, duration: 3, delay: 1.5, ease: "easeOut", times: [0, 0.15, 1] }}
+                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
+                                transition={{ repeat: Infinity, duration: 3, delay: 1, ease: "easeOut" }}
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
+                            />
+                            <motion.div 
+                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
+                                transition={{ repeat: Infinity, duration: 3, delay: 2, ease: "easeOut" }}
                                 className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
                             />
                         </>

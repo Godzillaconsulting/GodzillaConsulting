@@ -3,6 +3,13 @@ import { createPortal } from 'react-dom';
 
 const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
 
+export const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
 /**
  * MediaPicker — Componente para subir y seleccionar imágenes/videos.
  * En producción usa Vercel Blob Store (/api/blob); en dev usa /api/media local.
@@ -110,8 +117,9 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
     };
 
     const filteredItems = () => {
-        if (accept === 'image' || filter === 'images') return media.images;
-        if (accept === 'video' || filter === 'videos') return media.videos;
+        if (accept === 'image' || filter === 'images') return media.images || [];
+        if (accept === 'video' || filter === 'videos') return (media.videos || []).filter(v => v.type === 'videos');
+        if (filter === 'docs') return (media.videos || []).filter(v => Object.values(v)[0] && v.type === 'document');
         return [...(media.images || []), ...(media.videos || [])];
     };
 
@@ -141,6 +149,11 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                         ></iframe>
                     ) : value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
                         <video src={value} className="w-full h-full object-contain" muted />
+                    ) : value.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)(\?.*)?$/i) ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-2">
+                            <svg className="w-10 h-10 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                            <span className="text-[10px] font-mono truncate w-full text-center">Documento</span>
+                        </div>
                     ) : (
                         <img src={value} alt="preview" className="w-full h-full object-contain" />
                     )
@@ -202,9 +215,9 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                             ))}
                             {tab === 'library' && accept === 'all' && (
                                 <div className="ml-auto flex gap-1">
-                                    {['all', 'images', 'videos'].map(f => (
+                                    {['all', 'images', 'videos', 'docs'].map(f => (
                                         <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === f ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-white'}`}>
-                                            {f === 'all' ? 'Todo' : f === 'images' ? '🖼️ Imágenes' : '🎬 Videos'}
+                                            {f === 'all' ? 'Todo' : f === 'images' ? '🖼️ Imágenes' : f === 'videos' ? '🎬 Videos' : '📃 Docs'}
                                         </button>
                                     ))}
                                 </div>
@@ -230,8 +243,13 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     onClick={() => { onChange(item.url); setIsOpen(false); }}
                                                     className={`relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${value === item.url ? 'border-[#CC0000] shadow-[0_0_12px_rgba(204,0,0,0.5)]' : 'border-transparent hover:border-neutral-600'}`}
                                                 >
-                                                    <div className="aspect-square bg-neutral-800">
-                                                        {isVideo(item) ? (
+                                                    <div className="aspect-square bg-neutral-800 flex items-center justify-center relative overflow-hidden">
+                                                        {item.type === 'document' ? (
+                                                            <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-2">
+                                                                <svg className="w-12 h-12 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                                                <span className="text-[9px] font-mono truncate w-full text-center">{item.originalName || item.filename}</span>
+                                                            </div>
+                                                        ) : isVideo(item) ? (
                                                             <video src={item.url} className="w-full h-full object-cover" muted />
                                                         ) : (
                                                             <img src={item.url} alt={item.filename} className="w-full h-full object-cover" />
@@ -244,7 +262,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     </div>
                                                     {/* Badge tipo */}
                                                     <div className="absolute top-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
-                                                        {isVideo(item) ? '🎬' : '🖼️'}
+                                                        {item.type === 'document' ? '📃' : isVideo(item) ? '🎬' : '🖼️'}
                                                     </div>
                                                     {/* Botón eliminar */}
                                                     <button
@@ -276,7 +294,8 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                         accept={
                                             accept === 'image' ? 'image/*' :
                                             accept === 'video' ? 'video/*' :
-                                            'image/*,video/*'
+                                            accept === 'docs' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx' :
+                                            'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
                                         }
                                         onChange={handleFileUpload}
                                     />
@@ -310,7 +329,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                             >
                                                 <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📤</div>
                         <p className="text-white font-bold mb-1">Arrastra o haz clic para subir</p>
-                                                <p className="text-neutral-500 text-xs">Imágenes: JPG, PNG, GIF, WebP, SVG · Videos: MP4, WebM, MOV (→ servidor local) · Imágenes máx. 10 MB · Videos máx. 500 MB</p>
+                                                <p className="text-neutral-500 text-xs">Imágenes: JPG, PNG, GIF, WebP, SVG · Videos: MP4, MOV · Docs: PDF, Office · Imágenes máx. 10 MB · Videos/Docs máx. 500 MB</p>
                                             </div>
                                         </>
                                     )}

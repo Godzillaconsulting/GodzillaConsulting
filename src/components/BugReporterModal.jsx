@@ -36,6 +36,12 @@ const BugReporterModal = ({ x, y, onClose }) => {
                     path_url: window.location.pathname
                 })
             });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`HTTP Error ${res.status}: ${errorText}`);
+            }
+
             const data = await res.json();
             if (data.success) {
                 alert('✅ Bug/Sugerencia reportada a TI exitosamente.');

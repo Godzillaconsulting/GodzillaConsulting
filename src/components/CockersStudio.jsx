@@ -24,7 +24,15 @@ export default function CockersStudio({ adminProfile }) {
     
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
+    const [ytLink, setYtLink] = useState('');
     const [refImage, setRefImage] = useState('');
+
+    const getYouTubeId = (url) => {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
     const [builderData, setBuilderData] = useState({ 
         model: 'Veo 3.1 - Fast',
         aspect_ratio: '16:9',
@@ -169,7 +177,9 @@ export default function CockersStudio({ adminProfile }) {
                                 finalUrls = Array.isArray(statusData.result_url) ? statusData.result_url : [statusData.result_url];
                             } else {
                                 // Fallback para Simulaciones de backend o Kling sin tokens
-                                if (genMode === 'imagen') {
+                                if (ytLink && getYouTubeId(ytLink)) {
+                                    finalUrls = [ytLink];
+                                } else if (genMode === 'imagen') {
                                     finalUrls = [
                                         '/assets/kaiju_cheems.png',
                                         'https://images.unsplash.com/photo-1542626991-cbc4e32524cc'
@@ -373,7 +383,14 @@ export default function CockersStudio({ adminProfile }) {
                         <div className="relative group/model mb-4">
                             <select 
                                 value={builderData.model} 
-                                onChange={e => setBuilderData({...builderData, model: e.target.value})}
+                                onChange={e => {
+                                    if(e.target.value === 'Sora') {
+                                        window.open('/godzilla-sora', '_blank');
+                                        setBuilderData({...builderData, model: 'Veo 3.1 - Fast'});
+                                    } else {
+                                        setBuilderData({...builderData, model: e.target.value});
+                                    }
+                                }}
                                 className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
                             >
                                 <option value="Gemini Advanced">✨ Gemini Advanced (Cuenta Plus)</option>
@@ -381,8 +398,16 @@ export default function CockersStudio({ adminProfile }) {
                                 <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast</option>
                                 <option value="Kling 3.0">🎬 Kling 3.0 HD</option>
                                 <option value="Midjourney V6">🌌 Midjourney V6</option>
+                                <option value="Sora" className="bg-[#cc0000] text-white">🦖 Godzilla Sora (Cluster In-House)</option>
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">▼</div>
+                        </div>
+
+                        {/* YouTube Video URL Input */}
+                        <div className="mt-4 pt-4 border-t border-white/5">
+                            <label className="text-[10px] font-black text-[#CC0000] uppercase mb-2 flex items-center gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.86-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M9.996,15.005V8.995L15.266,12L9.996,15.005z"/></svg> Vincular YouTube (Final)</label>
+                            <input type="url" value={ytLink} onChange={e => setYtLink(e.target.value)} placeholder="Ej: https://youtu.be/..." className="w-full bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-xs font-bold text-white rounded-2xl p-4 transition-colors" />
+                            <p className="text-[9px] text-neutral-500 mt-2 leading-relaxed">Pega URL Oculto. Al "Generar", este video se vinculará a la tarea actual de la Admin en vez del motor local.</p>
                         </div>
                     </div>
                 </div>
@@ -391,7 +416,7 @@ export default function CockersStudio({ adminProfile }) {
                 <div className="p-4 border-t border-[#222] bg-[#0a0a09] shrink-0">
                     <button 
                         onClick={() => simulateAIGeneration()}
-                        disabled={renderingAI || !finalPrompt.trim()}
+                        disabled={renderingAI || (!finalPrompt.trim() && !ytLink.trim())}
                         className="w-full bg-white hover:bg-neutral-200 text-black font-black uppercase tracking-widest text-sm py-4 rounded-full flex justify-center items-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative group"
                     >
                         {renderingAI ? 'PROCESANDO...' : (selectedDraft?.media_options?.length > 0 ? 'RE-GENERAR VARIANTES' : 'GENERAR →')}
@@ -579,16 +604,28 @@ export default function CockersStudio({ adminProfile }) {
                                         
                                         <div 
                                             className="w-full aspect-video bg-[#111] rounded-2xl overflow-hidden relative cursor-pointer"
-                                            onClick={() => window.open(opt.url, '_blank')}
+                                            onClick={() => { if(!getYouTubeId(opt.url)) window.open(opt.url, '_blank'); }}
                                         >
                                             {opt.isVideo ? (
-                                                <div className="w-full h-full relative group/vid overflow-hidden">
-                                                    <img src={opt.url} alt="video mock" className="w-full h-full object-cover transform scale-105 group-hover/vid:scale-110 group-hover/vid:-translate-x-2 transition-all duration-[5000ms] ease-in-out" />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
-                                                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-                                                            <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-                                                        </div>
-                                                    </div>
+                                                <div className="w-full h-full relative group/vid overflow-hidden bg-black flex items-center justify-center">
+                                                    {getYouTubeId(opt.url) ? (
+                                                        <iframe 
+                                                            src={`https://www.youtube.com/embed/${getYouTubeId(opt.url)}?controls=1&autoplay=1&mute=1&loop=1`}
+                                                            className="absolute inset-0 w-full h-full pointer-events-none"
+                                                            frameBorder="0"
+                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                            allowFullScreen
+                                                        ></iframe>
+                                                    ) : (
+                                                        <>
+                                                            <img src={opt.url} alt="video mock" className="w-full h-full object-cover transform scale-105 group-hover/vid:scale-110 group-hover/vid:-translate-x-2 transition-all duration-[5000ms] ease-in-out" />
+                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
+                                                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
+                                                                    <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />

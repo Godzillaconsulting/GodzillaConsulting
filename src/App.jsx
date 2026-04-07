@@ -52,6 +52,7 @@ import Login from './components/Login';
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
 import PreguntasFrecuentes from './components/PreguntasFrecuentes';
 import RecursoPage from './components/RecursoPage';
+const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
 import whatsappIcon from './assets/icons/WhatsApp (white).png';
 
 function ScrollToHash() {
@@ -139,7 +140,7 @@ function GodzillaTracker() {
 
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
-  const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio'];
+  const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio', '/godzilla-sora'];
 
   if (hiddenRoutes.some(route => pathname.startsWith(route))) return null;
 
@@ -172,7 +173,7 @@ function Home() {
 
 function AppLayout() {
   const { pathname } = useLocation();
-  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio'].some(route => pathname.startsWith(route));
+  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
 
   return (
     <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">
@@ -198,6 +199,7 @@ function AppLayout() {
           <Route path="/admin" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO GODZILLA STUDIO...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
           <Route path="/cm" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-blue-500 font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO ASISTENTE CM...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
           <Route path="/studio" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO MOTOR IA...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
+          <Route path="/godzilla-sora" element={<React.Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#05050A] text-white">INICIALIZANDO CLUSTER...</div>}><PrivateRoute><GodzillaSora /></PrivateRoute></React.Suspense>} />
           <Route path="/recursos/:recursoId" element={<RecursoPage />} />
           <Route path="/:slug" element={<LandingPaqueteDynamic />} />
           <Route path="/login" element={<Login />} />

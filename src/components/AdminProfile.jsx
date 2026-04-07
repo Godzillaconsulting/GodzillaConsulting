@@ -558,7 +558,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                     </>
                 )}
 
-                {subTab === 'team' && profile?.is_superadmin && (
+                {subTab === 'team' && canManageUsers && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
                         {/* Cabecera Equipo */}
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

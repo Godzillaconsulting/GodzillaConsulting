@@ -133,7 +133,7 @@ const analyticsLimiter = rateLimit({
 */
 
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // ==========================================
 // 2. RUTAS DE LA API

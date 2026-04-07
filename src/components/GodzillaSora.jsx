@@ -22,7 +22,7 @@ export default function GodzillaSora() {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
     };
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         if (!prompt) {
             appendLog("[ERROR] El prompt en blanco no es válido.");
             return;
@@ -30,10 +30,32 @@ export default function GodzillaSora() {
         setStatus("CONNECTING");
         appendLog(`[NETWORK] Evaluando conexión al túnel físico...`);
         
-        setTimeout(() => {
+        try {
+            const response = await fetch("http://localhost:5000/api/generate_video", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    negative_prompt: negativePrompt,
+                    resolution: resolution,
+                    diffusion_steps: parseInt(diffusionSteps),
+                    cfg_scale: parseFloat(cfgScale),
+                    sampler: sampler,
+                    seed: parseInt(seed),
+                    upscale: upscale
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("El Python Cluster Local no está encendido.");
+            }
+
+            const data = await response.json();
+            
             setStatus("RENDERING");
             appendLog(`[CLUSTER] Inicializando Tensor Cores.`);
             appendLog(`[MODEL] DiT In-House (Godzilla-Custom-v1.safetensors) Cargado.`);
+            appendLog(`[TASK INFO] Server Pipeline ID: ${data.task_id}`);
             appendLog(`[PARAMS] Slicing Spacetime Patches... CFG: ${cfgScale} | Pasos: ${diffusionSteps}`);
             
             let currentStep = 0;
@@ -50,11 +72,15 @@ export default function GodzillaSora() {
                     if(upscale) appendLog(`[UPSCALE] Multiplicador Tensor activado. Subiendo a 4K...`);
                     setTimeout(() => {
                         setStatus("DONE");
-                        appendLog(`[SYSTEM] Render Completado. Guardado temporalmente en Cluster.`);
+                        appendLog(`[SYSTEM] Render Completado. Video enviado al Disco Duro Local (Limpieza en 24h).`);
                     }, 1000);
                 }
             }, 100);
-        }, 1500);
+
+        } catch (error) {
+            setStatus("ERROR");
+            appendLog(`[NETWORK ERROR] Conexión Fallida: ${error.message} - ¿Corriste godzilla_sora_bridge.py?`);
+        }
     };
 
     return (

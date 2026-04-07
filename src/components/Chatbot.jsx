@@ -93,13 +93,19 @@ const Chatbot = () => {
                     <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">✕</button>
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
                 </div>
-                <div className="relative pointer-events-auto">
+                <div className="relative pointer-events-auto flex items-center justify-center">
+                    {/* Halos concéntricos (visibles al estar cerrado) */}
+                    {!isOpen && (
+                        <>
+                            <div className="absolute inset-[-12px] rounded-full bg-gradient-to-br from-[#ff6b6b]/20 to-[#CC0000]/20 pointer-events-none transition-all duration-300" />
+                            <div className="absolute inset-[-24px] rounded-full bg-gradient-to-br from-[#ff6b6b]/10 to-[#CC0000]/10 pointer-events-none transition-all duration-300" />
+                        </>
+                    )}
                     <motion.button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`rounded-full shadow-2xl flex items-center justify-center border-2 border-brand-black focus:outline-none bg-[#CC0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
-                        animate={isOpen ? { scale: 1 } : { scale: 1 }}
-                        transition={isOpen ? { duration: 0.2 } : { duration: 0.2 }}
-                        whileHover={{ scale: 1.15, transition: { duration: 0.2 } }}
+                        className={`relative z-10 rounded-full shadow-[0_8px_25px_rgba(204,0,0,0.6)] flex items-center justify-center border border-white/20 focus:outline-none bg-gradient-to-br from-[#ff5555] to-[#990000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
+                        transition={{ duration: 0.2 }}
+                        whileHover={{ scale: 1.1, filter: "brightness(1.1)" }}
                     >
                         {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}
                     </motion.button>

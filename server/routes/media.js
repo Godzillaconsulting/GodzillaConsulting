@@ -68,8 +68,8 @@ const uploadVideo = multer({
     }),
     limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('video/')) cb(null, true);
-        else cb(new Error('Solo se aceptan videos en esta ruta.'));
+        if (file.mimetype.startsWith('video/') || file.originalname.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i)) cb(null, true);
+        else cb(new Error('Solo se aceptan videos o documentos.'));
     }
 });
 
@@ -190,7 +190,8 @@ router.get('/', async (req, res) => {
         // Leer videos del disco local
         let videos = [];
         try {
-            const videoExts = /\.(mp4|webm|mov|avi|mkv)$/i;
+            const videoExts = /\.(mp4|webm|mov|avi|mkv|pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i;
+            const docExts = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i;
             const diskFiles = fs.readdirSync(ARCHIVOS_PESADOS_DIR)
                 .filter(f => videoExts.test(f))
                 .map(f => {
@@ -199,7 +200,7 @@ router.get('/', async (req, res) => {
                         filename: f,
                         originalName: f,
                         url: getAssetUrl(f),
-                        type: 'videos',
+                        type: docExts.test(f) ? 'document' : 'videos',
                         size: stat.size,
                         createdAt: stat.mtime
                     };

@@ -85,6 +85,21 @@ export const processChatMessage = async (req, res) => {
             history = history.slice(validIndex);
         }
 
+        // --- CEREBRO ENJAMBRE DE GOYI (Memoria de todos los usuarios) ---
+        if (isGoyi) {
+            try {
+                const h = await pool.query("SELECT original_prompt, improved_prompt FROM goyi_learning WHERE context_type='goyi_chat' ORDER BY id DESC LIMIT 6");
+                const colmena = [];
+                for (const row of h.rows.reverse()) {
+                    colmena.push({ role: 'user', parts: [{ text: `[Feedback Global de Usuario]: ${row.original_prompt}` }] });
+                    colmena.push({ role: 'model', parts: [{ text: row.improved_prompt }] });
+                }
+                history = [...colmena, ...history];
+            } catch (errDb) {
+                console.error('[Goyi] Error cargando cerebro enjambre:', errDb);
+            }
+        }
+
         const chat = model.startChat({ history });
         const lastMsg = messages[messages.length - 1].content || messages[messages.length - 1].text;
 
@@ -212,6 +227,13 @@ export const processChatMessage = async (req, res) => {
             result = await chat.sendMessage(functionResponses);
             responseText = result.response.text();
         }
+
+        // --- ALIMENTAR A GOYI CON LA NUEVA SALIDA ---
+        if (isGoyi) {
+            pool.query("INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type) VALUES ($1, $2, 'goyi_chat')", [lastMsg, responseText])
+                .catch(err => console.error('[Goyi] Error al guardar nuevo aprendizaje:', err.message));
+        }
+
         res.status(200).json({ reply: responseText });
     } catch (e) {
         console.error(e);

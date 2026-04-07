@@ -20,6 +20,17 @@ export default function GoyiAdmin() {
         scrollToBottom();
     }, [messages, isOpen]);
 
+    // Listener para cerrar Goyi al presionar la tecla ESC
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen]);
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!inputValue.trim()) return;
@@ -40,7 +51,14 @@ export default function GoyiAdmin() {
                 body: JSON.stringify({ messages: newMessages, isGoyi: true }),
             });
 
-            if (!response.ok) throw new Error('Error al conectar con Goyi API');
+            if (!response.ok) {
+                let errDetail = 'Error al conectar con Goyi API';
+                try {
+                    const errorData = await response.json();
+                    errDetail = errorData.details || errorData.error || errDetail;
+                } catch(e) {}
+                throw new Error(errDetail);
+            }
 
             const data = await response.json();
             
@@ -50,7 +68,7 @@ export default function GoyiAdmin() {
             setMessages(prev => [...prev, { role: 'model', text: textResponse }]);
         } catch (error) {
             console.error('Error enviando mensaje a Goyi:', error);
-            setMessages(prev => [...prev, { role: 'model', text: 'Error interno en engranajes de Goyi. JareG me está reparando.' }]);
+            setMessages(prev => [...prev, { role: 'model', text: 'Error en mis engranajes: ' + error.message + ' - (JareG me está reparando).' }]);
         } finally {
             setIsLoading(false);
         }
@@ -74,13 +92,18 @@ export default function GoyiAdmin() {
             {isOpen && (
                 <div className="fixed bottom-24 right-6 z-[999999] w-[380px] h-[550px] max-h-[75vh] shadow-[0_0_50px_rgba(234,179,8,0.15)] flex flex-col bg-[#111111] border rounded-2xl border-yellow-600/30 overflow-hidden font-sans pointer-events-auto">
                     
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-4 border-b border-yellow-500/30 flex items-center gap-3 shrink-0 relative overflow-hidden">
+                    {/* Header Clickable */}
+                    <div 
+                        onClick={() => setIsOpen(false)}
+                        className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-4 border-b border-yellow-500/30 flex items-center gap-3 shrink-0 relative overflow-hidden cursor-pointer hover:from-yellow-500 hover:to-yellow-600 transition-colors group"
+                        title="Clickea aquí o presiona ESC para cerrar a Goyi"
+                    >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16"></div>
-                        <div className="w-10 h-10 rounded-full bg-black/40 border border-white/20 flex items-center justify-center shadow-inner relative z-10">
+                        
+                        <div className="w-10 h-10 rounded-full bg-black/40 border border-white/20 flex items-center justify-center shadow-inner relative z-10 transition-transform group-hover:scale-105">
                             <span className="text-sm">🦖</span>
                         </div>
-                        <div className="relative z-10">
+                        <div className="relative z-10 flex-1">
                             <h3 className="font-black text-sm text-black tracking-widest uppercase">Goyi Experto</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="w-2 h-2 rounded-full bg-black animate-pulse"></span>

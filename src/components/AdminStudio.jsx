@@ -431,19 +431,19 @@ export default function AdminStudio() {
    {[
      {
        title: "Sitio Principal",
-       filter: (n, tag) => ['INICIO', 'CULTURA', 'PORTAFOLIO', 'PIE'].includes(tag)
+       filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag)
      },
      {
        title: "Experiencias",
-       filter: (n, tag) => tag === 'PAQUETES' || n.id.startsWith('paquete-')
+       filter: (n, tag) => n.id.startsWith('paquete-')
      },
      {
        title: "Soluciones",
-       filter: (n, tag) => tag === 'SERVICIOS' || tag === 'SERVICIO' || n.id.startsWith('servicio-')
+       filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-')
      },
      {
        title: "Materiales",
-       filter: (n, tag) => tag === 'RECURSOS' || n.id.startsWith('landing-recurso')
+       filter: (n, tag) => n.id.startsWith('landing-recurso')
      }
    ].map((group, gIdx) => {
      const groupNodes = sortedNodes.filter(n => {

@@ -87,7 +87,7 @@ const Chatbot = () => {
             {/* Chatbot Toggle Button */}
             <div className="fixed bottom-[240px] md:bottom-[150px] right-6 z-50 flex flex-col items-end pointer-events-none">
                 <div
-                    className={`relative mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
+                    className={`relative z-20 mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
                     ¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?
                     <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">✕</button>
@@ -100,18 +100,18 @@ const Chatbot = () => {
                             <motion.div 
                                 animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
                                 transition={{ repeat: Infinity, duration: 3, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#CC0000] pointer-events-none" 
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
                             />
                             <motion.div 
                                 animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
                                 transition={{ repeat: Infinity, duration: 3, delay: 1.5, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#CC0000] pointer-events-none" 
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
                             />
                         </>
                     )}
                     <motion.button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`relative z-10 rounded-full shadow-[0_8px_25px_rgba(204,0,0,0.6)] flex items-center justify-center border border-white/20 focus:outline-none bg-gradient-to-br from-[#ff5555] to-[#990000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
+                        className={`relative z-10 rounded-full shadow-[0_8px_25px_rgba(204,0,0,0.6)] flex items-center justify-center focus:outline-none bg-gradient-to-br from-[#ff5e00] via-[#CC0000] to-[#4a0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
                         transition={{ duration: 0.2 }}
                         whileHover={{ scale: 1.1, filter: "brightness(1.1)" }}
                     >

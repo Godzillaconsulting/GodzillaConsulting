@@ -456,10 +456,12 @@ export default function AdminStudio() {
      return (
        <div key={gIdx} className="space-y-1 mb-4">
          <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white/80 uppercase tracking-widest mb-2 drop-shadow-sm flex items-center justify-between cursor-pointer border border-transparent hover:border-white/20 hover:bg-white hover:text-black transition-all group">
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest mb-2 drop-shadow-sm flex items-center justify-between cursor-pointer border transition-all group ${
+              !collapsedGroups[gIdx] ? 'bg-white text-[#CC0000] border-white/20 shadow-md' : 'border-transparent text-white/80 hover:bg-white hover:text-[#CC0000] hover:border-white/20'
+            }`}>
              <span>{group.title}</span>
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
-                  className={`transition-transform duration-300 text-white/40 group-hover:text-black ${collapsedGroups[gIdx] ? 'rotate-0' : '-rotate-180'}`}>
+                  className={`transition-transform duration-300 ${!collapsedGroups[gIdx] ? 'text-[#CC0000] -rotate-180' : 'text-white/40 group-hover:text-[#CC0000] rotate-0'}`}>
                <polyline points="6 9 12 15 18 9"></polyline>
              </svg>
          </p>

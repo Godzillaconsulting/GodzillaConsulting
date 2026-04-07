@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-
+import { GoogleGenAI } from '@google/genai';
 // Genera el JWT riguroso solicitado por la arquitectura de Kling AI 
 function generateKlingAuthToken() {
     const accessKey = process.env.KLING_ACCESS_KEY;
@@ -60,24 +60,40 @@ export const generateRenderJob = async (req, res) => {
                 body: JSON.stringify(requestBody)
             });
         } else {
-            // Generador de Imágenes AI (Usamos Pollinations.ai libre por ahora ya que Google Imagen 3 requiere Vertex AI o SDK nuevo)
-            console.log(`[STUDIO] Generando Imagen con Prompt: ${prompt}`);
+            // Generador de Imágenes AI NATIVO usando Google GenAI (Imagen 4.0)
+            console.log(`[STUDIO] Generando Imagen con Google GenAI (Imagen 4.0). Prompt: ${prompt}`);
             
-            // Calculamos resolución (Pollinations permite mandar w/h)
-            let w = 1024, h = 1024;
-            if (config.aspect_ratio === '16:9') { w = 1024; h = 576; }
-            else if (config.aspect_ratio === '9:16') { w = 576; h = 1024; }
-            else if (config.aspect_ratio === '4:3') { w = 1024; h = 768; }
-            else if (config.aspect_ratio === '3:4') { w = 768; h = 1024; }
+            if (!process.env.GEMINI_API_KEY) {
+                return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+            }
 
-            const safePrompt = encodeURIComponent(prompt || "a beautiful generic landscape");
-            const seed = Math.floor(Math.random() * 1000000);
-            const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=${w}&height=${h}&seed=${seed}&nologo=true`;
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            
+            // Map React aspect ratios to Google Imagen aspect ratios
+            const googleRatio = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
 
-            // Simulamos el task flow devolviendo success directo con la URL
+            const responseGenAI = await ai.models.generateImages({
+                model: 'imagen-4.0-fast-generate-001',
+                prompt: prompt || "A sleek cinematic render",
+                config: {
+                    numberOfImages: 1,
+                    outputMimeType: 'image/jpeg',
+                    aspectRatio: googleRatio
+                }
+            });
+
+            if (!responseGenAI.generatedImages || responseGenAI.generatedImages.length === 0) {
+                 return res.status(500).json({ error: "Google API no devolvió ninguna imagen." });
+            }
+
+            // Convert base64 bytes to a Data URI for immediate frontend rendering
+            const base64Bytes = responseGenAI.generatedImages[0].image.imageBytes;
+            const imageUrl = `data:image/jpeg;base64,${base64Bytes}`;
+
+            // Return synchronously because Imagen generation is fast enough via API
             return res.status(200).json({ 
                 status: 'succeed', 
-                job_id: "image_direct_task_" + Date.now(),
+                job_id: "google_image_" + Date.now(),
                 provider: engine,
                 result_url: imageUrl
             });

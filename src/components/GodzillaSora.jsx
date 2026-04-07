@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import './GodzillaSora.css';
 
 export default function GodzillaSora() {
@@ -24,17 +25,50 @@ export default function GodzillaSora() {
     const [status, setStatus] = useState("IDLE"); // IDLE, CONNECTING, RENDERING, DONE, ERROR
     const [logs, setLogs] = useState(["[SYSTEM] Godzilla In-House Cluster Iniciado.", "[SYSTEM] GPU A100 Detectadas: 4", "[SYSTEM] Esperando Prompts..."]);
     const [progress, setProgress] = useState(0);
+    const [finalMediaUrl, setFinalMediaUrl] = useState(null);
     const terminalEndRef = useRef(null);
+
+    // ==========================================
+    // INTEGRACIÓN WEBSOCKET LOCAL HPC
+    // ==========================================
+    const socketRef = useRef(null);
+
+    // Función segura para inyectar logs
+    const appendLog = (msg) => {
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    };
+
+    useEffect(() => {
+        // Inicializar socket al montar
+        socketRef.current = io('http://127.0.0.1:5000');
+
+        socketRef.current.on('connect', () => {
+            setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [NETWORK] Enlace WS con GPU Node establecido.`]);
+        });
+
+        socketRef.current.on('render_progress', (data) => {
+            if (data.msg) {
+                setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${data.msg}`]);
+            }
+            if (data.status) setStatus(data.status);
+            if (data.step) setProgress(data.step);
+            if (data.media_url) setFinalMediaUrl(data.media_url);
+            if (data.error) {
+                setStatus("ERROR");
+                setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [CRITICAL] ${data.error}`]);
+            }
+        });
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
+    }, []);
 
     useEffect(() => {
         if (terminalEndRef.current) {
             terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [logs]);
-
-    const appendLog = (msg) => {
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-    };
 
     const handleGenerate = async () => {
         if (!prompt) {
@@ -43,16 +77,16 @@ export default function GodzillaSora() {
         }
         setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Ejecutando nueva secuencia de renderizado...`]);
         setStatus("CONNECTING");
-        appendLog(`[NETWORK] Evaluando conexión cifrada al clúster de Godzilla...`);
+        setFinalMediaUrl(null); // Reinicio
+        appendLog(`[HTTP] Disparando Trigger de Inicialización al Python Master Node...`);
+        setProgress(0); // Reinicia barra progreso
         
         try {
-            const token = localStorage.getItem('adminToken');
-            const apiUrl = import.meta.env.VITE_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/studio/sora-generate`, {
+            // Pegar directamente al endpoint de Python Local
+            const response = await fetch(`http://127.0.0.1:5000/sora-start`, {
                 method: "POST",
                 headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     prompt: prompt,
@@ -68,35 +102,12 @@ export default function GodzillaSora() {
             });
 
             if (!response.ok) {
-                const dataError = await response.json().catch(()=>({error: "Server Error"}));
-                throw new Error(dataError.error || "El Master Cluster no respondió.");
+                throw new Error("El Master Cluster de Python no respondió. ¿Está corriendo godzilla_inference_bridge.py?");
             }
-
+            
+            // La respuesta POST no simula el progreso, los Sockets (render_progress) asumen la telemetría viva.
             const data = await response.json();
-            
-            setStatus("RENDERING");
-            appendLog(`[CLUSTER MASTER] Órdenes recibidas. Optimizando para ${mode === 'photo' ? 'IMAGEN FOTORREALISTA' : 'VIDEO DINÁMICO'}.`);
-            appendLog(`[TASK INFO] ID Seguro: ${data.task_id}`);
-            appendLog(`[PARAMS] Resolving Spacetime Patches... CFG: ${cfgScale} | Pasos: ${diffusionSteps}`);
-            
-            let currentStep = 0;
-            const renderInterval = setInterval(() => {
-                currentStep += 2;
-                setProgress(currentStep);
-                if (currentStep % 10 === 0) {
-                    appendLog(`[RENDER] Sampling step ${currentStep}/${diffusionSteps}... Denoising...`);
-                }
-
-                if (currentStep >= diffusionSteps) {
-                    clearInterval(renderInterval);
-                    appendLog(`[DECODE] VAE ${mode === 'photo' ? 'Image' : 'Video'} Output Decodificado Exitosamente.`);
-                    if(upscale) appendLog(`[UPSCALE] Multiplicador Tensor activado. Subiendo a 8K Textures...`);
-                    setTimeout(() => {
-                        setStatus("DONE");
-                        appendLog(`[SYSTEM] Render Completado.`);
-                    }, 1000);
-                }
-            }, 100);
+            appendLog(`[TASK INFO] Señal asincrona lanzada. TASK ID: ${data.task_id}`);
 
         } catch (error) {
             setStatus("ERROR");
@@ -280,13 +291,12 @@ export default function GodzillaSora() {
                     </div>
                     
                     <div className="video-player-mock">
-                        {status === 'DONE' ? (
+                        {status === 'DONE' && finalMediaUrl ? (
                             <>
                                 {mode === 'photo' ? (
                                     <img 
-                                        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" 
-                                        alt="Mockup Fotorrealista" 
-                                        style={{width: '100%', height: '100%', objectFit: 'cover', opacity: 0.95}}
+                                        src={finalMediaUrl} 
+                                        alt="Render Result" 
                                     />
                                 ) : (
                                     <video 
@@ -295,13 +305,9 @@ export default function GodzillaSora() {
                                         loop 
                                         muted 
                                         playsInline
-                                        src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                                        src={finalMediaUrl}
                                     />
                                 )}
-                                <div className="fake-video-overlay">
-                                    <h3>RENDER {mode === 'photo' ? 'FÓTOGRAFICO' : 'DE VIDEO'} COMPLETADO</h3>
-                                    <p>Este es un render simulado de demostración. La conexión al GPU físico está preparada.</p>
-                                </div>
                             </>
                         ) : status === 'RENDERING' ? (
                             <div className="loader-container">

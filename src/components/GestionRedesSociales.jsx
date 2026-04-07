@@ -70,15 +70,34 @@ const GestionRedesSociales = () => {
                     {/* Left Side: Video Area */}
                     <div className="w-full md:w-2/3 min-h-[400px] md:min-h-0 bg-[#18181b] relative overflow-hidden group">
                         {(content.videoFileUrl || content.videoUrl) ? (
-                            <video
-                                ref={videoRef}
-                                src={content.videoFileUrl || content.videoUrl}
-                                autoPlay
-                                muted
-                                playsInline
-                                className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
-                                onClick={togglePlay}
-                            />
+                            (() => {
+                                const vSrc = content.videoFileUrl || content.videoUrl;
+                                const ytMatch = vSrc.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+                                const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+                                if (ytId) {
+                                    return (
+                                        <iframe 
+                                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&loop=1&playlist=${ytId}&controls=0`}
+                                            className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                                            style={{ pointerEvents: 'none' }}
+                                            frameBorder="0"
+                                            allow="autoplay; encrypted-media"
+                                        ></iframe>
+                                    );
+                                }
+                                return (
+                                    <video
+                                        ref={videoRef}
+                                        src={vSrc}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                                        onClick={togglePlay}
+                                    />
+                                );
+                            })()
+                        
                         ) : (
                             <div className="absolute inset-0 w-full h-full bg-black flex flex-col items-center justify-center text-white/40">
                                 <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 opacity-50"><span className="text-2xl ml-1">▶</span></div>

@@ -504,21 +504,25 @@ input[type=range]::-webkit-slider-runnable-track {
 .sora-preview {
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+}
+.preview-tools {
+    display: flex;
+    gap: 8px;
+    flex-direction: row;
 }
 
 .video-player-mock {
-    flex: 1;
+    width: 100%;
+    height: auto;
     background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: block;
     position: relative;
     overflow: hidden;
     box-shadow: inset 0 4px 15px rgba(0,0,0,0.9);
-    min-height: 250px;
-    max-height: 400px;
     aspect-ratio: 16 / 9;
+    border: 2px solid #333;
+    border-radius: 4px;
 }
 .video-player-placeholder, .sora-preview img {
     position: absolute;

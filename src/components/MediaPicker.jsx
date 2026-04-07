@@ -17,6 +17,13 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
     const [filter, setFilter] = useState('all');
     const fileInputRef = useRef(null);
 
+    const getYouTubeId = (url) => {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
+
     useEffect(() => {
         if (isOpen) fetchMedia();
     }, [isOpen]);
@@ -125,7 +132,14 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                 onClick={() => setIsOpen(true)}
             >
                 {value ? (
-                    value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+                    getYouTubeId(value) ? (
+                        <iframe 
+                            src={`https://www.youtube.com/embed/${getYouTubeId(value)}?controls=0&mute=1&autoplay=1&loop=1`}
+                            className="w-full h-full object-contain pointer-events-none"
+                            frameBorder="0"
+                            allow="autoplay; encrypted-media"
+                        ></iframe>
+                    ) : value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
                         <video src={value} className="w-full h-full object-contain" muted />
                     ) : (
                         <img src={value} alt="preview" className="w-full h-full object-contain" />
@@ -316,8 +330,14 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                         onKeyDown={(e) => e.key === 'Enter' && handleSelectUrl()}
                                     />
                                     {urlInput && (
-                                        <div className="w-full h-40 bg-neutral-800 rounded-xl overflow-hidden">
-                                            {urlInput.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
+                                        <div className="w-full h-40 bg-neutral-800 rounded-xl overflow-hidden pointer-events-none relative flex items-center justify-center">
+                                            {getYouTubeId(urlInput) ? (
+                                                <iframe 
+                                                    src={`https://www.youtube.com/embed/${getYouTubeId(urlInput)}?controls=0&mute=1&autoplay=1`}
+                                                    className="w-full h-full object-contain"
+                                                    frameBorder="0"
+                                                ></iframe>
+                                            ) : urlInput.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
                                                 <video src={urlInput} controls className="w-full h-full object-contain" />
                                             ) : (
                                                 <img src={urlInput} alt="preview" className="w-full h-full object-contain" onError={(e) => e.target.style.display = 'none'} />

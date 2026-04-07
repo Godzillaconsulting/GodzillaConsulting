@@ -60,8 +60,27 @@ export const generateRenderJob = async (req, res) => {
                 body: JSON.stringify(requestBody)
             });
         } else {
-            // Placeholder si usas Imagenes
-            return res.status(200).json({ status: 'mocked', message: 'Endpoint Image en desarrollo' });
+            // Generador de Imágenes AI (Usamos Pollinations.ai libre por ahora ya que Google Imagen 3 requiere Vertex AI o SDK nuevo)
+            console.log(`[STUDIO] Generando Imagen con Prompt: ${prompt}`);
+            
+            // Calculamos resolución (Pollinations permite mandar w/h)
+            let w = 1024, h = 1024;
+            if (config.aspect_ratio === '16:9') { w = 1024; h = 576; }
+            else if (config.aspect_ratio === '9:16') { w = 576; h = 1024; }
+            else if (config.aspect_ratio === '4:3') { w = 1024; h = 768; }
+            else if (config.aspect_ratio === '3:4') { w = 768; h = 1024; }
+
+            const safePrompt = encodeURIComponent(prompt || "a beautiful generic landscape");
+            const seed = Math.floor(Math.random() * 1000000);
+            const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=${w}&height=${h}&seed=${seed}&nologo=true`;
+
+            // Simulamos el task flow devolviendo success directo con la URL
+            return res.status(200).json({ 
+                status: 'succeed', 
+                job_id: "image_direct_task_" + Date.now(),
+                provider: engine,
+                result_url: imageUrl
+            });
         }
 
         const data = await response.json();

@@ -171,8 +171,8 @@ export default function CockersStudio({ adminProfile }) {
                                 // Fallback para Simulaciones de backend o Kling sin tokens
                                 if (genMode === 'imagen') {
                                     finalUrls = [
-                                        'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
-                                        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'
+                                        '/assets/kaiju_cheems.png',
+                                        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc'
                                     ];
                                 } else {
                                     finalUrls = [
@@ -221,8 +221,8 @@ export default function CockersStudio({ adminProfile }) {
                     // Fallback local
                     if (genMode === 'imagen') {
                         finalUrls = [
-                            'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
-                            'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80'
+                            '/assets/kaiju_cheems.png',
+                            'https://images.unsplash.com/photo-1542626991-cbc4e32524cc'
                         ];
                     } else {
                         finalUrls = [

@@ -3,12 +3,12 @@
 
 .sora-platform {
     width: 100vw;
-    height: 100vh;
     min-height: 100vh;
     background: linear-gradient(180deg, #d8f0ff 0%, #a4e4ff 40%, #70ffaa 100%);
     color: #003366;
     font-family: 'Varela Round', 'Segoe UI', Tahoma, sans-serif;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -184,11 +184,17 @@
 /* Layout */
 .sora-workspace {
     display: grid;
-    grid-template-columns: 320px 1fr 400px;
+    grid-template-columns: minmax(300px, 320px) minmax(400px, 1fr) minmax(300px, 400px);
     gap: 20px;
     padding: 20px;
-    height: calc(100vh - 70px);
+    min-height: calc(100vh - 70px);
     box-sizing: border-box;
+}
+
+@media (max-width: 1200px) {
+    .sora-workspace {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Sidebar */

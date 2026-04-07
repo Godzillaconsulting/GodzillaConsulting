@@ -67,6 +67,7 @@
 /* Custom scrollbar to match dark theme */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {

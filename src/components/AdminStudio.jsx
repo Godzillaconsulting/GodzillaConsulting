@@ -614,7 +614,7 @@ export default function AdminStudio() {
  {selectedNodeId && draftData ? (
  <>
  {/* Tabs */}
- <div className="flex gap-2 px-6 py-3 border-b border-[#CC0000]/40 bg-[#CC0000]/5 shrink-0 overflow-x-auto">
+ <div className="flex gap-2 px-6 py-3 border-b border-[#CC0000]/40 bg-[#CC0000]/5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CC0000]/50 hover:[&::-webkit-scrollbar-thumb]:bg-[#CC0000]/80 [&::-webkit-scrollbar-track]:bg-transparent">
  {tabs.map(tab => (
  <button key={tab.id}
  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}

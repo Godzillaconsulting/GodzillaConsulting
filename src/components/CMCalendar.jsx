@@ -32,6 +32,13 @@ const renderMentions = (text) => {
     );
 };
 
+export const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
 export default function CMCalendar({ adminProfile }) {
     const navigate = useNavigate();
     const canCreate = canAssign(adminProfile);
@@ -187,7 +194,8 @@ export default function CMCalendar({ adminProfile }) {
                     audience: (typeof t.tags === 'string' ? JSON.parse(t.tags) : t.tags)?.join(', ') || 'Marketing',
                     priority: t.priority,
                     contentType: t.content_type || 'Backlog',
-                    status: t.status
+                    status: t.status,
+                    mediaPayload: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : t.media_payload
                 }));
                 // Si está vacío para dar sensación de uso añadimos unos de demostración (Opcional)
                 if (mapped.length === 0) {

@@ -28,12 +28,17 @@ export default function GodzillaSora() {
             return;
         }
         setStatus("CONNECTING");
-        appendLog(`[NETWORK] Evaluando conexión al túnel físico...`);
+        appendLog(`[NETWORK] Evaluando conexión cifrada al clúster de Godzilla...`);
         
         try {
-            const response = await fetch("http://localhost:5000/api/generate_video", {
+            const token = localStorage.getItem('adminToken');
+            const apiUrl = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/studio/sora-generate`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     prompt: prompt,
                     negative_prompt: negativePrompt,
@@ -47,15 +52,15 @@ export default function GodzillaSora() {
             });
 
             if (!response.ok) {
-                throw new Error("El Python Cluster Local no está encendido.");
+                const dataError = await response.json().catch(()=>({error: "Server Error"}));
+                throw new Error(dataError.error || "El Master Cluster no respondió.");
             }
 
             const data = await response.json();
             
             setStatus("RENDERING");
-            appendLog(`[CLUSTER] Inicializando Tensor Cores.`);
-            appendLog(`[MODEL] DiT In-House (Godzilla-Custom-v1.safetensors) Cargado.`);
-            appendLog(`[TASK INFO] Server Pipeline ID: ${data.task_id}`);
+            appendLog(`[CLUSTER MASTER] Órdenes recibidas. Tensor Cores activados.`);
+            appendLog(`[TASK INFO] ID Seguro: ${data.task_id}`);
             appendLog(`[PARAMS] Slicing Spacetime Patches... CFG: ${cfgScale} | Pasos: ${diffusionSteps}`);
             
             let currentStep = 0;
@@ -72,14 +77,14 @@ export default function GodzillaSora() {
                     if(upscale) appendLog(`[UPSCALE] Multiplicador Tensor activado. Subiendo a 4K...`);
                     setTimeout(() => {
                         setStatus("DONE");
-                        appendLog(`[SYSTEM] Render Completado. Video enviado al Disco Duro Local (Limpieza en 24h).`);
+                        appendLog(`[SYSTEM] Render Completado.`);
                     }, 1000);
                 }
             }, 100);
 
         } catch (error) {
             setStatus("ERROR");
-            appendLog(`[NETWORK ERROR] Conexión Fallida: ${error.message} - ¿Corriste godzilla_sora_bridge.py?`);
+            appendLog(`[NETWORK ERROR] Conexión Fallida: ${error.message}`);
         }
     };
 

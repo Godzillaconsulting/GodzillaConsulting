@@ -4,6 +4,7 @@ import './GodzillaSora.css';
 export default function GodzillaSora() {
     const [prompt, setPrompt] = useState("");
     const [negativePrompt, setNegativePrompt] = useState("low quality, distorted, bad physics");
+    const [mode, setMode] = useState("photo"); // 'photo' | 'video'
     
     // Parámetros Avanzados
     const [cfgScale, setCfgScale] = useState(7.5);
@@ -11,7 +12,13 @@ export default function GodzillaSora() {
     const [sampler, setSampler] = useState('DPM++ 2M SDE Karras');
     const [seed, setSeed] = useState(-1);
     const [upscale, setUpscale] = useState(false);
-    const [resolution, setResolution] = useState("1080p");
+    const [resolution, setResolution] = useState(mode === 'photo' ? "Ultra HDR 8K" : "1080p");
+    
+    // Efecto cuando cambia el modo
+    useEffect(() => {
+        if(mode === 'photo') setResolution("Ultra HDR 8K");
+        else setResolution("1080p");
+    }, [mode]);
     
     // Estado UI
     const [status, setStatus] = useState("IDLE"); // IDLE, CONNECTING, RENDERING, DONE, ERROR
@@ -42,6 +49,7 @@ export default function GodzillaSora() {
                 body: JSON.stringify({
                     prompt: prompt,
                     negative_prompt: negativePrompt,
+                    mode: mode,
                     resolution: resolution,
                     diffusion_steps: parseInt(diffusionSteps),
                     cfg_scale: parseFloat(cfgScale),
@@ -59,9 +67,9 @@ export default function GodzillaSora() {
             const data = await response.json();
             
             setStatus("RENDERING");
-            appendLog(`[CLUSTER MASTER] Órdenes recibidas. Tensor Cores activados.`);
+            appendLog(`[CLUSTER MASTER] Órdenes recibidas. Optimizando para ${mode === 'photo' ? 'IMAGEN FOTORREALISTA' : 'VIDEO DINÁMICO'}.`);
             appendLog(`[TASK INFO] ID Seguro: ${data.task_id}`);
-            appendLog(`[PARAMS] Slicing Spacetime Patches... CFG: ${cfgScale} | Pasos: ${diffusionSteps}`);
+            appendLog(`[PARAMS] Resolving Spacetime Patches... CFG: ${cfgScale} | Pasos: ${diffusionSteps}`);
             
             let currentStep = 0;
             const renderInterval = setInterval(() => {
@@ -73,8 +81,8 @@ export default function GodzillaSora() {
 
                 if (currentStep >= diffusionSteps) {
                     clearInterval(renderInterval);
-                    appendLog(`[DECODE] VAE Video Output Decodificado Exitosamente.`);
-                    if(upscale) appendLog(`[UPSCALE] Multiplicador Tensor activado. Subiendo a 4K...`);
+                    appendLog(`[DECODE] VAE ${mode === 'photo' ? 'Image' : 'Video'} Output Decodificado Exitosamente.`);
+                    if(upscale) appendLog(`[UPSCALE] Multiplicador Tensor activado. Subiendo a 8K Textures...`);
                     setTimeout(() => {
                         setStatus("DONE");
                         appendLog(`[SYSTEM] Render Completado.`);
@@ -100,10 +108,26 @@ export default function GodzillaSora() {
                 <div className="sora-brand">
                     <span className="brand-logo">G</span>
                     <div className="brand-text">
-                        <h1>GODZILLA AI</h1>
-                        <span className="brand-subtitle">In-House Spacetime Diffusion Cluster</span>
+                        <h1>GODZILLA DIFFUSION</h1>
+                        <span className="brand-subtitle">Industrial AI Asset Pipeline</span>
                     </div>
                 </div>
+
+                <div className="mode-selector" style={{display: 'flex', gap: '10px', background: '#111', padding: '5px', borderRadius: '8px', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.4)', border: '1px solid #333'}}>
+                    <button 
+                        onClick={() => setMode('photo')} 
+                        style={{padding: '8px 20px', borderRadius: '4px', border: 'none', fontWeight: '900', cursor: 'pointer', background: mode === 'photo' ? 'linear-gradient(180deg, #ffaa00 0%, #d68700 100%)' : 'transparent', color: mode === 'photo' ? '#111' : '#888', boxShadow: mode === 'photo' ? '0 0 10px rgba(255,170,0,0.5)' : 'none', transition: '0.3s'}}
+                    >
+                        📸 MODO FOTO
+                    </button>
+                    <button 
+                        onClick={() => setMode('video')} 
+                        style={{padding: '8px 20px', borderRadius: '4px', border: 'none', fontWeight: '900', cursor: 'pointer', background: mode === 'video' ? 'linear-gradient(180deg, #ffaa00 0%, #d68700 100%)' : 'transparent', color: mode === 'video' ? '#111' : '#888', boxShadow: mode === 'video' ? '0 0 10px rgba(255,170,0,0.5)' : 'none', transition: '0.3s'}}
+                    >
+                        🎥 MODO VIDEO
+                    </button>
+                </div>
+
                 <div className="sora-nav-actions">
                     <div className={`status-indicator ${status.toLowerCase()}`}>
                         <div className="status-dot"></div>
@@ -249,16 +273,24 @@ export default function GodzillaSora() {
                     <div className="video-player-mock">
                         {status === 'DONE' ? (
                             <>
-                                <video 
-                                    className="video-player-placeholder" 
-                                    autoPlay 
-                                    loop 
-                                    muted 
-                                    playsInline
-                                    src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                                />
+                                {mode === 'photo' ? (
+                                    <img 
+                                        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" 
+                                        alt="Mockup Fotorrealista" 
+                                        style={{width: '100%', height: '100%', objectFit: 'cover', opacity: 0.95}}
+                                    />
+                                ) : (
+                                    <video 
+                                        className="video-player-placeholder" 
+                                        autoPlay 
+                                        loop 
+                                        muted 
+                                        playsInline
+                                        src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                                    />
+                                )}
                                 <div className="fake-video-overlay">
-                                    <h3>Render Completado</h3>
+                                    <h3>RENDER {mode === 'photo' ? 'FÓTOGRAFICO' : 'DE VIDEO'} COMPLETADO</h3>
                                     <p>Este es un render simulado de demostración. La conexión al GPU físico está preparada.</p>
                                 </div>
                             </>

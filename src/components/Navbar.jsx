@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from'react';
 import { Link, useNavigate } from'react-router-dom';
-import { Menu, X, Globe } from'lucide-react';
+import { Menu, X } from 'lucide-react';
 import logo from'../assets/Godzilla Consulting.png';
 
 const Navbar = () => {
@@ -49,10 +49,6 @@ const Navbar = () => {
  </Link>
 
  <div className="flex items-center gap-4 border-l border-gray-700 pl-4 ml-2">
- <button className="flex items-center gap-1 text-sm font-semibold hover:text-[#CC0000] transition-colors">
- <Globe size={18} />
- ESP
- </button>
  <Link to="/login" className="flex items-center justify-center w-6 h-6 rounded-full transition-all opacity-80 hover:opacity-100 hover:scale-110" title="Acceso al Studio">
  <span className="text-xl filter grayscale hover:grayscale-0">🦖</span>
  </Link>
@@ -86,9 +82,6 @@ const Navbar = () => {
  CONTÁCTANOS
  </Link>
  <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-800">
- <button className="flex items-center gap-2 text-sm font-semibold hover:text-[#CC0000] transition-colors">
- <Globe size={20} /> ESP
- </button>
  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors">
  <span className="text-xl filter grayscale hover:grayscale-0">🦖</span> Studio
  </Link>

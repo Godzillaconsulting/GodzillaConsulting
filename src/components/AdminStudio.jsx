@@ -434,15 +434,15 @@ export default function AdminStudio() {
        filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag)
      },
      {
-       title: "Experiencias",
+       title: "Paquetes",
        filter: (n, tag) => n.id.startsWith('paquete-')
      },
      {
-       title: "Soluciones",
+       title: "Servicios",
        filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-')
      },
      {
-       title: "Materiales",
+       title: "Recursos",
        filter: (n, tag) => n.id.startsWith('landing-recurso')
      }
    ].map((group, gIdx) => {
@@ -454,12 +454,12 @@ export default function AdminStudio() {
      if (groupNodes.length === 0) return null;
 
      return (
-       <div key={gIdx} className="space-y-1">
+       <div key={gIdx} className="space-y-1 mb-4">
          <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
-            className="px-3 text-[11px] font-black text-[#CC0000]/80 uppercase tracking-widest mb-3 drop-shadow-sm flex items-center justify-between cursor-pointer hover:text-[#ff4444] transition-colors group">
+            className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white/80 uppercase tracking-widest mb-2 drop-shadow-sm flex items-center justify-between cursor-pointer border border-transparent hover:border-white/20 hover:bg-white hover:text-black transition-all group">
              <span>{group.title}</span>
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
-                  className={`transition-transform duration-300 text-white/40 group-hover:text-[#ff4444] ${collapsedGroups[gIdx] ? 'rotate-0' : '-rotate-180'}`}>
+                  className={`transition-transform duration-300 text-white/40 group-hover:text-black ${collapsedGroups[gIdx] ? 'rotate-0' : '-rotate-180'}`}>
                <polyline points="6 9 12 15 18 9"></polyline>
              </svg>
          </p>

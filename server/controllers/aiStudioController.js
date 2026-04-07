@@ -22,18 +22,6 @@ export const generateRenderJob = async (req, res) => {
     try {
         const { prompt, config, engine } = req.body;
         
-        let token;
-        try {
-            token = generateKlingAuthToken();
-        } catch (authError) {
-            console.log(`[STUDIO] Llaves Kling faltantes. Entrando en modo de simulación para motor: ${engine}`);
-            return res.status(200).json({
-                job_id: "simulated_task_" + Date.now(),
-                status: "processing",
-                provider: engine
-            });
-        }
-        
         console.log(`[STUDIO] Iniciando Job en Engine Real: ${engine}`);
 
         // Mapeo rudimentario de aspecto de ratio de React a Kling API
@@ -41,6 +29,18 @@ export const generateRenderJob = async (req, res) => {
         
         let response;
         if (engine.includes('Kling')) {
+            let token;
+            try {
+                token = generateKlingAuthToken();
+            } catch (authError) {
+                console.log(`[STUDIO] Llaves Kling faltantes. Entrando en modo de simulación para motor: ${engine}`);
+                return res.status(200).json({
+                    job_id: "simulated_task_" + Date.now(),
+                    status: "processing",
+                    provider: engine
+                });
+            }
+
             // Ejemplo de body para Text-To-Video Kling V1
             const requestBody = {
                 model: "kling-v1",
@@ -178,7 +178,12 @@ export const checkRenderStatus = async (req, res) => {
             });
         }
 
-        const token = generateKlingAuthToken();
+        let token;
+        try {
+            token = generateKlingAuthToken();
+        } catch (authErr) {
+            return res.status(200).json({ status: "processing", progress: 0 }); // Fallback on error
+        }
 
         const response = await fetch(`https://api.klingai.com/v1/videos/text2video/${taskId}`, {
             headers: { 'Authorization': `Bearer ${token}` }

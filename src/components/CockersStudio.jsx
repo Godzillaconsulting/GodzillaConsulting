@@ -143,7 +143,13 @@ export default function CockersStudio({ adminProfile }) {
                 body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: builderData.model })
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonErr) {
+                console.error("No se pudo parsear el JSON. El servidor retornó:", response.status);
+                throw new Error("El Backend (Vercel/API) ha colapsado o está retornando una página HTML (Error 500).");
+            }
             if (!response.ok) throw new Error(data.error || 'Error al enviar tarea a la IA');
 
             if (data.status === 'processing' && data.job_id) {

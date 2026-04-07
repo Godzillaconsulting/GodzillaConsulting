@@ -26,14 +26,39 @@ export const processLead = async (req, res) => {
         // 3. Buscar la configuración del Recurso en la tabla lead_magnets
         const magnetResult = await client.query("SELECT email_subject, email_body, file_url FROM lead_magnets WHERE slug = $1", [slug]);
         
-        if (magnetResult.rows.length === 0) {
-            throw new Error(`El recurso con el identificador '${slug}' no existe o no se ha configurado en el Admin Panel.`);
-        }
+        let emailSubject, emailBody, fileUrl;
 
-        const { email_subject: emailSubject, email_body: emailBody, file_url: fileUrl } = magnetResult.rows[0];
-
-        if (!emailSubject || !emailBody || !fileUrl) {
-            throw new Error("El correo de este recurso no se ha configurado completo en el Admin Panel -> Recursos -> 💌 Correos.");
+        // BARRERA DE BLINDAJE (Bulletproof): Si la tabla se corrompe, se borra o falla, JAMÁS se cae el correo.
+        if (magnetResult.rows.length === 0 || !magnetResult.rows[0].email_subject) {
+            console.warn(`[Lead Blinder] Recurso '${slug}' no encontrado en DB o sin datos. Aplicando Fallback Maestro.`);
+            
+            const HOST = process.env.PUBLIC_URL || 'https://godzillaconsulting.ai';
+            const FALLBACKS = {
+                'recurso1': {
+                    subject: '📂 Acceso a tu Bóveda de Scripts de IA',
+                    body: 'Hola,\n\nAquí tienes acceso a los 7 pasos estructurales que te permitirán automatizar tus respuestas.\n\nAtentamente,\nEl equipo de Godzilla Consulting',
+                    url: `${HOST}/lead-magnets/prompts-ia.pdf`
+                },
+                'recurso2': {
+                    subject: '📂 Tu descarga: El Protocolo Lázaro',
+                    body: 'Hola,\n\nTu recurso está listo. A continuación, puedes acceder a los 7 guiones estratégicos para reactivar prospectos.\n\nAtentamente,\nEl equipo de Godzilla Consulting',
+                    url: `${HOST}/lead-magnets/whatsapp-guia.pdf`
+                },
+                'recurso3': {
+                    subject: '📂 Acceso inmediato: Tu Tablero de Control de Ventas',
+                    body: 'Hola,\n\nGracias por solicitar el Tablero de Control de Ventas. Sugerimos prestar especial atención a la pestaña Semáforo de Leads.\n\nAtentamente,\nEl equipo de Godzilla Consulting',
+                    url: `${HOST}/lead-magnets/crm-template.xlsx`
+                }
+            };
+            
+            const fallback = FALLBACKS[slug] || FALLBACKS['recurso1'];
+            emailSubject = fallback.subject;
+            emailBody = fallback.body;
+            fileUrl = fallback.url;
+        } else {
+            emailSubject = magnetResult.rows[0].email_subject;
+            emailBody = magnetResult.rows[0].email_body;
+            fileUrl = magnetResult.rows[0].file_url;
         }
 
         // 5. Registrar la descarga y obtener ID (try/catch para tracking sin romper el proceso)

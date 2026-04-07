@@ -85,7 +85,7 @@ const Chatbot = () => {
     return (
         <>
             {/* Chatbot Toggle Button */}
-            <div className="fixed bottom-[200px] md:bottom-[110px] right-6 z-50 flex flex-col items-end pointer-events-none">
+            <div className="fixed bottom-[240px] md:bottom-[150px] right-6 z-50 flex flex-col items-end pointer-events-none">
                 <div
                     className={`relative mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
@@ -98,14 +98,14 @@ const Chatbot = () => {
                     {!isOpen && (
                         <>
                             <motion.div 
-                                animate={{ scale: [1, 1.05, 1], opacity: [0.6, 1, 0.6] }}
-                                transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                                className="absolute inset-[-12px] rounded-full bg-gradient-to-br from-[#ff6b6b]/20 to-[#CC0000]/20 pointer-events-none" 
+                                animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
+                                transition={{ repeat: Infinity, duration: 3, ease: "easeOut" }}
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#CC0000] pointer-events-none" 
                             />
                             <motion.div 
-                                animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.9, 0.4] }}
-                                transition={{ repeat: Infinity, duration: 2.5, delay: 0.2, ease: "easeInOut" }}
-                                className="absolute inset-[-24px] rounded-full bg-gradient-to-br from-[#ff6b6b]/10 to-[#CC0000]/10 pointer-events-none" 
+                                animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
+                                transition={{ repeat: Infinity, duration: 3, delay: 1.5, ease: "easeOut" }}
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#CC0000] pointer-events-none" 
                             />
                         </>
                     )}

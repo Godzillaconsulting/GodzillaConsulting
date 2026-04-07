@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', verifyAdminToken, async (req, res) => {
     try {
         const allowed = ['jareg', 'godzilla_admin', 'dani'];
-        if (!allowed.includes(req.user.username?.toLowerCase())) {
+        if (!allowed.includes(req.admin.username?.toLowerCase())) {
             return res.status(403).json({ error: 'Acceso restringido a TI' });
         }
         
@@ -28,7 +28,7 @@ router.get('/', verifyAdminToken, async (req, res) => {
 router.post('/', verifyAdminToken, async (req, res) => {
     try {
         const { description, priority, screenshot_url, path_url } = req.body;
-        const reporter = req.user.username || 'desconocido';
+        const reporter = req.admin.username || 'desconocido';
         
         const r = await pool.query(`
             INSERT INTO it_bugs (description, priority, screenshot_url, reporter_username, path_url)
@@ -47,13 +47,13 @@ router.post('/', verifyAdminToken, async (req, res) => {
 router.put('/:id', verifyAdminToken, async (req, res) => {
     try {
         const allowed = ['jareg', 'godzilla_admin', 'dani'];
-        if (!allowed.includes(req.user.username?.toLowerCase())) {
+        if (!allowed.includes(req.admin.username?.toLowerCase())) {
             return res.status(403).json({ error: 'Acceso restringido a TI' });
         }
         
         const bugId = req.params.id;
         const { resolved } = req.body;
-        const resolvedBy = resolved ? (req.user.username || 'AdminTI') : null;
+        const resolvedBy = resolved ? (req.admin.username || 'AdminTI') : null;
         
         const r = await pool.query(`
             UPDATE it_bugs 

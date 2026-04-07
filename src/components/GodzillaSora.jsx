@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './GodzillaSora.css';
 
 export default function GodzillaSora() {
@@ -24,6 +24,13 @@ export default function GodzillaSora() {
     const [status, setStatus] = useState("IDLE"); // IDLE, CONNECTING, RENDERING, DONE, ERROR
     const [logs, setLogs] = useState(["[SYSTEM] Godzilla In-House Cluster Iniciado.", "[SYSTEM] GPU A100 Detectadas: 4", "[SYSTEM] Esperando Prompts..."]);
     const [progress, setProgress] = useState(0);
+    const terminalEndRef = useRef(null);
+
+    useEffect(() => {
+        if (terminalEndRef.current) {
+            terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [logs]);
 
     const appendLog = (msg) => {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -34,6 +41,7 @@ export default function GodzillaSora() {
             appendLog("[ERROR] El prompt en blanco no es válido.");
             return;
         }
+        setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Ejecutando nueva secuencia de renderizado...`]);
         setStatus("CONNECTING");
         appendLog(`[NETWORK] Evaluando conexión cifrada al clúster de Godzilla...`);
         
@@ -255,6 +263,7 @@ export default function GodzillaSora() {
                                     <div className="progress-bar-fill" style={{width: `${(progress/diffusionSteps)*100}%`}}></div>
                                 </div>
                             )}
+                            <div ref={terminalEndRef} />
                         </div>
                     </div>
 

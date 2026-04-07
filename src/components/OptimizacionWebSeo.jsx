@@ -42,7 +42,7 @@ const OptimizacionWebSeo = () => {
         if (nodeData && Object.keys(nodeData).length > 0) {
             setContent(Object.assign({}, defaultContent, nodeData));
         }
-    }, [nodeData]);
+    }, [JSON.stringify(nodeData)]);
 
     const togglePlay = () => {
         if (videoRef.current) {

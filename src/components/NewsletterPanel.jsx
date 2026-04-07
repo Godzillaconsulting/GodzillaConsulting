@@ -15,11 +15,12 @@ export default function NewsletterPanel() {
  // Compose state
  const [subject, setSubject] = useState('Boletín #1 | Actualizaciones Globales de IA');
  const [bodyHtml, setBodyHtml] = useState('<h2>Saludos,</h2>\\n<p>Aquí tienes la edición de esta semana de nuestro boletín estratégico de <strong>Godzilla Consulting</strong>.</p>\\n<p>En el documento adjunto a este correo encontrarás un reporte consolidado con los anuncios, herramientas y avances más importantes del mundo en Inteligencia Artificial.</p>\\n<p>Toda la información ha sido corroborada y contiene las ligas oficiales para que mantengas a tu negocio siempre un paso adelante.</p>\\n<p>Descarga tu recurso a continuación.</p>');
- const [attachmentUrl, setAttachmentUrl] = useState('');
- const [sending, setSending] = useState(false);
- const [sendResult, setSendResult] = useState(null);
+    const [attachmentUrl, setAttachmentUrl] = useState('');
+    const [sending, setSending] = useState(false);
+    const [sendResult, setSendResult] = useState(null);
+    const [currentDraftId, setCurrentDraftId] = useState(null);
 
- // Subscribers
+    // Subscribers
  const [subscribers, setSubscribers] = useState([]);
  const [loadingSubs, setLoadingSubs] = useState(false);
 
@@ -62,11 +63,11 @@ export default function NewsletterPanel() {
  const r = await fetch(`${API_BASE}/api/newsletter/send`, {
  method:'POST',
  headers: authHeaders(),
- body: JSON.stringify({ subject, bodyHtml, attachmentUrl: attachmentUrl || null }),
+ body: JSON.stringify({ id: currentDraftId, subject, bodyHtml, attachmentUrl: attachmentUrl || null }),
  });
  const d = await r.json();
  setSendResult(d);
- if (d.success) { setSubject(''); setBodyHtml(''); setAttachmentUrl(''); }
+ if (d.success) { setSubject(''); setBodyHtml(''); setAttachmentUrl(''); setCurrentDraftId(null); }
  } catch (err) {
  setSendResult({ success: false, message: err.message });
  }
@@ -91,11 +92,23 @@ export default function NewsletterPanel() {
  return (
  <div className="flex flex-col h-full text-white">
 
- {/* Header */}
- <div className="px-6 py-4 border-b border-neutral-800 shrink-0">
- <h2 className="text-sm font-black text-white">📧 Newsletter</h2>
- <p className="text-[10px] text-neutral-500 mt-0.5">Redacta y envía boletines a todos tus suscriptores</p>
- </div>
+    {/* Header */}
+    <div className="px-6 py-4 border-b border-neutral-800 shrink-0">
+        <h2 className="text-sm font-black text-white">📧 Newsletter</h2>
+        <p className="text-[10px] text-neutral-500 mt-0.5">Redacta y envía boletines a todos tus suscriptores</p>
+        
+        {currentDraftId && (
+            <div className="mt-3 inline-flex items-center gap-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/20 px-3 py-1.5 rounded-full text-[10px] font-bold">
+                <span>🤖 Edición de un Borrador Inteligente</span>
+                <button onClick={() => {
+                    setCurrentDraftId(null);
+                    setSubject('');
+                    setBodyHtml('');
+                    setAttachmentUrl('');
+                }} className="ml-2 hover:text-white transition-colors">✕ Cancelar</button>
+            </div>
+        )}
+    </div>
 
  {/* Tabs */}
  <div className="flex gap-1 px-4 py-2 border-b border-neutral-800 shrink-0">
@@ -257,14 +270,30 @@ export default function NewsletterPanel() {
  {history.map(n => (
  <div key={n.id} className="px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2">
  <div className="flex items-start justify-between gap-2">
- <p className="text-xs font-bold text-white leading-snug flex-1">{n.subject}</p>
+ <p className="text-xs font-bold text-white leading-snug flex-1">{n.subject || 'Sin Asunto'}</p>
+ <div className="flex items-center gap-2">
+ {n.status === 'draft' && (
+ <button 
+ onClick={() => {
+ setCurrentDraftId(n.id);
+ setSubject(n.subject || '');
+ setBodyHtml(n.body_html || '');
+ setAttachmentUrl(n.attachment_url || '');
+ setTab('compose');
+ }}
+ className="text-[#CC0000] bg-white/5 hover:bg-[#CC0000] hover:text-white px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1"
+ >
+ ✏️ Editar Borrador
+ </button>
+ )}
  {statusBadge(n.status)}
  </div>
+ </div>
  <div className="flex items-center gap-4 text-[10px] text-neutral-500">
- <span className="flex items-center gap-1"><Users size={10} /> {n.total_recipients} total</span>
- <span className="flex items-center gap-1"><CheckCircle size={10} className="text-green-400" /> {n.sent_count} ok</span>
+ <span className="flex items-center gap-1"><Users size={10} /> {n.total_recipients || 0} total</span>
+ <span className="flex items-center gap-1"><CheckCircle size={10} className="text-green-400" /> {n.sent_count || 0} ok</span>
  {n.failed_count > 0 && <span className="flex items-center gap-1"><XCircle size={10} className="text-red-400" /> {n.failed_count} falló</span>}
- <span className="flex items-center gap-1"><Clock size={10} /> {new Date(n.sent_at).toLocaleDateString('es-MX')}</span>
+ {n.sent_at && <span className="flex items-center gap-1"><Clock size={10} /> {new Date(n.sent_at).toLocaleDateString('es-MX')}</span>}
  </div>
  </div>
  ))}

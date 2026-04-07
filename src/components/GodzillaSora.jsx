@@ -26,7 +26,24 @@ export default function GodzillaSora() {
     const [logs, setLogs] = useState(["[SYSTEM] Godzilla In-House Cluster Iniciado.", "[SYSTEM] GPU A100 Detectadas: 4", "[SYSTEM] Esperando Prompts..."]);
     const [progress, setProgress] = useState(0);
     const [finalMediaUrl, setFinalMediaUrl] = useState(null);
+    const [recipeHistory, setRecipeHistory] = useState([]);
     const terminalEndRef = useRef(null);
+    
+    // Función para obtener el Diario del Master Cluster
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch("http://127.0.0.1:5000/sora-history");
+            const data = await res.json();
+            if (data.success) setRecipeHistory(data.history);
+        } catch (e) {
+            console.error("Master Node no responde al historial local.");
+        }
+    };
+
+    // Refrescar historial cuando un render termine exitoso
+    useEffect(() => {
+        if (status === 'DONE') fetchHistory();
+    }, [status]);
 
     // ==========================================
     // INTEGRACIÓN WEBSOCKET LOCAL HPC
@@ -39,6 +56,7 @@ export default function GodzillaSora() {
     };
 
     useEffect(() => {
+        fetchHistory(); // Jalamos Diario al inicio
         // Inicializar socket al montar
         socketRef.current = io('http://127.0.0.1:5000');
 
@@ -107,11 +125,39 @@ export default function GodzillaSora() {
             
             // La respuesta POST no simula el progreso, los Sockets (render_progress) asumen la telemetría viva.
             const data = await response.json();
-            appendLog(`[TASK INFO] Señal asincrona lanzada. TASK ID: ${data.task_id}`);
+            appendLog(`[TASK INFO] Señal asíncrona lanzada. TASK ID: ${data.task_id}`);
+            if (data.queue_position > 0) {
+                appendLog(`[QUEUE] Nodo GPU ocupado. Agregado a la fila de espera. Posición: #${data.queue_position}`);
+                appendLog(`[QUEUE] El render iniciará automáticamente cuando la VRAM se libere...`);
+            }
 
         } catch (error) {
             setStatus("ERROR");
-            appendLog(`[NETWORK ERROR] Conexión Fallida: ${error.message}`);
+            appendLog(`[CRÍTICO] Fallo en disparo HTTP (Master Node No Responde): ${error.message}`);
+        }
+    };
+    
+    // Función de rito de Recreación
+    const handleRestoreRecipe = async (taskId) => {
+        if (status === 'RENDERING' || status === 'CONNECTING') return;
+        setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Invocando Recreación de Semilla...`]);
+        setStatus("CONNECTING");
+        setFinalMediaUrl(null);
+        setProgress(0);
+        
+        try {
+            const response = await fetch("http://127.0.0.1:5000/sora-restore", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task_id: taskId })
+            });
+            const data = await response.json();
+            if (data.queue_position > 0) {
+                appendLog(`[QUEUE] Nodo GPU ocupado. Agregado a la fila de espera. Posición: #${data.queue_position}`);
+            }
+        } catch (e) {
+            setStatus("ERROR");
+            appendLog(`[CRÍTICO] Fallo en disparo de Recreación.`);
         }
     };
 
@@ -308,17 +354,57 @@ export default function GodzillaSora() {
                                         src={finalMediaUrl}
                                     />
                                 )}
+                                <div className="fake-video-overlay">
+                                    <h3>RENDER {mode === 'photo' ? 'FÓTOGRAFICO' : 'DE VIDEO'} COMPLETADO</h3>
+                                    <p>Seed original y metadatos preservados.</p>
+                                </div>
                             </>
-                        ) : status === 'RENDERING' ? (
+                        ) : status === 'RENDERING' || status === 'CONNECTING' ? (
                             <div className="loader-container">
                                 <div className="spinner-glow"></div>
-                                <p>Sintetizando Parches de Espacio-Tiempo...</p>
+                                <p>{status === 'CONNECTING' ? 'Estableciendo Enlace con Master Node...' : 'Sintetizando Matrices C++...'}</p>
                             </div>
                         ) : (
-                            <div className="empty-state">
-                                <span>Esperando Comando...</span>
-                            </div>
+                            <div className="empty-state">EN ESPERA DE TRIGGERS</div>
                         )}
+                    </div>
+                    
+                    {/* Caja de Recetas / Historial */}
+                    <div className="recipe-history-container panel-glass">
+                        <div className="panel-header">
+                            <h2>LIBRETA DE RECETAS (LOCAL)</h2>
+                            <span className="recipe-count">{recipeHistory.length} Registros</span>
+                        </div>
+                        <div className="recipe-list">
+                            {recipeHistory.map((rec, i) => (
+                                <div className={`recipe-card ${rec.alive ? 'alive' : 'purged'}`} key={i}>
+                                    <div className="recipe-header">
+                                        <span className="recipe-id">{rec.task_id}</span>
+                                        <span className={`recipe-badge ${rec.alive ? 'bg-green' : 'bg-red'}`}>
+                                            {rec.alive ? "ACTIVO" : "PURGADO"}
+                                        </span>
+                                    </div>
+                                    <div className="recipe-body">
+                                        <div className="recipe-stat"><strong>SEED:</strong> {rec.seed}</div>
+                                        <div className="recipe-stat"><strong>MODO:</strong> {rec.mode} ({rec.steps} steps)</div>
+                                        <div className="recipe-stat"><strong>FECHA:</strong> {new Date(rec.timestamp * 1000).toLocaleTimeString()}</div>
+                                    </div>
+                                    <div className="recipe-actions">
+                                        {rec.alive && rec.url ? (
+                                            <a href={rec.url} target="_blank" rel="noreferrer" className="btn-small success">VER MEDIA</a>
+                                        ) : (
+                                            <button 
+                                                className="btn-small warning" 
+                                                onClick={() => handleRestoreRecipe(rec.task_id)}
+                                                disabled={status === 'RENDERING' || status === 'CONNECTING'}
+                                            >
+                                                RESTAURAR (RE-RENDER)
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </aside>
 

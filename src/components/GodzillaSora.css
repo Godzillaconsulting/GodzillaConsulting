@@ -577,3 +577,75 @@ input[type=range]::-webkit-slider-runnable-track {
 .fake-video-overlay p { font-size: 0.9rem; color: #ccc; line-height: 1.4; margin: 0; font-weight: bold;}
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Recipe History */
+.recipe-history-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: 15px;
+    background: #0f1115;
+    border: 2px solid #5a5f66;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.recipe-count {
+    font-size: 0.8rem;
+    color: #ffaa00;
+    font-weight: 800;
+}
+.recipe-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.recipe-card {
+    background: #1a1c23;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.recipe-card.purged {
+    opacity: 0.7;
+    border-color: #552222;
+}
+.recipe-card.alive {
+    border-left: 4px solid #00ff88;
+}
+.recipe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+.recipe-id { color: #aaa; font-family: monospace; font-size: 0.8rem; }
+.recipe-badge { padding: 2px 6px; font-size: 0.7rem; border-radius: 2px; font-weight: 900; }
+.bg-green { background: #00ff88; color: #000; }
+.bg-red { background: #ff3333; color: #fff; }
+
+.recipe-body { font-size: 0.8rem; color: #ddd; }
+.recipe-stat { margin-bottom: 3px; }
+.recipe-stat strong { color: #ffaa00; }
+
+.recipe-actions { display: flex; justify-content: flex-end; }
+.btn-small { 
+    padding: 5px 10px; 
+    font-size: 0.7rem; 
+    border: none; 
+    border-radius: 2px; 
+    font-weight: 900; 
+    cursor: pointer;
+    text-transform: uppercase;
+}
+.success { background: #00ff88; color: #000; text-decoration: none; }
+.warning { background: #ffaa00; color: #000; }
+.btn-small:hover { opacity: 0.8; }
+.btn-small:disabled { background: #555; cursor: not-allowed; }

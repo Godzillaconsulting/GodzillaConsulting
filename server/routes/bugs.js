@@ -1,6 +1,14 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { verifyAdminToken } from '../middleware/adminAuth.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let ARCHIVOS_PESADOS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
+try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (e) {}
 
 const router = express.Router();
 
@@ -29,12 +37,30 @@ router.post('/', verifyAdminToken, async (req, res) => {
     try {
         const { description, priority, screenshot_url, path_url } = req.body;
         const reporter = req.admin.username || 'desconocido';
+
+        let finalUrl = screenshot_url;
+
+        // Si envía un Base64 grande, lo escribimos al disco duro local para NO inflar PostgreSQL (Costos: $0)
+        if (screenshot_url && screenshot_url.startsWith('data:image')) {
+            try {
+                const base64Data = screenshot_url.replace(/^data:image\/\w+;base64,/, "");
+                const ext = screenshot_url.split(';')[0].split('/')[1] || 'png';
+                const filename = `bug_evidence_${Date.now()}_${Math.floor(Math.random()*1000)}.${ext}`;
+                const filepath = path.join(ARCHIVOS_PESADOS_DIR, filename);
+                
+                fs.writeFileSync(filepath, base64Data, 'base64');
+                finalUrl = `/api/media/assets/${filename}`;
+                console.log(`[Bugs] Evidencia guardada en disco local: ${finalUrl}`);
+            } catch (err) {
+                console.error("[Bugs] Error escupiendo archivo al disco, fallback a base64.", err);
+            }
+        }
         
         const r = await pool.query(`
             INSERT INTO it_bugs (description, priority, screenshot_url, reporter_username, path_url)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *
-        `, [description, priority || 'media', screenshot_url, reporter, path_url]);
+        `, [description, priority || 'media', finalUrl, reporter, path_url]);
         
         res.status(201).json({ success: true, bug: r.rows[0] });
     } catch (e) {

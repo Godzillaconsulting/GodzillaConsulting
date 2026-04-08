@@ -25,7 +25,8 @@ import { connectDB } from './config/db.js';
 import chatRoutes from './routes/chat.js';
 import nodesRoutes from './routes/nodes.js';
 import webhookRoutes from './routes/webhook.js';
-// Imports duplicados borrados
+import botConfigsRoutes from './routes/botConfigs.js';
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,7 +35,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 console.log('[DEBUG] .env cargado. GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Presente' : 'FALTANTE');
 
-// Inicializar conexión a PostgreSQL (Neon)
+// Inicializar conexión a PostgreSQL (Local)
 connectDB();
 
 const app = express();
@@ -162,6 +163,7 @@ app.use('/api/trends', trendsRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
+app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
 
 
 // Servir archivos subidos como estáticos en /media/*

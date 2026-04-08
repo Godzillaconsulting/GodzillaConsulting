@@ -15,7 +15,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 puppeteer.use(StealthPlugin());
 
-const POLLING_INTERVAL_MS = 60000;
+const POLLING_INTERVAL_MS = 15000;
 const processedMessages = new Set();
 const delay = (min, max) => new Promise(r => setTimeout(r, Math.floor(Math.random() * (max - min + 1)) + min));
 
@@ -83,6 +83,14 @@ async function handleAILogic(senderId, messageText) {
 
         // Customizamos levemente el prompt para el contexto de TikTok (respuestas más cortas y directas)
         let finalSystemPrompt = SYSTEM_PROMPT + `\n\nESTÁS HABLANDO POR TIKTOK DIRECT MESSAGES. MANTÉN TUS RESPUESTAS CORTAS Y ATRACTIVAS.`;
+        
+        try {
+            const configResult = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma='tiktok'");
+            if (configResult.rows.length > 0 && configResult.rows[0].dm_system_prompt) {
+                finalSystemPrompt += `\n\n## INSTRUCCIONES ESPECÍFICAS DE ESTA RED SOCIAL:\n${configResult.rows[0].dm_system_prompt}`;
+            }
+        } catch(e) {}
+
         if (resumen_contexto && resumen_contexto.trim() !== '') {
             finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}`;
         }
@@ -123,12 +131,88 @@ async function handleAILogic(senderId, messageText) {
         const functionCalls = result.response.functionCalls();
         if (functionCalls && functionCalls.length > 0) {
             for (const call of functionCalls) {
-                let fRes = { success: false, error: "Funcionabilidad temporalmente limitada desde TikTok DM. Por favor pide al usuario que nos contacte por WhatsApp." };
-                
-                // NOTA: Para no duplicar las 150 líneas de lógica de Calendar de WA, 
-                // aquí podemos delegar a la misma herramienta o usar una versión light que dice:
-                // "Para agendar, háblanos por WhatsApp (656-323-6397)"
-                fRes = { success: false, error: "Dile amablemente al usuario que para verificar agenda y hacer citas debe ir al link de nuestro perfil o contactar a nuestro WhatsApp automatizado +52 656 323 6397. Tú no puedes agendar desde TikTok directamente por seguridad." };
+                let fRes = {};
+                if (call.name === "check_availability") {
+                    const { fecha, hora } = call.args;
+                    const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                    const isSunday = dateObj.getDay() === 0;
+                    const hourInt = parseInt(hora.split(':')[0], 10);
+                    const now = new Date();
+
+                    if (dateObj < now) {
+                        fRes = { disponible: false, razon: "La fecha solicitada es en el pasado. Solicita una fecha futura." };
+                    } else if (isSunday) {
+                        fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
+                    } else if (hourInt < 9 || hourInt >= 19) {
+                        fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
+                    } else {
+                        const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                        const r = await pool.query(query, [fecha, hora]);
+                        fRes = { disponible: parseInt(r.rows[0].total) === 0 };
+                    }
+                } else if (call.name === "save_appointment") {
+                    try {
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
+                        const isSunday = dateObj.getDay() === 0;
+                        const hourInt = parseInt(hora.split(':')[0], 10);
+                        const now = new Date();
+
+                        if (dateObj < now || isSunday || hourInt < 9 || hourInt >= 19) {
+                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario. Pide otra fecha/hora." };
+                        } else {
+                            const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                            
+                            if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                 fRes = { success: false, error: "Horario recién ocupado." };
+                            } else {
+                                const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                let calendarId = null;
+                                let gRes = null;
+                                
+                                try {
+                                    gRes = await agendarEnGoogleCalendar(datosCita);
+                                    calendarId = gRes.id;
+                                    
+                                    try {
+                                        const r = await pool.query(
+                                            "INSERT INTO citas (nombre_completo, telefono, email, tipo_sesion, fecha, hora, status, google_calendar_id, origen, notas_adicionales) VALUES ($1,$2,$3,$4,$5,$6,'confirmada',$7,'tiktok',$8) RETURNING id",
+                                            [nombre, telefono, correo || 'sin-correo@tiktok.com', servicio, fecha, hora, calendarId, notas]
+                                        );
+                                        
+                                        if (correo && correo !== 'sin-correo@tiktok.com') {
+                                            await sendCitaConfirmationEmail({
+                                                nombre, email: correo, fecha, hora, tipoSesion: servicio, personalCalendarLink: gRes.personalCalendarLink
+                                            });
+                                        }
+                                        
+                                        fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB, Calendar y correo enviado." };
+                                    } catch (dbErr) {
+                                        if (calendarId) await cancelarEnGoogleCalendar(calendarId).catch(console.error);
+                                        fRes = { success: false, error: "Hubo un error de base de datos (" + dbErr.message + ")." };
+                                    }
+                                } catch (calErr) {
+                                     fRes = { success: false, error: "Google Calendar rechazó (" + calErr.message + ")." };
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        fRes = { success: false, error: "Error de servidor interno." };
+                    }
+                } else if (call.name === "cancel_appointment") {
+                    const { telefono } = call.args;
+                    try {
+                        const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                        if (result.rows.length === 0) fRes = { success: false, error: "No encontré cita activa con ese número de teléfono." };
+                        else {
+                            const cita = result.rows[0];
+                            if (cita.google_calendar_id) await cancelarEnGoogleCalendar(cita.google_calendar_id);
+                            await pool.query("UPDATE citas SET status = 'cancelada' WHERE id = $1", [cita.id]);
+                            fRes = { success: true, message: "Cita cancelada correctamente." };
+                        }
+                    } catch(e) { fRes = { success: false, error: "Error." }; }
+                }
 
                 result = await withTimeout(
                     chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
@@ -160,8 +244,8 @@ async function simulateHumanTyping(page, selector, text) {
     await page.waitForSelector(selector);
     await page.click(selector);
     // Retraso entre teclas (algo rápido para optimizar la automatización)
-    for (let i = 0; i < text.length; i++) {
-        await page.type(selector, text[i], { delay: Math.floor(Math.random() * 50) + 10 });
+    for (const char of text) {
+        await page.type(selector, char, { delay: Math.floor(Math.random() * 50) + 10 });
     }
     await delay(200, 500);
     await page.keyboard.press('Enter');
@@ -217,18 +301,23 @@ async function scrapeAndRespondDMs(page) {
             await delay(4000, 6000); // Esperar que cargue el hilo de mensajes
 
             // 3. Extraer todo el hilo de conversacion y validar
-            const chatThread = await page.evaluate(() => {
+            const chatThread = await page.evaluate((sender) => {
                 const rawMessages = document.querySelectorAll('[data-e2e="chat-item"]');
                 let thread = [];
+                const senderLower = sender.toLowerCase();
                 rawMessages.forEach(el => {
-                    const isMine = el.querySelector('[data-e2e="chat-avatar"]') === null;
+                    const linkEl = el.querySelector('a');
+                    // En TikTok Desktop, ambos tienen avatar. Diferenciamos por el href del link (que tiene el username).
+                    // Si el link NO tiene el nombre del sender, entonces el mensaje es nuestro (godzilla).
+                    const isMine = linkEl && !linkEl.href.toLowerCase().includes(senderLower);
+                    
                     const textEl = el.querySelector('p[class*="PText"]');
                     if(textEl && textEl.innerText.trim() !== '') {
                         thread.push({ role: isMine ? 'assistant' : 'user', content: textEl.innerText.trim() });
                     }
                 });
                 return thread;
-            });
+            }, chat.senderName);
 
             if(chatThread.length === 0) continue;
 
@@ -256,6 +345,98 @@ async function scrapeAndRespondDMs(page) {
     }
 }
 
+const checkComments = async (page) => {
+    try {
+        console.log('🔍 Revisando Notificaciones de Comentarios...');
+        
+        let configRow = null;
+        try {
+            const result = await pool.query("SELECT * FROM bot_configs WHERE plataforma='tiktok'");
+            if (result.rows.length > 0) configRow = result.rows[0];
+        } catch(e) { console.error('Error fetching bot config:', e); }
+        
+        // Defaults if missing or failed
+        const triggerKeywords = configRow && configRow.keywords ? configRow.keywords.split(',').map(s=>s.trim().toLowerCase()) : ['tecnologia', 'info'];
+        const autoCommentTemplate = configRow && configRow.comment_template ? configRow.comment_template : '¡Hola {USER}! Te invitamos a ver la información exclusiva. Mándanos un DM por aquí con la palabra "TECNOLOGIA" y nuestro bot te atenderá enseguida. 🚀';
+
+        await page.goto('https://www.tiktok.com/notification', { waitUntil: 'networkidle2' });
+        await delay(3000, 5000);
+
+        // Click en la pestaña de Comentarios
+        await page.evaluate(() => {
+            const commentsTab = document.querySelector('[data-e2e="comments"]');
+            if (commentsTab) commentsTab.click();
+        });
+        await delay(3000, 5000);
+
+        const newComments = await page.evaluate((keywords) => {
+            let arr = [];
+            document.querySelectorAll('[data-e2e="inbox-list-item"]').forEach(el => {
+                const titleEl = el.querySelector('[data-e2e="inbox-title"]');
+                const contentEl = el.querySelector('[data-e2e="inbox-content"]');
+                const title = titleEl ? titleEl.innerText : '';
+                const content = contentEl ? contentEl.innerText.toLowerCase() : '';
+
+                // Extraemos nombre de usuario de manera robusta
+                // El titulo suele ser "Username comentó:"
+                const usernameRaw = title.split(' ')[0] || "Usuario";
+                
+                // Checar dinamicamente
+                const matches = keywords.some(kw => content.includes(kw));
+                if(matches) {
+                    arr.push({ username: usernameRaw, text: content });
+                }
+            });
+            return arr;
+        }, triggerKeywords);
+
+        if (newComments.length === 0) return;
+
+        console.log(`[TikTok] 💭 Comentarios clave encontrados: ${newComments.length}`);
+
+        // Iterar sobre notificaciones
+        for (let comment of newComments) {
+            const hash = comment.username + comment.text;
+            if (processedMessages.has(hash)) continue;
+            
+            console.log(`[TikTok] 💭 Respondiendo al comentario de: ${comment.username}`);
+            
+            // Hacer click en la notificación para abrir el video
+            const clicked = await page.evaluate((u) => {
+                const items = [...document.querySelectorAll('[data-e2e="inbox-list-item"]')];
+                const target = items.find(el => el.innerText.includes(u));
+                if(target) {
+                    target.click();
+                    return true;
+                }
+                return false;
+            }, comment.username);
+
+            if (!clicked) continue;
+            await delay(4000, 6000); // Esperar que cargue el reproductor y los comentarios
+
+            // Preparar respuesta
+            const aiResponse = autoCommentTemplate.replace('{USER}', comment.username);
+
+            // Buscar input de comentario/respuesta
+            const inputSelector = '[contenteditable="true"]';
+            const inputExists = await page.$(inputSelector);
+
+            if (inputExists) {
+                await simulateHumanTyping(page, inputSelector, aiResponse);
+                processedMessages.add(hash);
+                console.log(`[TikTok] ✅ Comentario respondido a ${comment.username}`);
+            }
+
+            // Cerrar el modal del video (Generalmente presionar ESC u Ocultar)
+            await page.keyboard.press('Escape');
+            await delay(1000, 2000);
+        }
+    } catch (err) {
+        console.error('⚠️ Error en checkComments:', err.message);
+    }
+};
+
 let browserClient;
 
 export const initTikTokBypass = async (isHeadless = true) => {
@@ -282,10 +463,17 @@ export const initTikTokBypass = async (isHeadless = true) => {
 
     // Loop infinito de scraping
     // Reemplaza PM2 setInterval y aprovecha un while local asincrono
+    let iterations = 0;
     (async function loop() {
         while (true) {
             try {
                 await scrapeAndRespondDMs(page);
+                
+                // Solo checar comentarios 1 de cada 4 veces (cada 60s) para que los DMs sigan siendo de respuesta ultra rápida (15s).
+                if (iterations % 4 === 0) {
+                     await checkComments(page);
+                }
+                iterations++;
             } catch (e) {
                 console.error('Error iteración TikTok:', e);
             }

@@ -96,6 +96,61 @@ export default function CMCalendar({ adminProfile }) {
     const [realTrends, setRealTrends] = useState(null);
     const [loadingTrends, setLoadingTrends] = useState(false);
 
+    // ─── Bot AI Configurations ──────────────────────────────────────────────
+    const [botConfig, setBotConfig] = useState(null);
+    const [savingBot, setSavingBot] = useState(false);
+
+    const loadBotConfig = async (platform) => {
+        if (!platform || platform === 'ALL') {
+            setBotConfig(null);
+            return;
+        }
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || '';
+            const res = await fetch(`${API_URL}/api/bots/config/${platform}`);
+            const data = await res.json();
+            if (data.success && data.config) {
+                setBotConfig(data.config);
+            } else {
+                setBotConfig({ 
+                    plataforma: platform, 
+                    keywords: '', 
+                    comment_template: '', 
+                    dm_system_prompt: '' 
+                });
+            }
+        } catch (e) {
+            console.error('Error fetching bot config:', e);
+        }
+    };
+
+    const saveBotConfig = async () => {
+        if (!botConfig) return;
+        setSavingBot(true);
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || '';
+            const res = await fetch(`${API_URL}/api/bots/config/${botConfig.plataforma}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(botConfig)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('¡Configuración guardada! El cerebro PM2 tomará estos cambios enseguida.');
+            }
+        } catch (e) {
+            console.error('Error saving bot config:', e);
+            alert('Error al guardar configuración IA.');
+        }
+        setSavingBot(false);
+    };
+
+    // Refetch al cambiar plataforma
+    useEffect(() => {
+        if (activePlatform !== 'ALL') loadBotConfig(activePlatform);
+    }, [activePlatform]);
+
+
     const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
         setLoadingTrends(true);
         try {
@@ -638,6 +693,64 @@ export default function CMCalendar({ adminProfile }) {
                 </div>
 
                 <div className="flex-1 p-4 md:px-8 md:py-6 overflow-visible bg-[#050505] flex flex-col">
+                    {/* Panel de Configuración de IA para la Red Seleccionada */}
+                    {canCreate && (calendarTab === 'contenido' || calendarTab === 'todos') && activePlatform !== 'ALL' && (
+                        <div className="mb-6 bg-[#0a0a0a] border border-[#CC0000]/40 rounded-xl p-5 shadow-[0_0_20px_rgba(204,0,0,0.15)] animate-in fade-in slide-in-from-top-2">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-black text-white text-sm tracking-widest uppercase flex items-center gap-2">
+                                    <span className="text-[#CC0000] text-lg">🤖</span> 
+                                    Configuración Neurona: <span className="text-neutral-400">{activePlatform}</span>
+                                </h3>
+                                <button 
+                                    onClick={saveBotConfig}
+                                    disabled={savingBot || !botConfig}
+                                    className="bg-[#CC0000] hover:bg-white hover:text-[#CC0000] text-white text-[10px] font-black uppercase px-4 py-2 rounded transition-colors disabled:opacity-50"
+                                >
+                                    {savingBot ? "Guardando..." : "Guardar Ajustes"}
+                                </button>
+                            </div>
+                            
+                            {!botConfig ? (
+                                <div className="text-neutral-500 text-xs py-4 flex items-center gap-2">
+                                    <span className="animate-spin text-xl">⚙️</span> Conectando con IA...
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">Palabras Clave (Trigger)</label>
+                                        <input 
+                                            type="text" 
+                                            value={botConfig.keywords}
+                                            onChange={(e) => setBotConfig({...botConfig, keywords: e.target.value})}
+                                            className="w-full bg-black/60 border border-white/10 rounded p-2 text-white font-bold focus:outline-none focus:border-[#CC0000] transition-colors"
+                                            placeholder="ej. tecnologia, info, precio"
+                                        />
+                                        <p className="text-[9px] text-neutral-600 mt-1 italic">Separadas por coma. El bot solo responderá sí el comentario las contiene.</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">Público: Respuesta Automática Template</label>
+                                        <input 
+                                            type="text" 
+                                            value={botConfig.comment_template}
+                                            onChange={(e) => setBotConfig({...botConfig, comment_template: e.target.value})}
+                                            className="w-full bg-black/60 border border-white/10 rounded p-2 text-white font-bold focus:outline-none focus:border-[#CC0000] transition-colors"
+                                            placeholder="Ej: ¡Hola! Mándanos un DM..."
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 mt-2">
+                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">System Prompt Conversacional (Inbox Privado)</label>
+                                        <textarea 
+                                            value={botConfig.dm_system_prompt || ''}
+                                            onChange={(e) => setBotConfig({...botConfig, dm_system_prompt: e.target.value})}
+                                            className="w-full h-16 bg-black/60 border border-[#CC0000]/20 rounded p-2 text-yellow-300/80 font-mono text-[10px] focus:outline-none focus:border-[#CC0000] transition-colors resize-none"
+                                            placeholder="Instrucciones especiales para Gemini en esta red social. Ej: 'Redirige a WhatsApp en lugar de agendar'. Dejar en blanco para default."
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {calendarTab === 'pendientes' ? (
                         <div className="flex bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden h-full min-h-[600px] font-sans shadow-2xl">
                             {/* ASANA LEFT PANE -> Godzilla Dark Mode */}

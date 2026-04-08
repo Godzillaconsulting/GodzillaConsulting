@@ -356,7 +356,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                     className="w-full h-full object-contain"
                                                     frameBorder="0"
                                                 ></iframe>
-                                            ) : urlInput.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
+                                            ) : urlInput.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
                                                 <video src={urlInput} controls className="w-full h-full object-contain" />
                                             ) : (
                                                 <img src={urlInput} alt="preview" className="w-full h-full object-contain" onError={(e) => e.target.style.display = 'none'} />

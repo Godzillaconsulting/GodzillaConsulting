@@ -72,7 +72,7 @@ const ProduccionAudiovisual = () => {
                         {(content.videoFileUrl || content.videoUrl) ? (
                             (() => {
                                 const vSrc = content.videoFileUrl || content.videoUrl;
-                                const ytMatch = vSrc.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+                                const ytMatch = vSrc.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/);
                                 const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
                                 if (ytId) {
                                     return (

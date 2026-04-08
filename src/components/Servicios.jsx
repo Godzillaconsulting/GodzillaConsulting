@@ -87,7 +87,7 @@ const Servicios = () => {
                     if (!finalBg) return null;
 
                     // 1. Detección de YouTube
-                    const ytMatch = finalBg.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+                    const ytMatch = finalBg.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/);
                     const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
                     if (ytId) {
                         return (

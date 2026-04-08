@@ -409,10 +409,9 @@ export default function AdminStudio() {
  <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
   <div className="flex items-center gap-2.5">
-  <a href="/" target="_blank" rel="noopener noreferrer" className="cursor-pointer hover:scale-110 transition-transform">
+  <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer hover:scale-110 transition-transform">
     <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
   </a>
-
   </div>
   <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1.5 flex items-center gap-1.5 rounded-lg font-bold text-[10px] transition-all duration-300 border ${
   isAnalyticsMode ? 'bg-[#CC0000] border-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.5)]' : 'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-[#CC0000]/10 hover:border-[#CC0000]/50 hover:text-white shadow-sm'

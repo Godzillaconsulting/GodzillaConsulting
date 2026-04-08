@@ -97,21 +97,9 @@ const Chatbot = () => {
                     {/* Halos concéntricos (visibles al estar cerrado) */}
                     {!isOpen && (
                         <>
-                            <motion.div 
-                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
-                                transition={{ repeat: Infinity, duration: 3, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
-                            />
-                            <motion.div 
-                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
-                                transition={{ repeat: Infinity, duration: 3, delay: 1, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
-                            />
-                            <motion.div 
-                                animate={{ scale: [1, 2.5], opacity: [0.7, 0] }}
-                                transition={{ repeat: Infinity, duration: 3, delay: 2, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none" 
-                            />
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple" />
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple animation-delay-1000" />
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple animation-delay-2000" />
                         </>
                     )}
                     <motion.button

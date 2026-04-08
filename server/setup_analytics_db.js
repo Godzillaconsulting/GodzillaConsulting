@@ -4,7 +4,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Try to use the env string or the fallback one from other scripts
-const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_9oyPl3rTRqCb@ep-super-firefly-aev3f4b4.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require';
+import dotenv from 'dotenv';
+dotenv.config({ path: new URL('../.env', import.meta.url).pathname });
+const connectionString = process.env.DATABASE_URL;
 
 async function setupAnalyticsDB() {
     const pool = new Client({ connectionString });

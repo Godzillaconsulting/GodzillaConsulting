@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "godzilla-bot-redes",
+      name: "godzilla-server",
       script: "./index.js",
       cwd: "./server",
       instances: 1,
@@ -15,6 +15,22 @@ module.exports = {
       env_production: {
         NODE_ENV: "production",
         PORT: 3000
+      }
+    },
+    {
+      name: "whatsapp-bot",
+      script: "./whatsappBot.js",
+      cwd: "./server",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "512M",
+      max_restarts: 5,
+      restart_delay: 15000,
+      min_uptime: "20s",
+      watch: false,
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+      env: {
+        NODE_ENV: "production"
       }
     },
     {
@@ -36,11 +52,11 @@ module.exports = {
 
     {
       name: "tiktok-bot",
-      script: "./tiktok_bot.cjs",
+      script: "./tiktok_bypass.js",
       cwd: "./server",
       instances: 1,
       exec_mode: "fork",
-      max_memory_restart: "512M",
+      max_memory_restart: "1G",
       max_restarts: 5,
       restart_delay: 30000,
       min_uptime: "15s",
@@ -73,7 +89,20 @@ module.exports = {
       exec_mode: "fork",
       watch: false,
       autorestart: false,
-      cron_restart: "15 17 * * 5",
+      cron_restart: "0 18 * * 5",
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
+      name: "godzilla-newsletter-cron",
+      script: "./scripts/auto_newsletter_cron.js",
+      cwd: "./server",
+      instances: 1,
+      exec_mode: "fork",
+      watch: false,
+      autorestart: false,
+      cron_restart: "0 9 * * 1", // Todos los Lunes a las 9:00 AM
       env: {
         NODE_ENV: "production"
       }
@@ -93,6 +122,16 @@ module.exports = {
         NODE_ENV: "production",
         QUEUE_DELAY_MS: "2000"    // 2 segundos entre correos
       }
+    },
+    {
+      name: "godzilla-sora-engine",
+      script: "godzilla_inference_bridge.py",
+      cwd: "./server/core_engine",
+      interpreter: "python",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "12G", // Previene OOM Catastroficos
+      watch: false
     }
   ]
 };

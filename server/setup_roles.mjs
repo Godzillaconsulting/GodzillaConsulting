@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const { Pool } = pg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
 
 // 1. Ver usuarios actuales
 const users = await pool.query('SELECT id, username, is_superadmin, status FROM admins ORDER BY id');

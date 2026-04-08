@@ -76,19 +76,29 @@ export const getSubscribers = async (req, res) => {
 // ── POST /api/newsletter/send ────────────────────────────────────────────────
 export const sendNewsletter = async (req, res) => {
     try {
-        const { subject, bodyHtml, attachmentUrl } = req.body;
+        const { id, subject, bodyHtml, attachmentUrl } = req.body;
 
         if (!subject || !bodyHtml) {
             return res.status(400).json({ success: false, message: 'subject y bodyHtml son requeridos.' });
         }
 
-        // 1. Crear registro del newsletter
-        const nlRes = await pool.query(
-            `INSERT INTO newsletters (subject, body_html, attachment_url, status)
-             VALUES ($1, $2, $3, 'draft') RETURNING id`,
-            [subject, bodyHtml, attachmentUrl || null]
-        );
-        const newsletterId = nlRes.rows[0].id;
+        let newsletterId = id;
+
+        if (newsletterId) {
+            // Es un borrador que se está aprobando
+            await pool.query(
+                `UPDATE newsletters SET subject = $1, body_html = $2, attachment_url = $3, status = 'draft' WHERE id = $4`,
+                [subject, bodyHtml, attachmentUrl || null, newsletterId]
+            );
+        } else {
+            // 1. Crear nuevo registro del newsletter
+            const nlRes = await pool.query(
+                `INSERT INTO newsletters (subject, body_html, attachment_url, status)
+                 VALUES ($1, $2, $3, 'draft') RETURNING id`,
+                [subject, bodyHtml, attachmentUrl || null]
+            );
+            newsletterId = nlRes.rows[0].id;
+        }
 
         // 2. Encolar envío (regresa inmediatamente, el envío es async)
         const totalRecipients = await enqueueNewsletter(newsletterId);
@@ -109,8 +119,8 @@ export const sendNewsletter = async (req, res) => {
 export const getHistory = async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, subject, sent_at, total_recipients, sent_count, failed_count, status
-             FROM   newsletters ORDER BY sent_at DESC LIMIT 50`
+            `SELECT id, subject, body_html, attachment_url, sent_at, total_recipients, sent_count, failed_count, status
+             FROM   newsletters ORDER BY sent_at DESC NULLS FIRST, id DESC LIMIT 50`
         );
         return res.json({ success: true, newsletters: result.rows });
     } catch (err) {

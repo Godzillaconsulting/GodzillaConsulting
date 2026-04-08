@@ -40,14 +40,58 @@ export default function CockersStudio({ adminProfile }) {
         negativo: ''
     });
 
-    const elitePrompts = [
+    const [elitePrompts, setElitePrompts] = useState([
         "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight...",
         "Extreme macro close-up of a glowing glowing server rack cable snapping, sparks flying in explosive super slow motion..."
-    ];
+    ]);
 
     useEffect(() => {
         fetchQueue();
+        fetchElitePrompts();
     }, []);
+
+    const fetchElitePrompts = async () => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/elite-prompts`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.prompts?.length > 0) {
+                setElitePrompts(data.prompts);
+            }
+        } catch (e) {
+            console.error('Error fetching elite prompts:', e);
+        }
+    };
+
+    const handleSendChatMessage = async (val) => {
+        if (!val.trim()) return;
+        setScriptChatInput('');
+        const newUserMsg = { role: 'user', text: val };
+        setScriptChatHistory(h => [...h, newUserMsg]);
+        
+        try {
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/script-chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ message: val, chatHistory: scriptChatHistory })
+            });
+            const data = await response.json();
+            if (data.success) {
+                setScriptChatHistory(h => [...h, { role: 'ai', text: data.text }]);
+                if (setSelectedDraft) {
+                    setSelectedDraft(prev => prev ? {...prev, caption: data.text} : prev);
+                }
+            } else {
+                setScriptChatHistory(h => [...h, { role: 'ai', text: "Error de conexión con Gemini." }]);
+            }
+        } catch (e) {
+            console.error(e);
+            setScriptChatHistory(h => [...h, { role: 'ai', text: "Fallo al contactar IA." }]);
+        }
+    };
 
     const fetchQueue = async () => {
         setIsLoading(true);
@@ -406,10 +450,8 @@ export default function CockersStudio({ adminProfile }) {
                                 className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
                             >
                                 <option value="Gemini Advanced">✨ Gemini Advanced (Cuenta Plus)</option>
-                                <option value="Nano Banana 2">🍌 Nano Banana 2</option>
                                 <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast</option>
                                 <option value="Kling 3.0">🎬 Kling 3.0 HD</option>
-                                <option value="Midjourney V6">🌌 Midjourney V6</option>
                                 <option value="Sora" className="bg-[#cc0000] text-white">🦖 Godzilla Sora (Cluster In-House)</option>
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">▼</div>
@@ -476,35 +518,13 @@ export default function CockersStudio({ adminProfile }) {
                                     value={scriptChatInput} 
                                     onChange={e => setScriptChatInput(e.target.value)} 
                                     onKeyDown={(e) => {
-                                        if(e.key === 'Enter' && scriptChatInput.trim() !== '') {
-                                            const val = scriptChatInput; setScriptChatInput('');
-                                            setScriptChatHistory(h => [...h, {role:'user', text:val}]);
-                                            setTimeout(() => {
-                                                const response = `Perfecto. Aquí tienes el guion generado para "${val}":\n\n📌 Hook: ¿Estás perdiendo conversiones?\n🔍 Cuerpo: Optimiza tus procesos B2B con tecnología avanzada.\n🎯 CTA: Agenda una auditoría gratis.\n\nLo he inyectado en la caja de Copy detrás de esta ventana.`;
-                                                setScriptChatHistory(h => [...h, {role:'ai', text: response}]);
-                                                if(setSelectedDraft) {
-                                                    setSelectedDraft(prev => prev ? {...prev, caption: `📌 Hook: ¿Estás perdiendo conversiones?\n🔍 Cuerpo: Optimiza tus procesos B2B con tecnología avanzada.\n🎯 CTA: Agenda una auditoría gratis.`} : prev);
-                                                }
-                                            }, 1000);
-                                        }
+                                        if(e.key === 'Enter') handleSendChatMessage(scriptChatInput);
                                     }} 
                                     placeholder="Ej: Hazme un guion agresivo para vender software..." 
                                     className="flex-1 bg-black/50 backdrop-blur-md border hover:border-[#CC0000]/50 shadow-inner text-white focus:bg-[#CC0000]/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[#CC0000] border-red-900/30" 
                                 />
                                 <button 
-                                    onClick={() => {
-                                        if(scriptChatInput.trim() !== '') {
-                                            const val = scriptChatInput; setScriptChatInput('');
-                                            setScriptChatHistory(h => [...h, {role:'user', text:val}]);
-                                            setTimeout(() => {
-                                                const response = `Perfecto. Aquí tienes el guion cerrado para "${val}":\n\n📌 Hook: ¿Sigues operando a ciegas?\n🔍 Cuerpo: Conoce la infraestructura de ventas automatizada.\n🎯 CTA: Comenta IA para tu demo.\n\n(Inyectado al Copy automáticamente).`;
-                                                setScriptChatHistory(h => [...h, {role:'ai', text: response}]);
-                                                if(setSelectedDraft) {
-                                                    setSelectedDraft(prev => prev ? {...prev, caption: `📌 Hook: ¿Sigues operando a ciegas?\n🔍 Cuerpo: Conoce la infraestructura de ventas automatizada.\n🎯 CTA: Comenta IA para tu demo.`} : prev);
-                                                }
-                                            }, 1000);
-                                        }
-                                    }} 
+                                    onClick={() => handleSendChatMessage(scriptChatInput)} 
                                     className="bg-[#222] hover:bg-gradient-to-r from-[#CC0000] to-[#880000] text-white font-black uppercase px-6 rounded-xl text-xs transition-colors shadow-lg"
                                 >
                                     Enviar

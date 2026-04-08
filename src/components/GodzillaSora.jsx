@@ -29,10 +29,13 @@ export default function GodzillaSora() {
     const [recipeHistory, setRecipeHistory] = useState([]);
     const terminalEndRef = useRef(null);
     
+    // URL Dinámica para Vercel (En modo local sigue usando localhost 5000)
+    const SORA_API_URL = import.meta.env.VITE_SORA_API_URL || 'http://127.0.0.1:5000';
+
     // Función para obtener el Diario del Master Cluster
     const fetchHistory = async () => {
         try {
-            const res = await fetch("http://127.0.0.1:5000/sora-history");
+            const res = await fetch(`${SORA_API_URL}/sora-history`);
             const data = await res.json();
             if (data.success) setRecipeHistory(data.history);
         } catch (e) {
@@ -57,8 +60,8 @@ export default function GodzillaSora() {
 
     useEffect(() => {
         fetchHistory(); // Jalamos Diario al inicio
-        // Inicializar socket al montar
-        socketRef.current = io('http://127.0.0.1:5000');
+        // Inicializar socket al montar usando la ruta dinámica en nube
+        socketRef.current = io(SORA_API_URL);
 
         socketRef.current.on('connect', () => {
             setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [NETWORK] Enlace WS con GPU Node establecido.`]);
@@ -100,8 +103,8 @@ export default function GodzillaSora() {
         setProgress(0); // Reinicia barra progreso
         
         try {
-            // Pegar directamente al endpoint de Python Local
-            const response = await fetch(`http://127.0.0.1:5000/sora-start`, {
+            // Pegar apuntando al endpoint Seguro de Nube
+            const response = await fetch(`${SORA_API_URL}/sora-start`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json"
@@ -146,7 +149,7 @@ export default function GodzillaSora() {
         setProgress(0);
         
         try {
-            const response = await fetch("http://127.0.0.1:5000/sora-restore", {
+            const response = await fetch(`${SORA_API_URL}/sora-restore`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ task_id: taskId })

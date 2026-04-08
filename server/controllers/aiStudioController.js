@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
+import pool from '../config/db.js';
 // Genera el JWT riguroso solicitado por la arquitectura de Kling AI 
 function generateKlingAuthToken() {
     const accessKey = process.env.KLING_ACCESS_KEY;
@@ -212,5 +213,90 @@ export const checkRenderStatus = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
+    }
+};
+
+export const getElitePrompts = async (req, res) => {
+    try {
+        const query = `
+            SELECT original_prompt, improved_prompt, context_type 
+            FROM goyi_learning 
+            ORDER BY created_at DESC 
+            LIMIT 10;
+        `;
+        // Intentamos leer de la DB si es que la tabla existe (si no, fallará pero lo agarramos en el catch)
+        let rows = [];
+        try {
+            const result = await pool.query(query);
+            rows = result.rows;
+        } catch (dbErr) {
+            console.log("[STUDIO] Tabla goyi_learning no disponible aún o vacía, usando fallback.", dbErr.message);
+        }
+
+        let elitePrompts = [];
+        // Filtramos para sacar prompts que realmente tienen carnita visual
+        rows.forEach(r => {
+            if (r.improved_prompt && r.improved_prompt.length > 20) {
+                elitePrompts.push(r.improved_prompt);
+            }
+        });
+
+        // Si no hay suficientes, rellenar con the community classics
+        if (elitePrompts.length === 0) {
+            elitePrompts = [
+                "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight...",
+                "Extreme macro close-up of a glowing server rack cable snapping, sparks flying in explosive super slow motion..."
+            ];
+        }
+
+        res.status(200).json({ success: true, prompts: elitePrompts });
+    } catch (error) {
+        console.error("Error getElitePrompts:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const generateScriptChat = async (req, res) => {
+    try {
+        const { message, chatHistory } = req.body;
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+        }
+
+        console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
+        // Creamos el historial de chat combinando system prompt y previos (GoogleGenAI SDK)
+        let systemInstruction = "Eres un director creativo experto en copywriting y prompts de video. Sé muy agresivo para las conversiones y muy directo. Escribe siempre un Hook impactante, un Cuerpo directo y un CTA claro. Responde directamente con el guion pedido o la mejora. Usa máximo 2 párrafos.";
+        
+        let combinedText = systemInstruction + '\n\n';
+        if (chatHistory && chatHistory.length > 0) {
+            combinedText += chatHistory.map(m => `${m.role}: ${m.text}`).join('\n') + '\n';
+        }
+        combinedText += `user: ${message}\nai:`;
+
+        const responseGenAI = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: combinedText
+        });
+        
+        const aiResponse = responseGenAI.text || "No obtuve respuesta de mis servidores neuronales.";
+
+        // Intentar loguear esto en la base de datos de aprendizaje (Para Elite Prompts / Option 2)
+        try {
+            const query = `
+                INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type)
+                VALUES ($1, $2, $3)
+            `;
+            // Guardamos el input del user como original y la respuesta en improved
+            await pool.query(query, [message, aiResponse, 'script_chat']);
+        } catch (dbErr) {
+            console.log("[STUDIO] Info: goyi_learning log saltado", dbErr.message);
+        }
+
+        return res.status(200).json({ success: true, text: aiResponse });
+    } catch (error) {
+        console.error("Error generateScriptChat:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };

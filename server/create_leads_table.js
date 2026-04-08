@@ -1,6 +1,8 @@
 import pg from 'pg';
 const { Client } = pg;
-const connectionString = 'postgresql://neondb_owner:npg_9oyPl3rTRqCb@ep-super-firefly-aev3f4b4.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require';
+import dotenv from 'dotenv';
+dotenv.config({ path: new URL('../.env', import.meta.url).pathname });
+const connectionString = process.env.DATABASE_URL;;
 
 async function initLeads() {
     const pool = new Client({ connectionString });

@@ -61,15 +61,7 @@ const sankeyOptions = {
   enableInteractivity: true
 };
 
-// --- (Global) Financial ROI Mock Data ---
-const roiData = [
-  { name: 'Oct', spend: 3200, revenue: 9500, cac: 185 },
-  { name: 'Nov', spend: 4500, revenue: 14000, cac: 165 },
-  { name: 'Dec', spend: 6000, revenue: 21000, cac: 150 },
-  { name: 'Jan', spend: 5500, revenue: 18500, cac: 170 },
-  { name: 'Feb', spend: 7200, revenue: 28000, cac: 135 },
-  { name: 'Mar', spend: 8500, revenue: 35000, cac: 120 },
-];
+// --- Fin Mock Data Header ---
 
 // --- Mock Data ---
 // Nodos Globales (Tráfico)
@@ -81,8 +73,18 @@ const trafficSources = [
   { id: 'web', name: 'Sitio Web (Pixel)', emoji: '💻', visitors: 0, leads: 0, calls: 0, cac: '$0.00', roi: 'Tracking' }
 ];
 
-// Generador de sparklines
-const getRandomSparkline = () => Array.from({length: 10}, () => Math.floor(Math.random() * 50) + 10);
+// Sacar sparklines reales usando históricos
+const getRealSparkline = (srcId, liveWebGraph, liveSocialPosts) => {
+    if (srcId === 'web' || srcId === 'google_ads') {
+        if (!liveWebGraph || liveWebGraph.length === 0) return [0,0,0];
+        return liveWebGraph.map(d => d.views);
+    }
+    if (srcId === 'ig' || srcId === 'fb') {
+        if (!liveSocialPosts || !liveSocialPosts[srcId] || liveSocialPosts[srcId].length === 0) return [0,0,0];
+        return liveSocialPosts[srcId].slice(0, 10).map(p => p.likes || 0).reverse();
+    }
+    return [0,0,0];
+};
 
 // Nodos de Detalle (Frutiger Aero / Meta Clone Setup)
 const metaKpiTemplate = (nameType) => [
@@ -119,11 +121,11 @@ const metaKpiTemplate = (nameType) => [
 ];
 
 const detailData = {
-  ig: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', likes: 10}], topPosts: [] },
-  fb: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', likes: 10}], topPosts: [] },
-  messenger: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'msgs', name: 'Messages', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', msgs: 10}], topPosts: [] },
-  tiktok: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'views', name: 'Views', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', views: 10}], topPosts: [] },
-  web: { kpiCards: metaKpiTemplate('web'), metrics: [{key: 'events', name: 'Events', color: '#00f2fe', isArea: true}], engagementGraph: [{date: '01', events: 10}], topPosts: [] }
+  ig: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [], topPosts: [] },
+  fb: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'likes', name: 'Likes', color: '#00f2fe', isArea: true}], engagementGraph: [], topPosts: [] },
+  messenger: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'msgs', name: 'Messages', color: '#00f2fe', isArea: true}], engagementGraph: [], topPosts: [] },
+  tiktok: { kpiCards: metaKpiTemplate('social'), metrics: [{key: 'views', name: 'Views', color: '#00f2fe', isArea: true}], engagementGraph: [], topPosts: [] },
+  web: { kpiCards: metaKpiTemplate('web'), metrics: [{key: 'events', name: 'Events', color: '#00f2fe', isArea: true}], engagementGraph: [], topPosts: [] }
 };
 
 export default function AnalyticsDashboard() {
@@ -459,10 +461,9 @@ export default function AnalyticsDashboard() {
                 <span className="text-[10px] text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-2 py-1 rounded font-bold hidden sm:inline shadow-[0_0_10px_rgba(34,211,238,0.2)]">● Haz clic en una red para profundizar</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {trafficSources.map((src, idx) => {
-                  // Generamos un sparkline pseudo-aleatorio para el demo
-                  const trendGreen = idx % 2 === 0;
-                  const sparkData = getRandomSparkline();
+                {liveTrafficSources.map((src, idx) => {
+                  const trendGreen = true;
+                  const sparkData = getRealSparkline(src.id, liveWebGraph, liveSocialPosts);
                   
                   return (
                     <button 

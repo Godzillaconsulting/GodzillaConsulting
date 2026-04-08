@@ -396,3 +396,9 @@ export const initWhatsAppBot = () => {
         process.exit(0);
     });
 };
+
+// AUTO-START for PM2 standalone
+import { fileURLToPath } from 'url';
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    initWhatsAppBot();
+}

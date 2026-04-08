@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateRenderJob, checkRenderStatus } from '../controllers/aiStudioController.js';
+import { generateRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -10,6 +10,8 @@ const router = express.Router();
 // ==========================================
 router.post('/generate', authenticateToken, generateRenderJob);
 router.get('/status/:taskId', authenticateToken, checkRenderStatus);
+router.get('/elite-prompts', authenticateToken, getElitePrompts);
+router.post('/script-chat', authenticateToken, generateScriptChat);
 
 // ==========================================
 // In-House Cluster (Sora / Python Local Bridge)

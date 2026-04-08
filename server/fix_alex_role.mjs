@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const { Pool } = pg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
 
 // Asegurarse que alex y cualquier usuario GD tenga role=admin
 const r = await pool.query("UPDATE admins SET role = 'admin' WHERE username ILIKE '%alex%' AND role != 'superadmin' RETURNING id, username, role");

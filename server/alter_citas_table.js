@@ -5,7 +5,7 @@ dotenv.config();
 const { Pool } = pg;
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: false
 });
 
 async function alterCitas() {
@@ -21,7 +21,7 @@ async function alterCitas() {
         // Aplicamos también a DEV
         const poolDev = new Pool({
             connectionString: process.env.DATABASE_URL_DEV,
-            ssl: { rejectUnauthorized: false }
+            ssl: false
         });
         const clientDev = await poolDev.connect();
         await clientDev.query(`

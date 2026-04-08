@@ -9,7 +9,7 @@ Object.assign(process.env, envConfig);
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: false,
   max: 1,
 });
 

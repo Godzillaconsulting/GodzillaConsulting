@@ -6,7 +6,7 @@ dotenv.config();
 const { Pool } = pg;
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: false
 });
 
 async function setupTables() {
@@ -56,7 +56,7 @@ async function setupTables() {
 
         // Insertar un lead_magnet de prueba si no existe
         await client.query(`
-            INSERT INTO lead_magnets (slug, title, email_subject, email_body, file_url)
+            INSERT INTO lead_magnets (slug, name, email_subject, email_body, file_url)
             VALUES (
                 'test-magnet', 
                 'Recurso de Prueba', 

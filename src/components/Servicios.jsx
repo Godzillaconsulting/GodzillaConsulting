@@ -78,11 +78,30 @@ const Servicios = () => {
             <div className="relative w-full h-[400px] bg-[#050505] overflow-hidden flex flex-col pt-20">
                 {/* Video o Imagen de fondo - Inteligente */}
                 {(() => {
-                    const finalBg = nodeData.videoUrl !== undefined && nodeData.videoUrl !== '' 
+                    const finalBg = (nodeData.videoUrl !== undefined && nodeData.videoUrl !== '') 
                         ? nodeData.videoUrl 
-                        : bgVideo;
+                        : (nodeData.videoFileUrl !== undefined && nodeData.videoFileUrl !== '') 
+                            ? nodeData.videoFileUrl 
+                            : bgVideo;
                     
-                    if (finalBg.match(/\.(mp4|webm|ogg|mov)$/i)) {
+                    if (!finalBg) return null;
+
+                    // 1. Detección de YouTube
+                    const ytMatch = finalBg.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+                    const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+                    if (ytId) {
+                        return (
+                            <iframe 
+                                src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0`}
+                                className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen pointer-events-none"
+                                frameBorder="0"
+                                allow="autoplay; encrypted-media"
+                            ></iframe>
+                        );
+                    }
+
+                    // 2. Detección de Archivos Nativos de Video (mp4, mov, etc)
+                    if (finalBg.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) {
                         return (
                             <video
                                 src={finalBg}
@@ -93,15 +112,16 @@ const Servicios = () => {
                                 className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
                             />
                         );
-                    } else {
-                        return (
-                            <img
-                                src={finalBg}
-                                alt="Background Servicios"
-                                className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
-                            />
-                        );
-                    }
+                    } 
+                    
+                    // 3. Fallback a Imagen
+                    return (
+                        <img
+                            src={finalBg}
+                            alt="Background Servicios"
+                            className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen"
+                        />
+                    );
                 })()}
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>

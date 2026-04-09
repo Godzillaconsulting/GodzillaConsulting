@@ -41,7 +41,8 @@ export function SiteProvider({ children }) {
     if (previewOverride && previewOverride.nodeId === id) {
       return previewOverride.data;
     }
-    const node = nodes.find(n => n.id === id);
+    const nodesArray = Array.isArray(nodes) ? nodes : [];
+    const node = nodesArray.find(n => n.id === id);
     if (!node || !node.published_data) return null;
     return injectSectionDefaults(id, node.published_data);
   };

@@ -176,7 +176,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  loop
  playsInline
  controls
- className="w-full bg-black rounded-[2.5rem] shadow-[0_0_50px_rgba(255,255,255,0.1)] min-h-[250px] md:min-h-[300px] lg:min-h-[350px] object-cover"
+ className="w-full h-auto bg-black rounded-[2.5rem] shadow-[0_0_50px_rgba(255,255,255,0.1)] aspect-video object-contain"
  />
  ) : (
  <div className="w-full bg-white rounded-[2.5rem] shadow-[0_0_50px_rgba(255,255,255,0.1)] min-h-[250px] md:min-h-[300px] lg:min-h-[350px]">

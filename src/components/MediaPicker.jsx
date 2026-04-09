@@ -52,8 +52,10 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploading(true);
         setUploadProgress(0);
 
+        // Bypass Vercel 4.5MB serverless payload limit for uploads by hitting the PC Tunnel directly
+        const UPLOAD_API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
         const isVideoFile = file.type.startsWith('video/');
-        const endpoint = isVideoFile ? `${API}/api/media/upload-video` : `${API}/api/media/upload`;
+        const endpoint = isVideoFile ? `${UPLOAD_API}/api/media/upload-video` : `${UPLOAD_API}/api/media/upload`;
 
         try {
             const formData = new FormData();

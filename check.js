@@ -1,0 +1,1 @@
+fetch('https://godzillaconsulting.ai/assets/index-Btyv_Eg2.js').then(r=>r.text()).then(t=>{console.log('Includes tunnel URL?', t.includes('https://bot.godzillaconsulting.ai')); console.log('Includes empty fallback?', t.includes(':"\"'));})

@@ -4,13 +4,13 @@ import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Video, Scissors, Star, PlayCircle, Smartphone, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 
-const gifBot = 'https://bot.godzillaconsulting.ai/api/media/assets/Bot.gif';
-const gifVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Video.gif';
-const gifEmbudo = 'https://bot.godzillaconsulting.ai/api/media/assets/Embudo.gif';
-const gifRedes = 'https://bot.godzillaconsulting.ai/api/media/assets/Redes Sociales.gif';
-const gifSeo = 'https://bot.godzillaconsulting.ai/api/media/assets/Red Social Optimizar.gif';
-const gifCrm = 'https://bot.godzillaconsulting.ai/api/media/assets/Estadistica.gif';
-// const audiovisualVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/GC_VideoEImagenWebPage_AM_181225.mp4'; // TEMP: Comentado por falta de archivo
+const gifBot = '/api/media/assets/Bot.gif';
+const gifVideo = '/api/media/assets/Video.gif';
+const gifEmbudo = '/api/media/assets/Embudo.gif';
+const gifRedes = '/api/media/assets/Redes Sociales.gif';
+const gifSeo = '/api/media/assets/Red Social Optimizar.gif';
+const gifCrm = '/api/media/assets/Estadistica.gif';
+// const audiovisualVideo = '/api/media/assets/GC_VideoEImagenWebPage_AM_181225.mp4'; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
     title: 'Producción\naudiovisual',

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import { getYouTubeId } from './MediaPicker';
-const culturaImage = 'https://bot.godzillaconsulting.ai/api/media/assets/Nuestra cultura image.jpg';
-const culturaVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas.mp4';
+const culturaImage = '/api/media/assets/Nuestra cultura image.jpg';
+const culturaVideo = '/api/media/assets/Particulas Rojas.mp4';
 import { trackGodzillaEvent } from '../utils/analyticsHelper';
 
 const Cultura = () => {

@@ -6,6 +6,7 @@ export default function CockersStudio({ adminProfile }) {
     const [selectedDraft, setSelectedDraft] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [renderingAI, setRenderingAI] = useState(false);
+    const [renderProgress, setRenderProgress] = useState(0);
     
     // UI States para el Generador Profesional
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
@@ -171,6 +172,7 @@ export default function CockersStudio({ adminProfile }) {
 
     const simulateAIGeneration = async () => {
         setRenderingAI(true);
+        setRenderProgress(0);
         try {
             const rawPrompt = finalPrompt || selectedDraft?.visual_prompt || 'cyberpunk cinematic city';
             const cleanPrompt = rawPrompt.replace(/\[\/?.*?]/g, '').trim();
@@ -213,6 +215,10 @@ export default function CockersStudio({ adminProfile }) {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const statusData = await statusRes.json();
+                        
+                        if (statusData.progress !== undefined) {
+                            setRenderProgress(statusData.progress);
+                        }
                         
                         if (statusData.status === 'succeed') {
                             clearInterval(pollInterval);
@@ -366,16 +372,6 @@ export default function CockersStudio({ adminProfile }) {
                     </div>
                 </div>
 
-                {/* SORA Direct Action Button */}
-                <div className="px-5 pb-4 shrink-0">
-                    <button 
-                        onClick={() => window.open('/godzilla-sora', '_blank')}
-                        className="w-full bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-[#ff1e50] hover:to-[#CC0000] text-white p-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-[#cc0000]/20 transition-all hover:scale-[1.02]"
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                        <span className="font-black text-sm tracking-wider">ABRIR SORA CLUSTER (IN-HOUSE)</span>
-                    </button>
-                    <p className="text-[10px] text-center text-neutral-500 mt-2">Abre el servidor Python local en otra ventana</p>
                 </div>
 
                 {/* Área de Prompt */}
@@ -440,12 +436,7 @@ export default function CockersStudio({ adminProfile }) {
                             <select 
                                 value={builderData.model} 
                                 onChange={e => {
-                                    if(e.target.value === 'Sora') {
-                                        window.open('/godzilla-sora', '_blank');
-                                        setBuilderData({...builderData, model: 'Veo 3.1 - Fast'});
-                                    } else {
-                                        setBuilderData({...builderData, model: e.target.value});
-                                    }
+                                    setBuilderData({...builderData, model: e.target.value});
                                 }}
                                 className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
                             >
@@ -597,8 +588,11 @@ export default function CockersStudio({ adminProfile }) {
 
                 {renderingAI && (
                     <div className="flex flex-col items-center justify-center p-12 bg-neutral-900/50 rounded-3xl border border-neutral-800 shadow-2xl backdrop-blur-md">
-                        <div className="w-16 h-16 border-4 border-neutral-700 border-t-white rounded-full animate-spin mb-6"></div>
+                        <div className="w-16 h-16 border-4 border-neutral-700 border-t-white rounded-full animate-spin mb-6 relative flex items-center justify-center">
+                            <span className="absolute text-[10px] font-bold text-white mt-1.5">{renderProgress > 0 ? `${renderProgress}%` : ''}</span>
+                        </div>
                         <p className="text-lg font-bold text-white tracking-widest">{builderData.model} is rendering...</p>
+                        {renderProgress > 0 && <p className="text-[#CC0000] font-black tracking-widest text-sm mt-2">{renderProgress}% Completado</p>}
                         <p className="text-xs text-neutral-500 mt-2">Patience, director.</p>
                     </div>
                 )}

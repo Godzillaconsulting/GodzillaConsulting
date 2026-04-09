@@ -84,6 +84,7 @@ app_asgi = socketio.ASGIApp(sio, app)
 # ========================================================
 gpu_queue = None
 ai_pipeline = None
+LOCAL_TASKS_DB = {}
 
 def load_ai_model():
     global ai_pipeline
@@ -305,9 +306,12 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
                 })
         
         final_url = save_tensor_to_disk(task_id, mode, seed)
+        LOCAL_TASKS_DB[task_id] = {"status": "DONE", "media_url": final_url}
         await sio.emit("render_progress", {"task_id": task_id, "status": "DONE", "msg": "Generación Simulada Terminada.", "media_url": final_url})
         return
         
+    # Registrar inicio 
+    LOCAL_TASKS_DB[task_id] = {"status": "RUNNING", "msg": "Inicializando Tensor", "progress": 0}
     # FLUJO IDEAL C++ CON PUNTEROS DOBLES
     # 1. Initialize Doubly Linked List in native C++
     timeline_ptr = c_engine.CreateTimeline()
@@ -329,6 +333,7 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
                     "step": i,
                     "max_steps": steps
                 })
+                LOCAL_TASKS_DB[task_id] = {"status": "RUNNING", "progress": int((i/steps)*100)}
         
         # Pytorch Real Execution
         final_ai_image = None
@@ -353,9 +358,13 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
 
         # Guarda la obra final o el backup si PyTorch no corrió
         final_url = save_tensor_to_disk(task_id, mode, seed, ai_image=final_ai_image, ai_frames=final_ai_frames)
+        LOCAL_TASKS_DB[task_id] = {"status": "DONE", "media_url": final_url}
         await sio.emit("render_progress", {"task_id": task_id, "status": "DONE", "msg": f"Media Lista. Recolector programado para {task_id}.", "media_url": final_url})
         print(f"[ENGINE COMPLETE] Tensor Matrix finalized and packed for {task_id}.")
         
+    except Exception as e:
+        LOCAL_TASKS_DB[task_id] = {"status": "ERROR", "error": str(e)}
+        raise e
     finally:
         # 5. Crucial: The custom Destructors trigger here destroying Double Linked Pointers row by row
         c_engine.DestroyTimeline(timeline_ptr)
@@ -383,7 +392,22 @@ async def start_generation(payload: dict):
     await gpu_queue.put(put_data)
     queue_pos = gpu_queue.qsize()  # Posición aproximada en fila (1 = sigte, 2 = 2 tras actual)
     
+    LOCAL_TASKS_DB[task_id] = {"status": "QUEUED", "queue_position": queue_pos}
+    
     return {"success": True, "task_id": task_id, "msg": f"Orden encriptada y enviada.", "queue_position": queue_pos}
+
+@app.get("/sora-status/{task_id}")
+async def get_sora_status(task_id: str):
+    task_info = LOCAL_TASKS_DB.get(task_id)
+    if not task_info:
+        return {"success": False, "status": "failed", "error": "Task not found"}
+        
+    if task_info["status"] == "DONE":
+        return {"success": True, "status": "succeed", "result_url": task_info["media_url"]}
+    elif task_info["status"] == "ERROR":
+        return {"success": False, "status": "failed", "error": task_info.get("error", "Unknown Error")}
+    else:
+        return {"success": True, "status": "processing", "progress": task_info.get("progress", 0)}
 
 @app.get("/sora-history")
 async def get_sora_history():

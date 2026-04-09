@@ -29,7 +29,26 @@ export const generateRenderJob = async (req, res) => {
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
         let response;
-        if (engine.includes('Kling')) {
+        if (engine === 'Sora') {
+            console.log(`[STUDIO] Despertando In-House GoTSora. Prompt original: ${prompt}`);
+            try {
+                // Fetch to local Node proxy so it handles Gemini Context Expansion natively
+                const response = await fetch('http://127.0.0.1:3000/api/sora-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                         prompt: prompt,
+                         mode: 'photo',
+                         diffusion_steps: 4
+                    })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || "Falla en Local Backend");
+                return res.status(200).json({ job_id: data.task_id, status: "processing", provider: engine });
+            } catch (err) {
+                 return res.status(400).json({ error: "Sora Cluster Apagado o Desconectado" });
+            }
+        } else if (engine.includes('Kling')) {
             let token;
             try {
                 token = generateKlingAuthToken();
@@ -147,6 +166,33 @@ export const checkRenderStatus = async (req, res) => {
                 progress: 100,
                 result_url: "" // El frontend tiene fallbacks visuales
             });
+        }
+        
+        // Manejar Sora In-House
+        if (taskId.startsWith("sora_live_")) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/sora-status/${taskId}`);
+                const data = await response.json();
+                if (data.status === 'succeed') {
+                    return res.status(200).json({
+                        task_id: taskId,
+                        status: 'succeed',
+                        progress: 100,
+                        result_url: data.result_url
+                    });
+                } else if (data.status === 'failed') {
+                    return res.status(400).json({ error: data.error });
+                } else {
+                    return res.status(200).json({
+                        task_id: taskId,
+                        status: 'processing',
+                        progress: data.progress || 10,
+                        result_url: ''
+                    });
+                }
+            } catch (err) {
+                return res.status(400).json({ error: "Sora Offline" });
+            }
         }
 
         if (taskId.startsWith("veo_")) {

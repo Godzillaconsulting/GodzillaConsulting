@@ -9,7 +9,7 @@ async function setup() {
     const client = new Client({ connectionString });
     try {
         await client.connect();
-        console.log('🔗 Conectado a Neon PostgreSQL con la URL de Producción...');
+        console.log('🔗 Conectado a PostgreSQL Local con la URL de Producción...');
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS pixel_events (

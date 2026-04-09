@@ -1,7 +1,7 @@
 /**
  * 🧹 SCRIPT DE LIMPIEZA DE NODOS HUÉRFANOS
- * Compara eventos en Google Calendar vs registros en Neon.
- * Marca como 'cancelada' cualquier cita en Neon que NO tenga
+ * Compara eventos en Google Calendar vs registros en Local.
+ * Marca como 'cancelada' cualquier cita en Local que NO tenga
  * un evento real en Google Calendar.
  */
 import dotenv from 'dotenv';
@@ -26,9 +26,9 @@ async function auditAndClean(dryRun = true) {
     const calendar = getCalendarClient();
     const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
-    console.log('🔍 Auditando sincronización Neon ↔ Google Calendar...\n');
+    console.log('🔍 Auditando sincronización Local ↔ Google Calendar...\n');
 
-    // 1. Obtener todas las citas confirmadas de Neon
+    // 1. Obtener todas las citas confirmadas de Local
     const { rows: citas } = await pool.query(`
         SELECT id, nombre_completo, email, fecha, hora, google_calendar_event_id, created_at
         FROM citas
@@ -36,7 +36,7 @@ async function auditAndClean(dryRun = true) {
         ORDER BY created_at DESC
     `);
 
-    console.log(`📋 Citas confirmadas en Neon: ${citas.length}`);
+    console.log(`📋 Citas confirmadas en Local: ${citas.length}`);
     console.table(citas.map(c => ({
         id: c.id,
         nombre: c.nombre_completo,
@@ -97,7 +97,7 @@ async function auditAndClean(dryRun = true) {
         );
         console.log(`\n🗑️  ${orphanIds.length} nodo(s) huérfano(s) marcados como 'cancelada': IDs [${orphanIds.join(', ')}]`);
     } else {
-        console.log('\n✨ Sin nodos huérfanos que limpiar. Neon y Calendar están sincronizados.');
+        console.log('\n✨ Sin nodos huérfanos que limpiar. Local y Calendar están sincronizados.');
     }
 }
 

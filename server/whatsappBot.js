@@ -399,6 +399,7 @@ export const initWhatsAppBot = () => {
 
 // AUTO-START for PM2 standalone
 import { fileURLToPath } from 'url';
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+const isPM2 = process.env.pm_id !== undefined;
+if (isPM2 || process.argv[1] === fileURLToPath(import.meta.url)) {
     initWhatsAppBot();
 }

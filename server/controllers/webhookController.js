@@ -220,7 +220,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                                      VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
                                     [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
                                 );
-                                console.log(`[${platform}] ✅ Cita #${r.rows[0].id} en Neon. Calendar: ${googleRes.id}`);
+                                console.log(`[${platform}] ✅ Cita #${r.rows[0].id} en Local. Calendar: ${googleRes.id}`);
                                 fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink };
                             } else {
                                 fRes = { success: false, error: 'Google Calendar no confirmó el evento' };

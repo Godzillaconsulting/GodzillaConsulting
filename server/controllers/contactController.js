@@ -30,8 +30,8 @@ export const processContactForm = async (req, res) => {
             throw new Error('Google Calendar no confirmó el evento — no se guardó en DB.');
         }
 
-        // PASO 2: Solo si Google confirmó → insertar en Neon (con google_calendar_event_id)
-        console.log("🛠️ Insertando en Neon con Calendar ID:", googleRes.id);
+        // PASO 2: Solo si Google confirmó → insertar en Local (con google_calendar_event_id)
+        console.log("🛠️ Insertando en Local con Calendar ID:", googleRes.id);
         const result = await client.query(
             `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
              VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8) RETURNING id`,

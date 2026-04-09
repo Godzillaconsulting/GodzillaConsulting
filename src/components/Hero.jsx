@@ -2,6 +2,7 @@ import React from'react';
 import { useSiteData } from'../context/SiteContext';
 import { MessageCircle } from'lucide-react';
 import AnimatedHeadline from'./AnimatedHeadline';
+import { getYouTubeId } from './MediaPicker';
 
 import logoCeoCuts from'../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from'../assets/Logos/Circle One Logo@2x.png';
@@ -59,7 +60,9 @@ const Hero = () => {
  <section id="inicio" className="relative flex items-center justify-center pt-20 pb-4 overflow-hidden bg-transparent">
  {/* Fondo editable desde CMS (sobre ColorBends) */}
  {bgVideoUrl ? (
-     bgVideoUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+     getYouTubeId(bgVideoUrl) ? (
+         <iframe src={`https://www.youtube.com/embed/${getYouTubeId(bgVideoUrl)}?controls=0&mute=1&autoplay=1&loop=1&playlist=${getYouTubeId(bgVideoUrl)}`} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" frameBorder="0" allow="autoplay; encrypted-media"></iframe>
+     ) : bgVideoUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
          <video src={bgVideoUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />
      ) : (
          <img src={bgVideoUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" />

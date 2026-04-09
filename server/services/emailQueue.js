@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────
  * Patrón: Linked List de Nodos de Envío
  * Cada nodo contiene: email, newsletterId, queueLogId
- * Persistencia: Neon DB (queue_log) → survive PM2 restarts
+ * Persistencia: DB Local (queue_log) → survive PM2 restarts
  */
 
 import pool from '../config/db.js';

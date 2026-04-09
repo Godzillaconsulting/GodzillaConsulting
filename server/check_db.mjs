@@ -10,6 +10,6 @@ const r = await pool.query(`
   ORDER BY created_at DESC
   LIMIT 10
 `);
-console.log('Últimas 10 citas en Neon:');
+console.log('Últimas 10 citas en Local:');
 console.table(r.rows);
 await pool.end();

@@ -13,13 +13,10 @@ const connectionString =
         ? process.env.DATABASE_URL_DEV
         : process.env.DATABASE_URL;
 
-const isNeon = connectionString && connectionString.includes('neon.tech');
-
 const pool = new Pool({
     connectionString,
-    ssl: isNeon ? { rejectUnauthorized: false } : false,
-    // Optimizado para Vercel Serverless + Neon PgBouncer
-    max: 1,
+    // Optimizado para Local PostgreSQL
+    max: 10,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
 });
@@ -27,9 +24,9 @@ const pool = new Pool({
 // Verificación de conexión
 export const connectDB = async () => {
     try {
-        console.log('⏳ Intentando conectar a PostgreSQL (Vercel Node ENV:', process.env.NODE_ENV, ')...');
+        console.log('⏳ Intentando conectar a PostgreSQL (Node ENV:', process.env.NODE_ENV, ')...');
         const client = await pool.connect();
-        console.log('✅ PostgreSQL Conectado a Neon');
+        console.log('✅ PostgreSQL Local Conectado');
         client.release();
     } catch (error) {
         console.error(`❌ Error en PostgreSQL: ${error.message} | URL usada: ${connectionString ? 'SI' : 'NO'}`);

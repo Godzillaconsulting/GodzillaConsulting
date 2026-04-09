@@ -92,7 +92,7 @@ const chatTools = [{
     parameters: { type: 'OBJECT', properties: { fecha: { type: 'STRING' }, hora: { type: 'STRING' } }, required: ['fecha','hora'] }
 },{
     name: 'save_appointment',
-    description: 'Guarda la cita en Calendar + Neon.',
+    description: 'Guarda la cita en Calendar + Local.',
     parameters: {
         type: 'OBJECT',
         properties: {

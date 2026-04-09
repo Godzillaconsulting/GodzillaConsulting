@@ -2,13 +2,14 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import pool from '../config/db.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
 // ─── Directorio Temporal (Solo para recibir unida de multer) ───────────────
-const TEMP_DIR = '/tmp/uploads';
+const TEMP_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(os.tmpdir(), 'godzilla-uploads');
 try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
 
 // ─── Directorio Constante para Archivos Pesados (Bypass Vercel) ───────────
@@ -23,7 +24,7 @@ try {
     }
 } catch (e) {
     if (e.code === 'EROFS' || e.code === 'EACCES' || e.code === 'ENOENT') {
-        ARCHIVOS_PESADOS_DIR = '/tmp/uploads/assets';
+        ARCHIVOS_PESADOS_DIR = process.env.VERCEL ? '/tmp/uploads/assets' : path.join(os.tmpdir(), 'godzilla-assets');
         try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (_) {}
     } else {
         console.error("Error creating uploads dir", e);
@@ -37,7 +38,7 @@ router.use('/assets', express.static(ARCHIVOS_PESADOS_DIR, {
     immutable: true
 }));
 
-// ─── Multer para imágenes (10MB → Neon DB BYTEA) ────────────────────────────
+// ─── Multer para imágenes (10MB → Local DB BYTEA) ────────────────────────────
 const upload = multer({
     dest: TEMP_DIR,
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -55,7 +56,7 @@ const uploadVideo = multer({
                 if (err && err.code !== 'EEXIST') {
                     console.error('[Media] No se pudo crear directorio destino:', err);
                     // Fallback de emergencia
-                    return cb(null, '/tmp');
+                    return cb(null, process.env.VERCEL ? '/tmp' : os.tmpdir());
                 }
                 cb(null, dest);
             });
@@ -75,7 +76,7 @@ const uploadVideo = multer({
 
 // ─── URL Pública ─────────────────────────────────────────────────────────────
 const getPublicUrl = (req, relativePath) => {
-    // [Vercel Fix] NUNCA quemes un host aquí, usa rutas relativas para las imágenes Neon DB.
+    // [Vercel Fix] NUNCA quemes un host aquí, usa rutas relativas para las imágenes DB.
     // Así la landing lo carga transparente en cualquier dominio (localhost o godzillaconsulting.ai).
     return `/api/media/${relativePath}`;
 };
@@ -86,7 +87,7 @@ const getAssetUrl = (filename) => {
     return `${botBase}/api/media/assets/${filename}`;
 };
 
-// ─── POST /api/media/upload (Guardar a Neon BYTEA) ──────────────────────────
+// ─── POST /api/media/upload (Guardar a Local BYTEA) ──────────────────────────
 router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No se recibió ningún archivo.' });
@@ -97,7 +98,7 @@ router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => 
 
     if (isVideo) {
         if(fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-        return res.status(400).json({ error: 'El servidor Neon 🦖 no admite videos. Usa enlaces externos o Github para videos gigantes.' });
+        return res.status(400).json({ error: 'La Base de Datos 🦖 no admite videos. Usa el disco local vía /upload-video o enlaces externos.' });
     }
 
     try {
@@ -240,7 +241,7 @@ router.delete('/:type/:filename', requireAdmin, async (req, res) => {
         }
     }
 
-    // Imágenes: borrar de Neon DB
+    // Imágenes: borrar de DB
     try {
         const result = await pool.query('DELETE FROM media_storage WHERE id = $1 RETURNING id', [filename]);
         if (result.rowCount === 0) return res.status(404).json({ error: 'Archivo inexistente en DB' });

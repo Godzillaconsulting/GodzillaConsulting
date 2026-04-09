@@ -14,7 +14,7 @@ router.post('/send', async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM site_nodes WHERE id = 'recursos'");
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Configuración de recursos no encontrada en Neon' });
+            return res.status(404).json({ error: 'Configuración de recursos no encontrada en Local' });
         }
         
         const nodeData = result.rows[0];

@@ -16,7 +16,7 @@ const pool = new Pool({
 async function clearCulturaMedia() {
   const client = await pool.connect();
   try {
-    console.log('🔌 Conectado a Neon PostgreSQL...\n');
+    console.log('🔌 Conectado a PostgreSQL Local...\n');
 
     // 1. Leer el estado actual del nodo
     const current = await client.query(`SELECT id, draft_data, published_data FROM site_nodes WHERE id = 'cultura'`);

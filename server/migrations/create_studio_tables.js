@@ -2,7 +2,7 @@ import pool from '../config/db.js';
 
 const runMigration = async () => {
     try {
-        console.log('🚀 Creando tablas de Studio en Neon DB...');
+        console.log('🚀 Creando tablas de Studio en DB Local...');
         
         // Tabla para albergar los scripts y los resultados generados por IA
         await pool.query(`

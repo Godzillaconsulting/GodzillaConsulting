@@ -448,7 +448,8 @@ export const initTikTokBypass = async (isHeadless = true) => {
     const browser = await puppeteer.launch({
         headless: isHeadless ? 'new' : false,
         userDataDir: sessionDir,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        protocolTimeout: 120000
     });
 
     browserClient = browser;
@@ -475,7 +476,11 @@ export const initTikTokBypass = async (isHeadless = true) => {
                 }
                 iterations++;
             } catch (e) {
-                console.error('Error iteración TikTok:', e);
+                console.error('Error iteración TikTok:', e.message);
+                if (e.message.includes('timeout') || e.message.includes('ProtocolError')) {
+                    console.log('🔄 Refrescando pestaña debido a timeout interno...');
+                    try { await page.reload({ waitUntil: 'domcontentloaded' }); } catch(err){}
+                }
             }
             console.log(`💤 Esperando ${POLLING_INTERVAL_MS / 1000}s para próximo chequeo...`);
             await delay(POLLING_INTERVAL_MS, POLLING_INTERVAL_MS + 5000);

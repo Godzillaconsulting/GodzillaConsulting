@@ -1,0 +1,20 @@
+{
+  "name": "ig-neurona",
+  "version": "1.0.0",
+  "description": "Instagram Headless Bot (Godzilla Accrual Bypass)",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.js",
+    "start": "pm2 start ecosystem.neurona-ig.cjs",
+    "stop": "pm2 stop ig-neurona",
+    "log": "pm2 logs ig-neurona"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "puppeteer": "^22.6.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

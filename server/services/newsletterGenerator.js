@@ -76,9 +76,9 @@ DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
         }
     });
 
-    console.log("✅ PDF Compilado (" + (pdfBuffer.length / 1024).toFixed(1) + " KB). Inyectando a Base de Datos Neon...");
+    console.log("✅ PDF Compilado (" + (pdfBuffer.length / 1024).toFixed(1) + " KB). Inyectando a Base de Datos Local...");
 
-    // 3. SUBIDA A DISCO LOCAL (BYPASS NEON DB LIMITS) Y GENERACIÓN DE ENLACE
+    // 3. SUBIDA A DISCO LOCAL (BYPASS DB Local LIMITS) Y GENERACIÓN DE ENLACE
     const filename = `Reporte-Ejecutivo-Godzilla-${Date.now()}.pdf`;
     const targetPath = path.join(ASSETS_DIR, filename);
     await fs.promises.writeFile(targetPath, pdfBuffer);

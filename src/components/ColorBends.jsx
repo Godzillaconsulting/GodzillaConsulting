@@ -156,11 +156,19 @@ export default function ColorBends({
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      powerPreference: 'high-performance',
-      alpha: true
-    });
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        powerPreference: 'high-performance',
+        alpha: true
+      });
+    } catch (error) {
+      console.warn('WebGL is not supported. Background effects disabled to prevent crash.', error);
+      geometry.dispose();
+      material.dispose();
+      return () => {};
+    }
     rendererRef.current = renderer;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -216,10 +224,12 @@ export default function ColorBends({
       else window.removeEventListener('resize', handleResize);
       geometry.dispose();
       material.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      if (renderer.domElement && renderer.domElement.parentElement === container) {
-        container.removeChild(renderer.domElement);
+      if (renderer) {
+        renderer.dispose();
+        renderer.forceContextLoss();
+        if (renderer.domElement && renderer.domElement.parentElement === container) {
+          container.removeChild(renderer.domElement);
+        }
       }
     };
   }, [frequency, mouseInfluence, noise, parallax, scale, speed, transparent, warpStrength]);
@@ -227,7 +237,7 @@ export default function ColorBends({
   useEffect(() => {
     const material = materialRef.current;
     const renderer = rendererRef.current;
-    if (!material) return;
+    if (!material || !renderer) return;
 
     rotationRef.current = rotation;
     autoRotateRef.current = autoRotate;

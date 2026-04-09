@@ -12,7 +12,7 @@ const pool = new Pool({
 async function setupTables() {
     const client = await pool.connect();
     try {
-        console.log('⏳ Creando tablas en la base de datos Neon...');
+        console.log('⏳ Creando tablas en la base de datos Local...');
 
         // Tabla citas
         await client.query(`

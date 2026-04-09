@@ -78,7 +78,7 @@ try {
     console.log(`   Zilla: "${data4.reply?.substring(0, 300)}"\n`);
 
     // Verificar en la BD
-    console.log('🗄️  PASO 2: Verificando en base de datos (Neon PostgreSQL)...');
+    console.log('🗄️  PASO 2: Verificando en base de datos (PostgreSQL Local)...');
     await new Promise(r => setTimeout(r, 1000));
     const dbResult = await pool.query(
         `SELECT id, nombre_completo, email, fecha, hora, status, created_at 

@@ -16,7 +16,7 @@ const pool = new Pool({
 async function setupSiteNodes() {
     const client = await pool.connect();
     try {
-        console.log('⏳ Creando tabla site_nodes en la base de datos Neon...');
+        console.log('⏳ Creando tabla site_nodes en la base de datos Local...');
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS site_nodes (

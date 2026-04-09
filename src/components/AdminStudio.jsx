@@ -320,9 +320,6 @@ export default function AdminStudio() {
  const textFields = useMemo(() => detectTextFields(draftData), [draftData]);
  const mediaFields = useMemo(() => {
      let fields = detectMediaFields(draftData);
-     if (selectedNodeId === 'cultura') {
-         fields = fields.filter(([key]) => key !== 'bgVideoUrl');
-     }
      return fields;
  }, [draftData, selectedNodeId]);
  const groupedFields = useMemo(() => detectGroupedFields(draftData), [draftData]);

@@ -12,7 +12,7 @@ async function setupAnalyticsDB() {
     const pool = new Client({ connectionString });
     try {
         await pool.connect();
-        console.log('🔗 Conectado a Neon PostgreSQL...');
+        console.log('🔗 Conectado a PostgreSQL Local...');
 
         // 1. ALTER LEADS TABLE
         console.log('🔄 Actualizando tabla leads con UTMs...');

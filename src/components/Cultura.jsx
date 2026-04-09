@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+import { getYouTubeId } from './MediaPicker';
 const culturaImage = 'https://bot.godzillaconsulting.ai/api/media/assets/Nuestra cultura image.jpg';
 const culturaVideo = 'https://bot.godzillaconsulting.ai/api/media/assets/Particulas Rojas.mp4';
 import { trackGodzillaEvent } from '../utils/analyticsHelper';
@@ -130,7 +131,14 @@ const Cultura = () => {
  <section id="cultura" className="relative py-24 bg-[#111111] overflow-hidden">
  {/* Video de fondo — editable desde Admin Studio (bgVideoUrl) */}
  {finalBgVideo ? (
-    finalBgVideo.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+    getYouTubeId(finalBgVideo) ? (
+        <iframe
+            src={`https://www.youtube.com/embed/${getYouTubeId(finalBgVideo)}?controls=0&mute=1&autoplay=1&loop=1&playlist=${getYouTubeId(finalBgVideo)}`}
+            className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+            frameBorder="0"
+            allow="autoplay; encrypted-media"
+        ></iframe>
+    ) : finalBgVideo.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
         <video
             src={finalBgVideo}
             autoPlay

@@ -34,7 +34,7 @@ router.post('/sora-generate', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// Tareas del Studio (Neon DB)
+// Tareas del Studio (DB Local)
 // ==========================================
 
 // GET: Recuperar todas las tareas del Studio (con filtros opcionales)

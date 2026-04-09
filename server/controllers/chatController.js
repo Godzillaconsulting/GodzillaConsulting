@@ -75,7 +75,7 @@ export const processChatMessage = async (req, res) => {
 
         let history = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
-            parts: [{ text: m.content || m.text }]
+            parts: [{ text: m.content || m.text || "" }]
         }));
         
         let validIndex = history.findIndex(m => m.role === "user");
@@ -101,7 +101,8 @@ export const processChatMessage = async (req, res) => {
         }
 
         const chat = model.startChat({ history });
-        const lastMsg = messages[messages.length - 1].content || messages[messages.length - 1].text;
+        const lastMsgRaw = messages[messages.length - 1];
+        const lastMsg = lastMsgRaw.content || lastMsgRaw.text || "Hola";
 
         let result = await chat.sendMessage(lastMsg);
         let responseText = result.response.text();

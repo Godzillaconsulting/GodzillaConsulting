@@ -1,5 +1,9 @@
 import os
 import sys
+
+# Redirigir el peso de los modelos masivos al Disco Duro Secundario E:
+os.environ["HF_HOME"] = "E:\\GodzillaSora_Models"
+os.environ["TORCH_HOME"] = "E:\\GodzillaSora_Models\\torch"
 import time
 import ctypes
 import threading
@@ -61,10 +65,11 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI(title="Godzilla AI Local GPU Node")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_headers=["*"], allow_methods=["*"])
 
-os.makedirs("outputs", exist_ok=True)
-app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+OUTPUTS_DIR = r"E:\GodzillaSora_Outputs"
+os.makedirs(OUTPUTS_DIR, exist_ok=True)
+app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
 
-RECIPES_DB_PATH = "recipes.json"
+RECIPES_DB_PATH = os.path.join(OUTPUTS_DIR, "recipes.json")
 if not os.path.exists(RECIPES_DB_PATH):
     with open(RECIPES_DB_PATH, "w") as f:
         json.dump([], f)
@@ -167,8 +172,8 @@ async def maintenance_sweep_daemon():
             now = time.time()
             cutoff = now - (6 * 3600)  # 6 horas expiración
             count = 0
-            for f in os.listdir("outputs"):
-                file_path = os.path.join("outputs", f)
+            for f in os.listdir(OUTPUTS_DIR):
+                file_path = os.path.join(OUTPUTS_DIR, f)
                 if os.path.isfile(file_path):
                     if os.stat(file_path).st_mtime < cutoff:
                         os.remove(file_path)
@@ -221,7 +226,7 @@ def save_tensor_to_disk(task_id, mode, seed, ai_image=None):
     Toma los bytes de la inferencia y los escribe en el disco C:/ físicamente.
     """
     if mode == 'video':
-        video_path = os.path.join("outputs", f"render_{task_id}.mp4")
+        video_path = os.path.join(OUTPUTS_DIR, f"render_{task_id}.mp4")
         if not os.path.exists(video_path):
             urllib.request.urlretrieve("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", video_path)
         return f"http://127.0.0.1:5000/outputs/render_{task_id}.mp4"
@@ -243,7 +248,7 @@ def save_tensor_to_disk(task_id, mode, seed, ai_image=None):
             d.text((50, 50), f"TASK ID: {task_id}\nGODZILLA SEED: {seed}\nHDR REPLICABLE", fill=(255, 255, 255))
         
         filename = f"render_{task_id}.jpg"
-        img_path = os.path.join("outputs", filename)
+        img_path = os.path.join(OUTPUTS_DIR, filename)
         img.save(img_path)
         return f"http://127.0.0.1:5000/outputs/{filename}"
 
@@ -369,7 +374,7 @@ async def get_sora_history():
             tid = r["task_id"]
             mode = r.get("mode", "photo")
             ext = ".mp4" if mode == "video" else ".jpg"
-            file_path = os.path.join("outputs", f"render_{tid}{ext}")
+            file_path = os.path.join(OUTPUTS_DIR, f"render_{tid}{ext}")
             
             if os.path.exists(file_path):
                 r["alive"] = True

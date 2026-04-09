@@ -1,4 +1,7 @@
 import os
+# Redirigir la descarga al Disco Duro E:
+os.environ["HF_HOME"] = "E:\\GodzillaSora_Models"
+os.environ["TORCH_HOME"] = "E:\\GodzillaSora_Models\\torch"
 import torch
 from diffusers import DiffusionPipeline
 

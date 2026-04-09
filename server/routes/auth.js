@@ -57,11 +57,29 @@ router.post('/login', async (req, res) => {
 
         // Verificar si la cuenta está bloqueada
         if (admin.is_locked) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Cuenta bloqueada. Contacta a JareG para restaurarla.',
-                locked: true
-            });
+            // Auto-desbloqueo: si no hubo intentos fallidos en los últimos 30 min, levantar el bloqueo
+            const recentFails = await pool.query(
+                `SELECT COUNT(*) as count FROM login_attempts
+                 WHERE username = $1 AND attempted_at > NOW() - INTERVAL '30 minutes' AND (success IS NULL OR success = FALSE)`,
+                [username]
+            ).catch(() => ({ rows: [{ count: '0' }] }));
+            const recentFailCount = parseInt(recentFails.rows[0].count);
+
+            if (recentFailCount === 0) {
+                // Sin actividad sospechosa reciente → auto-unlock
+                await pool.query(
+                    'UPDATE admins SET is_locked = FALSE WHERE username = $1',
+                    [username]
+                ).catch(() => {});
+                console.log(`[AUTH] Auto-unlock aplicado a '${username}' (sin intentos fallidos recientes).`);
+                // Continúa el flujo normal de login (no hace return)
+            } else {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Cuenta bloqueada temporalmente por múltiples intentos fallidos. Espera 30 minutos.',
+                    locked: true
+                });
+            }
         }
 
         const isMatch = await bcrypt.compare(password, admin.password_hash);
@@ -111,7 +129,7 @@ router.post('/login', async (req, res) => {
                 role: admin.role || 'user'
             },
             JWT_SECRET,
-            { expiresIn: '8h' } // Reducido de 24h a 8h (turno laboral)
+            { expiresIn: '24h' } // 24h: evita forzar re-login diario
         );
 
         // Log de acceso exitoso

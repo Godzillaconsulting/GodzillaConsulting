@@ -13,9 +13,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function check() {
     try {
-        const res2 = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'admin_logs'");
-        console.log("Columnas en admin_logs:");
-        res2.rows.forEach(r => console.log(r.column_name));        
+        const res3 = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'media_storage'");
+        console.log("Columnas en media_storage:");
+        res3.rows.forEach(r => console.log(r.column_name));
         // Test frontend fetch
         const token = jwt.sign(
             { id: 1, username: 'JareG', role: 'superadmin' },

@@ -91,12 +91,24 @@ const Servicios = () => {
                     const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
                     if (ytId) {
                         return (
-                            <iframe 
-                                src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0`}
-                                className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-screen pointer-events-none"
-                                frameBorder="0"
-                                allow="autoplay; encrypted-media"
-                            ></iframe>
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <iframe 
+                                    src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        width: '100vw',
+                                        height: '56.25vw',
+                                        minHeight: '100%',
+                                        minWidth: '177.77vh',
+                                        transform: 'translate(-50%, -50%)',
+                                    }}
+                                    className="opacity-70 mix-blend-screen"
+                                    frameBorder="0"
+                                    allow="autoplay; encrypted-media"
+                                ></iframe>
+                            </div>
                         );
                     }
 

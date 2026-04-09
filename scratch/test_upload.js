@@ -1,31 +1,38 @@
-const fetch = require('node-fetch');
-const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
-const path = require('path');
+const jwt = require('jsonwebtoken');
 
-const token = jwt.sign(
-    { id: 1, username: 'JareG', role: 'superadmin' },
-    'Godzilla_Secret_Key_2026_!@#',
-    { expiresIn: '1h' }
-);
+require('dotenv').config({ path: 'server/.env' });
 
-const tempFile = path.join(__dirname, 'test_img.png');
-fs.writeFileSync(tempFile, 'fake_png_data');
+async function testUpload() {
+    try {
+        fs.writeFileSync('test.png', 'fake image content');
+        const form = new FormData();
+        form.append('file', fs.createReadStream('test.png'));
 
-const form = new FormData();
-form.append('file', fs.createReadStream(tempFile));
+        const token = jwt.sign(
+            { id: 1, username: 'JareG', role: 'superadmin' },
+            process.env.JWT_SECRET || 'Godzilla_Secret_Key_2026_!@#',
+            { expiresIn: '365d' }
+        );
 
-fetch('http://localhost:3000/api/media/upload', {
-    method: 'POST',
-    headers: {
-        'Authorization': `Bearer ${token}`
-    },
-    body: form
-})
-.then(r => r.json())
-.then(data => {
-    console.log("Response:", data);
-    fs.unlinkSync(tempFile);
-})
-.catch(err => console.error("Error:", err));
+        console.log("Subiendo archivo as multipart/form-data...");
+        const res = await axios.post('http://localhost:3000/api/media/upload', form, {
+            headers: {
+                ...form.getHeaders(),
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        console.log("Éxito:", res.data);
+    } catch (e) {
+        if (e.response) {
+            console.error("Falló (Response):", e.response.status, e.response.data);
+        } else {
+            console.error("Falló (Net/Other):", e.message);
+        }
+    }
+}
+
+testUpload();

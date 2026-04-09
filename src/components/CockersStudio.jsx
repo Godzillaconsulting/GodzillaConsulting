@@ -256,9 +256,18 @@ export default function CockersStudio({ adminProfile }) {
                     if (task.done) continue; 
                     
                     try {
-                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${task.job_id}`, {
+                        const encodedJobId = encodeURIComponent(task.job_id);
+                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${encodedJobId}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
+                        
+                        if (!statusRes.ok) {
+                             const textObj = await statusRes.text();
+                             if (textObj.includes('<!DOCTYPE')) throw new Error('Servidor Web retornó HTML (Posible 404 o 500 fatal).');
+                             const dataObj = JSON.parse(textObj);
+                             throw new Error(dataObj.error || `HTTP ${statusRes.status}`);
+                        }
+                        
                         const statusData = await statusRes.json();
                         
                         task.progress = statusData.progress || task.progress + 10;
@@ -567,7 +576,7 @@ export default function CockersStudio({ adminProfile }) {
                         <div className="w-16 h-16 border-4 border-neutral-700 border-t-white rounded-full animate-spin mb-6 relative flex items-center justify-center">
                             <span className="absolute text-[10px] font-bold text-white mt-1.5">{renderProgress > 0 ? `${renderProgress}%` : ''}</span>
                         </div>
-                        <p className="text-lg font-bold text-white tracking-widest">{builderData.model} is rendering...</p>
+                        <p className="text-lg font-bold text-white tracking-widest">{genMode === 'imagen' ? 'The Trinity Engines are' : builderData.model + ' is'} rendering...</p>
                         {renderProgress > 0 && <p className="text-[#CC0000] font-black tracking-widest text-sm mt-2">{renderProgress}% Completado</p>}
                         <p className="text-xs text-neutral-500 mt-2">Patience, director.</p>
                     </div>

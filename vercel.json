@@ -2,13 +2,6 @@
     "version": 2,
     "builds": [
         {
-            "src": "server/index.js",
-            "use": "@vercel/node",
-            "config": {
-                "maxDuration": 60
-            }
-        },
-        {
             "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
@@ -19,7 +12,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "/server/index.js"
+            "destination": "https://bot.godzillaconsulting.ai/api/:path*"
         },
         {
             "source": "/:path*",

@@ -191,113 +191,7 @@ export default function CockersStudio({ adminProfile }) {
                 }).catch(e => console.error("Error saving learning:", e));
             }
             
-            const response = await fetch(`${'' || ''}/api/studio/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: builderData.model })
-            });
-
-            let data;
-            try {
-                data = await response.json();
-            } catch (jsonErr) {
-                console.error("No se pudo parsear el JSON. El servidor retornó:", response.status);
-                throw new Error("El Backend (Vercel/API) ha colapsado o está retornando una página HTML (Error 500).");
-            }
-            if (!response.ok) throw new Error(data.error || 'Error al enviar tarea a la IA');
-
-            if (data.status === 'processing' && data.job_id) {
-                let attempts = 0;
-                const pollInterval = setInterval(async () => {
-                    attempts++;
-                    try {
-                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const statusData = await statusRes.json();
-                        
-                        if (statusData.progress !== undefined) {
-                            setRenderProgress(statusData.progress);
-                        }
-                        
-                        if (statusData.status === 'succeed') {
-                            clearInterval(pollInterval);
-                            let finalUrls = [];
-                            if (statusData.result_url) {
-                                finalUrls = Array.isArray(statusData.result_url) ? statusData.result_url : [statusData.result_url];
-                            } else {
-                                // Fallback para Simulaciones de backend o Kling sin tokens
-                                if (ytLink && getYouTubeId(ytLink)) {
-                                    finalUrls = [ytLink];
-                                } else if (genMode === 'imagen') {
-                                    finalUrls = [
-                                        '/assets/kaiju_cheems.png',
-                                        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc'
-                                    ];
-                                } else {
-                                    finalUrls = [
-                                        'https://images.unsplash.com/photo-1542626991-cbc4e32524cc',
-                                        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
-                                    ];
-                                }
-                            }
-                            
-                            const options = finalUrls.map((url, idx) => ({ 
-                                provider: `${builderData.model} (Opción ${idx + 1}${!statusData.result_url ? ' - Modo Simulación' : ''})`, 
-                                url: url, 
-                                isVideo: genMode === 'video' 
-                            }));
-                            
-                            if (selectedDraft) {
-                                setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
-                                setSelectedDraft(prev => ({ ...prev, media_options: options }));
-                            } else {
-                                setSelectedDraft({
-                                    id: Date.now(),
-                                    status: 'generated',
-                                    caption: '',
-                                    visual_prompt: rawPrompt,
-                                    media_options: options
-                                });
-                            }
-                            setRenderingAI(false);
-                        } else if (statusData.status === 'failed' || attempts > 60) {
-                            clearInterval(pollInterval);
-                            throw new Error(statusData.error || 'La Tarea de Inteligencia Artificial falló o dio Timeout tras 10 min.');
-                        }
-                    } catch (pollErr) {
-                        clearInterval(pollInterval);
-                        console.error(pollErr);
-                        alert(`Error esperando el render: ${pollErr.message}`);
-                        setRenderingAI(false);
-                    }
-                }, 10000); 
-            } else if (data.status === 'succeed') {
-                // Generación síncrona / instantánea
-                let finalUrls = [];
-                if (data.result_url) {
-                    finalUrls = Array.isArray(data.result_url) ? data.result_url : [data.result_url];
-                } else {
-                    // Fallback local
-                    if (genMode === 'imagen') {
-                        finalUrls = [
-                            '/assets/kaiju_cheems.png',
-                            'https://images.unsplash.com/photo-1542626991-cbc4e32524cc'
-                        ];
-                    } else {
-                        finalUrls = [
-                            'https://images.unsplash.com/photo-1542626991-cbc4e32524cc',
-                            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
-                        ];
-                    }
-                }
-                
-                const options = finalUrls.map((url, idx) => ({ 
-                    provider: `${builderData.model} (Opción ${idx + 1}${!data.result_url ? ' - Modo Simulación' : ''})`, 
-                    url: url, 
-                    isVideo: genMode === 'video' 
-                }));
-                
+            const guardarDraftFinal = (options, rPrompt) => {
                 if (selectedDraft) {
                     setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
                     setSelectedDraft(prev => ({ ...prev, media_options: options }));
@@ -306,14 +200,98 @@ export default function CockersStudio({ adminProfile }) {
                         id: Date.now(),
                         status: 'generated',
                         caption: '',
-                        visual_prompt: rawPrompt,
+                        visual_prompt: rPrompt,
                         media_options: options
                     });
                 }
-                setRenderingAI(false);
-            } else {
-                throw new Error('Respuesta desconocida desde la API');
+            };
+
+            // TRINITY BLASTER MODE: Si es imagen lanzamos 3 motores en paralelo
+            const enginesToRun = genMode === 'video' ? [builderData.model] : ['Gemini Advanced', 'Veo 3.1 - Fast', 'Sora'];
+            
+            const promises = enginesToRun.map(async (engineName) => {
+                const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: engineName })
+                });
+                let data = await resFetch.json();
+                if (!resFetch.ok) throw new Error(data.error || 'Server error');
+                return { engineName, data };
+            });
+
+            const initialResults = await Promise.allSettled(promises);
+            let finalOptions = [];
+            let tasksToPoll = [];
+            
+            // Repartir síncronos y asíncronos
+            initialResults.forEach(res => {
+                if (res.status === 'fulfilled') {
+                    const { engineName, data } = res.value;
+                    if (data.status === 'succeed' && data.result_url) {
+                        finalOptions.push({ provider: engineName, url: data.result_url, isVideo: genMode === 'video' });
+                    } else if (data.status === 'processing' && data.job_id) {
+                        tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false });
+                    }
+                }
+            });
+
+            if (tasksToPoll.length === 0) {
+                 if(finalOptions.length === 0){
+                     finalOptions.push({ provider: 'Simulación (Fallback LOCAL)', url: '/assets/kaiju_cheems.png', isVideo: false });
+                 }
+                 guardarDraftFinal(finalOptions, rawPrompt);
+                 setRenderingAI(false);
+                 return;
             }
+
+            // Iniciar Polling de Matriz (Monitorear a las 3 IAs simultáneamente)
+            let attempts = 0;
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                let allDone = true;
+                
+                for (let i = 0; i < tasksToPoll.length; i++) {
+                    const task = tasksToPoll[i];
+                    if (task.done) continue; 
+                    
+                    try {
+                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${task.job_id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const statusData = await statusRes.json();
+                        
+                        task.progress = statusData.progress || task.progress + 10;
+                        
+                        if (statusData.status === 'succeed') {
+                             task.done = true;
+                             if(statusData.result_url) {
+                                 let url = Array.isArray(statusData.result_url) ? statusData.result_url[0] : statusData.result_url;
+                                 finalOptions.push({ provider: task.engineName, url: url, isVideo: genMode === 'video' });
+                             }
+                        } else if (statusData.status === 'failed') {
+                             task.done = true; 
+                        } else {
+                             allDone = false; 
+                        }
+                    } catch (e) {
+                        console.error(`Poller fallando en node ${task.engineName}`);
+                        allDone = false;
+                    }
+                }
+                
+                let totalProgress = tasksToPoll.reduce((acc, t) => acc + (t.progress || 0), 0);
+                setRenderProgress(Math.floor(totalProgress / tasksToPoll.length));
+                
+                if (allDone || attempts > 50) { // Timeout 5 min aprox
+                    clearInterval(pollInterval);
+                    if(finalOptions.length === 0){
+                         finalOptions.push({ provider: 'Simulación de Reserva', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false });
+                    }
+                    guardarDraftFinal(finalOptions, rawPrompt);
+                    setRenderingAI(false);
+                }
+            }, 6000);
         } catch (error) {
             console.error('Error Live Gen', error);
             alert(`Error de Live Mode: ${error.message}`);
@@ -430,21 +408,21 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         )}
 
-                        <div className="relative group/model mb-4">
-                            <select 
-                                value={builderData.model} 
-                                onChange={e => {
-                                    setBuilderData({...builderData, model: e.target.value});
-                                }}
-                                className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
-                            >
-                                <option value="Gemini Advanced">✨ Gemini Advanced (Cuenta Plus)</option>
-                                <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast</option>
-                                <option value="Kling 3.0">🎬 Kling 3.0 HD</option>
-                                <option value="Sora" className="bg-[#cc0000] text-white">🦖 Godzilla Sora (Cluster In-House)</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">▼</div>
-                        </div>
+                        {genMode === 'video' && (
+                            <div className="relative group/model mb-4">
+                                <select 
+                                    value={builderData.model} 
+                                    onChange={e => {
+                                        setBuilderData({...builderData, model: e.target.value});
+                                    }}
+                                    className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
+                                >
+                                    <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast (Generación Única)</option>
+                                    <option value="Kling 3.0">🎬 Kling 3.0 HD (Generación Única)</option>
+                                </select>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">▼</div>
+                            </div>
+                        )}
 
                         {/* YouTube Video URL Input */}
                         <div className="mt-4 pt-4 border-t border-white/5">

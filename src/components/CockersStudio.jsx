@@ -206,8 +206,8 @@ export default function CockersStudio({ adminProfile }) {
                 }
             };
 
-            // TRINITY BLASTER MODE: Si es imagen lanzamos 3 motores en paralelo
-            const enginesToRun = genMode === 'video' ? [builderData.model] : ['Gemini Advanced', 'Veo 3.1 - Fast', 'Sora'];
+            // TRINITY BLASTER MODE: Si es imagen lanzamos 3 motores fotográficos puros
+            const enginesToRun = genMode === 'video' ? [builderData.model] : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
             const promises = enginesToRun.map(async (engineName) => {
                 const updatedConfig = { ...builderData, refImage: refImage };

@@ -30,12 +30,12 @@ export const generateRenderJob = async (req, res) => {
             if (process.env.GEMINI_API_KEY) {
                 const aiDirector = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
                 let instruction = '';
-                if (engine === 'Sora') {
+                if (engine.includes('Sora')) {
                     instruction = `Traduce este concepto a una lista de tags crudos separados por coma en INGLES, optimizados para text-to-image de StableDiffusion. Agrega 'masterpiece, high quality, highly detailed'. Solo los tags: ${prompt}`;
-                } else if (engine.includes('Veo')) {
-                    instruction = `Traduce este concepto a un prompt cinematográfico hiperrealista en inglés. Describe lentes e iluminación. Solo responde el prompt directo: ${prompt}`;
-                } else if (engine === 'Gemini Advanced') {
-                    instruction = `Crea un prompt directo en inglés muy descriptivo y vibrante para ilustración/render. Evita tecnicismos de cámaras pesados. Solo el prompt: ${prompt}`;
+                } else if (engine.includes('Imagen 3.0')) {
+                    instruction = `Traduce este concepto a un prompt de dirección fotográfica hiperrealista en inglés para comercial de publicidad. Foco en producto e iluminación. Solo responde el prompt: ${prompt}`;
+                } else if (engine.includes('Imagen 4.0')) {
+                    instruction = `Crea un prompt directo en inglés muy descriptivo y vibrante para diseño o arte conceptual comercial. Solo el prompt: ${prompt}`;
                 }
 
                 if (instruction) {
@@ -57,7 +57,7 @@ export const generateRenderJob = async (req, res) => {
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
         let response;
-        if (engine === 'Sora') {
+        if (engine.includes('Sora')) {
             console.log(`[STUDIO] Despertando In-House GoTSora. Prompt optimizado: ${optimizedPrompt.substring(0, 50)}...`);
             try {
                 // Fetch to local Node proxy (puerto 5000 directamente)
@@ -142,8 +142,9 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "No se pudo generar video: " + err.message });
             }
         } else {
-            // Generador de Imágenes AI NATIVO usando Google GenAI (Imagen 4.0)
-            console.log(`[STUDIO] Generando Imagen con Google GenAI (Imagen 4.0). Prompt: ${prompt}`);
+            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 3.0 y 4.0)
+            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-3.0-generate-002' : 'imagen-4.0-fast-generate-001';
+            console.log(`[STUDIO] Generando Foto Comercial con Google GenAI (${targetModel}). Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
                 return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
@@ -155,8 +156,8 @@ export const generateRenderJob = async (req, res) => {
             const googleRatioImg = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
 
             const responseGenAI = await aiImg.models.generateImages({
-                model: 'imagen-4.0-fast-generate-001',
-                prompt: optimizedPrompt || "A sleek cinematic render",
+                model: targetModel,
+                prompt: optimizedPrompt || "A sleek cinematic render for an ad",
                 config: {
                     numberOfImages: 1,
                     outputMimeType: 'image/jpeg',

@@ -72,19 +72,32 @@ const CrmSaas = () => {
                         {(content.videoFileUrl || content.videoUrl) ? (
                             (() => {
                                 const vSrc = content.videoFileUrl || content.videoUrl;
+                                const isImage = vSrc.match(/\.(jpeg|jpg|gif|png|webp)$/i) || vSrc.includes('/file/');
                                 const ytMatch = vSrc.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/);
                                 const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+                                
                                 if (ytId) {
                                     return (
                                         <iframe 
                                             src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&loop=1&playlist=${ytId}&controls=0`}
-                                            className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                                            className="absolute inset-0 w-full h-full object-cover bg-black"
                                             style={{ pointerEvents: 'none' }}
                                             frameBorder="0"
                                             allow="autoplay; encrypted-media"
                                         ></iframe>
                                     );
                                 }
+
+                                if (isImage) {
+                                    return (
+                                        <img 
+                                            src={vSrc} 
+                                            alt="CRM Preview" 
+                                            className="absolute inset-0 w-full h-full object-cover bg-black opacity-90 transition-opacity" 
+                                        />
+                                    );
+                                }
+
                                 return (
                                     <video
                                         ref={videoRef}
@@ -92,7 +105,8 @@ const CrmSaas = () => {
                                         autoPlay
                                         muted
                                         playsInline
-                                        className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                                        loop
+                                        className="absolute inset-0 w-full h-full object-cover bg-black cursor-pointer"
                                         onClick={togglePlay}
                                     />
                                 );

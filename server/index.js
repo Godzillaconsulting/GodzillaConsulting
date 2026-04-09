@@ -331,6 +331,7 @@ app.get('*', (req, res) => {
         return res.status(404).json({ error: 'Endpoint no encontrado' });
     }
     // Servir la vista de Diseño / Admin Panels / Landing Pages desde el PC!
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     res.sendFile(path.join(distPath, 'index.html'));
 });
 

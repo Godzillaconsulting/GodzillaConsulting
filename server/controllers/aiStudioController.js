@@ -40,7 +40,7 @@ export const generateRenderJob = async (req, res) => {
 
                 if (instruction) {
                     const translation = await aiDirector.models.generateContent({
-                        model: 'gemini-1.5-flash',
+                        model: 'gemini-1.5-flash-latest',
                         contents: instruction
                     });
                     if (translation && translation.text) {
@@ -118,24 +118,29 @@ export const generateRenderJob = async (req, res) => {
             if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
 
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            // Map React aspect ratios to Google Veo aspect ratios
-            const googleRatio = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
+            // Map React aspect ratios to Google Veo aspect ratios (Only 16:9 and 9:16 supported)
+            let googleRatio = '16:9';
+            if (config.aspect_ratio === '9:16' || config.aspect_ratio === '3:4') googleRatio = '9:16';
+            
+            try {
+                const operation = await ai.models.generateVideos({
+                    model: 'veo-3.1-fast-generate-preview',
+                    prompt: optimizedPrompt || "Cinematic masterpiece",
+                    config: {
+                        numberOfVideos: 1,
+                        aspectRatio: googleRatio
+                    }
+                });
 
-            const operation = await ai.models.generateVideos({
-                model: 'veo-3.1-fast-generate-preview',
-                prompt: optimizedPrompt || "Cinematic masterpiece",
-                config: {
-                    numberOfVideos: 1,
-                    aspectRatio: googleRatio
-                }
-            });
-
-            // Retornamos el operation name con un prefijo para que el status checker sepa la ruta
-            return res.status(200).json({ 
-                job_id: "veo_" + operation.name, 
-                status: "processing", 
-                provider: engine 
-            });
+                return res.status(200).json({ 
+                    job_id: "veo_" + operation.name, 
+                    status: "processing", 
+                    provider: engine 
+                });
+            } catch (err) {
+                console.error("[VEO] Error en generador de video:", err);
+                return res.status(400).json({ error: "No se pudo generar video: " + err.message });
+            }
         } else {
             // Generador de Imágenes AI NATIVO usando Google GenAI (Imagen 4.0)
             console.log(`[STUDIO] Generando Imagen con Google GenAI (Imagen 4.0). Prompt: ${prompt}`);

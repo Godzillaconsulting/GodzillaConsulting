@@ -341,7 +341,11 @@ export default function CockersStudio({ adminProfile }) {
                 <div className="p-4 pt-6 shrink-0 flex items-center justify-center">
                     <div className="bg-[#1a1a19] p-1 rounded-[20px] flex items-center gap-1 w-full relative">
                         <div 
-                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#2a2a29] rounded-[16px] transition-all duration-300 ease-in-out ${genMode === 'video' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'}`} 
+                            className="absolute top-1 bottom-1 bg-[#2a2a29] rounded-[16px] transition-all duration-300 ease-in-out"
+                            style={{ 
+                                width: 'calc(50% - 4px)', 
+                                left: genMode === 'video' ? 'calc(50%)' : '4px' 
+                            }}
                         />
                         <button 
                             onClick={() => setGenMode('imagen')} 

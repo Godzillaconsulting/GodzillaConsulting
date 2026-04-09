@@ -89,23 +89,33 @@ def load_ai_model():
     global ai_pipeline
     if ai_pipeline is None and AI_ENABLED:
         try:
-            print("[SYSTEM] PyTorch Carga Masiva: Inicializando Núcleo Cinematográfico de Video DiT (CogVideoX)...")
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print("[SYSTEM] PyTorch Carga Masiva: Inicializando Núcleo Fotorrealista (LCM CPU-Friendly)...")
+            device = "cpu" # Forzamos CPU ya que el hardware físico actual no tiene GPU
             
-            # Formato fp16 estricto para proteger la RAM
-            dtype = torch.float16
+            # Formato float32 estándar requerido por CPUs en PyTorch (fp16 suele fallar o ser lento en Windows CPU)
+            dtype = torch.float32
             
             print(f"[SYSTEM] Asignando Mega-Modelo agnóstico a: {device.upper()} con dtype {dtype}")
             
-            # Usando Pipeline Base (CogVideoX - Rival open source de Sora)
+            # Usando Pipeline LCM (Latent Consistency Model) - Genera fotos en 4 pasos en lugar de 50.
             OFFLOAD_DIR = os.environ.get("OFFLOAD_DIR_FALLBACK", r"E:\GodzillaSora_Offload")
             
-            ai_pipeline = CogVideoXPipeline.from_pretrained(
-                "THUDM/CogVideoX-2b", 
-                torch_dtype=dtype, 
-                device_map="auto" if device == "cuda" else None,
-                offload_folder=OFFLOAD_DIR
-            )
+            try:
+                ai_pipeline = DiffusionPipeline.from_pretrained(
+                    "SimianLuo/LCM_Dreamshaper_v7", 
+                    torch_dtype=dtype,
+                    custom_pipeline="latent_consistency_txt2img",
+                    custom_revision="main",
+                    offload_folder=OFFLOAD_DIR
+                )
+            except Exception as e:
+                # Si 'custom_pipeline' no es soportado por su diffusers version, fallback normal
+                ai_pipeline = DiffusionPipeline.from_pretrained(
+                    "SimianLuo/LCM_Dreamshaper_v7", 
+                    torch_dtype=dtype,
+                    offload_folder=OFFLOAD_DIR
+                )
+
             
             if device == "cuda":
                 # TÉCNICAS VRAM DE EXTREMA PREVENCIÓN DE OOM:
@@ -241,18 +251,13 @@ def generate_frame_tensor(channels, width, height):
 
 def save_tensor_to_disk(task_id, mode, seed, ai_image=None, ai_frames=None):
     """
-    Toma los bytes de la inferencia (imagen o serie de frames CogVideo) y los escribe en el disco E:.
+    Toma los bytes de la inferencia fotográfica y los escribe en el disco C:/ o E: físicamente.
     """
-    if mode == 'video':
-        video_path = os.path.join(OUTPUTS_DIR, f"render_{task_id}.mp4")
-        if ai_frames is not None:
-            # Compilamos el tensor multiforme en un archivo .mp4 jugable!
-            export_to_video(ai_frames, video_path, fps=8)
-        else:
-            # Backup por si falló la CPU/GPU
-            if not os.path.exists(video_path):
-                urllib.request.urlretrieve("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", video_path)
-        return f"http://127.0.0.1:5000/outputs/render_{task_id}.mp4"
+    img_path = os.path.join(OUTPUTS_DIR, f"render_{task_id}.png")
+    
+    if ai_image is not None:
+        ai_image.save(img_path)
+        return f"http://127.0.0.1:5000/outputs/render_{task_id}.png"
     else:
         # Generar imagen real o respaldo
         if ai_image is not None:
@@ -330,36 +335,20 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
         final_ai_frames = None
         
         if ai_pipeline is not None:
-            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando DiT Matrix para {mode}..."})
+            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando LCM Matrix para Foto en CPU..."})
             generator = torch.Generator(device=ai_pipeline.device).manual_seed(seed)
             
-            if mode == 'video':
-                # [NUEVO] COGVIDEOX: Inferimos con el motor nativo Sora-like
-                output = ai_pipeline(
-                    prompt=prompt,
-                    num_frames=49,       # Genera secuencias complejas
-                    use_dynamic_cfg=True,
-                    num_inference_steps=min(steps, 50),
-                    generator=generator,
-                )
-                final_ai_frames = output.frames[0]
-            else:
-                # [NUEVO] Si el pipeline lo soporta para foto
-                output = ai_pipeline(
-                    prompt=prompt,
-                    num_inference_steps=min(steps, 25),
-                    generator=generator
-                )
-                # CogVideoX maneja output.frames pero si la fallbackamos a imagen tomamos la primera
-                if hasattr(output, 'images'):
-                    final_ai_image = output.images[0]
-                elif hasattr(output, 'frames'):
-                    final_ai_image = output.frames[0][0] # Toma el primer cuadro como foto
+            # LCM Fotorrealismo puro en 4 pasos obligatorios
+            output = ai_pipeline(
+                prompt=prompt,
+                num_inference_steps=4, # La magia del LCM
+                guidance_scale=1.0,    # LCM ignora altas escalas CFG
+                generator=generator
+            )
+            final_ai_image = output.images[0]
             
             # Aggressive Garbage Collection
             del output
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
             gc.collect()
 
         # Guarda la obra final o el backup si PyTorch no corrió

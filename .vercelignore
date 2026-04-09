@@ -3,3 +3,17 @@ tiktok_session
 ig-neurona  
 whatsapp-session  
 .pm2 
+backups/
+server/backups/
+node_modules/
+server/node_modules/
+server/uploads/
+server/core_engine/
+server/core_engine/__pycache__/
+server/.wwebjs_cache/
+server/.wwebjs_auth/
+scratch/
+__pycache__/
+*.mp4
+*.mkv
+*.webm

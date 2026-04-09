@@ -10,6 +10,7 @@ import CockersStudio from './CockersStudio';
 import CMCalendar from './CMCalendar';
 import GoyiAdmin from './GoyiAdmin';
 import BugReporterModal from './BugReporterModal';
+import DBStudioPanel from './DBStudioPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -507,6 +508,13 @@ export default function AdminStudio() {
    <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
    
+   {isSuperAdmin && (
+       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('db_studio'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='db_studio' ?'bg-neutral-900 text-[#00ff88] border-[#00ff88]/50 shadow-[0_0_15px_rgba(0,255,136,0.2)]' :'text-neutral-300 border-transparent hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 hover:text-white' }`}>
+       <span className="text-xs mr-2 drop-shadow-sm">🗄️</span> DB Studio
+       </button>
+   )}
+   
    <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
        <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
@@ -550,6 +558,8 @@ export default function AdminStudio() {
       <CMCalendar adminProfile={adminProfile} />
 ) : activeSection === 'social_studio' ? (
       <CockersStudio adminProfile={adminProfile} />
+  ) : activeSection === 'db_studio' ? (
+      <DBStudioPanel />
   ) : (<>
 
  {/* Barra superior del editor */}

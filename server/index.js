@@ -26,8 +26,8 @@ import chatRoutes from './routes/chat.js';
 import nodesRoutes from './routes/nodes.js';
 import webhookRoutes from './routes/webhook.js';
 import botConfigsRoutes from './routes/botConfigs.js';
-
-
+import dbStudioRoutes from './routes/dbStudio.js';
+import { requireSuperAdmin } from './middleware/adminAuth.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
@@ -165,7 +165,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
-
+app.use('/api/db-studio', requireSuperAdmin, dbStudioRoutes); // DB Studio protegido
 // ==========================================
 // PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)
 // Supera el bloqueo Mixed Content (HTTPS -> HTTP) en el navegador
@@ -176,20 +176,26 @@ app.post('/api/sora-start', async (req, res) => {
         let finalPrompt = req.body.prompt;
         
         // ===============================================
-        // NIVEL 1: EL DIRECTOR DE CINE (Prompt Expansion)
+        // NIVEL 1: EL DIRECTOR DE CINE (Prompt Expander con Memoria)
         // ===============================================
-        if (process.env.GEMINI_API_KEY && finalPrompt.length < 50) {
+        // Memoria global temporal para este proceso de Node (Conserva el contexto de la sesión actual)
+        if (!global.soraDirectorMemory) global.soraDirectorMemory = [];
+        if (process.env.GEMINI_API_KEY && finalPrompt.length < 400) {
             console.log(`[GOTSORA DIRECTOR] Expandiendo prompt semilla: "${finalPrompt}"`);
             try {
                 const { GoogleGenerativeAI } = await import('@google/generative-ai');
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-pro" });
                 
-                const promptTemplate = `Eres un Director de Fotografía experto en Midjourney, Sora y Unreal Engine.
-Toma el siguiente concepto básico y méjoralo transformándolo en un prompt FÍSICO Y CINEMATOGRÁFICO muy descriptivo (en inglés). 
-Añade iluminación (volumetric lighting, neon, natural), lente de cámara (35mm, 8k, phantom high speed), textura y fluidez.
-Mantenlo de 1 solo párrafo, corto pero letal.
-Concepto básico: "${finalPrompt}"`;
+                const promptTemplate = `Eres un Maestro del Prompting estilo Midjourney V6.
+Toma el siguiente concepto básico y expándelo en un prompt (en inglés) altamente visual y estético de 1 a 2 oraciones, corto pero letal.
+REGLA DE ESTILO: Deduse el estilo a partir del concepto mismo (por ejemplo si dice 'dibujo', haz un prompt de ilustración con tintas artísticas; si pide '3D', hazlo render; si es corrección como 'haz al robot mas grande', aplícala a la idea anterior).
+Crea atmósfera e iluminación que destaquen la escena. Prohibido usar términos de video o animación.
+Historial de Creaciones Previas (Aprende del contexto y correcciones del usuario aquí):
+${global.soraDirectorMemory.join("\n")}
+
+NUEVO Concepto básico/Corrección: "${finalPrompt}"
+Genera ÚNICAMENTE el nuevo prompt en inglés directo, sin explicaciones.`;
 
                 const result = await model.generateContent(promptTemplate);
                 const resultText = result.response.text().trim();
@@ -197,6 +203,10 @@ Concepto básico: "${finalPrompt}"`;
                 if (resultText && resultText.length > 10) {
                     finalPrompt = resultText;
                     console.log(`[GOTSORA DIRECTOR] Prompt Expandido a: "${finalPrompt}"`);
+                    
+                    // Almacenamos en memoria global (Máximo 10 interacciones para no saturar tokens)
+                    global.soraDirectorMemory.push(`User pidió: ${req.body.prompt} -> Director generó: ${finalPrompt}`);
+                    if (global.soraDirectorMemory.length > 10) global.soraDirectorMemory.shift();
                 }
             } catch (aiError) {
                 console.error("[GOTSORA DIRECTOR] Fallo al contactar a Gemini. Usando prompt original.", aiError.message);

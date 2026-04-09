@@ -28,22 +28,32 @@ const Login = () => {
         fetch(`${API_BASE}/api/auth/verify`, {
             headers: { Authorization: `Bearer ${token}` },
         })
-            .then(r => r.json())
+            .then(r => {
+                if(r.status === 401) {
+                    return r.json().then(data => ({ ...data, _authFail: true }));
+                }
+                if(!r.ok) {
+                    return { success: true, _serverError: true }; // Ignora fallos de red locales (5xx)
+                }
+                return r.json();
+            })
             .then(data => {
-                if (data.success) {
+                if (data.success && !data._authFail) {
                     const savedUser = localStorage.getItem('adminUser') || '';
                     if (savedUser.toLowerCase() === 'judith') {
                         navigate('/cm');
                     } else {
                         navigate('/admin');
                     }
-                } else {
+                } else if (data._authFail) {
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminUser');
                     setChecking(false);
+                } else {
+                    setChecking(false);
                 }
             })
-            .catch(() => setChecking(false));
+            .catch(() => setChecking(false)); // Error de fetch no borra caché, solo corta checking
     }, []);
 
     // ── Restaurar intentos del localStorage ──────────────────

@@ -45,7 +45,7 @@ function killCloudflared() {
 function startTunnel() {
     const proc = spawn(
         CLOUDFLARED_PATH,
-        ['tunnel', '--no-autoupdate', '--protocol', 'http2', 'run', '--token', TUNNEL_TOKEN],
+        ['tunnel', '--no-autoupdate', '--protocol', 'quic', 'run', '--token', TUNNEL_TOKEN],
         { stdio: 'pipe', shell: false, windowsHide: true, detached: true }
     );
 

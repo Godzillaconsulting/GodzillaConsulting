@@ -107,11 +107,36 @@ const chatTools = [{
 const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiSessions = new Map();
 
-function getChat(userId) {
+let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
+let lastPromptCheck = 0;
+
+async function getSystemPrompt() {
+    // Sincronizar con el Cerebro Central cada minuto (60,000 ms)
+    if (Date.now() - lastPromptCheck > 60000) {
+        try {
+            const res = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma = 'instagram'");
+            if (res.rows.length > 0 && res.rows[0].dm_system_prompt) {
+                const newPrompt = res.rows[0].dm_system_prompt;
+                if (newPrompt !== currentSystemPrompt) {
+                    currentSystemPrompt = newPrompt;
+                    geminiSessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
+                    console.log('[Instagram] 🔄 SYSTEM PROMPT actualizado y sincronizado desde Cerebro Central');
+                }
+            }
+            lastPromptCheck = Date.now();
+        } catch(e) {
+            console.error('[Instagram] Error consultando bot_configs:', e.message);
+        }
+    }
+    return currentSystemPrompt;
+}
+
+async function getChat(userId) {
+    const activePrompt = await getSystemPrompt();
     if (!geminiSessions.has(userId)) {
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash',
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            systemInstruction: { parts: [{ text: activePrompt }] },
             tools: [{ function_declarations: chatTools }],
         });
         geminiSessions.set(userId, model.startChat({ history: [] }));
@@ -121,7 +146,7 @@ function getChat(userId) {
 
 // ── Procesar mensaje y responder ──────────────────────────────────────────────
 async function processAndReply(userId, text, replyFn) {
-    const chat = getChat(userId);
+    const chat = await getChat(userId);
     try {
         let result = await chat.sendMessage(text);
         const functionCalls = result.response.functionCalls();
@@ -202,7 +227,9 @@ const seenItems = new Set();
 async function startBot() {
     if (!existsSync(SESSION_FILE)) {
         console.error('[Instagram] ❌ Sin sesión. Ejecuta: node server/ig_setup.cjs');
-        process.exit(1);
+        console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena para evitar bucles de PM2...');
+        setInterval(() => {}, 60000); // Mantiene el Event Loop vivo
+        await new Promise(() => {}); // Pausa infinita para evitar restarts de PM2
     }
 
     const ig = new IgApiClient();
@@ -223,11 +250,13 @@ async function startBot() {
         const isCheckpoint = err.message?.includes('checkpoint_required') || err.response?.body?.checkpoint_url;
         if (isCheckpoint) {
             console.error('[Instagram] ❌ Sesión inválida — Instagram pide verificación de nuevo dispositivo.');
-            console.error('[Instagram]    Abre Instagram en tu celular → aprueba el inicio de sesión → ejecuta ig_setup.cjs');
+            console.error('[Instagram]    Abre Instagram en tu celular → aprueba el inicio de sesión → ejecuta node server/ig_setup.cjs');
         } else {
-            console.error('[Instagram] ❌ Sesión inválida (error', err.message, '). Ejecuta ig_setup.cjs de nuevo.');
+            console.error('[Instagram] ❌ Sesión inválida (error', err.message, '). Ejecuta node server/ig_setup.cjs de nuevo.');
         }
-        process.exit(1);
+        console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena para evitar bucles (spam a Meta)...');
+        setInterval(() => {}, 60000); // Mantiene el Event Loop vivo
+        await new Promise(() => {}); // Pausa infinita para la ejecución actual
     }
 
     console.log(`[Instagram] 📲 Polling DMs cada ${POLL_MS/1000}s...`);
@@ -264,8 +293,10 @@ async function startBot() {
         } catch(err) {
             const code = err?.response?.statusCode;
             if (code === 467 || code === 401 || err.name === 'IgLoginRequiredError') {
-                console.error('[Instagram] ❌ Sesión expirada. Ejecuta ig_setup.cjs para renovar.');
-                process.exit(1); // PM2 no reiniciará (max_restarts agotados)
+                console.error('[Instagram] ❌ Sesión expirada. Ejecuta node server/ig_setup.cjs para renovar.');
+                console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena para evitar bucles de PM2...');
+                setInterval(() => {}, 60000); // Mantiene el Event Loop vivo
+                await new Promise(() => {}); // Pausa infinita para evitar restarts de PM2
             } else if (err.message?.includes('429') || err.message?.includes('rate_limit')) {
                 console.warn('[Instagram] ⏳ Rate limit. Esperando 2 minutos...');
                 await new Promise(r => setTimeout(r, 120000));

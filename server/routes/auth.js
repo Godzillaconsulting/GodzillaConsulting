@@ -129,7 +129,7 @@ router.post('/login', async (req, res) => {
                 role: admin.role || 'user'
             },
             JWT_SECRET,
-            { expiresIn: '24h' } // 24h: evita forzar re-login diario
+            { expiresIn: '365d' } // Módulo Auth FB-Like: Sesión semi-permanente por 1 año
         );
 
         // Log de acceso exitoso

@@ -16,18 +16,19 @@ try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// [Vercel Fix]: En Vercel, el filesystem es de solo lectura excepto /tmp
-let ARCHIVOS_PESADOS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
+// Forza la subida a un disco/partición específica y garantizada
+let ARCHIVOS_PESADOS_DIR = 'E:/assets';
 try {
     if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) {
         fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true });
     }
 } catch (e) {
     if (e.code === 'EROFS' || e.code === 'EACCES' || e.code === 'ENOENT') {
-        ARCHIVOS_PESADOS_DIR = process.env.VERCEL ? '/tmp/uploads/assets' : path.join(os.tmpdir(), 'godzilla-assets');
+        // Fallback fallback si E: está deshabilitado
+        ARCHIVOS_PESADOS_DIR = path.join(os.tmpdir(), 'godzilla-assets');
         try { if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true }); } catch (_) {}
     } else {
-        console.error("Error creating uploads dir", e);
+        console.error("Error creating E:/assets uploads dir", e);
     }
 }
 
@@ -49,7 +50,7 @@ const uploadVideo = multer({
     storage: multer.diskStorage({
         // Función asíncrona: previene que multer llame a mkdirSync(string) en el primer ciclo del event loop (Evita Vercel 500)
         destination: (req, file, cb) => {
-            const dest = process.env.VERCEL ? '/tmp/uploads/assets' : ARCHIVOS_PESADOS_DIR;
+            const dest = ARCHIVOS_PESADOS_DIR;
             // Asegurar creación asíncrona sin bloquear el arranque
             fs.mkdir(dest, { recursive: true }, (err) => {
                 // EROFS / ENOENT fallará aquí pero en ejecución, no en BOOT.
@@ -69,8 +70,15 @@ const uploadVideo = multer({
     }),
     limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('video/') || file.originalname.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i)) cb(null, true);
-        else cb(new Error('Solo se aceptan videos o documentos.'));
+        const isVideo = file.mimetype.startsWith('video/');
+        const isDocMime = file.mimetype.match(/(pdf|msword|excel|powerpoint|officedocument|csv)/i);
+        const isDocExt = file.originalname.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)$/i);
+        
+        if (isVideo || isDocMime || isDocExt) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se aceptan videos o documentos válidos. Formato recibido: ' + file.mimetype));
+        }
     }
 });
 
@@ -83,7 +91,7 @@ const getPublicUrl = (req, relativePath) => {
 
 // URL para assets pesados en disco local (accesibles vía Cloudflare Tunnel)
 const getAssetUrl = (filename) => {
-    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || 'https://godzillaconsulting.ai';
     return `${botBase}/api/media/assets/${filename}`;
 };
 
@@ -135,11 +143,23 @@ router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => 
     }
 });
 // ─── POST /api/media/upload-video (Guardar Video a Disco Local) ─────────────
-router.post('/upload-video', requireAdmin, uploadVideo.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No se recibió video.' });
+router.post('/upload-video', requireAdmin, (req, res, next) => {
+    uploadVideo.single('file')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'El archivo excede los 500MB permitidos. Por rendimiento de la plataforma, te sugerimos subir videos largos directamente a YouTube e insertar la URL.' });
+            }
+            return res.status(400).json({ error: err.message });
+        } else if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo.' });
     const filename = req.file.filename;
     const publicUrl = getAssetUrl(filename);
-    console.log(`[Media-Local] Video guardado en disco: ${filename} (${(req.file.size/1024/1024).toFixed(1)} MB)`);
+    console.log(`[Media-Local] Recurso guardado en disco: ${filename} (${(req.file.size/1024/1024).toFixed(1)} MB)`);
     res.json({
         success: true,
         url: publicUrl,

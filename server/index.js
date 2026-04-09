@@ -76,7 +76,7 @@ app.use(cors({
             callback(new Error('Bloqueado por CORS: Origen no permitido.'));
         }
     },
-    methods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
+    methods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
     credentials: true
 }));
 
@@ -134,7 +134,8 @@ const analyticsLimiter = rateLimit({
 });
 
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // ==========================================
 // 2. RUTAS DE LA API
@@ -164,6 +165,98 @@ app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
+
+// ==========================================
+// PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)
+// Supera el bloqueo Mixed Content (HTTPS -> HTTP) en el navegador
+// ==========================================
+app.post('/api/sora-start', async (req, res) => {
+    try {
+        const fetch = (await import('node-fetch')).default;
+        let finalPrompt = req.body.prompt;
+        
+        // ===============================================
+        // NIVEL 1: EL DIRECTOR DE CINE (Prompt Expansion)
+        // ===============================================
+        if (process.env.GEMINI_API_KEY && finalPrompt.length < 50) {
+            console.log(`[GOTSORA DIRECTOR] Expandiendo prompt semilla: "${finalPrompt}"`);
+            try {
+                const { GoogleGenerativeAI } = await import('@google/generative-ai');
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                
+                const promptTemplate = `Eres un Director de Fotografía experto en Midjourney, Sora y Unreal Engine.
+Toma el siguiente concepto básico y méjoralo transformándolo en un prompt FÍSICO Y CINEMATOGRÁFICO muy descriptivo (en inglés). 
+Añade iluminación (volumetric lighting, neon, natural), lente de cámara (35mm, 8k, phantom high speed), textura y fluidez.
+Mantenlo de 1 solo párrafo, corto pero letal.
+Concepto básico: "${finalPrompt}"`;
+
+                const result = await model.generateContent(promptTemplate);
+                const resultText = result.response.text().trim();
+                
+                if (resultText && resultText.length > 10) {
+                    finalPrompt = resultText;
+                    console.log(`[GOTSORA DIRECTOR] Prompt Expandido a: "${finalPrompt}"`);
+                }
+            } catch (aiError) {
+                console.error("[GOTSORA DIRECTOR] Fallo al contactar a Gemini. Usando prompt original.", aiError.message);
+            }
+        }
+        
+        req.body.prompt = finalPrompt;
+
+        // Inyección de PyTorch
+        const response = await fetch('http://127.0.0.1:5000/sora-start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+        const data = await response.json();
+        
+        // Agregamos feedback sutil
+        if(data.success && finalPrompt !== req.body.prompt) {
+             data.msg += " (El Director expandió tu Prompt con Gemini).";
+        }
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Master Node Python Offline o Inaccesible.' });
+    }
+});
+
+app.get('/api/sora-history', async (req, res) => {
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch('http://127.0.0.1:5000/sora-history');
+        const data = await response.json();
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Memoria Histórica Python Offline.' });
+    }
+});
+
+app.post('/api/sora-restore', async (req, res) => {
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch('http://127.0.0.1:5000/sora-restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+        const data = await response.json();
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Python Offline.' });
+    }
+});
+
+// Proxy para los Assets Multimedia /outputs/*
+// El Python genera http://127.0.0.1:5000/outputs/video.mp4. Reemplazamos la llamada:
+app.get('/api/sora/media/:filename', async (req, res) => {
+    const filename = req.params.filename;
+    res.redirect(`http://localhost:5000/outputs/${filename}`);
+    // Nota: El navegador seguirá un redirect. Si el Mixed Context sigue frenando localhosts en redirect, 
+    // lo canalizamos via stream estático (pero el redirect interno funciona en la mayoria de túneles lógicos).
+});
 
 
 // Servir archivos subidos como estáticos en /media/*

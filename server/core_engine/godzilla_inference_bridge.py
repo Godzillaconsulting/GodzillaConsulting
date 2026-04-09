@@ -1,9 +1,11 @@
 import os
 import sys
 
-# Redirigir el peso de los modelos masivos al Disco Duro Secundario E:
-os.environ["HF_HOME"] = "E:\\GodzillaSora_Models"
-os.environ["TORCH_HOME"] = "E:\\GodzillaSora_Models\\torch"
+# Importar Rutas Deep Storage y forzar disco E: ANTES de cargar PyTorch
+from config import apply_storage_directives
+apply_storage_directives()
+OUTPUTS_DIR = os.environ.get("OUTPUTS_DIR_FALLBACK", r"E:\GodzillaSora_Outputs")
+
 import time
 import ctypes
 import threading
@@ -22,7 +24,8 @@ import gc
 
 try:
     import torch
-    from diffusers import DiffusionPipeline
+    from diffusers import DiffusionPipeline, CogVideoXPipeline
+    from diffusers.utils import export_to_video
     AI_ENABLED = True
 except ImportError:
     AI_ENABLED = False
@@ -65,8 +68,6 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI(title="Godzilla AI Local GPU Node")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_headers=["*"], allow_methods=["*"])
 
-OUTPUTS_DIR = r"E:\GodzillaSora_Outputs"
-os.makedirs(OUTPUTS_DIR, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
 
 RECIPES_DB_PATH = os.path.join(OUTPUTS_DIR, "recipes.json")
@@ -76,6 +77,11 @@ if not os.path.exists(RECIPES_DB_PATH):
 
 app_asgi = socketio.ASGIApp(sio, app)
 
+# ========================================================
+# COLA ASÍNCRONA NATIVA (GOTSORA QUEUE)
+# No usamos Redis/Celery. Mantenemos el stack ultraligero
+# acoplado puramente a PyTorch Core para evitar cuellos de red.
+# ========================================================
 gpu_queue = None
 ai_pipeline = None
 
@@ -83,30 +89,42 @@ def load_ai_model():
     global ai_pipeline
     if ai_pipeline is None and AI_ENABLED:
         try:
-            print("[SYSTEM] PyTorch Carga Masiva: Inicializando Núcleo Cinematográfico (SDXL)...")
+            print("[SYSTEM] PyTorch Carga Masiva: Inicializando Núcleo Cinematográfico de Video DiT (CogVideoX)...")
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            # SDXL OBLIGA float16 para no destruir la RAM (Evita picos de 14GB+)
+            
+            # Formato fp16 estricto para proteger la RAM
             dtype = torch.float16
             
-            print(f"[SYSTEM] Asignando Mega-Modelo a: {device.upper()} con dtype {dtype}")
-            print("[ALERTA] Si es la primera vez, el CLI descargará ~7GB de tensores. NO CERRAR LA TERMINAL.")
+            print(f"[SYSTEM] Asignando Mega-Modelo agnóstico a: {device.upper()} con dtype {dtype}")
             
-            # stabilityai/stable-diffusion-xl-base-1.0 es el rival de open-source fotográfico más fuerte actualmente.
-            ai_pipeline = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-base-1.0", 
+            # Usando Pipeline Base (CogVideoX - Rival open source de Sora)
+            OFFLOAD_DIR = os.environ.get("OFFLOAD_DIR_FALLBACK", r"E:\GodzillaSora_Offload")
+            
+            ai_pipeline = CogVideoXPipeline.from_pretrained(
+                "THUDM/CogVideoX-2b", 
                 torch_dtype=dtype, 
-                use_safetensors=True, 
-                variant="fp16"
+                device_map="auto" if device == "cuda" else None,
+                offload_folder=OFFLOAD_DIR
             )
             
-            # Optimizaciones extremas requeridas para SDXL en computadoras con límite RAM
             if device == "cuda":
-                ai_pipeline.enable_model_cpu_offload() 
+                # TÉCNICAS VRAM DE EXTREMA PREVENCIÓN DE OOM:
+                # Al delegar el device_map="auto" a HuggingFace Accelerate, enviará excesos a OFFLOAD_DIR automáticamente.
+                
+                # VAE Slicing procesa los tensores gigantes por fragmentos lógicos.
                 ai_pipeline.enable_vae_slicing()
                 
-            print("[SYSTEM] GODZILLA SORA (PyTorch SDXL) ONLINE. Listo para Producción Pesada.")
+                # Attention Slicing clave para el renderizado estilo 'Sora' donde 
+                # las secuencias largas causan explosiones cuadráticas de VRAM.
+                ai_pipeline.enable_attention_slicing()
+                
+                # [NUEVO] VAE Tiling: Ensambla el mega-video o imagen 8K en pequeñas baldosas, evitando 
+                # que el renderizador explote al final del proceso.
+                ai_pipeline.enable_vae_tiling()
+                
+            print("[SYSTEM] GODZILLA SORA (PyTorch Engine) ONLINE. Listo para Producción en Cascada Limitada.")
         except Exception as e:
-            print(f"[ERROR CRÍTICO] Falló inyección de Tensor Gigante: {e}")
+            print(f"[ERROR CRÍTICO] Falló inyección de Tensores: {e}")
             ai_pipeline = None
 
 async def gpu_worker_loop():
@@ -221,14 +239,19 @@ def generate_frame_tensor(channels, width, height):
     
     return ctypes.cast(rows, c_float_pp)
 
-def save_tensor_to_disk(task_id, mode, seed, ai_image=None):
+def save_tensor_to_disk(task_id, mode, seed, ai_image=None, ai_frames=None):
     """
-    Toma los bytes de la inferencia y los escribe en el disco C:/ físicamente.
+    Toma los bytes de la inferencia (imagen o serie de frames CogVideo) y los escribe en el disco E:.
     """
     if mode == 'video':
         video_path = os.path.join(OUTPUTS_DIR, f"render_{task_id}.mp4")
-        if not os.path.exists(video_path):
-            urllib.request.urlretrieve("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", video_path)
+        if ai_frames is not None:
+            # Compilamos el tensor multiforme en un archivo .mp4 jugable!
+            export_to_video(ai_frames, video_path, fps=8)
+        else:
+            # Backup por si falló la CPU/GPU
+            if not os.path.exists(video_path):
+                urllib.request.urlretrieve("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", video_path)
         return f"http://127.0.0.1:5000/outputs/render_{task_id}.mp4"
     else:
         # Generar imagen real o respaldo
@@ -304,21 +327,34 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
         
         # Pytorch Real Execution
         final_ai_image = None
-        if ai_pipeline is not None and mode == 'photo':
-            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": "PyTorch: Explotando Diffusers Matrix..."})
-            
-            # Crear generador amarrado a la seed para exactitud replicable
+        final_ai_frames = None
+        
+        if ai_pipeline is not None:
+            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando DiT Matrix para {mode}..."})
             generator = torch.Generator(device=ai_pipeline.device).manual_seed(seed)
             
-            # Inferencia Tensor pura (Thread blockeante de CPU/GPU envuelto opcionalmente)
-            # Para fines locales lo corremos bloqueante, el Worker lo protege
-            output = ai_pipeline(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                num_inference_steps=min(steps, 25), # limit steps for speed on CPU fallback
-                generator=generator
-            )
-            final_ai_image = output.images[0]
+            if mode == 'video':
+                # [NUEVO] COGVIDEOX: Inferimos con el motor nativo Sora-like
+                output = ai_pipeline(
+                    prompt=prompt,
+                    num_frames=49,       # Genera secuencias complejas
+                    use_dynamic_cfg=True,
+                    num_inference_steps=min(steps, 50),
+                    generator=generator,
+                )
+                final_ai_frames = output.frames[0]
+            else:
+                # [NUEVO] Si el pipeline lo soporta para foto
+                output = ai_pipeline(
+                    prompt=prompt,
+                    num_inference_steps=min(steps, 25),
+                    generator=generator
+                )
+                # CogVideoX maneja output.frames pero si la fallbackamos a imagen tomamos la primera
+                if hasattr(output, 'images'):
+                    final_ai_image = output.images[0]
+                elif hasattr(output, 'frames'):
+                    final_ai_image = output.frames[0][0] # Toma el primer cuadro como foto
             
             # Aggressive Garbage Collection
             del output
@@ -327,7 +363,7 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
             gc.collect()
 
         # Guarda la obra final o el backup si PyTorch no corrió
-        final_url = save_tensor_to_disk(task_id, mode, seed, ai_image=final_ai_image)
+        final_url = save_tensor_to_disk(task_id, mode, seed, ai_image=final_ai_image, ai_frames=final_ai_frames)
         await sio.emit("render_progress", {"task_id": task_id, "status": "DONE", "msg": f"Media Lista. Recolector programado para {task_id}.", "media_url": final_url})
         print(f"[ENGINE COMPLETE] Tensor Matrix finalized and packed for {task_id}.")
         

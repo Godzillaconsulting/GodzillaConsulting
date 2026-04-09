@@ -158,13 +158,36 @@ export const initWhatsAppBot = () => {
         const maskedSender = senderId.substring(0, 4) + "****" + senderId.substring(senderId.length - 4);
         console.log(`📩 WA Msg recibido [${maskedSender}]: [MENSAJE OCULTO POR SEGURIDAD PII]`);
 
+let dynamicPromptWA = null;
+let lastPromptCheckWA = 0;
+
+async function getSystemPromptWA() {
+    if (Date.now() - lastPromptCheckWA > 60000 || !dynamicPromptWA) {
+        try {
+            const res = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma = 'whatsapp'");
+            if (res.rows.length > 0 && res.rows[0].dm_system_prompt) {
+                dynamicPromptWA = res.rows[0].dm_system_prompt;
+                console.log('[WA] 🔄 SYSTEM PROMPT actualizado desde Cerebro Central');
+            } else if (!dynamicPromptWA) {
+                dynamicPromptWA = SYSTEM_PROMPT; // fallback init
+            }
+            lastPromptCheckWA = Date.now();
+        } catch(e) {
+            console.error("Error leyendo bot config WA:", e.message);
+            if (!dynamicPromptWA) dynamicPromptWA = SYSTEM_PROMPT;
+        }
+    }
+    return dynamicPromptWA;
+}
+
+// ... helper to get chat config
         try {
             const sessionData = await appendMessageToSession(senderId, "user", messageText);
             if (!sessionData) return;
 
             const { historial_mensajes, resumen_contexto } = sessionData;
 
-            let finalSystemPrompt = SYSTEM_PROMPT;
+            let finalSystemPrompt = await getSystemPromptWA();
             if (resumen_contexto && resumen_contexto.trim() !== '') {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }

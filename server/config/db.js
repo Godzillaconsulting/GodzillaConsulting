@@ -17,11 +17,18 @@ const isNeon = connectionString && connectionString.includes('neon.tech');
 
 const pool = new Pool({
     connectionString,
-    ssl: isNeon ? { rejectUnauthorized: false } : (process.env.VERCEL ? { rejectUnauthorized: false } : false),
-    // Optimizado mixto (10 local, 1 Vercel pgBouncer)
-    max: process.env.VERCEL ? 2 : 10,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 10000,
+    ssl: isNeon ? { rejectUnauthorized: false } : false,
+    max: 50,                               // Aumentado a 50 para soportar MultiTenant y bots en paralelo
+    idleTimeoutMillis: 30_000,             // 30s 
+    connectionTimeoutMillis: 5_000,        // 5s para detectar caídas rápido
+    allowExitOnIdle: false,
+    keepAlive: true,                       // Previene cortes TCP silenciosos del OS
+    keepAliveInitialDelayMillis: 10_000,
+});
+
+// Previene UnhandledRejection si un cliente idle muere
+pool.on('error', (err) => {
+    console.error('[DB Pool] Cliente idle falló (reconectando automáticamente):', err.message);
 });
 
 // Verificación de conexión

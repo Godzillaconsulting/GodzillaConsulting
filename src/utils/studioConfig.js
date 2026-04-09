@@ -240,6 +240,87 @@ export function injectSectionDefaults(nodeId, draftSource) {
       }
   }
 
+  // Inject defaults for Landings Paquetes
+  if (nodeId === 'paquete-expansion') {
+      if (combinedData.heroTitle === undefined) {
+          combinedData.heroTopText = 'Organiza un sistema que capture, atienda y organice a tus prospectos sin que tú muevas un dedo';
+          combinedData.heroTitle = 'NIVEL\nEXPANSIÓN';
+          combinedData.heroDisclaimer = 'Si en <span className="font-bold text-[#CC0000] not-italic">30 días hábiles</span>, no generamos ningún lead, te devolvemos el <span className="font-bold text-[#CC0000] not-italic">100%</span> de tu dinero.';
+          combinedData.cardTitle = 'NIVEL EXPANSIÓN';
+          combinedData.planTarget = 'Ideal para el que ya tiene experiencia, pero teme tirar el dinero a la basura.';
+          combinedData.planPrice = '$29,900';
+          combinedData.planPeriod = 'al mes';
+          combinedData.planFeaturesExtended = [
+              { title: 'Todo lo que incluye Posicionamiento Social', desc: '• Agente IA (Web + WhatsApp)\n• Respuestas en menos de 5 segundos 24/7\n• Captura de datos automática' },
+              { title: 'Tráfico Bilingüe (Ads Meta/Google)', desc: '' },
+              { title: 'Landing page de alta conversión', desc: '' }
+          ];
+          combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
+          combinedData.guaranteeBadge = 'Resultados garantizados 100%';
+          combinedData.guaranteeText = 'Estamos tan seguros de nuestros resultados que ofrecemos una garantía total.\n\nSi no cumplimos con los entregables pactados en el tiempo establecido, te devolvemos tu inversión o trabajamos gratis hasta lograrlo.';
+      }
+  }
+  
+  if (nodeId === 'paquete-elite') {
+      if (combinedData.heroTitle === undefined) {
+          combinedData.heroTopText = 'Organiza un sistema que capture, atienda y organice a tus prospectos sin que tú muevas un dedo';
+          combinedData.heroTitle = 'NIVEL\nÉLITE';
+          combinedData.heroDisclaimer = 'Si no aumentamos tus citas en un <span className="font-bold text-[#CC0000] not-italic">20% en 90 días hábiles</span>, trabajaremos <span className="font-bold text-[#CC0000] not-italic">gratis</span>.';
+          combinedData.cardTitle = 'NIVEL ÉLITE';
+          combinedData.planTarget = 'Ideal para el que pierde millones por el caos y la falta de datos.';
+          combinedData.planPrice = '$39,500';
+          combinedData.planPeriod = 'al mes';
+          combinedData.planFeaturesExtended = [
+              { title: 'Estrategia Godfather completa', desc: '' },
+              { title: 'Reactivación de base de datos', desc: '' },
+              { title: 'Consultoría mensual y cierre', desc: '' }
+          ];
+          combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
+          combinedData.guaranteeBadge = 'Resultados garantizados 100%';
+          combinedData.guaranteeText = 'Estamos tan seguros de nuestros resultados que ofrecemos una garantía total.\n\nSi no cumplimos con los entregables pactados en el tiempo establecido, te devolvemos tu inversión o trabajamos gratis hasta lograrlo.';
+      }
+  }
+
+  if (nodeId === 'paquete-control-ia') {
+      if (combinedData.heroTitle === undefined) {
+          combinedData.heroTopText = 'Atiende, califica y agenda en automático las 24 horas del día';
+          combinedData.heroTitle = 'CONTROL\nIA';
+          combinedData.heroDisclaimer = 'Si no está funcionando en <span className="font-bold text-[#CC0000] not-italic">7 días</span>, el siguiente mes es <span className="font-bold text-[#CC0000] not-italic">GRATIS</span>.';
+          combinedData.cardTitle = 'CONTROL IA';
+          combinedData.planTarget = 'Ideal para quienes pierden ventas por demorar en responder.';
+          combinedData.planPrice = '$7,900';
+          combinedData.planPeriod = 'al mes';
+          combinedData.planFeaturesExtended = [
+              { title: 'Agente IA (Web + WhatsApp)', desc: '' },
+              { title: 'Respuesta en menos de 5 segundos 24/7', desc: '' },
+              { title: 'Captura de datos automática', desc: '' }
+          ];
+          combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
+          combinedData.guaranteeBadge = 'Resultados garantizados 100%';
+          combinedData.guaranteeText = 'Estamos tan seguros de nuestros resultados que ofrecemos una garantía total.\n\nSi no cumplimos con los entregables pactados en el tiempo establecido, te devolvemos tu inversión o trabajamos gratis hasta lograrlo.';
+      }
+  }
+
+  if (nodeId === 'paquete-posicionamiento-social') {
+      if (combinedData.heroTitle === undefined) {
+          combinedData.heroTopText = 'Posiciona tu marca en donde tu audiencia realmente interactúa';
+          combinedData.heroTitle = 'POSICIONAMIENTO\nSOCIAL';
+          combinedData.heroDisclaimer = 'Si en <span className="font-bold text-[#CC0000] not-italic">14 días</span> no ves un incremento real en el engagement, el siguiente mes es <span className="font-bold text-[#CC0000] not-italic">GRATIS</span>.';
+          combinedData.cardTitle = 'POSICIONAMIENTO SOCIAL';
+          combinedData.planTarget = 'Ideal para marcas que necesitan contenido constante de alta calidad.';
+          combinedData.planPrice = '$7,900';
+          combinedData.planPeriod = 'al mes';
+          combinedData.planFeaturesExtended = [
+              { title: 'Estrategia de Contenido Omnicanal', desc: '' },
+              { title: 'Copywriting de Respuesta Directa', desc: '' },
+              { title: 'Community Management', desc: '' }
+          ];
+          combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
+          combinedData.guaranteeBadge = 'Resultados garantizados 100%';
+          combinedData.guaranteeText = 'Estamos tan seguros de nuestros resultados que ofrecemos una garantía total.\n\nSi no cumplimos con los entregables pactados en el tiempo establecido, te devolvemos tu inversión o trabajamos gratis hasta lograrlo.';
+      }
+  }
+
   // Inject defaults for Servicios Landings
   if (nodeId.startsWith('servicio-') && combinedData.title === undefined) {
       combinedData.ctaText = 'Agendar cita';

@@ -151,7 +151,7 @@ export default function AnalyticsDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const base = import.meta.env.DEV ? 'http://localhost:3000' : (import.meta.env.VITE_API_URL || '');
         const token = localStorage.getItem('adminToken');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         

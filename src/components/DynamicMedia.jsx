@@ -24,7 +24,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
 
         if (milestone > 0) {
             hasTracked.current[milestone] = true;
-            const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const backendUrl = import.meta.env.DEV ? 'http://localhost:3000' : (import.meta.env.VITE_API_URL || '');
             fetch(`${backendUrl}/api/analytics/video`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

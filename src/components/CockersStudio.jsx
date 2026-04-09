@@ -372,8 +372,6 @@ export default function CockersStudio({ adminProfile }) {
                     </div>
                 </div>
 
-                </div>
-
                 {/* Área de Prompt */}
                 <div className="px-5 py-2 flex flex-col flex-1 shrink-0">
                     <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider mb-2">Prompt</p>

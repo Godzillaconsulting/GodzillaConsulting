@@ -48,6 +48,9 @@ server/.wwebjs_cache/
 tiktok_session/
 server/tiktok_session/
 
+# IG Neurona bot — session data de Chrome
+ig-neurona/session_data/
+
 # Backups de base de datos
 backups/
 server/backups/

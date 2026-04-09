@@ -13,10 +13,13 @@ const connectionString =
         ? process.env.DATABASE_URL_DEV
         : process.env.DATABASE_URL;
 
+const isNeon = connectionString && connectionString.includes('neon.tech');
+
 const pool = new Pool({
     connectionString,
-    // Optimizado para Local PostgreSQL
-    max: 10,
+    ssl: isNeon ? { rejectUnauthorized: false } : (process.env.VERCEL ? { rejectUnauthorized: false } : false),
+    // Optimizado mixto (10 local, 1 Vercel pgBouncer)
+    max: process.env.VERCEL ? 2 : 10,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
 });

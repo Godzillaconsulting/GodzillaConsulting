@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-// import helmet from 'helmet';
-// import { rateLimit } from 'express-rate-limit';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -45,15 +45,17 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
-// [Desactivado temporalmente] Helmet estaba causando crash de FUNCTION_INVOCATION_FAILED en Vercel Serverless Node 18
-// app.use(helmet({
-//     contentSecurityPolicy: false, // CSP custom en prod si se necesita
-//     crossOriginEmbedderPolicy: false,
-//     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-//     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-//     xContentTypeOptions: true,      // Previene MIME sniffing
-//     xFrameOptions: { action: 'DENY' }, // Previene clickjacking
-// }));
+// [Restaurado con prevención de Vercel] Helmet estaba causando crash de FUNCTION_INVOCATION_FAILED en Vercel Serverless
+if (!process.env.VERCEL) {
+    app.use(helmet({
+        contentSecurityPolicy: false, // CSP custom en prod si se necesita
+        crossOriginEmbedderPolicy: false,
+        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        xContentTypeOptions: true,      // Previene MIME sniffing
+        xFrameOptions: { action: 'DENY' }, // Previene clickjacking
+    }));
+}
 
 // Cabecera anti-fingerprinting: oculta que es Express
 app.disable('x-powered-by');
@@ -79,8 +81,7 @@ app.use(cors({
 }));
 
 
-// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)/*
-/*
+// Rate Limit: Previene ataques de SPAM (fuerza bruta en el formulario)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: process.env.NODE_ENV === 'development' ? 1000 : 5,
@@ -131,7 +132,6 @@ const analyticsLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
-*/
 
 // Parsea el Body como JSON (si no haces esto req.body es undefined)
 app.use(express.json({ limit: '50mb' }));

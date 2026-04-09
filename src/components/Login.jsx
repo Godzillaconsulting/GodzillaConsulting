@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, User, ArrowRight, AlertCircle, Loader, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/Godzilla Consulting.png';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 const MAX_ATTEMPTS = 5; // Reflejado también en backend
 
 const Login = () => {

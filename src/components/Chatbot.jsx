@@ -17,7 +17,7 @@ const Chatbot = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || '';
+    const API_URL = '' || '';
 
     useEffect(() => {
         // Initial delay before showing the tooltip for the first time

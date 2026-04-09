@@ -53,7 +53,7 @@ export default function CockersStudio({ adminProfile }) {
     const fetchElitePrompts = async () => {
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/elite-prompts`, {
+            const res = await fetch(`${'' || ''}/api/studio/elite-prompts`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -73,7 +73,7 @@ export default function CockersStudio({ adminProfile }) {
         
         try {
             const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/script-chat`, {
+            const response = await fetch(`${'' || ''}/api/studio/script-chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ message: val, chatHistory: scriptChatHistory })
@@ -97,7 +97,7 @@ export default function CockersStudio({ adminProfile }) {
         setIsLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
+            const res = await fetch(`${'' || ''}/api/studio/tasks`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -148,7 +148,7 @@ export default function CockersStudio({ adminProfile }) {
                 return;
             }
 
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks/${selectedDraft.id}`, {
+            const res = await fetch(`${'' || ''}/api/studio/tasks/${selectedDraft.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
@@ -178,7 +178,7 @@ export default function CockersStudio({ adminProfile }) {
 
             // FEEDBACK LEARNING (Alimentar a Goyi si hubo cambios iterativos)
             if (finalPrompt && selectedDraft?.visual_prompt && finalPrompt !== selectedDraft.visual_prompt) {
-                fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/learning`, {
+                fetch(`${'' || ''}/api/studio/learning`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -189,7 +189,7 @@ export default function CockersStudio({ adminProfile }) {
                 }).catch(e => console.error("Error saving learning:", e));
             }
             
-            const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/generate`, {
+            const response = await fetch(`${'' || ''}/api/studio/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: builderData.model })
@@ -209,7 +209,7 @@ export default function CockersStudio({ adminProfile }) {
                 const pollInterval = setInterval(async () => {
                     attempts++;
                     try {
-                        const statusRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/status/${data.job_id}`, {
+                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const statusData = await statusRes.json();

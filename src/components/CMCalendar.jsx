@@ -106,7 +106,7 @@ export default function CMCalendar({ adminProfile }) {
             return;
         }
         try {
-            const API_URL = import.meta.env.VITE_API_URL || '';
+            const API_URL = '' || '';
             const res = await fetch(`${API_URL}/api/bots/config/${platform}`);
             const data = await res.json();
             if (data.success && data.config) {
@@ -128,7 +128,7 @@ export default function CMCalendar({ adminProfile }) {
         if (!botConfig) return;
         setSavingBot(true);
         try {
-            const API_URL = import.meta.env.VITE_API_URL || '';
+            const API_URL = '' || '';
             const res = await fetch(`${API_URL}/api/bots/config/${botConfig.plataforma}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -154,7 +154,7 @@ export default function CMCalendar({ adminProfile }) {
     const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
         setLoadingTrends(true);
         try {
-            const API_URL = import.meta.env.VITE_API_URL || '';
+            const API_URL = '' || '';
             // Si DEV mode usar /api/trends directo o port 3000
             const url = import.meta.env.DEV ? `http://localhost:3000/api/trends?network=${network}&filter=${niche}` : `/api/trends?network=${network}&filter=${niche}`;
             const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
@@ -180,7 +180,7 @@ export default function CMCalendar({ adminProfile }) {
             formData.append('file', file);
             
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/media/upload`, {
+            const res = await fetch(`${'' || ''}/api/media/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -231,7 +231,7 @@ export default function CMCalendar({ adminProfile }) {
         ]);
 
         const token = localStorage.getItem('adminToken');
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
+        fetch(`${'' || ''}/api/studio/tasks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(r => r.json())
@@ -271,7 +271,7 @@ export default function CMCalendar({ adminProfile }) {
         // Cargar citas reales si es admin
         if (canAssign(adminProfile)) {
             setLoadingCitas(true);
-            const API_URL = import.meta.env.VITE_API_URL || '';
+            const API_URL = '' || '';
             fetch(`${API_URL}/api/citas`)
                 .then(r => r.json())
                 .then(data => {
@@ -1164,7 +1164,7 @@ export default function CMCalendar({ adminProfile }) {
                                 
                                 try {
                                     const token = localStorage.getItem('adminToken');
-                                    const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/studio/tasks`, {
+                                    const res = await fetch(`${'' || ''}/api/studio/tasks`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                         body: JSON.stringify({

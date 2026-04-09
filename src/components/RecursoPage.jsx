@@ -93,7 +93,7 @@ const RecursoPage = ({ previewRecursoId }) => {
                           setStatus('loading');
                           setErrorMessage('');
                           try {
-                              const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/resources/send`, {
+                              const res = await fetch(`${'' || ''}/api/resources/send`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ email, recursoId })

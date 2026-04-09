@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Edit3, Link as LinkIcon, Save, Plus, Trash2, Tag, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 const getToken = () => localStorage.getItem('adminToken');
 
 const authHeaders = () => ({

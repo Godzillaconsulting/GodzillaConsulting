@@ -91,7 +91,7 @@ const ContactForm = ({ showNewsletter = true }) => {
   if (!nlEmail.trim()) return;
   setNlStatus('loading');
   try {
-  const base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+  const base = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
   const res = await fetch(`${base}/api/newsletter/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -183,7 +183,7 @@ export default function AdminStudio() {
          formData.append('file', file);
          
          const token = localStorage.getItem('adminToken');
-         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/media/upload`, {
+         const res = await fetch(`${'' || ''}/api/media/upload`, {
              method: 'POST',
              headers: { 'Authorization': `Bearer ${token}` },
              body: formData
@@ -221,7 +221,7 @@ export default function AdminStudio() {
  useEffect(() => {
      const token = localStorage.getItem('adminToken');
      if (token) {
-         fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/profile`, {
+         fetch(`${'' || ''}/api/users/profile`, {
              headers: { 'Authorization': `Bearer ${token}` }
          })
          .then(r => r.json())
@@ -282,7 +282,7 @@ export default function AdminStudio() {
  if (!window.confirm("⚠️ ¿Estás totalmente seguro de guardar estos cambios como tu nuevo borrador?")) return;
  setSaving(true);
  try {
- const base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+ const base = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
  const token = localStorage.getItem('adminToken');
  await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, {
  method:'PUT', headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
@@ -297,7 +297,7 @@ export default function AdminStudio() {
 
  const handlePublish = async () => {
  if (!window.confirm("🚨 PELIGRO 🚨: Este botón lanzará los cambios a la PÁGINA PÚBLICA EN VIVO.\n¿Estás absoluta y definitivamente seguro?")) return;
- const base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+ const base = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
  const token = localStorage.getItem('adminToken');
  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
  try {

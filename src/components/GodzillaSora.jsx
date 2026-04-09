@@ -29,17 +29,30 @@ export default function GodzillaSora() {
     const [recipeHistory, setRecipeHistory] = useState([]);
     const terminalEndRef = useRef(null);
     
-    // URL Dinámica para Vercel (En modo local sigue usando localhost 5000)
-    const SORA_API_URL = import.meta.env.VITE_SORA_API_URL || 'http://127.0.0.1:5000';
+    // URL Dinámica Segura (A través de NodeJS Proxy) para el Frontend
+    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_URL || '/api';
+    
+    // (Opcional) El socket sigue apuntando al motor si fuera local, pero los fetch van al proxy
+    const SORA_SOCKET_URL = import.meta.env.VITE_SORA_SOCKET_URL || 'http://127.0.0.1:5000';
 
-    // Función para obtener el Diario del Master Cluster
+    // Función para obtener el Diario del Master Cluster a través del proxy seguro
     const fetchHistory = async () => {
         try {
-            const res = await fetch(`${SORA_API_URL}/sora-history`);
+            const res = await fetch(`${BACKEND_API_URL}/sora-history`);
             const data = await res.json();
-            if (data.success) setRecipeHistory(data.history);
+            if (data.success) {
+                // Re-escribir las URLs devueltas por python para que pasen por NodeJS proxy.
+                const historyProxy = data.history.map(item => {
+                    if (item.url) {
+                        const filename = item.url.split('outputs/')[1];
+                        item.url = `${BACKEND_API_URL}/sora/media/${filename}`;
+                    }
+                    return item;
+                });
+                setRecipeHistory(historyProxy);
+            }
         } catch (e) {
-            console.error("Master Node no responde al historial local.");
+            console.error("NodeJS Proxy no responde para el historial.", e);
         }
     };
 
@@ -60,8 +73,9 @@ export default function GodzillaSora() {
 
     useEffect(() => {
         fetchHistory(); // Jalamos Diario al inicio
-        // Inicializar socket al montar usando la ruta dinámica en nube
-        socketRef.current = io(SORA_API_URL);
+        // Socket apunta al puerto directo (o puede ser bloqueado si HTTPS estricto). 
+        // Idealmente debe usar WSS si está en Cloudflare, si no, lo ignoramos y usamos la barra base.
+        socketRef.current = io(SORA_SOCKET_URL);
 
         socketRef.current.on('connect', () => {
             setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [NETWORK] Enlace WS con GPU Node establecido.`]);
@@ -73,7 +87,13 @@ export default function GodzillaSora() {
             }
             if (data.status) setStatus(data.status);
             if (data.step) setProgress(data.step);
-            if (data.media_url) setFinalMediaUrl(data.media_url);
+            if (data.media_url) {
+                // Re-enrutamos la media devuelta si es cruda
+                const proxyMedia = data.media_url.includes('outputs/') 
+                    ? `${BACKEND_API_URL}/sora/media/${data.media_url.split('outputs/')[1]}` 
+                    : data.media_url;
+                setFinalMediaUrl(proxyMedia);
+            }
             if (data.error) {
                 setStatus("ERROR");
                 setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [CRITICAL] ${data.error}`]);
@@ -99,12 +119,12 @@ export default function GodzillaSora() {
         setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Ejecutando nueva secuencia de renderizado...`]);
         setStatus("CONNECTING");
         setFinalMediaUrl(null); // Reinicio
-        appendLog(`[HTTP] Disparando Trigger de Inicialización al Python Master Node...`);
+        appendLog(`[HTTP] Disparando Trigger de Inicialización vía Seguro Proxy...`);
         setProgress(0); // Reinicia barra progreso
         
         try {
             // Pegar apuntando al endpoint Seguro de Nube
-            const response = await fetch(`${SORA_API_URL}/sora-start`, {
+            const response = await fetch(`${BACKEND_API_URL}/sora-start`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json"
@@ -123,11 +143,12 @@ export default function GodzillaSora() {
             });
 
             if (!response.ok) {
-                throw new Error("El Master Cluster de Python no respondió. ¿Está corriendo godzilla_inference_bridge.py?");
+                throw new Error("El NodeJS Proxy no respondió. ¿El server principal está corriendo?");
             }
             
-            // La respuesta POST no simula el progreso, los Sockets (render_progress) asumen la telemetría viva.
             const data = await response.json();
+            if(!data.success) throw new Error(data.error);
+
             appendLog(`[TASK INFO] Señal asíncrona lanzada. TASK ID: ${data.task_id}`);
             if (data.queue_position > 0) {
                 appendLog(`[QUEUE] Nodo GPU ocupado. Agregado a la fila de espera. Posición: #${data.queue_position}`);
@@ -136,31 +157,33 @@ export default function GodzillaSora() {
 
         } catch (error) {
             setStatus("ERROR");
-            appendLog(`[CRÍTICO] Fallo en disparo HTTP (Master Node No Responde): ${error.message}`);
+            appendLog(`[CRÍTICO] Fallo en disparo Proxy (Master Node No Responde): ${error.message}`);
         }
     };
     
     // Función de rito de Recreación
     const handleRestoreRecipe = async (taskId) => {
         if (status === 'RENDERING' || status === 'CONNECTING') return;
-        setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Invocando Recreación de Semilla...`]);
+        setLogs([`[${new Date().toLocaleTimeString()}] [SYSTEM] Invocando Recreación de Semilla vía Seguro Proxy...`]);
         setStatus("CONNECTING");
         setFinalMediaUrl(null);
         setProgress(0);
         
         try {
-            const response = await fetch(`${SORA_API_URL}/sora-restore`, {
+            const response = await fetch(`${BACKEND_API_URL}/sora-restore`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ task_id: taskId })
             });
             const data = await response.json();
+            if(!data.success) throw new Error(data.error);
+
             if (data.queue_position > 0) {
                 appendLog(`[QUEUE] Nodo GPU ocupado. Agregado a la fila de espera. Posición: #${data.queue_position}`);
             }
         } catch (e) {
             setStatus("ERROR");
-            appendLog(`[CRÍTICO] Fallo en disparo de Recreación.`);
+            appendLog(`[CRÍTICO] Fallo en disparo de Recreación: ${e.message}`);
         }
     };
 

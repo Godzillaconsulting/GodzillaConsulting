@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from'react';
 import { Send, Users, Clock, CheckCircle, XCircle, Loader, AlertCircle, PaperclipIcon } from'lucide-react';
 
-const API_BASE = import.meta.env.DEV ?'http://localhost:3000' :'';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 const getToken = () => localStorage.getItem('adminToken');
 
 const authHeaders = () => ({'Content-Type':'application/json',

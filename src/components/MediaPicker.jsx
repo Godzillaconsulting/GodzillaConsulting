@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 
 export const getYouTubeId = (url) => {
     if (!url) return null;

@@ -120,7 +120,7 @@ function GodzillaTracker() {
         sessionStorage.setItem('gz_session_id', sessionId);
       }
 
-      const backendUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
+      const backendUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
       fetch(`${backendUrl}/api/analytics/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

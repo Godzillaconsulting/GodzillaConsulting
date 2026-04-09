@@ -21,7 +21,7 @@ export const trackGodzillaEvent = async (eventName, eventData = {}) => {
     }
 
     // 2. Enviar al Backend propio para el Dashboard de Analytics
-    const backendUrl = import.meta.env.DEV ? 'http://localhost:3000' : (import.meta.env.VITE_API_URL || '');
+    const backendUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
     let sessionId = sessionStorage.getItem('gz_session_id');
     
     if (!sessionId) {

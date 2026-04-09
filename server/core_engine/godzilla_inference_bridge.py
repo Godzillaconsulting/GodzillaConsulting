@@ -24,8 +24,10 @@ import gc
 
 try:
     import torch
-    from diffusers import DiffusionPipeline, CogVideoXPipeline
-    from diffusers.utils import export_to_video
+    from diffusers import DiffusionPipeline, CogVideoXPipeline, LCMScheduler, ControlNetModel, StableDiffusionControlNetPipeline
+    from diffusers.utils import export_to_video, load_image
+    import cv2
+    import numpy as np
     AI_ENABLED = True
 except ImportError:
     AI_ENABLED = False
@@ -99,9 +101,11 @@ def load_ai_model():
             print(f"[SYSTEM] Asignando Mega-Modelo agnóstico a: {device.upper()} con dtype {dtype}")
             
             # Usando Pipeline LCM (Latent Consistency Model) - Genera fotos en 4 pasos en lugar de 50.
+            # Usando Pipeline LCM (Latent Consistency Model) - Genera fotos en 4 pasos.
             OFFLOAD_DIR = os.environ.get("OFFLOAD_DIR_FALLBACK", r"E:\GodzillaSora_Offload")
             
             try:
+                # 1. Pipeline puro de LCM
                 ai_pipeline = DiffusionPipeline.from_pretrained(
                     "SimianLuo/LCM_Dreamshaper_v7", 
                     torch_dtype=dtype,
@@ -110,13 +114,38 @@ def load_ai_model():
                     offload_folder=OFFLOAD_DIR
                 )
             except Exception as e:
-                # Si 'custom_pipeline' no es soportado por su diffusers version, fallback normal
                 ai_pipeline = DiffusionPipeline.from_pretrained(
                     "SimianLuo/LCM_Dreamshaper_v7", 
                     torch_dtype=dtype,
                     offload_folder=OFFLOAD_DIR
                 )
 
+            # INYECCIÓN DEL SCHEDULER (Evita bug de Estática/PNDM)
+            try:
+                ai_pipeline.scheduler = LCMScheduler.from_config(ai_pipeline.scheduler.config)
+                print("[SYSTEM] LCMScheduler Inyectado. Ruido controlado.")
+            except Exception as e:
+                print(f"[WARNING] LCMScheduler Missing: {e}")
+
+            # INYECCIÓN OPCIONAL DE CONTROLNET CANNY (Híbrido)
+            # Nota: Almacenado estáticamente en ai_pipeline.controlnet_pipe si se invoca ref_image
+            try:
+                print("[SYSTEM] Pre-cargando ControlNet (Canny Edge)... esto puede tardar si no está descargado.")
+                canny_controlnet = ControlNetModel.from_pretrained(
+                    "lllyasviel/sd-controlnet-canny", 
+                    torch_dtype=dtype
+                )
+                ai_pipeline.controlnet_pipe = StableDiffusionControlNetPipeline.from_pretrained(
+                    "SimianLuo/LCM_Dreamshaper_v7",
+                    controlnet=canny_controlnet,
+                    torch_dtype=dtype,
+                    safety_checker=None
+                )
+                ai_pipeline.controlnet_pipe.scheduler = LCMScheduler.from_config(ai_pipeline.controlnet_pipe.scheduler.config)
+                print("[SYSTEM] ControlNet Activado.")
+            except Exception as e:
+                print(f"[WARNING] Fallo precarga ControlNet: {e}")
+                ai_pipeline.controlnet_pipe = None
             
             if device == "cuda":
                 # TÉCNICAS VRAM DE EXTREMA PREVENCIÓN DE OOM:
@@ -179,7 +208,8 @@ async def gpu_worker_loop():
                 task_data["mode"], 
                 seed,
                 prompt=task_data.get("prompt", "A cinematic magical shot of industrial titan"),
-                negative_prompt=task_data.get("negative_prompt", "")
+                negative_prompt=task_data.get("negative_prompt", ""),
+                ref_image_b64=task_data.get("ref_image", None)
             )
         except Exception as e:
             print(f"[ERROR CRÍTICO] La GPU colapsó en la tarea {task_id}: {e}")
@@ -281,15 +311,20 @@ def save_tensor_to_disk(task_id, mode, seed, ai_image=None, ai_frames=None):
         img.save(img_path)
         return f"http://127.0.0.1:5000/outputs/{filename}"
 
-async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed: int, prompt: str = "", negative_prompt: str = ""):
+async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed: int, prompt: str = "", negative_prompt: str = "", ref_image_b64: str = None):
     """
     La arquitectura C++ procesando Stable Diffusion generación de forma manual.
     """
     import asyncio
+    import cv2
+    import numpy as np
+    import base64
+    from io import BytesIO
+    
     print(f"\n[ENGINE START] Initiating HPC Pipeline -> Mode: {mode}")
     await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"Nodos Inicializados para {mode} mode", "step": 0})
     
-    CHANNELS, WIDTH, HEIGHT = 3, 1024, 1024 # Standard 1024 base 
+    CHANNELS, WIDTH, HEIGHT = 3, 512, 512 # Set 512 for optimal CPU and memory usage
     
     if c_engine is None:
         print("[WARNING] Ejecutando MOCK SEQUENCE. No se detectó motor C++. Usa g++ para compilar.")
@@ -340,16 +375,50 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
         final_ai_frames = None
         
         if ai_pipeline is not None:
-            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando LCM Matrix para Foto en CPU..."})
+            await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando LCM Matrix para Foto en CPU (512x512)..."})
             generator = torch.Generator(device=ai_pipeline.device).manual_seed(seed)
             
-            # LCM Fotorrealismo puro en 4 pasos obligatorios
-            output = ai_pipeline(
-                prompt=prompt,
-                num_inference_steps=4, # La magia del LCM
-                guidance_scale=1.0,    # LCM ignora altas escalas CFG
-                generator=generator
-            )
+            canny_image = None
+            if ref_image_b64 and getattr(ai_pipeline, "controlnet_pipe", None) is not None:
+                try:
+                    await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"ControlNet: Extrayendo bordes Canny OpenCV..."})
+                    b64_data = ref_image_b64.split(",")[1] if "," in ref_image_b64 else ref_image_b64
+                    img_bytes = base64.b64decode(b64_data)
+                    pil_img = Image.open(BytesIO(img_bytes)).convert("RGB").resize((WIDTH, HEIGHT))
+                    
+                    np_img = np.array(pil_img)
+                    edges = cv2.Canny(np_img, 100, 200)
+                    edges = np.stack([edges]*3, axis=2)
+                    canny_image = Image.fromarray(edges)
+                    print("[SYSTEM] Canny Edges successfully extracted.")
+                except Exception as e:
+                    print(f"[WARNING] Fallo extracción Canny: {e}")
+                    canny_image = None
+
+            # LCM Fotorrealismo puro en 5 pasos obligatorios para mayor fidelidad a la silueta
+            inf_steps = 5 
+            
+            if canny_image is not None and getattr(ai_pipeline, "controlnet_pipe", None) is not None:
+                print(f"[SYSTEM] Lanzando ControlNetPipeline")
+                output = ai_pipeline.controlnet_pipe(
+                    prompt=prompt,
+                    image=canny_image,
+                    num_inference_steps=inf_steps, 
+                    guidance_scale=1.5,
+                    controlnet_conditioning_scale=0.8,
+                    width=WIDTH,
+                    height=HEIGHT,
+                    generator=generator
+                )
+            else:
+                output = ai_pipeline(
+                    prompt=prompt,
+                    num_inference_steps=inf_steps, 
+                    guidance_scale=1.0, 
+                    width=WIDTH,
+                    height=HEIGHT,
+                    generator=generator
+                )
             final_ai_image = output.images[0]
             
             # Aggressive Garbage Collection
@@ -371,29 +440,26 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
         print("[GC OVERRIDE] C++ memory explicitly destroyed. Preventing generic Python Memory Leaks.\n")
 
 @app.post("/sora-start")
-async def start_generation(payload: dict):
-    # Endpoint Vercel
-    mode = payload.get("mode", "photo")
-    steps = payload.get("diffusion_steps", 50)
-    prompt = payload.get("prompt", "Cinematic ultra realistic photo")
-    neg_prompt = payload.get("negative_prompt", "")
-    seed_req = payload.get("seed", -1)
-    
-    task_id = "sora_live_" + str(int(time.time()))
-    
+async def sora_start(payload: dict):
+    """
+    Endpoint nativo de entrada desde Vercel/Frontend NodeProxy.
+    Opciones: 'prompt', 'negative_prompt', 'diffusion_steps', 'width', 'height', 'ref_image'
+    """
     global gpu_queue
-    if gpu_queue is None:
-        return {"success": False, "error": "Queue System Offline"}
-        
-    put_data = {"task_id": task_id, "steps": steps, "mode": mode, "prompt": prompt, "negative_prompt": neg_prompt}
-    if seed_req != -1:
-        put_data["seed"] = seed_req
-        
-    await gpu_queue.put(put_data)
-    queue_pos = gpu_queue.qsize()  # Posición aproximada en fila (1 = sigte, 2 = 2 tras actual)
+    task_id = f"sora_live_{int(time.time()*1000)}"
+    LOCAL_TASKS_DB[task_id] = {"status": "QUEUED", "progress": 0}
     
-    LOCAL_TASKS_DB[task_id] = {"status": "QUEUED", "queue_position": queue_pos}
+    print(f"[API] Nueva Orden Recibida: {task_id}")
+    await gpu_queue.put({
+        "task_id": task_id,
+        "steps": int(payload.get("diffusion_steps", 4)),
+        "mode": payload.get("mode", "video"),
+        "prompt": payload.get("prompt", "Cinematic ultra realistic photo"),
+        "negative_prompt": payload.get("negative_prompt", ""),
+        "ref_image": payload.get("ref_image", None)
+    })
     
+    queue_pos = gpu_queue.qsize()
     return {"success": True, "task_id": task_id, "msg": f"Orden encriptada y enviada.", "queue_position": queue_pos}
 
 @app.get("/sora-status/{task_id}")

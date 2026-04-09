@@ -25,21 +25,50 @@ export const generateRenderJob = async (req, res) => {
         
         console.log(`[STUDIO] Iniciando Job en Engine Real: ${engine}`);
 
+        let optimizedPrompt = prompt;
+        try {
+            if (process.env.GEMINI_API_KEY) {
+                const aiDirector = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                let instruction = '';
+                if (engine === 'Sora') {
+                    instruction = `Traduce este concepto a una lista de tags crudos separados por coma en INGLES, optimizados para text-to-image de StableDiffusion. Agrega 'masterpiece, high quality, highly detailed'. Solo los tags: ${prompt}`;
+                } else if (engine.includes('Veo')) {
+                    instruction = `Traduce este concepto a un prompt cinematográfico hiperrealista en inglés. Describe lentes e iluminación. Solo responde el prompt directo: ${prompt}`;
+                } else if (engine === 'Gemini Advanced') {
+                    instruction = `Crea un prompt directo en inglés muy descriptivo y vibrante para ilustración/render. Evita tecnicismos de cámaras pesados. Solo el prompt: ${prompt}`;
+                }
+
+                if (instruction) {
+                    const translation = await aiDirector.models.generateContent({
+                        model: 'gemini-1.5-flash',
+                        contents: instruction
+                    });
+                    if (translation && translation.text) {
+                        optimizedPrompt = translation.text.trim();
+                        console.log(`[AI DIRECTOR] Prompt derivado para ${engine}:\n${optimizedPrompt}`);
+                    }
+                }
+            }
+        } catch (dirErr) {
+            console.log(`[AI DIRECTOR] Error traduciendo, fallback al original: ${dirErr.message}`);
+        }
+
         // Mapeo rudimentario de aspecto de ratio de React a Kling API
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
         let response;
         if (engine === 'Sora') {
-            console.log(`[STUDIO] Despertando In-House GoTSora. Prompt original: ${prompt}`);
+            console.log(`[STUDIO] Despertando In-House GoTSora. Prompt optimizado: ${optimizedPrompt.substring(0, 50)}...`);
             try {
-                // Fetch to local Node proxy so it handles Gemini Context Expansion natively
-                const response = await fetch('http://127.0.0.1:3000/api/sora-start', {
+                // Fetch to local Node proxy (puerto 5000 directamente)
+                const response = await fetch('http://127.0.0.1:5000/sora-start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                         prompt: prompt,
+                         prompt: optimizedPrompt,
                          mode: 'photo',
-                         diffusion_steps: 4
+                         diffusion_steps: 4,
+                         ref_image: config.refImage || null
                     })
                 });
                 const data = await response.json();
@@ -64,7 +93,7 @@ export const generateRenderJob = async (req, res) => {
             // Ejemplo de body para Text-To-Video Kling V1
             const requestBody = {
                 model: "kling-v1",
-                prompt: prompt || "cyberpunk shot",
+                prompt: optimizedPrompt || "cyberpunk shot",
                 negative_prompt: config.negative || "",
                 ratio: arMapping[config.aspect_ratio] || '16:9',
                 duration: config.duration === '10' ? "10" : "5"
@@ -94,7 +123,7 @@ export const generateRenderJob = async (req, res) => {
 
             const operation = await ai.models.generateVideos({
                 model: 'veo-3.1-fast-generate-preview',
-                prompt: prompt || "Cinematic masterpiece",
+                prompt: optimizedPrompt || "Cinematic masterpiece",
                 config: {
                     numberOfVideos: 1,
                     aspectRatio: googleRatio
@@ -122,7 +151,7 @@ export const generateRenderJob = async (req, res) => {
 
             const responseGenAI = await aiImg.models.generateImages({
                 model: 'imagen-4.0-fast-generate-001',
-                prompt: prompt || "A sleek cinematic render",
+                prompt: optimizedPrompt || "A sleek cinematic render",
                 config: {
                     numberOfImages: 1,
                     outputMimeType: 'image/jpeg',

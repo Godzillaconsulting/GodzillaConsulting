@@ -95,10 +95,20 @@ const getAssetUrl = (filename) => {
     return `${botBase}/api/media/assets/${filename}`;
 };
 
-// ─── POST /api/media/upload (Guardar a Local BYTEA) ──────────────────────────
-router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
+router.post('/upload', requireAdmin, (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            console.error('[Media] Multer Error:', err);
+            return res.status(400).json({ error: `Multer Error: ${err.message}` });
+        } else if (err) {
+            console.error('[Media] Unknown Upload Error:', err);
+            return res.status(500).json({ error: `Upload Error: ${err.message}` });
+        }
+        next();
+    });
+}, async (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+        return res.status(400).json({ error: 'No se recibió ningún archivo (req.file es undefined).' });
     }
 
     const tempPath = req.file.path;

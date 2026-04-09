@@ -67,18 +67,23 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
             };
             xhr.onload = async () => {
                 try {
-                    if (xhr.status >= 400) throw new Error(`HTTP ${xhr.status}: ${xhr.statusText}`);
+                    if (xhr.status >= 400) {
+                        const errorMsg = `HTTP ${xhr.status}: ${xhr.statusText}`;
+                        alert(`❌ Fallo de servidor/red. ${errorMsg}\n\nSi es un video grande y ves "413", Cloudflare está bloqueando el peso máximo permitido (100MB). Verifica el peso del archivo.`);
+                        throw new Error(errorMsg);
+                    }
                     const result = JSON.parse(xhr.responseText);
                     if (result.success) {
                         await fetchMedia();
                         onChange(result.url);
                         setIsOpen(false);
                     } else {
-                        alert(result.error || 'Error al subir: ' + JSON.stringify(result));
+                        alert(result.error || 'Error interno al procesar subida: ' + JSON.stringify(result));
                     }
                 } catch (err) {
                     console.error('Upload error:', err);
-                    alert('Error al subir archivo o parsear la respuesta.');
+                    if(err.message.includes("413")) return; // Ya se alertó
+                    alert('Error en el formato de transferencia. Es posible que el archivo exceda los limites o sea bloqueado por el firewall.');
                 } finally {
                     setUploading(false);
                     setUploadProgress(0);
@@ -213,15 +218,6 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                     {t.label}
                                 </button>
                             ))}
-                            {tab === 'library' && accept === 'all' && (
-                                <div className="ml-auto flex gap-1">
-                                    {['all', 'images', 'videos', 'docs'].map(f => (
-                                        <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === f ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-white'}`}>
-                                            {f === 'all' ? 'Todo' : f === 'images' ? '🖼️ Imágenes' : f === 'videos' ? '🎬 Videos' : '📃 Docs'}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
 
                         {/* Contenido */}
@@ -229,58 +225,87 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
                             {/* TAB: Biblioteca */}
                             {tab === 'library' && (
-                                <div>
-                                    {filteredItems().length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center h-48 text-neutral-500 gap-3">
-                                            <span className="text-4xl">📂</span>
-                                            <p className="text-sm">No hay archivos. Sube uno para comenzar.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-4 gap-3">
-                                            {filteredItems().map(item => (
-                                                <div
-                                                    key={item.filename}
-                                                    onClick={() => { onChange(item.url); setIsOpen(false); }}
-                                                    className={`relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${value === item.url ? 'border-[#CC0000] shadow-[0_0_12px_rgba(204,0,0,0.5)]' : 'border-transparent hover:border-neutral-600'}`}
-                                                >
-                                                    <div className="aspect-square bg-neutral-800 flex items-center justify-center relative overflow-hidden">
-                                                        {item.type === 'document' ? (
-                                                            <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-2">
-                                                                <svg className="w-12 h-12 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                                                <span className="text-[9px] font-mono truncate w-full text-center">{item.originalName || item.filename}</span>
+                                <div className="flex bg-neutral-900 overflow-hidden h-[50vh]">
+                                    
+                                    {/* Left Sidebar (Virtual Folders) */}
+                                    <div className="w-[220px] shrink-0 border-r border-neutral-800 bg-[#0a0a09] flex flex-col p-3 overflow-y-auto custom-scrollbar">
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 px-2">📂 Carpetas</p>
+                                        {[
+                                            { id: 'all', icon: '🌌', label: 'Todo el Medios' },
+                                            { id: 'images', icon: '🖼️', label: 'Imágenes / Fotos' },
+                                            { id: 'videos', icon: '🎬', label: 'Producción Video' },
+                                            { id: 'docs', icon: '📃', label: 'Documentos (PDF)' }
+                                        ].map(f => (
+                                            <button 
+                                                key={f.id} 
+                                                onClick={() => setFilter(f.id)} 
+                                                className={`flex items-center gap-3 px-3 py-3 mb-1 rounded-xl text-xs font-bold transition-all border ${
+                                                    filter === f.id 
+                                                        ? 'bg-[#CC0000]/10 border-[#CC0000] text-[#CC0000]' 
+                                                        : 'border-transparent text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                                }`}
+                                            >
+                                                <span className="text-lg">{f.icon}</span>
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Right Content (Grid) */}
+                                    <div className="flex-1 overflow-y-auto p-5 relative">
+                                        {filteredItems().length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-3">
+                                                <span className="text-4xl opacity-50">🕳️</span>
+                                                <p className="text-sm font-medium tracking-wide">Esta carpeta está vacía.</p>
+                                                <button onClick={() => setTab('upload')} className="mt-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-full text-xs font-bold">Subir nuevo archivo</button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                                {filteredItems().map(item => (
+                                                    <div
+                                                        key={item.filename}
+                                                        onClick={() => { onChange(item.url); setIsOpen(false); }}
+                                                        className={`relative group cursor-pointer rounded-2xl overflow-hidden border-[3px] transition-all hover:scale-[1.02] ${value === item.url ? 'border-[#CC0000] shadow-[0_0_20px_rgba(204,0,0,0.4)]' : 'border-neutral-800 hover:border-neutral-500'}`}
+                                                    >
+                                                        <div className="aspect-square bg-black flex items-center justify-center relative overflow-hidden">
+                                                            {item.type === 'document' ? (
+                                                                <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/10 text-blue-400 p-2">
+                                                                    <svg className="w-10 h-10 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                                                    <span className="text-[10px] font-mono truncate w-full text-center px-2">{item.originalName || item.filename}</span>
+                                                                </div>
+                                                            ) : isVideo(item) ? (
+                                                                <video src={item.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" muted />
+                                                            ) : (
+                                                                <img src={item.url} alt={item.filename} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                            )}
+                                                        </div>
+                                                        {/* Info overlay */}
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                                            <span className="text-white text-xs font-black w-full truncate">{item.originalName || '-'}</span>
+                                                            <div className="flex items-center justify-between mt-1">
+                                                                <span className="text-gray-400 text-[10px] font-mono">{formatSize(item.size)}</span>
+                                                                <span className="text-[#CC0000] text-[10px] font-bold">Seleccionar</span>
                                                             </div>
-                                                        ) : isVideo(item) ? (
-                                                            <video src={item.url} className="w-full h-full object-cover" muted />
-                                                        ) : (
-                                                            <img src={item.url} alt={item.filename} className="w-full h-full object-cover" />
+                                                        </div>
+                                                        {/* Botón eliminar */}
+                                                        <button
+                                                            onClick={(e) => handleDelete(item.type, item.filename, e, item.url)}
+                                                            className="absolute top-2 right-2 bg-red-600/80 backdrop-blur-md text-white text-[12px] w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:scale-110"
+                                                            title="Eliminar de la bóveda"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                        {/* Marker seleccionado */}
+                                                        {value === item.url && (
+                                                            <div className="absolute top-2 left-2 bg-[#CC0000] text-white text-[10px] px-2 py-1 rounded-full font-black shadow-lg">
+                                                                En uso
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {/* Info overlay */}
-                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2">
-                                                        <span className="text-white text-xs font-bold text-center truncate w-full text-center">✅ Seleccionar</span>
-                                                        <span className="text-gray-300 text-[10px]">{formatSize(item.size)}</span>
-                                                    </div>
-                                                    {/* Badge tipo */}
-                                                    <div className="absolute top-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
-                                                        {item.type === 'document' ? '📃' : isVideo(item) ? '🎬' : '🖼️'}
-                                                    </div>
-                                                    {/* Botón eliminar */}
-                                                    <button
-                                                        onClick={(e) => handleDelete(item.type, item.filename, e, item.url)}
-                                                        className="absolute top-1 right-1 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                    {/* Marker seleccionado */}
-                                                    {value === item.url && (
-                                                        <div className="absolute bottom-1 right-1 bg-[#CC0000] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                                                            ✓ Actual
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

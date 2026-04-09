@@ -210,10 +210,11 @@ export default function CockersStudio({ adminProfile }) {
             const enginesToRun = genMode === 'video' ? [builderData.model] : ['Gemini Advanced', 'Veo 3.1 - Fast', 'Sora'];
             
             const promises = enginesToRun.map(async (engineName) => {
+                const updatedConfig = { ...builderData, refImage: refImage };
                 const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ prompt: cleanPrompt, config: builderData, engine: engineName })
+                    body: JSON.stringify({ prompt: cleanPrompt, config: updatedConfig, engine: engineName })
                 });
                 let data = await resFetch.json();
                 if (!resFetch.ok) throw new Error(data.error || 'Server error');

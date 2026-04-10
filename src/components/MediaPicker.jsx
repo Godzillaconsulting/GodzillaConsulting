@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-const API = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+const API = '';
 
 export const getYouTubeId = (url) => {
     if (!url) return null;
@@ -59,10 +59,9 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploading(true);
         setUploadProgress(0);
 
-        // Bypass Vercel 4.5MB serverless payload limit for uploads by hitting the PC Tunnel directly
-        const UPLOAD_API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+        // Use relative path or Vite proxy to avoid CORS and mixed content issues
         const isVideoFile = file.type.startsWith('video/');
-        const endpoint = isVideoFile ? `${UPLOAD_API}/api/media/upload-video` : `${UPLOAD_API}/api/media/upload`;
+        const endpoint = isVideoFile ? `${API}/api/media/upload-video` : `${API}/api/media/upload`;
 
         try {
             const formData = new FormData();
@@ -154,16 +153,16 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                 onClick={() => setIsOpen(true)}
             >
                 {value ? (
-                    getYouTubeId(value) ? (
+                    (typeof value === 'string' && getYouTubeId(value)) ? (
                         <iframe 
                             src={`https://www.youtube.com/embed/${getYouTubeId(value)}?controls=0&mute=1&autoplay=1&loop=1`}
                             className="w-full h-full object-contain pointer-events-none"
                             frameBorder="0"
                             allow="autoplay; encrypted-media"
                         ></iframe>
-                    ) : value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+                    ) : (typeof value === 'string' && value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) ? (
                         <video src={value} className="w-full h-full object-contain" muted />
-                    ) : value.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)(\?.*)?$/i) ? (
+                    ) : (typeof value === 'string' && value.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)(\?.*)?$/i)) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-2">
                             <svg className="w-10 h-10 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                             <span className="text-[10px] font-mono truncate w-full text-center">Documento</span>
@@ -283,7 +282,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                                                     <span className="text-[10px] font-mono truncate w-full text-center px-2">{item.originalName || item.filename}</span>
                                                                 </div>
                                                             ) : isVideo(item) ? (
-                                                                <video src={item.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" muted />
+                                                                <video src={item.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" muted autoPlay loop playsInline />
                                                             ) : (
                                                                 <img src={item.url} alt={item.filename} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                                             )}

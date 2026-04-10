@@ -192,7 +192,7 @@ export const generateRenderJob = async (req, res) => {
 
             generatedImages.forEach((base64Bytes, index) => {
                 const safeEngineName = engine.replace(/[^a-zA-Z0-9]/g, '');
-                const uniqueName = `studio_${safeEngineName}_${Date.now()}_${index}.jpg`;
+                const uniqueName = `studio_${safeEngineName}_${Date.now()}_${index}.png`;
                 const finalPath = path.join(uploadsDir, uniqueName);
                 // Extraer los bytes en crudo desde el base64 de google y guardarlo
                 const buffer = Buffer.from(base64Bytes, 'base64');

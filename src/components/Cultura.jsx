@@ -2,6 +2,7 @@ import React, { useState, useEffect } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import { getYouTubeId } from './MediaPicker';
+import DynamicMedia from './DynamicMedia';
 const culturaImage = '/api/media/assets/Nuestra cultura image.jpg';
 const culturaVideo = '/api/media/assets/Particulas Rojas.mp4';
 import { trackGodzillaEvent } from '../utils/analyticsHelper';
@@ -262,22 +263,11 @@ const Cultura = () => {
             >
               {mediaGallery.map((media, idx) => (
                 <div key={idx} style={{ width: `${100 / mediaGallery.length}%` }} className="h-full flex-shrink-0 relative pointer-events-none select-none">
-                  {media.type === 'video' ? (
-                    <video
-                      src={media.url}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover object-center grayscale transition-all duration-700 hover:scale-105"
-                    />
-                  ) : (
-                    <img
-                      src={media.url}
-                      alt="Nuestra Cultura Media"
-                      className="w-full h-full object-cover object-top grayscale transition-all duration-700 hover:scale-105"
-                    />
-                  )}
+                  <DynamicMedia
+                    src={media.url}
+                    alt="Nuestra Cultura Media"
+                    className="w-full h-full object-cover object-center grayscale transition-all duration-700 hover:scale-105"
+                  />
                 </div>
               ))}
             </div>

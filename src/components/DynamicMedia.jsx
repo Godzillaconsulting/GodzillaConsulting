@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
+import { getYouTubeId } from './MediaPicker';
 
 /**
  * DynamicMedia
  * Renderiza un <video> silenciado en bucle (tipo GIF) si la URL apunta a un formato de video.
- * En caso contrario, renderiza un <img> estándar. Ideal para los slots del AdminStudio.
+ * En caso contrario, renderiza un <img> estándar o un iframe de YouTube si es un enlace de YT.
  */
 export default function DynamicMedia({ src, alt, className, style, ...props }) {
     const videoRef = useRef(null);
@@ -38,7 +39,21 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
         }
     };
 
-    if (!src) return null;
+    if (!src || typeof src !== 'string') return null;
+
+    const ytId = getYouTubeId(src);
+    if (ytId) {
+        return (
+            <iframe
+                src={`https://www.youtube.com/embed/${ytId}?controls=0&mute=1&autoplay=1&loop=1&playlist=${ytId}`}
+                className={className}
+                style={{ ...style, pointerEvents: 'none' }}
+                frameBorder="0"
+                allow="autoplay; encrypted-media"
+                {...props}
+            />
+        );
+    }
 
     const isVideo = src.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
 

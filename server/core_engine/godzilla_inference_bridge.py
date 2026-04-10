@@ -532,4 +532,4 @@ if __name__ == "__main__":
       [TECH] CTYPES DOUBLE-POINTER BINDING + ASGI
       --------------------------------------------------
     """)
-    uvicorn.run("godzilla_inference_bridge:app_asgi", host="127.0.0.1", port=5000, reload=True)
+    uvicorn.run("godzilla_inference_bridge:app_asgi", host="127.0.0.1", port=5000, reload=False)

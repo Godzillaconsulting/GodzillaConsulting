@@ -8,11 +8,42 @@ const BugReporterModal = ({ x, y, onClose }) => {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => setScreenshotBase64(ev.target.result);
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_DIMENSION = 1200;
+
+                if (width > height) {
+                    if (width > MAX_DIMENSION) {
+                        height *= MAX_DIMENSION / width;
+                        width = MAX_DIMENSION;
+                    }
+                } else {
+                    if (height > MAX_DIMENSION) {
+                        width *= MAX_DIMENSION / height;
+                        height = MAX_DIMENSION;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compresión: Transforma a JPEG al 60% de calidad.
+                // Destruye el error 502 por exceso de Payload de Vercel (< 500kb approx)
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                setScreenshotBase64(compressedBase64);
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async () => {
@@ -71,7 +102,7 @@ const BugReporterModal = ({ x, y, onClose }) => {
         <>
             <div className="fixed inset-0 z-[9998]" onClick={onClose}></div>
             <div 
-                className="fixed z-[9999] bg-[#0c0c0c] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in text-white p-5 flex flex-col gap-4"
+                className="fixed z-[9999] bg-[#0c0c0c] border border-neutral-800 rounded-2xl shadow-[0_0_50px_rgba(204,0,0,0.15)] overflow-hidden animate-fade-in text-white p-5 flex flex-col gap-4"
                 style={{ top: `${top}px`, left: `${left}px`, width: `${modalW}px` }}
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => e.stopPropagation()} // Aqui si permitir click derecho o no hacer nada

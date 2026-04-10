@@ -39,10 +39,10 @@ router.use('/assets', express.static(ARCHIVOS_PESADOS_DIR, {
     immutable: true
 }));
 
-// ─── Multer para imágenes (10MB → Local DB BYTEA) ────────────────────────────
+// ─── Multer para imágenes (50MB → Local DB BYTEA) ────────────────────────────
 const upload = multer({
     dest: TEMP_DIR,
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 // ─── Multer para videos (500MB → Disco local, sin límite de DB) ──────────────

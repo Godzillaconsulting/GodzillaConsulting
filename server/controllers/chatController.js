@@ -63,7 +63,7 @@ export const processChatMessage = async (req, res) => {
                 const token = req.headers.authorization.split(' ')[1];
                 try {
                     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Godzilla_Secret_Key_2026_!@#');
-                    currentUser = decoded.username || "Desconocido";
+                    currentUser = `${decoded.username || "Desconocido"} (Rol: ${decoded.role || "user"})`;
                 } catch(e) {}
             }
             finalGoyiPrompt = `\n[SISTEMA DE SEGURIDAD]: ESTÁS HABLANDO CON EL USUARIO AUTENTICADO COMO: "${currentUser}". Usa esto para verificar sus permisos de forma estricta.\n${GOYI_SYSTEM_PROMPT}`;

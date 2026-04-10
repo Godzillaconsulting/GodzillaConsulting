@@ -74,9 +74,14 @@ export function injectSectionDefaults(nodeId, draftSource) {
       if (combinedData.service6IconUrl === undefined) combinedData.service6IconUrl = gifCrm;
   }
 
-  // Inject bgVideoUrl for Cultura so it appears in Admin Studio Media tab
+  // Inject bgVideoUrl and TEXT FIELDS for Cultura so they appear in Admin Studio
   if (nodeId === 'cultura') {
       if (combinedData.bgVideoUrl === undefined) combinedData.bgVideoUrl = bgVideoCultura;
+      if (combinedData.overline === undefined) combinedData.overline = 'NUESTRA';
+      if (combinedData.title === undefined) combinedData.title = 'CULTURA';
+      if (combinedData.description === undefined) combinedData.description = 'Somos una agencia de marketing digital ubicada en Ciudad Juárez, Chihuahua.\n\nHemos trabajado con médicos, clínicas estéticas, abogados, hoteles, restaurantes y más.\n\nDiseñamos campañas y sistemas que priorizan ventas y rentabilidad.';
+      if (combinedData.missionText === undefined) combinedData.missionText = 'Ayudar a empresas mexicanas a crecer usando tecnología y estrategias digitales. Creemos que todos los negocios merecen las herramientas para competir y prosperar en el mundo actual.';
+      if (combinedData.visionText === undefined) combinedData.visionText = 'Multiplicar el 15% de negocios digitalizados en México y elevar ese 4% de éxito, convirtiéndonos en el motor del crecimiento digital del país.';
   }
 
   // Inject defaults for Portafolio / Casos de Éxito

@@ -11,6 +11,7 @@ import CMCalendar from './CMCalendar';
 import GoyiAdmin from './GoyiAdmin';
 import BugReporterModal from './BugReporterModal';
 import DBStudioPanel from './DBStudioPanel';
+import BugTrackerUI from './BugTrackerUI';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -537,10 +538,19 @@ export default function AdminStudio() {
  </svg>
  Cerrar sesión
  </button>
-  <button onClick={() => setShowFeedbackModal(true)}
- className="w-full text-[10px] text-yellow-500 font-bold hover:text-white hover:bg-yellow-500/10 border border-transparent hover:border-yellow-900/50 py-2 rounded-xl transition-all shadow-sm">
- 💡 Sugerencias / Bugs
- </button>
+  <button onClick={() => {
+      const isIT = ['jareg', 'godzilla_admin', 'dani'].includes(adminProfile?.username?.toLowerCase());
+      if (isIT) {
+          setIsAnalyticsMode(false);
+          setActiveSection('bugs');
+          setSelectedNodeId(null);
+      } else {
+          setShowFeedbackModal(true);
+      }
+  }}
+  className={`w-full text-[10px] py-2 rounded-xl transition-all shadow-sm font-bold border ${activeSection === 'bugs' ? 'bg-yellow-500 text-black border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 'text-yellow-500 hover:text-white hover:bg-yellow-500/10 border-transparent hover:border-yellow-900/50'}`}>
+  {activeSection === 'bugs' ? '💡 Monitoreo IT' : '💡 Sugerencias / Bugs'}
+  </button>
   </div>
   </div>
   </div>
@@ -560,6 +570,8 @@ export default function AdminStudio() {
       <CockersStudio adminProfile={adminProfile} />
   ) : activeSection === 'db_studio' ? (
       <DBStudioPanel />
+  ) : activeSection === 'bugs' ? (
+      <BugTrackerUI />
   ) : (<>
 
  {/* Barra superior del editor */}

@@ -10,7 +10,7 @@ export default function CockersStudio({ adminProfile }) {
     
     // UI States para el Generador Profesional
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
-    const [genMode, setGenMode] = useState('video'); // 'imagen' | 'video'
+    const [genMode, setGenMode] = useState('imagen'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
     
     // Auth & Roles
@@ -339,30 +339,13 @@ export default function CockersStudio({ adminProfile }) {
             {/* LEFT SIDEBAR: Panel de Parámetros (Estilo Kling / Flow) */}
             <div className="w-[380px] bg-[#0f0f0e] border-r border-[#222] flex flex-col shrink-0 h-full overflow-y-auto custom-scrollbar z-20">
                 
-                {/* Header Toggle (Imagen | Video) */}
+                {/* Header Fijo: El Modo Video está deshabilitado temporalmente. Sólo modo Imagen (gotSora, Imagen 3, Imagen 4) */}
                 <div className="p-4 pt-6 shrink-0 flex items-center justify-center">
-                    <div className="bg-[#1a1a19] p-1 rounded-[20px] flex items-center gap-1 w-full relative">
-                        <div 
-                            className="absolute top-1 bottom-1 bg-[#2a2a29] rounded-[16px] transition-all duration-300 ease-in-out"
-                            style={{ 
-                                width: 'calc(50% - 4px)', 
-                                left: genMode === 'video' ? 'calc(50%)' : '4px' 
-                            }}
-                        />
-                        <button 
-                            onClick={() => setGenMode('imagen')} 
-                            className={`flex-1 py-2.5 text-sm font-bold relative z-10 flex items-center justify-center gap-2 transition-colors ${genMode === 'imagen' ? 'text-white' : 'text-neutral-400'}`}
-                        >
+                    <div className="bg-[#1a1a19] p-1 rounded-[20px] flex items-center justify-center w-full">
+                        <span className="py-2.5 text-sm font-bold text-white flex items-center gap-2">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                            Imagen
-                        </button>
-                        <button 
-                            onClick={() => setGenMode('video')} 
-                            className={`flex-1 py-2.5 text-sm font-bold relative z-10 flex items-center justify-center gap-2 transition-colors ${genMode === 'video' ? 'text-white' : 'text-neutral-400'}`}
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-                            Video
-                        </button>
+                            Motores Fotográficos Activos
+                        </span>
                     </div>
                 </div>
 

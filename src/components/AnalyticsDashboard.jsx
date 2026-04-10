@@ -68,14 +68,14 @@ export default function AnalyticsDashboard() {
     const sankeyOptions = {
         sankey: {
             node: {
-                colors: ['#CC0000', '#f59e0b', '#3b82f6', '#10b981', '#6b7280', '#eab308'],
-                label: { fontName: 'Inter', fontSize: 13, color: '#fff', bold: true },
+                colors: ['#FF0055', '#00F0FF', '#9D00FF', '#00FF66', '#FFEA00', '#FF0055'],
+                label: { fontName: 'Inter', fontSize: 14, color: '#A3A3A3', bold: true },
                 nodePadding: 60,
-                width: 15
+                width: 12
             },
             link: {
                 colorMode: 'gradient',
-                colors: ['#440000', '#660000', '#333333']
+                colors: ['#FF0055', '#9D00FF', '#111111']
             }
         },
         backgroundColor: 'transparent'
@@ -134,7 +134,7 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* BOT SUPERVISOR (Panel Biométrico de PM2) */}
-            <div className="mb-10 bg-[#0a0a09] border border-neutral-800/60 p-6 md:p-8 rounded-[2rem] shadow-2xl relative">
+            <div className="mb-10 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative animate-in slide-in-from-bottom-8 duration-700 delay-[50ms] fill-mode-both">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#10b981] to-transparent opacity-20"></div>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-bold text-white flex items-center gap-3">
@@ -142,7 +142,10 @@ export default function AnalyticsDashboard() {
                         Biosensores de Agentes (El Bebé)
                     </h3>
                     <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#10b981]"></span>
+                        </span>
                         <span className="text-xs font-bold text-neutral-500">CONECTADO AL NÚCLEO PM2</span>
                     </div>
                 </div>
@@ -154,7 +157,7 @@ export default function AnalyticsDashboard() {
                             const targetOrigin = bot.name.includes('ig') ? 'instagram' : bot.name.includes('tiktok') ? 'tiktok' : bot.name.includes('whatsapp') ? 'whatsapp' : 'N/A';
                             const leadsGenerados = data.botProductivity ? (data.botProductivity[targetOrigin] || 0) : 0;
                             return (
-                                <div key={i} className="bg-[#111] border border-neutral-800 p-5 rounded-2xl relative overflow-hidden group hover:border-neutral-600 transition-all">
+                                <div key={i} className="bg-[#161615]/50 backdrop-blur-md border border-white/5 p-5 rounded-2xl relative overflow-hidden group hover:border-[#10b981]/50 transition-all">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-black text-white">{bot.name}</span>
@@ -201,8 +204,8 @@ export default function AnalyticsDashboard() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
                 
                 {/* Traffic Flow Sankey Chart */}
-                <div className="xl:col-span-2 bg-[#0a0a09] border border-neutral-800/60 p-6 md:p-8 rounded-[2rem] shadow-2xl relative">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#CC0000] to-transparent opacity-20"></div>
+                <div className="xl:col-span-2 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative animate-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#FF0055] to-transparent opacity-20"></div>
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                         <Activity size={20} className="text-[#CC0000]" />
                         Matriz de Conversión (Sankey Flow)
@@ -226,7 +229,7 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 {/* Pixel Events Breakdown */}
-                <div className="xl:col-span-1 bg-[#111] border border-neutral-800 p-6 md:p-8 rounded-[2rem] shadow-xl overflow-hidden flex flex-col">
+                <div className="xl:col-span-1 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                         <Zap size={20} className="text-yellow-500" />
                         Trigger Events (Godzilla Pixel)
@@ -235,7 +238,7 @@ export default function AnalyticsDashboard() {
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4">
                         {data.pixelEvents && data.pixelEvents.length > 0 ? (
                             data.pixelEvents.map((ev, i) => (
-                                <div key={i} className="bg-[#161615] rounded-xl p-4 border border-neutral-800/50 flex justify-between items-center group hover:border-[#CC0000]/50 transition-colors">
+                                <div key={i} className="bg-[#161615]/50 backdrop-blur-md rounded-xl p-4 border border-white/5 flex justify-between items-center group hover:border-[#FF0055]/50 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-neutral-500 group-hover:text-white transition-colors">
                                             <MousePointerClick size={16} />
@@ -259,7 +262,7 @@ export default function AnalyticsDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
                 
                 {/* Evolution Graph */}
-                <div className="bg-[#111] border border-neutral-800 p-6 md:p-8 rounded-[2rem] shadow-xl">
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
                     <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-3">
                         <ArrowUpRight size={20} className="text-blue-500" />
                         Tránsito de los Últimos 7 Días
@@ -270,20 +273,20 @@ export default function AnalyticsDashboard() {
                                 <AreaChart data={data.webGraphData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                            <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4}/>
+                                            <stop offset="95%" stopColor="#00F0FF" stopOpacity={0}/>
                                         </linearGradient>
                                         <linearGradient id="colorInt" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#CC0000" stopOpacity={0.4}/>
-                                            <stop offset="95%" stopColor="#CC0000" stopOpacity={0}/>
+                                            <stop offset="5%" stopColor="#FF0055" stopOpacity={0.4}/>
+                                            <stop offset="95%" stopColor="#FF0055" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
                                     <XAxis dataKey="date" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
                                     <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
                                     <RechartsTooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="views" name="Vistas" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                                    <Area type="monotone" dataKey="interactions" name="Eventos" stroke="#CC0000" strokeWidth={3} fillOpacity={1} fill="url(#colorInt)" />
+                                    <Area type="monotone" dataKey="views" name="Vistas" stroke="#00F0FF" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                                    <Area type="monotone" dataKey="interactions" name="Eventos" stroke="#FF0055" strokeWidth={3} fillOpacity={1} fill="url(#colorInt)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
@@ -295,7 +298,7 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 {/* Sources Table */}
-                <div className="bg-[#111] border border-neutral-800 p-6 md:p-8 rounded-[2rem] shadow-xl overflow-hidden flex flex-col">
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-700 delay-[250ms] fill-mode-both">
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                         <Database size={20} className="text-green-500" />
                         Desglose de Orígenes
@@ -311,9 +314,9 @@ export default function AnalyticsDashboard() {
                                     <th className="pb-4 text-xs font-black text-neutral-500 uppercase tracking-widest text-right pr-2">Costo (CAC)</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-900">
+                            <tbody className="divide-y divide-white/5">
                                 {data.trafficSources && data.trafficSources.map((src, idx) => (
-                                    <tr key={idx} className="group hover:bg-[#161615] transition-colors">
+                                    <tr key={idx} className="group hover:bg-[#161615]/50 transition-colors">
                                         <td className="py-4 pl-2">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xl bg-neutral-900 w-10 h-10 flex items-center justify-center rounded-xl">{src.emoji}</span>
@@ -327,7 +330,7 @@ export default function AnalyticsDashboard() {
                                             {src.leads}
                                         </td>
                                         <td className="py-4 text-right pr-2">
-                                            <span className="text-xs font-bold bg-neutral-900 border border-neutral-800 text-neutral-400 px-3 py-1.5 rounded-lg group-hover:bg-[#CC0000]/10 group-hover:text-[#CC0000] group-hover:border-[#CC0000]/30 transition-all">
+                                            <span className="text-xs font-bold bg-neutral-900/50 backdrop-blur-md border border-white/5 text-neutral-400 px-3 py-1.5 rounded-lg group-hover:bg-[#FF0055]/10 group-hover:text-[#FF0055] group-hover:border-[#FF0055]/30 transition-all">
                                                 {src.cac}
                                             </span>
                                         </td>

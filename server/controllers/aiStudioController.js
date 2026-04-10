@@ -144,8 +144,8 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "No se pudo generar video: " + err.message });
             }
         } else {
-            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 4.0)
-            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-4.0-ultra-generate-001' : 'imagen-4.0-fast-generate-001';
+            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 3.0)
+            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-3.0-generate-001' : 'imagen-3.0-fast-generate-001';
             console.log(`[STUDIO] Generando Foto Comercial con Google GenAI (${targetModel}). Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -175,8 +175,8 @@ export const generateRenderJob = async (req, res) => {
             const imageUrls = [];
             
             // Revisa si existe la carpeta uploads
-            import { fileURLToPath } from 'url';
-            import { dirname } from 'path';
+            const { fileURLToPath } = await import('url');
+            const { dirname } = await import('path');
             const __filenameCurrent = fileURLToPath(import.meta.url);
             const __dirnameCurrent = dirname(__filenameCurrent);
             const uploadsDir = path.join(__dirnameCurrent, '..', 'uploads');

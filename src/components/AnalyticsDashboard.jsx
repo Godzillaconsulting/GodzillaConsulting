@@ -3,11 +3,13 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Chart as GoogleChart } from "react-google-charts";
 import { 
     Activity, ArrowUpRight, Users, MousePointerClick, 
-    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database, Bot, Cpu
+    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database, Bot, Cpu,
+    X, MessageSquare, Heart, Clock, Eye, BarChart2, ChevronRight, Share2, PlayCircle
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
     const [loading, setLoading] = useState(true);
+    const [selectedNetwork, setSelectedNetwork] = useState(null);
     const [data, setData] = useState({
         kpis: {},
         trafficSources: [],
@@ -316,7 +318,7 @@ export default function AnalyticsDashboard() {
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {data.trafficSources && data.trafficSources.map((src, idx) => (
-                                    <tr key={idx} className="group hover:bg-[#161615]/50 transition-colors">
+                                    <tr key={idx} onClick={() => setSelectedNetwork(src)} className="group hover:bg-[#161615]/80 cursor-pointer transition-colors relative overflow-hidden">
                                         <td className="py-4 pl-2">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xl bg-neutral-900 w-10 h-10 flex items-center justify-center rounded-xl">{src.emoji}</span>
@@ -342,6 +344,173 @@ export default function AnalyticsDashboard() {
                 </div>
                 
             </div>
+            {selectedNetwork && <SocialFunnelDeepDive network={selectedNetwork} onClose={() => setSelectedNetwork(null)} />}
         </div>
     );
 }
+
+const SocialFunnelDeepDive = ({ network, onClose }) => {
+    // Dynamic content generator based on network ID
+    const isVideo = network.id === 'tiktok' || network.id === 'ig' || network.id === 'ig_reels';
+    
+    // Fake funnel metrics relative to visitors
+    const impressions = (network.visitors || 0) * 12;
+    const views = network.visitors || 0;
+    const clicks = Math.round(views * 0.15);
+    const leads = network.leads !== '-' ? network.leads : Math.round(clicks * 0.2);
+
+    const fakePosts = isVideo ? [
+        { id: 1, title: 'Reel A - Hook Problema B2B', views: '24.5K', likes: 1205, comments: 84 },
+        { id: 2, title: 'Testimonio Cliente IA', views: '18.2K', likes: 980, comments: 45 },
+        { id: 3, title: 'Behind The Scenes - Código', views: '12.1K', likes: 640, comments: 22 }
+    ] : [
+        { id: 1, title: 'Carrusel: 3 Errores de Embudos', views: '8.4K', likes: 310, comments: 18 },
+        { id: 2, title: 'Anuncio: Auditoría Gratuita', views: '5.2K', likes: 125, comments: 5 },
+        { id: 3, title: 'Post: Novedades del Mercado', views: '3.1K', likes: 88, comments: 2 }
+    ];
+
+    const topComments = [
+        { user: '@jare_dev22', txt: 'Bro la iluminación en este reel está brutal 🔥' },
+        { user: '@cfo_latam', txt: '¿Tienen soporte para integración con SAP?' },
+        { user: '@marketing_p', txt: 'Me acabo de registrar, ¡espero la llamada!' },
+        { user: '@hater_01', txt: 'Otra herramienta más de IA...' },
+    ];
+
+    const peakHours = [
+        { hour: '06:00', reach: 200 }, { hour: '09:00', reach: 600 },
+        { hour: '13:00', reach: 1300 }, { hour: '16:00', reach: 850 },
+        { hour: '19:00', reach: 2100 }, { hour: '22:00', reach: 1100 }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+            {/* Backdrop Blur Area */}
+            <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer animate-in fade-in duration-300" 
+                onClick={onClose}
+            ></div>
+
+            {/* Slide Out Panel */}
+            <div className="relative w-full max-w-4xl h-full bg-[#0a0a09]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-500 flex flex-col">
+                
+                {/* Header */}
+                <div className="sticky top-0 z-10 bg-[#0a0a09]/90 backdrop-blur-xl border-b border-white/5 p-6 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <span className="text-4xl bg-[#111] w-14 h-14 flex items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_15px_rgba(255,0,85,0.2)]">
+                            {network.emoji}
+                        </span>
+                        <div>
+                            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                                Análisis Forense: {network.name}
+                            </h2>
+                            <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mt-1">Conectado a Nodo de Inteligencia Central</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-3 bg-[#161615] hover:bg-[#CC0000] text-neutral-400 hover:text-white rounded-full transition-all">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-6 md:p-10 space-y-10 flex-1">
+
+                    {/* Zone 1: Mini Funnel */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full blur-xl group-hover:bg-blue-500/20"></div>
+                           <Eye className="text-blue-500 mb-2" size={20} />
+                           <span className="text-xl font-black text-white">{impressions.toLocaleString()}</span>
+                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Impresiones</span>
+                        </div>
+                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/10 rounded-bl-full blur-xl group-hover:bg-[#00F0FF]/20"></div>
+                           <Activity className="text-[#00F0FF] mb-2" size={20} />
+                           <span className="text-xl font-black text-white">{views.toLocaleString()}</span>
+                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Vistas a Perfil</span>
+                        </div>
+                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#9D00FF]/10 rounded-bl-full blur-xl group-hover:bg-[#9D00FF]/20"></div>
+                           <MousePointerClick className="text-[#9D00FF] mb-2" size={20} />
+                           <span className="text-xl font-black text-white">{clicks.toLocaleString()}</span>
+                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Clics Salientes</span>
+                        </div>
+                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#00FF66]/10 rounded-bl-full blur-xl group-hover:bg-[#00FF66]/20"></div>
+                           <Target className="text-[#00FF66] mb-2" size={20} />
+                           <span className="text-xl font-black text-white">{leads.toLocaleString()}</span>
+                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Conversiones Totales</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Zone 2: Posts Rendimiento */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                <Share2 size={16} className="text-[#FF0055]" />
+                                Aportes Principales
+                            </h3>
+                            <div className="space-y-3">
+                                {fakePosts.map(post => (
+                                    <div key={post.id} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 transition-all flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-500">
+                                                <PlayCircle size={18} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white line-clamp-1">{post.title}</span>
+                                                <span className="text-[10px] text-[#00F0FF]">{post.views} Vistas</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-xs font-bold text-neutral-500">
+                                            <div className="flex items-center gap-1.5 hover:text-white"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
+                                            <div className="flex items-center gap-1.5 hover:text-white"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Zone 3: Peak Hours Heatmap mock */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                <Clock size={16} className="text-[#00F0FF]" />
+                                Frecuencia Activa (Horas Pico)
+                            </h3>
+                            <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl h-[230px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={peakHours} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                        <XAxis dataKey="hour" stroke="#666" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                        <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                        <RechartsTooltip cursor={{ fill: '#161615' }} contentStyle={{ backgroundColor: '#0a0a09', borderColor: '#333', borderRadius: '12px' }} />
+                                        <Bar dataKey="reach" radius={[4, 4, 0, 0]}>
+                                            {peakHours.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.reach > 1500 ? '#FF0055' : entry.reach > 800 ? '#9D00FF' : '#333'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Zone 4: Sentinel Comments Feed */}
+                    <div className="flex flex-col gap-4 pb-10">
+                         <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                            <MessageSquare size={16} className="text-[#FFEA00]" />
+                            Radar Semántico (Últimas Interacciones)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {topComments.map((comment, i) => (
+                                <div key={i} className="bg-[#161615] border-l-2 border-[#FF0055] p-4 rounded-r-xl">
+                                    <p className="text-xs font-bold text-neutral-500 mb-1">{comment.user}</p>
+                                    <p className="text-sm text-neutral-300 italic">"{comment.txt}"</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    );
+};

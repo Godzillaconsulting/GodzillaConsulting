@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Chart as GoogleChart } from "react-google-charts";
 import { 
     Activity, ArrowUpRight, Users, MousePointerClick, 
-    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database
+    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database, Bot, Cpu
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
@@ -130,6 +130,70 @@ export default function AnalyticsDashboard() {
                     <DollarSign className="text-yellow-500 mb-4" size={28} />
                     <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Costo de Adquisición</p>
                     <h2 className="text-4xl font-black text-white">{data.kpis.avgCac || '$0.00'}</h2>
+                </div>
+            </div>
+
+            {/* BOT SUPERVISOR (Panel Biométrico de PM2) */}
+            <div className="mb-10 bg-[#0a0a09] border border-neutral-800/60 p-6 md:p-8 rounded-[2rem] shadow-2xl relative">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#10b981] to-transparent opacity-20"></div>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-3">
+                        <Bot size={20} className="text-[#10b981]" />
+                        Biosensores de Agentes (El Bebé)
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
+                        <span className="text-xs font-bold text-neutral-500">CONECTADO AL NÚCLEO PM2</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {data.botHealth && data.botHealth.length > 0 ? (
+                        data.botHealth.map((bot, i) => {
+                            const isOnline = bot.status === 'online';
+                            const targetOrigin = bot.name.includes('ig') ? 'instagram' : bot.name.includes('tiktok') ? 'tiktok' : bot.name.includes('whatsapp') ? 'whatsapp' : 'N/A';
+                            const leadsGenerados = data.botProductivity ? (data.botProductivity[targetOrigin] || 0) : 0;
+                            return (
+                                <div key={i} className="bg-[#111] border border-neutral-800 p-5 rounded-2xl relative overflow-hidden group hover:border-neutral-600 transition-all">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-black text-white">{bot.name}</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isOnline ? 'text-green-500' : 'text-red-500'}`}>
+                                                {isOnline ? 'ONLINE' : 'OFFLINE'}
+                                            </span>
+                                        </div>
+                                        <div className="bg-neutral-900 border border-neutral-800 p-1.5 rounded-lg flex flex-col items-center gap-1">
+                                            <Cpu size={14} className="text-blue-500" />
+                                            <span className="text-[10px] text-neutral-400 font-bold">{bot.cpuPercent}%</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-neutral-500">Memoria RAM</span>
+                                            <span className="text-neutral-300 font-bold">{bot.memoryMb} MB</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-neutral-500">Reinicios (PM2)</span>
+                                            <span className="text-neutral-300 font-bold">{bot.restarts}</span>
+                                        </div>
+                                        {targetOrigin !== 'N/A' && (
+                                            <div className="flex justify-between items-center text-xs mt-3 pt-3 border-t border-neutral-800/50">
+                                                <span className="text-neutral-500 flex items-center gap-1.5">
+                                                    <Activity size={12} className="text-purple-500"/>
+                                                    Citas Cerradas
+                                                </span>
+                                                <span className="text-purple-400 font-black">{leadsGenerados}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="col-span-1 lg:col-span-4 p-8 text-center text-neutral-600 font-bold border border-dashed border-neutral-800 rounded-2xl">
+                            Esperando telemetría de los bots...
+                        </div>
+                    )}
                 </div>
             </div>
 

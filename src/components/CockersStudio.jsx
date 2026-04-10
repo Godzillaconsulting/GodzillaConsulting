@@ -34,6 +34,29 @@ export default function CockersStudio({ adminProfile }) {
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
     };
+
+    const handleMediaClick = (url) => {
+        if (getYouTubeId(url)) return;
+        if (url.startsWith('data:')) {
+            try {
+                const parts = url.split(';base64,');
+                const contentType = parts[0].split(':')[1];
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                const blob = new Blob([uInt8Array], { type: contentType });
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+            } catch(e) {
+                console.error("Error al abrir data URI", e);
+            }
+        } else {
+            window.open(url, '_blank');
+        }
+    };
     const [builderData, setBuilderData] = useState({ 
         model: 'Veo 3.1 - Fast',
         aspect_ratio: '16:9',
@@ -589,7 +612,7 @@ export default function CockersStudio({ adminProfile }) {
                                         
                                         <div 
                                             className="w-full aspect-video bg-[#111] rounded-2xl overflow-hidden relative cursor-pointer"
-                                            onClick={() => { if(!getYouTubeId(opt.url)) window.open(opt.url, '_blank'); }}
+                                            onClick={() => handleMediaClick(opt.url)}
                                         >
                                             {opt.isVideo ? (
                                                 <div className="w-full h-full relative group/vid overflow-hidden bg-black flex items-center justify-center">

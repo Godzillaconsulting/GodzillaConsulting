@@ -1,7 +1,10 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
+import { exec } from 'child_process';
+import util from 'util';
 
+const execPromise = util.promisify(exec);
 const router = express.Router();
 
 /**
@@ -245,6 +248,37 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             { name: 'Hoy', spend: 0, revenue: 0, cac: 0 },
         ];
 
+        // --- PM2 Bot Health (Monitoreo de El Bebé) ---
+        let botHealth = [];
+        try {
+            const { stdout } = await execPromise('pm2 jlist');
+            const pm2Data = JSON.parse(stdout);
+            
+            const targetBots = ['godzilla-bot-ig', 'tiktok-bot', 'whatsapp-bot', 'godzilla-sora-engine'];
+            botHealth = pm2Data
+                .filter(proc => targetBots.includes(proc.name))
+                .map(proc => ({
+                    name: proc.name,
+                    status: proc.pm2_env.status,
+                    restarts: proc.pm2_env.restart_time,
+                    memoryMb: Math.round(proc.monit.memory / 1024 / 1024),
+                    cpuPercent: proc.monit.cpu
+                }));
+        } catch (e) {
+            console.error("Error reading PM2", e.message);
+        }
+
+        // --- Bot Productivity (Citas por origen) ---
+        let botProductivity = {};
+        try {
+            const originRes = await pool.query(`SELECT origen, COUNT(*) FROM citas GROUP BY origen`);
+            originRes.rows.forEach(r => {
+                botProductivity[r.origen] = parseInt(r.count, 10);
+            });
+        } catch (e) {
+            console.warn("Could not fetch bot origins", e.message);
+        }
+
         res.json({
             success: true,
             trafficSources,
@@ -252,7 +286,8 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             roiData,
             webGraphData,
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
-            webGraphData,
+            botHealth,
+            botProductivity,
             kpis: {
                 totalSpend: '$0.00',
                 totalRevenue: 'Pendiente Pauta',

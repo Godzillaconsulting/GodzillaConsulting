@@ -15,11 +15,11 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 
 // ─── ROLES ────────────────────────────────────────────────────────────────
-// canAssign: godzilla_admin (Boss), judith (CM/SEO). Los demás (Alex, Dani, JareG) NO agregan.
+// canAssign: Administradores principales y superadmins.
 const canAssign = (profile) => {
     if (!profile) return false;
     const usr = (profile.username || '').toLowerCase();
-    return usr === 'godzilla_admin' || usr === 'judith';
+    return usr === 'godzilla_admin' || usr === 'judith' || usr === 'jareg' || profile.is_superadmin;
 };
 
 // ─── PARSEAR MENCIONES para resaltado ─────────────────────────────────────

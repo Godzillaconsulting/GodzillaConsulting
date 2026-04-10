@@ -104,28 +104,28 @@ export default function AnalyticsDashboard() {
 
             {/* KPI GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <div className="bg-gradient-to-br from-[#161615] to-[#111] border border-neutral-800 p-6 rounded-3xl relative overflow-hidden group">
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full blur-2xl transition-all group-hover:bg-blue-500/20"></div>
                     <Users className="text-blue-500 mb-4" size={28} />
                     <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Tráfico Global</p>
                     <h2 className="text-4xl font-black text-white">{totalVisits}</h2>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#161615] to-[#111] border border-neutral-800 p-6 rounded-3xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#CC0000]/10 rounded-bl-full blur-2xl transition-all group-hover:bg-[#CC0000]/20"></div>
-                    <Target className="text-[#CC0000] mb-4" size={28} />
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#FF0055]/10 rounded-bl-full blur-2xl transition-all group-hover:bg-[#FF0055]/20"></div>
+                    <Target className="text-[#FF0055] mb-4" size={28} />
                     <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Leads Capturados</p>
                     <h2 className="text-4xl font-black text-white">{totalLeads}</h2>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#161615] to-[#111] border border-neutral-800 p-6 rounded-3xl relative overflow-hidden group">
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-bl-full blur-2xl transition-all group-hover:bg-green-500/20"></div>
                     <Smartphone className="text-green-500 mb-4" size={28} />
                     <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Llamadas Agendadas</p>
                     <h2 className="text-4xl font-black text-white">{totalCalls}</h2>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#161615] to-[#111] border border-neutral-800 p-6 rounded-3xl relative overflow-hidden group">
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/10 rounded-bl-full blur-2xl transition-all group-hover:bg-yellow-500/20"></div>
                     <DollarSign className="text-yellow-500 mb-4" size={28} />
                     <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Costo de Adquisición</p>

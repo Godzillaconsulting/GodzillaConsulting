@@ -412,7 +412,7 @@ export default function AdminStudio() {
  </div>
  <div className="flex justify-end gap-3 p-5 border-t border-neutral-700">
  <button onClick={() => setShowPublishModal(false)} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 rounded-full font-bold text-sm transition">Cancelar</button>
- <button onClick={handlePublish} className="px-7 py-2.5 bg-[#CC0000] hover:bg-red-600 text-white rounded-full font-black text-sm transition shadow-[0_4px_20px_rgba(204,0,0,0.5)]">Confirmar y Publicar</button>
+ <button onClick={handlePublish} className="px-7 py-2.5 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] rounded-full font-black text-sm transition-colors duration-300 shadow-[0_4px_20px_rgba(204,0,0,0.5)]">Confirmar y Publicar</button>
  </div>
  </div>
  </div>

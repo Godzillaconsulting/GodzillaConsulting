@@ -40,7 +40,7 @@ export const generateRenderJob = async (req, res) => {
 
                 if (instruction) {
                     const translation = await aiDirector.models.generateContent({
-                        model: 'gemini-1.5-flash-latest',
+                        model: 'gemini-1.5-flash',
                         contents: instruction
                     });
                     if (translation && translation.text) {
@@ -142,8 +142,8 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "No se pudo generar video: " + err.message });
             }
         } else {
-            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 3.0 y 4.0)
-            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-3.0-generate-002' : 'imagen-4.0-fast-generate-001';
+            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 3.0)
+            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-3.0-generate-001' : 'imagen-3.0-fast-generate-001';
             console.log(`[STUDIO] Generando Foto Comercial con Google GenAI (${targetModel}). Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {

@@ -4,7 +4,7 @@ import { Chart as GoogleChart } from "react-google-charts";
 import { 
     Activity, ArrowUpRight, Users, MousePointerClick, 
     Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database, Bot, Cpu,
-    X, MessageSquare, Heart, Clock, Eye, BarChart2, ChevronRight, Share2, PlayCircle
+    X, MessageSquare, Heart, Clock, Eye, BarChart2, ChevronRight, Share2, PlayCircle, Globe, Edit2
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
@@ -344,12 +344,12 @@ export default function AnalyticsDashboard() {
                 </div>
                 
             </div>
-            {selectedNetwork && <SocialFunnelDeepDive network={selectedNetwork} onClose={() => setSelectedNetwork(null)} />}
+            {selectedNetwork && <SocialFunnelDeepDive network={selectedNetwork} onClose={() => setSelectedNetwork(null)} data={data} />}
         </div>
     );
 }
 
-const SocialFunnelDeepDive = ({ network, onClose }) => {
+const SocialFunnelDeepDive = ({ network, onClose, data }) => {
     // Dynamic content generator based on network ID
     const isVideo = network.id === 'tiktok' || network.id === 'ig' || network.id === 'ig_reels';
     
@@ -419,7 +419,7 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
             ></div>
 
             {/* Slide Out Panel */}
-            <div className="relative w-full max-w-4xl h-full bg-[#0a0a09]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-500 flex flex-col">
+            <div className="relative w-[95vw] max-w-[1400px] h-full bg-[#0a0a09]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-500 flex flex-col">
                 
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-[#0a0a09]/90 backdrop-blur-xl border-b border-white/5 p-6 flex justify-between items-center">
@@ -439,7 +439,7 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                     </button>
                 </div>
 
-                <div className="p-6 md:p-10 space-y-10 flex-1">
+                <div className="p-6 md:p-10 flex flex-col gap-8 flex-1">
 
                     {/* Zone 1: Mini Funnel */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -447,7 +447,7 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full blur-xl group-hover:bg-blue-500/20"></div>
                            <Eye className="text-blue-500 mb-2" size={20} />
                            <span className="text-xl font-black text-white">{impressions.toLocaleString()}</span>
-                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Impresiones</span>
+                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Impresiones Globales</span>
                         </div>
                         <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
                            <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/10 rounded-bl-full blur-xl group-hover:bg-[#00F0FF]/20"></div>
@@ -469,88 +469,146 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Zone 2: Posts Rendimiento */}
-                        <div className="flex flex-col gap-4">
-                            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                                <Share2 size={16} className="text-[#FF0055]" />
-                                Aportes Principales
-                            </h3>
-                            <div className="space-y-3 min-h-[150px]">
-                                {loadingPosts ? (
-                                    <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-500 py-6">
-                                        <div className="w-6 h-6 border-2 border-[#00F0FF] border-t-transparent rounded-full animate-spin"></div>
-                                        <span className="text-xs font-bold uppercase tracking-widest text-[#00F0FF]">Extrayendo...</span>
-                                    </div>
-                                ) : apiError ? (
-                                    <div className="bg-[#111]/60 backdrop-blur-md border border-[#FF0055]/30 p-4 rounded-xl text-center shadow-[0_0_15px_rgba(255,0,85,0.1)]">
-                                        <p className="text-sm text-[#FF0055] font-bold pb-1">⚠️ Conexión API Denegada</p>
-                                        <p className="text-[11px] text-neutral-400 leading-snug">{apiError}</p>
-                                    </div>
-                                ) : (!realPosts || realPosts.length === 0) ? (
-                                    <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl text-center">
-                                        <p className="text-xs text-neutral-500 font-bold uppercase">No hay contenido recuperable por API</p>
-                                    </div>
-                                ) : (
-                                    realPosts.map((post, index) => (
-                                        <a href={post.url} target="_blank" rel="noopener noreferrer" key={post.id || index} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 hover:bg-[#161615] transition-all flex justify-between items-center cursor-pointer group shadow-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-500 group-hover:text-[#FF0055] transition-colors relative overflow-hidden">
-                                                    <div className="absolute inset-0 bg-[#FF0055]/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-                                                    <PlayCircle size={18} className="relative z-10" />
-                                                </div>
-                                                <div className="flex flex-col flex-1 max-w-[140px] lg:max-w-[200px]">
-                                                    <span className="text-sm font-bold text-white line-clamp-1 group-hover:underline">{post.title}</span>
-                                                    <span className="text-[10px] text-[#00F0FF] tracking-widest uppercase">{post.views}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4 text-xs font-bold text-neutral-500">
-                                                <div className="flex items-center gap-1.5 group-hover:text-white transition-colors"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
-                                                <div className="flex items-center gap-1.5 group-hover:text-white transition-colors"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
-                                            </div>
-                                        </a>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Zone 3: Peak Hours Heatmap mock */}
-                        <div className="flex flex-col gap-4">
-                            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                                <Clock size={16} className="text-[#00F0FF]" />
-                                Frecuencia Activa (Horas Pico)
-                            </h3>
-                            <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl h-[230px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={peakHours} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                        <XAxis dataKey="hour" stroke="#666" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} />
-                                        <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{ fill: '#161615' }} contentStyle={{ backgroundColor: '#0a0a09', borderColor: '#333', borderRadius: '12px' }} />
-                                        <Bar dataKey="reach" radius={[4, 4, 0, 0]}>
-                                            {peakHours.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.reach > 1500 ? '#FF0055' : entry.reach > 800 ? '#9D00FF' : '#333'} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Zone 4: Sentinel Comments Feed */}
-                    <div className="flex flex-col gap-4 pb-10">
-                         <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                            <MessageSquare size={16} className="text-[#FFEA00]" />
-                            Radar Semántico (Últimas Interacciones)
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {topComments.map((comment, i) => (
-                                <div key={i} className="bg-[#161615] border-l-2 border-[#FF0055] p-4 rounded-r-xl">
-                                    <p className="text-xs font-bold text-neutral-500 mb-1">{comment.user}</p>
-                                    <p className="text-sm text-neutral-300 italic">"{comment.txt}"</p>
-                                </div>
+                    {/* Zone 2: TABULAR DATA CREATOR STUDIO */}
+                    <div className="flex-1 flex flex-col bg-[#111]/40 border border-white/5 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+                        
+                        {/* Filtros visuales MOCK */}
+                        <div className="flex overflow-x-auto gap-2 p-5 border-b border-white/5 bg-black/20">
+                            {[
+                                { i: BarChart2, t: 'Métricas Generales', active: true },
+                                { i: Eye, t: 'Visualizaciones', active: false },
+                                { i: Heart, t: 'Me Gusta', active: false },
+                                { i: MessageSquare, t: 'Comentarios', active: false }
+                            ].map((tab, idx) => (
+                                <button key={idx} className={`shrink-0 flex items-center gap-2 px-5 py-2 rounded-full font-black text-xs uppercase tracking-widest transition-all ${tab.active ? 'bg-white text-black' : 'bg-transparent text-neutral-500 hover:text-white border border-transparent hover:border-white/10'}`}>
+                                    <tab.i size={14} /> {tab.t}
+                                </button>
                             ))}
+                            <div className="ml-auto w-64">
+                                <div className="bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2 flex items-center">
+                                    <span className="text-neutral-500 text-xs mr-2">🔍</span>
+                                    <input type="text" placeholder="Buscar contenido..." className="bg-transparent border-none outline-none text-xs text-white w-full h-full placeholder:text-neutral-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Contenedor de Tabla */}
+                        <div className="flex-1 overflow-auto rounded-b-3xl relative">
+                            {network.id === 'web' ? (
+                                // TABLA DE EVENTOS META PIXEL (WEB)
+                                <table className="w-full text-left border-collapse min-w-[800px]">
+                                    <thead className="sticky top-0 bg-[#0a0a0a] z-10">
+                                        <tr className="border-b border-white/5 text-[10px] uppercase font-black tracking-widest text-neutral-500">
+                                            <th className="py-4 px-6 w-[40%]">Evento Analizado</th>
+                                            <th className="py-4 px-6">Fuente / Origen</th>
+                                            <th className="py-4 px-6 text-center">Frecuencia</th>
+                                            <th className="py-4 px-6 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-sm">
+                                        {(!data.pixelEvents || data.pixelEvents.length === 0) ? (
+                                            <tr><td colSpan="4" className="py-10 text-center text-neutral-600 font-bold">No hay eventos recientes capturados</td></tr>
+                                        ) : (
+                                            data.pixelEvents.map((ev, i) => (
+                                                <tr key={i} className="hover:bg-neutral-900/50 transition-colors group">
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 flex items-center justify-center text-yellow-500">
+                                                                <MousePointerClick size={18} />
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-black text-white text-base capitalize">{ev.name.replace(/_/g, ' ')}</span>
+                                                                <span className="text-[10px] text-[#00F0FF] uppercase tracking-widest bg-[#00F0FF]/10 px-2 py-0.5 rounded w-fit mt-1">META PIXEL EVENT</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <span className="flex items-center gap-2 text-xs font-bold text-neutral-400">
+                                                            <Globe className="w-3 h-3"/> website_root
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <span className="font-black text-2xl text-white">{ev.count}</span>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                            <button className="p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-full transition-colors"><BarChart2 size={14}/></button>
+                                                            <button className="p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-full transition-colors">...</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                // TABLA ESTILO CREATOR STUDIO (REDES SOCIALES)
+                                <table className="w-full text-left border-collapse min-w-[1000px]">
+                                    <thead className="sticky top-0 bg-[#0a0a0a] z-10">
+                                        <tr className="border-b border-white/5 text-[10px] uppercase font-black tracking-widest text-neutral-500">
+                                            <th className="py-4 px-6 w-[40%]">Contenido (Post / Reel)</th>
+                                            <th className="py-4 px-6">Privacidad</th>
+                                            <th className="py-4 px-6 text-center">Visualizaciones</th>
+                                            <th className="py-4 px-6 text-center">Me Gusta</th>
+                                            <th className="py-4 px-6 text-center">Comentarios</th>
+                                            <th className="py-4 px-6 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-sm">
+                                        {loadingPosts ? (
+                                            <tr><td colSpan="6" className="py-20 text-center"><div className="mx-auto w-8 h-8 border-2 border-[#FF0055] border-t-transparent rounded-full animate-spin"></div></td></tr>
+                                        ) : apiError ? (
+                                            <tr><td colSpan="6" className="py-10 text-center text-[#FF0055] font-bold">{apiError}</td></tr>
+                                        ) : (!realPosts || realPosts.length === 0) ? (
+                                            <tr><td colSpan="6" className="py-10 text-center text-neutral-600 font-bold">Sin contenido emitido en este canal</td></tr>
+                                        ) : (
+                                            realPosts.map((post, i) => (
+                                                <tr key={post.id || i} className="hover:bg-neutral-900/40 transition-colors group">
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex gap-4 items-center">
+                                                            <div className="relative w-16 h-24 bg-neutral-900 rounded border border-white/10 overflow-hidden shrink-0 flex items-center justify-center group-hover:border-[#FF0055]/50 transition-colors">
+                                                                <PlayCircle className="text-white/30 absolute z-10" />
+                                                                {/* Simulación de Asset miniatura */}
+                                                                <div className="absolute bottom-1 left-1 bg-black/80 px-1 rounded text-[8px] font-black text-white z-10 tracking-widest">00:30</div>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <a href={post.url} target="_blank" rel="noopener noreferrer" className="font-bold text-neutral-200 text-sm line-clamp-2 hover:text-white hover:underline leading-snug">
+                                                                    {post.title}
+                                                                </a>
+                                                                <span className="text-[10px] text-[#FF0055] mt-1.5 flex items-center gap-1 font-bold">
+                                                                    📌 ACTIVO <span className="text-neutral-500 font-normal">| Dominio Público</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-neutral-400 font-bold text-xs">
+                                                        <div className="flex items-center gap-1.5 bg-[#161615] border border-white/5 w-max px-3 py-1.5 rounded-lg hover:border-white/20 cursor-pointer transition-colors">
+                                                            <Globe className="w-3 h-3 text-neutral-500" /> Todo el mundo v
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center font-black text-white">
+                                                        {post.views}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center font-bold text-neutral-400 group-hover:text-[#FF0055] transition-colors">
+                                                        {post.likes}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center font-bold text-neutral-400 group-hover:text-[#00F0FF] transition-colors">
+                                                        {post.comments}
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                            <button className="p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-full transition-colors" title="Editar"><Edit2 size={14}/></button>
+                                                            <button className="p-2 bg-neutral-800 hover:bg-[#00F0FF]/20 hover:text-[#00F0FF] text-neutral-300 rounded-full transition-colors" title="Ver comentarios"><MessageSquare size={14}/></button>
+                                                            <button className="p-2 bg-neutral-800 hover:bg-[#FF0055]/20 hover:text-[#FF0055] text-neutral-300 rounded-full transition-colors" title="Promocionar"><Activity size={14}/></button>
+                                                            <button className="p-2 bg-transparent text-neutral-500 hover:text-white transition-colors">...</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     </div>
                     

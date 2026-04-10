@@ -15,7 +15,12 @@ export default function CockersStudio({ adminProfile }) {
     
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
+    const isSuperAdmin = adminProfile?.is_superadmin;
+    const canSeeAll = isCockers || isSuperAdmin;
     
+    // Outbox State
+    const [showOutbox, setShowOutbox] = useState(false);
+
     // States del Redactor IA (Asistente Copywriting)
     const [showScriptGen, setShowScriptGen] = useState(false);
     const [scriptChatHistory, setScriptChatHistory] = useState([
@@ -158,6 +163,9 @@ export default function CockersStudio({ adminProfile }) {
         } else if (actionType === 'reject') {
             msg = `¿Devolver este contenido a Cockers (Alex) para corrección?`;
             newStatus = 'rejected';
+        } else if (actionType === 'delete') {
+            msg = `¿Estás seguro de eliminar este contenido?`;
+            newStatus = 'deleted'; // We can just set status deleted so it hides
         }
 
         if (!window.confirm(msg)) return;
@@ -185,8 +193,10 @@ export default function CockersStudio({ adminProfile }) {
             if (!data.success) throw new Error(data.message || 'Fallo API');
 
             alert(`✅ Exito: El contenido se movió a estado: ${newStatus}.`);
-            setQueue(q => q.filter(p => p.id !== selectedDraft.id));
-            setSelectedDraft(null);
+            setQueue(q => q.map(t => t.id === selectedDraft?.id ? { ...t, status: newStatus } : t));
+            if (actionType !== 'reject' && actionType !== 'delete') {
+                setSelectedDraft(null);
+            }
         } catch (error) {
             console.error(error);
             alert(`⚠️ Error al procesar: ${error.message}`);
@@ -229,9 +239,10 @@ export default function CockersStudio({ adminProfile }) {
                 }
             };
 
-            // TRINITY BLASTER MODE: 3 Motores Simultáneos SIEMPRE, sin importar si es imagen o video
-            const enginesToRun = genMode === 'video' 
-                ? ['Veo 3.1 - Fast', 'Kling 3.0', 'Sora'] 
+            // Motores a invocar según la pestaña activa
+            // Nota: Se elimina Sora del tab Video, y se pre-configura soporte futuro para Luma/Runway
+            const enginesToRun = (isCockers && genMode === 'video')
+                ? ['Luma Dream Machine', 'Runway Gen-3']
                 : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
             const promises = enginesToRun.map(async (engineName) => {
@@ -430,10 +441,13 @@ export default function CockersStudio({ adminProfile }) {
                             <div className="flex items-center flex-col justify-center h-[120px] mb-4 border-2 border-dashed border-neutral-800 rounded-2xl hover:border-neutral-600 transition-colors cursor-pointer relative">
                                 <span className="text-2xl mb-1">Upload</span>
                                 <span className="text-xs text-neutral-500 font-bold uppercase">Sube una imagen de referencia</span>
-                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,video/*" onChange={(e)=>{
+                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e)=>{
                                        if(e.target.files && e.target.files[0]){
                                            const reader = new FileReader();
-                                           reader.onload = (ev) => setRefImage(ev.target.result);
+                                           reader.onload = (ev) => {
+                                               setRefImage(ev.target.result);
+                                               e.target.value = null; // Fix de caché de input React
+                                           };
                                            reader.readAsDataURL(e.target.files[0]);
                                            setActiveTab('Fotogramas');
                                        }
@@ -531,11 +545,83 @@ export default function CockersStudio({ adminProfile }) {
                         ) : 'Lienzo de Creación'}
                     </h2>
                     
-                    {/* Boton para abrir la bandeja original (Opcional) */}
-                    <button onClick={() => setSelectedDraft(queue[0])} className="text-xs font-bold text-neutral-500 hover:text-white border border-neutral-800 hover:border-neutral-600 px-4 py-2 rounded-full transition-colors flex items-center gap-2 bg-[#111]">
-                        📋 Scripts Pendientes ({queue.length})
-                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={() => {
+                            const pendings = queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved');
+                            if(pendings.length > 0) setSelectedDraft(pendings[0]);
+                            else alert('No hay scripts pendientes');
+                        }} className="text-xs font-bold text-neutral-500 hover:text-white border border-neutral-800 hover:border-neutral-600 px-4 py-2 rounded-full transition-colors flex items-center gap-2 bg-[#111]">
+                            📋 Pendientes ({queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved').length})
+                        </button>
+                        
+                        {canSeeAll && (
+                            <button onClick={() => setShowOutbox(true)} className="text-xs font-bold text-[#CC0000] hover:bg-[#CC0000] hover:text-white border border-[#CC0000]/50 px-4 py-2 rounded-full transition-colors flex items-center gap-2 bg-[#CC0000]/10 shadow-[0_0_10px_rgba(204,0,0,0.2)]">
+                                📤 Enviados y Devueltos ({queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length})
+                            </button>
+                        )}
+                    </div>
                 </div>
+
+                {/* MODAL OUTBOX */}
+                {showOutbox && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="w-full max-w-4xl max-h-[85vh] bg-[#111111] border border-neutral-800 shadow-2xl rounded-3xl overflow-hidden flex flex-col relative">
+                            <div className="bg-[#1a1a1a] border-b border-neutral-800 p-5 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">📤 Bandeja de Salida (Arte)</h3>
+                                    <p className="text-[10px] text-neutral-400 font-bold mt-1 uppercase">Monitor de trabajos enviados y correcciones</p>
+                                </div>
+                                <button onClick={() => setShowOutbox(false)} className="text-white hover:text-[#CC0000] text-xl font-black w-8 h-8">×</button>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-6 bg-[#050505]">
+                                {queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center p-10 opacity-50">
+                                        <span className="text-4xl mb-4">📭</span>
+                                        <p className="text-white font-bold tracking-widest text-sm">Tu bandeja está vacía.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').map(task => (
+                                            <div key={task.id} className={`border rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden ${task.status === 'rejected' ? 'bg-[#CC0000]/5 border-[#CC0000]/40' : 'bg-neutral-900 border-neutral-800'}`}>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${task.status === 'rejected' ? 'bg-[#CC0000] text-white' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                                                        {task.status === 'rejected' ? '❌ DEVUELTO (Corrección)' : '⏳ EN REVISIÓN'}
+                                                    </span>
+                                                </div>
+                                                
+                                                {task.media_options && task.media_options[0] && (
+                                                    <img src={task.media_options[0].url} alt="asset" className="w-full h-32 object-cover rounded-lg border border-neutral-800" />
+                                                )}
+                                                
+                                                <p className="text-xs text-neutral-300 line-clamp-2">{task.caption || task.visual_prompt}</p>
+                                                
+                                                <div className="flex justify-end gap-2 mt-auto pt-2 border-t border-neutral-800/50">
+                                                    {task.status === 'pending_cm_approval' && (
+                                                        <button 
+                                                            onClick={() => { setSelectedDraft(task); handleAction(task.media_options[0] || {}, 'delete'); }} 
+                                                            className="text-[10px] bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-3 py-1.5 rounded"
+                                                        >
+                                                            Eliminar Tarea
+                                                        </button>
+                                                    )}
+                                                    {task.status === 'rejected' && (
+                                                        <button 
+                                                            onClick={() => { setSelectedDraft(task); setShowOutbox(false); }} 
+                                                            className="text-[10px] bg-[#CC0000] hover:bg-red-800 text-white font-bold px-4 py-1.5 rounded shadow-[0_0_10px_rgba(204,0,0,0.3)]"
+                                                        >
+                                                            Cargar al Canvas
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Si no hay drafts ni generación, Mostramos el Splash principal */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
@@ -657,18 +743,23 @@ export default function CockersStudio({ adminProfile }) {
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                 </a>
                                                 
-                                                {isCockers ? (
-                                                    <button onClick={() => handleAction(opt, 'review')} className="bg-[#CC0000] hover:bg-red-800 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(204,0,0,0.4)] transition-transform active:scale-95">
-                                                        Enviar a Revisión
-                                                    </button>
-                                                ) : (
+                                                {canSeeAll && (
                                                     <div className="flex gap-1.5">
-                                                        <button onClick={() => handleAction(opt, 'reject')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center" title="Devolver a Cockers">
-                                                            ↩️ 
+                                                        <button onClick={() => handleAction(opt, 'review')} className="bg-[#CC0000] hover:bg-red-800 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(204,0,0,0.4)] transition-transform active:scale-95">
+                                                            Enviar a Revisión (CM)
                                                         </button>
-                                                        <button onClick={() => handleAction(opt, 'approve')} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-transform active:scale-95">
-                                                            Aprobar ✔️
-                                                        </button>
+                                                        
+                                                        {/* Actions below usually for Judith/Admin, visible to SuperAdmin via canSeeAll */}
+                                                        {adminProfile?.is_superadmin && (
+                                                            <>
+                                                                <button onClick={() => handleAction(opt, 'reject')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center" title="Devolver a Cockers">
+                                                                    ↩️ Rechazar
+                                                                </button>
+                                                                <button onClick={() => handleAction(opt, 'approve')} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-transform active:scale-95">
+                                                                    Aprobar ✔️
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

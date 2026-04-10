@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
 
 export default function AdminProfile({ profile, onProfileUpdate }) {
     const [subTab, setSubTab] = useState('personal'); // 'personal' | 'team'

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-
+const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
 export const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
@@ -130,10 +129,29 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
     };
 
     const filteredItems = () => {
-        if (accept === 'image' || filter === 'images') return media.images || [];
-        if (accept === 'video' || filter === 'videos') return (media.videos || []).filter(v => v.type === 'videos');
-        if (filter === 'docs') return (media.videos || []).filter(v => Object.values(v)[0] && v.type === 'document');
-        return [...(media.images || []), ...(media.videos || [])];
+        let items = [];
+        
+        // Step 1: Base list based on accept prop
+        if (accept === 'image') {
+            items = media.images || [];
+        } else if (accept === 'video') {
+            items = (media.videos || []).filter(v => v.type === 'videos');
+        } else if (accept === 'docs') {
+            items = (media.videos || []).filter(v => v.type === 'document');
+        } else {
+            items = [...(media.images || []), ...(media.videos || [])];
+        }
+
+        // Step 2: Apply folder filter
+        if (filter === 'images') {
+            items = items.filter(i => i.type === 'images' || i.type === 'image');
+        } else if (filter === 'videos') {
+            items = items.filter(i => i.type === 'videos' || i.type === 'video');
+        } else if (filter === 'docs') {
+            items = items.filter(i => i.type === 'document');
+        }
+
+        return items;
     };
 
     const isVideo = (item) => item.type === 'videos';

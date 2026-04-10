@@ -143,6 +143,9 @@ export const generateRenderJob = async (req, res) => {
                 console.error("[VEO] Error en generador de video:", err);
                 return res.status(400).json({ error: "No se pudo generar video: " + err.message });
             }
+        } else if (engine.includes('Luma') || engine.includes('Runway')) {
+            // Future-proofing for Runway Gen-3 and Luma Dream Machine
+            return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway (Gemini Plus no procesa Video nativo vía API). Agrega tus llaves en el servidor." });
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
             const targetModel = engine.includes('Imagen 3.0') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';

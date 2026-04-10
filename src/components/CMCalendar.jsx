@@ -45,9 +45,10 @@ export default function CMCalendar({ adminProfile }) {
     const currentUser = adminProfile?.username || 'Usuario';
 
     // ─── Pestaña activa del Calendario (solo para admins) ─────────────────
-    // 'contenido' | 'citas' | 'pendientes' | 'todos'
+    // 'contenido' | 'citas' | 'pendientes' | 'aprobadas' | 'todos'
     const [calendarTab, setCalendarTab] = useState('contenido');
     const [currentDate, setCurrentDate] = useState(new Date());
+
 
     // ─── Estado del Calendario de Contenido ───────────────────────────────
     const [events, setEvents] = useState([]);
@@ -180,7 +181,7 @@ export default function CMCalendar({ adminProfile }) {
             formData.append('file', file);
             
             const token = localStorage.getItem('adminToken');
-            const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
             const res = await fetch(`${API}/api/media/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -354,6 +355,43 @@ export default function CMCalendar({ adminProfile }) {
         setSelectedEvent(prev => ({ ...prev, comments: [...(prev.comments || []), newComment] }));
         setCommentText('');
         setMentionQuery(null);
+    };
+
+    // ─── LÓGICA DE ENVÍO A REDES (PESTAÑA APROBADAS) ────────────────────────
+    const [networkSelections, setNetworkSelections] = useState({});
+
+    const toggleNetwork = (taskId, network) => {
+        setNetworkSelections(prev => {
+            const current = prev[taskId] || { facebook: true, instagram: true, tiktok: true };
+            return { ...prev, [taskId]: { ...current, [network]: !current[network] } };
+        });
+    };
+
+    const handleSendToNetworks = async (task) => {
+        const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
+        const selectedNetworks = Object.keys(selection).filter(k => selection[k]);
+        if(selectedNetworks.length === 0) return alert('Selecciona al menos una red');
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${'' || ''}/api/studio/tasks/${task.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    status: 'queued',
+                    publish_targets: selectedNetworks
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert(`¡Exito! La tarea ha sido enviada a las redes: ${selectedNetworks.join(', ').toUpperCase()}`);
+                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'queued', done: true } : t));
+            } else {
+                throw new Error(data.message || 'Error API');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Fallo al mandar a redes: ' + e.message);
+        }
     };
 
     // ─── ESTILOS DEL CALENDARIO ────────────────────────────────────────────
@@ -649,6 +687,7 @@ export default function CMCalendar({ adminProfile }) {
                                 { id: 'contenido', label: '📣 Contenido', count: events.length },
                                 { id: 'citas', label: '📅 Citas', count: citas.length },
                                 { id: 'pendientes', label: '✅ Tablero Tareas', count: tasks.filter(t => !t.done).length },
+                                { id: 'aprobadas', label: '🌟 Aprobadas', count: tasks.filter(t => t.status === 'approved').length },
                                 { id: 'todos', label: '🗺️ Todo', count: null },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setCalendarTab(tab.id)}
@@ -940,6 +979,98 @@ export default function CMCalendar({ adminProfile }) {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    ) : calendarTab === 'aprobadas' ? (
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-black/40 backdrop-blur-sm rounded-3xl mx-2 mb-2 custom-scrollbar">
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-black uppercase tracking-widest text-[#d4af37] flex items-center gap-3">
+                                    🌟 Bandeja de Aprobadas
+                                    <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full">{tasks.filter(t => t.status === 'approved').length} Listas para Publicar</span>
+                                </h2>
+                                <p className="text-sm font-bold text-neutral-400 mt-2">Selecciona las redes destino y manda directo a producción.</p>
+                            </div>
+
+                            {tasks.filter(t => t.status === 'approved').length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-20 opacity-50">
+                                    <span className="text-5xl mb-4">🌟</span>
+                                    <p className="text-white font-bold tracking-widest">No hay contenido aprobado pendiente.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {tasks.filter(t => t.status === 'approved').map(task => {
+                                        const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
+                                        const mediaUrl = task.mediaPayload?.[0]?.url || task.mediaPayload?.url;
+                                        const isVideo = task.mediaPayload?.[0]?.isVideo || task.mediaPayload?.isVideo || (mediaUrl && mediaUrl.includes('.mp4'));
+
+                                        return (
+                                            <div key={task.id} className="bg-[#111111] border border-[#d4af37]/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.1)] flex flex-col">
+                                                <div className="relative h-48 bg-black">
+                                                    {mediaUrl ? (
+                                                        isVideo ? (
+                                                            <video src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline autoPlay />
+                                                        ) : (
+                                                            <img src={mediaUrl} className="w-full h-full object-cover" alt="Media" />
+                                                        )
+                                                    ) : (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center text-neutral-600">
+                                                            <span className="text-3xl">📷</span>
+                                                            <p className="text-[9px] font-black uppercase mt-1">Sin Media Detectada</p>
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
+                                                        <span className="text-[9px] font-black tracking-widest text-[#d4af37] uppercase">APROBADO</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-4 flex-1 flex flex-col">
+                                                    <p className="text-xs font-bold text-neutral-300 line-clamp-3 flex-1 mb-4">{task.caption || task.que}</p>
+                                                    
+                                                    <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 mb-4">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Canales de Distribución:</p>
+                                                        <div className="flex gap-2">
+                                                            {[
+                                                                { id: 'facebook', icon: '🔵 FB', active: selection.facebook },
+                                                                { id: 'instagram', icon: '🟣 IG', active: selection.instagram },
+                                                                { id: 'tiktok', icon: '⚫ TK', active: selection.tiktok }
+                                                            ].map(net => (
+                                                                <button 
+                                                                    key={net.id}
+                                                                    onClick={() => toggleNetwork(task.id, net.id)}
+                                                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-colors ${net.active ? 'bg-white text-black' : 'bg-black text-neutral-600 border border-neutral-800'}`}
+                                                                >
+                                                                    {net.icon}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => handleSendToNetworks(task)}
+                                                        className="w-full mt-auto py-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all active:scale-95"
+                                                    >
+                                                        🚀 Mandar a Redes
+                                                    </button>
+                                                    
+                                                    {/* Opción para devolver a arte si se arrepiente a último minuto (aplica para Judith/SuperAdmin) */}
+                                                    <button 
+                                                        onClick={() => {
+                                                            if(!window.confirm('¿Seguro de rechazar esta tarea y devolverla a Alex?')) return;
+                                                            fetch(`${'' || ''}/api/studio/tasks/${task.id}`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+                                                                body: JSON.stringify({ status: 'rejected' })
+                                                            }).then(() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rejected' } : t)));
+                                                        }}
+                                                        className="w-full mt-2 py-2 text-[10px] font-black tracking-widest uppercase text-neutral-500 hover:text-[#CC0000] transition-colors text-center"
+                                                    >
+                                                        Devolver a Cóckers
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div style={{ minHeight: '750px', height: '100%' }}>

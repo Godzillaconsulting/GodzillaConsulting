@@ -159,7 +159,7 @@ export const generateRenderJob = async (req, res) => {
                 model: targetModel,
                 prompt: optimizedPrompt || "A sleek cinematic render for an ad",
                 config: {
-                    numberOfImages: 1,
+                    numberOfImages: 3,
                     outputMimeType: 'image/jpeg',
                     aspectRatio: googleRatioImg
                 }
@@ -169,16 +169,15 @@ export const generateRenderJob = async (req, res) => {
                  return res.status(500).json({ error: "Google API no devolvió ninguna imagen." });
             }
 
-            // Convert base64 bytes to a Data URI for immediate frontend rendering
-            const base64Bytes = responseGenAI.generatedImages[0].image.imageBytes;
-            const imageUrl = `data:image/jpeg;base64,${base64Bytes}`;
+            // Convert base64 bytes to Data URIs for immediate frontend rendering
+            const imageUrls = responseGenAI.generatedImages.map(img => `data:image/jpeg;base64,${img.image.imageBytes}`);
 
             // Return synchronously because Imagen generation is fast enough via API
             return res.status(200).json({ 
                 status: 'succeed', 
                 job_id: "google_image_" + Date.now(),
                 provider: engine,
-                result_url: imageUrl
+                result_url: imageUrls
             });
         }
 

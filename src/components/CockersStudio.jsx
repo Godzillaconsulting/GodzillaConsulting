@@ -232,7 +232,13 @@ export default function CockersStudio({ adminProfile }) {
                 if (res.status === 'fulfilled') {
                     const { engineName, data } = res.value;
                     if (data.status === 'succeed' && data.result_url) {
-                        finalOptions.push({ provider: engineName, url: data.result_url, isVideo: genMode === 'video' });
+                        if (Array.isArray(data.result_url)) {
+                            data.result_url.forEach((url, i) => {
+                                finalOptions.push({ provider: `${engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: genMode === 'video' });
+                            });
+                        } else {
+                            finalOptions.push({ provider: engineName, url: data.result_url, isVideo: genMode === 'video' });
+                        }
                     } else if (data.status === 'processing' && data.job_id) {
                         tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false });
                     }
@@ -278,8 +284,13 @@ export default function CockersStudio({ adminProfile }) {
                         if (statusData.status === 'succeed') {
                              task.done = true;
                              if(statusData.result_url) {
-                                 let url = Array.isArray(statusData.result_url) ? statusData.result_url[0] : statusData.result_url;
-                                 finalOptions.push({ provider: task.engineName, url: url, isVideo: genMode === 'video' });
+                                 if (Array.isArray(statusData.result_url)) {
+                                     statusData.result_url.forEach((url, i) => {
+                                         finalOptions.push({ provider: `${task.engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: genMode === 'video' });
+                                     });
+                                 } else {
+                                     finalOptions.push({ provider: task.engineName, url: statusData.result_url, isVideo: genMode === 'video' });
+                                 }
                              }
                         } else if (statusData.status === 'failed') {
                              task.done = true; 

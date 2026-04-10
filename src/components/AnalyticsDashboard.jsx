@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Chart as GoogleChart } from "react-google-charts";
 import { 
     Activity, ArrowUpRight, Users, MousePointerClick, 
-    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap
+    Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {

@@ -515,20 +515,7 @@ export default function CockersStudio({ adminProfile }) {
                         <div className="w-full text-left bg-[#0a0a09] border border-neutral-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-neutral-700 to-transparent opacity-20"></div>
                             
-                            <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span>💡</span> Sugerencias de la Comunidad (Elite Prompts)
-                            </h3>
-                            <div className="flex flex-col gap-3 mb-8">
-                                {elitePrompts.map((p, i) => (
-                                    <button 
-                                        key={i}
-                                        onClick={() => setFinalPrompt(p)}
-                                        className="text-left text-sm font-light text-neutral-300 bg-[#161615] hover:bg-[#1a1a19] border border-neutral-800 hover:border-yellow-500/30 p-4 rounded-xl transition-all shadow-inner"
-                                    >
-                                        "{p}"
-                                    </button>
-                                ))}
-                            </div>
+
                             
                             <h3 className="text-xs font-black text-[#CC0000] uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <span>✨</span> ¿Sin saber qué guion crear?

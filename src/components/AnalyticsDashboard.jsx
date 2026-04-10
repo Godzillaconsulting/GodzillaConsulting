@@ -141,7 +141,7 @@ export default function AnalyticsDashboard() {
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-bold text-white flex items-center gap-3">
                         <Bot size={20} className="text-[#10b981]" />
-                        Biosensores de Agentes (El Bebé)
+                        Biosensores de Agentes
                     </h3>
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-3 w-3">
@@ -450,7 +450,7 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                             </h3>
                             <div className="space-y-3">
                                 {fakePosts.map(post => (
-                                    <div key={post.id} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 transition-all flex justify-between items-center">
+                                    <a href={network.id === 'tiktok' ? 'https://tiktok.com/@godzillaconsulting' : 'https://instagram.com/godzilla.consulting'} target="_blank" rel="noopener noreferrer" key={post.id} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 hover:bg-[#161615] transition-all flex justify-between items-center cursor-pointer group">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-500">
                                                 <PlayCircle size={18} />
@@ -464,7 +464,7 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                                             <div className="flex items-center gap-1.5 hover:text-white"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
                                             <div className="flex items-center gap-1.5 hover:text-white"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
                                         </div>
-                                    </div>
+                                    </a>
                                 ))}
                             </div>
                         </div>

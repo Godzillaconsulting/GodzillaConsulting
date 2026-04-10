@@ -34,7 +34,12 @@ async function setup() {
     console.log('');
 
     const ig = new IgApiClient();
-    ig.state.generateDevice(USERNAME);
+    ig.state.generateDevice(USERNAME + "fixed_device_v3");
+    
+    // PATCH para saltar el "unsupported_version" block de Meta
+    ig.state.appVersion = '314.0.0.35.109';
+    ig.state.appVersionCode = '3140035109';
+    console.log('🔧 Aplicando patch de versión Instagram:', ig.state.appVersion);
 
     // ── Intentar login ───────────────────────────────────────────────────────
     let twoFactorInfo = null;
@@ -80,11 +85,11 @@ async function setup() {
                 console.log('\n✅ 2FA verificado correctamente!\n');
                 
                 // Warmup: activar sesión haciendo 2 llamadas antes de guardar
-                console.log('🔄 Activando sesión (warmup)...');
-                const user = await ig.account.currentUser();
-                console.log('   Usuario verificado:', user.username, '| Seguidores:', user.follower_count);
-                await ig.feed.directInbox().items(); // Activa permisos de DMs
-                console.log('   Bandeja de DMs accesible ✅');
+                console.log('🔄 Omitiendo warmup por seguridad...');
+                // const user = await ig.account.currentUser();
+                // console.log('   Usuario verificado:', user.username, '| Seguidores:', user.follower_count);
+                // await ig.feed.directInbox().items(); // Activa permisos de DMs
+                // console.log('   Bandeja de DMs accesible ✅');
                 
             } catch(tfaErr) {
                 console.error('\n❌ Error en 2FA:', tfaErr.message);

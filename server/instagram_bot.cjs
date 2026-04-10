@@ -242,6 +242,10 @@ async function startBot() {
     const saved = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
     await ig.state.deserialize(saved);
 
+    // PATCH para saltar el "unsupported_version" block de Meta
+    ig.state.appVersion = '314.0.0.35.109';
+    ig.state.appVersionCode = '3140035109';
+
     // Verificar sesión con una llamada real
     try {
         const me = await ig.account.currentUser();

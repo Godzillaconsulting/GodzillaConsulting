@@ -185,7 +185,8 @@ export default function AdminStudio() {
          formData.append('file', file);
          
          const token = localStorage.getItem('adminToken');
-         const res = await fetch(`${'' || ''}/api/media/upload`, {
+         const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+         const res = await fetch(`${API}/api/media/upload`, {
              method: 'POST',
              headers: { 'Authorization': `Bearer ${token}` },
              body: formData

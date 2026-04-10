@@ -6,7 +6,7 @@ export default function BugTrackerUI() {
     const [error, setError] = useState(null);
     const [selectedBug, setSelectedBug] = useState(null);
     const token = localStorage.getItem('adminToken');
-    const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : '';
+    const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
     useEffect(() => {
         fetchBugs();

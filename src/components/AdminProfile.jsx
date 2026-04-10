@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+
 export default function AdminProfile({ profile, onProfileUpdate }) {
     const [subTab, setSubTab] = useState('personal'); // 'personal' | 'team'
     const [saving, setSaving] = useState(false);
@@ -32,7 +34,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const fetchBugs = async () => {
         const token = localStorage.getItem('adminToken');
         try {
-            const res = await fetch(`${'' || ''}/api/bugs`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await fetch(`${API}/api/bugs`, { headers: { Authorization: `Bearer ${token}` } });
             const data = await res.json();
             if (data.bugs) setItBugs(data.bugs);
         } catch (e) {
@@ -43,7 +45,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const resolveBug = async (id, currentStatus) => {
         const token = localStorage.getItem('adminToken');
         try {
-            await fetch(`${'' || ''}/api/bugs/${id}`, {
+            await fetch(`${API}/api/bugs/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ resolved: !currentStatus })
@@ -83,7 +85,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setLoadingTeam(true);
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users`, {
+            const res = await fetch(`${API}/api/users`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -113,7 +115,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setPersonalMsg({ text: '', type: '' });
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users/profile`, {
+            const res = await fetch(`${API}/api/users/profile`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -147,7 +149,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
             formData.append('file', file);
             
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/media/upload`, {
+            const res = await fetch(`${API}/api/media/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }, // REQUISITO DE SEGURIDAD
                 body: formData
@@ -174,7 +176,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         setSaving(true);
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users`, {
+            const res = await fetch(`${API}/api/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
@@ -210,7 +212,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users/${targetId}`, {
+            const res = await fetch(`${API}/api/users/${targetId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ superadminPassword: pass })
@@ -236,7 +238,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users/${targetId}`, {
+            const res = await fetch(`${API}/api/users/${targetId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ superadminPassword: pass, newPassword: newPass, username: currentUsername })
@@ -261,7 +263,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch(`${'' || ''}/api/users/${targetId}`, {
+            const res = await fetch(`${API}/api/users/${targetId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ superadminPassword: pass, isSuperadmin: newRole === 'superadmin', role: newRole })

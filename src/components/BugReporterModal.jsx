@@ -53,8 +53,9 @@ const BugReporterModal = ({ x, y, onClose }) => {
         }
         setLoading(true);
         try {
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
             const token = localStorage.getItem('adminToken');
-            const res = await fetch('/api/bugs', {
+            const res = await fetch(`${API}/api/bugs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -11,23 +11,35 @@ export function SiteProvider({ children }) {
   // { nodeId: string, data: object } | null
   const [previewOverride, setPreviewOverrideState] = useState(null);
 
-  // Load all nodes
-  const fetchNodes = async () => {
+  // Load all nodes with retry logic for Neon DB cold starts
+  const fetchNodes = async (retries = 3) => {
     try {
       setLoading(true);
-      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes', {
+      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes?t=' + new Date().getTime(), {
+        cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
         }
       });
+      
+      if (!res.ok) {
+          throw new Error('Servidor retornó ' + res.status);
+      }
+      
       const data = await res.json();
       setNodes(data);
     } catch (err) {
       console.error('Error fetching nodes:', err);
+      if (retries > 0) {
+          console.warn(`Reintentando conexión a base de datos... quedan ${retries} intentos`);
+          setTimeout(() => fetchNodes(retries - 1), 1500); // Darle tiempo a Neon DB de despertar
+      }
     } finally {
-      setLoading(false);
+      if (retries === 0 || nodes.length > 0) {
+          setLoading(false);
+      }
     }
   };
 

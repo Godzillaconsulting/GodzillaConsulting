@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
 import pool from '../config/db.js';
+import fs from 'fs';
+import path from 'path';
 // Genera el JWT riguroso solicitado por la arquitectura de Kling AI 
 function generateKlingAuthToken() {
     const accessKey = process.env.KLING_ACCESS_KEY;
@@ -169,10 +171,23 @@ export const generateRenderJob = async (req, res) => {
                  return res.status(500).json({ error: "Google API no devolvió ninguna imagen." });
             }
 
-            // Convert base64 bytes to Data URIs for immediate frontend rendering
-            const imageUrls = responseGenAI.generatedImages.map(img => `data:image/jpeg;base64,${img.image.imageBytes}`);
+            // Save Base64 to physical disk (uploads folder) to prevent browser crashing from massive strings
+            const imageUrls = [];
+            
+            // Revisa si existe la carpeta uploads
+            const uploadsDir = path.join(process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-            // Return synchronously because Imagen generation is fast enough via API
+            responseGenAI.generatedImages.forEach((img, index) => {
+                const uniqueName = `studio_${engine.replace(/\s+/g, '')}_${Date.now()}_${index}.jpg`;
+                const finalPath = path.join(uploadsDir, uniqueName);
+                // Extraer los bytes en crudo desde el base64 de google y guardarlo
+                const buffer = Buffer.from(img.image.imageBytes, 'base64');
+                fs.writeFileSync(finalPath, buffer);
+                imageUrls.push(`${process.env.PUBLIC_URL || ''}/media/${uniqueName}`);
+            });
+
+            // Return synchronously with the public URLs so the UI handles them gently
             return res.status(200).json({ 
                 status: 'succeed', 
                 job_id: "google_image_" + Date.now(),

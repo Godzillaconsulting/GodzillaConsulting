@@ -77,7 +77,8 @@ app.use(cors({
         }
     },
     methods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
 
 

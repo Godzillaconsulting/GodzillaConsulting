@@ -34,7 +34,7 @@ const Paquetes = () => {
  {
  id: 3,
  title:'Expansión',
- price:'$29,900',
+ price:'$29,500',
  period:'al mes',
  highlighted: true,
  features: ['Todo lo del Nivel Esencial','Tráfico Bilingüe (Ads Meta/Google)','Landing Page de Alta Conversión'
@@ -45,7 +45,7 @@ const Paquetes = () => {
  {
  id: 4,
  title:'Élite',
- price:'$39,500',
+ price:'$45,900',
  period:'al mes',
  highlighted: false,
  features: ['Estrategia Godfather Completa','Reactivación de Base de Datos','Consultoría Mensual y Cierre'

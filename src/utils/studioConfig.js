@@ -248,7 +248,7 @@ export function injectSectionDefaults(nodeId, draftSource) {
           combinedData.heroDisclaimer = 'Si en <span className="font-bold text-[#CC0000] not-italic">30 días hábiles</span>, no generamos ningún lead, te devolvemos el <span className="font-bold text-[#CC0000] not-italic">100%</span> de tu dinero.';
           combinedData.cardTitle = 'NIVEL EXPANSIÓN';
           combinedData.planTarget = 'Ideal para el que ya tiene experiencia, pero teme tirar el dinero a la basura.';
-          combinedData.planPrice = '$29,900';
+          combinedData.planPrice = '$29,500';
           combinedData.planPeriod = 'al mes';
           combinedData.planFeaturesExtended = [
               { title: 'Todo lo que incluye Posicionamiento Social', desc: '• Agente IA (Web + WhatsApp)\n• Respuestas en menos de 5 segundos 24/7\n• Captura de datos automática' },
@@ -264,11 +264,11 @@ export function injectSectionDefaults(nodeId, draftSource) {
   if (nodeId === 'paquete-elite') {
       if (combinedData.heroTitle === undefined) {
           combinedData.heroTopText = 'Organiza un sistema que capture, atienda y organice a tus prospectos sin que tú muevas un dedo';
-          combinedData.heroTitle = 'NIVEL\nÉLITE';
-          combinedData.heroDisclaimer = 'Si no aumentamos tus citas en un <span className="font-bold text-[#CC0000] not-italic">20% en 90 días hábiles</span>, trabajaremos <span className="font-bold text-[#CC0000] not-italic">gratis</span>.';
+          combinedData.heroTitle = 'ÉLITE';
+          combinedData.heroDisclaimer = 'Si no aumentamos tus citas en un <span class="font-bold text-white not-italic">20% en 90 días hábiles</span>, trabajaremos <span class="font-bold text-white not-italic">gratis</span>.';
           combinedData.cardTitle = 'NIVEL ÉLITE';
           combinedData.planTarget = 'Ideal para el que pierde millones por el caos y la falta de datos.';
-          combinedData.planPrice = '$39,500';
+          combinedData.planPrice = '$49,500';
           combinedData.planPeriod = 'al mes';
           combinedData.planFeaturesExtended = [
               { title: 'Estrategia Godfather completa', desc: '' },
@@ -284,15 +284,15 @@ export function injectSectionDefaults(nodeId, draftSource) {
   if (nodeId === 'paquete-control-ia') {
       if (combinedData.heroTitle === undefined) {
           combinedData.heroTopText = 'Atiende, califica y agenda en automático las 24 horas del día';
-          combinedData.heroTitle = 'CONTROL\nIA';
-          combinedData.heroDisclaimer = 'Si no está funcionando en <span className="font-bold text-[#CC0000] not-italic">7 días</span>, el siguiente mes es <span className="font-bold text-[#CC0000] not-italic">GRATIS</span>.';
+          combinedData.heroTitle = 'Control IA';
+          combinedData.heroDisclaimer = 'Si en <span class="font-bold text-white not-italic">7 días hábiles</span>, tu sistema no está instalado, respondiendo mensajes y capturando datos de tus clientes automáticamente, te regalamos el siguiente mes de servicio completamente <span class="font-bold text-white not-italic">GRATIS</span>.';
           combinedData.cardTitle = 'CONTROL IA';
-          combinedData.planTarget = 'Ideal para quienes pierden ventas por demorar en responder.';
+          combinedData.planTarget = 'Ideal para el que no confía y se ha vuelto esclavo de su propio éxito';
           combinedData.planPrice = '$7,900';
           combinedData.planPeriod = 'al mes';
           combinedData.planFeaturesExtended = [
-              { title: 'Agente IA (Web + WhatsApp)', desc: '' },
-              { title: 'Respuesta en menos de 5 segundos 24/7', desc: '' },
+              { title: 'Agente IA (Web + WhatsApp):', desc: 'Configuración de cerebro digital para\nresponder dudas frecuentes y horarios 24/7' },
+              { title: 'Respuesta en menos de 5 segundos\n24 horas al día, 7 días a la semana', desc: '' },
               { title: 'Captura de datos automática', desc: '' }
           ];
           combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
@@ -304,16 +304,17 @@ export function injectSectionDefaults(nodeId, draftSource) {
   if (nodeId === 'paquete-posicionamiento-social') {
       if (combinedData.heroTitle === undefined) {
           combinedData.heroTopText = 'Posiciona tu marca en donde tu audiencia realmente interactúa';
-          combinedData.heroTitle = 'POSICIONAMIENTO\nSOCIAL';
-          combinedData.heroDisclaimer = 'Si en <span className="font-bold text-[#CC0000] not-italic">14 días</span> no ves un incremento real en el engagement, el siguiente mes es <span className="font-bold text-[#CC0000] not-italic">GRATIS</span>.';
+          combinedData.heroTitle = 'Posicionamiento social';
+          combinedData.heroDisclaimer = 'Si en <span class="font-bold text-white not-italic">14 días</span> no ves un incremento real en el engagement y la calidad de tu marca, el siguiente mes es <span class="font-bold text-[#CC0000] not-italic">GRATIS</span>.';
           combinedData.cardTitle = 'POSICIONAMIENTO SOCIAL';
-          combinedData.planTarget = 'Ideal para marcas que necesitan contenido constante de alta calidad.';
+          combinedData.planTarget = 'Ideal para negocios invisibles que buscan generar contenido en redes en demanda';
           combinedData.planPrice = '$7,900';
           combinedData.planPeriod = 'al mes';
           combinedData.planFeaturesExtended = [
               { title: 'Estrategia de Contenido Omnicanal', desc: '' },
               { title: 'Copywriting de Respuesta Directa', desc: '' },
-              { title: 'Community Management', desc: '' }
+              { title: 'Community Management', desc: '' },
+              { title: 'Growth Hacking Orgánico', desc: '' }
           ];
           combinedData.guaranteeTitle = 'GARANTÍA DE SATISFACCIÓN';
           combinedData.guaranteeBadge = 'Resultados garantizados 100%';

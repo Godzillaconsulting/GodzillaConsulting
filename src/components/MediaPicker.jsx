@@ -37,7 +37,14 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
     const fetchMedia = async () => {
         try {
-            const r = await fetch(`${API}/api/media`);
+            // Anti-cache total: Headers estrictos
+            const r = await fetch(`${API}/api/media`, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
             const d = await r.json();
             setMedia(d);
         } catch (e) {

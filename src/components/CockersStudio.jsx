@@ -206,8 +206,10 @@ export default function CockersStudio({ adminProfile }) {
                 }
             };
 
-            // TRINITY BLASTER MODE: Si es imagen lanzamos 3 motores fotográficos puros
-            const enginesToRun = genMode === 'video' ? [builderData.model] : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
+            // TRINITY BLASTER MODE: 3 Motores Simultáneos SIEMPRE, sin importar si es imagen o video
+            const enginesToRun = genMode === 'video' 
+                ? ['Veo 3.1 - Fast', 'Kling 3.0', 'Sora'] 
+                : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
             const promises = enginesToRun.map(async (engineName) => {
                 const updatedConfig = { ...builderData, refImage: refImage };
@@ -422,21 +424,7 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         )}
 
-                        {genMode === 'video' && (
-                            <div className="relative group/model mb-4">
-                                <select 
-                                    value={builderData.model} 
-                                    onChange={e => {
-                                        setBuilderData({...builderData, model: e.target.value});
-                                    }}
-                                    className="w-full appearance-none bg-[#111110] border border-neutral-800 hover:border-neutral-600 outline-none text-sm font-bold text-white rounded-2xl p-4 pr-10 cursor-pointer shadow-inner transition-colors"
-                                >
-                                    <option value="Veo 3.1 - Fast">🚀 Veo 3.1 - Fast (Generación Única)</option>
-                                    <option value="Kling 3.0">🎬 Kling 3.0 HD (Generación Única)</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">▼</div>
-                            </div>
-                        )}
+
 
                         {/* YouTube Video URL Input */}
                         <div className="mt-4 pt-4 border-t border-white/5">
@@ -581,7 +569,7 @@ export default function CockersStudio({ adminProfile }) {
                         <div className="w-16 h-16 border-4 border-neutral-700 border-t-white rounded-full animate-spin mb-6 relative flex items-center justify-center">
                             <span className="absolute text-[10px] font-bold text-white mt-1.5">{renderProgress > 0 ? `${renderProgress}%` : ''}</span>
                         </div>
-                        <p className="text-lg font-bold text-white tracking-widest">{genMode === 'imagen' ? 'The Trinity Engines are' : builderData.model + ' is'} rendering...</p>
+                        <p className="text-lg font-bold text-white tracking-widest">The Trinity Engines are rendering...</p>
                         {renderProgress > 0 && <p className="text-[#CC0000] font-black tracking-widest text-sm mt-2">{renderProgress}% Completado</p>}
                         <p className="text-xs text-neutral-500 mt-2">Patience, director.</p>
                     </div>

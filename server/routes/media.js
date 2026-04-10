@@ -207,6 +207,7 @@ router.get('/file/:id', async (req, res) => {
 // ─── GET /api/media (Lista de Galería para Admin Studio) ────────────────────
 router.get('/', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         const result = await pool.query('SELECT id, filename, mimetype, size, created_at FROM media_storage ORDER BY created_at DESC');
 
         const images = result.rows.map(row => ({

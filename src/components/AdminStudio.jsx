@@ -286,15 +286,20 @@ export default function AdminStudio() {
  try {
  const base = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
  const token = localStorage.getItem('adminToken');
- await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, {
+ const res = await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, {
  method:'PUT', headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
  body: JSON.stringify({ draft_data: draftData })
  });
+ if (!res.ok) {
+     if (res.status === 401 || res.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
+     throw new Error('El servidor rechazó los cambios.');
+ }
  await fetchNodes();
  setHasUnsavedChanges(false);
- alert('✅ Borrador guardado. Ahora presiona 🚀 Emisión Pública para verlo en el sitio.');
- } catch { alert('❌ Error al guardar'); }
- finally { setSaving(false); }
+ alert('✅ Borrador guardado. Ahora presiona 🚀 Actualizar cambios para verlo en el sitio.');
+ } catch (err) { 
+    alert(`❌ Error al guardar: ${err.message}`); 
+ } finally { setSaving(false); }
  };
 
  const handlePublish = async () => {
@@ -303,12 +308,20 @@ export default function AdminStudio() {
  const token = localStorage.getItem('adminToken');
  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
  try {
- await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers, body: JSON.stringify({ draft_data: draftData }) });
- await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers });
+ const resDraft = await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers, body: JSON.stringify({ draft_data: draftData }) });
+ if (!resDraft.ok) {
+     if (resDraft.status === 401 || resDraft.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
+     throw new Error('Error guardando el borrador');
+ }
+ const resPub = await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers });
+ if (!resPub.ok) {
+     if (resPub.status === 401 || resPub.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
+     throw new Error('Error aplicando la publicación final');
+ }
  await fetchNodes();
  setShowPublishModal(false);
  alert('🚀 Publicado');
- } catch { alert('❌ Error al publicar'); }
+ } catch (err) { alert(`❌ Error al publicar: ${err.message}`); }
  };
 
   // Oculta nodos legacy y muestra obligatoriamente TODAS las secciones oficiales, existan o no aún en BD
@@ -397,8 +410,8 @@ export default function AdminStudio() {
  <iframe src="https://godzillaconsulting.ai" title="Preview" className="w-full h-[52vh] rounded-xl border border-neutral-700" />
  </div>
  <div className="flex justify-end gap-3 p-5 border-t border-neutral-700">
- <button onClick={() => setShowPublishModal(false)} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 rounded-full font-bold text-sm transition">← Cancelar</button>
- <button onClick={handlePublish} className="px-7 py-2.5 bg-[#CC0000] hover:bg-red-600 text-white rounded-full font-black text-sm transition shadow-[0_4px_20px_rgba(204,0,0,0.5)]">🚀 Confirmar y Publicar</button>
+ <button onClick={() => setShowPublishModal(false)} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 rounded-full font-bold text-sm transition">Cancelar</button>
+ <button onClick={handlePublish} className="px-7 py-2.5 bg-[#CC0000] hover:bg-red-600 text-white rounded-full font-black text-sm transition shadow-[0_4px_20px_rgba(204,0,0,0.5)]">Confirmar y Publicar</button>
  </div>
  </div>
  </div>

@@ -152,7 +152,6 @@ export default function BugTrackerUI() {
                     </div>
                 )}
             </div>
-            </div>
             
             {/* Modal de Detalle */}
             {selectedBug && (

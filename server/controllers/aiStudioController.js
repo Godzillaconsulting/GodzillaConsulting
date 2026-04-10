@@ -144,8 +144,8 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "No se pudo generar video: " + err.message });
             }
         } else {
-            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Imagen 3.0)
-            const targetModel = engine.includes('Imagen 3.0') ? 'imagen-3.0-generate-001' : 'imagen-3.0-fast-generate-001';
+            // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
+            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';
             console.log(`[STUDIO] Generando Foto Comercial con Google GenAI (${targetModel}). Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -154,21 +154,29 @@ export const generateRenderJob = async (req, res) => {
 
             const aiImg = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             
-            // Map React aspect ratios to Google Imagen aspect ratios
-            const googleRatioImg = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' }[config.aspect_ratio] || '16:9';
-
-            const responseGenAI = await aiImg.models.generateImages({
+            // Generar 3 imágenes en paralelo simulando `numberOfImages: 3` ya que generateContent a veces devuelve 1
+            const tasks = Array.from({ length: 3 }, () => aiImg.models.generateContent({
                 model: targetModel,
-                prompt: optimizedPrompt || "A sleek cinematic render for an ad",
+                contents: optimizedPrompt || "A sleek cinematic render for an ad",
                 config: {
-                    numberOfImages: 3,
-                    outputMimeType: 'image/jpeg',
-                    aspectRatio: googleRatioImg
+                    responseModalities: ["IMAGE"]
+                }
+            }));
+
+            const responsesGenAI = await Promise.allSettled(tasks);
+            
+            // Filtrar las tareas exitosas y extraer la base64
+            const generatedImages = [];
+            responsesGenAI.forEach(result => {
+                if(result.status === 'fulfilled') {
+                    const parts = result.value.candidates?.[0]?.content?.parts;
+                    const imgPart = parts ? parts.find(p => p.inlineData) : null;
+                    if(imgPart) generatedImages.push(imgPart.inlineData.data);
                 }
             });
 
-            if (!responseGenAI.generatedImages || responseGenAI.generatedImages.length === 0) {
-                 return res.status(500).json({ error: "Google API no devolvió ninguna imagen." });
+            if (generatedImages.length === 0) {
+                 return res.status(500).json({ error: "Google API no devolvió ninguna imagen tras 3 intentos." });
             }
 
             // Save Base64 to physical disk (uploads folder) to prevent browser crashing from massive strings
@@ -182,12 +190,12 @@ export const generateRenderJob = async (req, res) => {
             const uploadsDir = path.join(__dirnameCurrent, '..', 'uploads');
             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-            responseGenAI.generatedImages.forEach((img, index) => {
+            generatedImages.forEach((base64Bytes, index) => {
                 const safeEngineName = engine.replace(/[^a-zA-Z0-9]/g, '');
                 const uniqueName = `studio_${safeEngineName}_${Date.now()}_${index}.jpg`;
                 const finalPath = path.join(uploadsDir, uniqueName);
                 // Extraer los bytes en crudo desde el base64 de google y guardarlo
-                const buffer = Buffer.from(img.image.imageBytes, 'base64');
+                const buffer = Buffer.from(base64Bytes, 'base64');
                 fs.writeFileSync(finalPath, buffer);
                 imageUrls.push(`${process.env.PUBLIC_URL || ''}/api/media/${uniqueName}`);
             });
@@ -228,11 +236,18 @@ export const checkRenderStatus = async (req, res) => {
                 const response = await fetch(`http://127.0.0.1:5000/sora-status/${taskId}`);
                 const data = await response.json();
                 if (data.status === 'succeed') {
+                    let soraUrl = data.result_url;
+                    if (soraUrl.startsWith('/outputs/')) {
+                        soraUrl = `/api/sora/media/${soraUrl.replace('/outputs/', '')}`;
+                    } else if (!soraUrl.startsWith('http') && !soraUrl.startsWith('/api')) {
+                        soraUrl = `/api/sora/media/${soraUrl}`;
+                    }
+
                     return res.status(200).json({
                         task_id: taskId,
                         status: 'succeed',
                         progress: 100,
-                        result_url: data.result_url
+                        result_url: soraUrl
                     });
                 } else if (data.status === 'failed') {
                     return res.status(400).json({ error: data.error });

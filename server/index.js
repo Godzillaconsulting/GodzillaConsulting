@@ -271,8 +271,9 @@ app.get('/api/sora/media/:filename', async (req, res) => {
 
 
 // Servir archivos subidos como estáticos en /media/* (y también /api/media/ para compatibilidad con Vite)
-app.use('/media', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/media', express.static(path.join(__dirname, 'uploads')));
+// Cloudflare CDN Cache: 1h para estabilizar conexiones recurrentes simultaneas
+app.use('/media', express.static(path.join(__dirname, 'uploads'), { maxAge: '1h' }));
+app.use('/api/media', express.static(path.join(__dirname, 'uploads'), { maxAge: '1h' }));
 
 // Configuración para servir el Front-End compilado (React/Vite)
 // Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)
@@ -342,10 +343,17 @@ app.get('*', (req, res) => {
 // 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================
 if (!process.env.VERCEL) {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
         console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
         console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
     });
+    
+    // 🔥 ESTABILIZADOR CLOUDFLARE TUNNEL (Previene Error 502 Bad Gateway)
+    // Cloudflare usa un timeout de 60s. Node usa 5s. Si no se ajusta, 
+    // Node cierra el socket HTTP silenciosamente mientras Cloudflare intenta re-usarlo para 
+    // pedir una imagen pesada, causando una caída abrupta de conexión.
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
 
     // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo local/PM2
     // Usa Puppeteer/Chrome para mantener sesión activa 24/7

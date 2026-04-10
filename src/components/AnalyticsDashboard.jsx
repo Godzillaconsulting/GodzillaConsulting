@@ -512,18 +512,6 @@ const SocialFunnelDeepDive = ({ network, onClose }) => {
                                     ))
                                 )}
                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-white line-clamp-1">{post.title}</span>
-                                                <span className="text-[10px] text-[#00F0FF]">{post.views} Vistas</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-xs font-bold text-neutral-500">
-                                            <div className="flex items-center gap-1.5 hover:text-white"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
-                                            <div className="flex items-center gap-1.5 hover:text-white"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
-                                        </div>
-                                    </a>
-                                ))}
-                            </div>
                         </div>
 
                         {/* Zone 3: Peak Hours Heatmap mock */}

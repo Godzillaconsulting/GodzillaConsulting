@@ -308,7 +308,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
 router.get('/proxy-posts', requireAdmin, async (req, res) => {
     const { network } = req.query;
     try {
-        if (network === 'fb' || network === 'ig' || network === 'ig_reels' || network === 'messenger') {
+        if (network === 'fb' || network === 'messenger') {
             const token = process.env.PAGE_ACCESS_TOKEN;
             if (!token) return res.json({ success: false, error: 'NO_TOKEN' });
 
@@ -319,13 +319,37 @@ router.get('/proxy-posts', requireAdmin, async (req, res) => {
             if (data.error) {
                 return res.json({ success: false, error: data.error.message, code: data.error.code });
             }
-            const cleanPosts = data.data.map(p => ({
+            const cleanPosts = (data.data || []).map(p => ({
                 id: p.id,
-                title: p.message || 'Contenido Multimedia/Reel',
-                views: 'Alcance Real',
+                title: p.message || 'Contenido FB',
+                views: 'Alcance Real FB',
                 likes: p.likes?.summary?.total_count || 0,
                 comments: p.comments?.summary?.total_count || 0,
-                url: p.permalink_url || 'https://instagram.com/godzilla.consulting'
+                url: p.permalink_url || 'https://facebook.com/godzilla.consulting'
+            }));
+            return res.json({ success: true, posts: cleanPosts });
+        } 
+
+        if (network === 'ig' || network === 'ig_reels') {
+            const token = process.env.PAGE_ACCESS_TOKEN;
+            if (!token) return res.json({ success: false, error: 'NO_TOKEN' });
+
+            const graphUrl = `https://graph.facebook.com/v19.0/me?fields=instagram_business_account{media.limit(5){id,caption,permalink,like_count,comments_count}}&access_token=${token}`;
+            const response = await fetch(graphUrl);
+            const data = await response.json();
+            
+            if (data.error) {
+                return res.json({ success: false, error: data.error.message, code: data.error.code });
+            }
+            
+            const igMedia = data.instagram_business_account?.media?.data || [];
+            const cleanPosts = igMedia.map(p => ({
+                id: p.id,
+                title: p.caption || 'Reel / Post IG',
+                views: 'Alcance Orgánico IG',
+                likes: p.like_count || 0,
+                comments: p.comments_count || 0,
+                url: p.permalink || 'https://instagram.com/godzilla.consulting'
             }));
             return res.json({ success: true, posts: cleanPosts });
         } 

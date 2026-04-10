@@ -326,50 +326,10 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
     
     CHANNELS, WIDTH, HEIGHT = 3, 512, 512 # Set 512 for optimal CPU and memory usage
     
-    if c_engine is None:
-        print("[WARNING] Ejecutando MOCK SEQUENCE. No se detectó motor C++. Usa g++ para compilar.")
-        for i in range(1, steps + 1):
-            await asyncio.sleep(0.1)
-            if i % 10 == 0 or i == steps:
-                print(f"[Sampling {i}/{steps}] Mapeando en memoria RAM pura (riesgo GC)...")
-                await sio.emit("render_progress", {
-                    "task_id": task_id, 
-                    "status": "RENDERING", 
-                    "msg": f"Sampling step {i}/{steps}. (MOCK MODE).", 
-                    "step": i,
-                    "max_steps": steps
-                })
-        
-        final_url = save_tensor_to_disk(task_id, mode, seed)
-        LOCAL_TASKS_DB[task_id] = {"status": "DONE", "media_url": final_url}
-        await sio.emit("render_progress", {"task_id": task_id, "status": "DONE", "msg": "Generación Simulada Terminada.", "media_url": final_url})
-        return
-        
     # Registrar inicio 
     LOCAL_TASKS_DB[task_id] = {"status": "RUNNING", "msg": "Inicializando Tensor", "progress": 0}
-    # FLUJO IDEAL C++ CON PUNTEROS DOBLES
-    # 1. Initialize Doubly Linked List in native C++
-    timeline_ptr = c_engine.CreateTimeline()
-    
-    try:
-        for i in range(1, steps + 1):
-            await asyncio.sleep(0.05)
-            # Extracción del buffer simulada para C++ Pipeline
-            raw_c_tensor = generate_frame_tensor(CHANNELS, WIDTH, HEIGHT)
-            c_engine.AppendFrameToTimeline(timeline_ptr, raw_c_tensor, CHANNELS, WIDTH, HEIGHT)
-            nodes_count = c_engine.GetTimelineFrameCount(timeline_ptr)
-            
-            if i % 10 == 0 or i == steps:
-                print(f"[Sampling {i}/{steps}] Active Double-Linked Nodes: {nodes_count}")
-                await sio.emit("render_progress", {
-                    "task_id": task_id, 
-                    "status": "RENDERING", 
-                    "msg": f"C++ Tensor mapped {i}/{steps}. VRAM Guard Active.", 
-                    "step": i,
-                    "max_steps": steps
-                })
-                LOCAL_TASKS_DB[task_id] = {"status": "RUNNING", "progress": int((i/steps)*100)}
         
+    try:
         # Pytorch Real Execution
         final_ai_image = None
         final_ai_frames = None
@@ -434,10 +394,6 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
     except Exception as e:
         LOCAL_TASKS_DB[task_id] = {"status": "ERROR", "error": str(e)}
         raise e
-    finally:
-        # 5. Crucial: The custom Destructors trigger here destroying Double Linked Pointers row by row
-        c_engine.DestroyTimeline(timeline_ptr)
-        print("[GC OVERRIDE] C++ memory explicitly destroyed. Preventing generic Python Memory Leaks.\n")
 
 @app.post("/sora-start")
 async def sora_start(payload: dict):
@@ -488,7 +444,7 @@ async def get_sora_history():
         for r in db:
             tid = r["task_id"]
             mode = r.get("mode", "photo")
-            ext = ".mp4" if mode == "video" else ".jpg"
+            ext = ".mp4" if mode == "video" else ".png"
             file_path = os.path.join(OUTPUTS_DIR, f"render_{tid}{ext}")
             
             if os.path.exists(file_path):

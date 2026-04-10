@@ -175,16 +175,21 @@ export const generateRenderJob = async (req, res) => {
             const imageUrls = [];
             
             // Revisa si existe la carpeta uploads
-            const uploadsDir = path.join(process.cwd(), 'uploads');
+            import { fileURLToPath } from 'url';
+            import { dirname } from 'path';
+            const __filenameCurrent = fileURLToPath(import.meta.url);
+            const __dirnameCurrent = dirname(__filenameCurrent);
+            const uploadsDir = path.join(__dirnameCurrent, '..', 'uploads');
             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
             responseGenAI.generatedImages.forEach((img, index) => {
-                const uniqueName = `studio_${engine.replace(/\s+/g, '')}_${Date.now()}_${index}.jpg`;
+                const safeEngineName = engine.replace(/[^a-zA-Z0-9]/g, '');
+                const uniqueName = `studio_${safeEngineName}_${Date.now()}_${index}.jpg`;
                 const finalPath = path.join(uploadsDir, uniqueName);
                 // Extraer los bytes en crudo desde el base64 de google y guardarlo
                 const buffer = Buffer.from(img.image.imageBytes, 'base64');
                 fs.writeFileSync(finalPath, buffer);
-                imageUrls.push(`${process.env.PUBLIC_URL || ''}/media/${uniqueName}`);
+                imageUrls.push(`${process.env.PUBLIC_URL || ''}/api/media/${uniqueName}`);
             });
 
             // Return synchronously with the public URLs so the UI handles them gently

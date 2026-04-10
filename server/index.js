@@ -270,8 +270,9 @@ app.get('/api/sora/media/:filename', async (req, res) => {
 });
 
 
-// Servir archivos subidos como estáticos en /media/*
+// Servir archivos subidos como estáticos en /media/* (y también /api/media/ para compatibilidad con Vite)
 app.use('/media', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/media', express.static(path.join(__dirname, 'uploads')));
 
 // Configuración para servir el Front-End compilado (React/Vite)
 // Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)

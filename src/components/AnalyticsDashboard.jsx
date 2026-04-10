@@ -172,300 +172,41 @@ export default function AnalyticsDashboard() {
                                             <span className="text-[10px] text-neutral-400 font-bold">{bot.cpuPercent}%</span>
                                         </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-neutral-500">Memoria RAM</span>
-                                            <span className="text-neutral-300 font-bold">{bot.memoryMb} MB</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-neutral-500">Reinicios (PM2)</span>
-                                            <span className="text-neutral-300 font-bold">{bot.restarts}</span>
-                                        </div>
-                                        {targetOrigin !== 'N/A' && (
-                                            <div className="flex justify-between items-center text-xs mt-3 pt-3 border-t border-neutral-800/50">
-                                                <span className="text-neutral-500 flex items-center gap-1.5">
-                                                    <Activity size={12} className="text-purple-500"/>
-                                                    Citas Cerradas
-                                                </span>
-                                                <span className="text-purple-400 font-black">{leadsGenerados}</span>
-                                            </div>
-                                        )}
+                                                                <div className="space-y-3 min-h-[150px]">
+                                {loadingPosts ? (
+                                    <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-500 py-6">
+                                        <div className="w-6 h-6 border-2 border-[#00F0FF] border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-xs font-bold uppercase tracking-widest text-[#00F0FF]">Extrayendo Red...</span>
                                     </div>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="col-span-1 lg:col-span-4 p-8 text-center text-neutral-600 font-bold border border-dashed border-neutral-800 rounded-2xl">
-                            Esperando telemetría de los bots...
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Main Graphs Area */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
-                
-                {/* Traffic Flow Sankey Chart */}
-                <div className="xl:col-span-2 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative animate-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#FF0055] to-transparent opacity-20"></div>
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                        <Activity size={20} className="text-[#CC0000]" />
-                        Matriz de Conversión (Sankey Flow)
-                    </h3>
-                    
-                    {data.sankeyData && data.sankeyData.length > 2 ? (
-                        <div className="w-full h-[400px] bg-transparent rounded-2xl">
-                             <GoogleChart
-                                chartType="Sankey"
-                                width="100%"
-                                height="100%"
-                                data={data.sankeyData}
-                                options={sankeyOptions}
-                             />
-                        </div>
-                    ) : (
-                        <div className="w-full h-[400px] flex items-center justify-center border border-dashed border-neutral-800 rounded-2xl bg-[#111]">
-                            <p className="text-neutral-500 font-bold uppercase tracking-widest text-sm text-center">Falta volumen de tráfico para mapear el flujo</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Pixel Events Breakdown */}
-                <div className="xl:col-span-1 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                        <Zap size={20} className="text-yellow-500" />
-                        Trigger Events (Godzilla Pixel)
-                    </h3>
-                    
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4">
-                        {data.pixelEvents && data.pixelEvents.length > 0 ? (
-                            data.pixelEvents.map((ev, i) => (
-                                <div key={i} className="bg-[#161615]/50 backdrop-blur-md rounded-xl p-4 border border-white/5 flex justify-between items-center group hover:border-[#FF0055]/50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-neutral-500 group-hover:text-white transition-colors">
-                                            <MousePointerClick size={16} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-neutral-300 capitalize">{ev.name.replace(/_/g, ' ')}</span>
-                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Actividad</span>
-                                        </div>
+                                ) : apiError ? (
+                                    <div className="bg-[#111]/60 backdrop-blur-md border border-[#FF0055]/30 p-4 rounded-xl text-center shadow-[0_0_15px_rgba(255,0,85,0.1)]">
+                                        <p className="text-sm text-[#FF0055] font-bold pb-1">⚠️ Conexión API Denegada</p>
+                                        <p className="text-[11px] text-neutral-400 leading-snug">{apiError}</p>
                                     </div>
-                                    <span className="font-black text-xl text-white">{ev.count}</span>
-                                </div>
-                            ))
-                        ) : (
-                             <p className="text-center text-neutral-600 mt-10">No hay señales capturadas hoy.</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Performance Over Time (Area Chart) & Table */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-                
-                {/* Evolution Graph */}
-                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
-                    <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-3">
-                        <ArrowUpRight size={20} className="text-blue-500" />
-                        Tránsito de los Últimos 7 Días
-                    </h3>
-                    <div className="w-full h-[300px]">
-                        {data.webGraphData && data.webGraphData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={data.webGraphData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.4}/>
-                                            <stop offset="95%" stopColor="#00F0FF" stopOpacity={0}/>
-                                        </linearGradient>
-                                        <linearGradient id="colorInt" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#FF0055" stopOpacity={0.4}/>
-                                            <stop offset="95%" stopColor="#FF0055" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                    <XAxis dataKey="date" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                    <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                    <RechartsTooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="views" name="Vistas" stroke="#00F0FF" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                                    <Area type="monotone" dataKey="interactions" name="Eventos" stroke="#FF0055" strokeWidth={3} fillOpacity={1} fill="url(#colorInt)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="w-full h-full flex justify-center items-center">
-                                <p className="text-neutral-600 font-bold">Analizando metadatos...</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Sources Table */}
-                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-700 delay-[250ms] fill-mode-both">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                        <Database size={20} className="text-green-500" />
-                        Desglose de Orígenes
-                    </h3>
-                    
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-neutral-800/50">
-                                    <th className="pb-4 text-xs font-black text-neutral-500 uppercase tracking-widest pl-2">Fuente</th>
-                                    <th className="pb-4 text-xs font-black text-neutral-500 uppercase tracking-widest text-center">Visitas</th>
-                                    <th className="pb-4 text-xs font-black text-neutral-500 uppercase tracking-widest text-center">Leads</th>
-                                    <th className="pb-4 text-xs font-black text-neutral-500 uppercase tracking-widest text-right pr-2">Costo (CAC)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {data.trafficSources && data.trafficSources.map((src, idx) => (
-                                    <tr key={idx} onClick={() => setSelectedNetwork(src)} className="group hover:bg-[#161615]/80 cursor-pointer transition-colors relative overflow-hidden">
-                                        <td className="py-4 pl-2">
+                                ) : realPosts.length === 0 ? (
+                                    <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl text-center">
+                                        <p className="text-xs text-neutral-500 font-bold uppercase">No hay contenido recuperable por API</p>
+                                    </div>
+                                ) : (
+                                    realPosts.map((post, index) => (
+                                        <a href={post.url} target="_blank" rel="noopener noreferrer" key={post.id || index} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 hover:bg-[#161615] transition-all flex justify-between items-center cursor-pointer group shadow-sm">
                                             <div className="flex items-center gap-3">
-                                                <span className="text-xl bg-neutral-900 w-10 h-10 flex items-center justify-center rounded-xl">{src.emoji}</span>
-                                                <span className="font-bold text-neutral-300 group-hover:text-white transition-colors">{src.name}</span>
+                                                <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-500 group-hover:text-[#FF0055] transition-colors relative overflow-hidden">
+                                                    <div className="absolute inset-0 bg-[#FF0055]/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                                    <PlayCircle size={18} className="relative z-10" />
+                                                </div>
+                                                <div className="flex flex-col flex-1 max-w-[140px] lg:max-w-[200px]">
+                                                    <span className="text-sm font-bold text-white line-clamp-1 group-hover:underline">{post.title}</span>
+                                                    <span className="text-[10px] text-[#00F0FF] tracking-widest uppercase">{post.views}</span>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td className="py-4 text-center font-black text-neutral-400 group-hover:text-blue-500 transition-colors">
-                                            {src.visitors || 0}
-                                        </td>
-                                        <td className="py-4 text-center font-black text-neutral-400 group-hover:text-green-500 transition-colors">
-                                            {src.leads}
-                                        </td>
-                                        <td className="py-4 text-right pr-2">
-                                            <span className="text-xs font-bold bg-neutral-900/50 backdrop-blur-md border border-white/5 text-neutral-400 px-3 py-1.5 rounded-lg group-hover:bg-[#FF0055]/10 group-hover:text-[#FF0055] group-hover:border-[#FF0055]/30 transition-all">
-                                                {src.cac}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-            </div>
-            {selectedNetwork && <SocialFunnelDeepDive network={selectedNetwork} onClose={() => setSelectedNetwork(null)} />}
-        </div>
-    );
-}
-
-const SocialFunnelDeepDive = ({ network, onClose }) => {
-    // Dynamic content generator based on network ID
-    const isVideo = network.id === 'tiktok' || network.id === 'ig' || network.id === 'ig_reels';
-    
-    // Fake funnel metrics relative to visitors
-    const impressions = (network.visitors || 0) * 12;
-    const views = network.visitors || 0;
-    const clicks = Math.round(views * 0.15);
-    const leads = network.leads !== '-' ? network.leads : Math.round(clicks * 0.2);
-
-    const fakePosts = isVideo ? [
-        { id: 1, title: 'Reel A - Hook Problema B2B', views: '24.5K', likes: 1205, comments: 84 },
-        { id: 2, title: 'Testimonio Cliente IA', views: '18.2K', likes: 980, comments: 45 },
-        { id: 3, title: 'Behind The Scenes - Código', views: '12.1K', likes: 640, comments: 22 }
-    ] : [
-        { id: 1, title: 'Carrusel: 3 Errores de Embudos', views: '8.4K', likes: 310, comments: 18 },
-        { id: 2, title: 'Anuncio: Auditoría Gratuita', views: '5.2K', likes: 125, comments: 5 },
-        { id: 3, title: 'Post: Novedades del Mercado', views: '3.1K', likes: 88, comments: 2 }
-    ];
-
-    const topComments = [
-        { user: '@jare_dev22', txt: 'Bro la iluminación en este reel está brutal 🔥' },
-        { user: '@cfo_latam', txt: '¿Tienen soporte para integración con SAP?' },
-        { user: '@marketing_p', txt: 'Me acabo de registrar, ¡espero la llamada!' },
-        { user: '@hater_01', txt: 'Otra herramienta más de IA...' },
-    ];
-
-    const peakHours = [
-        { hour: '06:00', reach: 200 }, { hour: '09:00', reach: 600 },
-        { hour: '13:00', reach: 1300 }, { hour: '16:00', reach: 850 },
-        { hour: '19:00', reach: 2100 }, { hour: '22:00', reach: 1100 }
-    ];
-
-    return (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-            {/* Backdrop Blur Area */}
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer animate-in fade-in duration-300" 
-                onClick={onClose}
-            ></div>
-
-            {/* Slide Out Panel */}
-            <div className="relative w-full max-w-4xl h-full bg-[#0a0a09]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-500 flex flex-col">
-                
-                {/* Header */}
-                <div className="sticky top-0 z-10 bg-[#0a0a09]/90 backdrop-blur-xl border-b border-white/5 p-6 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <span className="text-4xl bg-[#111] w-14 h-14 flex items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_15px_rgba(255,0,85,0.2)]">
-                            {network.emoji}
-                        </span>
-                        <div>
-                            <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                                Análisis Forense: {network.name}
-                            </h2>
-                            <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mt-1">Conectado a Nodo de Inteligencia Central</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-3 bg-[#161615] hover:bg-[#CC0000] text-neutral-400 hover:text-white rounded-full transition-all">
-                        <X size={20} />
-                    </button>
-                </div>
-
-                <div className="p-6 md:p-10 space-y-10 flex-1">
-
-                    {/* Zone 1: Mini Funnel */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full blur-xl group-hover:bg-blue-500/20"></div>
-                           <Eye className="text-blue-500 mb-2" size={20} />
-                           <span className="text-xl font-black text-white">{impressions.toLocaleString()}</span>
-                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Impresiones</span>
-                        </div>
-                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/10 rounded-bl-full blur-xl group-hover:bg-[#00F0FF]/20"></div>
-                           <Activity className="text-[#00F0FF] mb-2" size={20} />
-                           <span className="text-xl font-black text-white">{views.toLocaleString()}</span>
-                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Vistas a Perfil</span>
-                        </div>
-                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#9D00FF]/10 rounded-bl-full blur-xl group-hover:bg-[#9D00FF]/20"></div>
-                           <MousePointerClick className="text-[#9D00FF] mb-2" size={20} />
-                           <span className="text-xl font-black text-white">{clicks.toLocaleString()}</span>
-                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Clics Salientes</span>
-                        </div>
-                        <div className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-16 h-16 bg-[#00FF66]/10 rounded-bl-full blur-xl group-hover:bg-[#00FF66]/20"></div>
-                           <Target className="text-[#00FF66] mb-2" size={20} />
-                           <span className="text-xl font-black text-white">{leads.toLocaleString()}</span>
-                           <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Conversiones Totales</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Zone 2: Posts Rendimiento */}
-                        <div className="flex flex-col gap-4">
-                            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                                <Share2 size={16} className="text-[#FF0055]" />
-                                Aportes Principales
-                            </h3>
-                            <div className="space-y-3">
-                                {fakePosts.map(post => (
-                                    <a href={network.id === 'tiktok' ? 'https://tiktok.com/@godzillaconsulting' : 'https://instagram.com/godzilla.consulting'} target="_blank" rel="noopener noreferrer" key={post.id} className="bg-[#111]/60 backdrop-blur-md border border-white/5 p-4 rounded-xl hover:border-[#FF0055]/30 hover:bg-[#161615] transition-all flex justify-between items-center cursor-pointer group">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-500">
-                                                <PlayCircle size={18} />
+                                            <div className="flex items-center gap-4 text-xs font-bold text-neutral-500">
+                                                <div className="flex items-center gap-1.5 group-hover:text-white transition-colors"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
+                                                <div className="flex items-center gap-1.5 group-hover:text-white transition-colors"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-white line-clamp-1">{post.title}</span>
-                                                <span className="text-[10px] text-[#00F0FF]">{post.views} Vistas</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-xs font-bold text-neutral-500">
-                                            <div className="flex items-center gap-1.5 hover:text-white"><Heart size={14} className="text-[#FF0055]" />{post.likes}</div>
-                                            <div className="flex items-center gap-1.5 hover:text-white"><MessageSquare size={14} className="text-[#FFEA00]" />{post.comments}</div>
-                                        </div>
-                                    </a>
-                                ))}
+                                        </a>
+                                    ))
+                                )}
                             </div>
                         </div>
 

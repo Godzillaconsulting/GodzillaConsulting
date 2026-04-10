@@ -301,4 +301,69 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/analytics/proxy-posts
+ * Proxy a Meta / TikTok APIs para datos crudos forenses en tiempo real
+ */
+router.get('/proxy-posts', requireAdmin, async (req, res) => {
+    const { network } = req.query;
+    try {
+        if (network === 'fb' || network === 'ig' || network === 'ig_reels' || network === 'messenger') {
+            const token = process.env.PAGE_ACCESS_TOKEN;
+            if (!token) return res.json({ success: false, error: 'NO_TOKEN' });
+
+            const graphUrl = `https://graph.facebook.com/v19.0/me/feed?fields=id,message,permalink_url,created_time,likes.summary(true),comments.summary(true)&limit=5&access_token=${token}`;
+            const response = await fetch(graphUrl);
+            const data = await response.json();
+            
+            if (data.error) {
+                return res.json({ success: false, error: data.error.message, code: data.error.code });
+            }
+            const cleanPosts = data.data.map(p => ({
+                id: p.id,
+                title: p.message || 'Contenido Multimedia/Reel',
+                views: 'Alcance Real',
+                likes: p.likes?.summary?.total_count || 0,
+                comments: p.comments?.summary?.total_count || 0,
+                url: p.permalink_url || 'https://instagram.com/godzilla.consulting'
+            }));
+            return res.json({ success: true, posts: cleanPosts });
+        } 
+        
+        if (network === 'tiktok') {
+            const token = process.env.TIKTOK_ACCESS_TOKEN;
+            if (!token) return res.json({ success: false, error: 'NO_TOKEN' });
+            
+            const response = await fetch(`https://open.tiktokapis.com/v2/video/list/?fields=id,title,share_url,like_count,comment_count,view_count`, {
+                method: 'POST', // TikTok v2 video/list relies on POST
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ max_count: 5 })
+            });
+
+            const data = await response.json();
+            if (data.error || !data.data) {
+                return res.json({ success: false, error: data.error?.message || 'Token TikTok caducado o Sandbox' });
+            }
+            const cleanPosts = (data.data.videos || []).map(v => ({
+                id: v.id,
+                title: v.title || 'Video de TikTok',
+                views: v.view_count || 0,
+                likes: v.like_count || 0,
+                comments: v.comment_count || 0,
+                url: v.share_url || 'https://tiktok.com/@godzillaconsulting'
+            }));
+            return res.json({ success: true, posts: cleanPosts });
+        }
+
+        // Web Pixel Default fallback return
+        return res.json({ success: false, error: 'Red local o no requiere API Externa' });
+
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 export default router;

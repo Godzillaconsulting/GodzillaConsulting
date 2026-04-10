@@ -195,9 +195,11 @@ export function injectSectionDefaults(nodeId, draftSource) {
   // Inject defaults for Paquetes
 
   if (nodeId === 'paquetes') {
-      if (combinedData.title === undefined) {
-          combinedData.title = 'PAQUETES';
-          combinedData.subtitle = 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.';
+  if (nodeId === 'paquetes') {
+      if (combinedData.title === undefined) combinedData.title = 'PAQUETES';
+      if (combinedData.subtitle === undefined) combinedData.subtitle = 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.';
+      
+      if (!combinedData.elements || combinedData.elements.length === 0) {
           combinedData.elements = [
               {
                   title: 'Posicionamiento Social',

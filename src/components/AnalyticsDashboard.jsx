@@ -353,11 +353,11 @@ const SocialFunnelDeepDive = ({ network, onClose, data }) => {
     // Dynamic content generator based on network ID
     const isVideo = network.id === 'tiktok' || network.id === 'ig' || network.id === 'ig_reels';
     
-    // Fake funnel metrics relative to visitors
-    const impressions = (network.visitors || 0) * 12;
+    // True funnel metrics mapped from DB/API
+    const impressions = network.impressions || 0;
     const views = network.visitors || 0;
-    const clicks = Math.round(views * 0.15);
-    const leads = network.leads !== '-' ? network.leads : Math.round(clicks * 0.2);
+    const clicks = network.clicks || 0;
+    const leads = network.leads !== '-' ? network.leads : 0;
 
     const [realPosts, setRealPosts] = useState([]);
     const [loadingPosts, setLoadingPosts] = useState(true);

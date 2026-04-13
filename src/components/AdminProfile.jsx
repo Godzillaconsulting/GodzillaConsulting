@@ -12,19 +12,57 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const [photoUrl, setPhotoUrl] = useState(profile?.photo_url || '');
     const [personalMsg, setPersonalMsg] = useState({ text: '', type: '' });
 
-    // --- Estado de Tareas Personales (Mock UI) ---
-    const [allTasks, setAllTasks] = useState([
-        { id: 1, title: 'Oscurecer imagen y subir contraste', deadline: 'Hoy 5:00 PM', source: 'Oscar', asignadoA: 'Alex', done: false, why: 'Post Hero para Instagram', references: 'https://pin.it/ejemplo', comments: 'Por favor no olvides quitarle el viñeteado excesivo.' },
-        { id: 2, title: 'Corregir copy Accrual', deadline: 'Mañana AM', source: 'Judith', asignadoA: 'Judith', done: false, why: 'Tiktok de Accrual', references: '', comments: 'Asegúrate de incluir los hashtags.' },
-        { id: 3, title: 'Renderizar video Kling V3 de Cripto', deadline: 'Ayer', source: 'JareG', asignadoA: 'JareG', done: true, why: 'Youtube Shorts', references: '', comments: '' },
-        { id: 4, title: 'Lanzar migración de seguridad', deadline: 'Mañana', source: 'JareG', asignadoA: 'godzilla_admin', done: false, why: 'Protección de plataforma', references: '', comments: 'Urgente.' }
-    ]);
-
-    const myTasks = allTasks.filter(t => t.asignadoA?.toLowerCase() === profile?.username?.toLowerCase());
+    // --- Estado de Tareas Personales (Live DB) ---
+    const [allTasks, setAllTasks] = useState([]);
+    const [myTasks, setMyTasks] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
 
-    const toggleTask = (id) => {
+    const fetchTasks = async () => {
+        const token = localStorage.getItem('adminToken');
+        try {
+            const res = await fetch(`${API}/api/studio/tasks`, { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.tasks) {
+                // Mapear de Postgres a la estructura UI
+                const liveTasks = data.tasks.map(t => ({
+                    id: t.id,
+                    title: t.title,
+                    deadline: t.generation_details?.deadline || 'Sin fecha',
+                    source: t.creator_username || 'Sistema',
+                    asignadoA: t.appointed_username || t.assigned_team || 'Equipo',
+                    done: t.status === 'APPROVED',
+                    why: t.description || 'Objetivo no especificado',
+                    references: t.media_reference || '',
+                    comments: t.generation_details?.technical_brief || ''
+                }));
+                setAllTasks(liveTasks);
+                setMyTasks(liveTasks.filter(t => t.asignadoA?.toLowerCase() === profile?.username?.toLowerCase()));
+            }
+        } catch (e) {
+            console.error('Error fetching tasks', e);
+        }
+    };
+
+    const toggleTask = async (id) => {
+        const tsk = allTasks.find(t => t.id === id);
+        if(!tsk) return;
+        const newStatus = tsk.done ? 'PENDING' : 'APPROVED';
+        
+        // Optimistic UI
         setAllTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+        setMyTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+        if (selectedTask && selectedTask.id === id) setSelectedTask(prev => ({...prev, done: !prev.done}));
+
+        const token = localStorage.getItem('adminToken');
+        try {
+            await fetch(`${API}/api/studio/tasks/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ status: newStatus })
+            });
+        } catch(e) {
+            console.error('Error toggling status', e);
+        }
     };
 
     // --- Estado de IT Bugs (Solo JareG/Dani) ---
@@ -57,8 +95,9 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     };
 
     useEffect(() => {
-        if (subTab === 'tasks' && isIT) {
-            fetchBugs();
+        if (subTab === 'tasks') {
+            fetchTasks();
+            if (isIT) fetchBugs();
         }
     }, [subTab, isIT]);
 

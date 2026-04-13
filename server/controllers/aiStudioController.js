@@ -3,6 +3,10 @@ import { GoogleGenAI } from '@google/genai';
 import pool from '../config/db.js';
 import fs from 'fs';
 import path from 'path';
+import { removeWatermark } from '../utils/videoProcessor.js';
+
+// Cache para manejar los trabajos asincronos de postproduccion de video nativo
+const postProcessJobs = new Map();
 // Genera el JWT riguroso solicitado por la arquitectura de Kling AI 
 function generateKlingAuthToken() {
     const accessKey = process.env.KLING_ACCESS_KEY;
@@ -299,17 +303,63 @@ export const checkRenderStatus = async (req, res) => {
 
         const taskInfo = data.data;
         // taskInfo.task_status enum: 'submitted', 'processing', 'succeed', 'failed'
-        let outputUrl = '';
         if (taskInfo.task_status === 'succeed' && taskInfo.task_result) {
-            // Kling devuelve un array de videos generados
-            outputUrl = taskInfo.task_result.videos[0].url;
+            const rawUrl = taskInfo.task_result.videos[0].url;
+            
+            // Si ya fue limpiado por nosotros
+            if (postProcessJobs.has(taskId)) {
+                const job = postProcessJobs.get(taskId);
+                if (job.status === 'done') {
+                    return res.status(200).json({
+                        task_id: taskId,
+                        status: 'succeed',
+                        progress: 100,
+                        result_url: job.localUrl
+                    });
+                } else if (job.status === 'failed') {
+                    return res.status(400).json({ error: "Fallo durante remocion de marca de agua" });
+                } else {
+                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 99, result_url: '' }); // Aun limpiando
+                }
+            } else {
+                // Iniciar trabajo de FFmpeg Watermark Removal Local
+                postProcessJobs.set(taskId, { status: 'working' });
+                
+                // Fire and Forget async process
+                (async () => {
+                    try {
+                        const mediaDir = 'E:/assets';
+                        if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+
+                        const rawRes = await fetch(rawUrl);
+                        const arrBuf = await rawRes.arrayBuffer();
+                        const buf = Buffer.from(arrBuf);
+                        const rawPath = path.join(mediaDir, `${taskId}_raw.mp4`);
+                        const cleanPath = path.join(mediaDir, `${taskId}_clean.mp4`);
+                        
+                        fs.writeFileSync(rawPath, buf);
+                        
+                        console.log(`[STUDIO] FFMPEG: Borrando marca de agua Kling en ${taskId}...`);
+                        await removeWatermark(rawPath, cleanPath);
+                        
+                        fs.unlinkSync(rawPath);
+                        
+                        postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/media/videos/${taskId}_clean.mp4` });
+                    } catch (err) {
+                        console.error("[STUDIO] Fallo ffmpeg inpainting automático:", err);
+                        postProcessJobs.set(taskId, { status: 'failed' });
+                    }
+                })();
+
+                return res.status(200).json({ task_id: taskId, status: 'processing', progress: 99, result_url: '' });
+            }
         }
 
         return res.status(200).json({
             task_id: taskId,
             status: taskInfo.task_status,
             progress: taskInfo.task_status === 'succeed' ? 100 : 50,
-            result_url: outputUrl
+            result_url: ''
         });
 
     } catch (error) {

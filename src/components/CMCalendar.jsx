@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -15,7 +15,6 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 
 // ─── ROLES ────────────────────────────────────────────────────────────────
-// canAssign: Administradores principales y superadmins.
 const canAssign = (profile) => {
     if (!profile) return false;
     const usr = (profile.username || '').toLowerCase();
@@ -39,24 +38,71 @@ export const getYouTubeId = (url) => {
     return (match && match[2].length === 11) ? match[2] : null;
 };
 
+// ─── API BASE ─────────────────────────────────────────────────────────────
+const getAPI = () => import.meta.env.DEV ? 'http://localhost:3000' : '';
+
+// ─── Mapear evento de DB al shape del cliente ─────────────────────────────
+const mapEvent = (row) => ({
+    id: row.id,
+    title: row.title,
+    platform: row.platform || 'ALL',
+    status: row.status || 'warning',
+    caption: row.caption || '',
+    media_url: row.media_url || '',
+    provider: row.provider || '',
+    start: row.start instanceof Date ? row.start : new Date(row.start_date || row.start),
+    end: row.end instanceof Date ? row.end : new Date(row.end_date || row.end_date || row.start_date || row.start),
+    empresa: row.empresa || 'godzilla',
+    assigned_to: row.assigned_to || '',
+    created_by: row.created_by || '',
+    comments: row.comments || [],
+    is_rescheduled: row.is_rescheduled || false
+});
+
+// ─── ICONOS Y COLORES DE PLATAFORMA ──────────────────────────────────────
+const PLATFORM_META = {
+    facebook:  { icon: '🔵', label: 'FB',      color: '#1877F2', glow: 'rgba(24,119,242,0.4)',  ring: 'border-[#1877F2]' },
+    instagram: { icon: '🟣', label: 'IG',      color: '#E1306C', glow: 'rgba(225,48,108,0.4)',  ring: 'border-[#E1306C]' },
+    tiktok:    { icon: '⚫', label: 'TK',      color: '#00f2ea', glow: 'rgba(0,242,234,0.4)',   ring: 'border-[#00f2ea]' },
+    ALL:       { icon: '🌐', label: 'Multi',   color: '#ffffff', glow: 'rgba(255,255,255,0.2)', ring: 'border-white/30'  },
+};
+
+const STATUS_META = {
+    urgent:  { bg: 'bg-red-500/20',    border: 'border-red-500',    text: 'text-red-400',    glow: '0 0 12px rgba(204,0,0,0.5)',       label: 'Urgente'    },
+    warning: { bg: 'bg-amber-500/20',  border: 'border-amber-500',  text: 'text-amber-400',  glow: '0 0 12px rgba(245,158,11,0.4)',    label: 'En progreso' },
+    success: { bg: 'bg-emerald-500/20',border: 'border-emerald-500',text: 'text-emerald-400',glow: '0 0 12px rgba(0,255,136,0.3)',     label: 'Listo'      },
+};
+
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────
 export default function CMCalendar({ adminProfile }) {
     const navigate = useNavigate();
     const canCreate = canAssign(adminProfile);
     const currentUser = adminProfile?.username || 'Usuario';
 
-    // ─── Pestaña activa del Calendario (solo para admins) ─────────────────
-    // 'contenido' | 'citas' | 'pendientes' | 'aprobadas' | 'todos'
+    // ─── Tabs ─────────────────────────────────────────────────────────────
     const [calendarTab, setCalendarTab] = useState('contenido');
+    const [calendarView, setCalendarView] = useState('month'); // 'month' | 'week'
     const [currentDate, setCurrentDate] = useState(new Date());
 
-
-    // ─── Estado del Calendario de Contenido ───────────────────────────────
+    // ─── Estado principal: eventos del calendario (persistidos en DB) ──────
     const [events, setEvents] = useState([]);
-    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [loadingEvents, setLoadingEvents] = useState(true);
+
+    // ─── Filtros ──────────────────────────────────────────────────────────
     const [activePlatform, setActivePlatform] = useState('ALL');
     const [activeHashtag, setActiveHashtag] = useState(null);
+    const [sortBy, setSortBy] = useState('date'); // 'date' | 'status' | 'platform'
+
+    // ─── UI State ─────────────────────────────────────────────────────────
+    const [selectedEvent, setSelectedEvent] = useState(null);
     const [showNewAssignModal, setShowNewAssignModal] = useState(false);
     const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
+    const [savingCampaign, setSavingCampaign] = useState(false);
+
+    // ─── Drag-and-Drop ────────────────────────────────────────────────────
+    const [draggingEventId, setDraggingEventId] = useState(null);
+    const [dragOverDay, setDragOverDay] = useState(null);
+
     const [newCampaign, setNewCampaign] = useState({
         empresa: 'godzilla',
         calendario: 'contenido',
@@ -82,157 +128,93 @@ export default function CMCalendar({ adminProfile }) {
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
-    // ─── Sistema de Comentarios & Notificaciones ───────────────────────────
+    // ─── Comentarios & Notificaciones ─────────────────────────────────────
     const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
     const [commentText, setCommentText] = useState('');
     const [mentionQuery, setMentionQuery] = useState(null);
-    const [mentionDropdownPos, setMentionDropdownPos] = useState({ top: 0, left: 0 });
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const commentInputRef = useRef(null);
 
-    // ─── Tendencias en Tiempo Real ─────────────────────────────────────────
+    // ─── Tendencias ───────────────────────────────────────────────────────
     const [trendsNiche, setTrendsNiche] = useState('B2B Tech');
     const [trendsNetwork, setTrendsNetwork] = useState('Todas');
     const [realTrends, setRealTrends] = useState(null);
     const [loadingTrends, setLoadingTrends] = useState(false);
 
-    // ─── Bot AI Configurations ──────────────────────────────────────────────
+    // ─── Bot AI Configurations ────────────────────────────────────────────
     const [botConfig, setBotConfig] = useState(null);
     const [savingBot, setSavingBot] = useState(false);
 
-    const loadBotConfig = async (platform) => {
-        if (!platform || platform === 'ALL') {
-            setBotConfig(null);
-            return;
-        }
-        try {
-            const API_URL = '' || '';
-            const res = await fetch(`${API_URL}/api/bots/config/${platform}`);
-            const data = await res.json();
-            if (data.success && data.config) {
-                setBotConfig(data.config);
-            } else {
-                setBotConfig({ 
-                    plataforma: platform, 
-                    keywords: '', 
-                    comment_template: '', 
-                    dm_system_prompt: '' 
-                });
-            }
-        } catch (e) {
-            console.error('Error fetching bot config:', e);
-        }
-    };
-
-    const saveBotConfig = async () => {
-        if (!botConfig) return;
-        setSavingBot(true);
-        try {
-            const API_URL = '' || '';
-            const res = await fetch(`${API_URL}/api/bots/config/${botConfig.plataforma}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(botConfig)
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('¡Configuración guardada! El cerebro PM2 tomará estos cambios enseguida.');
-            }
-        } catch (e) {
-            console.error('Error saving bot config:', e);
-            alert('Error al guardar configuración IA.');
-        }
-        setSavingBot(false);
-    };
-
-    // Refetch al cambiar plataforma
-    useEffect(() => {
-        if (activePlatform !== 'ALL') loadBotConfig(activePlatform);
-    }, [activePlatform]);
-
-
-    const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
-        setLoadingTrends(true);
-        try {
-            const API_URL = '' || '';
-            // Si DEV mode usar /api/trends directo o port 3000
-            const url = import.meta.env.DEV ? `http://localhost:3000/api/trends?network=${network}&filter=${niche}` : `/api/trends?network=${network}&filter=${niche}`;
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
-            const data = await res.json();
-            if (data.success && data.data) {
-                setRealTrends(data.data);
-            }
-        } catch (e) {
-            console.error('Error fetching trends', e);
-        }
-        setLoadingTrends(false);
-    };
-
     const unreadCount = notifications.filter(n => !n.read && n.to?.toLowerCase() === currentUser.toLowerCase()).length;
 
-    const handleUploadTaskImage = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        setIsUploadingMedia(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const token = localStorage.getItem('adminToken');
-            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-            const res = await fetch(`${API}/api/media/upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                const addedUrl = data.url;
-                const newRef = newTask.referencias ? `${newTask.referencias}\n${addedUrl}` : addedUrl;
-                setNewTask({ ...newTask, referencias: newRef });
-            } else {
-                alert('Error subiendo imagen: ' + (data.error || 'Server error'));
-            }
-        } catch (err) {
-            console.error('Upload Error:', err);
-            alert('Falló la subida (Conexión)');
-        }
-        setIsUploadingMedia(false);
-    };
-
+    // ═══════════════════════════════════════════════════════════════════════
+    // ESC KEY — cierra cualquier overlay/modal/panel abierto
+    // ═══════════════════════════════════════════════════════════════════════
     useEffect(() => {
-        const today = new Date();
-        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-        const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 5);
+        const handleEsc = (e) => {
+            if (e.key !== 'Escape') return;
+            // Prioridad: primero el más "interior"
+            if (showNewCampaignModal)  { setShowNewCampaignModal(false);  return; }
+            if (showNewAssignModal)    { setShowNewAssignModal(false);    return; }
+            if (selectedEvent)         { setSelectedEvent(null);           return; }
+            if (showNotifications)     { setShowNotifications(false);      return; }
+            if (showTemplateDropdown)  { setShowTemplateDropdown(false);   return; }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [showNewCampaignModal, showNewAssignModal, selectedEvent, showNotifications, showTemplateDropdown]);
 
-        setEvents([
-            {
-                id: 1, title: '🔵 FB: El boca a boca no sirve', start: today, end: today, status: 'urgent',
-                caption: '🚀 El boca a boca no te va a pagar la nómina el mes que viene. Si tu empresa Tech sigue dependiendo de referidos, estás cediendo el control a la "suerte".',
-                media_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80',
-                provider: 'Nano Banana', platform: 'facebook',
-                comments: [{ id: 1, author: 'Judith', text: '@Alex por favor haz la imagen menos oscura. Se pierde el logo.', time: 'hace 2h' }]
-            },
-            {
-                id: 2, title: '⚫ TK: Trend de Programación', start: tomorrow, end: tomorrow, status: 'warning',
-                caption: '🎶 Si tu backend hace esto en 2026... (Baila) 🦖',
-                media_url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80',
-                provider: 'Kling AI', platform: 'tiktok',
-                comments: []
-            },
-            {
-                id: 3, title: '🟣 IG: Portafolio de Éxito', start: nextWeek, end: nextWeek, status: 'success',
-                caption: 'Así escalamos el B2B en Godzilla Consulting.',
-                media_url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80',
-                provider: 'Cockers Manual', platform: 'instagram',
-                comments: []
-            }
-        ]);
-
+    // ═══════════════════════════════════════════════════════════════════════
+    // CARGA INICIAL + SSE (TIEMPO REAL)
+    // ═══════════════════════════════════════════════════════════════════════
+    useEffect(() => {
         const token = localStorage.getItem('adminToken');
+        const API = getAPI();
+
+        // 1. Carga inicial de eventos desde DB
+        setLoadingEvents(true);
+        fetch(`${API}/api/calendar/events`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) setEvents(data.events.map(mapEvent));
+        })
+        .catch(e => console.error('[Calendar] Error cargando eventos:', e))
+        .finally(() => setLoadingEvents(false));
+
+        // 2. SSE — recibe cambios en tiempo real de TODOS los usuarios
+        const evtSource = new EventSource(`${API}/api/calendar/events/stream?token=${token}`);
+
+        evtSource.onmessage = (e) => {
+            const { type, event } = JSON.parse(e.data);
+            if (type === 'CONNECTED') return; // heartbeat inicial
+            if (type === 'CREATE') {
+                setEvents(prev => {
+                    // Evitar duplicados si el propio usuario ya lo agregó optimisticamente
+                    const exists = prev.some(ev => ev.id === event.id);
+                    return exists ? prev : [mapEvent(event), ...prev];
+                });
+            }
+            if (type === 'UPDATE') {
+                setEvents(prev => prev.map(ev => ev.id === event.id ? mapEvent(event) : ev));
+                setSelectedEvent(prev => prev?.id === event.id ? mapEvent(event) : prev);
+            }
+            if (type === 'DELETE') {
+                setEvents(prev => prev.filter(ev => ev.id !== event.id));
+                setSelectedEvent(prev => prev?.id === event.id ? null : prev);
+            }
+            if (type === 'RESCHEDULE') {
+                setEvents(prev => prev.map(ev => ev.id === event.id ? mapEvent(event) : ev));
+            }
+        };
+
+        evtSource.onerror = () => {
+            console.warn('[SSE Calendar] Conexión interrumpida — reintentando automáticamente...');
+        };
+
+        // 3. Cargar tareas de studio
         fetch(`${'' || ''}/api/studio/tasks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -254,29 +236,26 @@ export default function CMCalendar({ adminProfile }) {
                     status: t.status,
                     mediaPayload: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : t.media_payload
                 }));
-                // Si está vacío para dar sensación de uso añadimos unos de demostración (Opcional)
-                if (mapped.length === 0) {
-                    setTasks([
-                        { id: 9991, que: 'Crear endpoint S3', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString(), audience: 'Product', priority: 'Medium', contentType: 'Launch' }
-                    ]);
-                } else {
-                    setTasks(mapped);
-                }
+                setTasks(mapped.length === 0 ? [
+                    { id: 9991, que: 'Crear endpoint S3', para: 'Dani', referencias: '/api/media/upload', deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], done: false, asignadoPor: 'JareG', createdAt: new Date().toISOString(), audience: 'Product', priority: 'Medium', contentType: 'Launch' }
+                ] : mapped);
             }
         }).catch(err => console.error('Error fetching tasks:', err));
 
-        // Notificación de ejemplo para el usuario actual
+        // 4. Notificación demo
         setNotifications([
-            { id: 1, to: currentUser, from: 'Judith', text: '@' + currentUser + ' revisa el post de Facebook, necesita ajuste de color.', read: false, time: 'hace 2h', eventTitle: '🔵 FB: El boca a boca' }
+            { id: 1, to: currentUser, from: 'Sistema', text: `@${currentUser} calendario sincronizado en tiempo real.`, read: false, time: 'ahora', eventTitle: 'Sistema' }
         ]);
 
-        // Cargar citas reales si es admin
+        // 5. Citas si es admin
         if (canAssign(adminProfile)) {
             setLoadingCitas(true);
-            const API_URL = '' || '';
+            const API_URL = '';
             fetch(`${API_URL}/api/citas`)
                 .then(r => r.json())
                 .then(data => {
+                    const today = new Date();
+                    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
                     const citaEvents = (data.citas || data || []).map(c => ({
                         id: `cita-${c.id}`,
                         title: `📅 ${c.nombre_completo || c.nombre} — ${c.tipo_sesion || 'Consultoría'}`,
@@ -289,32 +268,73 @@ export default function CMCalendar({ adminProfile }) {
                     setCitas(citaEvents);
                 })
                 .catch(() => {
-                    // Si falla, datos de muestra
+                    const today = new Date();
+                    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
                     setCitas([
                         { id: 'cita-1', title: '📅 Carlos Mendez — CRM', start: today, end: today, status: 'success', tipo: 'cita', raw: { email: 'carlos@demo.com', telefono: '664-000-0001', notas_adicionales: 'Interesado en plan B2B' } },
                         { id: 'cita-2', title: '📅 Ana Torres — SEO', start: tomorrow, end: tomorrow, status: 'warning', tipo: 'cita', raw: { email: 'ana@demo.com', telefono: '664-000-0002', notas_adicionales: 'Quiere auditoría SEO completa' } },
                     ]);
                 })
                 .finally(() => setLoadingCitas(false));
-        }
 
-        if (canAssign(adminProfile)) {
             fetchTrends('Todas', 'B2B Tech');
         }
+
+        return () => evtSource.close(); // Cleanup SSE al desmontar
     }, []);
 
-    // ─── DETECTOR DE @menciones EN EL INPUT ──────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOT CONFIG (NEURONAS — SIN CAMBIOS)
+    // ═══════════════════════════════════════════════════════════════════════
+    const loadBotConfig = async (platform) => {
+        if (!platform || platform === 'ALL') { setBotConfig(null); return; }
+        try {
+            const API_URL = '';
+            const res = await fetch(`${API_URL}/api/bots/config/${platform}`);
+            const data = await res.json();
+            setBotConfig(data.success && data.config ? data.config : { plataforma: platform, keywords: '', comment_template: '', dm_system_prompt: '' });
+        } catch (e) { console.error('Error fetching bot config:', e); }
+    };
+
+    const saveBotConfig = async () => {
+        if (!botConfig) return;
+        setSavingBot(true);
+        try {
+            const API_URL = '';
+            const res = await fetch(`${API_URL}/api/bots/config/${botConfig.plataforma}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(botConfig)
+            });
+            const data = await res.json();
+            if (data.success) alert('¡Configuración guardada! El cerebro PM2 tomará estos cambios enseguida.');
+        } catch (e) { console.error('Error saving bot config:', e); alert('Error al guardar configuración IA.'); }
+        setSavingBot(false);
+    };
+
+    useEffect(() => { if (activePlatform !== 'ALL') loadBotConfig(activePlatform); }, [activePlatform]);
+
+    const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
+        setLoadingTrends(true);
+        try {
+            const url = import.meta.env.DEV ? `http://localhost:3000/api/trends?network=${network}&filter=${niche}` : `/api/trends?network=${network}&filter=${niche}`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
+            const data = await res.json();
+            if (data.success && data.data) setRealTrends(data.data);
+        } catch (e) { console.error('Error fetching trends', e); }
+        setLoadingTrends(false);
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMENTARIOS & @MENCIONES (ahora persisten en DB)
+    // ═══════════════════════════════════════════════════════════════════════
     const handleCommentChange = (e) => {
         const val = e.target.value;
         setCommentText(val);
         const cursor = e.target.selectionStart;
         const textUpToCursor = val.slice(0, cursor);
         const match = textUpToCursor.match(/@(\w*)$/);
-        if (match) {
-            setMentionQuery(match[1]);
-        } else {
-            setMentionQuery(null);
-        }
+        setMentionQuery(match ? match[1] : null);
     };
 
     const insertMention = (username) => {
@@ -327,37 +347,53 @@ export default function CMCalendar({ adminProfile }) {
         commentInputRef.current.focus();
     };
 
-    const submitComment = () => {
+    const submitComment = async () => {
         if (!commentText.trim() || !selectedEvent) return;
 
-        const newComment = { id: Date.now(), author: currentUser, text: commentText, time: 'ahora' };
+        const API = getAPI();
+        const token = localStorage.getItem('adminToken');
 
-        // Detectar menciones y crear notificaciones
+        try {
+            // Persistir en DB — el SSE notificará a todos los demás usuarios
+            const res = await fetch(`${API}/api/calendar/events/${selectedEvent.id}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ text: commentText })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // El SSE actualiza el evento para todos; actualización optimista local
+                const newComment = data.comment;
+                setSelectedEvent(prev => ({ ...prev, comments: [...(prev.comments || []), newComment] }));
+                setEvents(prev => prev.map(ev => ev.id === selectedEvent.id
+                    ? { ...ev, comments: [...(ev.comments || []), newComment] }
+                    : ev
+                ));
+            }
+        } catch (e) {
+            // Fallback: solo actualización local
+            const newComment = { id: Date.now(), author: currentUser, text: commentText, time: 'ahora' };
+            setSelectedEvent(prev => ({ ...prev, comments: [...(prev.comments || []), newComment] }));
+        }
+
+        // Notificaciones de @menciones
         const mentioned = TEAM.filter(u => commentText.toLowerCase().includes(`@${u.toLowerCase()}`));
-        const newNotifs = mentioned.map(u => ({
-            id: Date.now() + Math.random(),
-            to: u,
-            from: currentUser,
-            text: commentText,
-            read: false,
-            time: 'ahora',
-            eventTitle: selectedEvent.title
-        }));
+        if (mentioned.length > 0) {
+            const newNotifs = mentioned.map(u => ({
+                id: Date.now() + Math.random(), to: u, from: currentUser,
+                text: commentText, read: false, time: 'ahora', eventTitle: selectedEvent.title
+            }));
+            setNotifications(prev => [...newNotifs, ...prev]);
+        }
 
-        if (newNotifs.length > 0) setNotifications(prev => [...newNotifs, ...prev]);
-
-        // Actualizar comentarios del evento
-        setEvents(prev => prev.map(ev =>
-            ev.id === selectedEvent.id
-                ? { ...ev, comments: [...(ev.comments || []), newComment] }
-                : ev
-        ));
-        setSelectedEvent(prev => ({ ...prev, comments: [...(prev.comments || []), newComment] }));
         setCommentText('');
         setMentionQuery(null);
     };
 
-    // ─── LÓGICA DE ENVÍO A REDES (PESTAÑA APROBADAS) ────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENVÍO A REDES (sin cambios)
+    // ═══════════════════════════════════════════════════════════════════════
     const [networkSelections, setNetworkSelections] = useState({});
 
     const toggleNetwork = (taskId, network) => {
@@ -370,39 +406,242 @@ export default function CMCalendar({ adminProfile }) {
     const handleSendToNetworks = async (task) => {
         const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
         const selectedNetworks = Object.keys(selection).filter(k => selection[k]);
-        if(selectedNetworks.length === 0) return alert('Selecciona al menos una red');
+        if (selectedNetworks.length === 0) return alert('Selecciona al menos una red');
         try {
             const token = localStorage.getItem('adminToken');
             const res = await fetch(`${'' || ''}/api/studio/tasks/${task.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'queued', publish_targets: selectedNetworks })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`¡Éxito! La tarea ha sido enviada a: ${selectedNetworks.join(', ').toUpperCase()}`);
+                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'queued', done: true } : t));
+            } else { throw new Error(data.message || 'Error API'); }
+        } catch (e) { alert('Fallo al mandar a redes: ' + e.message); }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DRAG AND DROP — persiste en DB
+    // ═══════════════════════════════════════════════════════════════════════
+    const handleDragStart = (eventId) => setDraggingEventId(eventId);
+
+    const handleDragOver = (e, dayKey) => {
+        e.preventDefault();
+        setDragOverDay(dayKey);
+    };
+
+    const handleDrop = async (e, targetDate) => {
+        e.preventDefault();
+        setDragOverDay(null);
+        if (!draggingEventId || !canCreate) { setDraggingEventId(null); return; }
+
+        const API = getAPI();
+        const token = localStorage.getItem('adminToken');
+
+        // Actualización optimista inmediata
+        const newDate = new Date(targetDate);
+        newDate.setHours(12, 0, 0, 0);
+        setEvents(prev => prev.map(ev =>
+            ev.id === draggingEventId ? { ...ev, start: newDate, end: newDate, is_rescheduled: true } : ev
+        ));
+
+        try {
+            await fetch(`${API}/api/calendar/events/${draggingEventId}/reschedule`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ start_date: newDate.toISOString(), end_date: newDate.toISOString() })
+            });
+            // El SSE notificará el cambio a todos los demás automáticamente
+        } catch (err) {
+            console.error('[DnD] Error al reprogramar:', err);
+            // Revertir si falla
+            const original = events.find(ev => ev.id === draggingEventId);
+            if (original) setEvents(prev => prev.map(ev => ev.id === draggingEventId ? original : ev));
+        }
+
+        setDraggingEventId(null);
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CREAR CAMPAÑA — ahora persiste en DB y notifica en tiempo real
+    // ═══════════════════════════════════════════════════════════════════════
+    const handleCreateCampaign = async () => {
+        if (!newCampaign.empresa || !newCampaign.asignado || !newCampaign.titulo || !newCampaign.fecha || !newCampaign.briefing) {
+            alert('Por favor completa todos los campos obligatorios (*)');
+            return;
+        }
+
+        setSavingCampaign(true);
+        const API = getAPI();
+        const token = localStorage.getItem('adminToken');
+
+        const platformPrefix = newCampaign.plataforma === 'tiktok' ? '⚫ TK' :
+                               newCampaign.plataforma === 'instagram' ? '🟣 IG' :
+                               newCampaign.plataforma === 'facebook' ? '🔵 FB' : '🌐 Multi';
+
+        try {
+            const res = await fetch(`${API}/api/calendar/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
-                    status: 'queued',
-                    publish_targets: selectedNetworks
+                    title: `${platformPrefix}: ${newCampaign.titulo}`,
+                    platform: newCampaign.plataforma === 'ALL' ? 'ALL' : newCampaign.plataforma,
+                    status: 'warning',
+                    caption: newCampaign.briefing,
+                    media_url: newCampaign.urlFoto || newCampaign.urlVideo || '',
+                    provider: newCampaign.empresa,
+                    start_date: `${newCampaign.fecha}T12:00:00`,
+                    end_date: `${newCampaign.fecha}T12:00:00`,
+                    empresa: newCampaign.empresa,
+                    assigned_to: newCampaign.asignado
                 })
             });
             const data = await res.json();
-            if(data.success) {
-                alert(`¡Exito! La tarea ha sido enviada a las redes: ${selectedNetworks.join(', ').toUpperCase()}`);
-                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'queued', done: true } : t));
+
+            if (data.success) {
+                // El SSE notificará a todos; añadir optimisticamente al estado local también
+                setEvents(prev => {
+                    const exists = prev.some(ev => ev.id === data.event.id);
+                    return exists ? prev : [mapEvent(data.event), ...prev];
+                });
+
+                // Notificar al asignado
+                setNotifications(prev => [{
+                    id: Date.now() + 1, to: newCampaign.asignado, from: currentUser,
+                    text: `@${newCampaign.asignado} te han asignado una nueva campaña: "${newCampaign.titulo}"`,
+                    read: false, time: 'ahora', eventTitle: `${platformPrefix}: ${newCampaign.titulo}`
+                }, ...prev]);
+
+                setNewCampaign({ empresa: 'godzilla', calendario: 'contenido', asignado: '', titulo: '', fecha: '', plataforma: 'ALL', briefing: '', urlFoto: '', urlVideo: '', urlReferencia: '' });
+                setShowNewCampaignModal(false);
             } else {
-                throw new Error(data.message || 'Error API');
+                alert('Error al crear campaña: ' + (data.error || 'Error desconocido'));
             }
-        } catch(e) {
-            console.error(e);
-            alert('Fallo al mandar a redes: ' + e.message);
+        } catch (err) {
+            console.error('[Calendar] Error creando campaña:', err);
+            alert('Error de conexión al crear campaña.');
         }
+        setSavingCampaign(false);
     };
 
-    // ─── ESTILOS DEL CALENDARIO ────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // UPLOAD DE MEDIA EN TAREAS
+    // ═══════════════════════════════════════════════════════════════════════
+    const handleUploadTaskImage = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingMedia(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const token = localStorage.getItem('adminToken');
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const res = await fetch(`${API}/api/media/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const addedUrl = data.url;
+                const newRef = newTask.referencias ? `${newTask.referencias}\n${addedUrl}` : addedUrl;
+                setNewTask({ ...newTask, referencias: newRef });
+            } else { alert('Error subiendo imagen: ' + (data.error || 'Server error')); }
+        } catch (err) { alert('Falló la subida (Conexión)'); }
+        setIsUploadingMedia(false);
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DATOS DERIVADOS
+    // ═══════════════════════════════════════════════════════════════════════
+    const filteredEvents = activePlatform === 'ALL'
+        ? events
+        : events.filter(e => e.platform === activePlatform);
+
+    // Counts para badges de filtro
+    const platformCounts = {
+        ALL: events.length,
+        facebook: events.filter(e => e.platform === 'facebook').length,
+        instagram: events.filter(e => e.platform === 'instagram').length,
+        tiktok: events.filter(e => e.platform === 'tiktok').length,
+    };
+
+    const pendingTaskEvents = tasks.filter(t => !t.done).map(t => ({
+        id: `task-${t.id}`,
+        title: `✅ ${t.para}: ${t.que.substring(0, 35)}...`,
+        start: new Date(t.deadline + 'T00:00'),
+        end: new Date(t.deadline + 'T00:00'),
+        status: 'warning', tipo: 'pendiente', raw: t
+    }));
+
+    const calendarEventsMap = {
+        contenido: filteredEvents,
+        citas: citas,
+        pendientes: pendingTaskEvents,
+        aprobadas: tasks.filter(t => t.status === 'approved'),
+        todos: [...filteredEvents, ...citas, ...pendingTaskEvents]
+    };
+
+    const myFilteredTasks = tasks.filter(t =>
+        t.para?.toLowerCase() === currentUser.toLowerCase() || currentUser.toLowerCase() === 'godzilla_admin'
+    );
+    const pendingTasks = myFilteredTasks.filter(t => !t.done);
+    const doneTasks = myFilteredTasks.filter(t => t.done);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GENERADOR DE GRID MENSUAL CUSTOM (Asana-style)
+    // ═══════════════════════════════════════════════════════════════════════
+    const generateMonthDays = useCallback((date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const startDay = startOfWeek(firstDay, { weekStartsOn: 1 }); // Lunes
+        const days = [];
+        let cursor = new Date(startDay);
+        for (let i = 0; i < 35; i++) {
+            days.push(new Date(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        // Extender a 42 si el mes lo necesita
+        while (cursor.getMonth() === month || days.length % 7 !== 0) {
+            days.push(new Date(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+            if (days.length >= 42) break;
+        }
+        return days;
+    }, []);
+
+    const monthDays = generateMonthDays(currentDate);
+    const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+    // Agrupar eventos por día para el grid
+    const eventsByDay = useCallback(() => {
+        const map = {};
+        const eventsToShow = calendarTab === 'contenido' ? filteredEvents :
+                             calendarTab === 'todos' ? [...filteredEvents, ...citas, ...pendingTaskEvents] : filteredEvents;
+
+        eventsToShow.forEach(ev => {
+            const d = ev.start instanceof Date ? ev.start : new Date(ev.start);
+            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            if (!map[key]) map[key] = [];
+            map[key].push(ev);
+        });
+        return map;
+    }, [filteredEvents, citas, pendingTaskEvents, calendarTab]);
+
+    const dayEventsMap = eventsByDay();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ESTILOS DEL CALENDAR RBC (para tabs que siguen usándolo)
+    // ═══════════════════════════════════════════════════════════════════════
     const eventStyleGetter = (event) => {
         let backgroundColor = '#333333'; let border = '1px solid #111111';
         if (event.status === 'urgent') { backgroundColor = '#CC0000'; border = '1px solid #ff4444'; }
         else if (event.status === 'warning') { backgroundColor = '#d97706'; border = '1px solid #f59e0b'; }
         else if (event.status === 'success') { backgroundColor = '#15803d'; border = '1px solid #22c55e'; }
-        return {
-            style: { backgroundColor, border, borderRadius: '8px', opacity: 0.9, color: 'white', borderLeft: '4px solid white', display: 'block', fontWeight: 'bold', fontSize: '11px', padding: '2px 5px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }
-        };
+        return { style: { backgroundColor, border, borderRadius: '8px', opacity: 0.9, color: 'white', borderLeft: '4px solid white', display: 'block', fontWeight: 'bold', fontSize: '11px', padding: '2px 5px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' } };
     };
 
     const hackerCalendarStyles = `
@@ -411,41 +650,193 @@ export default function CMCalendar({ adminProfile }) {
       .rbc-header { padding: 10px 0; border-bottom: 1px solid #333 !important; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #888; }
       .rbc-header + .rbc-header { border-left: 1px solid #333 !important; }
       .rbc-day-bg { border-left: 1px solid #222 !important; }
-      .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #222 !important; }
       .rbc-month-row + .rbc-month-row { border-top: 1px solid #222 !important; }
       .rbc-off-range-bg { background-color: #050505; }
-      .rbc-today { background-color: rgba(204, 0, 0, 0.05); }
+      .rbc-today { background-color: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.2) !important; }
       .rbc-date-cell { padding: 5px; font-weight: bold; color: #aaa; }
       .rbc-btn-group button { background: #111; color: #fff; border: 1px solid #333; padding: 5px 15px; font-weight: bold; transition: 0.3s; }
       .rbc-btn-group button:hover { background: #333; }
       .rbc-btn-group button.rbc-active { background: #CC0000; border-color: #CC0000; box-shadow: none; }
       .rbc-toolbar-label { color: white; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
-      .rbc-time-content { border-top: 1px solid #333; }
-      .rbc-timeslot-group { border-bottom: 1px solid #222; }
     `;
 
-    const filteredEvents = activePlatform === 'ALL' ? events : events.filter(e => e.platform === activePlatform);
-    // Eventos a mostrar en el calendario según pestaña
-    const pendingTaskEvents = tasks.filter(t => !t.done).map(t => ({
-        id: `task-${t.id}`,
-        title: `✅ ${t.para}: ${t.que.substring(0, 35)}...`,
-        start: new Date(t.deadline + 'T00:00'),
-        end: new Date(t.deadline + 'T00:00'),
-        status: 'warning', tipo: 'pendiente', raw: t
-    }));
-    const calendarEvents = {
-        contenido: filteredEvents,
-        citas: citas,
-        pendientes: pendingTaskEvents,
-        todos: [...filteredEvents, ...citas, ...pendingTaskEvents]
-    }[calendarTab] || filteredEvents;
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDERIZADORES
+    // ═══════════════════════════════════════════════════════════════════════
 
-    // ─── TAREAS DEL SIDEBAR (Solo muestra las del usuario actual) ───
-    const myFilteredTasks = tasks.filter(t => t.para?.toLowerCase() === currentUser.toLowerCase() || currentUser.toLowerCase() === 'godzilla_admin');
-    const pendingTasks = myFilteredTasks.filter(t => !t.done);
-    const doneTasks = myFilteredTasks.filter(t => t.done);
+    // ─── Neuron Card (el corazón del nuevo diseño) ─────────────────────────
+    const renderNeuronCard = (event) => {
+        const pm = PLATFORM_META[event.platform] || PLATFORM_META.ALL;
+        const sm = STATUS_META[event.status] || STATUS_META.warning;
+        const isDragging = draggingEventId === event.id;
 
-    // ─── Mockup de red social (visible para TODOS) ─────────────────────────
+        return (
+            <div
+                key={event.id}
+                draggable={canCreate}
+                onDragStart={() => handleDragStart(event.id)}
+                onDragEnd={() => { setDraggingEventId(null); setDragOverDay(null); }}
+                onClick={() => { setSelectedEvent(event); setCommentText(''); setMentionQuery(null); }}
+                className={`
+                    group relative cursor-pointer rounded-xl overflow-hidden border transition-all duration-200
+                    ${sm.bg} ${sm.border}
+                    ${isDragging ? 'opacity-40 scale-95' : 'hover:-translate-y-0.5 hover:scale-[1.02]'}
+                `}
+                style={{ boxShadow: isDragging ? 'none' : sm.glow }}
+            >
+                {/* Thumbnail */}
+                {event.media_url && (
+                    <div className="relative h-16 bg-black overflow-hidden">
+                        <img
+                            src={event.media_url}
+                            alt=""
+                            className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
+                            onError={e => { e.target.style.display = 'none'; }}
+                        />
+                        {/* Glass overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        {/* Platform badge */}
+                        <div
+                            className="absolute top-1 left-1 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider backdrop-blur-md border"
+                            style={{ background: `${pm.color}25`, borderColor: `${pm.color}60`, color: pm.color }}
+                        >
+                            <span>{pm.icon}</span> {pm.label}
+                        </div>
+                        {/* Rescheduled badge */}
+                        {event.is_rescheduled && (
+                            <div className="absolute top-1 right-1 bg-amber-500/80 text-black text-[8px] font-black px-1 rounded">
+                                ⟳ Moved
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Content */}
+                <div className="px-2 py-1.5">
+                    {/* Without media: show platform inline */}
+                    {!event.media_url && (
+                        <div className="flex items-center gap-1 mb-1">
+                            <span className="text-[10px]">{pm.icon}</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider"
+                                  style={{ color: pm.color }}>
+                                {pm.label}
+                            </span>
+                        </div>
+                    )}
+
+                    <p className={`text-[10px] font-bold leading-tight truncate ${sm.text}`}>
+                        {event.title?.replace(/^[🔵🟣⚫🌐]\s*\w+:\s*/, '')}
+                    </p>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-1">
+                        <span className="text-[8px] text-neutral-600 truncate max-w-[60%]">
+                            {event.provider || event.assigned_to || ''}
+                        </span>
+                        {(event.comments?.length > 0) && (
+                            <span className="text-[8px] text-neutral-600 flex items-center gap-0.5">
+                                💬 {event.comments.length}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // ─── GRID MENSUAL ASANA-STYLE ──────────────────────────────────────────
+    const renderMonthGrid = () => {
+        const today = new Date();
+        const isToday = (d) =>
+            d.getDate() === today.getDate() &&
+            d.getMonth() === today.getMonth() &&
+            d.getFullYear() === today.getFullYear();
+        const isCurrentMonth = (d) => d.getMonth() === currentDate.getMonth();
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '600px' }}>
+                {/* Day headers */}
+                <div className="grid grid-cols-7 border-b border-white/5 shrink-0">
+                    {DAY_NAMES.map(d => (
+                        <div key={d} className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                            {d}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Weeks */}
+                <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${monthDays.length / 7}, minmax(120px, 1fr))` }}>
+                    {monthDays.map((day, idx) => {
+                        const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+                        const dayEvents = dayEventsMap[dayKey] || [];
+                        const todayDay = isToday(day);
+                        const currentMonth = isCurrentMonth(day);
+                        const isDragOver = dragOverDay === dayKey;
+
+                        return (
+                            <div
+                                key={idx}
+                                onDragOver={(e) => handleDragOver(e, dayKey)}
+                                onDrop={(e) => {
+                                    const targetDate = new Date(day);
+                                    handleDrop(e, targetDate);
+                                }}
+                                className={`
+                                    relative border-b border-r border-white/[0.04] p-1.5 flex flex-col gap-1 transition-all duration-150 group/day
+                                    ${currentMonth ? 'bg-transparent' : 'bg-black/20'}
+                                    ${todayDay ? 'ring-1 ring-inset ring-[#00ff88]/30' : ''}
+                                    ${isDragOver ? 'bg-[#00ff88]/5 ring-1 ring-inset ring-[#00ff88]/50' : ''}
+                                `}
+                            >
+                                {/* Date number */}
+                                <div className="flex items-center justify-between shrink-0">
+                                    <span className={`
+                                        text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full transition-colors
+                                        ${todayDay
+                                            ? 'bg-[#00ff88] text-black shadow-[0_0_12px_rgba(0,255,136,0.6)]'
+                                            : currentMonth
+                                                ? 'text-neutral-400 hover:text-white'
+                                                : 'text-neutral-700'
+                                        }
+                                    `}>
+                                        {day.getDate()}
+                                    </span>
+
+                                    {/* Add event button (hover) */}
+                                    {canCreate && currentMonth && (
+                                        <button
+                                            onClick={() => {
+                                                setNewCampaign(prev => ({ ...prev, fecha: day.toISOString().split('T')[0] }));
+                                                setShowNewCampaignModal(true);
+                                            }}
+                                            className="opacity-0 group-hover/day:opacity-100 w-4 h-4 rounded-full bg-white/10 hover:bg-[#CC0000] text-white text-[10px] flex items-center justify-center transition-all"
+                                        >
+                                            +
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Events */}
+                                <div className="flex flex-col gap-1 overflow-hidden flex-1">
+                                    {dayEvents.slice(0, 3).map(ev => renderNeuronCard(ev))}
+                                    {dayEvents.length > 3 && (
+                                        <button
+                                            className="text-[8px] text-neutral-600 hover:text-white font-bold text-left px-1 transition-colors"
+                                            onClick={() => {/* TODO: expandir día */}}
+                                        >
+                                            +{dayEvents.length - 3} más
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
+    // ─── Mockup de red social ──────────────────────────────────────────────
     const renderSocialMockup = (event) => (
         <div className="bg-white rounded-xl overflow-hidden shadow-xl text-black font-sans border border-white/20">
             {event.platform === 'instagram' && (
@@ -456,11 +847,11 @@ export default function CMCalendar({ adminProfile }) {
                         </div>
                         <p className="font-bold text-sm">godzillaconsulting</p>
                     </div>
-                    <img src={event.media_url} className="w-full aspect-square object-cover" alt="post" />
+                    {event.media_url && <img src={event.media_url} className="w-full aspect-square object-cover" alt="post" />}
                     <div className="p-3">
                         <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
                         <p className="font-bold text-sm mb-1">1,234 Me gusta</p>
-                        <p className="text-sm"><span className="font-bold mr-1">godzillaconsulting</span><span className="text-gray-700">{event.caption.substring(0, 60)}...</span></p>
+                        <p className="text-sm"><span className="font-bold mr-1">godzillaconsulting</span><span className="text-gray-700">{event.caption?.substring(0, 60)}...</span></p>
                     </div>
                 </div>
             )}
@@ -471,17 +862,16 @@ export default function CMCalendar({ adminProfile }) {
                         <div><p className="font-bold text-[15px] leading-tight">Godzilla Consulting</p><p className="text-xs text-gray-500">Publicado • Hace 2 min • 🌎</p></div>
                     </div>
                     <div className="px-3 pb-3 text-[14px] text-gray-800"><p className="whitespace-pre-wrap line-clamp-3">{event.caption}</p></div>
-                    <img src={event.media_url} className="w-full h-52 object-cover" alt="post" />
+                    {event.media_url && <img src={event.media_url} className="w-full h-52 object-cover" alt="post" />}
                     <div className="p-3 border-t border-gray-200 flex justify-between text-gray-500 text-sm font-semibold"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↪️ Compartir</span></div>
                 </div>
             )}
             {event.platform === 'tiktok' && (
                 <div className="relative bg-black text-white h-[350px] flex items-center justify-center overflow-hidden">
-                    <img src={event.media_url} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="post" />
+                    {event.media_url && <img src={event.media_url} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="post" />}
                     <div className="absolute right-2 bottom-12 flex flex-col items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden shadow-lg"><img src="/logo192.png" className="w-full h-full object-cover bg-black" alt="logo" /></div>
                         <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">❤️</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
-                        <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">💬</span><span className="text-xs font-bold drop-shadow-md">1,024</span></div>
                     </div>
                     <div className="absolute bottom-4 left-4 right-16">
                         <p className="font-bold text-sm drop-shadow-md">@godzillaconsulting</p>
@@ -539,8 +929,7 @@ export default function CMCalendar({ adminProfile }) {
                                     <ul className="text-[10px] text-neutral-300 space-y-3 font-bold leading-tight">
                                         {(realTrends.hooks || []).map((hk, i) => (
                                             <li key={i} className="flex gap-2">
-                                                <span className="text-[#CC0000] shrink-0">👉</span>
-                                                <span>{hk}</span>
+                                                <span className="text-[#CC0000] shrink-0">👉</span><span>{hk}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -554,7 +943,6 @@ export default function CMCalendar({ adminProfile }) {
             );
         }
 
-        // Vista diseñador (Alex etc.)
         return (
             <div className="w-[300px] border-l border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col">
                 <div className="p-5 border-b border-red-900/50 bg-gradient-to-r from-[#CC0000]/10 to-transparent">
@@ -578,7 +966,7 @@ export default function CMCalendar({ adminProfile }) {
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <p className="text-xs font-black text-white leading-snug">{task.que}</p>
                                         <button onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: true } : t))}
-                                            className="shrink-0 w-6 h-6 rounded-full border-2 border-neutral-700 hover:border-green-500 hover:bg-green-500/20 transition-all flex items-center justify-center" title="Marcar como realizada">
+                                            className="shrink-0 w-6 h-6 rounded-full border-2 border-neutral-700 hover:border-green-500 hover:bg-green-500/20 transition-all flex items-center justify-center">
                                             <span className="text-[10px]">✔</span>
                                         </button>
                                     </div>
@@ -609,28 +997,51 @@ export default function CMCalendar({ adminProfile }) {
         );
     };
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDER PRINCIPAL
+    // ═══════════════════════════════════════════════════════════════════════
     return (
-        <div className="h-full w-full bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] relative flex overflow-hidden text-white">
+        <div
+            className="h-full w-full bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.1),rgba(255,255,255,0))] relative flex overflow-hidden text-white"
+            onClick={(e) => {
+                // Clic fuera de dropdowns → cerrar
+                if (!e.target.closest('[data-dropdown="notifications"]')) setShowNotifications(false);
+                if (!e.target.closest('[data-dropdown="templates"]'))     setShowTemplateDropdown(false);
+            }}
+        >
             <style>{hackerCalendarStyles}</style>
 
-            <div className="flex-1 flex flex-col h-full overflow-y-auto overflow-x-hidden">
+            {/* Frutiger Aero orbs */}
+            <div className="absolute top-[-15%] left-[20%] w-[40%] h-[40%] bg-[#00ff88]/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] bg-[#0ea5e9]/5 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+
                 {/* ── HEADER ── */}
-                <div className="px-8 py-5 bg-[#000000] border-b border-white/10 shrink-0">
-                    <div className="flex justify-between items-center mb-5">
+                <div className="px-8 py-4 bg-black/60 backdrop-blur-xl border-b border-white/[0.06] shrink-0">
+                    <div className="flex justify-between items-center mb-4">
                         <div>
-                            <h2 className="text-2xl font-black text-white tracking-widest uppercase">
-                                {canCreate ? "Control de Emisión" : "Calendario de Campañas"}
-                            </h2>
-                            <p className="text-neutral-500 font-bold text-sm mt-0.5">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-2xl font-black text-white tracking-widest uppercase">
+                                    {canCreate ? "Control de Emisión" : "Calendario de Campañas"}
+                                </h2>
+                                {/* Indicador de tiempo real */}
+                                <div className="flex items-center gap-1.5 bg-[#00ff88]/10 border border-[#00ff88]/30 px-2.5 py-1 rounded-full">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse shadow-[0_0_6px_rgba(0,255,136,0.8)]" />
+                                    <span className="text-[9px] font-black text-[#00ff88] uppercase tracking-widest">EN VIVO</span>
+                                </div>
+                            </div>
+                            <p className="text-neutral-500 font-bold text-xs mt-0.5">
                                 {canCreate ? `Gestión completa • ${currentUser}` : `Solo lectura y comentarios • ${currentUser}`}
+                                {loadingEvents && <span className="ml-2 animate-pulse text-neutral-600">• Cargando...</span>}
                             </p>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {/* 🔔 Campana de Notificaciones */}
-                            <div className="relative">
+                            {/* Notificaciones */}
+                            <div className="relative" data-dropdown="notifications">
                                 <button onClick={() => { setShowNotifications(!showNotifications); setNotifications(prev => prev.map(n => n.to?.toLowerCase() === currentUser.toLowerCase() ? { ...n, read: true } : n)); }}
-                                    className="relative w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center hover:border-[#CC0000]/50 transition-colors">
+                                    className="relative w-10 h-10 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center hover:border-[#00ff88]/50 transition-colors backdrop-blur-sm">
                                     <span className="text-lg">🔔</span>
                                     {unreadCount > 0 && (
                                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#CC0000] rounded-full text-[10px] font-black flex items-center justify-center text-white animate-pulse shadow-[0_0_8px_rgba(204,0,0,0.8)]">
@@ -638,9 +1049,8 @@ export default function CMCalendar({ adminProfile }) {
                                         </span>
                                     )}
                                 </button>
-                                {/* Dropdown de notificaciones */}
                                 {showNotifications && (
-                                    <div className="absolute right-0 top-12 w-80 bg-[#111] border border-white/10 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] z-50 overflow-hidden">
+                                    <div className="absolute right-0 top-12 w-80 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] z-50 overflow-hidden">
                                         <div className="p-4 border-b border-white/10 flex justify-between items-center">
                                             <h4 className="text-white font-black text-xs uppercase tracking-widest">Menciones & Alertas</h4>
                                             <button onClick={() => setShowNotifications(false)} className="text-neutral-500 hover:text-white text-lg font-black">×</button>
@@ -649,7 +1059,7 @@ export default function CMCalendar({ adminProfile }) {
                                             {notifications.filter(n => n.to?.toLowerCase() === currentUser.toLowerCase()).length === 0
                                                 ? <p className="text-neutral-600 text-xs font-bold text-center py-8">Sin notificaciones</p>
                                                 : notifications.filter(n => n.to?.toLowerCase() === currentUser.toLowerCase()).map(n => (
-                                                    <div key={n.id} className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${!n.read ? 'border-l-2 border-l-[#CC0000]' : ''}`}>
+                                                    <div key={n.id} className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${!n.read ? 'border-l-2 border-l-[#00ff88]' : ''}`}>
                                                         <div className="flex justify-between items-start mb-1">
                                                             <span className="text-[#CC0000] font-black text-xs">{n.from}</span>
                                                             <span className="text-neutral-600 text-[10px]">{n.time}</span>
@@ -666,27 +1076,26 @@ export default function CMCalendar({ adminProfile }) {
 
                             {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewAssignModal(true)}
-                                    className="px-4 py-2 bg-black/60 border border-[#CC0000]/40 hover:border-[#CC0000] text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest">
+                                    className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-[#CC0000]/40 text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest">
                                     📋 Asignar Tarea
                                 </button>
                             )}
                             {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewCampaignModal(true)}
-                                    className="px-4 py-2 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.5)] border border-red-900/50 uppercase tracking-widest flex items-center gap-1">
+                                    className="px-4 py-2 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.4)] uppercase tracking-widest flex items-center gap-1">
                                     ➕ Campaña
                                 </button>
                             )}
                         </div>
                     </div>
 
-
-                    {/* Pestañas de Calendario (solo Oscar, Judith, JareG) */}
+                    {/* Tabs */}
                     {canCreate && (
                         <div className="flex gap-2 mb-4">
                             {[
                                 { id: 'contenido', label: '📣 Contenido', count: events.length },
                                 { id: 'citas', label: '📅 Citas', count: citas.length },
-                                { id: 'pendientes', label: '✅ Tablero Tareas', count: tasks.filter(t => !t.done).length },
+                                { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
                                 { id: 'aprobadas', label: '🌟 Aprobadas', count: tasks.filter(t => t.status === 'approved').length },
                                 { id: 'todos', label: '🗺️ Todo', count: null },
                             ].map(tab => (
@@ -694,415 +1103,360 @@ export default function CMCalendar({ adminProfile }) {
                                     className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
                                         calendarTab === tab.id
                                             ? 'bg-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]'
-                                            : 'bg-black/60 border border-white/10 text-neutral-500 hover:text-white hover:border-white/30'
+                                            : 'bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] text-neutral-500 hover:text-white hover:border-white/20'
                                     }`}>
                                     {tab.label}
                                     {tab.count !== null && (
-                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                                            calendarTab === tab.id ? 'bg-white/20' : 'bg-white/10'
-                                        }`}>{tab.count}</span>
+                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${calendarTab === tab.id ? 'bg-white/20' : 'bg-white/10'}`}>
+                                            {tab.count}
+                                        </span>
                                     )}
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    {/* Filtros de Plataforma (solo en pestaña Contenido o Todos) */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    {/* Filtros + controles */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                         {(calendarTab === 'contenido' || calendarTab === 'todos' || !canCreate) ? (
-                        <div className="flex gap-3">
-                            {[{ id: 'ALL', label: 'Todas' }, { id: 'facebook', label: '🔵 Facebook' }, { id: 'instagram', label: '🟣 Instagram' }, { id: 'tiktok', label: '⚫ TikTok' }].map(tab => (
-                                <button key={tab.id} onClick={() => setActivePlatform(tab.id)}
-                                    className={`px-5 py-2 rounded-full font-black text-xs transition-all ${activePlatform === tab.id ? 'bg-white text-black' : 'bg-black/60 border border-white/10 text-neutral-500 hover:text-white'}`}>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+                            <div className="flex gap-2 flex-wrap">
+                                {[
+                                    { id: 'ALL', label: 'Todas', icon: '🌐' },
+                                    { id: 'facebook', label: 'Facebook', icon: '🔵' },
+                                    { id: 'instagram', label: 'Instagram', icon: '🟣' },
+                                    { id: 'tiktok', label: 'TikTok', icon: '⚫' }
+                                ].map(tab => (
+                                    <button key={tab.id} onClick={() => setActivePlatform(tab.id)}
+                                        className={`px-4 py-1.5 rounded-full font-black text-xs transition-all flex items-center gap-1.5 ${
+                                            activePlatform === tab.id
+                                                ? 'bg-white text-black shadow-[0_0_12px_rgba(255,255,255,0.2)]'
+                                                : 'bg-white/[0.04] border border-white/[0.06] text-neutral-500 hover:text-white hover:bg-white/10'
+                                        }`}>
+                                        <span>{tab.icon}</span>
+                                        {tab.label}
+                                        <span className="text-[9px] opacity-60">({platformCounts[tab.id] || 0})</span>
+                                    </button>
+                                ))}
+                            </div>
                         ) : <div />}
-                        
+
                         <div className="flex items-center gap-3">
-                            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none mt-1">Ir a Fecha:</label>
-                            <input type="date" value={currentDate.toISOString().split('T')[0]} onChange={(e) => { if (e.target.value) { const [y,m,d] = e.target.value.split('-'); setCurrentDate(new Date(y, m-1, d)); } }} className="bg-black/60 border border-white/10 rounded-full px-4 py-1.5 text-xs font-black tracking-widest text-[#CC0000] focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
+                            {/* Month/Week toggle (solo tab contenido) */}
+                            {(calendarTab === 'contenido' || calendarTab === 'todos') && (
+                                <div className="flex bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
+                                    {['month', 'week'].map(v => (
+                                        <button key={v} onClick={() => setCalendarView(v)}
+                                            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors ${calendarView === v ? 'bg-[#CC0000] text-white' : 'text-neutral-500 hover:text-white'}`}>
+                                            {v === 'month' ? '🗓 Mes' : '📅 Semana'}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Ir a fecha */}
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                                    className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-xs hover:bg-white/10 transition-colors">
+                                    ‹
+                                </button>
+                                <span className="text-[11px] font-black text-white uppercase tracking-widest min-w-[100px] text-center">
+                                    {currentDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+                                </span>
+                                <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                                    className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-xs hover:bg-white/10 transition-colors">
+                                    ›
+                                </button>
+                                <button onClick={() => setCurrentDate(new Date())}
+                                    className="px-3 py-1 text-[9px] font-black uppercase text-[#00ff88] border border-[#00ff88]/30 rounded-lg hover:bg-[#00ff88]/10 transition-colors">
+                                    Hoy
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Carga de citas */}
                     {calendarTab === 'citas' && loadingCitas && (
-                        <p className="text-xs text-neutral-500 font-black animate-pulse">Cargando citas desde la base de datos...</p>
+                        <p className="text-xs text-neutral-500 font-black animate-pulse mt-2">Cargando citas desde la base de datos...</p>
                     )}
                 </div>
 
-                <div className="flex-1 p-4 md:px-8 md:py-6 overflow-visible bg-[#050505] flex flex-col">
-                    {/* Panel de Configuración de IA para la Red Seleccionada */}
+                {/* ── BODY ── */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+
+                    {/* Panel de Configuración de IA / Neurona */}
                     {canCreate && (calendarTab === 'contenido' || calendarTab === 'todos') && activePlatform !== 'ALL' && (
-                        <div className="mb-6 bg-[#0a0a0a] border border-[#CC0000]/40 rounded-xl p-5 shadow-[0_0_20px_rgba(204,0,0,0.15)] animate-in fade-in slide-in-from-top-2">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-black text-white text-sm tracking-widest uppercase flex items-center gap-2">
-                                    <span className="text-[#CC0000] text-lg">🤖</span> 
+                        <div className="mx-6 mt-4 mb-2 bg-[#0a0a0a]/80 backdrop-blur-sm border border-[#CC0000]/30 rounded-xl p-4 shadow-[0_0_20px_rgba(204,0,0,0.1)] shrink-0">
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="font-black text-white text-xs tracking-widest uppercase flex items-center gap-2">
+                                    <span className="text-[#CC0000]">🤖</span>
                                     Configuración Neurona: <span className="text-neutral-400">{activePlatform}</span>
                                 </h3>
-                                <button 
-                                    onClick={saveBotConfig}
-                                    disabled={savingBot || !botConfig}
-                                    className="bg-[#CC0000] hover:bg-white hover:text-[#CC0000] text-white text-[10px] font-black uppercase px-4 py-2 rounded transition-colors disabled:opacity-50"
-                                >
+                                <button onClick={saveBotConfig} disabled={savingBot || !botConfig}
+                                    className="bg-[#CC0000] hover:bg-white hover:text-[#CC0000] text-white text-[10px] font-black uppercase px-4 py-1.5 rounded transition-colors disabled:opacity-50">
                                     {savingBot ? "Guardando..." : "Guardar Ajustes"}
                                 </button>
                             </div>
-                            
                             {!botConfig ? (
-                                <div className="text-neutral-500 text-xs py-4 flex items-center gap-2">
+                                <div className="text-neutral-500 text-xs py-2 flex items-center gap-2">
                                     <span className="animate-spin text-xl">⚙️</span> Conectando con IA...
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                                     <div>
                                         <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">Palabras Clave (Trigger)</label>
-                                        <input 
-                                            type="text" 
-                                            value={botConfig.keywords}
+                                        <input type="text" value={botConfig.keywords}
                                             onChange={(e) => setBotConfig({...botConfig, keywords: e.target.value})}
                                             className="w-full bg-black/60 border border-white/10 rounded p-2 text-white font-bold focus:outline-none focus:border-[#CC0000] transition-colors"
-                                            placeholder="ej. tecnologia, info, precio"
-                                        />
-                                        <p className="text-[9px] text-neutral-600 mt-1 italic">Separadas por coma. El bot solo responderá sí el comentario las contiene.</p>
+                                            placeholder="ej. tecnologia, info, precio" />
                                     </div>
                                     <div>
-                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">Público: Respuesta Automática Template</label>
-                                        <input 
-                                            type="text" 
-                                            value={botConfig.comment_template}
+                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">Respuesta Automática Template</label>
+                                        <input type="text" value={botConfig.comment_template}
                                             onChange={(e) => setBotConfig({...botConfig, comment_template: e.target.value})}
                                             className="w-full bg-black/60 border border-white/10 rounded p-2 text-white font-bold focus:outline-none focus:border-[#CC0000] transition-colors"
-                                            placeholder="Ej: ¡Hola! Mándanos un DM..."
-                                        />
+                                            placeholder="Ej: ¡Hola! Mándanos un DM..." />
                                     </div>
-                                    <div className="md:col-span-2 mt-2">
-                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">System Prompt Conversacional (Inbox Privado)</label>
-                                        <textarea 
-                                            value={botConfig.dm_system_prompt || ''}
+                                    <div className="md:col-span-2">
+                                        <label className="text-neutral-500 font-bold mb-1 block uppercase tracking-widest text-[10px]">System Prompt (Inbox Privado)</label>
+                                        <textarea value={botConfig.dm_system_prompt || ''}
                                             onChange={(e) => setBotConfig({...botConfig, dm_system_prompt: e.target.value})}
-                                            className="w-full h-16 bg-black/60 border border-[#CC0000]/20 rounded p-2 text-yellow-300/80 font-mono text-[10px] focus:outline-none focus:border-[#CC0000] transition-colors resize-none"
-                                            placeholder="Instrucciones especiales para Gemini en esta red social. Ej: 'Redirige a WhatsApp en lugar de agendar'. Dejar en blanco para default."
-                                        />
+                                            className="w-full h-14 bg-black/60 border border-[#CC0000]/20 rounded p-2 text-yellow-300/80 font-mono text-[10px] focus:outline-none focus:border-[#CC0000] transition-colors resize-none"
+                                            placeholder="Instrucciones especiales para Gemini en esta red social." />
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {calendarTab === 'pendientes' ? (
-                        <div className="flex bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden h-full min-h-[600px] font-sans shadow-2xl">
-                            {/* ASANA LEFT PANE -> Godzilla Dark Mode */}
-                            <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505] text-white">
-                                {/* Toolbar Top Left */}
-                                <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a] relative">
-                                    <button onClick={() => setShowTemplateDropdown(!showTemplateDropdown)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all relative z-10">
-                                        <span className="mr-2 text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
-                                    </button>
-                                    {showTemplateDropdown && (
-                                        <div className="absolute top-12 left-4 w-64 bg-[#111] border border-neutral-700 rounded-xl shadow-2xl z-50 overflow-hidden text-white font-sans animate-in fade-in slide-in-from-top-2">
-                                            <button 
-                                                onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' }); setShowNewAssignModal(true); }}
-                                                className="w-full text-left px-4 py-3 text-xs font-bold hover:bg-neutral-800 transition-colors border-b border-neutral-800 flex items-center gap-2"
-                                            >
-                                                <span className="text-[#CC0000] text-sm">+</span> Blank task
+                    {/* ── CONTENIDO PRINCIPAL ── */}
+                    <div className="flex-1 flex overflow-hidden">
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {/* TAB: PENDIENTES */}
+                            {calendarTab === 'pendientes' ? (
+                                <div className="flex bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex-1 m-4 font-sans shadow-2xl">
+                                    {/* Left Pane */}
+                                    <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505] text-white">
+                                        <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a] relative" data-dropdown="templates">
+                                            <button onClick={() => setShowTemplateDropdown(!showTemplateDropdown)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all relative z-10">
+                                                <span className="mr-2 text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
                                             </button>
-                                            <div className="px-4 py-2 text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Task templates</div>
-                                            <div className="flex flex-col">
-                                                <button 
-                                                    onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Rebrand Outreach Campaign', para: 'Alex', referencias: 'Objetivo: Renovación visual de pautas Q4.', deadline: new Date(Date.now() + 86400000*7).toISOString().split('T')[0], audience: 'Social Media', priority: 'High', contentType: 'Launch' }); setShowNewAssignModal(true); }}
-                                                    className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300"
-                                                >
-                                                    <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Rebrand Outreach Campaign
-                                                </button>
-                                                <button 
-                                                    onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Blog Updates Template', para: 'Judith', referencias: 'Revisar y actualizar SEO on-page.', deadline: new Date(Date.now() + 86400000*3).toISOString().split('T')[0], audience: 'Marketing', priority: 'Medium', contentType: 'Testing' }); setShowNewAssignModal(true); }}
-                                                    className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300"
-                                                >
-                                                    <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Blog Updates Template
-                                                </button>
+                                            {showTemplateDropdown && (
+                                                <div className="absolute top-12 left-4 w-64 bg-[#111] border border-neutral-700 rounded-xl shadow-2xl z-50 overflow-hidden text-white font-sans">
+                                                    <button onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' }); setShowNewAssignModal(true); }}
+                                                        className="w-full text-left px-4 py-3 text-xs font-bold hover:bg-neutral-800 transition-colors border-b border-neutral-800 flex items-center gap-2">
+                                                        <span className="text-[#CC0000] text-sm">+</span> Blank task
+                                                    </button>
+                                                    <div className="px-4 py-2 text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Task templates</div>
+                                                    <div className="flex flex-col">
+                                                        <button onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Rebrand Outreach Campaign', para: 'Alex', referencias: 'Objetivo: Renovación visual de pautas Q4.', deadline: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0], audience: 'Social Media', priority: 'High', contentType: 'Launch' }); setShowNewAssignModal(true); }}
+                                                            className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300">
+                                                            <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Rebrand Outreach Campaign
+                                                        </button>
+                                                        <button onClick={() => { setShowTemplateDropdown(false); setNewTask({ que: 'Blog Updates Template', para: 'Judith', referencias: 'Revisar y actualizar SEO on-page.', deadline: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], audience: 'Marketing', priority: 'Medium', contentType: 'Testing' }); setShowNewAssignModal(true); }}
+                                                            className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#CC0000]/10 hover:text-[#CC0000] transition-colors flex items-center gap-2 group text-neutral-300">
+                                                            <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Blog Updates Template
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto">
+                                            <div className="px-4 py-3 flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-500 mt-2">
+                                                <span className="mr-2">▼</span> Asignaciones Recientes
                                             </div>
+                                            <div className="flex flex-col mt-1">
+                                                {tasks.length === 0 ? (
+                                                    <p className="text-neutral-600 text-xs font-bold text-center py-6 uppercase tracking-widest">No hay tareas pendientes.</p>
+                                                ) : tasks.map(task => (
+                                                    <div key={task.id} onClick={() => setSelectedTaskBoard(task)}
+                                                        className={`flex items-center border-b border-neutral-800/50 px-4 py-2 cursor-pointer max-h-12 transition-all ${selectedTaskBoard?.id === task.id ? 'bg-[#CC0000]/10 border-l-[3px] border-l-[#CC0000]' : 'hover:bg-white/5 border-l-[3px] border-l-transparent'}`}>
+                                                        <div onClick={(e) => { e.stopPropagation(); setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t)); }}
+                                                            className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-600 hover:border-green-500 hover:text-green-500'}`}>
+                                                            {task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                        </div>
+                                                        <div className={`flex-1 text-sm font-bold truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.que}</div>
+                                                        <div className="hidden xl:flex items-center space-x-1.5 mr-3 shrink-0">
+                                                            <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.audience || 'Marketing'}</div>
+                                                            <div className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-14 text-center border ${task.priority === 'High' ? 'bg-red-500/10 text-red-400 border-red-500/20' : task.priority === 'Low' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>{task.priority || 'Medium'}</div>
+                                                        </div>
+                                                        <div className="w-7 h-7 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center text-[10px] font-black text-white mr-3 shrink-0 uppercase shadow-md">{task.para?.[0] || '?'}</div>
+                                                        <div className="text-[10px] font-black uppercase tracking-wider w-16 text-right truncate">
+                                                            {task.deadline === new Date().toISOString().split('T')[0] ? <span className="text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">Hoy</span> : <span className="text-neutral-500">{task.deadline}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Pane */}
+                                    <div className="w-1/2 md:w-7/12 flex flex-col bg-[#080808] text-white">
+                                        {selectedTaskBoard ? (
+                                            <div className="flex-1 flex flex-col overflow-hidden">
+                                                <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
+                                                    <div className="flex items-center space-x-3 text-xs">
+                                                        <button onClick={() => { setTasks(prev => prev.map(t => t.id === selectedTaskBoard.id ? { ...t, done: !t.done } : t)); setSelectedTaskBoard({...selectedTaskBoard, done: !selectedTaskBoard.done}); }}
+                                                            className={`border rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all ${selectedTaskBoard.done ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'border-neutral-700 hover:border-green-500 hover:text-green-500'}`}>
+                                                            <span className={`mr-2 ${selectedTaskBoard.done ? 'text-green-500' : 'text-neutral-500'}`}>✓</span> {selectedTaskBoard.done ? 'Completado' : 'Marcar Acción'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto px-8 py-8">
+                                                    <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 bg-neutral-900/50 w-max px-3 py-1.5 rounded-lg border border-neutral-800">
+                                                        <span className="mr-2 text-[#CC0000]">🔒</span>
+                                                        Tarea Interna • Reporte asignado por {selectedTaskBoard.asignadoPor}.
+                                                    </div>
+                                                    <h1 className={`text-3xl font-black leading-tight mb-8 ${selectedTaskBoard.done ? 'text-neutral-600 line-through' : 'text-white'}`}>
+                                                        {selectedTaskBoard.que}
+                                                    </h1>
+                                                    <div className="flex flex-col space-y-5 mb-10 border-b border-neutral-800 pb-8">
+                                                        <div className="flex items-center">
+                                                            <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Asignado a</div>
+                                                            <div className="flex items-center text-sm font-bold text-white">
+                                                                <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-[10px] text-white uppercase font-black mr-3 shadow">{selectedTaskBoard.para?.[0] || '?'}</div>
+                                                                {selectedTaskBoard.para}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center">
+                                                            <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Deadline</div>
+                                                            <div className="text-sm font-bold text-yellow-500">{selectedTaskBoard.deadline}</div>
+                                                        </div>
+                                                        <div className="flex items-start mt-4">
+                                                            <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500 mt-2">Briefing</div>
+                                                            <div className="flex-1 text-sm text-neutral-300 bg-[#111] hover:bg-[#1a1a1a] border border-neutral-800 p-4 rounded-xl min-h-[100px] transition-colors shadow-inner leading-relaxed whitespace-pre-wrap">
+                                                                {selectedTaskBoard.referencias || <span className="text-neutral-500 italic">No hay brief detallado...</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="pt-2">
+                                                        <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Comentarios:</h3>
+                                                        <div className="flex space-x-4">
+                                                            <div className="w-10 h-10 rounded-full bg-[#CC0000] flex items-center justify-center text-sm font-black text-white shrink-0 uppercase border-2 border-red-900">{(currentUser || 'U')[0]}</div>
+                                                            <div className="flex-1 border border-neutral-800 hover:border-neutral-600 rounded-xl bg-[#111] p-0 shadow-inner flex flex-col focus-within:border-[#CC0000]/50 transition-colors">
+                                                                <textarea className="w-full bg-transparent resize-none outline-none p-3 text-sm text-white placeholder-neutral-600 min-h-[80px]" placeholder="Añadir una actualización..." />
+                                                                <div className="p-2 flex justify-end shrink-0 border-t border-neutral-800">
+                                                                    <button className="bg-white text-black text-[10px] uppercase font-black px-4 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors">Comentar</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex flex-col items-center justify-center text-[#6D6E6F]">
+                                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-4 text-[#2a2a2a]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                                <p className="text-sm">Click on a task to view details</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                            ) : calendarTab === 'aprobadas' ? (
+                                <div className="flex-1 overflow-y-auto p-6 bg-black/20">
+                                    <div className="mb-6">
+                                        <h2 className="text-2xl font-black uppercase tracking-widest text-[#d4af37] flex items-center gap-3">
+                                            🌟 Bandeja de Aprobadas
+                                            <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full">{tasks.filter(t => t.status === 'approved').length} Listas para Publicar</span>
+                                        </h2>
+                                    </div>
+                                    {tasks.filter(t => t.status === 'approved').length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center p-20 opacity-50">
+                                            <span className="text-5xl mb-4">🌟</span>
+                                            <p className="text-white font-bold tracking-widest">No hay contenido aprobado pendiente.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {tasks.filter(t => t.status === 'approved').map(task => {
+                                                const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
+                                                const mediaUrl = task.mediaPayload?.[0]?.url || task.mediaPayload?.url;
+                                                const isVideo = task.mediaPayload?.[0]?.isVideo || (mediaUrl && mediaUrl.includes('.mp4'));
+                                                return (
+                                                    <div key={task.id} className="bg-[#111111] border border-[#d4af37]/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.1)] flex flex-col">
+                                                        <div className="relative h-48 bg-black">
+                                                            {mediaUrl ? (isVideo ? <video src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline autoPlay /> : <img src={mediaUrl} className="w-full h-full object-cover" alt="Media" />) : <div className="w-full h-full flex flex-col items-center justify-center text-neutral-600"><span className="text-3xl">📷</span><p className="text-[9px] font-black uppercase mt-1">Sin Media</p></div>}
+                                                            <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md border border-white/10"><span className="text-[9px] font-black tracking-widest text-[#d4af37] uppercase">APROBADO</span></div>
+                                                        </div>
+                                                        <div className="p-4 flex-1 flex flex-col">
+                                                            <p className="text-xs font-bold text-neutral-300 line-clamp-3 flex-1 mb-4">{task.caption || task.que}</p>
+                                                            <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 mb-4">
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Canales de Distribución:</p>
+                                                                <div className="flex gap-2">
+                                                                    {[{ id: 'facebook', icon: '🔵 FB' }, { id: 'instagram', icon: '🟣 IG' }, { id: 'tiktok', icon: '⚫ TK' }].map(net => (
+                                                                        <button key={net.id} onClick={() => toggleNetwork(task.id, net.id)}
+                                                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-colors ${selection[net.id] ? 'bg-white text-black' : 'bg-black text-neutral-600 border border-neutral-800'}`}>
+                                                                            {net.icon}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <button onClick={() => handleSendToNetworks(task)} className="w-full mt-auto py-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all">🚀 Mandar a Redes</button>
+                                                            <button onClick={() => { if (!window.confirm('¿Seguro de rechazar?')) return; fetch(`${'' || ''}/api/studio/tasks/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }, body: JSON.stringify({ status: 'rejected' }) }).then(() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rejected' } : t))); }}
+                                                                className="w-full mt-2 py-2 text-[10px] font-black tracking-widest uppercase text-neutral-500 hover:text-[#CC0000] transition-colors text-center">
+                                                                Devolver a Cóckers
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    {/* Section Header */}
-                                    <div className="px-4 py-3 flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-500 mt-2">
-                                        <span className="mr-2">▼</span> Asignaciones Recientes
-                                    </div>
-                                    <div className="flex flex-col mt-1">
-                                        {tasks.length === 0 ? (
-                                           <p className="text-neutral-600 text-xs font-bold text-center py-6 uppercase tracking-widest">No hay tareas pendientes.</p>
-                                        ) : tasks.map(task => (
-                                            <div 
-                                                key={task.id} 
-                                                onClick={() => setSelectedTaskBoard(task)}
-                                                className={`flex items-center border-b border-neutral-800/50 px-4 py-2 cursor-pointer max-h-12 transition-all ${selectedTaskBoard?.id === task.id ? 'bg-[#CC0000]/10 border-l-[3px] border-l-[#CC0000]' : 'hover:bg-white/5 border-l-[3px] border-l-transparent'}`}
-                                            >
-                                                <div 
-                                                    onClick={(e) => { e.stopPropagation(); setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t)); }}
-                                                    className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-600 hover:border-green-500 hover:text-green-500'}`}
-                                                >
-                                                    {task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
-                                                    {!task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-0 hover:opacity-100"><polyline points="20 6 9 17 4 12"/></svg>}
-                                                </div>
-                                                <div className={`flex-1 text-sm font-bold truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.que}</div>
-                                                
-                                                {/* Labels / Pills */}
-                                                <div className="hidden xl:flex items-center space-x-1.5 mr-3 shrink-0">
-                                                    <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.audience || 'Marketing'}</div>
-                                                    <div className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-14 text-center border ${task.priority === 'High' ? 'bg-red-500/10 text-red-400 border-red-500/20' : task.priority === 'Low' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
-                                                        {task.priority || 'Medium'}
-                                                    </div>
-                                                    <div className="bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.contentType || 'Backlog'}</div>
-                                                </div>
-                                                
-                                                {/* Assignee Avatar */}
-                                                <div className="w-7 h-7 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center text-[10px] font-black text-white mr-3 shrink-0 uppercase shadow-md" title={task.para}>
-                                                    {task.para?.[0] || '?'}
-                                                </div>
-                                                
-                                                {/* Date */}
-                                                <div className="text-[10px] font-black uppercase tracking-wider w-16 text-right truncate">
-                                                    {task.deadline === new Date().toISOString().split('T')[0] ? <span className="text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">Hoy</span> : <span className="text-neutral-500">{task.deadline}</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* ASANA RIGHT PANE -> Godzilla Dark Mode */}
-                            <div className="w-1/2 md:w-7/12 flex flex-col bg-[#080808] text-white">
-                                {selectedTaskBoard ? (
-                                    <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4">
-                                        {/* Top Action Bar */}
-                                        <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
-                                            <div className="flex items-center space-x-3 text-xs">
-                                                <button 
-                                                    onClick={() => {
-                                                        setTasks(prev => prev.map(t => t.id === selectedTaskBoard.id ? { ...t, done: !t.done } : t));
-                                                        setSelectedTaskBoard({...selectedTaskBoard, done: !selectedTaskBoard.done});
-                                                    }}
-                                                    className={`border rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all ${selectedTaskBoard.done ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'border-neutral-700 hover:border-green-500 hover:text-green-500'}`}
-                                                >
-                                                    <span className={`mr-2 ${selectedTaskBoard.done ? 'text-green-500':'text-neutral-500'}`}>✓</span> {selectedTaskBoard.done ? 'Completado' : 'Marcar Acción'}
-                                                </button>
-                                                <button className="px-2 py-1.5 rounded hover:bg-white/10 text-lg transition-colors">👍</button>
-                                                <button className="px-2 py-1.5 rounded hover:bg-white/10 text-sm transition-colors">🔗</button>
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                               <button className="px-3 py-1.5 rounded-lg hover:bg-white/10 font-bold transition-colors">⋯</button>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar relative">
-                                            {/* Top notification mock */}
-                                            <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 bg-neutral-900/50 w-max px-3 py-1.5 rounded-lg border border-neutral-800">
-                                                <span className="mr-2 text-[#CC0000]">🔒</span>
-                                                Tarea Interna • Reporte asignado por {selectedTaskBoard.asignadoPor}.
-                                            </div>
-                                            
-                                            {/* Big Title */}
-                                            <div className="mb-8">
-                                                <h1 className={`text-3xl md:text-4xl font-black leading-tight selection:bg-[#CC0000]/30 outline-none w-full bg-transparent ${selectedTaskBoard.done ? 'text-neutral-600 line-through' : 'text-white'}`}>
-                                                    {selectedTaskBoard.que}
-                                                </h1>
-                                            </div>
-                                            
-                                            {/* Details Grid */}
-                                            <div className="flex flex-col space-y-5 mb-10 border-b border-neutral-800 pb-8">
-                                                <div className="flex items-center">
-                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Asignado a</div>
-                                                    <div className="flex items-center text-sm font-bold text-white cursor-pointer hover:bg-white/5 px-2 py-1.5 rounded -ml-2 transition-colors">
-                                                        <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-[10px] text-white uppercase font-black mr-3 shadow">
-                                                            {selectedTaskBoard.para?.[0] || '?'}
-                                                        </div>
-                                                        {selectedTaskBoard.para}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Deadline</div>
-                                                    <div className="flex items-center text-sm font-bold text-yellow-500 cursor-pointer hover:bg-white/5 px-2 py-1.5 rounded -ml-2 transition-colors">
-                                                        {selectedTaskBoard.deadline}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center mt-5">
-                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500">Tags</div>
-                                                    <div className="flex items-center space-x-2 -ml-2">
-                                                        <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider">{selectedTaskBoard.audience || 'Marketing'}</div>
-                                                        <div className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider border ${selectedTaskBoard.priority === 'High' ? 'bg-red-500/10 text-red-400 border-red-500/20' : selectedTaskBoard.priority === 'Low' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
-                                                            {selectedTaskBoard.priority || 'Medium'}
-                                                        </div>
-                                                        <div className="bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider">{selectedTaskBoard.contentType || 'Backlog'}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-start mt-4">
-                                                    <div className="w-32 text-xs font-black uppercase tracking-widest text-neutral-500 mt-2">Briefing</div>
-                                                    <div className="flex-1 text-sm text-neutral-300 bg-[#111] hover:bg-[#1a1a1a] border border-neutral-800 p-4 rounded-xl -ml-2 min-h-[100px] transition-colors shadow-inner leading-relaxed whitespace-pre-wrap">
-                                                        {selectedTaskBoard.referencias ? (
-                                                            selectedTaskBoard.referencias.startsWith('http') ? (
-                                                                <a href={selectedTaskBoard.referencias} target="_blank" rel="noreferrer" className="text-sky-400 hover:text-sky-300 underline font-bold">{selectedTaskBoard.referencias}</a>
-                                                            ) : (
-                                                                selectedTaskBoard.referencias
-                                                            )
-                                                        ) : (
-                                                            <span className="text-neutral-500 italic">No hay un brief detallado de la tarea...</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
 
-                                            {/* Comments Section */}
-                                            <div className="pt-2 flex flex-col">
-                                                <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Comentarios:</h3>
-                                                {/* Comment Input */}
-                                                <div className="flex space-x-4 mb-6">
-                                                    <div className="w-10 h-10 rounded-full bg-[#CC0000] flex items-center justify-center text-sm font-black text-white shrink-0 uppercase border-2 border-red-900 shadow-[0_0_10px_rgba(204,0,0,0.3)]">
-                                                        {(currentUser || 'U')[0]}
-                                                    </div>
-                                                    <div className="flex-1 border border-neutral-800 hover:border-neutral-600 rounded-xl bg-[#111] p-0 shadow-inner flex flex-col focus-within:border-[#CC0000]/50 transition-colors">
-                                                        <textarea className="w-full bg-transparent resize-none outline-none p-3 text-sm text-white placeholder-neutral-600 min-h-[80px]" placeholder="Añadir una actualización o preguntar..."></textarea>
-                                                        <div className="p-2 flex justify-end shrink-0 border-t border-neutral-800">
-                                                            <button className="bg-white text-black text-[10px] uppercase font-black px-4 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors">Comentar</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-[#6D6E6F] font-sans">
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-4 text-[#e8ecee]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        <p className="text-sm">Click on a task to view details</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : calendarTab === 'aprobadas' ? (
-                        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-black/40 backdrop-blur-sm rounded-3xl mx-2 mb-2 custom-scrollbar">
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-black uppercase tracking-widest text-[#d4af37] flex items-center gap-3">
-                                    🌟 Bandeja de Aprobadas
-                                    <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full">{tasks.filter(t => t.status === 'approved').length} Listas para Publicar</span>
-                                </h2>
-                                <p className="text-sm font-bold text-neutral-400 mt-2">Selecciona las redes destino y manda directo a producción.</p>
-                            </div>
-
-                            {tasks.filter(t => t.status === 'approved').length === 0 ? (
-                                <div className="flex flex-col items-center justify-center p-20 opacity-50">
-                                    <span className="text-5xl mb-4">🌟</span>
-                                    <p className="text-white font-bold tracking-widest">No hay contenido aprobado pendiente.</p>
+                            ) : (calendarTab === 'citas' || calendarTab === 'todos') ? (
+                                // CITAS y TODOS → siguen usando React Big Calendar
+                                <div className="flex-1 p-4 min-h-0" style={{ minHeight: '600px' }}>
+                                    <Calendar
+                                        date={currentDate} onNavigate={(newDate) => setCurrentDate(newDate)}
+                                        localizer={localizer}
+                                        events={calendarEventsMap[calendarTab] || []}
+                                        startAccessor="start" endAccessor="end"
+                                        style={{ height: '100%' }}
+                                        messages={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", next: "Sig", previous: "Ant" }}
+                                        culture="es" eventPropGetter={eventStyleGetter}
+                                        onSelectEvent={(event) => {
+                                            if (event.tipo === 'cita') setSelectedEvent({ ...event, isCita: true });
+                                            else if (event.tipo === 'pendiente') setSelectedEvent({ ...event, isPendiente: true });
+                                            else setSelectedEvent(event);
+                                            setCommentText(''); setMentionQuery(null);
+                                        }}
+                                    />
                                 </div>
+
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {tasks.filter(t => t.status === 'approved').map(task => {
-                                        const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
-                                        const mediaUrl = task.mediaPayload?.[0]?.url || task.mediaPayload?.url;
-                                        const isVideo = task.mediaPayload?.[0]?.isVideo || task.mediaPayload?.isVideo || (mediaUrl && mediaUrl.includes('.mp4'));
-
-                                        return (
-                                            <div key={task.id} className="bg-[#111111] border border-[#d4af37]/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.1)] flex flex-col">
-                                                <div className="relative h-48 bg-black">
-                                                    {mediaUrl ? (
-                                                        isVideo ? (
-                                                            <video src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline autoPlay />
-                                                        ) : (
-                                                            <img src={mediaUrl} className="w-full h-full object-cover" alt="Media" />
-                                                        )
-                                                    ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center text-neutral-600">
-                                                            <span className="text-3xl">📷</span>
-                                                            <p className="text-[9px] font-black uppercase mt-1">Sin Media Detectada</p>
-                                                        </div>
-                                                    )}
-                                                    <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
-                                                        <span className="text-[9px] font-black tracking-widest text-[#d4af37] uppercase">APROBADO</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-4 flex-1 flex flex-col">
-                                                    <p className="text-xs font-bold text-neutral-300 line-clamp-3 flex-1 mb-4">{task.caption || task.que}</p>
-                                                    
-                                                    <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 mb-4">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Canales de Distribución:</p>
-                                                        <div className="flex gap-2">
-                                                            {[
-                                                                { id: 'facebook', icon: '🔵 FB', active: selection.facebook },
-                                                                { id: 'instagram', icon: '🟣 IG', active: selection.instagram },
-                                                                { id: 'tiktok', icon: '⚫ TK', active: selection.tiktok }
-                                                            ].map(net => (
-                                                                <button 
-                                                                    key={net.id}
-                                                                    onClick={() => toggleNetwork(task.id, net.id)}
-                                                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-colors ${net.active ? 'bg-white text-black' : 'bg-black text-neutral-600 border border-neutral-800'}`}
-                                                                >
-                                                                    {net.icon}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <button 
-                                                        onClick={() => handleSendToNetworks(task)}
-                                                        className="w-full mt-auto py-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all active:scale-95"
-                                                    >
-                                                        🚀 Mandar a Redes
+                                // ── CONTENIDO → CUSTOM GRID ASANA-STYLE ──
+                                <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+                                    {loadingEvents ? (
+                                        <div className="flex flex-col items-center justify-center h-64 opacity-40">
+                                            <div className="w-8 h-8 border-2 border-[#00ff88] border-t-transparent rounded-full animate-spin mb-4" />
+                                            <p className="text-xs font-black text-neutral-500 uppercase tracking-widest">Cargando calendario...</p>
+                                        </div>
+                                    ) : (
+                                        events.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center flex-1 opacity-40 gap-3 py-20">
+                                                <span className="text-5xl">📅</span>
+                                                <p className="text-sm font-black text-neutral-500 uppercase tracking-widest">Sin eventos. Crea tu primera campaña.</p>
+                                                {canCreate && (
+                                                    <button onClick={() => setShowNewCampaignModal(true)}
+                                                        className="mt-2 px-6 py-2 bg-[#CC0000] text-white font-black text-xs rounded-xl uppercase tracking-widest hover:bg-white hover:text-[#CC0000] transition-all">
+                                                        + Nueva Campaña
                                                     </button>
-                                                    
-                                                    {/* Opción para devolver a arte si se arrepiente a último minuto (aplica para Judith/SuperAdmin) */}
-                                                    <button 
-                                                        onClick={() => {
-                                                            if(!window.confirm('¿Seguro de rechazar esta tarea y devolverla a Alex?')) return;
-                                                            fetch(`${'' || ''}/api/studio/tasks/${task.id}`, {
-                                                                method: 'PUT',
-                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
-                                                                body: JSON.stringify({ status: 'rejected' })
-                                                            }).then(() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rejected' } : t)));
-                                                        }}
-                                                        className="w-full mt-2 py-2 text-[10px] font-black tracking-widest uppercase text-neutral-500 hover:text-[#CC0000] transition-colors text-center"
-                                                    >
-                                                        Devolver a Cóckers
-                                                    </button>
-                                                </div>
+                                                )}
                                             </div>
-                                        );
-                                    })}
+                                        ) : renderMonthGrid()
+                                    )}
                                 </div>
                             )}
                         </div>
-                    ) : (
-                        <div style={{ minHeight: '750px', height: '100%' }}>
-                            <Calendar
-                                date={currentDate} onNavigate={(newDate) => setCurrentDate(newDate)}
-                                localizer={localizer} events={calendarEvents}
-                                startAccessor="start" endAccessor="end" style={{ height: '100%' }}
-                                messages={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", next: "Sig", previous: "Ant" }}
-                                culture="es" eventPropGetter={eventStyleGetter}
-                                onSelectEvent={(event) => {
-                                    if (event.tipo === 'cita') {
-                                        setSelectedEvent({ ...event, isCita: true });
-                                    } else if (event.tipo === 'pendiente') {
-                                        setSelectedEvent({ ...event, isPendiente: true });
-                                    } else {
-                                        setSelectedEvent(event);
-                                    }
-                                    setCommentText(''); setMentionQuery(null);
-                                }}
-                            />
-                        </div>
-                    )}
+
+                        {/* SIDEBAR */}
+                        {calendarTab !== 'pendientes' && renderSidebar()}
+                    </div>
                 </div>
             </div>
 
-            {calendarTab !== 'pendientes' && renderSidebar()}
-
-            {/* ── PANEL DE EVENTO/POST (visible para TODOS) ── */}
+            {/* ── PANEL DE EVENTO SELECCIONADO ── */}
             {selectedEvent && (
-                <div className="absolute top-0 right-0 h-full w-[420px] bg-black/40 backdrop-blur-2xl border-l border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col z-50">
-                    {/* Header */}
-                    <div className={`p-4 border-b flex justify-between items-center shrink-0 ${selectedEvent.status === 'urgent' ? 'bg-gradient-to-r from-[#CC0000] to-red-800 border-red-900' : 'bg-black/30 border-white/10'}`}>
+                <div className="absolute top-0 right-0 h-full w-[420px] bg-black/50 backdrop-blur-2xl border-l border-white/[0.06] shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col z-50">
+                    <div className={`p-4 border-b flex justify-between items-center shrink-0 ${selectedEvent.status === 'urgent' ? 'bg-gradient-to-r from-[#CC0000] to-red-800 border-red-900' : 'bg-black/30 border-white/[0.06]'}`}>
                         <div>
                             <h3 className="font-black text-sm uppercase text-white tracking-widest">{selectedEvent.title}</h3>
                             <p className="text-[10px] text-white/60 font-bold mt-0.5 uppercase">{selectedEvent.provider}</p>
@@ -1110,14 +1464,14 @@ export default function CMCalendar({ adminProfile }) {
                         <button onClick={() => setSelectedEvent(null)} className="text-white hover:text-black font-black text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20">×</button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-5 space-y-5 relative">
-                        {/* Mockup de Red Social - visible para TODOS */}
+                    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                        {/* Preview */}
                         <div>
                             <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest mb-2">Vista Previa en Red Social:</p>
                             {renderSocialMockup(selectedEvent)}
                         </div>
 
-                        {/* Copy editable - solo lectura para diseñadores */}
+                        {/* Caption editable */}
                         <div>
                             <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption:</p>
                             {canCreate
@@ -1126,98 +1480,80 @@ export default function CMCalendar({ adminProfile }) {
                             }
                         </div>
 
-                        {/* Asignar corrección - SOLO Oscar/Judith/JareG */}
+                        {/* Asignar corrección — solo admins */}
                         {canCreate && (
-                            <div className="pt-3 border-t border-white/10">
-                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar Tarea / Corrección al diseñador:</p>
+                            <div className="pt-3 border-t border-white/[0.06]">
+                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar Corrección al diseñador:</p>
                                 <div className="space-y-2 mb-3">
-                                    <input type="text" placeholder="¿El qué? (Ej: Oscurecer imagen y subir contraste)" value={correctionForm.que} onChange={e => setCorrectionForm({...correctionForm, que: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="text" placeholder="¿El cuándo? (Ej: Urgente, Hoy a las 5PM)" value={correctionForm.cuando} onChange={e => setCorrectionForm({...correctionForm, cuando: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="text" placeholder="¿Para qué? (Ej: Post de mañana en Instagram)" value={correctionForm.paraQue} onChange={e => setCorrectionForm({...correctionForm, paraQue: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="url" placeholder="Referencias (URLs, links a Drive, etc.)" value={correctionForm.referencias} onChange={e => setCorrectionForm({...correctionForm, referencias: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="text" placeholder="¿El qué? (Ej: Oscurecer imagen)" value={correctionForm.que} onChange={e => setCorrectionForm({...correctionForm, que: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="text" placeholder="¿El cuándo? (Ej: Urgente, Hoy 5PM)" value={correctionForm.cuando} onChange={e => setCorrectionForm({...correctionForm, cuando: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="text" placeholder="¿Para qué? (Ej: Post de mañana IG)" value={correctionForm.paraQue} onChange={e => setCorrectionForm({...correctionForm, paraQue: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                    <input type="url" placeholder="Referencias (URLs, Drive, etc.)" value={correctionForm.referencias} onChange={e => setCorrectionForm({...correctionForm, referencias: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
                                     <textarea placeholder="Comentarios adicionales / @Menciones..." value={correctionForm.comentarios} onChange={e => setCorrectionForm({...correctionForm, comentarios: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg resize-none outline-none focus:border-[#CC0000]" rows="2" />
                                 </div>
-                                <button 
-                                    onClick={() => {
-                                        if(!correctionForm.que) return alert('Debes especificar al menos el ¿Qué?');
-                                        const finalComment = `📌 NUEVO PENDIENTE ASIGNADO:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Referencias: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
-                                        const newComment = { id: Date.now(), author: currentUser, text: finalComment, time: 'ahora' };
-                                        const mentioned = TEAM.filter(u => correctionForm.comentarios.toLowerCase().includes(`@${u.toLowerCase()}`));
-                                        if (mentioned.length > 0) {
-                                            const newNotifs = mentioned.map(u => ({ id: Date.now() + Math.random(), to: u, from: currentUser, text: `Asignación: ${correctionForm.que}`, read: false, time: 'ahora', eventTitle: selectedEvent.title }));
-                                            setNotifications(prev => [...newNotifs, ...prev]);
-                                        }
-                                        setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, status: 'urgent', comments: [...(ev.comments || []), newComment] } : ev));
-                                        setSelectedEvent(prev => ({ ...prev, status: 'urgent', comments: [...(prev.comments || []), newComment] }));
-                                        setCorrectionForm({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
-                                        alert('Tarea de corrección enviada con formato estructurado.');
-                                    }}
-                                    className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700 shadow-md">
+                                <button onClick={() => {
+                                    if (!correctionForm.que) return alert('Debes especificar al menos el ¿Qué?');
+                                    const finalComment = `📌 NUEVO PENDIENTE:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Refs: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
+                                    const newComment = { id: Date.now(), author: currentUser, text: finalComment, time: 'ahora' };
+                                    const mentioned = TEAM.filter(u => correctionForm.comentarios.toLowerCase().includes(`@${u.toLowerCase()}`));
+                                    if (mentioned.length > 0) {
+                                        const newNotifs = mentioned.map(u => ({ id: Date.now() + Math.random(), to: u, from: currentUser, text: `Asignación: ${correctionForm.que}`, read: false, time: 'ahora', eventTitle: selectedEvent.title }));
+                                        setNotifications(prev => [...newNotifs, ...prev]);
+                                    }
+                                    setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, status: 'urgent', comments: [...(ev.comments || []), newComment] } : ev));
+                                    setSelectedEvent(prev => ({ ...prev, status: 'urgent', comments: [...(prev.comments || []), newComment] }));
+                                    setCorrectionForm({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
+                                    alert('Tarea de corrección enviada.');
+                                }} className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700 shadow-md">
                                     Mandar a Corregir ➔
                                 </button>
                             </div>
                         )}
 
-                        {/* ── SECCIÓN DE COMENTARIOS (TODOS pueden comentar y mencionar) ── */}
-                        <div className="pt-3 border-t border-white/10">
+                        {/* Comentarios */}
+                        <div className="pt-3 border-t border-white/[0.06]">
                             <p className="text-xs font-black text-neutral-500 uppercase mb-3 flex items-center gap-2">
                                 💬 Comentarios del equipo
-                                <span className="text-[10px] text-neutral-700 font-normal normal-case tracking-normal">Usa @Nombre para mencionar</span>
+                                <span className="text-[10px] text-neutral-700 font-normal normal-case">Usa @Nombre para mencionar</span>
                             </p>
-
-                            {/* Hilo de comentarios */}
                             <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
                                 {(selectedEvent.comments || []).length === 0
                                     ? <p className="text-neutral-700 text-xs font-bold text-center py-4">Sin comentarios aún. Sé el primero.</p>
                                     : (selectedEvent.comments || []).map(c => (
                                         <div key={c.id} className={`flex gap-2 ${c.author?.toLowerCase() === currentUser.toLowerCase() ? 'flex-row-reverse' : ''}`}>
-                                            <div className="w-7 h-7 rounded-full bg-[#CC0000]/20 border border-[#CC0000]/40 flex items-center justify-center shrink-0 text-[10px] font-black text-[#CC0000]">
-                                                {(c.author || '?')[0].toUpperCase()}
-                                            </div>
+                                            <div className="w-7 h-7 rounded-full bg-[#CC0000]/20 border border-[#CC0000]/40 flex items-center justify-center shrink-0 text-[10px] font-black text-[#CC0000]">{(c.author || '?')[0].toUpperCase()}</div>
                                             <div className={`max-w-[75%] ${c.author?.toLowerCase() === currentUser.toLowerCase() ? 'items-end' : 'items-start'} flex flex-col`}>
                                                 <div className={`px-3 py-2 rounded-xl text-xs font-bold leading-snug ${c.author?.toLowerCase() === currentUser.toLowerCase() ? 'bg-[#CC0000]/20 border border-[#CC0000]/30 text-white rounded-tr-none' : 'bg-white/5 border border-white/10 text-neutral-300 rounded-tl-none'}`}>
                                                     {renderMentions(c.text)}
                                                 </div>
-                                                <p className="text-[10px] text-neutral-600 font-bold mt-1">{c.author} · {c.time}</p>
+                                                <p className="text-[10px] text-neutral-600 font-bold mt-1">{c.author} · {typeof c.time === 'string' && c.time.includes('T') ? new Date(c.time).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : c.time}</p>
                                             </div>
                                         </div>
                                     ))
                                 }
                             </div>
-
-                            {/* Input de comentario con @menciones */}
                             <div className="relative">
-                                {/* Dropdown de sugerencias de @menciones */}
                                 {mentionQuery !== null && (
                                     <div className="absolute bottom-full mb-1 left-0 bg-[#1a1a1a] border border-[#CC0000]/30 rounded-xl overflow-hidden shadow-xl z-10 min-w-[160px]">
                                         {TEAM.filter(u => u.toLowerCase().startsWith(mentionQuery.toLowerCase())).map(u => (
-                                            <button key={u} onClick={() => insertMention(u)}
-                                                className="w-full text-left px-4 py-2 text-sm font-black text-white hover:bg-[#CC0000]/20 transition-colors flex items-center gap-2">
+                                            <button key={u} onClick={() => insertMention(u)} className="w-full text-left px-4 py-2 text-sm font-black text-white hover:bg-[#CC0000]/20 transition-colors flex items-center gap-2">
                                                 <span className="w-6 h-6 rounded-full bg-[#CC0000]/20 border border-[#CC0000]/40 flex items-center justify-center text-[10px] text-[#CC0000]">{u[0]}</span>
                                                 @{u}
                                             </button>
                                         ))}
                                     </div>
                                 )}
-
                                 <div className="flex gap-2">
-                                    <input
-                                        ref={commentInputRef}
-                                        value={commentText}
-                                        onChange={handleCommentChange}
+                                    <input ref={commentInputRef} value={commentText} onChange={handleCommentChange}
                                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-                                        placeholder={`Comenta... usa @Nombre para mencionar`}
-                                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors placeholder:text-neutral-700"
-                                    />
-                                    <button onClick={submitComment}
-                                        className="bg-[#CC0000] hover:bg-red-700 text-white font-black px-4 rounded-xl text-xs transition-colors shrink-0">
-                                        ↑
-                                    </button>
+                                        placeholder="Comenta... usa @Nombre para mencionar"
+                                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors placeholder:text-neutral-700" />
+                                    <button onClick={submitComment} className="bg-[#CC0000] hover:bg-red-700 text-white font-black px-4 rounded-xl text-xs transition-colors shrink-0">↑</button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-white/10">
+                        <div className="pt-3 border-t border-white/[0.06]">
                             <button className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-sm tracking-widest">Aprobar y Agendar ✔️</button>
                         </div>
                     </div>
@@ -1227,7 +1563,7 @@ export default function CMCalendar({ adminProfile }) {
             {/* ── MODAL: ASIGNAR TAREA ── */}
             {showNewAssignModal && canCreate && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#111111] border border-white/10 p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
+                    <div className="bg-[#0d0d0d] border border-white/[0.06] p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.15)] relative">
                         <button onClick={() => setShowNewAssignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
                         <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">📋</span> Asignar Tarea</h3>
                         <div className="space-y-4">
@@ -1244,17 +1580,14 @@ export default function CMCalendar({ adminProfile }) {
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-yellow-500/80 uppercase mb-2 flex items-center gap-2">
-                                    <span>📸 Referencias y Capturas</span> 
+                                    <span>📸 Referencias</span>
                                     <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[9px]">Opcional</span>
                                 </label>
                                 <div className="space-y-3 p-4 border border-white/5 bg-white/[0.02] rounded-xl">
                                     <input type="text" value={newTask.referencias} onChange={e => setNewTask({ ...newTask, referencias: e.target.value })} placeholder="Link, brief, notas o URL..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
-                                    
-                                    <label className={`w-full flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isUploadingMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-neutral-600 hover:border-yellow-500 hover:bg-white/5'}`}>
+                                    <label className={`w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isUploadingMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-neutral-600 hover:border-yellow-500 hover:bg-white/5'}`}>
                                         <span className="text-xl mb-1">↑</span>
-                                        <span className="text-xs font-black text-white uppercase tracking-widest text-center">
-                                            {isUploadingMedia ? 'Subiendo...' : 'Subir foto o screenshot del celular'}
-                                        </span>
+                                        <span className="text-xs font-black text-white uppercase tracking-widest text-center">{isUploadingMedia ? 'Subiendo...' : 'Subir foto o screenshot'}</span>
                                         <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingMedia} onChange={handleUploadTaskImage} />
                                     </label>
                                 </div>
@@ -1262,28 +1595,20 @@ export default function CMCalendar({ adminProfile }) {
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Audience</label>
-                                    <select value={newTask.audience} onChange={e => setNewTask({ ...newTask, audience: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 transition-colors">
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Social Media">Social Media</option>
-                                        <option value="Product">Product</option>
-                                        <option value="Branding">Branding</option>
-                                        <option value="Finance">Finance</option>
+                                    <select value={newTask.audience} onChange={e => setNewTask({ ...newTask, audience: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 focus:outline-none transition-colors">
+                                        <option>Marketing</option><option>Social Media</option><option>Product</option><option>Branding</option><option>Finance</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Priority</label>
-                                    <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-orange-400 focus:outline-none focus:border-orange-500 transition-colors">
-                                        <option value="High" className="text-red-400">High</option>
-                                        <option value="Medium" className="text-orange-400">Medium</option>
-                                        <option value="Low" className="text-yellow-500">Low</option>
+                                    <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-orange-400 focus:outline-none transition-colors">
+                                        <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2">Content Type</label>
-                                    <select value={newTask.contentType} onChange={e => setNewTask({ ...newTask, contentType: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-fuchsia-400 focus:outline-none focus:border-fuchsia-500 transition-colors">
-                                        <option value="Backlog">Backlog</option>
-                                        <option value="Launch">Launch</option>
-                                        <option value="Testing">Testing</option>
+                                    <select value={newTask.contentType} onChange={e => setNewTask({ ...newTask, contentType: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-fuchsia-400 focus:outline-none transition-colors">
+                                        <option>Backlog</option><option>Launch</option><option>Testing</option>
                                     </select>
                                 </div>
                             </div>
@@ -1293,40 +1618,20 @@ export default function CMCalendar({ adminProfile }) {
                             </div>
                             <button onClick={async () => {
                                 if (!newTask.que || !newTask.para || !newTask.deadline) return alert('Completa los campos obligatorios (*)');
-                                
                                 try {
                                     const token = localStorage.getItem('adminToken');
                                     const res = await fetch(`${'' || ''}/api/studio/tasks`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                        body: JSON.stringify({
-                                            title: newTask.que,
-                                            prompt: newTask.referencias || 'No referenciado',
-                                            assigned_to: newTask.para.toLowerCase().replace('@',''),
-                                            tags: [newTask.audience],
-                                            priority: newTask.priority,
-                                            content_type: newTask.contentType,
-                                            ig_publish_date: new Date(newTask.deadline).toISOString()
-                                        })
+                                        body: JSON.stringify({ title: newTask.que, prompt: newTask.referencias || 'No referenciado', assigned_to: newTask.para.toLowerCase().replace('@', ''), tags: [newTask.audience], priority: newTask.priority, content_type: newTask.contentType, ig_publish_date: new Date(newTask.deadline).toISOString() })
                                     });
                                     const data = await res.json();
-                                    if(data.success) {
+                                    if (data.success) {
                                         const t = data.task;
-                                        setTasks(prev => [{
-                                            id: t.id, que: t.title, para: t.assigned_to, referencias: t.prompt,
-                                            deadline: newTask.deadline, done: false, asignadoPor: currentUser, createdAt: t.created_at,
-                                            audience: newTask.audience, priority: newTask.priority, contentType: newTask.contentType, status: t.status
-                                        }, ...prev]);
-                                    } else {
-                                        alert('Error al crear tarea: ' + data.message);
-                                    }
-                                } catch (error) {
-                                    console.error("Error creating task", error);
-                                    alert("Fallo de red al asignar tarea.");
-                                }
-
-                                // Notificación al asignado
-                                setNotifications(prev => [{ id: Date.now(), to: newTask.para, from: currentUser, text: `@${newTask.para} tienes una nueva tarea asignada: "${newTask.que}"`, read: false, time: 'ahora', eventTitle: 'Tarea directa' }, ...prev]);
+                                        setTasks(prev => [{ id: t.id, que: t.title, para: t.assigned_to, referencias: t.prompt, deadline: newTask.deadline, done: false, asignadoPor: currentUser, createdAt: t.created_at, audience: newTask.audience, priority: newTask.priority, contentType: newTask.contentType, status: t.status }, ...prev]);
+                                    } else { alert('Error al crear tarea: ' + data.message); }
+                                } catch (error) { alert("Fallo de red al asignar tarea."); }
+                                setNotifications(prev => [{ id: Date.now(), to: newTask.para, from: currentUser, text: `@${newTask.para} tienes una nueva tarea: "${newTask.que}"`, read: false, time: 'ahora', eventTitle: 'Tarea directa' }, ...prev]);
                                 setNewTask({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' });
                                 setShowNewAssignModal(false);
                             }} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all">
@@ -1340,10 +1645,12 @@ export default function CMCalendar({ adminProfile }) {
             {/* ── MODAL: NUEVA CAMPAÑA ── */}
             {showNewCampaignModal && canCreate && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#111111] border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
+                    <div className="bg-[#0d0d0d] border border-white/[0.06] p-6 md:p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(204,0,0,0.15)] relative">
                         <button onClick={() => setShowNewCampaignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
-                        <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">🎯</span> Programar Campaña</h3>
-                        
+                        <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2">
+                            <span className="text-[#CC0000]">🎯</span> Programar Campaña
+                            <span className="text-[10px] bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] px-2 py-0.5 rounded-full uppercase tracking-wider font-black">Persiste en DB • Tiempo Real</span>
+                        </h3>
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -1351,102 +1658,61 @@ export default function CMCalendar({ adminProfile }) {
                                     <select value={newCampaign.empresa} onChange={e => setNewCampaign({...newCampaign, empresa: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
                                         <option value="godzilla">🦖 Godzilla Consulting</option>
                                         <option value="accrual" disabled>🏢 Accrual (Próximamente)</option>
-                                        <option value="crein" disabled>🏗️ Crein (Próximamente)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Calendario Destino *</label>
-                                    <select value={newCampaign.calendario} onChange={e => setNewCampaign({...newCampaign, calendario: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                        <option value="contenido">📣 Calendario de Contenido</option>
-                                        <option value="citas" disabled>📅 Calendario de Citas</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Para quién? (Encargado) *</label>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Responsable *</label>
                                     <select value={newCampaign.asignado} onChange={e => setNewCampaign({...newCampaign, asignado: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                        <option value="">— Selecciona responsable —</option>
+                                        <option value="">— Selecciona —</option>
                                         {TEAM.map(u => <option key={u} value={u}>@{u}</option>)}
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Cuándo? (Fecha) *</label>
-                                    <input type="date" value={newCampaign.fecha} onChange={e => setNewCampaign({...newCampaign, fecha: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
-                                </div>
                             </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Qué? (Título) *</label>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Título *</label>
                                     <input type="text" value={newCampaign.titulo} onChange={e => setNewCampaign({...newCampaign, titulo: e.target.value})} placeholder="Ej: Video explicativo Godzilla..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma *</label>
-                                    <select value={newCampaign.plataforma} onChange={e => setNewCampaign({...newCampaign, plataforma: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                        <option value="ALL">🌐 Multicanal (Todas)</option>
-                                        <option value="tiktok">⚫ TikTok</option>
-                                        <option value="instagram">🟣 Instagram</option>
-                                        <option value="facebook">🔵 Facebook</option>
-                                    </select>
+                                    <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Fecha *</label>
+                                    <input type="date" value={newCampaign.fecha} onChange={e => setNewCampaign({...newCampaign, fecha: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors [color-scheme:dark]" />
                                 </div>
                             </div>
-
+                            <div>
+                                <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma *</label>
+                                <select value={newCampaign.plataforma} onChange={e => setNewCampaign({...newCampaign, plataforma: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
+                                    <option value="ALL">🌐 Multicanal (Todas)</option>
+                                    <option value="tiktok">⚫ TikTok</option>
+                                    <option value="instagram">🟣 Instagram</option>
+                                    <option value="facebook">🔵 Facebook</option>
+                                </select>
+                            </div>
                             <div>
                                 <label className="block text-xs font-black text-yellow-500/80 uppercase mb-2 flex items-center gap-2">
-                                    <span>📸 Referencias (Fotos/Videos/URLs recomendadas)</span> 
+                                    <span>📸 Referencias</span>
                                     <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[9px]">Opcional</span>
                                 </label>
                                 <div className="space-y-2 border border-white/5 p-3 rounded-xl bg-white/[0.02]">
-                                    <div className="flex items-center gap-3">
-                                        <span className="shrink-0 text-base w-6 text-center" title="Foto">🖼️</span>
-                                        <input type="url" value={newCampaign.urlFoto} onChange={e => setNewCampaign({...newCampaign, urlFoto: e.target.value})} placeholder="Ej: URL de referencia a Foto/Drive..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="shrink-0 text-base w-6 text-center" title="Video">🎬</span>
-                                        <input type="url" value={newCampaign.urlVideo} onChange={e => setNewCampaign({...newCampaign, urlVideo: e.target.value})} placeholder="Ej: URL de referencia a TikTok/Reel..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="shrink-0 text-base w-6 text-center" title="URL">🔗</span>
-                                        <input type="url" value={newCampaign.urlReferencia} onChange={e => setNewCampaign({...newCampaign, urlReferencia: e.target.value})} placeholder="Ej: URL al documento o blog..." className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
-                                    </div>
+                                    {[['🖼️', 'urlFoto', 'URL de Foto/Drive...'], ['🎬', 'urlVideo', 'URL de TikTok/Reel...'], ['🔗', 'urlReferencia', 'URL al documento...']].map(([icon, key, ph]) => (
+                                        <div key={key} className="flex items-center gap-3">
+                                            <span className="shrink-0 text-base w-6 text-center">{icon}</span>
+                                            <input type="url" value={newCampaign[key]} onChange={e => setNewCampaign({...newCampaign, [key]: e.target.value})} placeholder={ph} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Briefing detallado *</label>
-                                <textarea value={newCampaign.briefing} onChange={e => setNewCampaign({...newCampaign, briefing: e.target.value})} placeholder="Explica la visión, tono y los activos necesarios para esta campaña..." rows="3" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors resize-none" />
+                                <textarea value={newCampaign.briefing} onChange={e => setNewCampaign({...newCampaign, briefing: e.target.value})} placeholder="Explica la visión, tono y activos necesarios..." rows="3" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors resize-none" />
                             </div>
-
-                            <button onClick={() => {
-                                if (!newCampaign.empresa || !newCampaign.calendario || !newCampaign.asignado || !newCampaign.titulo || !newCampaign.fecha || !newCampaign.briefing) {
-                                    alert('Por favor completa todos los campos obligatorios (*) antes de programar la campaña.');
-                                    return;
-                                }
-                                
-                                const eventInfo = {
-                                    id: Date.now(),
-                                    title: `${newCampaign.plataforma === 'tiktok' ? '⚫ TK' : newCampaign.plataforma === 'instagram' ? '🟣 IG' : newCampaign.plataforma === 'facebook' ? '🔵 FB' : '🌐 Multi'}: ${newCampaign.titulo}`,
-                                    start: new Date(newCampaign.fecha + 'T12:00:00'),
-                                    end: new Date(newCampaign.fecha + 'T12:00:00'),
-                                    status: 'warning',
-                                    caption: newCampaign.briefing,
-                                    media_url: newCampaign.urlFoto || newCampaign.urlVideo || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80',
-                                    provider: newCampaign.empresa, // Guardamos la empresa
-                                    platform: newCampaign.plataforma === 'ALL' ? 'instagram' : newCampaign.plataforma, // Default icon/mockup behavior
-                                    comments: [{ id: Date.now(), author: currentUser, text: `@${newCampaign.asignado} te he asignado esta nueva campaña.`, time: 'ahora' }]
-                                };
-                                
-                                setEvents(prev => [...prev, eventInfo]);
-                                
-                                // Notificar a asignado
-                                setNotifications(prev => [{ id: Date.now()+1, to: newCampaign.asignado, from: currentUser, text: `@${newCampaign.asignado} te han asignado una nueva campaña para ${newCampaign.empresa}: "${newCampaign.titulo}"`, read: false, time: 'ahora', eventTitle: eventInfo.title }, ...prev]);
-                                
-                                setNewCampaign({ empresa: 'godzilla', calendario: 'contenido', asignado: '', titulo: '', fecha: '', plataforma: 'ALL', briefing: '', urlFoto: '', urlVideo: '', urlReferencia: '' });
-                                setShowNewCampaignModal(false);
-                            }} className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all mt-4 border border-red-900/50 shadow-[0_4px_15px_rgba(204,0,0,0.5)]">
-                                AGREGAR AL CALENDARIO ✔️
+                            <button
+                                onClick={handleCreateCampaign}
+                                disabled={savingCampaign}
+                                className="w-full bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-4 rounded-xl font-black uppercase tracking-widest transition-all mt-4 border border-red-900/50 shadow-[0_4px_15px_rgba(204,0,0,0.5)] disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {savingCampaign ? (
+                                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Guardando en DB...</>
+                                ) : '📡 AGREGAR AL CALENDARIO ✔️'}
                             </button>
                         </div>
                     </div>

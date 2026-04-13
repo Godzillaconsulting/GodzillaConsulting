@@ -791,9 +791,10 @@ export default function CockersStudio({ adminProfile }) {
                     </div>
                 )}
 
-                {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" (Estilo Midjourney) */}
+                {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" — DIVIDIDO por modo */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
                     <motion.div 
+                        key={genMode}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
@@ -813,10 +814,14 @@ export default function CockersStudio({ adminProfile }) {
                         <div className="sticky top-0 z-40 bg-gradient-to-b from-[#0a0a09] via-[#0a0a09]/95 to-transparent pt-6 pb-6 px-8">
                             <div className="flex items-center justify-between max-w-5xl mx-auto">
                                 <div>
-                                    <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em] mb-0.5">Godzilla Studio AI — v2.0</p>
+                                    <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em] mb-0.5">
+                                        Godzilla Studio AI — {genMode === 'video' ? 'Video Plus' : 'Motores Flash'}
+                                    </p>
                                     <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
-                                        Director's Gallery
-                                        <span className="text-[9px] font-black bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 px-2 py-0.5 rounded-full uppercase tracking-wider">LIVE</span>
+                                        {genMode === 'video' ? 'Video Showcase' : "Director's Gallery"}
+                                        <span className="text-[9px] font-black bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                            {genMode === 'video' ? 'BETA' : 'LIVE'}
+                                        </span>
                                     </h1>
                                 </div>
                                 <button 
@@ -832,9 +837,12 @@ export default function CockersStudio({ adminProfile }) {
                         {/* Scrolling Marquee Ticker */}
                         <div className="overflow-hidden border-y border-white/5 bg-black/30 backdrop-blur-sm py-2 mb-6">
                             <div className="marquee-track flex gap-8 whitespace-nowrap">
-                                {['8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal',
-                                  '8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal'
-                                ].map((tag, i) => (
+                                {(genMode === 'video' 
+                                    ? ['Slow Motion', 'Aerial Drone', 'Time Lapse', 'Cinematic Pan', 'Luma Dream', 'Runway Gen-3', 'Dolly Shot', 'Tracking Shot', 'Hyper-lapse', 'Epic Reveal', 'Nature B-Roll', 'Urban Night Walk',
+                                       'Slow Motion', 'Aerial Drone', 'Time Lapse', 'Cinematic Pan', 'Luma Dream', 'Runway Gen-3', 'Dolly Shot', 'Tracking Shot', 'Hyper-lapse', 'Epic Reveal', 'Nature B-Roll', 'Urban Night Walk']
+                                    : ['8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal',
+                                       '8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal']
+                                ).map((tag, i) => (
                                     <span key={i} className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-[#CC0000]/50" />
                                         {tag}
@@ -843,32 +851,104 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         </div>
 
-                        <div className="px-8 pb-16 max-w-5xl mx-auto relative z-10">
-                            <Masonry
-                                breakpointCols={{ default: 3, 900: 2, 600: 1 }}
-                                className="flex gap-5"
-                                columnClassName="flex flex-col gap-5"
-                            >
-                                {[
-                                    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
-                                    { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
-                                    { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
-                                    { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
-                                ].map((item, idx) => (
-                                    <TiltCard 
-                                        key={idx} 
-                                        item={item} 
-                                        idx={idx} 
-                                        onClick={() => setFinalPrompt(item.prompt)} 
-                                    />
-                                ))}
-                            </Masonry>
-                        </div>
+                        {genMode === 'video' ? (
+                            /* ─── VIDEO SHOWCASE: clips MP4 reales en loop ─── */
+                            <div className="px-8 pb-16 max-w-5xl mx-auto relative z-10">
+                                <p className="text-neutral-500 text-xs mb-6 flex items-center gap-2">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                                    Ejemplos de estilos cinematográficos. Haz clic para usar el prompt.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {[
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-11-small.mp4', tag: 'City Night Aerial', engine: 'Luma Dream Machine', prompt: 'Aerial cinematic drone shot of city at night, car light trails, hyper-lapse, 4k, Luma Dream Machine style' },
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-going-down-a-curved-highway-through-a-mountain-range-41576-small.mp4', tag: 'Mountain Highway', engine: 'Runway Gen-3', prompt: 'Cinematic tracking shot along curved mountain highway, dramatic sky, golden hour, epic reveal' },
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-small.mp4', tag: 'Ocean Waves', engine: 'Luma Dream Machine', prompt: 'Slow motion ocean waves crashing on rocks, ultra-high detail, natural lighting, cinematic composition' },
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-small.mp4', tag: 'Forest Stream', engine: 'Runway Gen-3', prompt: 'Mystical forest stream with sun rays piercing through trees, slow motion, 8k cinematic, Runway Gen-3' },
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-stars-in-night-sky-1610-small.mp4', tag: 'Starry Night', engine: 'Luma Dream Machine', prompt: 'Time-lapse of stars rotating over epic mountain landscape, milky way visible, 4k hyper-lapse' },
+                                        { mp4: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-with-burning-sparkler-in-a-field-4432-small.mp4', tag: 'Sparkler Portrait', engine: 'Runway Gen-3', prompt: 'Cinematic portrait with bokeh and sparklers, golden hour, slow motion, 35mm film aesthetic' },
+                                    ].map((item, idx) => (
+                                        <motion.div 
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                            onClick={() => setFinalPrompt(item.prompt)}
+                                            className="relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-[#CC0000]/50 transition-colors shadow-xl shadow-black/60"
+                                        >
+                                            {/* Real video player */}
+                                            <video 
+                                                src={item.mp4} 
+                                                className="w-full aspect-video object-cover block" 
+                                                autoPlay loop muted playsInline
+                                            />
+                                            {/* Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
+                                            {/* Video play indicator */}
+                                            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                                                <div className="w-2 h-2 rounded-full bg-[#CC0000] animate-pulse" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest bg-black/60 backdrop-blur-xl border border-white/10 text-white px-2 py-0.5 rounded-full">
+                                                    LIVE PREVIEW
+                                                </span>
+                                            </div>
+                                            {/* Engine badge */}
+                                            <div className="float-badge absolute top-3 right-3">
+                                                <span className="text-[9px] font-black uppercase tracking-widest bg-black/70 backdrop-blur-xl border border-[#CC0000]/30 text-[#CC0000] px-2 py-1 rounded-full">
+                                                    {item.engine}
+                                                </span>
+                                            </div>
+                                            {/* Bottom info */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                <p className="text-white font-bold text-sm mb-1">{item.tag}</p>
+                                                <p className="text-neutral-400 text-[10px] line-clamp-2 mb-3">{item.prompt}</p>
+                                                <motion.div 
+                                                    className="flex items-center justify-center gap-2 bg-[#CC0000]/20 hover:bg-[#CC0000]/40 backdrop-blur-xl border border-[#CC0000]/30 rounded-full py-2 text-[10px] font-black text-[#CC0000] uppercase tracking-wider transition-colors"
+                                                    whileHover={{ scale: 1.02 }}
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+                                                    Generar con este estilo
+                                                </motion.div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* Coming soon banner */}
+                                <div className="mt-8 bg-gradient-to-r from-[#CC0000]/10 via-transparent to-transparent border border-[#CC0000]/20 rounded-2xl p-6 flex items-center gap-5">
+                                    <div className="w-10 h-10 rounded-full bg-[#CC0000]/20 flex items-center justify-center shrink-0">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-bold text-sm mb-0.5">Generación de video nativa requiere API Keys</p>
+                                        <p className="text-neutral-400 text-xs">Para habilitar Luma Dream Machine o Runway Gen-3, agrega
+                                        <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-[#CC0000] mx-1">LUMA_API_KEY</code> o
+                                        <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-[#CC0000] mx-1">RUNWAY_API_KEY</code> en tu <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-300">.env</code>.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            /* ─── PHOTO GALLERY: masonry con TiltCards ─── */
+                            <div className="px-8 pb-16 max-w-5xl mx-auto relative z-10">
+                                <Masonry
+                                    breakpointCols={{ default: 3, 900: 2, 600: 1 }}
+                                    className="flex gap-5"
+                                    columnClassName="flex flex-col gap-5"
+                                >
+                                    {[
+                                        { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
+                                        { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
+                                        { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
+                                        { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
+                                        { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
+                                        { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
+                                        { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
+                                        { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
+                                        { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
+                                    ].map((item, idx) => (
+                                        <TiltCard key={idx} item={item} idx={idx} onClick={() => setFinalPrompt(item.prompt)} />
+                                    ))}
+                                </Masonry>
+                            </div>
+                        )}
                     </motion.div>
                 )}
 

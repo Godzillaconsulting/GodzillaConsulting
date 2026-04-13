@@ -27,6 +27,7 @@ import nodesRoutes from './routes/nodes.js';
 import webhookRoutes from './routes/webhook.js';
 import botConfigsRoutes from './routes/botConfigs.js';
 import dbStudioRoutes from './routes/dbStudio.js';
+import calendarRoutes from './routes/calendar.js';
 import { requireSuperAdmin } from './middleware/adminAuth.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -166,6 +167,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
+app.use('/api/calendar', calendarRoutes);       // 📅 Calendario Colaborativo (SSE + CRUD)
 app.use('/api/db-studio', requireSuperAdmin, dbStudioRoutes); // DB Studio protegido
 // ==========================================
 // PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)

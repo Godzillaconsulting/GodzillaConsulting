@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
 
@@ -374,6 +374,118 @@ export default function CockersStudio({ adminProfile }) {
 
     if (isLoading) return <div className="p-10 text-center text-neutral-400 font-bold flex items-center justify-center h-full">Iniciando Estudio IA...</div>;
 
+    // ─── Injected CSS for ken-burns, scanline sweep, glow pulse ───
+    const GALLERY_CSS = `
+        @keyframes kenBurns {
+            0%   { transform: scale(1)    translateX(0)    translateY(0); }
+            25%  { transform: scale(1.06) translateX(-1%)  translateY(-1%); }
+            50%  { transform: scale(1.1)  translateX(1%)   translateY(1%); }
+            75%  { transform: scale(1.06) translateX(-0.5%) translateY(0.5%); }
+            100% { transform: scale(1)    translateX(0)    translateY(0); }
+        }
+        @keyframes scanSweep {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 0px rgba(204,0,0,0); }
+            50%       { box-shadow: 0 0 24px rgba(204,0,0,0.5), 0 0 48px rgba(204,0,0,0.2); }
+        }
+        .gallery-img { animation: kenBurns 14s ease-in-out infinite; }
+        .gallery-card:hover .gallery-img { animation-play-state: paused; }
+        .gallery-card.featured { animation: glowPulse 3s ease-in-out infinite; }
+        .scan-overlay {
+            position: absolute; inset: 0; z-index: 15; pointer-events: none;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%);
+            background-size: 200% 100%;
+            animation: scanSweep 3s linear infinite;
+        }
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-8px); }
+        }
+        .float-badge { animation: floatBob 4s ease-in-out infinite; }
+        @keyframes ticker {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-track { animation: ticker 22s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
+    `;
+
+    // ─── TiltCard: 3-D mouse-tracking card ───
+    const TiltCard = ({ item, idx, onClick }) => {
+        const cardRef = useRef(null);
+        const rotX = useMotionValue(0);
+        const rotY = useMotionValue(0);
+        const springX = useSpring(rotX, { stiffness: 200, damping: 20 });
+        const springY = useSpring(rotY, { stiffness: 200, damping: 20 });
+
+        const handleMouse = (e) => {
+            const card = cardRef.current;
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top  + rect.height / 2;
+            rotY.set(((e.clientX - cx) / rect.width)  * 18);
+            rotX.set(((cy - e.clientY) / rect.height) * 12);
+        };
+        const resetTilt = () => { rotX.set(0); rotY.set(0); };
+
+        const isFeatured = idx % 4 === 0;
+
+        return (
+            <motion.div
+                ref={cardRef}
+                key={idx}
+                initial={{ opacity: 0, y: 40, scale: 0.93 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                style={{ rotateX: springX, rotateY: springY, transformPerspective: 900 }}
+                onMouseMove={handleMouse}
+                onMouseLeave={resetTilt}
+                onClick={onClick}
+                className={`gallery-card relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60${isFeatured ? ' featured' : ''}`}
+            >
+                {/* Scan sweep shimmer */}
+                <div className="scan-overlay" />
+                {/* Shimmer skeleton */}
+                <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
+                <img
+                    src={item.img}
+                    alt={item.tag}
+                    loading="lazy"
+                    className="gallery-img relative z-10 w-full h-auto object-cover block"
+                />
+                {/* Dark gradient */}
+                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
+
+                {/* Floating top badge */}
+                <div className="float-badge absolute top-3 right-3 z-30">
+                    <span className="bg-black/70 backdrop-blur-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-neutral-300 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isFeatured ? 'bg-[#CC0000] animate-pulse' : 'bg-emerald-400'}`}/>
+                        {item.model}
+                    </span>
+                </div>
+
+                {/* Bottom overlay — always visible slightly, full on hover */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileHover={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="absolute bottom-0 left-0 right-0 z-30 p-4"
+                >
+                    <p className="text-white font-bold text-sm mb-0.5">{item.tag}</p>
+                    <p className="text-neutral-400 text-[10px] line-clamp-2 leading-relaxed mb-3">{item.prompt}</p>
+                    <div className="flex items-center justify-center gap-1 bg-white/10 hover:bg-[#CC0000]/30 backdrop-blur-xl border border-white/10 hover:border-[#CC0000]/50 rounded-full py-2 text-[10px] font-black text-white uppercase tracking-wider transition-colors">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                        Usar este estilo
+                    </div>
+                </motion.div>
+            </motion.div>
+        );
+    };
+
     // Componente de Botón de Aspect Ratio (inspirado en la referencia)
     const AspectRatioButton = ({ ratio, label, active }) => (
         <button 
@@ -684,15 +796,28 @@ export default function CockersStudio({ adminProfile }) {
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 0.6 }}
+                        transition={{ duration: 0.5 }}
                         className="absolute inset-0 overflow-auto custom-scrollbar"
                     >
-                        {/* Gradient Header */}
-                        <div className="sticky top-0 z-10 bg-gradient-to-b from-[#0a0a09] via-[#0a0a09]/95 to-transparent pt-6 pb-8 px-8">
+                        {/* Inject dynamic CSS */}
+                        <style>{GALLERY_CSS}</style>
+
+                        {/* Ambient background orbs */}
+                        <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+                            <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#CC0000]/8 rounded-full blur-[120px] animate-pulse" />
+                            <div className="absolute top-1/2 -right-48 w-[400px] h-[400px] bg-indigo-900/12 rounded-full blur-[100px]" style={{animation:'floatBob 8s ease-in-out infinite'}} />
+                            <div className="absolute bottom-0 left-1/3 w-[300px] h-[300px] bg-violet-900/10 rounded-full blur-[80px]" style={{animation:'floatBob 12s ease-in-out infinite reverse'}} />
+                        </div>
+
+                        {/* Sticky Header */}
+                        <div className="sticky top-0 z-40 bg-gradient-to-b from-[#0a0a09] via-[#0a0a09]/95 to-transparent pt-6 pb-6 px-8">
                             <div className="flex items-center justify-between max-w-5xl mx-auto">
                                 <div>
-                                    <p className="text-[10px] font-black text-[#CC0000] uppercase tracking-widest mb-1">Godzilla Studio AI</p>
-                                    <h1 className="text-2xl font-black tracking-tight">Director's Gallery</h1>
+                                    <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em] mb-0.5">Godzilla Studio AI — v2.0</p>
+                                    <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                                        Director's Gallery
+                                        <span className="text-[9px] font-black bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 px-2 py-0.5 rounded-full uppercase tracking-wider">LIVE</span>
+                                    </h1>
                                 </div>
                                 <button 
                                     onClick={() => setShowScriptGen(true)}
@@ -704,7 +829,21 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         </div>
 
-                        <div className="px-8 pb-16 max-w-5xl mx-auto">
+                        {/* Scrolling Marquee Ticker */}
+                        <div className="overflow-hidden border-y border-white/5 bg-black/30 backdrop-blur-sm py-2 mb-6">
+                            <div className="marquee-track flex gap-8 whitespace-nowrap">
+                                {['8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal',
+                                  '8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal'
+                                ].map((tag, i) => (
+                                    <span key={i} className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-[#CC0000]/50" />
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="px-8 pb-16 max-w-5xl mx-auto relative z-10">
                             <Masonry
                                 breakpointCols={{ default: 3, 900: 2, 600: 1 }}
                                 className="flex gap-5"
@@ -714,52 +853,19 @@ export default function CockersStudio({ adminProfile }) {
                                     { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
                                     { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
                                     { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1541888086925-0c13d3cb00bd?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
-                                    { img: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, clean white background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
-                                    { img: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo, f/8 long exposure', tag: '35mm Film', model: 'Sora LCM' },
-                                    { img: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
+                                    { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
+                                    { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
                                 ].map((item, idx) => (
-                                    <motion.div 
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 30, scale: 0.96 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        transition={{ duration: 0.5, delay: idx * 0.07, ease: 'easeOut' }}
-                                        onClick={() => setFinalPrompt(item.prompt)}
-                                        whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                                        className="relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-white/20 transition-colors shadow-xl shadow-black/50"
-                                    >
-                                        {/* Shimmer skeleton while loading */}
-                                        <div className="absolute inset-0 bg-neutral-900 animate-pulse rounded-2xl" />
-                                        <img 
-                                            src={item.img} 
-                                            alt={item.tag} 
-                                            className="relative z-10 w-full h-auto object-cover block transform group-hover:scale-[1.03] transition-transform duration-700"
-                                            loading="lazy"
-                                        />
-                                        {/* Overlay */}
-                                        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4">
-                                            {/* Top badge */}
-                                            <span className="self-end bg-black/60 backdrop-blur-xl text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full text-neutral-300 border border-white/10">
-                                                {item.model}
-                                            </span>
-                                            {/* Bottom info */}
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] animate-pulse" />
-                                                    <span className="text-white font-bold text-sm">{item.tag}</span>
-                                                </div>
-                                                <p className="text-neutral-400 text-[10px] line-clamp-2 leading-relaxed">{item.prompt}</p>
-                                                <div className="mt-3 flex items-center gap-2">
-                                                    <div className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/10 rounded-full py-1.5 text-[10px] font-black text-white uppercase tracking-wider transition-colors">
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                                                        Usar Estilo
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
+                                    <TiltCard 
+                                        key={idx} 
+                                        item={item} 
+                                        idx={idx} 
+                                        onClick={() => setFinalPrompt(item.prompt)} 
+                                    />
                                 ))}
                             </Masonry>
                         </div>

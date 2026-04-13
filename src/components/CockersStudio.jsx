@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
 
 export default function CockersStudio({ adminProfile }) {
@@ -679,47 +681,89 @@ export default function CockersStudio({ adminProfile }) {
 
                 {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" (Estilo Midjourney) */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
-                    <div className="absolute inset-0 p-8 pt-8 overflow-auto custom-scrollbar">
-                        <div className="max-w-5xl mx-auto pb-12">
-                            
-                            <div className="flex items-center justify-between mb-8">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6 }}
+                        className="absolute inset-0 overflow-auto custom-scrollbar"
+                    >
+                        {/* Gradient Header */}
+                        <div className="sticky top-0 z-10 bg-gradient-to-b from-[#0a0a09] via-[#0a0a09]/95 to-transparent pt-6 pb-8 px-8">
+                            <div className="flex items-center justify-between max-w-5xl mx-auto">
                                 <div>
-                                    <h1 className="text-3xl font-black tracking-widest uppercase mb-2">Director's Gallery</h1>
-                                    <p className="text-sm font-light text-neutral-400">Selecciona un marco visual de referencia o usa el asistente para comenzar.</p>
+                                    <p className="text-[10px] font-black text-[#CC0000] uppercase tracking-widest mb-1">Godzilla Studio AI</p>
+                                    <h1 className="text-2xl font-black tracking-tight">Director's Gallery</h1>
                                 </div>
                                 <button 
                                     onClick={() => setShowScriptGen(true)}
-                                    className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-2"
+                                    className="group bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 hover:border-transparent px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2"
                                 >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
-                                    Asistente (Gemini)
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+                                    Asistente Gemini
                                 </button>
                             </div>
-
-                            <div className="columns-2 md:columns-3 gap-6 space-y-6">
-                                {[
-                                    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic lighting, hyperrealistic 8k', tag: 'Abstract Liquid' },
-                                    { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=600&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner style reflection, cinematic composition', tag: 'Cyberpunk' },
-                                    { img: 'https://images.unsplash.com/photo-1541888086925-0c13d3cb00bd?q=80&w=600&auto=format&fit=crop', prompt: 'Minimalist studio product shot, soft elegant lighting, stark shadows, highly detailed design', tag: 'Studio Product' },
-                                    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop', prompt: 'Epic aerial drone shot of icy mountains, golden hour volumetric rays, unreal engine 5 render, national geographic', tag: 'Epic Drone' },
-                                    { img: 'https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=600&auto=format&fit=crop', prompt: 'Retro 80s synthwave aesthetic, glowing grid, sunset background, vhs grain', tag: 'Retro Synth' },
-                                    { img: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=600&auto=format&fit=crop', prompt: 'Majestic landscape, 35mm film photography, natural soft dramatic lighting, highly textured', tag: '35mm Film' }
-                                ].map((item, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        onClick={() => setFinalPrompt(item.prompt)}
-                                        className="relative group rounded-3xl overflow-hidden cursor-pointer shadow-lg break-inside-avoid border border-neutral-800 hover:border-[#CC0000] transition-colors"
-                                    >
-                                        <img src={item.img} alt={item.tag} className="w-full h-auto object-cover transform group-hover:scale-110 transition-transform duration-700" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-white font-bold text-sm mb-1">{item.tag}</span>
-                                            <p className="text-neutral-400 text-[10px] line-clamp-2">{item.prompt}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
-                    </div>
+
+                        <div className="px-8 pb-16 max-w-5xl mx-auto">
+                            <Masonry
+                                breakpointCols={{ default: 3, 900: 2, 600: 1 }}
+                                className="flex gap-5"
+                                columnClassName="flex flex-col gap-5"
+                            >
+                                {[
+                                    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
+                                    { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1541888086925-0c13d3cb00bd?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
+                                    { img: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, clean white background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
+                                    { img: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo, f/8 long exposure', tag: '35mm Film', model: 'Sora LCM' },
+                                    { img: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
+                                ].map((item, idx) => (
+                                    <motion.div 
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 30, scale: 0.96 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.5, delay: idx * 0.07, ease: 'easeOut' }}
+                                        onClick={() => setFinalPrompt(item.prompt)}
+                                        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                        className="relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-white/20 transition-colors shadow-xl shadow-black/50"
+                                    >
+                                        {/* Shimmer skeleton while loading */}
+                                        <div className="absolute inset-0 bg-neutral-900 animate-pulse rounded-2xl" />
+                                        <img 
+                                            src={item.img} 
+                                            alt={item.tag} 
+                                            className="relative z-10 w-full h-auto object-cover block transform group-hover:scale-[1.03] transition-transform duration-700"
+                                            loading="lazy"
+                                        />
+                                        {/* Overlay */}
+                                        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4">
+                                            {/* Top badge */}
+                                            <span className="self-end bg-black/60 backdrop-blur-xl text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full text-neutral-300 border border-white/10">
+                                                {item.model}
+                                            </span>
+                                            {/* Bottom info */}
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] animate-pulse" />
+                                                    <span className="text-white font-bold text-sm">{item.tag}</span>
+                                                </div>
+                                                <p className="text-neutral-400 text-[10px] line-clamp-2 leading-relaxed">{item.prompt}</p>
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    <div className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/10 rounded-full py-1.5 text-[10px] font-black text-white uppercase tracking-wider transition-colors">
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                                                        Usar Estilo
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </Masonry>
+                        </div>
+                    </motion.div>
                 )}
 
                 {renderingAI && (
@@ -735,7 +779,12 @@ export default function CockersStudio({ adminProfile }) {
 
                 {/* Resultados: Opciones Renderizadas */}
                 {selectedDraft && selectedDraft.media_options?.length > 0 && !renderingAI && (
-                    <div className="absolute inset-0 p-8 pt-24 overflow-auto custom-scrollbar">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="absolute inset-0 p-8 pt-24 overflow-auto custom-scrollbar"
+                    >
                         <div className="max-w-5xl mx-auto">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-white font-bold text-lg flex items-center gap-3">
@@ -753,7 +802,12 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {selectedDraft.media_options.map((opt, i) => (
-                                    <div key={i} className="group bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 rounded-3xl p-3 flex flex-col relative transition-all shadow-xl">
+                                    <motion.div 
+                                        key={i} 
+                                        initial={{ opacity: 0, scale: 0.94 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.4, delay: i * 0.12, ease: 'easeOut' }}
+                                        className="group bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 rounded-3xl p-3 flex flex-col relative transition-all shadow-xl">
                                         
                                         <div className="absolute top-5 left-5 z-20 flex gap-2">
                                             <span className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full shadow text-white font-bold text-[10px] tracking-wider uppercase border border-white/10 group-hover:border-white/30 transition-colors">
@@ -842,7 +896,7 @@ export default function CockersStudio({ adminProfile }) {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
                             </div>
                             
@@ -875,7 +929,7 @@ export default function CockersStudio({ adminProfile }) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
             </div>

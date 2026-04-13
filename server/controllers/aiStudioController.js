@@ -312,7 +312,7 @@ export const checkRenderStatus = async (req, res) => {
                         fs.writeFileSync(rawPath, buf);
                         
                         console.log(`[STUDIO] FFMPEG: Borrando marca de agua Kling en ${taskId}...`);
-                        await removeWatermark(rawPath, cleanPath);
+                        await removeWatermark(rawPath, cleanPath, (p) => { postProcessJobs.set(taskId, { status: 'working', progress: p }); });
                         
                         fs.unlinkSync(rawPath);
                         
@@ -481,7 +481,7 @@ export const purifyVideo = async (req, res) => {
                     fs.mkdirSync('E:/assets', { recursive: true });
                 }
                 
-                await removeWatermark(rawPath, cleanPath);
+                await removeWatermark(rawPath, cleanPath, (p) => { postProcessJobs.set(taskId, { status: 'working', progress: p }); });
                 
                 // Limpiar el crudo suciote
                 if(fs.existsSync(rawPath)) fs.unlinkSync(rawPath);

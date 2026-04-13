@@ -42,6 +42,7 @@ export default function CockersStudio({ adminProfile }) {
     
     // Purificador UI States
     const [purifyingStatus, setPurifyingStatus] = useState(null); // 'uploading' | 'processing' | null
+    const [purifyPercent, setPurifyPercent] = useState(0);
     const [purifiedResult, setPurifiedResult] = useState('');
     
     const handlePurifyVideo = async (file) => {
@@ -758,7 +759,7 @@ export default function CockersStudio({ adminProfile }) {
                                     <div className="flex items-center justify-center p-6 border border-neutral-800 rounded-xl bg-black">
                                        <div className="flex flex-col items-center gap-2 animate-pulse">
                                           <div className="w-5 h-5 rounded-full border-t-2 border-[#CC0000] animate-spin"></div>
-                                          <span className="text-[10px] text-white font-bold uppercase tracking-widest">{purifyingStatus === 'uploading' ? 'Subiendo 300MB/s...' : 'Destruyendo Marca en CPU...'}</span>
+                                          <span className="text-[10px] text-white font-bold uppercase tracking-widest">{purifyingStatus === 'uploading' ? 'Subiendo 300MB/s...' : `Destruyendo Marca... ${purifyPercent}%`}</span>
                                        </div>
                                     </div>
                                 ) : (

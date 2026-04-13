@@ -6,7 +6,7 @@ import path from 'path';
 // Set the binary path so it works cross-platform seamlessly
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 
-export const removeWatermark = async (inputPath, outputPath) => {
+export const removeWatermark = async (inputPath, outputPath, onProgress = () => {}) => {
     return new Promise((resolve, reject) => {
         // La marca de agua típica de servicios AI suele colocarse en la esquina inferior derecha
         // Parámetros: delogo = x, y, width, height. W/H son dinámicos según el video.
@@ -27,7 +27,7 @@ export const removeWatermark = async (inputPath, outputPath) => {
                 '-preset slow',  // Más pesado de compilar, pero preserva más detalle
                 '-c:a copy'      // No destrozar ni recomprimir el audio original
             ])
-            .save(outputPath)
+            .on('progress', (progress) => { if(progress.percent) onProgress(Math.floor(progress.percent)); }).save(outputPath)
             .on('end', () => {
                 console.log(`[VIDEO-PROCESSOR] Watermark aniquilada con éxito en: ${outputPath}`);
                 resolve(outputPath);

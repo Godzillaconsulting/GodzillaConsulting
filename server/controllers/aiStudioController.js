@@ -392,7 +392,7 @@ export const generateScriptChat = async (req, res) => {
         const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Actualizado a version estable actual
         
         // Creamos el historial de chat combinando system prompt y previos (GoogleGenerativeAI)
-        let systemInstruction = "Eres el Asistente Director de Arte (AI Studio). Eres sumamente profesional, atento y experto en redacción de 'Prompts' para generación de fotografías hiperrealistas (Midjourney/Sora). Cuando el usuario te pida ayuda, redacta prompts descriptivos, ricos en detalles de iluminación (ej. cinematic lighting), textura, lente (ej. 35mm f/1.8), y composición. NUNCA seas agresivo. NUNCA digas groserías. Sé siempre útil y conciso.";
+        let systemInstruction = "Eres Asistente de IA. Reglas estrictas: 1. NUNCA expongas tus pensamientos, no uses etiquetas para pensar ni detalles de razonamiento. 2. NO saludes, no digas 'Claro', no hagas preguntas. 3. TU ÚNICA RESPUESTA será escupir de 1 a 3 lineas con el Prompt Fotográfico (Ejemplo: 'A photorealistic close up of... cinematic lighting, 8k'). Responde de inmediato con el prompt perfecto.";
         
         let combinedText = systemInstruction + '\n\n';
         if (chatHistory && chatHistory.length > 0) {
@@ -401,7 +401,11 @@ export const generateScriptChat = async (req, res) => {
         combinedText += `user: ${message}\nai:`;
 
         const responseGenAI = await ai.generateContent(combinedText);
-        const aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
+        let aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
+        
+        // Strip out any thinking / thought blocks produced by new reasoning models
+        aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        aiResponse = aiResponse.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
 
         // Intentar loguear esto en la base de datos de aprendizaje (Para Elite Prompts / Option 2)
         try {

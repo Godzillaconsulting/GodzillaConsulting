@@ -103,3 +103,33 @@ VALUES
   'Hola, aquí tienes la plantilla de CRM que solicitaste. Esperamos que te ayude a organizar mejor tus ventas. ¡Mucho éxito!'
 )
 ON CONFLICT (slug) DO UPDATE SET file_url = EXCLUDED.file_url;
+
+-- ============================================
+-- TABLA: studio_tasks (Estudio IA / Director's Queue)
+-- ============================================
+CREATE TABLE IF NOT EXISTS studio_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(255),
+  prompt TEXT,
+  assigned_to VARCHAR(100),
+  tags JSONB,
+  priority VARCHAR(50) DEFAULT 'Media',
+  content_type VARCHAR(50),
+  status VARCHAR(50) DEFAULT 'pending',
+  media_payload JSONB,
+  publish_targets JSONB,
+  ig_publish_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- TABLA: goyi_learning (Machine Learning Log / Elite Prompts)
+-- ============================================
+CREATE TABLE IF NOT EXISTS goyi_learning (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_prompt TEXT,
+  improved_prompt TEXT,
+  context_type VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

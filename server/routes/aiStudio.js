@@ -35,8 +35,48 @@ router.post('/sora-generate', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// Tareas del Studio (DB Local)
 // ==========================================
+// Tareas del Studio (DB Local) & Real-Time Sync
+// ==========================================
+
+const sseClients = new Set();
+
+function broadcast(type, task) {
+    const payload = JSON.stringify({ type, task });
+    for (const client of sseClients) {
+        try {
+            client.res.write(`data: ${payload}\n\n`);
+        } catch (e) {
+            sseClients.delete(client);
+        }
+    }
+}
+
+// GET: SSE Stream (Debe ir antes de otros parámetros para no colisionar con rutas /:id genéricas si existieran, aunque aquí no las hay inmediatamente)
+router.get('/tasks/stream', (req, res) => {
+    const token = req.query.token;
+    if (!token) return res.status(401).json({ error: 'Token requerido' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', ts: Date.now() })}\n\n`);
+
+    const client = { id: Date.now(), res };
+    sseClients.add(client);
+
+    const heartbeat = setInterval(() => {
+        try { res.write(`: ping\n\n`); } catch(e) { clearInterval(heartbeat); }
+    }, 25000);
+
+    req.on('close', () => {
+        clearInterval(heartbeat);
+        sseClients.delete(client);
+    });
+});
 
 // GET: Recuperar todas las tareas del Studio (con filtros opcionales)
 router.get('/tasks', authenticateToken, async (req, res) => {
@@ -87,7 +127,10 @@ router.post('/tasks', authenticateToken, requireCM, async (req, res) => {
         ];
 
         const result = await pool.query(query, values);
-        res.status(201).json({ success: true, task: result.rows[0] });
+        const newTask = result.rows[0];
+        broadcast('CREATE', newTask);
+        
+        res.status(201).json({ success: true, task: newTask });
     } catch (error) {
         console.error('Error POST /tasks:', error);
         res.status(500).json({ success: false, message: 'Error al crear tarea', error: error.message });
@@ -151,8 +194,11 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
 
         const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id];
         const result = await pool.query(query, values);
+        
+        const updatedTask = result.rows[0];
+        broadcast('UPDATE', updatedTask);
 
-        res.json({ success: true, task: result.rows[0], report: publishReport });
+        res.json({ success: true, task: updatedTask, report: publishReport });
     } catch (error) {
         console.error('Error PUT /tasks/:id:', error);
         res.status(500).json({ success: false, message: 'Error al actualizar tarea', error: error.message });

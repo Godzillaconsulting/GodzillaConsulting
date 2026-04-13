@@ -6,6 +6,78 @@ import { logAction } from './users.js';
 
 const router = express.Router();
 
+// ===================================
+// ADMIN PRESENCE (SSE & Lock State)
+// ===================================
+const presenceClients = new Set();
+let activePresences = {}; // { [nodeId]: { user: 'oscar', ts: timestamp } }
+
+function broadcastPresence() {
+    const payload = JSON.stringify({ type: 'PRESENCE_SYNC', activePresences });
+    for (const client of presenceClients) {
+        try { client.res.write(`data: ${payload}\n\n`); }
+        catch (e) { presenceClients.delete(client); }
+    }
+}
+
+// Limpieza automática cada minuto de presencias fantasma (locks abandonados)
+setInterval(() => {
+    let changed = false;
+    const now = Date.now();
+    for (const [nodeId, data] of Object.entries(activePresences)) {
+        if (now - data.ts > 60000 * 5) { // 5 min timeout
+            delete activePresences[nodeId];
+            changed = true;
+        }
+    }
+    if (changed) broadcastPresence();
+}, 60000);
+
+// GET /api/nodes/stream/presence  (SSE)
+// NOTA: Debe ir antes que /:id
+router.get('/stream/presence', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    
+    res.write(`data: ${JSON.stringify({ type: 'CONNECTED', ts: Date.now() })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'PRESENCE_SYNC', activePresences })}\n\n`);
+
+    const client = { id: Date.now(), res };
+    presenceClients.add(client);
+
+    const heartbeat = setInterval(() => {
+        try { res.write(`: ping\n\n`); } catch(e) { clearInterval(heartbeat); }
+    }, 25000);
+
+    req.on('close', () => {
+        clearInterval(heartbeat);
+        presenceClients.delete(client);
+    });
+});
+
+// POST /api/nodes/presence
+router.post('/presence', requireAdmin, (req, res) => {
+    const { nodeId, action, user } = req.body;
+    if (!nodeId || !user) return res.status(400).json({error: 'nodeId and user required'});
+    
+    if (action === 'claim') {
+        activePresences[nodeId] = { user, ts: Date.now() };
+    } else if (action === 'release') {
+        if (activePresences[nodeId] && activePresences[nodeId].user === user) {
+            delete activePresences[nodeId];
+        }
+    } else if (action === 'heartbeat') {
+        if (activePresences[nodeId] && activePresences[nodeId].user === user) {
+            activePresences[nodeId].ts = Date.now();
+        }
+    }
+    
+    broadcastPresence();
+    res.json({ success: true, activePresences });
+});
+
 // GET /api/nodes -> Fetch all nodes in the linked list
 router.get('/', async (req, res) => {
     try {

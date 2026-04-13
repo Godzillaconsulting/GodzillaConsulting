@@ -160,6 +160,8 @@ export default function AdminStudio() {
  const [saving, setSaving] = useState(false);
  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
  const [savedDraftKeys, setSavedDraftKeys] = useState(null);
+ const [activePresences, setActivePresences] = useState({});
+
 
  const [showPublishModal, setShowPublishModal] = useState(false);
  const [showPreview, setShowPreview] = useState(true);
@@ -232,6 +234,68 @@ export default function AdminStudio() {
          .catch(err => console.error('Error al cargar perfil', err));
      }
  }, []);
+
+ // ── Presence SSE Listener ────────────────────────────────────────────────
+ useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+    const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+    const evtSource = new EventSource(`${API}/api/nodes/stream/presence?token=${token}`);
+    
+    evtSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'PRESENCE_SYNC') {
+                setActivePresences(data.activePresences || {});
+            }
+        } catch(e){}
+    };
+    return () => evtSource.close();
+ }, []);
+
+ // ── Presence Broadcaster (Claim/Release) ─────────────────────────────────
+ useEffect(() => {
+    if (!selectedNodeId || !adminProfile) return;
+    const token = localStorage.getItem('adminToken');
+    const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+    const user = adminProfile.username || 'admin';
+
+    // Usar Beacon para release seguro al desmontar/cambiar tab sin esperar Fetch
+    const releaseUrl = `${API}/api/nodes/presence`;
+    const releasePayload = JSON.stringify({ nodeId: selectedNodeId, action: 'release', user });
+
+    // Claim
+    fetch(releaseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ nodeId: selectedNodeId, action: 'claim', user })
+    }).catch(()=>{});
+
+    const hb = setInterval(() => {
+        fetch(releaseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ nodeId: selectedNodeId, action: 'heartbeat', user })
+        }).catch(()=>{});
+    }, 20000);
+
+    return () => {
+        clearInterval(hb);
+        // Release (Intento con navigator.sendBeacon para cuando cierran pestaña, fallback a fetch)
+        if (navigator.sendBeacon) {
+            const blob = new Blob([releasePayload], { type: 'application/json' });
+            navigator.sendBeacon(releaseUrl, blob);
+        } else {
+            fetch(releaseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: releasePayload,
+                keepalive: true
+            }).catch(()=>{});
+        }
+    };
+ }, [selectedNodeId, adminProfile]);
+
 
  // ── Permisos por Rol ─────────────────────────────────────────────────────
  // isCM        → role='cm' (Judith): solo calendario/studio
@@ -587,13 +651,19 @@ export default function AdminStudio() {
   ) : (<>
 
  {/* Barra superior del editor */}
- <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm">
+ <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
+
  {selectedNodeId ? (
  <div className="flex items-center gap-3">
  <span className="text-2xl drop-shadow-sm">{PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.emoji ||'📄'}</span>
  <div>
- <h2 className="text-lg font-black text-white leading-none drop-shadow-sm">
+ <h2 className="text-lg font-black text-white leading-none drop-shadow-sm flex items-center gap-2">
  {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
+ {activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username && (
+    <span className="text-[9px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)] whitespace-nowrap">
+      🔒 Bloqueado por {activePresences[selectedNodeId].user}
+    </span>
+ )}
  </h2>
  <p className="text-[10px] font-bold text-[#CC0000]/60 uppercase">Vista de Editor Glassy</p>
  </div>
@@ -612,7 +682,10 @@ export default function AdminStudio() {
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
  </button>
- <button onClick={handleSave} disabled={saving || !selectedNodeId || !isRecursosValid || isCM}
+ 
+ { /* ── Botón Guardar (Bloqueable por Presence) ── */ }
+ <button onClick={handleSave} 
+ disabled={saving || !selectedNodeId || !isRecursosValid || isCM || (activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username)}
  className={`group px-5 py-2 text-xs font-black rounded-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 shadow-md active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0 border relative ${
      hasUnsavedChanges 
          ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)]' 

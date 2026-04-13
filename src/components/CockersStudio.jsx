@@ -138,6 +138,49 @@ export default function CockersStudio({ adminProfile }) {
     useEffect(() => {
         fetchQueue();
         fetchElitePrompts();
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SSE: LIVE SYNC PARA TAREAS (Arte ↔ Calendario)
+        // ═══════════════════════════════════════════════════════════════════════
+        const token = localStorage.getItem('adminToken');
+        const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+        const evtSource = new EventSource(`${API}/api/studio/tasks/stream?token=${token}`);
+
+        evtSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'CONNECTED') {
+                    console.log("[SSE Studio] Conectado a live sync.");
+                } else if (data.type === 'CREATE' || data.type === 'UPDATE') {
+                    const incomingTask = data.task;
+                    const mapped = {
+                        id: incomingTask.id,
+                        status: incomingTask.status,
+                        scheduled_for: incomingTask.ig_publish_date,
+                        caption: incomingTask.title,
+                        visual_prompt: incomingTask.prompt,
+                        media_options: typeof incomingTask.media_payload === 'string' ? JSON.parse(incomingTask.media_payload) : (incomingTask.media_payload || [])
+                    };
+
+                    setQueue(prevQueue => {
+                        const exists = prevQueue.find(t => t.id === mapped.id);
+                        if (exists) {
+                            return prevQueue.map(t => t.id === mapped.id ? mapped : t);
+                        } else {
+                            return [mapped, ...prevQueue];
+                        }
+                    });
+                } else if (data.type === 'DELETE') {
+                    setQueue(prevQueue => prevQueue.filter(t => t.id !== data.taskId));
+                }
+            } catch (e) {
+                console.error("Error parseando SSE Studio:", e);
+            }
+        };
+
+        return () => {
+            evtSource.close();
+        };
     }, []);
 
     const fetchElitePrompts = async () => {

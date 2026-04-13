@@ -182,28 +182,12 @@ export const generateRenderJob = async (req, res) => {
                  return res.status(500).json({ error: "Google API no devolvió ninguna imagen tras 3 intentos." });
             }
 
-            // Save Base64 to physical disk (uploads folder) to prevent browser crashing from massive strings
-            const imageUrls = [];
-            
-            // Revisa si existe la carpeta uploads
-            const { fileURLToPath } = await import('url');
-            const { dirname } = await import('path');
-            const __filenameCurrent = fileURLToPath(import.meta.url);
-            const __dirnameCurrent = dirname(__filenameCurrent);
-            const uploadsDir = path.join(__dirnameCurrent, '..', 'uploads');
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            // Eliminado el guardado en disco para prevenir memory/disk leak en el VPS.
+            // Las imágenes crudas en Base64 se envían directo al frontend para ser renderizadas
+            // y solo se guardarán si el usuario da clic en "Descargar".
+            const imageUrls = generatedImages.map(base64Bytes => `data:image/png;base64,${base64Bytes}`);
 
-            generatedImages.forEach((base64Bytes, index) => {
-                const safeEngineName = engine.replace(/[^a-zA-Z0-9]/g, '');
-                const uniqueName = `studio_${safeEngineName}_${Date.now()}_${index}.png`;
-                const finalPath = path.join(uploadsDir, uniqueName);
-                // Extraer los bytes en crudo desde el base64 de google y guardarlo
-                const buffer = Buffer.from(base64Bytes, 'base64');
-                fs.writeFileSync(finalPath, buffer);
-                imageUrls.push(`${process.env.PUBLIC_URL || ''}/api/media/${uniqueName}`);
-            });
-
-            // Return synchronously with the public URLs so the UI handles them gently
+            // Return synchronously with the Base64 URLs so the UI handles them directly
             return res.status(200).json({ 
                 status: 'succeed', 
                 job_id: "google_image_" + Date.now(),

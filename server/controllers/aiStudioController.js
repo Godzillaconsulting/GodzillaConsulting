@@ -392,7 +392,7 @@ export const generateScriptChat = async (req, res) => {
         const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Actualizado a version estable actual
         
         // Creamos el historial de chat combinando system prompt y previos (GoogleGenerativeAI)
-        let systemInstruction = "Eres un director creativo experto en copywriting y prompts de video. Sé muy agresivo para las conversiones y muy directo. Escribe siempre un Hook impactante, un Cuerpo directo y un CTA claro. Responde directamente con el guion pedido o la mejora. Usa máximo 2 párrafos.";
+        let systemInstruction = "Eres el Asistente Director de Arte (AI Studio). Eres sumamente profesional, atento y experto en redacción de 'Prompts' para generación de fotografías hiperrealistas (Midjourney/Sora). Cuando el usuario te pida ayuda, redacta prompts descriptivos, ricos en detalles de iluminación (ej. cinematic lighting), textura, lente (ej. 35mm f/1.8), y composición. NUNCA seas agresivo. NUNCA digas groserías. Sé siempre útil y conciso.";
         
         let combinedText = systemInstruction + '\n\n';
         if (chatHistory && chatHistory.length > 0) {

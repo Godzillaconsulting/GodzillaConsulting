@@ -43,7 +43,15 @@ export default function CockersStudio({ adminProfile }) {
         { id: 'vintage', label: '🎞️ Analógico 90s', prompt: '1990s analog 35mm film photography, polaroid style, light film grain, nostalgic faded colors, warm tone' },
         { id: 'editorial', label: '👠 Alta Costura', prompt: 'Editorial fashion photography, high contrast rim lighting, Vogue magazine cover style, Hasselblad medium format camera' },
         { id: 'drone', label: '🦅 Vista de Drone', prompt: 'Epic aerial drone shot, landscape photography, majestic, golden hour lighting, wide angle, National Geographic style' },
-        { id: 'surreal', label: '🌀 Surrealismo 3D', prompt: 'Abstract surrealism 3D render, octane render, intricate geometry, dream-like atmosphere, floating elements' }
+        { id: 'surreal', label: '🌀 Surrealismo 3D', prompt: 'Abstract surrealism 3D render, octane render, intricate geometry, dream-like atmosphere, floating elements' },
+        { id: 'food', label: '🍔 Food Commercial', prompt: 'Mouth-watering commercial food photography, macro details, vibrant colors, studio ring light, condensation and steam, highly appetizing' },
+        { id: 'noir', label: '🖤 Cine Noir', prompt: 'Black and white dramatic photography, film noir aesthetic, high contrast chiaroscuro lighting, deep shadows, classic 1940s vintage look, 35mm film' },
+        { id: 'interior', label: '🏠 Diseño Interior', prompt: 'Architectural interior photography, natural sunlight streaming through windows, modern minimalist design, wide-angle lens, photorealistic 8k, Unreal Engine 5 rendering' },
+        { id: 'pixelart', label: '🕹️ Pixel Art', prompt: '16-bit pixel art style, retro classic arcade aesthetic, vibrant palette, RPG isometric perspective, highly detailed sprite, nostalgic gaming' },
+        { id: 'claymation', label: '🧸 Claymation', prompt: 'Cute 3D claymation style, stop-motion look, tilt-shift lens, plasticine textures, soft ambient lighting, pastel colors, Aardman animations aesthetic' },
+        { id: 'motionblur', label: '🏎️ Motion Blur', prompt: 'High speed action photography, intense motion blur on background, sharp subject in focus, panning shot, cinematic speeding effect, sports photography' },
+        { id: 'anime', label: '🌸 Anime Studio', prompt: 'High budget anime style, Studio Ghibli aesthetic, beautiful vibrant 2D illustration, lush detailed background, magical lighting, cell shaded, masterpiece' },
+        { id: 'watercolor', label: '🎨 Acuarela', prompt: 'Beautiful watercolor painting, soft bleeding edge strokes, artistic, vibrant pastel colors, masterpiece, traditional media' }
     ];
 
     const toggleFilter = (filterPrompt) => {

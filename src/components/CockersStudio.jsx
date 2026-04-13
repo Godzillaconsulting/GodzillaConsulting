@@ -384,13 +384,23 @@ export default function CockersStudio({ adminProfile }) {
             {/* LEFT SIDEBAR: Panel de Parámetros (Estilo Kling / Flow) */}
             <div className="w-[380px] bg-[#0f0f0e] border-r border-[#222] flex flex-col shrink-0 h-full overflow-y-auto custom-scrollbar z-20">
                 
-                {/* Header Fijo: El Modo Video está deshabilitado temporalmente. Sólo modo Imagen (gotSora, Imagen 3, Imagen 4) */}
+                {/* Header Fijo: Seleccionador de Modo AI (Imagen / Video) */}
                 <div className="p-4 pt-6 shrink-0 flex items-center justify-center">
-                    <div className="bg-[#1a1a19] p-1 rounded-[20px] flex items-center justify-center w-full">
-                        <span className="py-2.5 text-sm font-bold text-white flex items-center gap-2">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                            Motores Fotográficos Activos
-                        </span>
+                    <div className="bg-[#1a1a19] p-1 rounded-full flex items-center justify-center w-full shadow-inner border border-neutral-800/50">
+                        <button 
+                            onClick={() => setGenMode('imagen')}
+                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2 ${genMode === 'imagen' ? 'bg-white text-black shadow-lg' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                            Motores Flash
+                        </button>
+                        <button 
+                            onClick={() => setGenMode('video')}
+                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2 ${genMode === 'video' ? 'bg-[#CC0000] text-white shadow-[0_0_15px_rgba(204,0,0,0.4)]' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+                            Video Plus
+                        </button>
                     </div>
                 </div>
 

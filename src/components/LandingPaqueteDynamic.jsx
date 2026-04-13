@@ -25,6 +25,38 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  const contentData = getNodeData(nodeId);
  const content = contentData?.heroTitle ? contentData : null;
+ const videoRef = useRef(null);
+ const [isPlaying, setIsPlaying] = useState(true);
+ const [isMuted, setIsMuted] = useState(true);
+
+ const togglePlay = () => {
+     if (videoRef.current) {
+         if (videoRef.current.tagName === 'IFRAME') {
+             const func = isPlaying ? 'pauseVideo' : 'playVideo';
+             videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+         } else {
+             if (isPlaying) {
+                 videoRef.current.pause();
+             } else {
+                 videoRef.current.play();
+             }
+         }
+     }
+     setIsPlaying(!isPlaying);
+ };
+
+ const toggleMute = () => {
+     if (videoRef.current) {
+         if (videoRef.current.tagName === 'IFRAME') {
+             const func = isMuted ? 'unMute' : 'mute';
+             videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+         } else {
+             videoRef.current.muted = !isMuted;
+         }
+     }
+     setIsMuted(!isMuted);
+ };
+
 
  useEffect(() => {
  window.scrollTo(0, 0);

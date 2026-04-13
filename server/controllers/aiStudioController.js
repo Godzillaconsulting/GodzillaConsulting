@@ -179,7 +179,7 @@ export const generateRenderJob = async (req, res) => {
     }
 };
 
-export const checkRenderStatus = async (req, res) => {
+export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); 
     try {
         const { taskId } = req.params;
         

@@ -97,7 +97,7 @@ export default function CockersStudio({ adminProfile }) {
                 // Poll checkRenderStatus
                 const pollTimer = setInterval(async () => {
                     try {
-                        const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
+                        const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}?t=${Date.now()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const stData = await stRes.json();
@@ -140,7 +140,7 @@ export default function CockersStudio({ adminProfile }) {
             if (data.status === 'processing' && data.job_id) {
                 // Poll status
                 const pollTimer = setInterval(async () => {
-                    const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
+                    const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const stData = await stRes.json();
@@ -503,7 +503,7 @@ export default function CockersStudio({ adminProfile }) {
                     
                     try {
                         const encodedJobId = encodeURIComponent(task.job_id);
-                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${encodedJobId}`, {
+                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${encodedJobId}?t=${Date.now()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         

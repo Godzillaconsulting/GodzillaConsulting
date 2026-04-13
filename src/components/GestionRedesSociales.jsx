@@ -46,10 +46,15 @@ const GestionRedesSociales = () => {
 
     const togglePlay = () => {
         if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
+            if (videoRef.current.tagName === 'IFRAME') {
+                const func = isPlaying ? 'pauseVideo' : 'playVideo';
+                videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
             } else {
-                videoRef.current.play();
+                if (isPlaying) {
+                    videoRef.current.pause();
+                } else {
+                    videoRef.current.play();
+                }
             }
         }
         setIsPlaying(!isPlaying);
@@ -57,7 +62,12 @@ const GestionRedesSociales = () => {
 
     const toggleMute = () => {
         if (videoRef.current) {
-            videoRef.current.muted = !isMuted;
+            if (videoRef.current.tagName === 'IFRAME') {
+                const func = isMuted ? 'unMute' : 'mute';
+                videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+            } else {
+                videoRef.current.muted = !isMuted;
+            }
         }
         setIsMuted(!isMuted);
     };
@@ -77,7 +87,8 @@ const GestionRedesSociales = () => {
                                 if (ytId) {
                                     return (
                                         <iframe 
-                                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&loop=1&playlist=${ytId}&controls=0`}
+                                            ref={videoRef}
+                                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&enablejsapi=1`}
                                             className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
                                             style={{ pointerEvents: 'none' }}
                                             frameBorder="0"

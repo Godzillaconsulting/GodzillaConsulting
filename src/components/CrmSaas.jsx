@@ -46,10 +46,15 @@ const CrmSaas = () => {
 
     const togglePlay = () => {
         if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
+            if (videoRef.current.tagName === 'IFRAME') {
+                const func = isPlaying ? 'pauseVideo' : 'playVideo';
+                videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
             } else {
-                videoRef.current.play();
+                if (isPlaying) {
+                    videoRef.current.pause();
+                } else {
+                    videoRef.current.play();
+                }
             }
         }
         setIsPlaying(!isPlaying);
@@ -57,7 +62,12 @@ const CrmSaas = () => {
 
     const toggleMute = () => {
         if (videoRef.current) {
-            videoRef.current.muted = !isMuted;
+            if (videoRef.current.tagName === 'IFRAME') {
+                const func = isMuted ? 'unMute' : 'mute';
+                videoRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+            } else {
+                videoRef.current.muted = !isMuted;
+            }
         }
         setIsMuted(!isMuted);
     };

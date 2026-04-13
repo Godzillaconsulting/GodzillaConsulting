@@ -139,24 +139,33 @@ export const generateRenderJob = async (req, res) => {
                 return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
             }
 
-            // Para no romper la experiencia si se usa el SDK sin capacidades de imagen de base64 nativa, 
-            // llamaremos a "sora-start" local en su lugar con model "photo".
-            try {
-                const imgRes = await fetch('http://127.0.0.1:5000/sora-start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                         prompt: optimizedPrompt || "A sleek cinematic render for an ad",
-                         mode: 'photo',
-                         diffusion_steps: 8
-                    })
-                });
-                const imgData = await imgRes.json();
-                if (!imgData.success) throw new Error("Fallo en Local Backend GoTSora para Imagenes");
-                return res.status(200).json({ job_id: imgData.task_id, status: "processing", provider: "GotSora Vision" });
-            } catch (errimg) {
-                return res.status(500).json({ error: "GotSora no disponible para imagenes y el Endpoint de GenAI no esta activo en SDK publico." });
-            }
+            // Nativamente utilizamos la API Top de Google (Gemini Image Models)
+            const taskId = 'googleimg_' + Date.now();
+            postProcessJobs.set(taskId, { status: 'working', progress: 0 });
+
+            // Proceso asíncrono robusto
+            (async () => {
+                try {
+                    const ai = genAI.getGenerativeModel({ model: "gemini-3.1-flash-image-preview" });
+                    const result = await ai.generateContent(optimizedPrompt || prompt);
+                    const candidates = result.response.candidates;
+                    if (candidates && candidates.length > 0) {
+                        const parts = candidates[0].content.parts;
+                        if (parts && parts.length > 0 && parts[0].inlineData) {
+                            const b64 = parts[0].inlineData.data;
+                            const mime = parts[0].inlineData.mimeType || "image/png";
+                            postProcessJobs.set(taskId, { status: 'done', localUrl: `data:${mime};base64,${b64}` });
+                            return;
+                        }
+                    }
+                    postProcessJobs.set(taskId, { status: 'failed', error: "Google no devolvió imagen." });
+                } catch (e) {
+                    console.error("[GOOGLE-VISION] Error Generando Imagen:", e.message);
+                    postProcessJobs.set(taskId, { status: 'failed', error: e.message });
+                }
+            })();
+            
+            return res.status(200).json({ job_id: taskId, status: "processing", provider: "Google Vision API" });
 
             // Eliminado el guardado en disco para prevenir memory/disk leak en el VPS.
             // Las imágenes crudas en Base64 se envían directo al frontend para ser renderizadas

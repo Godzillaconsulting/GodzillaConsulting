@@ -350,7 +350,10 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
         
         if ai_pipeline is not None:
             await sio.emit("render_progress", {"task_id": task_id, "status": "RENDERING", "msg": f"PyTorch: Explotando LCM Matrix para Foto en CPU (512x512)..."})
-            generator = torch.Generator(device=ai_pipeline.device).manual_seed(seed)
+            
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
             
             canny_image = None
             if ref_image_b64 and getattr(ai_pipeline, "controlnet_pipe", None) is not None:
@@ -381,8 +384,7 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
                     guidance_scale=1.5,
                     controlnet_conditioning_scale=0.8,
                     width=WIDTH,
-                    height=HEIGHT,
-                    generator=generator
+                    height=HEIGHT
                 )
             else:
                 output = ai_pipeline(
@@ -390,8 +392,7 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
                     num_inference_steps=inf_steps, 
                     guidance_scale=1.0, 
                     width=WIDTH,
-                    height=HEIGHT,
-                    generator=generator
+                    height=HEIGHT
                 )
             final_ai_image = output.images[0]
             

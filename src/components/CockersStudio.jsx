@@ -430,7 +430,7 @@ export default function CockersStudio({ adminProfile }) {
             };
 
             // Motores a invocar - Exclusivo Motores Fotográficos
-            const enginesToRun = ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
+            const enginesToRun = ['Google Imagen 3 (Ultra)', 'Google Vision (Pro)', 'Google Vision (Fast)'];
             
             // Re-armar el prompt base si tiene filtros
             const promptAmentado = selectedFilters.length > 0 

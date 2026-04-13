@@ -33,6 +33,27 @@ export default function CockersStudio({ adminProfile }) {
     
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
+    const [selectedFilters, setSelectedFilters] = useState([]);
+    
+    // Lista Visual de Filtros de Fotografía Profesionales
+    const PHOTO_FILTERS = [
+        { id: 'cinematic', label: '🎥 Cinemático', prompt: 'Cinematic lighting, dramatic shadows, volumetric fog, dark mood, color grading, 8k resolution, highly detailed' },
+        { id: 'macro', label: '📸 Macro Lente', prompt: 'Macro photography, extreme depth of field, f/2.8 aperture, soft background bokeh, sharp subject focus, commercial studio lighting' },
+        { id: 'cyberpunk', label: '👽 Cyberpunk Neo', prompt: 'Cyberpunk aesthetic, glowing neon purple and blue lights, rainy night, wet reflective puddles, blade runner style' },
+        { id: 'vintage', label: '🎞️ Analógico 90s', prompt: '1990s analog 35mm film photography, polaroid style, light film grain, nostalgic faded colors, warm tone' },
+        { id: 'editorial', label: '👠 Alta Costura', prompt: 'Editorial fashion photography, high contrast rim lighting, Vogue magazine cover style, Hasselblad medium format camera' },
+        { id: 'drone', label: '🦅 Vista de Drone', prompt: 'Epic aerial drone shot, landscape photography, majestic, golden hour lighting, wide angle, National Geographic style' },
+        { id: 'surreal', label: '🌀 Surrealismo 3D', prompt: 'Abstract surrealism 3D render, octane render, intricate geometry, dream-like atmosphere, floating elements' }
+    ];
+
+    const toggleFilter = (filterPrompt) => {
+        if (selectedFilters.includes(filterPrompt)) {
+            setSelectedFilters(selectedFilters.filter(f => f !== filterPrompt));
+        } else {
+            setSelectedFilters([...selectedFilters, filterPrompt]);
+        }
+    };
+
     const [customPresets, setCustomPresets] = useState(() => {
         try { return JSON.parse(localStorage.getItem('godzilla_custom_presets') || '[]'); } catch { return []; }
     });
@@ -403,16 +424,32 @@ export default function CockersStudio({ adminProfile }) {
             // Motores a invocar - Exclusivo Motores Fotográficos
             const enginesToRun = ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
+            // Re-armar el prompt base si tiene filtros
+            const promptAmentado = selectedFilters.length > 0 
+                ? `${finalPrompt}. ${selectedFilters.join(', ')}`
+                : finalPrompt;
+            
             const promises = enginesToRun.map(async (engineName) => {
                 const updatedConfig = { ...builderData, refImage: refImage };
-                const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ prompt: cleanPrompt, config: updatedConfig, engine: engineName })
-                });
-                let data = await resFetch.json();
-                if (!resFetch.ok) throw new Error(data.error || 'Server error');
-                return { engineName, data };
+                
+                try {
+                    const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ 
+                            prompt: promptAmentado, 
+                            mode: isCockers ? genMode : 'imagen', 
+                            engine: engineName, 
+                            config: updatedConfig 
+                        })
+                    });
+                    let data = await resFetch.json();
+                    if (!resFetch.ok) throw new Error(data.error || 'Server error');
+                    return { engineName, data };
+                } catch (e) {
+                    console.error("Error for engine", engineName, e);
+                    return { engineName, data: { status: 'error', error: e.message } };
+                }
             });
 
             const initialResults = await Promise.allSettled(promises);
@@ -726,14 +763,27 @@ export default function CockersStudio({ adminProfile }) {
                                     <AspectRatioButton label="9:16" active={builderData.aspect_ratio === '9:16'} />
                                 </div>
                                 
-                                {genMode === 'video' && (
-                                    <div className="flex bg-[#1a1a19] rounded-full p-1 mb-4">
-                                        <MultiplierButton label="x1" active={builderData.duracion === 'x1'} />
-                                        <MultiplierButton label="x2" active={builderData.duracion === 'x2'} />
-                                        <MultiplierButton label="x3" active={builderData.duracion === 'x3'} />
-                                        <MultiplierButton label="x4" active={builderData.duracion === 'x4'} />
+                                {/* Estilos Fotográficos / Filtros */}
+                                <div className="mt-2 pt-2 border-t border-white/5">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center justify-between">
+                                        Filtros de Estilo
+                                        <span className="text-[8px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{selectedFilters.length} activos</span>
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {PHOTO_FILTERS.map(filter => {
+                                            const isActive = selectedFilters.includes(filter.prompt);
+                                            return (
+                                                <button
+                                                    key={filter.id}
+                                                    onClick={() => toggleFilter(filter.prompt)}
+                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border ${isActive ? 'bg-[#CC0000] text-white border-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-600 hover:text-white'}`}
+                                                >
+                                                    {filter.label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                )}
+                                </div>
                             </>
                         ) : activeTab === 'Ingredientes' ? (
                             <div className="flex items-center flex-col justify-center h-[120px] mb-4 border-2 border-dashed border-neutral-800 rounded-2xl hover:border-neutral-600 transition-colors cursor-pointer relative">

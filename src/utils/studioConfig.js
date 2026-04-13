@@ -44,8 +44,9 @@ export const PAGE_SECTIONS = [
 export function injectSectionDefaults(nodeId, draftSource) {
   const combinedData = { ...draftSource };
   // Autoinject videoUrl field for landing packages so it appears in Media automatically
-  if (nodeId.startsWith('paquete-') && combinedData.videoUrl === undefined) {
-  combinedData.videoUrl ='';
+  if (nodeId.startsWith('paquete-')) {
+     if (combinedData.videoUrl === undefined) combinedData.videoUrl = '';
+     if (combinedData.videoFileUrl === undefined) combinedData.videoFileUrl = '';
   }
 
 

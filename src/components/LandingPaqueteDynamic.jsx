@@ -1,7 +1,7 @@
-import React, { useEffect } from'react';
+import React, { useEffect, useState, useRef } from'react';
 import ContactForm from'./ContactForm';
 import { Link, useParams } from'react-router-dom';
-import { Check } from'lucide-react';
+import { Check, Play, Pause, Volume2, VolumeX } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
 const backgroundVideo = '/api/media/assets/Particulas Rojas LANDINGS.mp4';
 import NivelExpansion from'./NivelExpansion';
@@ -169,15 +169,53 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {/* Right Content */}
  <div className="w-full lg:w-[45%] flex flex-col items-center justify-center space-y-12">
  {content.videoFileUrl || content.videoUrl ? (
- <video
- src={content.videoFileUrl || content.videoUrl}
- autoPlay
- muted
- loop
- playsInline
- controls
- className="w-full h-auto bg-black rounded-[2.5rem] shadow-[0_0_50px_rgba(255,255,255,0.1)] aspect-video object-contain"
- />
+    <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(255,255,255,0.1)] group bg-black">
+        {(() => {
+            const vSrc = content.videoFileUrl || content.videoUrl;
+            const ytMatch = vSrc.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/);
+            const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+            if (ytId) {
+                return (
+                    <iframe 
+                        ref={videoRef}
+                        src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&enablejsapi=1`}
+                        className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                        style={{ pointerEvents: 'none' }}
+                        frameBorder="0"
+                        allow="autoplay; encrypted-media"
+                    ></iframe>
+                );
+            }
+            return (
+                <video
+                    ref={videoRef}
+                    src={vSrc}
+                    autoPlay
+                    muted={isMuted}
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+                    onClick={togglePlay}
+                />
+            );
+        })()}
+        
+        {/* Video Controls Overlay */}
+        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button
+                onClick={togglePlay}
+                className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"
+            >
+                {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-1" />}
+            </button>
+            <button
+                onClick={toggleMute}
+                className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"
+            >
+                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            </button>
+        </div>
+    </div>
  ) : (
  <div className="w-full bg-white rounded-[2.5rem] shadow-[0_0_50px_rgba(255,255,255,0.1)] min-h-[250px] md:min-h-[300px] lg:min-h-[350px]">
  </div>

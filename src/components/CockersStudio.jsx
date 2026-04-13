@@ -30,8 +30,22 @@ export default function CockersStudio({ adminProfile }) {
     
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
+    const [customPresets, setCustomPresets] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('godzilla_custom_presets') || '[]'); } catch { return []; }
+    });
     const [ytLink, setYtLink] = useState('');
     const [refImage, setRefImage] = useState('');
+
+    const handleSavePreset = () => {
+        if (!finalPrompt.trim()) return alert('Escribe un prompt primero para guardarlo.');
+        const name = prompt('Dale un nombre corto a tu Preset (Ej: Estilo Pixar):');
+        if (!name) return;
+        const icon = prompt('Un emoji para identificarlo (Ej: 🎨):') || '📌';
+        const newPreset = { icon, name, prompt: finalPrompt };
+        const newPresets = [...customPresets, newPreset];
+        setCustomPresets(newPresets);
+        localStorage.setItem('godzilla_custom_presets', JSON.stringify(newPresets));
+    };
 
     const getYouTubeId = (url) => {
         if (!url) return null;
@@ -421,16 +435,23 @@ export default function CockersStudio({ adminProfile }) {
                             { icon: '📸', name: 'Macro Product', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed' },
                             { icon: '👽', name: 'Cyberpunk', prompt: 'Cyberpunk aesthetic, neon purple and blue lighting, rainy atmosphere, blade runner reflections, unreal engine 5 render' },
                             { icon: '🎞️', name: 'Vintage 90s', prompt: '90s analog film look, light grain, warm faded colors, vintage aesthetic, polaroid style' },
-                            { icon: '🦅', name: 'Drone Epic', prompt: 'Aerial drone shot, epic dramatic landscape, golden hour lighting, national geographic photography' }
-                        ].map(preset => (
+                            { icon: '🦅', name: 'Drone Epic', prompt: 'Aerial drone shot, epic dramatic landscape, golden hour lighting, national geographic photography' },
+                            ...customPresets
+                        ].map((preset, idx) => (
                             <button 
-                                key={preset.name}
+                                key={idx}
                                 onClick={() => setFinalPrompt(preset.prompt)}
                                 className="shrink-0 bg-[#1a1a19] hover:bg-[#CC0000]/20 border border-neutral-800 hover:border-[#CC0000]/50 text-neutral-400 hover:text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-1.5"
                             >
                                 <span>{preset.icon}</span> {preset.name}
                             </button>
                         ))}
+                        <button 
+                            onClick={handleSavePreset}
+                            className="shrink-0 bg-transparent hover:bg-neutral-800 border border-dashed border-neutral-700 hover:border-neutral-500 text-neutral-500 hover:text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-1.5"
+                        >
+                            <span>+</span> Añadir
+                        </button>
                     </div>
 
                     {/* Floating Settings Widget (Estilo Luma Dream Machine) */}
@@ -656,33 +677,47 @@ export default function CockersStudio({ adminProfile }) {
                     </div>
                 )}
 
-                {/* Si no hay drafts ni generación, Mostramos el Splash principal */}
+                {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" (Estilo Midjourney) */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
-                    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto mt-12 pb-12">
-                        <div className="flex flex-col items-center text-center opacity-40 mb-10">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                            <h1 className="text-2xl font-bold tracking-wider mb-2">Awaiting Instructions</h1>
-                            <p className="text-sm font-light max-w-sm">Type your prompt on the left or select a pending script to summon the AI engines.</p>
-                        </div>
-                        
-                        <div className="w-full text-left bg-[#0a0a09] border border-neutral-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-neutral-700 to-transparent opacity-20"></div>
+                    <div className="absolute inset-0 p-8 pt-8 overflow-auto custom-scrollbar">
+                        <div className="max-w-5xl mx-auto pb-12">
                             
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h1 className="text-3xl font-black tracking-widest uppercase mb-2">Director's Gallery</h1>
+                                    <p className="text-sm font-light text-neutral-400">Selecciona un marco visual de referencia o usa el asistente para comenzar.</p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowScriptGen(true)}
+                                    className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-2"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+                                    Asistente (Gemini)
+                                </button>
+                            </div>
 
-                            
-                            <h3 className="text-xs font-black text-[#CC0000] uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span>✨</span> ¿Sin saber qué guion crear?
-                            </h3>
-                            <button 
-                                onClick={() => setShowScriptGen(true)}
-                                className="w-full bg-[#161615] hover:bg-gradient-to-r hover:from-[#CC0000] hover:to-[#880000] border border-neutral-800 hover:border-transparent p-4 rounded-xl transition-all shadow-lg group flex justify-between items-center"
-                            >
-                                <span className="font-bold text-neutral-300 group-hover:text-white transition-colors">Abrir Asistente de Guiones (Gemini)</span>
-                                <span className="text-xs bg-black/50 text-white px-3 py-1.5 rounded-lg border border-neutral-700 flex items-center gap-1.5">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
-                                    Chat
-                                </span>
-                            </button>
+                            <div className="columns-2 md:columns-3 gap-6 space-y-6">
+                                {[
+                                    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic lighting, hyperrealistic 8k', tag: 'Abstract Liquid' },
+                                    { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=600&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner style reflection, cinematic composition', tag: 'Cyberpunk' },
+                                    { img: 'https://images.unsplash.com/photo-1541888086925-0c13d3cb00bd?q=80&w=600&auto=format&fit=crop', prompt: 'Minimalist studio product shot, soft elegant lighting, stark shadows, highly detailed design', tag: 'Studio Product' },
+                                    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop', prompt: 'Epic aerial drone shot of icy mountains, golden hour volumetric rays, unreal engine 5 render, national geographic', tag: 'Epic Drone' },
+                                    { img: 'https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=600&auto=format&fit=crop', prompt: 'Retro 80s synthwave aesthetic, glowing grid, sunset background, vhs grain', tag: 'Retro Synth' },
+                                    { img: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=600&auto=format&fit=crop', prompt: 'Majestic landscape, 35mm film photography, natural soft dramatic lighting, highly textured', tag: '35mm Film' }
+                                ].map((item, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => setFinalPrompt(item.prompt)}
+                                        className="relative group rounded-3xl overflow-hidden cursor-pointer shadow-lg break-inside-avoid border border-neutral-800 hover:border-[#CC0000] transition-colors"
+                                    >
+                                        <img src={item.img} alt={item.tag} className="w-full h-auto object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-white font-bold text-sm mb-1">{item.tag}</span>
+                                            <p className="text-neutral-400 text-[10px] line-clamp-2">{item.prompt}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}

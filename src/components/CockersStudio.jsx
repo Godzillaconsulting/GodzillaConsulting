@@ -414,6 +414,25 @@ export default function CockersStudio({ adminProfile }) {
                         className="w-full h-[140px] bg-transparent border-none text-white/90 focus:ring-0 p-0 text-md font-light placeholder-neutral-600 outline-none resize-none leading-relaxed"
                     />
                     
+                    {/* Suggested Presets Strip (Higgsfield Style) */}
+                    <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2 mb-2 mt-2">
+                        {[
+                            { icon: '🎥', name: 'Cinematic', prompt: 'Cinematic dolly shot, dramatic lighting, vivid colors, 35mm film, hyper-realistic, 8k resolution' },
+                            { icon: '📸', name: 'Macro Product', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed' },
+                            { icon: '👽', name: 'Cyberpunk', prompt: 'Cyberpunk aesthetic, neon purple and blue lighting, rainy atmosphere, blade runner reflections, unreal engine 5 render' },
+                            { icon: '🎞️', name: 'Vintage 90s', prompt: '90s analog film look, light grain, warm faded colors, vintage aesthetic, polaroid style' },
+                            { icon: '🦅', name: 'Drone Epic', prompt: 'Aerial drone shot, epic dramatic landscape, golden hour lighting, national geographic photography' }
+                        ].map(preset => (
+                            <button 
+                                key={preset.name}
+                                onClick={() => setFinalPrompt(preset.prompt)}
+                                className="shrink-0 bg-[#1a1a19] hover:bg-[#CC0000]/20 border border-neutral-800 hover:border-[#CC0000]/50 text-neutral-400 hover:text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-1.5"
+                            >
+                                <span>{preset.icon}</span> {preset.name}
+                            </button>
+                        ))}
+                    </div>
+
                     {/* Floating Settings Widget (Estilo Luma Dream Machine) */}
                     <div className="bg-[#141413] border border-neutral-800 rounded-3xl p-4 mt-4 shadow-2xl relative overflow-hidden group">
                         

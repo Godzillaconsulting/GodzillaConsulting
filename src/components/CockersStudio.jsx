@@ -22,6 +22,7 @@ export default function CockersStudio({ adminProfile }) {
     
     // Outbox State
     const [showOutbox, setShowOutbox] = useState(false);
+    const [outboxTab, setOutboxTab] = useState('enviadas'); // 'enviadas' | 'aprobadas' | 'correcciones'
 
     // States del Redactor IA (Asistente Copywriting)
     const [showScriptGen, setShowScriptGen] = useState(false);
@@ -516,14 +517,14 @@ export default function CockersStudio({ adminProfile }) {
                 <div className="p-4 pt-6 shrink-0 flex items-center justify-center">
                     <div className="bg-[#1a1a19] p-1 rounded-full flex items-center justify-center w-full shadow-inner border border-neutral-800/50">
                         <button 
-                            onClick={() => setGenMode('imagen')}
+                            onClick={() => { setGenMode('imagen'); setSelectedDraft(null); }}
                             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2 ${genMode === 'imagen' ? 'bg-white text-black shadow-lg' : 'text-neutral-500 hover:text-white'}`}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                             Motores Flash
                         </button>
                         <button 
-                            onClick={() => setGenMode('video')}
+                            onClick={() => { setGenMode('video'); setSelectedDraft(null); }}
                             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2 ${genMode === 'video' ? 'bg-[#CC0000] text-white shadow-[0_0_15px_rgba(204,0,0,0.4)]' : 'text-neutral-500 hover:text-white'}`}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
@@ -727,30 +728,42 @@ export default function CockersStudio({ adminProfile }) {
                 </div>
 
                 {/* MODAL OUTBOX */}
-                {showOutbox && (
+                {showOutbox && (() => {
+                    const outboxQueue = queue.filter(q => {
+                        if (outboxTab === 'enviadas') return ['pending_cm_approval', 'approved', 'rejected'].includes(q.status);
+                        if (outboxTab === 'aprobadas') return q.status === 'approved';
+                        if (outboxTab === 'correcciones') return q.status === 'rejected';
+                        return false;
+                    });
+                    
+                    return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <div className="w-full max-w-4xl max-h-[85vh] bg-[#111111] border border-neutral-800 shadow-2xl rounded-3xl overflow-hidden flex flex-col relative">
                             <div className="bg-[#1a1a1a] border-b border-neutral-800 p-5 flex justify-between items-center">
                                 <div>
                                     <h3 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">📤 Bandeja de Salida (Arte)</h3>
-                                    <p className="text-[10px] text-neutral-400 font-bold mt-1 uppercase">Monitor de trabajos enviados y correcciones</p>
+                                    <div className="flex gap-2 mt-3">
+                                        <button onClick={() => setOutboxTab('enviadas')} className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all border ${outboxTab === 'enviadas' ? 'bg-[#CC0000] text-white border-[#CC0000]' : 'bg-transparent text-neutral-500 border-neutral-700 hover:text-white'}`}>Enviadas</button>
+                                        <button onClick={() => setOutboxTab('aprobadas')} className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all border ${outboxTab === 'aprobadas' ? 'bg-yellow-600 text-white border-yellow-500' : 'bg-transparent text-neutral-500 border-neutral-700 hover:text-white'}`}>Aprobadas</button>
+                                        <button onClick={() => setOutboxTab('correcciones')} className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all border ${outboxTab === 'correcciones' ? 'bg-[#CC0000] text-white border-[#CC0000]' : 'bg-transparent text-neutral-500 border-neutral-700 hover:text-white'}`}>Correcciones</button>
+                                    </div>
                                 </div>
-                                <button onClick={() => setShowOutbox(false)} className="text-white hover:text-[#CC0000] text-xl font-black w-8 h-8">×</button>
+                                <button onClick={() => setShowOutbox(false)} className="text-white hover:text-[#CC0000] text-xl font-black w-8 h-8 self-start">×</button>
                             </div>
                             
                             <div className="flex-1 overflow-y-auto p-6 bg-[#050505]">
-                                {queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length === 0 ? (
+                                {outboxQueue.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center p-10 opacity-50">
                                         <span className="text-4xl mb-4">📭</span>
                                         <p className="text-white font-bold tracking-widest text-sm">Tu bandeja está vacía.</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').map(task => (
-                                            <div key={task.id} className={`border rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden ${task.status === 'rejected' ? 'bg-[#CC0000]/5 border-[#CC0000]/40' : 'bg-neutral-900 border-neutral-800'}`}>
+                                        {outboxQueue.map(task => (
+                                            <div key={task.id} className={`border rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden ${task.status === 'rejected' ? 'bg-[#CC0000]/5 border-[#CC0000]/40' : task.status === 'approved' ? 'bg-yellow-900/10 border-yellow-500/40' : 'bg-neutral-900 border-neutral-800'}`}>
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${task.status === 'rejected' ? 'bg-[#CC0000] text-white' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                                        {task.status === 'rejected' ? '❌ DEVUELTO (Corrección)' : '⏳ EN REVISIÓN'}
+                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${task.status === 'rejected' ? 'bg-[#CC0000] text-white' : task.status === 'approved' ? 'bg-yellow-600 text-white' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                                                        {task.status === 'rejected' ? '❌ DEVUELTO' : task.status === 'approved' ? '🌟 APROBADA' : '⏳ EN REVISIÓN'}
                                                     </span>
                                                 </div>
                                                 
@@ -789,7 +802,8 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         </div>
                     </div>
-                )}
+                    );
+                })()}
 
                 {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" — DIVIDIDO por modo */}
                 {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
@@ -997,7 +1011,7 @@ export default function CockersStudio({ adminProfile }) {
                                         
                                         <div className="absolute top-5 left-5 z-20 flex gap-2">
                                             <span className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full shadow text-white font-bold text-[10px] tracking-wider uppercase border border-white/10 group-hover:border-white/30 transition-colors">
-                                                {opt.isVideo ? 'VIDEO' : 'IMAGE'}
+                                                {opt.isVideo && (opt.url.includes('.mp4') || opt.url.includes('.webm')) ? 'VIDEO' : opt.isVideo ? 'CONCEPT FRAME' : 'IMAGE'}
                                             </span>
                                             <span className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full shadow text-neutral-400 font-bold text-[10px] uppercase border border-white/10">
                                                 {builderData.aspect_ratio}
@@ -1018,24 +1032,35 @@ export default function CockersStudio({ adminProfile }) {
                                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                             allowFullScreen
                                                         ></iframe>
+                                                    ) : opt.url.includes('.mp4') || opt.url.includes('.webm') ? (
+                                                        /* Real native video file */
+                                                        <video 
+                                                            src={opt.url} 
+                                                            className="w-full h-full object-cover" 
+                                                            autoPlay loop muted playsInline controls
+                                                        />
                                                     ) : (
+                                                        /* Image URL tagged as video - show as CONCEPT FRAME */
                                                         <>
-                                                            {opt.url.includes('.mp4') || opt.url.includes('.webm') ? (
-                                                                <video 
-                                                                    src={opt.url} 
-                                                                    className="w-full h-full object-cover" 
-                                                                    autoPlay loop muted playsInline controls
-                                                                />
-                                                            ) : (
-                                                                <>
-                                                                    <img src={opt.url} alt="video mock" className="w-full h-full object-cover transform scale-105 group-hover/vid:scale-110 group-hover/vid:-translate-x-2 transition-all duration-[5000ms] ease-in-out" />
-                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
-                                                                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-                                                                            <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            )}
+                                                            <img 
+                                                                src={opt.url} 
+                                                                alt="concept frame" 
+                                                                className="w-full h-full object-cover gallery-img" 
+                                                                onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                                                            />
+                                                            {/* Error fallback - hidden by default */}
+                                                            <div style={{display:'none'}} className="absolute inset-0 flex-col items-center justify-center bg-neutral-900 gap-3">
+                                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#CC0000" strokeWidth="1.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/><line x1="2" y1="2" x2="22" y2="22" stroke="#666"/></svg>
+                                                                <p className="text-neutral-500 text-[10px] font-bold uppercase">Sin Resultado</p>
+                                                            </div>
+                                                            {/* Cinematic concept frame overlay */}
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+                                                            <div className="absolute bottom-3 left-3 right-3 pointer-events-none">
+                                                                <div className="flex items-center gap-1.5 mb-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                                    <span className="text-[9px] text-amber-400 font-black uppercase tracking-widest">Frame Conceptual — API Key pendiente</span>
+                                                                </div>
+                                                            </div>
                                                         </>
                                                     )}
                                                 </div>
@@ -1063,9 +1088,11 @@ export default function CockersStudio({ adminProfile }) {
                                                 
                                                 {canSeeAll && (
                                                     <div className="flex gap-1.5">
-                                                        <button onClick={() => handleAction(opt, 'review')} className="bg-[#CC0000] hover:bg-red-800 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(204,0,0,0.4)] transition-transform active:scale-95">
-                                                            Enviar a Revisión (CM)
-                                                        </button>
+                                                        {adminProfile?.username?.toLowerCase() === 'alex' && (
+                                                            <button onClick={() => handleAction(opt, 'review')} className="bg-[#CC0000] hover:bg-red-800 text-white font-bold text-[9px] uppercase tracking-wider px-4 py-2 rounded-full shadow-[0_0_10px_rgba(204,0,0,0.4)] transition-transform active:scale-95">
+                                                                Enviar a Revisión (CM)
+                                                            </button>
+                                                        )}
                                                         
                                                         {/* Actions below usually for Judith/Admin, visible to SuperAdmin via canSeeAll */}
                                                         {adminProfile?.is_superadmin && (

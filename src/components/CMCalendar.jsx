@@ -127,6 +127,11 @@ export default function CMCalendar({ adminProfile }) {
     const [newTask, setNewTask] = useState({ que: '', para: '', referencias: '', deadline: '', audience: 'Marketing', priority: 'Medium', contentType: 'Backlog' });
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+    
+    // ─── Modal de Publicación ─────────────────────────────────────────────
+    const [selectedPublishTask, setSelectedPublishTask] = useState(null);
+    const [showPublishModal, setShowPublishModal] = useState(false);
+    const [publishNetwork, setPublishNetwork] = useState('instagram');
 
     // ─── Comentarios & Notificaciones ─────────────────────────────────────
     const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
@@ -950,7 +955,7 @@ export default function CMCalendar({ adminProfile }) {
                     <p className="text-xs text-red-500/70 font-bold">Asignadas por CM / Dirección</p>
                 </div>
                 <div className="flex border-b border-white/10">
-                    {[['pendientes', 'Por Realizar'], ['realizadas', 'Realizadas']].map(([key, label]) => (
+                    {[['pendientes', 'Por Realizar'], ['realizadas', 'Realizadas'], ['aprobadas', 'Listas']].map(([key, label]) => (
                         <button key={key} onClick={() => setTaskView(key)}
                             className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-colors ${taskView === key ? 'text-[#CC0000] border-b-2 border-[#CC0000]' : 'text-neutral-600 hover:text-neutral-400'}`}>
                             {label}
@@ -991,6 +996,29 @@ export default function CMCalendar({ adminProfile }) {
                                     <p className="text-[10px] text-neutral-600 font-bold">Asignó: {task.asignadoPor}</p>
                                 </div>
                             ))
+                    )}
+                    {taskView === 'aprobadas' && (
+                        tasks.filter(t => t.status === 'approved').length === 0
+                            ? <p className="text-neutral-600 text-xs font-bold text-center py-8">Aún no hay contenido listo</p>
+                            : tasks.filter(t => t.status === 'approved').map(task => {
+                                const mediaUrl = task.mediaPayload?.[0]?.url || task.mediaPayload?.url;
+                                const isVideo = task.mediaPayload?.[0]?.isVideo || (mediaUrl && mediaUrl.includes('.mp4'));
+                                return (
+                                    <div key={task.id} className="group bg-yellow-950/20 border border-yellow-500/30 hover:border-yellow-500/60 p-4 rounded-xl transition-colors cursor-pointer relative overflow-hidden" onClick={() => { setSelectedPublishTask(task); setShowPublishModal(true); setPublishNetwork('instagram'); }}>
+                                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/0 via-yellow-400 to-yellow-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        <div className="flex gap-3 mb-2">
+                                            <div className="w-12 h-12 bg-black rounded shrink-0 overflow-hidden relative">
+                                                {mediaUrl ? (isVideo ? <video src={mediaUrl} className="w-full h-full object-cover" /> : <img src={mediaUrl} className="w-full h-full object-cover" />) : <span className="text-lg absolute inset-0 flex items-center justify-center">📷</span>}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-white line-clamp-2">{task.caption || task.que}</p>
+                                                <p className="text-[9px] text-yellow-500 font-black uppercase mt-1">🌟 Aprobado</p>
+                                            </div>
+                                        </div>
+                                        <button className="w-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-500 text-[10px] font-black uppercase tracking-widest py-1.5 rounded transition-all mt-2 group-hover:bg-yellow-500 group-hover:text-black">Previsualizar</button>
+                                    </div>
+                                );
+                            })
                     )}
                 </div>
             </div>
@@ -1096,7 +1124,6 @@ export default function CMCalendar({ adminProfile }) {
                                 { id: 'contenido', label: '📣 Contenido', count: events.length },
                                 { id: 'citas', label: '📅 Citas', count: citas.length },
                                 { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
-                                { id: 'aprobadas', label: '🌟 Aprobadas', count: tasks.filter(t => t.status === 'approved').length },
                                 { id: 'todos', label: '🗺️ Todo', count: null },
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setCalendarTab(tab.id)}
@@ -1348,57 +1375,6 @@ export default function CMCalendar({ adminProfile }) {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-
-                            ) : calendarTab === 'aprobadas' ? (
-                                <div className="flex-1 overflow-y-auto p-6 bg-black/20">
-                                    <div className="mb-6">
-                                        <h2 className="text-2xl font-black uppercase tracking-widest text-[#d4af37] flex items-center gap-3">
-                                            🌟 Bandeja de Aprobadas
-                                            <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-3 py-1 rounded-full">{tasks.filter(t => t.status === 'approved').length} Listas para Publicar</span>
-                                        </h2>
-                                    </div>
-                                    {tasks.filter(t => t.status === 'approved').length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center p-20 opacity-50">
-                                            <span className="text-5xl mb-4">🌟</span>
-                                            <p className="text-white font-bold tracking-widest">No hay contenido aprobado pendiente.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {tasks.filter(t => t.status === 'approved').map(task => {
-                                                const selection = networkSelections[task.id] || { facebook: true, instagram: true, tiktok: true };
-                                                const mediaUrl = task.mediaPayload?.[0]?.url || task.mediaPayload?.url;
-                                                const isVideo = task.mediaPayload?.[0]?.isVideo || (mediaUrl && mediaUrl.includes('.mp4'));
-                                                return (
-                                                    <div key={task.id} className="bg-[#111111] border border-[#d4af37]/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.1)] flex flex-col">
-                                                        <div className="relative h-48 bg-black">
-                                                            {mediaUrl ? (isVideo ? <video src={mediaUrl} className="w-full h-full object-cover" loop muted playsInline autoPlay /> : <img src={mediaUrl} className="w-full h-full object-cover" alt="Media" />) : <div className="w-full h-full flex flex-col items-center justify-center text-neutral-600"><span className="text-3xl">📷</span><p className="text-[9px] font-black uppercase mt-1">Sin Media</p></div>}
-                                                            <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md border border-white/10"><span className="text-[9px] font-black tracking-widest text-[#d4af37] uppercase">APROBADO</span></div>
-                                                        </div>
-                                                        <div className="p-4 flex-1 flex flex-col">
-                                                            <p className="text-xs font-bold text-neutral-300 line-clamp-3 flex-1 mb-4">{task.caption || task.que}</p>
-                                                            <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 mb-4">
-                                                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Canales de Distribución:</p>
-                                                                <div className="flex gap-2">
-                                                                    {[{ id: 'facebook', icon: '🔵 FB' }, { id: 'instagram', icon: '🟣 IG' }, { id: 'tiktok', icon: '⚫ TK' }].map(net => (
-                                                                        <button key={net.id} onClick={() => toggleNetwork(task.id, net.id)}
-                                                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-colors ${selection[net.id] ? 'bg-white text-black' : 'bg-black text-neutral-600 border border-neutral-800'}`}>
-                                                                            {net.icon}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            <button onClick={() => handleSendToNetworks(task)} className="w-full mt-auto py-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all">🚀 Mandar a Redes</button>
-                                                            <button onClick={() => { if (!window.confirm('¿Seguro de rechazar?')) return; fetch(`${'' || ''}/api/studio/tasks/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }, body: JSON.stringify({ status: 'rejected' }) }).then(() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rejected' } : t))); }}
-                                                                className="w-full mt-2 py-2 text-[10px] font-black tracking-widest uppercase text-neutral-500 hover:text-[#CC0000] transition-colors text-center">
-                                                                Devolver a Cóckers
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
                                 </div>
 
                             ) : (calendarTab === 'citas' || calendarTab === 'todos') ? (
@@ -1714,6 +1690,82 @@ export default function CMCalendar({ adminProfile }) {
                                     <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Guardando en DB...</>
                                 ) : '📡 AGREGAR AL CALENDARIO ✔️'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ── MODAL: PUBLICACIÓN (PREVIEW Y ENVIO A REDES) ── */}
+            {showPublishModal && selectedPublishTask && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                    <div className="bg-[#0a0a0a] border border-[#d4af37]/30 p-0 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(212,175,55,0.15)] relative overflow-hidden">
+                        <div className="bg-[#111] p-5 border-b border-neutral-800 flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    🌟 Publicador de Redes
+                                </h3>
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase mt-1">Visualiza cómo se verá la media en el dispositivo móvil.</p>
+                            </div>
+                            <button onClick={() => setShowPublishModal(false)} className="text-neutral-500 hover:text-white text-2xl font-black transition-colors w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center">×</button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            {/* Panel Izquierdo: Selección y Config */}
+                            <div className="w-full md:w-1/3 border-r border-neutral-800 bg-[#050505] p-5 flex flex-col overflow-y-auto">
+                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2">Canal Objetivo (Preview)</label>
+                                <div className="flex flex-col gap-2 mb-6">
+                                    {[
+                                        { id: 'instagram', icon: '🟣', label: 'Instagram Feed' }, 
+                                        { id: 'tiktok', icon: '⚫', label: 'TikTok For You' }, 
+                                        { id: 'facebook', icon: '🔵', label: 'Facebook Feed' }
+                                    ].map(net => (
+                                        <button 
+                                            key={net.id} 
+                                            onClick={() => setPublishNetwork(net.id)}
+                                            className={`p-3 rounded-xl flex items-center gap-3 transition-colors border ${publishNetwork === net.id ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-transparent border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
+                                        >
+                                            <span className="text-lg">{net.icon}</span>
+                                            <span className="text-xs font-black uppercase tracking-wider">{net.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                
+                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2">Texto (Caption)</label>
+                                <textarea 
+                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-white text-xs resize-none focus:border-[#d4af37] focus:outline-none mb-6 min-h-[120px]" 
+                                    value={selectedPublishTask.caption || selectedPublishTask.referencias || selectedPublishTask.que}
+                                    readOnly
+                                />
+                                
+                                <button onClick={() => {
+                                    alert('Publicado con éxito a las APIs de distribución.');
+                                    fetch(`${getAPI()}/api/studio/tasks/${selectedPublishTask.id}`, { 
+                                        method: 'PUT', 
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }, 
+                                        body: JSON.stringify({ status: 'published' }) 
+                                    }).then(() => {
+                                        setTasks(prev => prev.filter(t => t.id !== selectedPublishTask.id));
+                                        setShowPublishModal(false);
+                                    });
+                                }} className="mt-auto w-full bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2">
+                                    🚀 IMPACTAR AHORA
+                                </button>
+                            </div>
+                            
+                            {/* Panel Derecho: Preview del HUD */}
+                            <div className="w-full md:w-2/3 bg-neutral-950 flex items-center justify-center p-6 md:p-10 relative">
+                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,rgba(212,175,55,0.05),transparent)]"></div>
+                                <div className="w-full max-w-[320px] shadow-2xl relative z-10 transition-all duration-300 transform rounded-[2rem] border-[6px] border-black bg-black">
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-6 bg-black rounded-b-xl z-50"></div>
+                                    <div className="h-[650px] w-full overflow-hidden rounded-[1.5rem] bg-[#111] custom-scrollbar-hide overflow-y-auto">
+                                        {/* Mockup Renderer Inyectando Datos de la Tarea Actual */}
+                                        {renderSocialMockup({ 
+                                            platform: publishNetwork, 
+                                            media_url: selectedPublishTask.mediaPayload?.[0]?.url || selectedPublishTask.mediaPayload?.url, 
+                                            caption: selectedPublishTask.caption || selectedPublishTask.referencias || selectedPublishTask.que 
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

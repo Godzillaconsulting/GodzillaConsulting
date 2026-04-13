@@ -620,7 +620,11 @@ export default function CockersStudio({ adminProfile }) {
                                                 </div>
                                                 
                                                 {task.media_options && task.media_options[0] && (
-                                                    <img src={task.media_options[0].url} alt="asset" className="w-full h-32 object-cover rounded-lg border border-neutral-800" />
+                                                    task.media_options[0].url.includes('.mp4') || task.media_options[0].url.includes('.webm') ? (
+                                                        <video src={task.media_options[0].url} className="w-full h-32 object-cover rounded-lg border border-neutral-800" autoPlay loop muted playsInline />
+                                                    ) : (
+                                                        <img src={task.media_options[0].url} alt="asset" className="w-full h-32 object-cover rounded-lg border border-neutral-800" />
+                                                    )
                                                 )}
                                                 
                                                 <p className="text-xs text-neutral-300 line-clamp-2">{task.caption || task.visual_prompt}</p>
@@ -741,12 +745,22 @@ export default function CockersStudio({ adminProfile }) {
                                                         ></iframe>
                                                     ) : (
                                                         <>
-                                                            <img src={opt.url} alt="video mock" className="w-full h-full object-cover transform scale-105 group-hover/vid:scale-110 group-hover/vid:-translate-x-2 transition-all duration-[5000ms] ease-in-out" />
-                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
-                                                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-                                                                    <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-                                                                </div>
-                                                            </div>
+                                                            {opt.url.includes('.mp4') || opt.url.includes('.webm') ? (
+                                                                <video 
+                                                                    src={opt.url} 
+                                                                    className="w-full h-full object-cover" 
+                                                                    autoPlay loop muted playsInline controls
+                                                                />
+                                                            ) : (
+                                                                <>
+                                                                    <img src={opt.url} alt="video mock" className="w-full h-full object-cover transform scale-105 group-hover/vid:scale-110 group-hover/vid:-translate-x-2 transition-all duration-[5000ms] ease-in-out" />
+                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
+                                                                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
+                                                                            <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>

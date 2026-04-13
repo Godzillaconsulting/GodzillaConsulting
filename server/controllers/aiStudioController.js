@@ -33,7 +33,7 @@ export const generateRenderJob = async (req, res) => {
                 const aiDirector = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
                 let instruction = '';
                 if (engine.includes('Sora')) {
-                    instruction = `Traduce este concepto a una lista de tags crudos separados por coma en INGLES, optimizados para text-to-image de StableDiffusion. Agrega 'masterpiece, high quality, highly detailed'. Solo los tags: ${prompt}`;
+                    instruction = `Eres un Director de Fotografía experto. Traduce esta idea a un prompt técnico avanzado ("prompt engineering") en INGLÉS para Stable Diffusion LCM. El prompt debe ser una secuencia separada por comas que dicte estrictamente la calidad fotográfica (ej. 'raw photo, masterpiece, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT4'). No uses oraciones, solo descripciones y tags físicos. Idea: ${prompt}`;
                 } else if (engine.includes('Imagen 3.0')) {
                     instruction = `Traduce este concepto a un prompt de dirección fotográfica hiperrealista en inglés para comercial de publicidad. Foco en producto e iluminación. Solo responde el prompt: ${prompt}`;
                 } else if (engine.includes('Imagen 4.0')) {

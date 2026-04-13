@@ -51,15 +51,15 @@ const OptimizacionWebSeo = () => {
             } else {
                 videoRef.current.play();
             }
-            setIsPlaying(!isPlaying);
         }
+        setIsPlaying(!isPlaying);
     };
 
     const toggleMute = () => {
         if (videoRef.current) {
             videoRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
         }
+        setIsMuted(!isMuted);
     };
 
     return (
@@ -90,7 +90,7 @@ const OptimizacionWebSeo = () => {
                                         ref={videoRef}
                                         src={vSrc}
                                         autoPlay
-                                        muted
+                                        muted={isMuted}
                                         playsInline
                                         className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
                                         onClick={togglePlay}

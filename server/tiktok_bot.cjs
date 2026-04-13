@@ -61,9 +61,34 @@ Respondes comentarios de TikTok de forma breve, directa y con buen humor. Máxim
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const sessions = new Map();
 
-function getChat(userId) {
+let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
+let lastPromptCheck = 0;
+
+async function getSystemPrompt() {
+    // Sincronizar con el Cerebro Central cada minuto (60,000 ms)
+    if (Date.now() - lastPromptCheck > 60000) {
+        try {
+            const res = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma = 'tiktok'");
+            if (res.rows.length > 0 && res.rows[0].dm_system_prompt) {
+                const newPrompt = res.rows[0].dm_system_prompt;
+                if (newPrompt !== currentSystemPrompt) {
+                    currentSystemPrompt = newPrompt;
+                    sessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
+                    console.log('[TikTok] 🔄 SYSTEM PROMPT actualizado y sincronizado desde Cerebro Central');
+                }
+            }
+            lastPromptCheck = Date.now();
+        } catch(e) {
+            console.error('[TikTok] Error consultando bot_configs:', e.message);
+        }
+    }
+    return currentSystemPrompt;
+}
+
+async function getChat(userId) {
     if (!sessions.has(userId)) {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash', systemInstruction: SYSTEM_PROMPT });
+        const activePrompt = await getSystemPrompt();
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash', systemInstruction: activePrompt });
         sessions.set(userId, model.startChat({ history: [] }));
     }
     return sessions.get(userId);
@@ -117,7 +142,7 @@ async function refreshAccessToken() {
 
 // ── Procesar comentario y responder ─────────────────────────────────────────
 async function processComment(comment, videoId) {
-    const chat = getChat(comment.id);
+    const chat = await getChat(comment.id);
     try {
         const context = `[Comentario en TikTok de @${comment.username || 'usuario'}]: "${comment.text}"`;
         const result  = await chat.sendMessage(context);

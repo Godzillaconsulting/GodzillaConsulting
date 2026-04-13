@@ -499,8 +499,7 @@ export default function CockersStudio({ adminProfile }) {
                 
                 let totalProgress = tasksToPoll.reduce((acc, t) => acc + (t.progress || 0), 0);
                 setRenderProgress(Math.floor(totalProgress / tasksToPoll.length));
-                
-                if (allDone || attempts > 50) { // Timeout 5 min aprox
+                if (allDone || attempts > 150) { // Timeout ampliado a 15 min para renders de Video pesados
                     clearInterval(pollInterval);
                     if(finalOptions.length === 0){
                          finalOptions.push({ provider: 'Simulación de Reserva', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false });

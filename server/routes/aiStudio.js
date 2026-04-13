@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat } from '../controllers/aiStudioController.js';
+import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -9,6 +9,7 @@ const router = express.Router();
 // Integraciones de API Externas (Kling/Flow)
 // ==========================================
 router.post('/generate', authenticateToken, generateRenderJob);
+router.post('/refine', authenticateToken, refineRenderJob);
 router.get('/status/:taskId', authenticateToken, checkRenderStatus);
 router.get('/elite-prompts', authenticateToken, getElitePrompts);
 router.post('/script-chat', authenticateToken, generateScriptChat);
@@ -110,6 +111,37 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
         const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : currentTask.publish_targets;
         const updatedIgDate = ig_publish_date !== undefined ? ig_publish_date : currentTask.ig_publish_date;
 
+        // <--- INJECT: Trigger Publisher --->
+        let publishReport = null;
+        if (updatedStatus === 'published' && req.body.publish_targets && req.body.publish_targets.length > 0) {
+            try {
+                const { publishToMeta, publishToTikTok } = await import('../services/socialPublisher.js');
+                let mediaUrl = null;
+                const parsed = typeof updatedMedia === 'string' ? JSON.parse(updatedMedia) : updatedMedia;
+                if (Array.isArray(parsed) && parsed.length > 0) mediaUrl = parsed[0].url;
+                else if (parsed && parsed.url) mediaUrl = parsed.url;
+                
+                const captionText = currentTask.prompt || currentTask.title || 'Studio AutoPublish';
+                
+                if (mediaUrl) {
+                    publishReport = {};
+                    const targetsArr = typeof updatedTargets === 'string' ? JSON.parse(updatedTargets) : updatedTargets;
+                    const metaNetworks = targetsArr.filter(t => t === 'instagram' || t === 'facebook');
+                    
+                    if (metaNetworks.length > 0) {
+                        const resMeta = await publishToMeta(mediaUrl, captionText, metaNetworks);
+                        publishReport = { ...publishReport, ...resMeta.report };
+                    }
+                    if (targetsArr.includes('tiktok')) {
+                        const resTikTok = await publishToTikTok(mediaUrl, captionText);
+                        publishReport.tiktok = resTikTok;
+                    }
+                }
+            } catch (pubErr) {
+                console.error("Error executing publisher:", pubErr);
+            }
+        }
+
         const query = `
             UPDATE studio_tasks 
             SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, updated_at = CURRENT_TIMESTAMP
@@ -120,7 +152,7 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
         const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id];
         const result = await pool.query(query, values);
 
-        res.json({ success: true, task: result.rows[0] });
+        res.json({ success: true, task: result.rows[0], report: publishReport });
     } catch (error) {
         console.error('Error PUT /tasks/:id:', error);
         res.status(500).json({ success: false, message: 'Error al actualizar tarea', error: error.message });

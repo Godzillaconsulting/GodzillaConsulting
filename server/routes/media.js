@@ -89,11 +89,13 @@ const getPublicUrl = (req, relativePath) => {
     return `/api/media/${relativePath}`;
 };
 
-// URL para assets pesados en disco local (accesibles vía Cloudflare Tunnel)
+// URL para assets pesados en disco local
+// ⚠️ SIEMPRE relativa: Vite proxy (/api → localhost:3000) la resuelve en dev,
+//    Cloudflare Tunnel + nginx en prod. NUNCA hardcodear el dominio aquí.
 const getAssetUrl = (filename) => {
-    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || 'https://godzillaconsulting.ai';
-    return `${botBase}/api/media/assets/${filename}`;
+    return `/api/media/assets/${filename}`;
 };
+
 
 router.post('/upload', requireAdmin, (req, res, next) => {
     upload.single('file')(req, res, (err) => {

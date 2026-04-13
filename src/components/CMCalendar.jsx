@@ -132,6 +132,8 @@ export default function CMCalendar({ adminProfile }) {
     const [selectedPublishTask, setSelectedPublishTask] = useState(null);
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [publishNetwork, setPublishNetwork] = useState('instagram');
+    const [publishTargets, setPublishTargets] = useState(['instagram', 'tiktok', 'facebook']);
+    const [isPublishingToSocial, setIsPublishingToSocial] = useState(false);
 
     // ─── Comentarios & Notificaciones ─────────────────────────────────────
     const [correctionForm, setCorrectionForm] = useState({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
@@ -542,21 +544,24 @@ export default function CMCalendar({ adminProfile }) {
             const formData = new FormData();
             formData.append('file', file);
             const token = localStorage.getItem('adminToken');
-            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-            const res = await fetch(`${API}/api/media/upload`, {
+            const API = getAPI(); // ← usa el helper consistente del componente
+            const isVideo = file.type.startsWith('video/');
+            const endpoint = isVideo ? `${API}/api/media/upload-video` : `${API}/api/media/upload`;
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
             const data = await res.json();
             if (data.success) {
-                const addedUrl = data.url;
+                const addedUrl = data.url; // relativa: /api/media/file/{id} o /api/media/assets/{file}
                 const newRef = newTask.referencias ? `${newTask.referencias}\n${addedUrl}` : addedUrl;
                 setNewTask({ ...newTask, referencias: newRef });
-            } else { alert('Error subiendo imagen: ' + (data.error || 'Server error')); }
+            } else { alert('Error subiendo media: ' + (data.error || 'Server error')); }
         } catch (err) { alert('Falló la subida (Conexión)'); }
         setIsUploadingMedia(false);
     };
+
 
     // ═══════════════════════════════════════════════════════════════════════
     // DATOS DERIVADOS
@@ -1711,21 +1716,31 @@ export default function CMCalendar({ adminProfile }) {
                         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                             {/* Panel Izquierdo: Selección y Config */}
                             <div className="w-full md:w-1/3 border-r border-neutral-800 bg-[#050505] p-5 flex flex-col overflow-y-auto">
-                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2">Canal Objetivo (Preview)</label>
+                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2">Canales a Publicar & Preview</label>
                                 <div className="flex flex-col gap-2 mb-6">
                                     {[
                                         { id: 'instagram', icon: '🟣', label: 'Instagram Feed' }, 
                                         { id: 'tiktok', icon: '⚫', label: 'TikTok For You' }, 
                                         { id: 'facebook', icon: '🔵', label: 'Facebook Feed' }
                                     ].map(net => (
-                                        <button 
-                                            key={net.id} 
-                                            onClick={() => setPublishNetwork(net.id)}
-                                            className={`p-3 rounded-xl flex items-center gap-3 transition-colors border ${publishNetwork === net.id ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-transparent border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
-                                        >
-                                            <span className="text-lg">{net.icon}</span>
-                                            <span className="text-xs font-black uppercase tracking-wider">{net.label}</span>
-                                        </button>
+                                        <div key={net.id} className={`flex items-center justify-between p-3 rounded-xl transition-colors border ${publishNetwork === net.id ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-transparent border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
+                                            <button onClick={() => setPublishNetwork(net.id)} className="flex flex-1 items-center gap-3">
+                                                <span className="text-lg">{net.icon}</span>
+                                                <span className="text-xs font-black uppercase tracking-wider">{net.label}</span>
+                                            </button>
+                                            <div className="flex flex-col items-center gap-1 shrink-0 ml-3">
+                                                <span className="text-[8px] uppercase tracking-widest text-[#d4af37] font-bold">Publicar</span>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="w-4 h-4 accent-[#d4af37] cursor-pointer" 
+                                                    checked={publishTargets.includes(net.id)}
+                                                    onChange={(e) => {
+                                                        if(e.target.checked) setPublishTargets([...publishTargets, net.id]);
+                                                        else setPublishTargets(publishTargets.filter(t => t !== net.id));
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                                 
@@ -1736,18 +1751,35 @@ export default function CMCalendar({ adminProfile }) {
                                     readOnly
                                 />
                                 
-                                <button onClick={() => {
-                                    alert('Publicado con éxito a las APIs de distribución.');
-                                    fetch(`${getAPI()}/api/studio/tasks/${selectedPublishTask.id}`, { 
-                                        method: 'PUT', 
-                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }, 
-                                        body: JSON.stringify({ status: 'published' }) 
-                                    }).then(() => {
-                                        setTasks(prev => prev.filter(t => t.id !== selectedPublishTask.id));
-                                        setShowPublishModal(false);
-                                    });
-                                }} className="mt-auto w-full bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2">
-                                    🚀 IMPACTAR AHORA
+                                <button 
+                                    disabled={isPublishingToSocial || publishTargets.length === 0} 
+                                    onClick={() => {
+                                        setIsPublishingToSocial(true);
+                                        fetch(`${getAPI()}/api/studio/tasks/${selectedPublishTask.id}`, { 
+                                            method: 'PUT', 
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }, 
+                                            body: JSON.stringify({ status: 'published', publish_targets: publishTargets }) 
+                                        }).then(async (res) => {
+                                            setIsPublishingToSocial(false);
+                                            const dt = await res.json();
+                                            if(!dt.success) return alert('Hubo errores al publicar:\n' + JSON.stringify(dt.error || dt.message, null, 2));
+                                            
+                                            // Extraemos reporte parcial si existiera en el payload
+                                            if (dt.report) {
+                                                const oks = Object.keys(dt.report).filter(k => dt.report[k].success).join(', ');
+                                                if (oks) alert('Aprobado y Enviado a:\n' + oks);
+                                            } else {
+                                                alert('El servidor procesó la petición de impacto con éxito.');
+                                            }
+                                            
+                                            setTasks(prev => prev.filter(t => t.id !== selectedPublishTask.id));
+                                            setShowPublishModal(false);
+                                        }).catch(err => {
+                                            setIsPublishingToSocial(false);
+                                            alert('Error crítico de red al publicar.');
+                                        });
+                                }} className="mt-auto w-full bg-gradient-to-r from-[#d4af37] to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {isPublishingToSocial ? <><span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span> ESPERANDO REDES...</> : '🚀 IMPACTAR AHORA'}
                                 </button>
                             </div>
                             

@@ -38,6 +38,50 @@ export default function CockersStudio({ adminProfile }) {
     });
     const [ytLink, setYtLink] = useState('');
     const [refImage, setRefImage] = useState('');
+    const [refiningTasks, setRefiningTasks] = useState({});
+
+    const refineWithGotSora = async (url, promptContext, optionIndex) => {
+        setRefiningTasks(prev => ({ ...prev, [optionIndex]: true }));
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${'' || ''}/api/studio/refine`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ imageUrl: url, prompt: promptContext })
+            });
+            const data = await res.json();
+            
+            if (data.status === 'processing' && data.job_id) {
+                // Poll status
+                const pollTimer = setInterval(async () => {
+                    const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const stData = await stRes.json();
+                    
+                    if (stData.status === 'succeed') {
+                        clearInterval(pollTimer);
+                        setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
+                        
+                        // Replace the url in selectedDraft
+                        setSelectedDraft(prev => {
+                            if (!prev) return prev;
+                            const newOpts = [...prev.media_options];
+                            newOpts[optionIndex] = { ...newOpts[optionIndex], url: stData.result_url, provider: 'GotSora RefinedHQ' };
+                            return { ...prev, media_options: newOpts };
+                        });
+                    } else if (stData.status === 'failed' || stData.status === 'error') {
+                        clearInterval(pollTimer);
+                        setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
+                        alert("Error refinando con GotSora: " + (stData.error || "Falla desconocida"));
+                    }
+                }, 3000);
+            }
+        } catch (e) {
+            console.error(e);
+            setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
+        }
+    };
 
     const handleSavePreset = () => {
         if (!finalPrompt.trim()) return alert('Escribe un prompt primero para guardarlo.');
@@ -257,9 +301,9 @@ export default function CockersStudio({ adminProfile }) {
             };
 
             // Motores a invocar según la pestaña activa
-            // Nota: Se elimina Sora del tab Video, y se pre-configura soporte futuro para Luma/Runway
+            // Nota: Se elimina Sora del tab Video, y se pre-configura soporte a Google Veo
             const enginesToRun = (isCockers && genMode === 'video')
-                ? ['Luma Dream Machine', 'Runway Gen-3']
+                ? ['Google Veo (3.1)']
                 : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
             const promises = enginesToRun.map(async (engineName) => {
@@ -1086,6 +1130,19 @@ export default function CockersStudio({ adminProfile }) {
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                 </a>
                                                 
+                                                {!opt.isVideo && !opt.provider.includes('GotSora RefinedHQ') && (
+                                                    <button 
+                                                        onClick={() => refineWithGotSora(opt.url, finalPrompt || selectedDraft.visual_prompt, i)} 
+                                                        disabled={refiningTasks[i]}
+                                                        className={`bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-400 border border-indigo-500/50 font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center gap-1.5 ${refiningTasks[i] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        title="Pasar por filtro GotSora Refiner (LCM) para añadir texturas y detalle HD"
+                                                    >
+                                                        {refiningTasks[i] ? (
+                                                            <><span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"/> Refinando...</>
+                                                        ) : '🔬 Refinar GotSora'}
+                                                    </button>
+                                                )}
+
                                                 {canSeeAll && (
                                                     <div className="flex gap-1.5">
                                                         {adminProfile?.username?.toLowerCase() === 'alex' && (

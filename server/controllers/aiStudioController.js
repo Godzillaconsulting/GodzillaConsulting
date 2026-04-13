@@ -33,11 +33,11 @@ export const generateRenderJob = async (req, res) => {
                 const aiDirector = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
                 let instruction = '';
                 if (engine.includes('Sora')) {
-                    instruction = `Eres un Director de Fotografía experto. Traduce esta idea a un prompt técnico avanzado ("prompt engineering") en INGLÉS para Stable Diffusion LCM. El prompt debe ser una secuencia separada por comas que dicte estrictamente la calidad fotográfica (ej. 'raw photo, masterpiece, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT4'). No uses oraciones, solo descripciones y tags físicos. Idea: ${prompt}`;
+                    instruction = `Eres un Director de Fotografía experto. Traduce esta idea a un prompt técnico avanzado en INGLÉS para Stable Diffusion. El prompt debe ser muy distinto a una foto normal: usa perspectivas extremas, ángulos experimentales, vista de dron o composiciones asimétricas para darle un toque indie/vanguardista. Secuencia separada por comas (ej. 'raw photo, masterpiece, 8k, low angle shot, experimental lighting, moody...'). Solo responde el prompt: ${prompt}`;
                 } else if (engine.includes('Imagen 3.0')) {
-                    instruction = `Traduce este concepto a un prompt de dirección fotográfica hiperrealista en inglés para comercial de publicidad. Foco en producto e iluminación. Solo responde el prompt: ${prompt}`;
+                    instruction = `Traduce este concepto a un prompt de dirección fotográfica en inglés. Enfócate en una estética premium y comercial: usa luces de estudio limpias, hora dorada, simetría perfecta, o close-ups detallados (macro). Que se sienta como una campaña publicitaria de alto presupuesto. Solo responde el prompt: ${prompt}`;
                 } else if (engine.includes('Imagen 4.0')) {
-                    instruction = `Crea un prompt directo en inglés muy descriptivo y vibrante para diseño o arte conceptual comercial. Solo el prompt: ${prompt}`;
+                    instruction = `Crea un prompt vibrante en inglés para arte conceptual. Aléjate de lo mundano: usa paletas de colores inusuales (neón, pastel, monocromo con acento), estilos de renderización 3D (Unreal Engine, octane render) o composiciones dinámicas/surrealistas. Solo responde el prompt: ${prompt}`;
                 }
 
                 if (instruction) {
@@ -416,5 +416,41 @@ export const generateScriptChat = async (req, res) => {
     } catch (error) {
         console.error("Error generateScriptChat:", error);
         res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const refineRenderJob = async (req, res) => {
+    try {
+        const { imageUrl, prompt } = req.body;
+        console.log(`[STUDIO] Iniciando Refinado GotSora para: ${imageUrl}`);
+
+        let base64Image = null;
+        if (imageUrl.startsWith('http')) {
+            const imgRes = await fetch(imageUrl);
+            const arrayBuffer = await imgRes.arrayBuffer();
+            base64Image = Buffer.from(arrayBuffer).toString('base64');
+            const contentType = imgRes.headers.get('content-type') || 'image/png';
+            base64Image = `data:${contentType};base64,${base64Image}`;
+        }
+
+        const response = await fetch('http://127.0.0.1:5000/sora-start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                 prompt: prompt || 'high quality, masterpiece, 8k, raw photo, film grain',
+                 mode: 'photo',
+                 diffusion_steps: 5,
+                 ref_image: base64Image
+            })
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Falla en Local Backend GoTSora');
+
+        return res.status(200).json({ job_id: data.task_id, status: 'processing', provider: 'GotSora Refined' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
     }
 };

@@ -126,9 +126,13 @@ async function handleAILogic(senderId, messageText) {
             chat.sendMessage(messageText), 
             "Lo lamento, estoy saturado procesando respuestas. ¿Podemos seguir en unos minutos?"
         );
-        let botReply = result.response.text();
+        
+        let botReply = "Lo siento, fallé al entender.";
+        try { botReply = result.response.text(); } catch(e) {}
 
-        const functionCalls = result.response.functionCalls();
+        let rawFc = result.response.functionCalls;
+        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
+        
         if (functionCalls && functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
@@ -218,7 +222,7 @@ async function handleAILogic(senderId, messageText) {
                     chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
                     "Hubo un fallo temporal de procesamiento."
                 );
-                botReply = result.response.text();
+                try { botReply = result.response.text(); } catch(e) {}
             }
         }
 

@@ -126,10 +126,7 @@ export const generateRenderJob = async (req, res) => {
                 status: "processing", 
                 provider: engine 
             });
-            } catch (err) {
-                console.error("[VEO] Error en generador de video:", err);
-                return res.status(400).json({ error: "No se pudo generar video: " + err.message });
-            }
+
         } else if (engine.includes('Luma') || engine.includes('Runway')) {
             // Future-proofing for Runway Gen-3 and Luma Dream Machine
             return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway (Gemini Plus no procesa Video nativo vía API). Agrega tus llaves en el servidor." });

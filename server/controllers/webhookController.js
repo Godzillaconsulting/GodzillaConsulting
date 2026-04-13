@@ -191,9 +191,12 @@ async function processAndReply(from, text, phoneNumberId, platform) {
 
     try {
         let result = await chat.sendMessage(text);
-        let responseText = result.response.text();
 
-        const functionCalls = result.response.functionCalls();
+        let responseText = "Lo siento, fallé al entender.";
+        try { responseText = result.response.text(); } catch(e) {}
+
+        let rawFc = result.response.functionCalls;
+        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
         if (functionCalls && functionCalls.length > 0) {
             const functionResponses = [];
             for (const call of functionCalls) {
@@ -237,7 +240,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                 functionResponses.push({ functionResponse: { name: call.name, response: fRes } });
             }
             result = await chat.sendMessage(functionResponses);
-            responseText = result.response.text();
+            try { responseText = result.response.text(); } catch(e) {}
             console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
         }
 

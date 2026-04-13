@@ -223,9 +223,11 @@ async function getSystemPromptWA() {
                 chat.sendMessage(messageText), 
                 "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
             );
-            let botReply = result.response.text();
+            let botReply = "Lo siento, fallé al entender.";
+            try { botReply = result.response.text(); } catch(e) {}
 
-            const functionCalls = result.response.functionCalls();
+            let rawFc = result.response.functionCalls;
+            const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
             if (functionCalls && functionCalls.length > 0) {
                 for (const call of functionCalls) {
                     let fRes = {};
@@ -384,7 +386,7 @@ async function getSystemPromptWA() {
                         chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
                         "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
                     );
-                    botReply = result.response.text();
+                    try { botReply = result.response.text(); } catch(e) {}
                 }
             }
 

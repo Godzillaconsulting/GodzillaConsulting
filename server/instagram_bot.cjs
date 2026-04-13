@@ -151,7 +151,9 @@ async function processAndReply(userId, text, replyFn) {
     const chat = await getChat(userId);
     try {
         let result = await chat.sendMessage(text);
-        const functionCalls = result.response.functionCalls();
+        
+        let rawFc = result.response.functionCalls;
+        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
 
         if (functionCalls?.length) {
             const responses = [];
@@ -204,7 +206,9 @@ async function processAndReply(userId, text, replyFn) {
             result = await chat.sendMessage(responses);
         }
 
-        const responseText = result.response.text();
+        let responseText = "Lo siento, fallé al entender.";
+        try { responseText = result.response.text(); } catch(e) {}
+        
         // Instagram DMs soportan ~1000 chars por mensaje
         if (responseText.length > 900) {
             const chunks = responseText.match(/.{1,800}(\s|$)/gs) || [responseText];

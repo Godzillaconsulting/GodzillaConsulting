@@ -105,9 +105,12 @@ export const processChatMessage = async (req, res) => {
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text || "Hola";
 
         let result = await chat.sendMessage(lastMsg);
-        let responseText = result.response.text();
+        let responseText = "";
+        try { responseText = result.response.text(); } catch(e) {}
 
-        const functionCalls = result.response.functionCalls();
+        let rawFc = result.response.functionCalls;
+        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
+        
         if (functionCalls && functionCalls.length > 0) {
             const functionResponses = [];
             
@@ -226,7 +229,7 @@ export const processChatMessage = async (req, res) => {
             }
             
             result = await chat.sendMessage(functionResponses);
-            responseText = result.response.text();
+            try { responseText = result.response.text(); } catch(e) {}
         }
 
         // --- ALIMENTAR A GOYI CON LA NUEVA SALIDA ---

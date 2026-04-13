@@ -39,6 +39,62 @@ export default function CockersStudio({ adminProfile }) {
     const [ytLink, setYtLink] = useState('');
     const [refImage, setRefImage] = useState('');
     const [refiningTasks, setRefiningTasks] = useState({});
+    
+    // Purificador UI States
+    const [purifyingStatus, setPurifyingStatus] = useState(null); // 'uploading' | 'processing' | null
+    const [purifiedResult, setPurifiedResult] = useState('');
+    
+    const handlePurifyVideo = async (file) => {
+        if (!file) return;
+        setPurifyingStatus('uploading');
+        setPurifiedResult('');
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${'' || ''}/api/studio/purify-video`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            
+            const data = await res.json();
+            if (data.job_id) {
+                setPurifyingStatus('processing');
+                
+                // Poll checkRenderStatus
+                const pollTimer = setInterval(async () => {
+                    try {
+                        const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const stData = await stRes.json();
+                        
+                        if (stData.status === 'succeed') {
+                            clearInterval(pollTimer);
+                            setPurifyingStatus(null);
+                            setPurifiedResult(stData.result_url);
+                        } else if (stData.status === 'failed' || stData.status === 'error') {
+                            clearInterval(pollTimer);
+                            setPurifyingStatus(null);
+                            alert("FFMPEG Error de Purificación: " + (stData.error || 'Unknown'));
+                        }
+                    } catch (pollErr) {
+                        console.error('Polling error', pollErr);
+                    }
+                }, 3000);
+            } else {
+                setPurifyingStatus(null);
+                alert("Fallo al iniciar el purificador: " + (data.error || 'Server error'));
+            }
+        } catch (e) {
+            setPurifyingStatus(null);
+            console.error('Upload Error:', e);
+            alert("Error de conexión con el Motor Local.");
+        }
+    };
 
     const refineWithGotSora = async (url, promptContext, optionIndex) => {
         setRefiningTasks(prev => ({ ...prev, [optionIndex]: true }));
@@ -344,9 +400,9 @@ export default function CockersStudio({ adminProfile }) {
             };
 
             // Motores a invocar según la pestaña activa
-            // Nota: Se elimina Sora del tab Video, y se pre-configura soporte a Google Veo
+            // Nota: Se elimina Luma/Runway nativo y se configuran Google Veo y GotSora Video
             const enginesToRun = (isCockers && genMode === 'video')
-                ? ['Google Veo (3.1)']
+                ? ['Google Veo (Ultra)', 'Google Veo (Express)', 'Sora (Video)']
                 : ['Imagen 4.0 (Express)', 'Imagen 3.0 (Ultra)', 'Sora (LCM)'];
             
             const promises = enginesToRun.map(async (engineName) => {
@@ -659,13 +715,16 @@ export default function CockersStudio({ adminProfile }) {
                     {/* Floating Settings Widget (Estilo Luma Dream Machine) */}
                     <div className="bg-[#141413] border border-neutral-800 rounded-3xl p-4 mt-4 shadow-2xl relative overflow-hidden group">
                         
-                        {/* Selector Interno (Fotogramas vs Ingredientes) */}
+                        {/* Selector Interno (Fotogramas vs Ingredientes vs Limpiador) */}
                         <div className="flex bg-[#222221] rounded-full p-1 mb-4">
-                            <button onClick={()=>setActiveTab('Fotogramas')} className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-colors ${activeTab==='Fotogramas' ? 'bg-[#3a3a39] text-white shadow-sm' : 'text-neutral-400 hover:text-white'}`}>
+                            <button onClick={()=>setActiveTab('Fotogramas')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-full transition-colors ${activeTab==='Fotogramas' ? 'bg-[#3a3a39] text-white shadow-sm' : 'text-neutral-400 hover:text-white'}`}>
                                 🖼 Fotogramas
                             </button>
-                            <button onClick={()=>setActiveTab('Ingredientes')} className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-colors ${activeTab==='Ingredientes' ? 'bg-[#3a3a39] text-white shadow-sm' : 'text-neutral-400 hover:text-white'}`}>
+                            <button onClick={()=>setActiveTab('Ingredientes')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-full transition-colors ${activeTab==='Ingredientes' ? 'bg-[#3a3a39] text-white shadow-sm' : 'text-neutral-400 hover:text-white'}`}>
                                 🧩 Ingredientes
+                            </button>
+                            <button onClick={()=>setActiveTab('Purificador')} className={`flex-1 py-1.5 text-[10px] uppercase tracking-widest font-bold rounded-full transition-colors ${activeTab==='Purificador' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'text-neutral-400 hover:text-[#CC0000]'}`}>
+                                ✨ Limpiador
                             </button>
                         </div>
 
@@ -689,7 +748,7 @@ export default function CockersStudio({ adminProfile }) {
                                     </div>
                                 )}
                             </>
-                        ) : (
+                        ) : activeTab === 'Ingredientes' ? (
                             <div className="flex items-center flex-col justify-center h-[120px] mb-4 border-2 border-dashed border-neutral-800 rounded-2xl hover:border-neutral-600 transition-colors cursor-pointer relative">
                                 <span className="text-2xl mb-1">Upload</span>
                                 <span className="text-xs text-neutral-500 font-bold uppercase">Sube una imagen de referencia</span>
@@ -704,6 +763,37 @@ export default function CockersStudio({ adminProfile }) {
                                            setActiveTab('Fotogramas');
                                        }
                                 }}/>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col mb-4 p-4 border border-[#CC0000]/30 bg-[#CC0000]/5 rounded-2xl">
+                                <p className="text-[10px] text-neutral-400 font-medium mb-3 leading-relaxed">Sube un video manchado (Ej: Kling) y el Motor lo limpiará con <span className="font-bold text-white">-crf 18 Lossless</span>.</p>
+                                
+                                {purifyingStatus ? (
+                                    <div className="flex items-center justify-center p-6 border border-neutral-800 rounded-xl bg-black">
+                                       <div className="flex flex-col items-center gap-2 animate-pulse">
+                                          <div className="w-5 h-5 rounded-full border-t-2 border-[#CC0000] animate-spin"></div>
+                                          <span className="text-[10px] text-white font-bold uppercase tracking-widest">{purifyingStatus === 'uploading' ? 'Subiendo 300MB/s...' : 'Destruyendo Marca en CPU...'}</span>
+                                       </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center flex-col justify-center h-[100px] border-2 border-dashed border-[#CC0000]/50 rounded-xl hover:border-[#CC0000] hover:bg-[#CC0000]/10 transition-colors cursor-pointer relative">
+                                        <span className="text-2xl mb-1">✨</span>
+                                        <span className="text-[10px] text-white font-bold uppercase tracking-widest">Arrastra MP4 a Limpiar</span>
+                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="video/mp4,video/x-m4v,video/*" onChange={(e)=>{
+                                            if(e.target.files && e.target.files[0]) {
+                                                 handlePurifyVideo(e.target.files[0]);
+                                                 e.target.value = null;
+                                            }
+                                        }}/>
+                                    </div>
+                                )}
+                                
+                                {purifiedResult && (
+                                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between">
+                                        <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest">Video Puro Listo</span>
+                                        <button onClick={() => window.open(purifiedResult, '_blank')} className="px-3 py-1 bg-green-500 text-black font-black text-[10px] uppercase rounded hover:bg-green-400 -mr-1">Ver/Descargar</button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1013,18 +1103,6 @@ export default function CockersStudio({ adminProfile }) {
                                     ))}
                                 </div>
 
-                                {/* Coming soon banner */}
-                                <div className="mt-8 bg-gradient-to-r from-[#CC0000]/10 via-transparent to-transparent border border-[#CC0000]/20 rounded-2xl p-6 flex items-center gap-5">
-                                    <div className="w-10 h-10 rounded-full bg-[#CC0000]/20 flex items-center justify-center shrink-0">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-white font-bold text-sm mb-0.5">Generación de video nativa requiere API Keys</p>
-                                        <p className="text-neutral-400 text-xs">Para habilitar Luma Dream Machine o Runway Gen-3, agrega
-                                        <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-[#CC0000] mx-1">LUMA_API_KEY</code> o
-                                        <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-[#CC0000] mx-1">RUNWAY_API_KEY</code> en tu <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-300">.env</code>.</p>
-                                    </div>
-                                </div>
                             </div>
                         ) : (
                             /* ─── PHOTO GALLERY: masonry con TiltCards ─── */

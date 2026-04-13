@@ -1,5 +1,9 @@
 import express from 'express';
-import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat } from '../controllers/aiStudioController.js';
+import multer from 'multer';
+import os from 'os';
+
+const upload = multer({ dest: os.tmpdir() });
+import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -10,6 +14,7 @@ const router = express.Router();
 // ==========================================
 router.post('/generate', authenticateToken, generateRenderJob);
 router.post('/refine', authenticateToken, refineRenderJob);
+router.post('/purify-video', authenticateToken, upload.single('file'), purifyVideo);
 router.get('/status/:taskId', authenticateToken, checkRenderStatus);
 router.get('/elite-prompts', authenticateToken, getElitePrompts);
 router.post('/script-chat', authenticateToken, generateScriptChat);

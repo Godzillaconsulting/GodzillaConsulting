@@ -40,11 +40,7 @@ export default function CockersStudio({ adminProfile }) {
     // Galería Comunitaria Dinámica
     const [communityGallery, setCommunityGallery] = useState(() => {
         const shuffled = [...COMMUNITY_GALLERY_POOL].sort(() => 0.5 - Math.random());
-        // Interceptamos la carga inicial (que trae los default Unsplash) y los convertimos en renders puros FLUX dinámicos
-        return shuffled.slice(0, 12).map(item => ({
-            ...item,
-            img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=500&height=500&nologo=true&model=flux&seed=${Math.floor(Math.random() * 99999)}`
-        }));
+        return shuffled.slice(0, 12);
     });
     const [isFetchingInspiration, setIsFetchingInspiration] = useState(false);
     
@@ -763,7 +759,7 @@ export default function CockersStudio({ adminProfile }) {
                 style={{ rotateX: springX, rotateY: springY, transformPerspective: 900 }}
                 onMouseMove={handleMouse}
                 onMouseLeave={resetTilt}
-                className={`gallery-card relative group rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60${isFeatured ? ' featured' : ''}`}
+                className={`gallery-card relative group rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60 aspect-[4/3] bg-neutral-900${isFeatured ? ' featured' : ''}`}
             >
                 {/* Scan sweep shimmer */}
                 <div className="scan-overlay pointer-events-none" />
@@ -773,7 +769,7 @@ export default function CockersStudio({ adminProfile }) {
                     src={item.img}
                     alt={item.tag}
                     loading="lazy"
-                    className="gallery-img relative z-10 w-full h-auto object-cover block pointer-events-none"
+                    className="gallery-img relative z-10 w-full h-full object-cover block pointer-events-none"
                 />
                 {/* Dark gradient */}
                 <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />

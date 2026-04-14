@@ -679,12 +679,12 @@ export const getInspirationGallery = async (req, res) => {
             throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
         }
         
-        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations Flux
+        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (Turbo es más estable y rápido para grid render)
         const finalGallery = generationList.map(item => {
-            // Recortar strings enormes para no romper la URL
+            // Recortar strings enormes para no romper la URL de Pollinations API
             const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
             return {
-                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&model=flux&seed=${Math.floor(Math.random() * 99999)}`,
+                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
                 prompt: item.prompt,
                 tag: item.tag,
                 model: item.model

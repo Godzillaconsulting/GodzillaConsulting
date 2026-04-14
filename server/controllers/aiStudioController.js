@@ -126,14 +126,10 @@ export const generateRenderJob = async (req, res) => {
 
             // Mapa de motor a modelo Veo exacto
             let veoModel;
-            if (engine.includes('3.1 Fast') || engine.includes('Fast')) {
-                veoModel = 'veo-3.1-fast-generate-preview';
-            } else if (engine.includes('3.1')) {
+            if (engine === 'Veo 3.1') {
                 veoModel = 'veo-3.1-generate-preview';
-            } else if (engine.includes('3.0') || engine.includes('3')) {
-                veoModel = 'veo-3.0-generate-001';
             } else {
-                veoModel = 'veo-2.0-generate-001';
+                veoModel = 'veo-3.1-fast-generate-preview'; // Veo 3.1 Fast default
             }
             console.log(`[VEO] Motor seleccionado: ${veoModel}`);
 
@@ -212,16 +208,18 @@ export const generateRenderJob = async (req, res) => {
                 try {
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-                    // Motor a elegir segun el tipo solicitado
+                    // Motor EXACTO segun nombre del engine (5 modelos confirmados Ultra)
                     let modelName;
-                    if (engine.includes('Ultra')) {
+                    if (engine === 'Imagen 4 Ultra') {
                         modelName = 'imagen-4.0-ultra-generate-001';
-                    } else if (engine.includes('Imagen')) {
+                    } else if (engine === 'Imagen 4 Pro') {
                         modelName = 'imagen-4.0-generate-001';
-                    } else if (engine.includes('Pro')) {
+                    } else if (engine === 'Imagen 4 Fast') {
+                        modelName = 'imagen-4.0-fast-generate-001';
+                    } else if (engine === 'Gemini 3 Pro Image') {
                         modelName = 'gemini-3-pro-image-preview';
                     } else {
-                        modelName = 'gemini-3.1-flash-image-preview';
+                        modelName = 'gemini-3.1-flash-image-preview'; // Gemini 3.1 Flash Image
                     }
 
                     const finalPromptToUse = optimizedPrompt || prompt;

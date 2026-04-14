@@ -38,10 +38,31 @@ export default function CockersStudio({ adminProfile }) {
     const isSuperAdmin = adminProfile?.is_superadmin;
 
     // Galería Comunitaria Dinámica
-    const communityGallery = useMemo(() => {
+    const [communityGallery, setCommunityGallery] = useState(() => {
         const shuffled = [...COMMUNITY_GALLERY_POOL].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 9);
-    }, []);
+        return shuffled.slice(0, 6);
+    });
+    const [isFetchingInspiration, setIsFetchingInspiration] = useState(false);
+    
+    const fetchDynamicInspiration = async () => {
+        setIsFetchingInspiration(true);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${'' || ''}/api/studio/inspiration`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.gallery) {
+                setCommunityGallery(data.gallery);
+            } else {
+                alert("Falló la IA: " + data.error);
+            }
+        } catch (e) {
+            console.error("Inspiration Error", e);
+        }
+        setIsFetchingInspiration(false);
+    };
+
     const canSeeAll = isCockers || isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar';
     
     // Outbox State
@@ -523,10 +544,10 @@ export default function CockersStudio({ adminProfile }) {
                 return currentId;
             };
 
-            // Motores a invocar - TODOS los modelos confirmados + GotSora Nativo
+            // Motores a invocar - TODOS los modelos confirmados (Sin GotSora Inicial)
             const enginesToRun = genMode === 'video'
                 ? ['Veo 3.1', 'Veo 3.1 Fast']
-                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image', 'GotSora (T2I Local)'];
+                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
             
             // Re-armar el prompt base si tiene filtros
             const promptAmentado = selectedFilters.length > 0 
@@ -953,20 +974,31 @@ export default function CockersStudio({ adminProfile }) {
                                 </div>
                             </>
                         ) : activeTab === 'Ingredientes' ? (
-                            <div className="flex items-center flex-col justify-center h-[120px] mb-4 border-2 border-dashed border-neutral-800 rounded-2xl hover:border-neutral-600 transition-colors cursor-pointer relative">
-                                <span className="text-2xl mb-1">Upload</span>
-                                <span className="text-xs text-neutral-500 font-bold uppercase">Sube una imagen de referencia</span>
-                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e)=>{
-                                       if(e.target.files && e.target.files[0]){
-                                           const reader = new FileReader();
-                                           reader.onload = (ev) => {
-                                               setRefImage(ev.target.result);
-                                               e.target.value = null; // Fix de caché de input React
-                                           };
-                                           reader.readAsDataURL(e.target.files[0]);
-                                           setActiveTab('Fotogramas');
-                                       }
-                                }}/>
+                            <div className="flex flex-col gap-2 mb-4">
+                                {refImage ? (
+                                    <div className="relative group rounded-2xl overflow-hidden border-2 border-[#CC0000] shadow-[0_0_15px_rgba(204,0,0,0.3)]">
+                                        <img src={refImage} alt="Ingrediente" className="w-full h-[120px] object-cover" />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                            <span className="text-white text-[10px] font-bold uppercase tracking-widest text-center px-2">Ingrediente <br/>Digerido</span>
+                                            <button onClick={() => setRefImage('')} className="bg-red-600 hover:bg-red-500 text-white font-bold py-1 px-3 rounded-full text-[9px] uppercase">Quitar/Cambiar</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center flex-col justify-center h-[120px] border-2 border-dashed border-neutral-800 rounded-2xl hover:border-[#CC0000] hover:bg-[#CC0000]/10 transition-colors cursor-pointer relative">
+                                        <span className="text-2xl mb-1">🧩</span>
+                                        <span className="text-[10px] text-white font-bold uppercase tracking-widest">Añadir Ingrediente</span>
+                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e)=>{
+                                            if(e.target.files && e.target.files[0]){
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => {
+                                                    setRefImage(ev.target.result);
+                                                    e.target.value = null; 
+                                                };
+                                                reader.readAsDataURL(e.target.files[0]);
+                                            }
+                                        }}/>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex flex-col mb-4 p-4 border border-[#CC0000]/30 bg-[#CC0000]/5 rounded-2xl">
@@ -1219,13 +1251,23 @@ export default function CockersStudio({ adminProfile }) {
                                         </span>
                                     </h1>
                                 </div>
-                                <button 
-                                    onClick={() => setShowScriptGen(true)}
-                                    className="group bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 hover:border-transparent px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2"
-                                >
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
-                                    Asistente Gemini
-                                </button>
+                                <div className="flex items-center gap-3 flex-wrap justify-end">
+                                    <button 
+                                        onClick={fetchDynamicInspiration}
+                                        disabled={isFetchingInspiration}
+                                        className="group bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                                    >
+                                        <span className={isFetchingInspiration ? "animate-spin" : ""}>✨</span>
+                                        {isFetchingInspiration ? 'Generando...' : 'Jalar Inspiración Google'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowScriptGen(true)}
+                                        className="group bg-white/5 hover:bg-white text-white hover:text-black border border-white/10 hover:border-transparent px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+                                        Asistente Gemini
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

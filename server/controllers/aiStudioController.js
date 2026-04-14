@@ -615,6 +615,46 @@ export const getElitePrompts = async (req, res) => {
     }
 };
 
+export const getInspirationGallery = async (req, res) => {
+    try {
+        if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for inspiration");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        
+        const promptInstruction = `Return a JSON array of 6 highly creative cinematic visual prompts. 
+        Each object must have:
+        1. "prompt": very detailed cinematic description in english (e.g. "Neon cyberpunk street at night, rainy puddles...").
+        2. "tag": short catchy name in spanish (e.g. "Cyberpunk").
+        3. "model": randomly choose between "Imagen 4 Ultra" or "Gemini 3.1 Flash Image".
+        Return ONLY valid JSON array with 6 objects. Do not include markdown \`\`\` blocks, just the JSON.`;
+        
+        const resp = await ai.generateContent({
+             contents: [{role: 'user', parts: [{text: promptInstruction}]}]
+        });
+        
+        // Limpiamos la respuesta en caso que Gemini devuelva markdown
+        let jsonStr = resp.response.text().trim();
+        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
+        if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+        
+        const generationList = JSON.parse(jsonStr.trim());
+        
+        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (no requiere key)
+        const finalGallery = generationList.map(item => ({
+            img: \`https://image.pollinations.ai/prompt/\${encodeURIComponent(item.prompt)}?width=400&height=400&nologo=true&seed=\${Math.floor(Math.random() * 99999)}\`,
+            prompt: item.prompt,
+            tag: item.tag,
+            model: item.model
+        }));
+        
+        res.status(200).json({ success: true, gallery: finalGallery });
+    } catch (error) {
+        console.error("Error getInspirationGallery:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 export const generateScriptChat = async (req, res) => {
     try {
         const { message, chatHistory } = req.body;

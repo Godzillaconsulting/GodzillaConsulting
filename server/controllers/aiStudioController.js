@@ -674,7 +674,7 @@ export const getInspirationGallery = async (req, res) => {
         
         // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (no requiere key)
         const finalGallery = generationList.map(item => ({
-            img: \`https://image.pollinations.ai/prompt/\${encodeURIComponent(item.prompt)}?width=400&height=400&nologo=true&seed=\${Math.floor(Math.random() * 99999)}\`,
+            img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=400&height=400&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
             prompt: item.prompt,
             tag: item.tag,
             model: item.model

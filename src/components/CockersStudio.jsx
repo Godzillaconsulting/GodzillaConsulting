@@ -30,7 +30,7 @@ export default function CockersStudio({ adminProfile }) {
     const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
 
     // Aplica filtro GotSora a un slot específico de liveSlots
-    const triggerSingleRefine = useCallback(async (slot, slotIdx, _draftId, prompt) => {
+    const triggerSlotRefine = useCallback(async (slot, slotIdx, prompt) => {
         if (!slot.url) return;
         const token = localStorage.getItem('adminToken');
         setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'loading' } : s));
@@ -43,7 +43,6 @@ export default function CockersStudio({ adminProfile }) {
             const refineData = await refineRes.json();
             if (!refineRes.ok || !refineData.job_id) throw new Error(refineData.error || 'Error iniciando GotSora');
 
-            // Poll el job de refinado
             let refAttempts = 0;
             const refPoll = setInterval(async () => {
                 refAttempts++;

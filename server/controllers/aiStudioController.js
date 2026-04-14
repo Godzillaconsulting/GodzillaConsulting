@@ -124,14 +124,14 @@ export const generateRenderJob = async (req, res) => {
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
-            // Mapa de motor a modelo Veo exacto (cuenta Ultra — acceso completo)
+            // IDs REALES confirmados desde listModels (14-Abr-2026)
             let veoModel;
             if (engine === 'Veo 3') {
-                veoModel = 'veo-3.0-generate-preview';
+                veoModel = 'veo-3.0-generate-001';         // GA
             } else if (engine === 'Veo 3 Fast') {
-                veoModel = 'veo-3.0-fast-generate-preview';
+                veoModel = 'veo-3.0-fast-generate-001';    // GA Fast
             } else {
-                veoModel = 'veo-2.0-generate-001'; // Veo 2 — GA estable
+                veoModel = 'veo-2.0-generate-001';         // Veo 2 — estable
             }
             console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
 
@@ -281,15 +281,18 @@ export const generateRenderJob = async (req, res) => {
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real de Google AI Studio
-                    // NOTA: imagen-3.0 SÍ funciona con AI Studio API Key (no requiere Vertex AI)
+                    // NOTA: IDs REALES confirmados desde listModels API (14-Abr-2026)
                     let modelName;
-                    if (engine === 'Imagen 4 Ultra' || engine === 'Imagen 4 Pro') {
-                        modelName = 'imagen-3.0-generate-001';
+                    if (engine === 'Imagen 4 Ultra') {
+                        modelName = 'imagen-4.0-ultra-generate-001';
+                    } else if (engine === 'Imagen 4 Pro') {
+                        modelName = 'imagen-4.0-generate-001';
                     } else if (engine === 'Imagen 4 Fast') {
-                        modelName = 'imagen-3.0-fast-generate-001';
+                        modelName = 'imagen-4.0-fast-generate-001';
+                    } else if (engine === 'Gemini 3 Pro Image') {
+                        modelName = 'gemini-3-pro-image-preview';   // supports generateContent
                     } else {
-                        // Gemini 3 Pro Image y Gemini 3.1 Flash Image
-                        modelName = 'gemini-2.0-flash-preview-image-generation';
+                        modelName = 'gemini-3.1-flash-image-preview'; // supports generateContent
                     }
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
@@ -297,7 +300,7 @@ export const generateRenderJob = async (req, res) => {
                     let resultUrl = null;
 
                     if (modelName.startsWith('imagen')) {
-                        // Imagen 3.0: usa generateImages (diferente endpoint del SDK)
+                        // Imagen 4: usa generateImages del SDK @google/genai
                         const response = await ai.models.generateImages({
                             model: modelName,
                             prompt: finalPromptToUse,
@@ -308,17 +311,17 @@ export const generateRenderJob = async (req, res) => {
                             resultUrl = `data:image/jpeg;base64,${b64}`;
                         }
                     } else {
-                        // gemini-2.0-flash-preview-image-generation: generateContent + responseModalities
-                        const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
+                        // Gemini 3 Pro Image / Gemini 3.1 Flash Image — generateContent + responseModalities
+                        const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')
                             ? [
                                 { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
-                                finalPromptToUse
-                              ] 
-                            : finalPromptToUse;
+                                { text: finalPromptToUse }
+                              ]
+                            : [{ text: finalPromptToUse }];
 
                         const response = await ai.models.generateContent({
                             model: modelName,
-                            contents: contentPayload,
+                            contents: [{ role: 'user', parts: contentPayload }],
                             config: { responseModalities: ['TEXT', 'IMAGE'] }
                         });
 

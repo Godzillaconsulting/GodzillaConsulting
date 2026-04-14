@@ -153,6 +153,14 @@ export default function CMCalendar({ adminProfile }) {
     const [botConfig, setBotConfig] = useState(null);
     const [savingBot, setSavingBot] = useState(false);
 
+    // ─── Google Sheets Importer ───────────────────────────────────────────
+    const [showSheetsModal, setShowSheetsModal] = useState(false);
+    const [sheetsUrl, setSheetsUrl] = useState('');
+    const [sheetsPreview, setSheetsPreview] = useState(null);
+    const [sheetsLoading, setSheetsLoading] = useState(false);
+    const [sheetsImporting, setSheetsImporting] = useState(false);
+    const [sheetsError, setSheetsError] = useState('');
+
     const unreadCount = notifications.filter(n => !n.read && n.to?.toLowerCase() === currentUser.toLowerCase()).length;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -291,8 +299,61 @@ export default function CMCalendar({ adminProfile }) {
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BOT CONFIG (NEURONAS — SIN CAMBIOS)
+    // GOOGLE SHEETS IMPORTER
     // ═══════════════════════════════════════════════════════════════════════
+    const extractSpreadsheetId = (urlOrId) => {
+        // Si ya es un ID (sin slashes), devolverlo directo
+        if (!urlOrId.includes('/')) return urlOrId.trim();
+        // Extraer de URL: https://docs.google.com/spreadsheets/d/ID/edit
+        const match = urlOrId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        return match ? match[1] : urlOrId.trim();
+    };
+
+    const fetchSheetsPreview = async () => {
+        if (!sheetsUrl.trim()) return;
+        setSheetsLoading(true);
+        setSheetsError('');
+        setSheetsPreview(null);
+        try {
+            const spreadsheetId = extractSpreadsheetId(sheetsUrl);
+            const API = getAPI();
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${API}/api/sheets/import?spreadsheetId=${encodeURIComponent(spreadsheetId)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Error desconocido');
+            setSheetsPreview(data);
+        } catch (e) {
+            setSheetsError(e.message);
+        }
+        setSheetsLoading(false);
+    };
+
+    const confirmSheetsImport = async () => {
+        if (!sheetsPreview?.events?.length) return;
+        setSheetsImporting(true);
+        const API = getAPI();
+        const token = localStorage.getItem('adminToken');
+        let imported = 0;
+        for (const ev of sheetsPreview.events) {
+            try {
+                const res = await fetch(`${API}/api/calendar/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify(ev)
+                });
+                const data = await res.json();
+                if (data.success) imported++;
+            } catch (_) {}
+        }
+        setSheetsImporting(false);
+        setShowSheetsModal(false);
+        setSheetsPreview(null);
+        setSheetsUrl('');
+        alert(`✅ ${imported} eventos importados al calendario correctamente.`);
+    };
+
     const loadBotConfig = async (platform) => {
         if (!platform || platform === 'ALL') { setBotConfig(null); return; }
         try {
@@ -718,6 +779,12 @@ export default function CMCalendar({ adminProfile }) {
                                 ⟳ Moved
                             </div>
                         )}
+                        {/* Sheets badge */}
+                        {event.provider === 'sheets_import' && (
+                            <div className="absolute bottom-1 right-1 bg-green-500/80 text-black text-[8px] font-black px-1 rounded">
+                                📊 Sheets
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -725,12 +792,17 @@ export default function CMCalendar({ adminProfile }) {
                 <div className="px-2 py-1.5">
                     {/* Without media: show platform inline */}
                     {!event.media_url && (
-                        <div className="flex items-center gap-1 mb-1">
-                            <span className="text-[10px]">{pm.icon}</span>
-                            <span className="text-[8px] font-black uppercase tracking-wider"
-                                  style={{ color: pm.color }}>
-                                {pm.label}
-                            </span>
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px]">{pm.icon}</span>
+                                <span className="text-[8px] font-black uppercase tracking-wider"
+                                      style={{ color: pm.color }}>
+                                    {pm.label}
+                                </span>
+                            </div>
+                            {event.provider === 'sheets_import' && (
+                                <span className="text-[8px] bg-green-500/20 text-green-400 font-black px-1 rounded">📊</span>
+                            )}
                         </div>
                     )}
 
@@ -749,6 +821,26 @@ export default function CMCalendar({ adminProfile }) {
                             </span>
                         )}
                     </div>
+
+                    {/* Botón Generar en Studio — visible solo al hover */}
+                    {canCreate && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/studio', {
+                                    state: {
+                                        prompt: event.caption || event.title,
+                                        platform: event.platform,
+                                        eventTitle: event.title,
+                                        empresa: event.empresa
+                                    }
+                                });
+                            }}
+                            className="mt-1.5 w-full opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-black bg-[#CC0000]/80 hover:bg-[#CC0000] text-white py-1 rounded flex items-center justify-center gap-1"
+                        >
+                            ✨ Generar en Studio
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -1111,6 +1203,13 @@ export default function CMCalendar({ adminProfile }) {
                                 <button onClick={() => setShowNewAssignModal(true)}
                                     className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-[#CC0000]/40 text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest">
                                     📋 Asignar Tarea
+                                </button>
+                            )}
+                            {canCreate && calendarTab !== 'pendientes' && (
+                                <button
+                                    onClick={() => { setShowSheetsModal(true); setSheetsPreview(null); setSheetsError(''); setSheetsUrl(''); }}
+                                    className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-green-500/50 text-green-400 rounded-xl font-black text-xs transition-all uppercase tracking-widest flex items-center gap-1.5">
+                                    📊 Importar Sheets
                                 </button>
                             )}
                             {canCreate && calendarTab !== 'pendientes' && (
@@ -1802,6 +1901,71 @@ export default function CMCalendar({ adminProfile }) {
                     </div>
                 </div>
             )}
+            {/* ═══ MODAL: IMPORTAR DESDE GOOGLE SHEETS ═══ */}
+            {showSheetsModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+                    <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
+                        <div className="flex items-center justify-between p-6 border-b border-white/10">
+                            <div>
+                                <h3 className="text-white font-black text-lg">📊 Importar desde Google Sheets</h3>
+                                <p className="text-neutral-500 text-xs font-bold mt-0.5">Pega la URL de tu Sheet de calendario de contenido</p>
+                            </div>
+                            <button onClick={() => setShowSheetsModal(false)} className="text-neutral-600 hover:text-white text-2xl font-black">×</button>
+                        </div>
+                        <div className="p-6 flex flex-col gap-4 flex-1 overflow-y-auto">
+                            <div>
+                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2 block">URL del Google Sheet</label>
+                                <div className="flex gap-2">
+                                    <input type="text" value={sheetsUrl} onChange={e => setSheetsUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchSheetsPreview()} placeholder="https://docs.google.com/spreadsheets/d/..." className="flex-1 bg-black border border-white/20 text-white text-xs rounded-xl px-4 py-3 focus:outline-none focus:border-green-500/60 placeholder-neutral-700 font-mono" />
+                                    <button onClick={fetchSheetsPreview} disabled={sheetsLoading || !sheetsUrl.trim()} className="px-5 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-black text-xs rounded-xl transition-colors">
+                                        {sheetsLoading ? '⏳' : '🔍 Leer'}
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-neutral-600 mt-2 font-bold">
+                                    Comparte el Sheet con: <span className="text-green-400 font-mono">zilla-calendar@bot-godzilla.iam.gserviceaccount.com</span>
+                                </p>
+                            </div>
+                            {sheetsError && <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-xs font-bold">❌ {sheetsError}</div>}
+                            {sheetsPreview && (
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-green-400 font-black text-sm">✅ {sheetsPreview.total} eventos detectados</span>
+                                        <span className="text-neutral-600 text-[10px] font-bold">Cols: {sheetsPreview.headers?.slice(0,5).join(', ')}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto">
+                                        {sheetsPreview.events.map((ev, i) => {
+                                            const pm = PLATFORM_META[ev.platform] || PLATFORM_META.ALL;
+                                            const sm = STATUS_META[ev.status] || STATUS_META.warning;
+                                            return (
+                                                <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${sm.bg} ${sm.border}`}>
+                                                    <span className="text-lg shrink-0" style={{ color: pm.color }}>{pm.icon}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-xs font-black truncate ${sm.text}`}>{ev.title}</p>
+                                                        {ev.caption && <p className="text-[10px] text-neutral-500 line-clamp-1">{ev.caption}</p>}
+                                                        <div className="flex gap-3 mt-1">
+                                                            <span className="text-[9px] text-neutral-600 font-bold">📅 {new Date(ev.start_date).toLocaleDateString('es-MX', { day:'2-digit', month:'short' })}</span>
+                                                            {ev.assigned_to && <span className="text-[9px] text-neutral-600 font-bold">👤 {ev.assigned_to}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 border-t border-white/10 flex gap-3 justify-end">
+                            <button onClick={() => setShowSheetsModal(false)} className="px-6 py-3 bg-white/5 border border-white/10 text-neutral-400 hover:text-white rounded-xl font-black text-xs">Cancelar</button>
+                            {sheetsPreview?.events?.length > 0 && (
+                                <button onClick={confirmSheetsImport} disabled={sheetsImporting} className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 disabled:opacity-50 text-white rounded-xl font-black text-xs flex items-center gap-2">
+                                    {sheetsImporting ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>Importando...</> : `📥 Importar ${sheetsPreview.total} eventos`}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+
     );
 }

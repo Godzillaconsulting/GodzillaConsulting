@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import React, { useState, useEffect, memo } from 'react';
 import ColorBends from './components/ColorBends';
+import CustomCursor from './components/CustomCursor';
 const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
 import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider } from './context/SiteContext';
@@ -222,6 +223,7 @@ function App() {
   return (
     <SiteProvider>
       <Router>
+        <CustomCursor />
         <ScrollToHash />
         <ScrollToTop />
         <PixelTracker />

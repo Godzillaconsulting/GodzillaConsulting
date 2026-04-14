@@ -203,6 +203,62 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
+    const updateOption = (draftId, optIndex, changes) => {
+        setQueue(q => q.map(post => {
+            if (post.id === draftId) {
+                const newOpts = [...post.media_options];
+                newOpts[optIndex] = { ...newOpts[optIndex], ...changes };
+                if (selectedDraft?.id === draftId) setSelectedDraft(prev => ({...prev, media_options: newOpts}));
+                return { ...post, media_options: newOpts };
+            }
+            return post;
+        }));
+    };
+
+    const triggerSingleRefine = async (opt, optIndex, draftId, promptText) => {
+        updateOption(draftId, optIndex, { refinedUrl: 'loading' });
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${'' || ''}/api/studio/refine`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ imageUrl: opt.url, prompt: promptText })
+            });
+            const data = await res.json();
+            
+            if (data.status === 'processing' && data.job_id) {
+                const pollTimer = setInterval(async () => {
+                    try {
+                        const stRes = await fetch(`${'' || ''}/api/studio/status/${encodeURIComponent(data.job_id)}?t=${Date.now()}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const stData = await stRes.json();
+                        
+                        if (stData.status === 'succeed') {
+                            clearInterval(pollTimer);
+                            updateOption(draftId, optIndex, { refinedUrl: stData.result_url });
+                        } else if (stData.status === 'failed' || stData.status === 'error') {
+                            clearInterval(pollTimer);
+                            updateOption(draftId, optIndex, { refinedUrl: 'error' });
+                        }
+                    } catch(e) {}
+                }, 4000);
+            } else {
+                updateOption(draftId, optIndex, { refinedUrl: 'error' });
+            }
+        } catch(e) {
+            updateOption(draftId, optIndex, { refinedUrl: 'error' });
+        }
+    };
+
+    const triggerAutoRefine = async (optionsList, promptText, draftId) => {
+        optionsList.forEach((opt, i) => {
+             if (!opt.isVideo && !opt.provider.includes('GotSora')) {
+                 triggerSingleRefine(opt, i, draftId, promptText);
+             }
+        });
+    };
+
     const handleSavePreset = () => {
         if (!finalPrompt.trim()) return alert('Escribe un prompt primero para guardarlo.');
         const name = prompt('Dale un nombre corto a tu Preset (Ej: Estilo Pixar):');
@@ -449,18 +505,22 @@ export default function CockersStudio({ adminProfile }) {
             }
             
             const guardarDraftFinal = (options, rPrompt) => {
+                let currentId;
                 if (selectedDraft) {
+                    currentId = selectedDraft.id;
                     setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
                     setSelectedDraft(prev => ({ ...prev, media_options: options }));
                 } else {
+                    currentId = Date.now();
                     setSelectedDraft({
-                        id: Date.now(),
+                        id: currentId,
                         status: 'generated',
                         caption: '',
                         visual_prompt: rPrompt,
                         media_options: options
                     });
                 }
+                return currentId;
             };
 
             // Motores a invocar - TODOS los modelos confirmados
@@ -531,8 +591,9 @@ export default function CockersStudio({ adminProfile }) {
                  if(finalOptions.length === 0){
                      finalOptions.push({ provider: 'Simulación (Fallback LOCAL)', url: '/assets/kaiju_cheems.png', isVideo: false });
                  }
-                 guardarDraftFinal(finalOptions, rawPrompt);
+                 const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
                  setRenderingAI(false);
+                 triggerAutoRefine(finalOptions, rawPrompt, newDraftId);
                  return;
             }
 
@@ -593,8 +654,9 @@ export default function CockersStudio({ adminProfile }) {
                     if(finalOptions.length === 0){
                          finalOptions.push({ provider: 'Simulación de Reserva', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false });
                     }
-                    guardarDraftFinal(finalOptions, rawPrompt);
+                    const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
                     setRenderingAI(false);
+                    triggerAutoRefine(finalOptions, rawPrompt, newDraftId);
                 }
             }, 6000);
         } catch (error) {
@@ -646,7 +708,7 @@ export default function CockersStudio({ adminProfile }) {
     `;
 
     // ─── TiltCard: 3-D mouse-tracking card ───
-    const TiltCard = ({ item, idx, onClick }) => {
+    const TiltCard = ({ item, idx }) => {
         const cardRef = useRef(null);
         const rotX = useMotionValue(0);
         const rotY = useMotionValue(0);
@@ -676,24 +738,23 @@ export default function CockersStudio({ adminProfile }) {
                 style={{ rotateX: springX, rotateY: springY, transformPerspective: 900 }}
                 onMouseMove={handleMouse}
                 onMouseLeave={resetTilt}
-                onClick={onClick}
-                className={`gallery-card relative group rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60${isFeatured ? ' featured' : ''}`}
+                className={`gallery-card relative group rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60${isFeatured ? ' featured' : ''}`}
             >
                 {/* Scan sweep shimmer */}
-                <div className="scan-overlay" />
+                <div className="scan-overlay pointer-events-none" />
                 {/* Shimmer skeleton */}
-                <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
+                <div className="absolute inset-0 bg-neutral-900 animate-pulse pointer-events-none" />
                 <img
                     src={item.img}
                     alt={item.tag}
                     loading="lazy"
-                    className="gallery-img relative z-10 w-full h-auto object-cover block"
+                    className="gallery-img relative z-10 w-full h-auto object-cover block pointer-events-none"
                 />
                 {/* Dark gradient */}
-                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
+                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
 
                 {/* Floating top badge */}
-                <div className="float-badge absolute top-3 right-3 z-30">
+                <div className="float-badge absolute top-3 right-3 z-30 pointer-events-none">
                     <span className="bg-black/70 backdrop-blur-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-neutral-300 px-2.5 py-1 rounded-full flex items-center gap-1.5">
                         <span className={`w-1.5 h-1.5 rounded-full ${isFeatured ? 'bg-[#CC0000] animate-pulse' : 'bg-emerald-400'}`}/>
                         {item.model}
@@ -709,9 +770,15 @@ export default function CockersStudio({ adminProfile }) {
                 >
                     <p className="text-white font-bold text-sm mb-0.5">{item.tag}</p>
                     <p className="text-neutral-400 text-[10px] line-clamp-2 leading-relaxed mb-3">{item.prompt}</p>
-                    <div className="flex items-center justify-center gap-1 bg-white/10 hover:bg-[#CC0000]/30 backdrop-blur-xl border border-white/10 hover:border-[#CC0000]/50 rounded-full py-2 text-[10px] font-black text-white uppercase tracking-wider transition-colors">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                        Usar este estilo
+                    <div className="flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setFinalPrompt(item.prompt); }} className="flex-1 flex items-center justify-center gap-1 bg-white/10 hover:bg-emerald-600/50 backdrop-blur-xl border border-white/10 hover:border-emerald-500/50 rounded-full py-1.5 text-[9px] font-black text-white uppercase tracking-wider transition-colors cursor-pointer">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            Usar Prompt
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); toggleFilter(item.prompt); }} className="flex-1 flex items-center justify-center gap-1 bg-white/10 hover:bg-[#CC0000]/50 backdrop-blur-xl border border-white/10 hover:border-[#CC0000]/50 rounded-full py-1.5 text-[9px] font-black text-white uppercase tracking-wider transition-colors cursor-pointer">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                            + Filtro
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -856,9 +923,10 @@ export default function CockersStudio({ adminProfile }) {
                                                 <button
                                                     key={filter.id}
                                                     onClick={() => toggleFilter(filter.prompt)}
-                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border ${isActive ? 'bg-[#CC0000] text-white border-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-600 hover:text-white'}`}
+                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border flex items-center gap-1.5 ${isActive ? 'bg-[#CC0000] text-white border-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-600 hover:text-white'}`}
                                                 >
                                                     {filter.label}
+                                                    {isActive && <span className="text-[7px] bg-red-900/40 hover:bg-black/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
                                                 </button>
                                             );
                                         })}
@@ -871,10 +939,11 @@ export default function CockersStudio({ adminProfile }) {
                                                 <button
                                                     key={sf}
                                                     onClick={() => toggleFilter(sf)}
-                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border bg-indigo-600 text-white border-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.5)]`}
+                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border bg-indigo-600 text-white border-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.5)] flex items-center gap-1.5`}
                                                     title="Filtro seleccionado de la Galería Comunitaria"
                                                 >
                                                     ✨ {label}
+                                                    <span className="text-[7px] bg-indigo-900/40 hover:bg-black/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>
                                                 </button>
                                             );
                                         })}
@@ -1180,7 +1249,7 @@ export default function CockersStudio({ adminProfile }) {
                                     columnClassName="flex flex-col gap-5"
                                 >
                                     {communityGallery.map((item, idx) => (
-                                        <TiltCard key={idx} item={item} idx={idx} onClick={() => toggleFilter(item.prompt)} />
+                                        <TiltCard key={idx} item={item} idx={idx} />
                                     ))}
                                 </Masonry>
                             </div>
@@ -1239,12 +1308,9 @@ export default function CockersStudio({ adminProfile }) {
                                             </span>
                                         </div>
                                         
-                                        <div 
-                                            className="w-full aspect-video bg-[#111] rounded-2xl overflow-hidden relative cursor-pointer"
-                                            onClick={() => handleMediaClick(opt.url)}
-                                        >
+                                        <div className={`w-full aspect-video bg-[#111] rounded-2xl overflow-hidden relative flex gap-1 ${opt.isVideo || opt.provider.includes('GotSora') ? '' : 'p-1 bg-black/40 border border-neutral-800'}`}>
                                             {opt.isVideo ? (
-                                                <div className="w-full h-full relative group/vid overflow-hidden bg-black flex items-center justify-center">
+                                                <div className="w-full h-full relative group/vid overflow-hidden bg-black flex items-center justify-center cursor-pointer" onClick={() => handleMediaClick(opt.url)}>
                                                     {getYouTubeId(opt.url) ? (
                                                         <iframe 
                                                             src={`https://www.youtube.com/embed/${getYouTubeId(opt.url)}?controls=1&autoplay=1&mute=1&loop=1`}
@@ -1254,14 +1320,12 @@ export default function CockersStudio({ adminProfile }) {
                                                             allowFullScreen
                                                         ></iframe>
                                                     ) : opt.url.includes('.mp4') || opt.url.includes('.webm') ? (
-                                                        /* Real native video file */
                                                         <video 
                                                             src={opt.url} 
                                                             className="w-full h-full object-cover" 
                                                             autoPlay loop muted playsInline controls
                                                         />
                                                     ) : (
-                                                        /* Image URL tagged as video - show as CONCEPT FRAME */
                                                         <>
                                                             <img 
                                                                 src={opt.url} 
@@ -1269,12 +1333,10 @@ export default function CockersStudio({ adminProfile }) {
                                                                 className="w-full h-full object-cover gallery-img" 
                                                                 onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
                                                             />
-                                                            {/* Error fallback - hidden by default */}
                                                             <div style={{display:'none'}} className="absolute inset-0 flex-col items-center justify-center bg-neutral-900 gap-3">
                                                                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#CC0000" strokeWidth="1.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/><line x1="2" y1="2" x2="22" y2="22" stroke="#666"/></svg>
                                                                 <p className="text-neutral-500 text-[10px] font-bold uppercase">Sin Resultado</p>
                                                             </div>
-                                                            {/* Cinematic concept frame overlay */}
                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
                                                             <div className="absolute bottom-3 left-3 right-3 pointer-events-none">
                                                                 <div className="flex items-center gap-1.5 mb-1">
@@ -1286,7 +1348,37 @@ export default function CockersStudio({ adminProfile }) {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                                <>
+                                                    {/* Original Image Pane */}
+                                                    <div className="flex-1 rounded-xl overflow-hidden relative cursor-pointer group/orig" onClick={() => handleMediaClick(opt.url)}>
+                                                        <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
+                                                        {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
+                                                    </div>
+
+                                                    {/* Auto-Refined GotSora Pane */}
+                                                    {!opt.provider.includes('GotSora') && (
+                                                        <div className="flex-1 rounded-xl overflow-hidden relative border border-transparent hover:border-indigo-500/50 transition-colors group/ref bg-[#0f0f0f]">
+                                                            {opt.refinedUrl === 'loading' ? (
+                                                                <div className="flex flex-col items-center justify-center h-full w-full bg-indigo-900/10">
+                                                                    <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mb-2"></div>
+                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">Aplicando GotSora...</span>
+                                                                </div>
+                                                            ) : opt.refinedUrl === 'error' || !opt.refinedUrl ? (
+                                                                <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-900/30">
+                                                                    <button onClick={(e) => { e.stopPropagation(); triggerSingleRefine(opt, i, selectedDraft.id, finalPrompt || selectedDraft.visual_prompt); }} className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[9px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 xl:scale-100 scale-90">
+                                                                        <span>✨</span> Aplicar Filtro
+                                                                    </button>
+                                                                    <span className="text-[7px] text-neutral-600 mt-2">GotSora Engine Local</span>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <img src={opt.refinedUrl} alt="refined" onClick={() => handleMediaClick(opt.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
+                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_10px_rgba(79,70,229,0.5)]">GotSora HQ ✨</div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                         
@@ -1307,18 +1399,6 @@ export default function CockersStudio({ adminProfile }) {
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                 </a>
                                                 
-                                                {!opt.isVideo && !opt.provider.includes('GotSora RefinedHQ') && (
-                                                    <button 
-                                                        onClick={() => refineWithGotSora(opt.url, finalPrompt || selectedDraft.visual_prompt, i)} 
-                                                        disabled={refiningTasks[i]}
-                                                        className={`bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-400 border border-indigo-500/50 font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center gap-1.5 ${refiningTasks[i] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        title="Pasar por filtro GotSora Refiner (LCM) para añadir texturas y detalle HD"
-                                                    >
-                                                        {refiningTasks[i] ? (
-                                                            <><span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"/> Refinando...</>
-                                                        ) : '🔬 Refinar GotSora'}
-                                                    </button>
-                                                )}
 
                                                 {canSeeAll && (
                                                     <div className="flex gap-1.5">

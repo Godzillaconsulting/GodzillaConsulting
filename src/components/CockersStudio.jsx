@@ -854,6 +854,22 @@ export default function CockersStudio({ adminProfile }) {
                                                 </button>
                                             );
                                         })}
+                                        {/* Píldoras especiales comunitarias inyectadas desde la galería */}
+                                        {selectedFilters.map(sf => {
+                                            if (PHOTO_FILTERS.find(pf => pf.prompt === sf)) return null;
+                                            const comm = COMMUNITY_GALLERY_POOL.find(c => c.prompt === sf);
+                                            const label = comm ? comm.tag : 'Estilo Mágico';
+                                            return (
+                                                <button
+                                                    key={sf}
+                                                    onClick={() => toggleFilter(sf)}
+                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border bg-indigo-600 text-white border-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.5)]`}
+                                                    title="Filtro seleccionado de la Galería Comunitaria"
+                                                >
+                                                    ✨ {label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </>
@@ -1156,7 +1172,7 @@ export default function CockersStudio({ adminProfile }) {
                                     columnClassName="flex flex-col gap-5"
                                 >
                                     {communityGallery.map((item, idx) => (
-                                        <TiltCard key={idx} item={item} idx={idx} onClick={() => setFinalPrompt(item.prompt)} />
+                                        <TiltCard key={idx} item={item} idx={idx} onClick={() => toggleFilter(item.prompt)} />
                                     ))}
                                 </Masonry>
                             </div>

@@ -146,7 +146,8 @@ export const generateRenderJob = async (req, res) => {
             // Proceso asíncrono robusto
             (async () => {
                 try {
-                    const ai = genAI.getGenerativeModel({ model: "gemini-3.1-flash-image-preview" });
+                    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                    const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // Fallback temporal a 2.0-flash experimental hasta que genAI Node libere la SDK nativa para Gemini Image 3.1
                     const result = await ai.generateContent(optimizedPrompt || prompt);
                     const candidates = result.response.candidates;
                     if (candidates && candidates.length > 0) {

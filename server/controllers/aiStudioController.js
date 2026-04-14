@@ -264,41 +264,59 @@ export const generateRenderJob = async (req, res) => {
 
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-                    // Todos los motores de imagen ahora usan gemini-2.0-flash-preview-image-generation
-                    // (imagen-3.0 requiere Google Cloud Vertex AI activado, no AI Studio API Key)
-                    let modelName = 'gemini-2.0-flash-preview-image-generation';
+                    // Motor EXACTO mapeado por nombre de UI a modelo real de Google AI Studio
+                    // NOTA: imagen-3.0 SÍ funciona con AI Studio API Key (no requiere Vertex AI)
+                    let modelName;
+                    if (engine === 'Imagen 4 Ultra' || engine === 'Imagen 4 Pro') {
+                        modelName = 'imagen-3.0-generate-001';
+                    } else if (engine === 'Imagen 4 Fast') {
+                        modelName = 'imagen-3.0-fast-generate-001';
+                    } else {
+                        // Gemini 3 Pro Image y Gemini 3.1 Flash Image
+                        modelName = 'gemini-2.0-flash-preview-image-generation';
+                    }
 
-                    // Personalizar el prompt para simular diferencias entre motores
-                    let enginePrompt = finalPromptToUse;
-                    if (engine === 'Imagen 4 Ultra') enginePrompt = `Ultra photorealistic, 8K detail, professional studio: ${finalPromptToUse}`;
-                    else if (engine === 'Imagen 4 Pro') enginePrompt = `Photorealistic cinematic quality: ${finalPromptToUse}`;
-                    else if (engine === 'Imagen 4 Fast') enginePrompt = `Clean, detailed: ${finalPromptToUse}`;
-                    else if (engine === 'Gemini 3 Pro Image') enginePrompt = `Artistic, atmospheric, advanced composition: ${finalPromptToUse}`;
-
-                    console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${enginePrompt.substring(0, 80)}...`);
+                    console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
                     let resultUrl = null;
 
-                    // gemini-2.0-flash-preview-image-generation: generateContent + responseModalities
-                    const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
-                        ? [
-                            { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
-                            enginePrompt
-                          ] 
-                        : enginePrompt;
-
-                    const response = await ai.models.generateContent({
-                        model: modelName,
-                        contents: contentPayload,
-                        config: { responseModalities: ['TEXT', 'IMAGE'] }
-                    });
-
-                    for (const part of (response.candidates?.[0]?.content?.parts || [])) {
-                        if (part.inlineData?.data) {
-                            const mime = part.inlineData.mimeType || 'image/png';
-                            resultUrl = `data:${mime};base64,${part.inlineData.data}`;
-                            break;
+                    if (modelName.startsWith('imagen')) {
+                        // Imagen 3.0: usa generateImages (diferente endpoint del SDK)
+                        const response = await ai.models.generateImages({
+                            model: modelName,
+                            prompt: finalPromptToUse,
+                            config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
+                        });
+                        if (response.generatedImages?.[0]?.image?.imageBytes) {
+                            const b64 = response.generatedImages[0].image.imageBytes;
+                            resultUrl = `data:image/jpeg;base64,${b64}`;
                         }
+                    } else {
+                        // gemini-2.0-flash-preview-image-generation: generateContent + responseModalities
+                        const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
+                            ? [
+                                { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
+                                finalPromptToUse
+                              ] 
+                            : finalPromptToUse;
+
+                        const response = await ai.models.generateContent({
+                            model: modelName,
+                            contents: contentPayload,
+                            config: { responseModalities: ['TEXT', 'IMAGE'] }
+                        });
+
+                        for (const part of (response.candidates?.[0]?.content?.parts || [])) {
+                            if (part.inlineData?.data) {
+                                const mime = part.inlineData.mimeType || 'image/png';
+                                resultUrl = `data:${mime};base64,${part.inlineData.data}`;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!resultUrl) {
+                        throw new Error(`${modelName}: Respuesta sin datos de imagen. Verifica permisos del modelo en tu cuenta.`);
                     }
 
                     postProcessJobs.set(taskId, { status: 'done', localUrl: resultUrl });

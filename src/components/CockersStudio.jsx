@@ -54,12 +54,12 @@ export default function CockersStudio({ adminProfile }) {
                         setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: sData.result_url } : s));
                     } else if (sData.status === 'failed' || refAttempts > 40) {
                         clearInterval(refPoll);
-                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s));
+                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: sData.error || 'GotSora Failure' } : s));
                     }
-                } catch { clearInterval(refPoll); setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s)); }
+                } catch { clearInterval(refPoll); setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: 'Server Timeout' } : s)); }
             }, 5000);
         } catch (e) {
-            setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s));
+            setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: e.message } : s));
         }
     }, []);
 
@@ -559,8 +559,8 @@ export default function CockersStudio({ adminProfile }) {
         }
 
         const enginesToRun = genMode === 'video'
-            ? ['Veo 2', 'Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
+            ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos']
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'GotSora T2I', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -631,11 +631,25 @@ export default function CockersStudio({ adminProfile }) {
                 for (const task of toPoll) {
                     if (task.done) continue;
                     try {
-                        const sRes = await fetch(`/api/studio/status/${encodeURIComponent(task.job_id)}?t=${Date.now()}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (!sRes.ok) continue;
-                        const sData = await sRes.json();
+                        let sData = null;
+                        try {
+                            const sRes = await fetch(`/api/studio/status/${encodeURIComponent(task.job_id)}?t=${Date.now()}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (sRes.ok) sData = await sRes.json();
+                        } catch (e) {
+                            // Silencioso ante errores 502/net errs temporales.
+                        }
+
+                        if (!sData) {
+                            task.failCt = (task.failCt || 0) + 1;
+                            // 5 retries antes de darlo por muerto en frontend
+                            if (task.failCt > 5) {
+                                task.done = true;
+                                updateSlot(task.idx, { status: 'failed', progress: 100 });
+                            }
+                            continue;
+                        }
 
                         updateSlot(task.idx, { progress: sData.progress || Math.min(attempts * 6, 92) });
 
@@ -645,7 +659,7 @@ export default function CockersStudio({ adminProfile }) {
                             updateSlot(task.idx, { status: 'done', url, progress: 100, isVideo: sData.isVideo || isVideoMode });
                         } else if (sData.status === 'failed') {
                             task.done = true;
-                            updateSlot(task.idx, { status: 'failed', progress: 100 });
+                            updateSlot(task.idx, { status: 'failed', progress: 100, errorMsg: sData.error || "Falla desconocida" });
                         }
                     } catch(e) { /* silencioso */ }
                 }
@@ -1256,10 +1270,13 @@ export default function CockersStudio({ adminProfile }) {
                                                         <span className="text-[7px] text-neutral-600 font-bold">{slot.progress || 0}%</span>
                                                     </div>
                                                 ) : slot.status === 'failed' ? (
-                                                    /* Error State */
-                                                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                                                        <span className="text-2xl">⚠️</span>
-                                                        <span className="text-[8px] text-red-400 font-black uppercase tracking-widest text-center px-3">{slot.provider} falló</span>
+                                                    /* Error State - Soft Retry UI */
+                                                    <div className="flex-1 flex flex-col items-center justify-center gap-2 bg-neutral-900 border-2 border-dashed border-red-900/40 rounded-xl m-2 opacity-80 cursor-pointer p-4 text-center" onClick={() => simulateAIGeneration()}>
+                                                        <span className="text-xl">⚠️</span>
+                                                        <span className="text-[9px] text-[#CC0000] font-black uppercase tracking-widest leading-loose">
+                                                            {slot.errorMsg || `Falla de motor ${slot.provider}`}
+                                                        </span>
+                                                        <span className="text-[8px] text-red-500/80 bg-red-900/10 px-2 py-1 rounded">Clic para Reintentar</span>
                                                     </div>
                                                 ) : slot.isVideo ? (
                                                     /* Video Done */
@@ -1290,12 +1307,15 @@ export default function CockersStudio({ adminProfile }) {
                                                                     <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">GotSora HQ ✨</div>
                                                                 </>
                                                             ) : (
-                                                                <div className="flex flex-col items-center justify-center h-full gap-2">
+                                                                <div className="flex flex-col items-center justify-center h-full gap-2 p-2">
+                                                                    {slot.refinedUrl === 'error' && (
+                                                                        <span className="text-[8px] text-center text-red-500 font-bold mb-1 leading-tight">{slot.refinedError || 'Error al conectar'}</span>
+                                                                    )}
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); triggerSlotRefine(slot, i, finalPrompt); }}
                                                                         className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[8px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
                                                                     >
-                                                                        <span>✨</span> Aplicar Filtro
+                                                                        <span>✨</span> {slot.refinedUrl === 'error' ? 'Reintentar Filtro' : 'Aplicar Filtro'}
                                                                     </button>
                                                                     <span className="text-[7px] text-neutral-600">GotSora Engine</span>
                                                                 </div>

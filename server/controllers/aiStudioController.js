@@ -5,6 +5,7 @@ import pool from '../config/db.js';
 import fs from 'fs';
 import path from 'path';
 import { removeWatermark } from '../utils/videoProcessor.js';
+import { getModelId } from '../config/ai_models_v4.config.js';
 
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
@@ -124,15 +125,8 @@ export const generateRenderJob = async (req, res) => {
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
-            // IDs REALES confirmados desde listModels (14-Abr-2026)
-            let veoModel;
-            if (engine === 'Veo 3') {
-                veoModel = 'veo-3.0-generate-001';         // GA
-            } else if (engine === 'Veo 3 Fast') {
-                veoModel = 'veo-3.0-fast-generate-001';    // GA Fast
-            } else {
-                veoModel = 'veo-2.0-generate-001';         // Veo 2 — estable
-            }
+            // Importar IDs desde la v4 (purga automatizada de modelos V2)
+            const veoModel = getModelId(engine) || 'veo-3.0-generate-001';
             console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
 
             (async () => {
@@ -280,20 +274,8 @@ export const generateRenderJob = async (req, res) => {
 
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-                    // Motor EXACTO mapeado por nombre de UI a modelo real de Google AI Studio
-                    // NOTA: IDs REALES confirmados desde listModels API (14-Abr-2026)
-                    let modelName;
-                    if (engine === 'Imagen 4 Ultra') {
-                        modelName = 'imagen-4.0-ultra-generate-001';
-                    } else if (engine === 'Imagen 4 Pro') {
-                        modelName = 'imagen-4.0-generate-001';
-                    } else if (engine === 'Imagen 4 Fast') {
-                        modelName = 'imagen-4.0-fast-generate-001';
-                    } else if (engine === 'Gemini 3 Pro Image') {
-                        modelName = 'gemini-3-pro-image-preview';   // supports generateContent
-                    } else {
-                        modelName = 'gemini-3.1-flash-image-preview'; // supports generateContent
-                    }
+                    // Motor EXACTO mapeado por nombre de UI a modelo real
+                    const modelName = getModelId(engine) || 'gemini-3.1-flash-image-preview';
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
@@ -416,6 +398,55 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             }
         }
 
+        // Manejar Refinados de GotSora guardados Localmente (Disco E:)
+        if (taskId.startsWith("refine_")) {
+            const job = postProcessJobs.get(taskId);
+            if (!job) return res.status(400).json({ error: "Job expirado o no existe en RAM" });
+
+            if (job.status === 'done') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: job.localUrl });
+            } else if (job.status === 'failed') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({ status: 'failed', error: job.error });
+            } else if (job.status === 'delegated') {
+                try {
+                    const lres = await fetch(`http://127.0.0.1:5000/sora-status/${job.local_task_id}`);
+                    const ldata = await lres.json();
+                    if (ldata.status === 'succeed') {
+                        let soraUrl = ldata.result_url;
+                        if (!soraUrl.startsWith('http')) soraUrl = 'http://127.0.0.1:5000' + soraUrl; // Asegurar full url
+                        
+                        try {
+                            const imgRes = await fetch(soraUrl);
+                            const arrBuf = await imgRes.arrayBuffer();
+                            const buffer = Buffer.from(arrBuf);
+                            
+                            const saveDir = 'E:/GodzillaSora_Outputs';
+                            if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
+                            const filename = `gotsora_refined_${Date.now()}.jpg`;
+                            fs.writeFileSync(path.join(saveDir, filename), buffer);
+                            
+                            const localUrl = `/api/sora/media/${filename}`;
+                            postProcessJobs.delete(taskId);
+                            return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: localUrl });
+                        } catch (saveErr) {
+                            postProcessJobs.delete(taskId);
+                            return res.status(200).json({ status: 'failed', error: "Fallo guardando a E: " + saveErr.message });
+                        }
+                    } else if (ldata.status === 'failed') {
+                        postProcessJobs.delete(taskId);
+                        return res.status(200).json({ status: 'failed', error: ldata.error || "Falla en Local Engine GPU." });
+                    } else {
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
+                    }
+                } catch(pe) {
+                    // Retry mode silenciador
+                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                }
+            }
+        }
+
         // Manejar Google Vision Nativos guardados en Server RAM
         if (taskId.startsWith("googleimg_")) {
             const job = postProcessJobs.get(taskId);
@@ -481,9 +512,25 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                 return res.status(200).json({ status: 'failed', error: job.error });
             } else if (job.status === 'delegated') {
                 try {
+                    const abortController = new AbortController();
+                    const timeoutId = setTimeout(() => abortController.abort(), 3500);
+
                     const hRes = await fetch(`https://api.higgsfield.ai/v1/generations/${job.provider_job_id}`, {
-                        headers: { 'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}` }
+                        headers: { 'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}` },
+                        signal: abortController.signal
                     });
+                    clearTimeout(timeoutId);
+                    
+                    if (hRes.status === 502 || hRes.status === 504) {
+                        job.retries = (job.retries || 0) + 1;
+                        if (job.retries > 5) {
+                            job.status = 'failed';
+                            job.error = "Higgsfield timeout (502). Múltiples reintentos fallidos.";
+                            return res.status(200).json({ status: 'failed', error: job.error });
+                        }
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                    }
+                    
                     const hData = await hRes.json();
                     if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Polling fallido a Higgsfield");
                     
@@ -503,6 +550,10 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                         return res.status(200).json({ task_id: taskId, status: 'processing', progress: hData.progress || 50, result_url: '' });
                     }
                 } catch(pe) {
+                    if (pe.name === 'AbortError') {
+                        console.log("[HIGGSFIELD] Async Polling Timeout (3.5s). Retrying next cycle sin bloquear Node.");
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                    }
                     console.error("Higgsfield Polling Error: ", pe);
                     return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
                 }
@@ -806,29 +857,50 @@ export const refineRenderJob = async (req, res) => {
         console.log(`[STUDIO] Iniciando Refinado GotSora para: ${imageUrl}`);
 
         let base64Image = null;
+        let localDiskPath = null;
         if (imageUrl.startsWith('http')) {
             const imgRes = await fetch(imageUrl);
             const arrayBuffer = await imgRes.arrayBuffer();
-            base64Image = Buffer.from(arrayBuffer).toString('base64');
+            const buffer = Buffer.from(arrayBuffer);
+            
+            // Garantizar escritura asincrona a Disco E: ANTES de notificar a GotSora
+            const saveDir = 'E:/GodzillaSora_Outputs';
+            if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
+            localDiskPath = path.join(saveDir, `temp_refine_${Date.now()}.jpg`);
+            fs.writeFileSync(localDiskPath, buffer);
+            
+            console.log(`[STUDIO] GotSora Sequence 1/2: Imagen Original 100% grabada en ${localDiskPath}`);
+
+            // Seguimos enviando base64 si el UI así lo requiere, pero el pipeline 
+            // ya asegura retención en disco para failsafes de RAM.
+            base64Image = buffer.toString('base64');
             const contentType = imgRes.headers.get('content-type') || 'image/png';
             base64Image = `data:${contentType};base64,${base64Image}`;
         }
+
+        const optimizedPrompt = (prompt || 'high quality, masterpiece, 8k, raw photo, film grain') + ', Cinematic/Godzilla style, premium rendering';
+        
+        console.log(`[STUDIO] GotSora Sequence 2/2: Input a Engine. Tareas de render a iniciar.`);
 
         const response = await fetch('http://127.0.0.1:5000/sora-start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                 prompt: prompt || 'high quality, masterpiece, 8k, raw photo, film grain',
+                 prompt: optimizedPrompt,
                  mode: 'photo',
                  diffusion_steps: 5,
-                 ref_image: base64Image
+                 ref_image: base64Image,
+                 local_path: localDiskPath // Pasamos el hint al motor Python por si soporta optimizacion directa
             })
         });
 
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Falla en Local Backend GoTSora');
 
-        return res.status(200).json({ job_id: data.task_id, status: 'processing', provider: 'GotSora Refined' });
+        const refineTaskId = "refine_" + data.task_id;
+        postProcessJobs.set(refineTaskId, { status: 'delegated', local_task_id: data.task_id });
+
+        return res.status(200).json({ job_id: refineTaskId, status: 'processing', provider: 'GotSora Refined' });
 
     } catch (error) {
         console.error(error);

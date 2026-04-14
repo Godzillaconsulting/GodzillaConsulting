@@ -126,9 +126,29 @@ export const initWhatsAppBot = () => {
         qrcode.generate(qr, { small: true });
     });
 
-    client.on('ready', () => {
+    client.on('ready', async () => {
         currentQR = null;
         console.log('✅ ZillaBot (WhatsApp Web) está conectado y listo!');
+        console.log('🔄 Escaneando y recuperando mensajes que entraron mientras estaba apagado...');
+        try {
+            const chats = await client.getChats();
+            let unreadCount = 0;
+            for (const chat of chats) {
+                if (chat.unreadCount > 0 && !chat.isGroup) {
+                    const messages = await chat.fetchMessages({ limit: chat.unreadCount });
+                    for (const msg of messages) {
+                        if (!msg.fromMe) {
+                            unreadCount++;
+                            // Forzamos al bot a que procese este mensaje como si acabara de llegar
+                            client.emit('message', msg);
+                        }
+                    }
+                }
+            }
+            console.log(`✅ Se recuperaron y enviaron a procesar ${unreadCount} mensajes perdidos.`);
+        } catch (e) {
+            console.error('⚠️ Error al recuperar mensajes perdidos:', e.message);
+        }
     });
 
     // ===============================================

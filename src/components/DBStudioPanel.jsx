@@ -236,12 +236,25 @@ export default function DBStudioPanel({ adminProfile }) {
                                         <tr key={rIdx} className="hover:bg-neutral-900 hover:text-white transition-colors border-b border-neutral-900/50">
                                             {data.fields.map((f, cIdx) => {
                                                 let cellData = row[f];
-                                                if (typeof cellData === 'object' && cellData !== null) {
-                                                    cellData = JSON.stringify(cellData);
+                                                let displayContent;
+                                                
+                                                if (cellData === null || cellData === undefined) {
+                                                    displayContent = <span className="text-neutral-600 italic text-[10px]">null</span>;
+                                                } else if (typeof cellData === 'object') {
+                                                    displayContent = <span className="text-cyan-400 font-mono text-[10px] inline-block max-w-[300px] truncate" title={JSON.stringify(cellData)}>{JSON.stringify(cellData)}</span>;
+                                                } else if (typeof cellData === 'boolean') {
+                                                    displayContent = <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${cellData ? 'bg-green-900/30 text-green-400 border-green-500/30' : 'bg-red-900/30 text-red-500 border-red-500/30'}`}>{cellData ? 'TRUE' : 'FALSE'}</span>;
+                                                } else if (typeof cellData === 'string' && cellData.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+                                                    displayContent = <span className="text-neutral-400 text-[10px]">{new Date(cellData).toLocaleString('es-MX', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute:'2-digit' })}</span>;
+                                                } else if (typeof cellData === 'number') {
+                                                    displayContent = <span className="text-amber-400 font-mono text-[11px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">{cellData}</span>;
+                                                } else {
+                                                    displayContent = <span className="text-gray-300 text-xs truncate max-w-[250px] inline-block" title={cellData}>{String(cellData)}</span>;
                                                 }
+
                                                 return (
-                                                    <td key={cIdx} className="py-2 px-4 whitespace-nowrap max-w-[200px] truncate text-xs" title={cellData}>
-                                                        {cellData === null ? <span className="text-neutral-600 italic">null</span> : String(cellData)}
+                                                    <td key={cIdx} className="py-2.5 px-4 align-middle whitespace-nowrap">
+                                                        {displayContent}
                                                     </td>
                                                 );
                                             })}

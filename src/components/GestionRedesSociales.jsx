@@ -86,14 +86,24 @@ const GestionRedesSociales = () => {
                                 const ytId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
                                 if (ytId) {
                                     return (
+                                        <>
                                         <iframe 
                                             ref={videoRef}
-                                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&enablejsapi=1`}
+                                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&enablejsapi=1&rel=0`}
                                             className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
                                             style={{ pointerEvents: 'none' }}
                                             frameBorder="0"
                                             allow="autoplay; encrypted-media"
                                         ></iframe>
+                                        <div 
+                                            className="absolute inset-0 z-20 cursor-pointer" 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.open('https://www.youtube.com/@GodzillaConsulting', '_blank');
+                                            }}
+                                            title="Ir al canal de YouTube"
+                                        ></div>
+                                        </>
                                     );
                                 }
                                 return (

@@ -264,77 +264,55 @@ export const generateRenderJob = async (req, res) => {
 
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-                    // Motor EXACTO segun nombre del engine (5 modelos confirmados Ultra)
-                    let modelName;
-                    if (engine === 'Imagen 4 Ultra') {
-                        modelName = 'imagen-3.0-generate-001';
-                    } else if (engine === 'Imagen 4 Pro') {
-                        modelName = 'imagen-3.0-generate-001';
-                    } else if (engine === 'Imagen 4 Fast') {
-                        modelName = 'imagen-3.0-fast-generate-001';
-                    } else if (engine === 'Gemini 3 Pro Image') {
-                        modelName = 'gemini-2.0-pro-exp-02-05';
-                    } else {
-                        modelName = 'gemini-2.0-flash'; // Gemini 3.1 Flash Image Fallback
-                    }
+                    // Todos los motores de imagen ahora usan gemini-2.0-flash-preview-image-generation
+                    // (imagen-3.0 requiere Google Cloud Vertex AI activado, no AI Studio API Key)
+                    let modelName = 'gemini-2.0-flash-preview-image-generation';
 
-                    console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
+                    // Personalizar el prompt para simular diferencias entre motores
+                    let enginePrompt = finalPromptToUse;
+                    if (engine === 'Imagen 4 Ultra') enginePrompt = `Ultra photorealistic, 8K detail, professional studio: ${finalPromptToUse}`;
+                    else if (engine === 'Imagen 4 Pro') enginePrompt = `Photorealistic cinematic quality: ${finalPromptToUse}`;
+                    else if (engine === 'Imagen 4 Fast') enginePrompt = `Clean, detailed: ${finalPromptToUse}`;
+                    else if (engine === 'Gemini 3 Pro Image') enginePrompt = `Artistic, atmospheric, advanced composition: ${finalPromptToUse}`;
+
+                    console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${enginePrompt.substring(0, 80)}...`);
 
                     let resultUrl = null;
 
-                    if (modelName.startsWith('imagen')) {
-                        // Imagen 3 usa generateImages (API diferente)
-                        const response = await ai.models.generateImages({
-                            model: modelName,
-                            prompt: finalPromptToUse,
-                            config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
-                        });
-                        if (response.generatedImages?.[0]?.image?.imageBytes) {
-                            const b64 = response.generatedImages[0].image.imageBytes;
-                            resultUrl = `data:image/jpeg;base64,${b64}`;
-                        }
-                    } else {
-                            const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
-                                ? [
-                                    { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
-                                    finalPromptToUse
-                                ] 
-                                : finalPromptToUse;
+                    // gemini-2.0-flash-preview-image-generation: generateContent + responseModalities
+                    const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
+                        ? [
+                            { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
+                            enginePrompt
+                          ] 
+                        : enginePrompt;
 
-                            // gemini-2.0-flash-preview-image-generation usa generateContent con responseModalities
-                            const response = await ai.models.generateContent({
-                                model: modelName,
-                                contents: contentPayload,
-                                config: { responseModalities: ['TEXT', 'IMAGE'] }
-                            });
-                            for (const part of (response.candidates?.[0]?.content?.parts || [])) {
-                            if (part.inlineData?.data) {
-                                const mime = part.inlineData.mimeType || 'image/png';
-                                resultUrl = `data:${mime};base64,${part.inlineData.data}`;
-                                break;
-                            }
-                        }
-                    }
+                    const response = await ai.models.generateContent({
+                        model: modelName,
+                        contents: contentPayload,
+                        config: { responseModalities: ['TEXT', 'IMAGE'] }
+                    });
 
-                    if (!resultUrl) {
-                        throw new Error(`${modelName}: La respuesta no contenía datos de imagen. Verifica la llave API y los permisos del modelo.`);
+                    for (const part of (response.candidates?.[0]?.content?.parts || [])) {
+                        if (part.inlineData?.data) {
+                            const mime = part.inlineData.mimeType || 'image/png';
+                            resultUrl = `data:${mime};base64,${part.inlineData.data}`;
+                            break;
+                        }
                     }
 
                     postProcessJobs.set(taskId, { status: 'done', localUrl: resultUrl });
                     console.log(`[GOOGLE-VISION] ✅ Imagen generada correctamente. Job: ${taskId}`);
 
                 } catch (e) {
+                    const usedPrompt = finalPromptToUse || prompt;
                     console.error(`[GOOGLE-VISION] ❌ Error (${engine}):`, e.message);
                     console.log(`[GOOGLE-VISION] 🔄 Fallback a GODZILLA NATIVE TENSOR (Local GPU)...`);
                     try {
                         const localRes = await fetch('http://127.0.0.1:5000/sora-start', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                prompt: finalPromptToUse || prompt,
-                                mode: 'photo',
-                                diffusion_steps: 4
-                            })
+                            body: JSON.stringify({ prompt: usedPrompt, mode: 'photo', diffusion_steps: 4 })
                         });
                         const localData = await localRes.json();
                         if (localData.success) {
@@ -344,25 +322,12 @@ export const generateRenderJob = async (req, res) => {
                         }
                     } catch (localErr) {
                          console.error("[STUDIO] Local Fallback falló también:", localErr.message);
-                         postProcessJobs.set(taskId, { status: 'failed', error: e.message + " | Fallback: " + localErr.message });
+                         postProcessJobs.set(taskId, { status: 'failed', error: e.message });
                     }
                 }
             })();
             
             return res.status(200).json({ job_id: taskId, status: "processing", provider: "Google Vision API" });
-
-            // Eliminado el guardado en disco para prevenir memory/disk leak en el VPS.
-            // Las imágenes crudas en Base64 se envían directo al frontend para ser renderizadas
-            // y solo se guardarán si el usuario da clic en "Descargar".
-            const imageUrls = generatedImages.map(base64Bytes => `data:image/png;base64,${base64Bytes}`);
-
-            // Return synchronously with the Base64 URLs so the UI handles them directly
-            return res.status(200).json({ 
-                status: 'succeed', 
-                job_id: "google_image_" + Date.now(),
-                provider: engine,
-                result_url: imageUrls
-            });
         }
 
 

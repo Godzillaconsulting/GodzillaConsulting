@@ -3,6 +3,7 @@ import { useSiteData } from'../context/SiteContext';
 import { MessageCircle } from'lucide-react';
 import AnimatedHeadline from'./AnimatedHeadline';
 import { getYouTubeId } from './MediaPicker';
+import ParticleField from './ParticleField';
 
 import logoCeoCuts from'../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from'../assets/Logos/Circle One Logo@2x.png';
@@ -57,8 +58,24 @@ const Hero = () => {
         ];
     }
  return (
- <section id="inicio" className="relative flex items-center justify-center pt-20 pb-4 overflow-hidden bg-transparent">
- {/* Fondo editable desde CMS (sobre ColorBends) */}
+ <section id="inicio" className="relative flex items-center justify-center pt-20 pb-4 overflow-hidden bg-black">
+ {/* ── Particle Flow Field background ── */}
+ <div className="absolute inset-0 z-0 pointer-events-none" style={{ height: '100%' }}>
+  <ParticleField
+   particleCount={2000}
+   colors={['#CC0000', '#FF2200', '#FF3300', '#FF4400', '#FF5500', '#990000', '#8B0000']}
+   speed={1}
+   discRadius={0.55}
+   orbitSpeed={0.20}
+   spiralDrift={0.012}
+   repulseRadius={130}
+   repulseForce={8}
+   followSpeed={0.07}
+   fadeAlpha={0.055}
+   style={{ width: '100%', height: '100%' }}
+  />
+ </div>
+ {/* Fondo editable desde CMS (sobre partículas) */}
  {bgVideoUrl ? (
      getYouTubeId(bgVideoUrl) ? (
          <iframe src={`https://www.youtube.com/embed/${getYouTubeId(bgVideoUrl)}?controls=0&mute=1&autoplay=1&loop=1&playlist=${getYouTubeId(bgVideoUrl)}`} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none z-0" frameBorder="0" allow="autoplay; encrypted-media"></iframe>

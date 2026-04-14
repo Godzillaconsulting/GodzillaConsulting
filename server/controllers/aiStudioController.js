@@ -459,6 +459,60 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                 });
             }
         }
+        // Manejar Higgsfield Cosmos Video Jobs guardados en Server RAM
+        if (taskId.startsWith("higgsfield_")) {
+            const job = postProcessJobs.get(taskId);
+            if (!job) {
+                return res.status(400).json({ error: "Job de Higgsfield expirado o no existe en RAM" });
+            }
+            if (job.status === 'done') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'succeed',
+                    progress: 100,
+                    result_url: job.localUrl,
+                    isVideo: true
+                });
+            } else if (job.status === 'failed') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({ status: 'failed', error: job.error });
+            } else if (job.status === 'delegated') {
+                try {
+                    const hRes = await fetch(`https://api.higgsfield.ai/v1/generations/${job.provider_job_id}`, {
+                        headers: { 'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}` }
+                    });
+                    const hData = await hRes.json();
+                    if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Polling fallido a Higgsfield");
+                    
+                    if (hData.state === 'completed' || hData.status === 'completed' || hData.status === 'succeed') {
+                        const videoUrl = hData.video?.url || hData.output?.url || hData.url;
+                        if (!videoUrl) throw new Error("Higgsfield finalizó pero no regresó URL de video");
+                        
+                        job.status = 'done';
+                        job.localUrl = videoUrl;
+                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: videoUrl, isVideo: true });
+                    } else if (hData.state === 'failed' || hData.status === 'failed' || hData.status === 'error') {
+                        job.status = 'failed';
+                        job.error = "Fallo interno en motor de Higgsfield: " + (hData.error?.message || "Error desconocido");
+                        return res.status(200).json({ status: 'failed', error: job.error });
+                    } else {
+                        // Sigue procesando
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: hData.progress || 50, result_url: '' });
+                    }
+                } catch(pe) {
+                    console.error("Higgsfield Polling Error: ", pe);
+                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                }
+            } else {
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'processing',
+                    progress: job.progress || 10,
+                    result_url: ''
+                });
+            }
+        }
         
         // Manejar Sora In-House
         if (taskId.startsWith("sora_live_")) {

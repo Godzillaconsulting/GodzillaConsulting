@@ -652,7 +652,7 @@ export default function AdminStudio() {
 ) : activeSection === 'social_studio' ? (
       <CockersStudio adminProfile={adminProfile} />
   ) : activeSection === 'db_studio' ? (
-      <DBStudioPanel />
+      <DBStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'bugs' ? (
       <BugTrackerUI />
   ) : (<>

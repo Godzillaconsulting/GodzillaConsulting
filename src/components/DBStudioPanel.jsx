@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function DBStudioPanel() {
+export default function DBStudioPanel({ adminProfile }) {
     const [tables, setTables] = useState([]);
     const [selectedTable, setSelectedTable] = useState(null);
     const [queryMode, setQueryMode] = useState(false);
@@ -12,6 +12,8 @@ export default function DBStudioPanel() {
 
     const token = localStorage.getItem('adminToken');
     const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
+
+    const isJareg = adminProfile?.username?.toLowerCase() === 'jareg';
 
     // Cargar lista de tablas al inicio
     useEffect(() => {
@@ -109,13 +111,15 @@ export default function DBStudioPanel() {
                 </div>
                 
                 <div className="p-3">
-                    <button 
-                        onClick={() => { setQueryMode(true); setSelectedTable(null); }}
-                        className={`w-full py-2.5 rounded hover:bg-[#CC0000]/20 hover:text-white transition-all text-xs font-bold border border-transparent flex items-center justify-center gap-2 ${queryMode ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000]/50' : 'bg-neutral-900 text-neutral-400'}`}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-                        SQL Editor
-                    </button>
+                    {isJareg && (
+                        <button 
+                            onClick={() => { setQueryMode(true); setSelectedTable(null); }}
+                            className={`w-full py-2.5 rounded hover:bg-[#CC0000]/20 hover:text-white transition-all text-xs font-bold border border-transparent flex items-center justify-center gap-2 ${queryMode ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000]/50' : 'bg-neutral-900 text-neutral-400'}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                            SQL Editor
+                        </button>
+                    )}
                 </div>
 
                 <div className="px-3 pb-2 flex-1 overflow-y-auto custom-scrollbar">
@@ -138,7 +142,7 @@ export default function DBStudioPanel() {
             {/* PANEL DERECHO: Visor + Editor */}
             <div className="flex-1 flex flex-col min-w-0" style={{ background: 'radial-gradient(ellipse at top right, rgba(204,0,0,0.05), transparent 40%)' }}>
                 
-                {queryMode && (
+                {queryMode && isJareg && (
                     <div className="flex flex-col border-b border-red-900/30 p-4 bg-neutral-900/50 backdrop-blur shrink-0 z-10 transition-all shadow-md">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold text-neutral-400">⚡ Consola SQL Directa (Bypass)</span>

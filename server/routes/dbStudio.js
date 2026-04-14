@@ -56,6 +56,12 @@ router.get('/tables/:name', async (req, res) => {
 // POST /api/db-studio/query - Ejecuta un raw SQL (Max 500 rows format safe)
 router.post('/query', async (req, res) => {
     try {
+        // Validación de Dios de Servidores (Solo JareG)
+        const username = req.admin?.username?.toLowerCase();
+        if (username !== 'jareg' && username !== 'godzilla_admin') {
+            return res.status(403).json({ success: false, error: 'Acceso Denegado: Inyecciones SQL solo permitidas para JareG (Security GodMode).' });
+        }
+
         let { query } = req.body;
         if (!query || typeof query !== 'string') {
             return res.status(400).json({ success: false, error: 'Se requiere una query válida.' });

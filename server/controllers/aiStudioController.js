@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai'; // SDK nuevo - soporta responseModalities para imagen
 import pool from '../config/db.js';
 import fs from 'fs';
 import path from 'path';
@@ -35,12 +36,12 @@ export const generateRenderJob = async (req, res) => {
         try {
             if (process.env.GEMINI_API_KEY) {
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const aiDirector = genAI.getGenerativeModel({ model: "gemini-2.5-pro" }); // Usamos pro si esta disponible, o 2.0-flash
+                const aiDirector = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
                 let instruction = '';
                 if (engine.includes('Sora')) {
-                    instruction = `Eres un Director de Fotografía experto. Traduce esta idea a un prompt técnico avanzado en INGLÉS para Stable Diffusion. El prompt debe ser muy distinto a una foto normal: usa perspectivas extremas, ángulos experimentales o composiciones asimétricas. Solo responde el prompt: ${prompt}`;
-                } else if (engine.includes('Imagen 3.0') || engine.includes('Imagen 4.0')) {
-                    instruction = `Traduce este concepto a un prompt de dirección fotográfica en inglés con estética comercial. Solo responde el prompt: ${prompt}`;
+                    instruction = `You are an expert Photography Director. Translate this concept into an advanced technical prompt in ENGLISH for Stable Diffusion. Use extreme perspectives, experimental angles or asymmetric compositions. Respond ONLY with the prompt: ${prompt}`;
+                } else if (engine.includes('Google Imagen') || engine.includes('Google Vision')) {
+                    instruction = `You are a commercial photography director. Translate this concept into a detailed photographic direction prompt in English. Focus on lighting, composition, mood and technical camera details. Respond ONLY with the prompt, no preamble: ${prompt}`;
                 }
 
                 if (instruction) {
@@ -143,25 +144,60 @@ export const generateRenderJob = async (req, res) => {
             const taskId = 'googleimg_' + Date.now();
             postProcessJobs.set(taskId, { status: 'working', progress: 0 });
 
-            // Proceso asíncrono robusto
+            // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)
             (async () => {
                 try {
-                    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                    const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // Fallback temporal a 2.0-flash experimental hasta que genAI Node libere la SDK nativa para Gemini Image 3.1
-                    const result = await ai.generateContent(optimizedPrompt || prompt);
-                    const candidates = result.response.candidates;
-                    if (candidates && candidates.length > 0) {
-                        const parts = candidates[0].content.parts;
-                        if (parts && parts.length > 0 && parts[0].inlineData) {
-                            const b64 = parts[0].inlineData.data;
-                            const mime = parts[0].inlineData.mimeType || "image/png";
-                            postProcessJobs.set(taskId, { status: 'done', localUrl: `data:${mime};base64,${b64}` });
-                            return;
+                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+                    // Motor a elegir segun el tipo solicitado
+                    let modelName;
+                    if (engine.includes('Imagen 3') || engine.includes('Ultra')) {
+                        modelName = 'imagen-3.0-generate-002';
+                    } else {
+                        modelName = 'gemini-2.0-flash-preview-image-generation';
+                    }
+
+                    const finalPromptToUse = optimizedPrompt || prompt;
+                    console.log(`[GOOGLE-VISION] Motor: ${modelName} | Engine: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
+
+                    let resultUrl = null;
+
+                    if (modelName.startsWith('imagen')) {
+                        // Imagen 3 usa generateImages (API diferente)
+                        const response = await ai.models.generateImages({
+                            model: modelName,
+                            prompt: finalPromptToUse,
+                            config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
+                        });
+                        if (response.generatedImages?.[0]?.image?.imageBytes) {
+                            const b64 = response.generatedImages[0].image.imageBytes;
+                            resultUrl = `data:image/jpeg;base64,${b64}`;
+                        }
+                    } else {
+                        // gemini-2.0-flash-preview-image-generation usa generateContent con responseModalities
+                        const response = await ai.models.generateContent({
+                            model: modelName,
+                            contents: finalPromptToUse,
+                            config: { responseModalities: ['TEXT', 'IMAGE'] }
+                        });
+                        for (const part of (response.candidates?.[0]?.content?.parts || [])) {
+                            if (part.inlineData?.data) {
+                                const mime = part.inlineData.mimeType || 'image/png';
+                                resultUrl = `data:${mime};base64,${part.inlineData.data}`;
+                                break;
+                            }
                         }
                     }
-                    postProcessJobs.set(taskId, { status: 'failed', error: "Google no devolvió imagen." });
+
+                    if (!resultUrl) {
+                        throw new Error(`${modelName}: La respuesta no contenía datos de imagen. Verifica la llave API y los permisos del modelo.`);
+                    }
+
+                    postProcessJobs.set(taskId, { status: 'done', localUrl: resultUrl });
+                    console.log(`[GOOGLE-VISION] ✅ Imagen generada correctamente. Job: ${taskId}`);
+
                 } catch (e) {
-                    console.error("[GOOGLE-VISION] Error Generando Imagen:", e.message);
+                    console.error(`[GOOGLE-VISION] ❌ Error (${engine}):`, e.message);
                     postProcessJobs.set(taskId, { status: 'failed', error: e.message });
                 }
             })();

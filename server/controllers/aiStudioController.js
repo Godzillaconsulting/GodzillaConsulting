@@ -441,7 +441,11 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                         return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
                     }
                 } catch(pe) {
-                    // Retry mode silenciador
+                    job.retries = (job.retries || 0) + 1;
+                    if (job.retries > 3) {
+                        postProcessJobs.delete(taskId);
+                        return res.status(200).json({ status: 'failed', error: "Motor GPU PyTorch Offline o inaccesible (127.0.0.1:5000)" });
+                    }
                     return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
                 }
             }
@@ -481,6 +485,11 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                         return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
                     }
                 } catch(pe) {
+                    job.retries = (job.retries || 0) + 1;
+                    if (job.retries > 3) {
+                        postProcessJobs.delete(taskId);
+                        return res.status(200).json({ status: 'failed', error: "Motor GPU PyTorch Offline o inaccesible (127.0.0.1:5000)" });
+                    }
                     return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
                 }
             } else {

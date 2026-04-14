@@ -30,10 +30,10 @@ export default function DBStudioPanel() {
                     loadTable(json.tables[0]);
                 }
             } else {
-                setError(json.error || 'Error cargando tablas');
+                setError(json.error || json.message || 'Error cargando tablas');
             }
         } catch (err) {
-            setError('Fallo de red al conectar al DB Studio');
+            setError(`Fallo de conexión HTTP: ${err.message}`);
         }
     };
 

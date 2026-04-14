@@ -587,7 +587,7 @@ export default function AdminStudio() {
    <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
    
-   {(isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar') && (
+   {(adminProfile?.username?.toLowerCase() === 'jareg') && (
        <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('db_studio'); setSelectedNodeId(null); }}
        className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='db_studio' ?'bg-neutral-900 text-[#00ff88] border-[#00ff88]/50 shadow-[0_0_15px_rgba(0,255,136,0.2)]' :'text-neutral-300 border-transparent hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 hover:text-white' }`}>
        <span className="text-xs mr-2 drop-shadow-sm">🗄️</span> DB Studio

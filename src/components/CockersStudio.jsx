@@ -523,10 +523,10 @@ export default function CockersStudio({ adminProfile }) {
                 return currentId;
             };
 
-            // Motores a invocar - TODOS los modelos confirmados
+            // Motores a invocar - TODOS los modelos confirmados + GotSora Nativo
             const enginesToRun = genMode === 'video'
                 ? ['Veo 3.1', 'Veo 3.1 Fast']
-                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
+                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image', 'GotSora (T2I Local)'];
             
             // Re-armar el prompt base si tiene filtros
             const promptAmentado = selectedFilters.length > 0 

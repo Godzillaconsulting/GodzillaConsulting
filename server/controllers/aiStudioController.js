@@ -206,6 +206,30 @@ export const generateRenderJob = async (req, res) => {
             // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)
             (async () => {
                 try {
+                    const finalPromptToUse = optimizedPrompt || prompt;
+
+                    // Shortcut para generación 100% nativa LCM (GotSora 6to Modelo)
+                    if (engine === 'GotSora (T2I Local)') {
+                        console.log(`[STUDIO] Activando Motor GPU Local (GotSora T2I)...`);
+                        const localRes = await fetch('http://127.0.0.1:5000/sora-start', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                prompt: finalPromptToUse,
+                                mode: 'photo',
+                                diffusion_steps: 4,
+                                input_image: config?.refImage || null
+                            })
+                        });
+                        const localData = await localRes.json();
+                        if (localData.success) {
+                            postProcessJobs.set(taskId, { status: 'delegated', local_task_id: localData.task_id });
+                            return; // Terminamos aquí, sin usar Google.
+                        } else {
+                            throw new Error("Sora Engine Rejected: " + (localData.error || "Unknown"));
+                        }
+                    }
+
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO segun nombre del engine (5 modelos confirmados Ultra)
@@ -222,7 +246,6 @@ export const generateRenderJob = async (req, res) => {
                         modelName = 'gemini-3.1-flash-image-preview'; // Gemini 3.1 Flash Image
                     }
 
-                    const finalPromptToUse = optimizedPrompt || prompt;
                     console.log(`[GOOGLE-VISION] Motor: ${modelName} | Engine: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
                     let resultUrl = null;

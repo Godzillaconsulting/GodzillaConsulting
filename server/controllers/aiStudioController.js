@@ -120,7 +120,7 @@ export const generateRenderJob = async (req, res) => {
             console.log(`[STUDIO] 🎬 Iniciando Generación de Video Nativa Google ${engine}. Prompt: ${prompt}`);
             if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
 
-            const taskId = 'veo_live_' + Date.now();
+            const taskId = 'veo_live_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
@@ -200,7 +200,7 @@ export const generateRenderJob = async (req, res) => {
             }
 
             // Nativamente utilizamos la API Top de Google (Gemini Image Models)
-            const taskId = 'googleimg_' + Date.now();
+            const taskId = 'googleimg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             postProcessJobs.set(taskId, { status: 'working', progress: 0 });
 
             // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)

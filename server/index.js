@@ -262,14 +262,9 @@ app.post('/api/sora-restore', async (req, res) => {
     }
 });
 
-// Proxy para los Assets Multimedia /outputs/*
-// El Python genera http://127.0.0.1:5000/outputs/video.mp4. Reemplazamos la llamada:
-app.get('/api/sora/media/:filename', async (req, res) => {
-    const filename = req.params.filename;
-    res.redirect(`http://localhost:5000/outputs/${filename}`);
-    // Nota: El navegador seguirá un redirect. Si el Mixed Context sigue frenando localhosts en redirect, 
-    // lo canalizamos via stream estático (pero el redirect interno funciona en la mayoria de túneles lógicos).
-});
+// Servir los Assets Multimedia de Video estáticamente en el mismo origen (Node.js)
+// Evita el error de CORS/CORB que causaba el redirect 302 hacia Python en el reproductor de React.
+app.use('/api/sora/media', express.static('E:/GodzillaSora_Outputs', { maxAge: '1y', immutable: true }));
 
 
 // Servir archivos subidos como estáticos en /media/* (y también /api/media/ para compatibilidad con Vite)

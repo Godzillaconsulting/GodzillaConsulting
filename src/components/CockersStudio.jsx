@@ -18,7 +18,7 @@ export default function CockersStudio({ adminProfile }) {
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
     const isSuperAdmin = adminProfile?.is_superadmin;
-    const canSeeAll = isCockers || isSuperAdmin;
+    const canSeeAll = isCockers || isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar';
     
     // Outbox State
     const [showOutbox, setShowOutbox] = useState(false);
@@ -1252,7 +1252,7 @@ export default function CockersStudio({ adminProfile }) {
                                                         )}
                                                         
                                                         {/* Actions below usually for Judith/Admin, visible to SuperAdmin via canSeeAll */}
-                                                        {adminProfile?.is_superadmin && (
+                                                        {(adminProfile?.is_superadmin || adminProfile?.username?.toLowerCase() === 'oscar') && (
                                                             <>
                                                                 <button onClick={() => handleAction(opt, 'reject')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white font-bold text-[9px] uppercase tracking-wider px-3 py-2 rounded-full transition-colors flex items-center" title="Devolver a Cockers">
                                                                     ↩️ Rechazar

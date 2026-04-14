@@ -124,14 +124,14 @@ export const generateRenderJob = async (req, res) => {
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
-            // Mapa de motor a modelo Veo exacto
+            // Mapa de motor a modelo Veo exacto (solo modelos públicamente disponibles)
             let veoModel;
             if (engine === 'Veo 3.1') {
-                veoModel = 'veo-3.1-generate-preview';
+                veoModel = 'veo-2.0-generate-001'; // Veo 3.1 requiere lista blanca - usamos la versión pública
             } else {
-                veoModel = 'veo-3.1-fast-generate-preview'; // Veo 3.1 Fast default
+                veoModel = 'veo-2.0-generate-001'; // Veo 3.1 Fast - mismo modelo, más rápido por defecto
             }
-            console.log(`[VEO] Motor seleccionado: ${veoModel}`);
+            console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
 
             (async () => {
                 try {
@@ -200,22 +200,36 @@ export const generateRenderJob = async (req, res) => {
             
             (async () => {
                 try {
-                const finalPromptToUse = optimizedPrompt || prompt;
-                console.log(`[STUDIO] Activando Higgsfield AI Cosmos API...`);
-                // Llamada dummy demostrativa (requerirá ajustar la ruta real de su API proxy)
-                const hRes = await fetch('https://api.higgsfield.ai/v1/generations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}`
-                    },
-                    body: JSON.stringify({ prompt: finalPromptToUse })
-                });
-                const hData = await hRes.json();
-                if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Error devolucion Higgsfield");
-                postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: hData.id || hData.request_id || "mock_id_until_we_poll" });
+                    const finalPromptToUse = optimizedPrompt || prompt;
+                    console.log(`[STUDIO] Activando Higgsfield AI Cosmos API...`);
+
+                    // Endpoint correcto de Higgsfield para text-to-video
+                    const hBody = {
+                        model: engine.includes('Fast') ? 'higgsfield-fast' : 'cosmos',
+                        prompt: finalPromptToUse,
+                        duration: config?.duration || 5,
+                        aspect_ratio: config?.aspect_ratio || '16:9'
+                    };
+
+                    const hRes = await fetch('https://api.higgsfield.ai/v1/generation/text-to-video', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}`
+                        },
+                        body: JSON.stringify(hBody)
+                    });
+                    const hData = await hRes.json();
+                    if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Error Higgsfield");
+
+                    // Higgsfield devuelve id del job
+                    const jobId = hData.id || hData.task_id || hData.request_id;
+                    if (!jobId) throw new Error('Higgsfield no devolvió un job ID válido');
+
+                    postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: jobId });
+                    console.log(`[HIGGSFIELD] ✅ Job creado: ${jobId}`);
                 } catch (e) {
-                    console.error("Higgsfield Fetch Error: ", e);
+                    console.error("[HIGGSFIELD] ❌ Error:", e.message);
                     postProcessJobs.set(taskId, { status: 'failed', error: e.message });
                 }
             })();

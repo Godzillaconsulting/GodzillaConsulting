@@ -544,10 +544,10 @@ export default function CockersStudio({ adminProfile }) {
                 return currentId;
             };
 
-            // Motores a invocar - TODOS los modelos confirmados (Sin GotSora Inicial)
+            // Motores reales disponibles (confirmados con API activa)
             const enginesToRun = genMode === 'video'
-                ? ['Veo 3.1', 'Veo 3.1 Fast', 'Higgsfield Cosmos', 'Higgsfield Fast']
-                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image', 'GotSora (T2I Local)'];
+                ? ['Veo 3.1', 'Higgsfield Cosmos']  // Solo los 2 proveedores de video que tienes activos
+                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
             
             // Re-armar el prompt base si tiene filtros
             const promptAmentado = selectedFilters.length > 0 

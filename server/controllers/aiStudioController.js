@@ -214,10 +214,14 @@ export const generateRenderJob = async (req, res) => {
 
                     // Motor a elegir segun el tipo solicitado
                     let modelName;
-                    if (engine.includes('Imagen 3') || engine.includes('Ultra')) {
-                        modelName = 'imagen-3.0-generate-002';
+                    if (engine.includes('Ultra')) {
+                        modelName = 'imagen-4.0-ultra-generate-001';
+                    } else if (engine.includes('Imagen')) {
+                        modelName = 'imagen-4.0-generate-001';
+                    } else if (engine.includes('Pro')) {
+                        modelName = 'gemini-3-pro-image-preview';
                     } else {
-                        modelName = 'gemini-2.0-flash-preview-image-generation';
+                        modelName = 'gemini-3.1-flash-image-preview';
                     }
 
                     const finalPromptToUse = optimizedPrompt || prompt;

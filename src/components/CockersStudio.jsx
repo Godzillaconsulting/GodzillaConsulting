@@ -583,6 +583,8 @@ export default function CockersStudio({ adminProfile }) {
                         }
                     } else if (data.status === 'processing' && data.job_id) {
                         tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false, isVideoMode });
+                    } else if (data.status === 'error') {
+                        finalOptions.push({ provider: engineName + ' ⚠️ Failed (Network/500)', url: 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?q=80&w=700&auto=format&fit=crop', isVideo: isVideoMode });
                     }
                 }
             });

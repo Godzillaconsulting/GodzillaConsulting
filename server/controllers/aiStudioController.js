@@ -653,12 +653,12 @@ export const getInspirationGallery = async (req, res) => {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         
-        const promptInstruction = `Return a JSON array of 6 highly creative cinematic visual prompts. 
+        const promptInstruction = `Return a JSON array of 12 extremely creative, breathtaking, and unique cinematic visual prompts. 
         Each object must have:
-        1. "prompt": very detailed cinematic description in english (e.g. "Neon cyberpunk street at night, rainy puddles...").
-        2. "tag": short catchy name in spanish (e.g. "Cyberpunk").
-        3. "model": randomly choose between "Imagen 4 Ultra" or "Gemini 3.1 Flash Image".
-        Return ONLY valid JSON array with 6 objects. Do not include markdown \`\`\` blocks, just the JSON.`;
+        1. "prompt": hyper-detailed cinematic description in english. VERY IMPORTANT: KEEP PROMPT UNDER 150 CHARACTERS to prevent URL crashes. Make them avant-garde, macro photography, unreal engine 5 style, or dark fantasy.
+        2. "tag": short catchy name in spanish (e.g. "Cyberpunk", "Macro Lente", "Cinemático").
+        3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "GotSora T2I", "Higgsfield Cosmos".
+        Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
         const resp = await ai.generateContent({
              contents: [{role: 'user', parts: [{text: promptInstruction}]}]
@@ -672,13 +672,17 @@ export const getInspirationGallery = async (req, res) => {
         
         const generationList = JSON.parse(jsonStr.trim());
         
-        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (no requiere key)
-        const finalGallery = generationList.map(item => ({
-            img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=400&height=400&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
-            prompt: item.prompt,
-            tag: item.tag,
-            model: item.model
-        }));
+        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations Flux
+        const finalGallery = generationList.map(item => {
+            // Recortar strings enormes para no romper la URL
+            const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
+            return {
+                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&model=flux&seed=${Math.floor(Math.random() * 99999)}`,
+                prompt: item.prompt,
+                tag: item.tag,
+                model: item.model
+            };
+        });
         
         res.status(200).json({ success: true, gallery: finalGallery });
     } catch (error) {

@@ -40,7 +40,11 @@ export default function CockersStudio({ adminProfile }) {
     // Galería Comunitaria Dinámica
     const [communityGallery, setCommunityGallery] = useState(() => {
         const shuffled = [...COMMUNITY_GALLERY_POOL].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 6);
+        // Interceptamos la carga inicial (que trae los default Unsplash) y los convertimos en renders puros FLUX dinámicos
+        return shuffled.slice(0, 12).map(item => ({
+            ...item,
+            img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=500&height=500&nologo=true&model=flux&seed=${Math.floor(Math.random() * 99999)}`
+        }));
     });
     const [isFetchingInspiration, setIsFetchingInspiration] = useState(false);
     
@@ -616,7 +620,6 @@ export default function CockersStudio({ adminProfile }) {
                  }
                  const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
                  setRenderingAI(false);
-                 triggerAutoRefine(finalOptions, rawPrompt, newDraftId);
                  return;
             }
 
@@ -679,7 +682,6 @@ export default function CockersStudio({ adminProfile }) {
                     }
                     const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
                     setRenderingAI(false);
-                    triggerAutoRefine(finalOptions, rawPrompt, newDraftId);
                 }
             }, 6000);
         } catch (error) {

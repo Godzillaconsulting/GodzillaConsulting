@@ -6,26 +6,42 @@ import logo from'../assets/Godzilla Consulting.png';
 const Navbar = () => {
  const [isScrolled, setIsScrolled] = useState(false);
  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+ const [activeTab, setActiveTab] = useState('/#inicio');
 
  // Login redireccionado a la ruta /login completada
 
+ const navLinks = [
+  { name:'INICIO', href:'/#inicio', id: 'inicio' },
+  { name:'CULTURA', href:'/#cultura', id: 'cultura' },
+  { name:'SERVICIOS', href:'/#servicios', id: 'servicios' },
+  { name:'PORTAFOLIO', href:'/#portafolio', id: 'portafolio' },
+  { name:'RECURSOS', href:'/#recursos', id: 'recursos' },
+  { name:'PAQUETES', href:'/#paquetes', id: 'paquetes' },
+ ];
 
  useEffect(() => {
  const handleScroll = () => {
- setIsScrolled(window.scrollY > 50);
+  const scrollY = window.scrollY;
+  setIsScrolled(scrollY > 50);
+
+  // Determinar en qué sección estamos
+  let currentSection = '/#inicio'; // por defecto
+  for (let i = navLinks.length - 1; i >= 0; i--) {
+   const link = navLinks[i];
+   const element = document.getElementById(link.id);
+   if (element) {
+    if (scrollY >= element.offsetTop - 250) {
+     currentSection = link.href;
+     break;
+    }
+   }
+  }
+  setActiveTab(currentSection);
  };
  window.addEventListener('scroll', handleScroll);
+ handleScroll();
  return () => window.removeEventListener('scroll', handleScroll);
  }, []);
-
- const navLinks = [
-		{ name:'INICIO', href:'/#inicio' },
-		{ name:'CULTURA', href:'/#cultura' },
-		{ name:'SERVICIOS', href:'/#servicios' },
-		{ name:'PORTAFOLIO', href:'/#portafolio' },
-		{ name:'RECURSOS', href:'/#recursos' },
-		{ name:'PAQUETES', href:'/#paquetes' },
-	];
 
  return (
  <>
@@ -39,11 +55,19 @@ const Navbar = () => {
 
  {/* Desktop Nav */}
  <nav className="hidden xl:flex items-center gap-8">
- {navLinks.map((link) => (
- <Link key={link.name} to={link.href} className="text-sm font-semibold tracking-wide hover:text-[#CC0000] transition-colors">
- {link.name}
- </Link>
- ))}
+ {navLinks.map((link) => {
+  const isActive = activeTab === link.href;
+  return (
+   <Link 
+     key={link.name} 
+     to={link.href} 
+     className="relative text-white text-sm font-semibold tracking-wide transition-colors py-1 hover:text-[#CC0000]"
+   >
+     {link.name}
+     <span className={`absolute bottom-0 left-0 w-full h-[3px] bg-[#CC0000] rounded-full transition-transform duration-300 origin-center ${isActive ? 'scale-x-100' : 'scale-x-0'}`}></span>
+   </Link>
+  );
+ })}
  <Link to="/#contacto" className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-[30px] text-sm font-bold tracking-wide transition-all shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:-translate-y-0.5">
  CONTÁCTANOS
  </Link>

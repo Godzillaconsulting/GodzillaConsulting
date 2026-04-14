@@ -34,6 +34,46 @@ const CasosExito = () => {
     const [scrollLeftState, setScrollLeftState] = useState(0);
     const [cases, setCases] = useState(defaultCases);
 
+    // --- Typewriter Effect Logic ---
+    const rawTitle = nodeData.title || 'CASOS DE ÉXITO';
+    const [typedTitle, setTypedTitle] = useState('');
+    const [startTyping, setStartTyping] = useState(false);
+    const titleContainerRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setStartTyping(true);
+                } else {
+                    setStartTyping(false);
+                    setTypedTitle('');
+                }
+            },
+            { threshold: 0.3 }
+        );
+        if (titleContainerRef.current) {
+            observer.observe(titleContainerRef.current);
+        }
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!startTyping) return;
+        let i = 0;
+        let current = '';
+        const interval = setInterval(() => {
+            if (i < rawTitle.length) {
+                current += rawTitle.charAt(i);
+                setTypedTitle(current);
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 120);
+        return () => clearInterval(interval);
+    }, [rawTitle, startTyping]);
+
     useEffect(() => {
         client
             .fetch(`*[_type == "casoExito"] | order(orden asc)`)
@@ -162,14 +202,14 @@ const CasosExito = () => {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
 
             <div className="container mx-auto px-6 max-w-7xl relative z-10">
-                <div className="text-center mb-16">
+                <div ref={titleContainerRef} className="text-center mb-16">
                     {nodeData.overline && (
                         <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
                             {nodeData.overline}
                         </span>
                     )}
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter">
-                        {nodeData.title || 'CASOS DE ÉXITO'}
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter inline-block animate-blink-cursor">
+                        {typedTitle}
                     </h2>
                     <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
                         {nodeData.subtitle || 'No hacemos solo campañas, construimos sistemas'}

@@ -104,3 +104,14 @@
 .animation-delay-2000 {
   animation-delay: 2s;
 }
+/* Typewriter Cursor Blink */
+@keyframes blink-cursor {
+  0%, 100% { border-color: transparent }
+  50% { border-color: var(--color-brand-red) }
+}
+
+.animate-blink-cursor {
+  animation: blink-cursor 0.8s step-end infinite;
+  border-right: 4px solid var(--color-brand-red);
+  padding-right: 4px;
+}

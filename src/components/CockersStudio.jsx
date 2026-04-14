@@ -1292,7 +1292,7 @@ export default function CockersStudio({ adminProfile }) {
                                                             ) : (
                                                                 <div className="flex flex-col items-center justify-center h-full gap-2">
                                                                     <button
-                                                                        onClick={(e) => { e.stopPropagation(); triggerSingleRefine(slot, i, Date.now(), finalPrompt); }}
+                                                                        onClick={(e) => { e.stopPropagation(); triggerSlotRefine(slot, i, finalPrompt); }}
                                                                         className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[8px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
                                                                     >
                                                                         <span>✨</span> Aplicar Filtro

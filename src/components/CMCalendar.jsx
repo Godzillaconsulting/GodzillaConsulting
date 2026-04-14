@@ -160,6 +160,7 @@ export default function CMCalendar({ adminProfile }) {
     const [sheetsLoading, setSheetsLoading] = useState(false);
     const [sheetsImporting, setSheetsImporting] = useState(false);
     const [sheetsError, setSheetsError] = useState('');
+    const [sheetsEmpresa, setSheetsEmpresa] = useState('godzilla'); // empresa destino del import
 
     const unreadCount = notifications.filter(n => !n.read && n.to?.toLowerCase() === currentUser.toLowerCase()).length;
 
@@ -170,6 +171,7 @@ export default function CMCalendar({ adminProfile }) {
         const handleEsc = (e) => {
             if (e.key !== 'Escape') return;
             // Prioridad: primero el más "interior"
+            if (showSheetsModal)       { setShowSheetsModal(false);       return; }
             if (showNewCampaignModal)  { setShowNewCampaignModal(false);  return; }
             if (showNewAssignModal)    { setShowNewAssignModal(false);    return; }
             if (selectedEvent)         { setSelectedEvent(null);           return; }
@@ -341,7 +343,8 @@ export default function CMCalendar({ adminProfile }) {
                 const res = await fetch(`${API}/api/calendar/events`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify(ev)
+                    // Forzar empresa seleccionada + calendario de contenido
+                    body: JSON.stringify({ ...ev, empresa: sheetsEmpresa, calendario: 'contenido' })
                 });
                 const data = await res.json();
                 if (data.success) imported++;
@@ -351,7 +354,9 @@ export default function CMCalendar({ adminProfile }) {
         setShowSheetsModal(false);
         setSheetsPreview(null);
         setSheetsUrl('');
-        alert(`✅ ${imported} eventos importados al calendario correctamente.`);
+        // Cambiar tab al calendario de contenido si no estamos ahí
+        setCalendarTab('contenido');
+        alert(`✅ ${imported} publicaciones importadas al Calendario de Contenido.`);
     };
 
     const loadBotConfig = async (platform) => {
@@ -1907,14 +1912,41 @@ export default function CMCalendar({ adminProfile }) {
                     <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
                         <div className="flex items-center justify-between p-6 border-b border-white/10">
                             <div>
-                                <h3 className="text-white font-black text-lg">📊 Importar desde Google Sheets</h3>
-                                <p className="text-neutral-500 text-xs font-bold mt-0.5">Pega la URL de tu Sheet de calendario de contenido</p>
+                                <h3 className="text-white font-black text-lg flex items-center gap-2">
+                                    📊 Automatizar Contenido desde Sheets
+                                </h3>
+                                <p className="text-neutral-500 text-xs font-bold mt-0.5">
+                                    Las publicaciones importadas <span className="text-green-400">irán al Calendario de Contenido</span>, no al de citas
+                                </p>
                             </div>
                             <button onClick={() => setShowSheetsModal(false)} className="text-neutral-600 hover:text-white text-2xl font-black">×</button>
                         </div>
                         <div className="p-6 flex flex-col gap-4 flex-1 overflow-y-auto">
+                            {/* Empresa destino */}
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <label className="text-[10px] font-black uppercase text-neutral-500 mb-2 block">Empresa / Proyecto</label>
+                                    <select
+                                        value={sheetsEmpresa}
+                                        onChange={e => setSheetsEmpresa(e.target.value)}
+                                        className="w-full bg-black border border-white/20 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-green-500/60"
+                                    >
+                                        <option value="godzilla">🦖 Godzilla Consulting</option>
+                                        <option value="cliente1">📁 Cliente 1</option>
+                                        <option value="cliente2">📁 Cliente 2</option>
+                                        <option value="cockers">🎬 Cockers Studio</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-end pb-0.5">
+                                    <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-green-400 text-[10px] font-black uppercase tracking-wider">→ Contenido</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* URL Input */}
                             <div>
-                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2 block">URL del Google Sheet</label>
+                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2 block">URL del Google Sheet con el calendario</label>
                                 <div className="flex gap-2">
                                     <input type="text" value={sheetsUrl} onChange={e => setSheetsUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchSheetsPreview()} placeholder="https://docs.google.com/spreadsheets/d/..." className="flex-1 bg-black border border-white/20 text-white text-xs rounded-xl px-4 py-3 focus:outline-none focus:border-green-500/60 placeholder-neutral-700 font-mono" />
                                     <button onClick={fetchSheetsPreview} disabled={sheetsLoading || !sheetsUrl.trim()} className="px-5 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-black text-xs rounded-xl transition-colors">
@@ -1922,9 +1954,10 @@ export default function CMCalendar({ adminProfile }) {
                                     </button>
                                 </div>
                                 <p className="text-[10px] text-neutral-600 mt-2 font-bold">
-                                    Comparte el Sheet con: <span className="text-green-400 font-mono">zilla-calendar@bot-godzilla.iam.gserviceaccount.com</span>
+                                    ⚠️ Comparte el Sheet con: <span className="text-green-400 font-mono text-[9px]">zilla-calendar@bot-godzilla.iam.gserviceaccount.com</span>
                                 </p>
                             </div>
+
                             {sheetsError && <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-xs font-bold">❌ {sheetsError}</div>}
                             {sheetsPreview && (
                                 <div className="flex flex-col gap-3">

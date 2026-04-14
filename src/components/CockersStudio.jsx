@@ -1,7 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
+const COMMUNITY_GALLERY_POOL = [
+    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
+    { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
+    { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
+    { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=700&auto=format&fit=crop', prompt: 'Dark moody minimalist interior architecture, brutalist concrete walls, warm hidden led strips, 8k render, octane render', tag: 'Brutalist Arch', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?q=80&w=700&auto=format&fit=crop', prompt: 'Macro shot of a glowing neon jellyfish in deep dark ocean, bioluminescence, highly detailed, national geographic 8k', tag: 'Bioluminescence', model: 'Gemini 3 Pro' },
+    { img: 'https://images.unsplash.com/photo-1563603357963-439f52473623?q=80&w=700&auto=format&fit=crop', prompt: 'Synthwave outrun grid sunset, glowing magenta sun, vectorized retro horizon, 80s arcade style aesthetics', tag: 'Synthwave 80s', model: 'Gemini 3.1 Flash' },
+    { img: 'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?q=80&w=700&auto=format&fit=crop', prompt: 'Mystical dark forest with glowing mystical mushrooms, ethereal blue fog, cinematic fantasy concept art, highly detailed', tag: 'Dark Fantasy', model: 'Sora LCM' },
+    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=700&auto=format&fit=crop', prompt: 'High key beauty portrait, dripping gold paint on skin, macro lens, incredibly detailed skin texture, ultra realistic', tag: 'Gold Beauty', model: 'Imagen 4 Ultra' },
+    { img: 'https://images.unsplash.com/photo-1531297122539-56c285bf8ee1?q=80&w=700&auto=format&fit=crop', prompt: 'Hardware motherboard glowing with neon blue and pink laser data streams, cyberpunk tech core, macro electronics', tag: 'Tech Core', model: 'Gemini 3 Pro' },
+    { img: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract corporate 3d glassmorphism UI elements floating against dark space, frosted glass texture, modern web3 design', tag: 'Glassmorphism', model: 'Imagen 4 Ultra' }
+];
 
 export default function CockersStudio({ adminProfile }) {
     const [queue, setQueue] = useState([]);
@@ -18,6 +36,12 @@ export default function CockersStudio({ adminProfile }) {
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
     const isSuperAdmin = adminProfile?.is_superadmin;
+
+    // Galería Comunitaria Dinámica
+    const communityGallery = useMemo(() => {
+        const shuffled = [...COMMUNITY_GALLERY_POOL].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 9);
+    }, []);
     const canSeeAll = isCockers || isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar';
     
     // Outbox State
@@ -1125,24 +1149,13 @@ export default function CockersStudio({ adminProfile }) {
                             </div>
                         </div>
 
-                            /* ─── PHOTO GALLERY: masonry con TiltCards ─── */
                             <div className="px-8 pb-16 max-w-5xl mx-auto relative z-10">
                                 <Masonry
                                     breakpointCols={{ default: 3, 900: 2, 600: 1 }}
                                     className="flex gap-5"
                                     columnClassName="flex flex-col gap-5"
                                 >
-                                    {[
-                                        { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
-                                        { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
-                                        { img: 'https://images.unsplash.com/photo-1542051812871-75fe5009f424?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
-                                        { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
-                                        { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
-                                        { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
-                                        { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
-                                        { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
-                                        { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
-                                    ].map((item, idx) => (
+                                    {communityGallery.map((item, idx) => (
                                         <TiltCard key={idx} item={item} idx={idx} onClick={() => setFinalPrompt(item.prompt)} />
                                     ))}
                                 </Masonry>

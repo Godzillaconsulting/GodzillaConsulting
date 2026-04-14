@@ -195,6 +195,19 @@ router.delete('/:id', requireAdmin, requireSuperAdmin, async (req, res) => {
     }
 });
 
+// ==========================================
+// RUTAS SEGURIDAD E IT (Logs de ataques)
+// ==========================================
+router.get('/security-alerts', requireAdmin, requireSuperAdmin, async (req, res) => {
+    try {
+        const alertsRes = await pool.query('SELECT id, attempt_type, ip_address, username, payload, created_at FROM security_alerts ORDER BY created_at DESC LIMIT 50');
+        res.json({ success: true, alerts: alertsRes.rows });
+    } catch (e) {
+        console.error('Error fetching security alerts', e);
+        res.status(500).json({ success: false });
+    }
+});
+
 // Para exportarlo para usarse de utilidad general desde otras rutas
 export { logAction };
 

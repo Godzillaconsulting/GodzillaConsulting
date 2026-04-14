@@ -59,6 +59,19 @@ router.post('/query', async (req, res) => {
         // Validación de Dios de Servidores (Solo JareG)
         const username = req.admin?.username?.toLowerCase();
         if (username !== 'jareg' && username !== 'godzilla_admin') {
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const payloadStr = req.body?.query ? String(req.body.query).substring(0, 500) : 'Sin query';
+            
+            // Log del ataque
+            try {
+                await pool.query(
+                    `INSERT INTO security_alerts (attempt_type, ip_address, username, payload) VALUES ($1, $2, $3, $4)`,
+                    ['UNAUTHORIZED_SQL_INJECTION', ip, req.admin?.username || 'Desconocido', payloadStr]
+                );
+            } catch (logErr) {
+                console.error('[SECURITY] Error guardando log de ataque:', logErr);
+            }
+
             return res.status(403).json({ success: false, error: 'Acceso Denegado: Inyecciones SQL solo permitidas para JareG (Security GodMode).' });
         }
 

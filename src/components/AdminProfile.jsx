@@ -11,6 +11,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
     const [password, setPassword] = useState('');
     const [photoUrl, setPhotoUrl] = useState(profile?.photo_url || '');
     const [personalMsg, setPersonalMsg] = useState({ text: '', type: '' });
+    const [securityAlerts, setSecurityAlerts] = useState([]);
 
     // --- Estado de Tareas Personales (Live DB) ---
     const [allTasks, setAllTasks] = useState([]);
@@ -144,7 +145,25 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
         if (subTab === 'team' && canManageUsers) {
             fetchTeamData();
         }
+        if (subTab === 'personal' && canManageUsers) {
+            fetchSecurityAlerts();
+        }
     }, [subTab, profile, canManageUsers]);
+
+    const fetchSecurityAlerts = async () => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${API}/api/users/security-alerts`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setSecurityAlerts(data.alerts);
+            }
+        } catch (e) {
+            console.error('Error fetching security alerts', e);
+        }
+    };
 
     const handleSavePersonal = async (e) => {
         e.preventDefault();
@@ -422,6 +441,49 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                 </button>
                             </div>
                         </form>
+
+                        {/* Reporte de Intentos de Inyección (Solo SuperAdmins) */}
+                        {canManageUsers && securityAlerts.length > 0 && (
+                            <div className="mt-8 bg-red-950/20 border border-red-500/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(204,0,0,0.15)] animate-in fade-in slide-in-from-bottom-4">
+                                <div className="px-6 py-4 border-b border-red-900/30 bg-[#CC0000]/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xl">🛡️</span>
+                                        <h3 className="text-sm font-bold text-red-500 uppercase tracking-widest">Reporte de Amenazas Detección de Intrusos</h3>
+                                    </div>
+                                    <span className="text-xs font-black text-rose-500 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">{securityAlerts.length} Eventos</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm whitespace-nowrap">
+                                        <thead className="bg-[#050505] text-xs text-red-500 font-black uppercase">
+                                            <tr>
+                                                <th className="px-6 py-4 border-b border-red-900/30">Fecha / Hora</th>
+                                                <th className="px-6 py-4 border-b border-red-900/30">Intento de Payload</th>
+                                                <th className="px-6 py-4 border-b border-red-900/30">IP Atacante</th>
+                                                <th className="px-6 py-4 border-b border-red-900/30">Alerta</th>
+                                                <th className="px-6 py-4 border-b border-red-900/30">Usuario Logeado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-red-900/20">
+                                            {securityAlerts.map(alert => (
+                                                <tr key={alert.id} className="hover:bg-red-900/10 transition">
+                                                    <td className="px-6 py-3 text-neutral-400 text-xs font-mono">{new Date(alert.created_at).toLocaleString('es-MX')}</td>
+                                                    <td className="px-6 py-3 font-mono text-xs text-red-300 max-w-[200px] truncate" title={alert.payload}>{alert.payload}</td>
+                                                    <td className="px-6 py-3 font-mono text-rose-400 font-bold">{alert.ip_address}</td>
+                                                    <td className="px-6 py-3 text-red-500 font-black text-[10px] uppercase tracking-widest">{alert.attempt_type}</td>
+                                                    <td className="px-6 py-3 text-gray-300 font-bold">{alert.username}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                        {canManageUsers && securityAlerts.length === 0 && (
+                            <div className="mt-8 bg-green-950/20 border border-green-500/30 rounded-2xl p-6 text-center animate-in fade-in">
+                                <span className="text-2xl mb-2 block">✅</span>
+                                <p className="text-green-500 text-sm font-bold uppercase tracking-widest">Sin amenazas de inyección SQL registradas</p>
+                            </div>
+                        )}
                     </div>
                 )}
                 {subTab === 'tasks' && (

@@ -267,18 +267,18 @@ export const generateRenderJob = async (req, res) => {
                     // Motor EXACTO segun nombre del engine (5 modelos confirmados Ultra)
                     let modelName;
                     if (engine === 'Imagen 4 Ultra') {
-                        modelName = 'imagen-4.0-ultra-generate-001';
+                        modelName = 'imagen-3.0-generate-001';
                     } else if (engine === 'Imagen 4 Pro') {
-                        modelName = 'imagen-4.0-generate-001';
+                        modelName = 'imagen-3.0-generate-001';
                     } else if (engine === 'Imagen 4 Fast') {
-                        modelName = 'imagen-4.0-fast-generate-001';
+                        modelName = 'imagen-3.0-fast-generate-001';
                     } else if (engine === 'Gemini 3 Pro Image') {
-                        modelName = 'gemini-3-pro-image-preview';
+                        modelName = 'gemini-2.0-pro-exp-02-05';
                     } else {
-                        modelName = 'gemini-3.1-flash-image-preview'; // Gemini 3.1 Flash Image
+                        modelName = 'gemini-2.0-flash'; // Gemini 3.1 Flash Image Fallback
                     }
 
-                    console.log(`[GOOGLE-VISION] Motor: ${modelName} | Engine: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
+                    console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
                     let resultUrl = null;
 
@@ -661,7 +661,8 @@ export const getInspirationGallery = async (req, res) => {
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
         const resp = await ai.generateContent({
-             contents: [{role: 'user', parts: [{text: promptInstruction}]}]
+             contents: [{role: 'user', parts: [{text: promptInstruction}]}],
+             generationConfig: { responseMimeType: "application/json" }
         });
         
         // Limpiamos la respuesta en caso que Gemini devuelva markdown
@@ -670,7 +671,13 @@ export const getInspirationGallery = async (req, res) => {
         if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
         if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
         
-        const generationList = JSON.parse(jsonStr.trim());
+        let generationList;
+        try {
+            generationList = JSON.parse(jsonStr.trim());
+        } catch(err) {
+            console.error("Gemini failed standard JSON", err);
+            throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
+        }
         
         // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations Flux
         const finalGallery = generationList.map(item => {

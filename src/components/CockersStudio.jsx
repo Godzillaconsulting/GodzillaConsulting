@@ -787,12 +787,7 @@ export default function CockersStudio({ adminProfile }) {
                 </div>
 
                 {/* Bottom overlay — always visible slightly, full on hover */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    whileHover={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22 }}
-                    className="absolute bottom-0 left-0 right-0 z-30 p-4"
-                >
+                <div className="absolute bottom-0 left-0 right-0 z-30 p-4 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-300">
                     <p className="text-white font-bold text-sm mb-0.5">{item.tag}</p>
                     <p className="text-neutral-400 text-[10px] line-clamp-2 leading-relaxed mb-3">{item.prompt}</p>
                     <div className="flex items-center gap-2">
@@ -800,12 +795,12 @@ export default function CockersStudio({ adminProfile }) {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                             Usar Prompt
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); toggleFilter(item.prompt); }} className="flex-1 flex items-center justify-center gap-1 bg-white/10 hover:bg-[#CC0000]/50 backdrop-blur-xl border border-white/10 hover:border-[#CC0000]/50 rounded-full py-1.5 text-[9px] font-black text-white uppercase tracking-wider transition-colors cursor-pointer">
+                        <button onClick={(e) => { e.stopPropagation(); toggleFilter(item.tag); }} className="flex-1 flex items-center justify-center gap-1 bg-white/10 hover:bg-[#CC0000]/50 backdrop-blur-xl border border-white/10 hover:border-[#CC0000]/50 rounded-full py-1.5 text-[9px] font-black text-white uppercase tracking-wider transition-colors cursor-pointer">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
                             + Filtro
                         </button>
                     </div>
-                </motion.div>
+                </div>
             </motion.div>
         );
     };

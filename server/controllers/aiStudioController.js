@@ -189,7 +189,39 @@ export const generateRenderJob = async (req, res) => {
 
         } else if (engine.includes('Luma') || engine.includes('Runway')) {
             // Future-proofing for Runway Gen-3 and Luma Dream Machine
-            return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway (Gemini Plus no procesa Video nativo vía API). Agrega tus llaves en el servidor." });
+            return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway." });
+        } else if (engine.includes('Higgsfield')) {
+            if (!process.env.HIGGSFIELD_API_KEY) {
+                return res.status(400).json({ error: "La conexión API hacia Higgsfield Cosmos requiere tu llave de desarrollador. Agrégala a las variables de entorno (.env)." });
+            }
+            
+            const taskId = 'higgsfield_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+            postProcessJobs.set(taskId, { status: 'working', progress: 0 });
+            
+            (async () => {
+                try {
+                const finalPromptToUse = optimizedPrompt || prompt;
+                console.log(`[STUDIO] Activando Higgsfield AI Cosmos API...`);
+                // Llamada dummy demostrativa (requerirá ajustar la ruta real de su API proxy)
+                const hRes = await fetch('https://api.higgsfield.ai/v1/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}`
+                    },
+                    body: JSON.stringify({ prompt: finalPromptToUse })
+                });
+                const hData = await hRes.json();
+                if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Error devolucion Higgsfield");
+                postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: hData.id || hData.request_id || "mock_id_until_we_poll" });
+                } catch (e) {
+                    console.error("Higgsfield Fetch Error: ", e);
+                    postProcessJobs.set(taskId, { status: 'failed', error: e.message });
+                }
+            })();
+            
+            return res.status(200).json({ job_id: taskId, status: 'processing', provider: engine });
+            
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
             const targetModel = engine.includes('Imagen 3.0') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.

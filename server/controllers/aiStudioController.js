@@ -203,6 +203,33 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             });
         }
         
+        // Manejar Google Vision Nativos guardados en Server RAM
+        if (taskId.startsWith("googleimg_")) {
+            const job = postProcessJobs.get(taskId);
+            if (!job) {
+                return res.status(400).json({ error: "Job expirado o no existe en RAM" });
+            }
+            if (job.status === 'done') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'succeed',
+                    progress: 100,
+                    result_url: job.localUrl
+                });
+            } else if (job.status === 'failed') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({ status: 'failed', error: job.error });
+            } else {
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'processing',
+                    progress: job.progress || 50,
+                    result_url: ''
+                });
+            }
+        }
+        
         // Manejar Sora In-House
         if (taskId.startsWith("sora_live_")) {
             try {

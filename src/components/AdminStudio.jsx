@@ -153,7 +153,9 @@ export default function AdminStudio() {
  const [selectedNodeId, setSelectedNodeId] = useState(null);
  const [activeSection, setActiveSection] = useState(window.location.pathname.includes('/cm') ? 'social' : window.location.pathname.includes('/studio') ? 'social_studio' : 'editor'); //'editor' |'newsletter' | 'profile'
  const [activeTab, setActiveTab] = useState('textos');
- const [adminProfile, setAdminProfile] = useState(null);
+ const [adminProfile, setAdminProfile] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('godzilla_cached_profile')) || null; } catch { return null; }
+ });
  const [draftData, setDraftData] = useState(null);
  const [selectedElementIndex, setSelectedElementIndex] = useState(null);
  const [selectedFeatureIndex, setSelectedFeatureIndex] = useState(null);

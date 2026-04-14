@@ -92,12 +92,27 @@ export const initWhatsAppBot = () => {
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
+            headless: true,
             args: [
-                '--no-sandbox', 
+                '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-gpu'
-            ],
-            headless: 'new'
+                '--disable-gpu',
+                '--disable-dev-shm-usage',       // Evita crash en RAM baja (usa /tmp)
+                '--disable-accelerated-2d-canvas',// Apaga canvas GPU
+                '--no-first-run',
+                '--no-zygote',                   // Reduce procesos hijo de Chrome
+                '--single-process',              // Corre todo en 1 proceso (menos RAM)
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--safebrowsing-disable-auto-update',
+                '--js-flags=--max-old-space-size=256', // Limitar JS heap a 256MB
+            ]
         }
     });
 

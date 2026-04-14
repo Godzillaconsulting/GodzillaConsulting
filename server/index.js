@@ -357,19 +357,9 @@ if (!process.env.VERCEL) {
     server.keepAliveTimeout = 65000;
     server.headersTimeout = 66000;
 
-    // 🤖 Inicializar WhatsApp Bot (whatsapp-web.js) — Solo modo local/PM2
-    // Usa Puppeteer/Chrome para mantener sesión activa 24/7
-    // [IMPORTANTE] Aislado de Vercel y ejecutado como servicio independiente por pm2
-    /*
-    const w = "whatsapp";
-    const b = "Bot.js";
-    import('./' + w + b).then(({ initWhatsAppBot }) => {
-        initWhatsAppBot();
-        console.log('📱 [WhatsApp] Bot iniciado. Escanea QR en http://localhost:3002/qr');
-    }).catch(err => {
-        console.error('❌ [WhatsApp] Error al iniciar bot:', err.message);
-    });
-    */
+    // 🤖 WhatsApp Bot — Corre como proceso PM2 separado: `zilla-whatsapp`
+    // Para iniciarlo: npx pm2 start server/whatsappBot.js --name zilla-whatsapp
+    // Para verlo: npx pm2 logs zilla-whatsapp
 }
 
 // Exportar para Vercel

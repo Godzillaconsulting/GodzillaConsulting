@@ -239,13 +239,20 @@ export const generateRenderJob = async (req, res) => {
                             resultUrl = `data:image/jpeg;base64,${b64}`;
                         }
                     } else {
-                        // gemini-2.0-flash-preview-image-generation usa generateContent con responseModalities
-                        const response = await ai.models.generateContent({
-                            model: modelName,
-                            contents: finalPromptToUse,
-                            config: { responseModalities: ['TEXT', 'IMAGE'] }
-                        });
-                        for (const part of (response.candidates?.[0]?.content?.parts || [])) {
+                            const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:') 
+                                ? [
+                                    { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
+                                    finalPromptToUse
+                                ] 
+                                : finalPromptToUse;
+
+                            // gemini-2.0-flash-preview-image-generation usa generateContent con responseModalities
+                            const response = await ai.models.generateContent({
+                                model: modelName,
+                                contents: contentPayload,
+                                config: { responseModalities: ['TEXT', 'IMAGE'] }
+                            });
+                            for (const part of (response.candidates?.[0]?.content?.parts || [])) {
                             if (part.inlineData?.data) {
                                 const mime = part.inlineData.mimeType || 'image/png';
                                 resultUrl = `data:${mime};base64,${part.inlineData.data}`;

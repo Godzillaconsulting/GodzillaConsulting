@@ -475,28 +475,35 @@ export default function CockersStudio({ adminProfile }) {
             
             const isVideoMode = genMode === 'video';
 
-            const promises = enginesToRun.map(async (engineName) => {
+            const promises = [];
+            for (let i = 0; i < enginesToRun.length; i++) {
+                const engineName = enginesToRun[i];
                 const updatedConfig = { ...builderData, refImage: refImage };
                 
-                try {
-                    const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ 
-                            prompt: promptAmentado, 
-                            mode: isVideoMode ? 'video' : 'imagen', 
-                            engine: engineName, 
-                            config: updatedConfig 
-                        })
-                    });
-                    let data = await resFetch.json();
-                    if (!resFetch.ok) throw new Error(data.error || 'Server error');
-                    return { engineName, data, isVideoMode };
-                } catch (e) {
-                    console.error("Error for engine", engineName, e);
-                    return { engineName, data: { status: 'error', error: e.message }, isVideoMode };
-                }
-            });
+                promises.push((async () => {
+                    try {
+                        const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ 
+                                prompt: promptAmentado, 
+                                mode: isVideoMode ? 'video' : 'imagen', 
+                                engine: engineName, 
+                                config: updatedConfig 
+                            })
+                        });
+                        let data = await resFetch.json();
+                        if (!resFetch.ok) throw new Error(data.error || 'Server error');
+                        return { engineName, data, isVideoMode };
+                    } catch (e) {
+                        console.error("Error for engine", engineName, e);
+                        return { engineName, data: { status: 'error', error: e.message }, isVideoMode };
+                    }
+                })());
+                await new Promise(r => setTimeout(r, 800)); // Stagger each request by 800ms to avoid 429 Resource Exhausted on Google GenAI
+            }
+                
+
 
             const initialResults = await Promise.allSettled(promises);
             let finalOptions = [];
@@ -568,6 +575,7 @@ export default function CockersStudio({ adminProfile }) {
                                  }
                              }
                         } else if (statusData.status === 'failed') {
+                             finalOptions.push({ provider: task.engineName + ' ⚠️ Failed', url: 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?q=80&w=700&auto=format&fit=crop', isVideo: task.isVideoMode });
                              task.done = true; 
                         } else {
                              allDone = false; 

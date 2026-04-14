@@ -27,6 +27,43 @@ export default function CockersStudio({ adminProfile }) {
     const [isLoading, setIsLoading] = useState(false);
     const [renderingAI, setRenderingAI] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
+    const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
+
+    // Aplica filtro GotSora a un slot específico de liveSlots
+    const triggerSingleRefine = useCallback(async (slot, slotIdx, _draftId, prompt) => {
+        if (!slot.url) return;
+        const token = localStorage.getItem('adminToken');
+        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'loading' } : s));
+        try {
+            const refineRes = await fetch('/api/studio/refine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ imageUrl: slot.url, prompt: prompt || 'high quality, masterpiece, 8k, raw photo' })
+            });
+            const refineData = await refineRes.json();
+            if (!refineRes.ok || !refineData.job_id) throw new Error(refineData.error || 'Error iniciando GotSora');
+
+            // Poll el job de refinado
+            let refAttempts = 0;
+            const refPoll = setInterval(async () => {
+                refAttempts++;
+                try {
+                    const sRes = await fetch(`/api/studio/status/${encodeURIComponent(refineData.job_id)}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const sData = await sRes.json();
+                    if (sData.status === 'succeed' && sData.result_url) {
+                        clearInterval(refPoll);
+                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: sData.result_url } : s));
+                    } else if (sData.status === 'failed' || refAttempts > 40) {
+                        clearInterval(refPoll);
+                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s));
+                    }
+                } catch { clearInterval(refPoll); setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s)); }
+            }, 5000);
+        } catch (e) {
+            setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error' } : s));
+        }
+    }, []);
+
     
     // UI States para el Generador Profesional
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
@@ -505,189 +542,133 @@ export default function CockersStudio({ adminProfile }) {
     };
 
     const simulateAIGeneration = async () => {
+        if (!finalPrompt.trim()) return alert('Escribe un prompt antes de generar.');
         setRenderingAI(true);
         setRenderProgress(0);
-        try {
-            const rawPrompt = finalPrompt || selectedDraft?.visual_prompt || 'cyberpunk cinematic city';
-            const cleanPrompt = rawPrompt.replace(/\[\/?.*?]/g, '').trim();
-            const token = localStorage.getItem('adminToken');
+        setSelectedDraft(null);
 
-            // FEEDBACK LEARNING (Alimentar a Goyi si hubo cambios iterativos)
-            if (finalPrompt && selectedDraft?.visual_prompt && finalPrompt !== selectedDraft.visual_prompt) {
-                fetch(`${'' || ''}/api/studio/learning`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        original_prompt: selectedDraft.visual_prompt,
-                        improved_prompt: finalPrompt,
-                        context_type: 'cockers_regenerate'
-                    })
-                }).catch(e => console.error("Error saving learning:", e));
-            }
-            
-            const guardarDraftFinal = (options, rPrompt) => {
-                let currentId;
-                if (selectedDraft) {
-                    currentId = selectedDraft.id;
-                    setQueue(q => q.map(post => post.id === selectedDraft.id ? { ...post, media_options: options } : post));
-                    setSelectedDraft(prev => ({ ...prev, media_options: options }));
-                } else {
-                    currentId = Date.now();
-                    setSelectedDraft({
-                        id: currentId,
-                        status: 'generated',
-                        caption: '',
-                        visual_prompt: rPrompt,
-                        media_options: options
-                    });
-                }
-                return currentId;
-            };
+        const rawPrompt = finalPrompt.trim();
+        const token = localStorage.getItem('adminToken');
 
-            // Motores reales disponibles (confirmados con API activa)
-            const enginesToRun = genMode === 'video'
-                ? ['Veo 3.1', 'Higgsfield Cosmos']  // Solo los 2 proveedores de video que tienes activos
-                : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
-            
-            // Re-armar el prompt base si tiene filtros
-            const promptAmentado = selectedFilters.length > 0 
-                ? `${finalPrompt}. ${selectedFilters.join(', ')}`
-                : finalPrompt;
-            
-            const isVideoMode = genMode === 'video';
+        // Feedback learning
+        if (finalPrompt && selectedDraft?.visual_prompt && finalPrompt !== selectedDraft.visual_prompt) {
+            fetch('/api/studio/learning', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ original_prompt: selectedDraft.visual_prompt, improved_prompt: finalPrompt, context_type: 'cockers_regenerate' })
+            }).catch(() => {});
+        }
 
-            const promises = [];
-            for (let i = 0; i < enginesToRun.length; i++) {
-                const engineName = enginesToRun[i];
-                const updatedConfig = { ...builderData, refImage: refImage };
-                
-                promises.push((async () => {
-                    try {
-                        const resFetch = await fetch(`${'' || ''}/api/studio/generate`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                            body: JSON.stringify({ 
-                                prompt: promptAmentado, 
-                                mode: isVideoMode ? 'video' : 'imagen', 
-                                engine: engineName, 
-                                config: updatedConfig 
-                            })
-                        });
-                        let data = await resFetch.json();
-                        if (!resFetch.ok) throw new Error(data.error || 'Server error');
-                        return { engineName, data, isVideoMode };
-                    } catch (e) {
-                        console.error("Error for engine", engineName, e);
-                        return { engineName, data: { status: 'error', error: e.message }, isVideoMode };
-                    }
-                })());
-                await new Promise(r => setTimeout(r, 800)); // Stagger each request by 800ms to avoid 429 Resource Exhausted on Google GenAI
-            }
-                
+        const enginesToRun = genMode === 'video'
+            ? ['Veo 2', 'Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos']
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Imagen 4 Fast', 'Gemini 3 Pro Image', 'Gemini 3.1 Flash Image'];
 
+        const promptAmentado = selectedFilters.length > 0
+            ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
 
-            const initialResults = await Promise.allSettled(promises);
-            let finalOptions = [];
-            let tasksToPoll = [];
-            
-            // Repartir síncronos y asíncronos
-            initialResults.forEach(res => {
-                if (res.status === 'fulfilled') {
-                    const { engineName, data, isVideoMode } = res.value;
-                    if (data.status === 'succeed' && data.result_url) {
-                        if (Array.isArray(data.result_url)) {
-                            data.result_url.forEach((url, i) => {
-                                finalOptions.push({ provider: `${engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: isVideoMode || !!data.isVideo });
-                            });
-                        } else {
-                            finalOptions.push({ provider: engineName, url: data.result_url, isVideo: isVideoMode || !!data.isVideo });
-                        }
-                    } else if (data.status === 'processing' && data.job_id) {
-                        tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false, isVideoMode });
-                    } else if (data.status === 'error') {
-                        finalOptions.push({ provider: engineName + ' ⚠️ Failed (Network/500)', url: 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?q=80&w=700&auto=format&fit=crop', isVideo: isVideoMode });
-                    }
-                }
+        const isVideoMode = genMode === 'video';
+        const ar = builderData.aspect_ratio || '16:9';
+
+        // Aspect ratio → CSS class
+        const arClass = { '16:9': 'aspect-video', '9:16': 'aspect-[9/16]', '1:1': 'aspect-square', '3:4': 'aspect-[3/4]', '4:3': 'aspect-[4/3]' }[ar] || 'aspect-video';
+
+        // ── 1. Mostrar slots vacíos inmediatamente ──
+        const initialSlots = enginesToRun.map(engineName => ({
+            provider: engineName,
+            status: 'loading',
+            progress: 0,
+            url: null,
+            refinedUrl: null,
+            isVideo: isVideoMode,
+            aspect_ratio: ar,
+            arClass
+        }));
+        setLiveSlots(initialSlots);
+
+        const updateSlot = (idx, patch) => {
+            setLiveSlots(prev => {
+                const next = [...prev];
+                next[idx] = { ...next[idx], ...patch };
+                return next;
             });
+        };
 
-            if (tasksToPoll.length === 0) {
-                 if(finalOptions.length === 0){
-                     finalOptions.push({ provider: 'Simulación (Fallback LOCAL)', url: '/assets/kaiju_cheems.png', isVideo: false });
-                 }
-                 const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
-                 setRenderingAI(false);
-                 return;
+        try {
+            // ── 2. Lanzar requests con stagger ──
+            const toPoll = [];
+
+            for (let idx = 0; idx < enginesToRun.length; idx++) {
+                const engineName = enginesToRun[idx];
+                if (idx > 0) await new Promise(r => setTimeout(r, 800));
+                try {
+                    const resFetch = await fetch('/api/studio/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ prompt: promptAmentado, mode: isVideoMode ? 'video' : 'imagen', engine: engineName, config: { ...builderData, refImage } })
+                    });
+                    const data = await resFetch.json();
+                    if (!resFetch.ok) throw new Error(data.error || `HTTP ${resFetch.status}`);
+
+                    if (data.status === 'succeed' && data.result_url) {
+                        const url = Array.isArray(data.result_url) ? data.result_url[0] : data.result_url;
+                        updateSlot(idx, { status: 'done', url, progress: 100 });
+                    } else if (data.status === 'processing' && data.job_id) {
+                        toPoll.push({ idx, engineName, job_id: data.job_id, done: false });
+                        updateSlot(idx, { status: 'loading', progress: 5 });
+                    } else {
+                        updateSlot(idx, { status: 'failed', progress: 100 });
+                    }
+                } catch(e) {
+                    updateSlot(idx, { status: 'failed', progress: 100 });
+                }
             }
 
-            // Iniciar Polling de Matriz (Monitorear a las 3 IAs simultáneamente)
+            if (toPoll.length === 0) { setRenderingAI(false); return; }
+
+            // ── 3. Polling independiente por slot ──
             let attempts = 0;
             const pollInterval = setInterval(async () => {
                 attempts++;
-                let allDone = true;
-                
-                for (let i = 0; i < tasksToPoll.length; i++) {
-                    const task = tasksToPoll[i];
-                    if (task.done) continue; 
-                    
+                for (const task of toPoll) {
+                    if (task.done) continue;
                     try {
-                        const encodedJobId = encodeURIComponent(task.job_id);
-                        const statusRes = await fetch(`${'' || ''}/api/studio/status/${encodedJobId}?t=${Date.now()}`, {
+                        const sRes = await fetch(`/api/studio/status/${encodeURIComponent(task.job_id)}?t=${Date.now()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
-                        
-                        if (!statusRes.ok) {
-                             const textObj = await statusRes.text();
-                             if (textObj.includes('<!DOCTYPE')) throw new Error('Servidor Web retornó HTML (Posible 404 o 500 fatal).');
-                             const dataObj = JSON.parse(textObj);
-                             throw new Error(dataObj.error || `HTTP ${statusRes.status}`);
+                        if (!sRes.ok) continue;
+                        const sData = await sRes.json();
+
+                        updateSlot(task.idx, { progress: sData.progress || Math.min(attempts * 6, 92) });
+
+                        if (sData.status === 'succeed') {
+                            task.done = true;
+                            const url = Array.isArray(sData.result_url) ? sData.result_url[0] : sData.result_url;
+                            updateSlot(task.idx, { status: 'done', url, progress: 100, isVideo: sData.isVideo || isVideoMode });
+                        } else if (sData.status === 'failed') {
+                            task.done = true;
+                            updateSlot(task.idx, { status: 'failed', progress: 100 });
                         }
-                        
-                        const statusData = await statusRes.json();
-                        
-                        task.progress = statusData.progress || task.progress + 10;
-                        
-                        if (statusData.status === 'succeed') {
-                             task.done = true;
-                             if(statusData.result_url) {
-                                 if (Array.isArray(statusData.result_url)) {
-                                     statusData.result_url.forEach((url, i) => {
-                                         finalOptions.push({ provider: `${task.engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: task.isVideoMode || !!statusData.isVideo });
-                                     });
-                                 } else {
-                                     finalOptions.push({ provider: task.engineName, url: statusData.result_url, isVideo: task.isVideoMode || !!statusData.isVideo });
-                                 }
-                             }
-                        } else if (statusData.status === 'failed') {
-                             finalOptions.push({ provider: task.engineName + ' ⚠️ Failed', url: 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?q=80&w=700&auto=format&fit=crop', isVideo: task.isVideoMode });
-                             task.done = true; 
-                        } else {
-                             allDone = false; 
-                        }
-                    } catch (e) {
-                        console.error(`Poller fallando en node ${task.engineName}`);
-                        allDone = false;
-                    }
+                    } catch(e) { /* silencioso */ }
                 }
-                
-                let totalProgress = tasksToPoll.reduce((acc, t) => acc + (t.progress || 0), 0);
-                setRenderProgress(Math.floor(totalProgress / tasksToPoll.length));
-                if (allDone || attempts > 150) { // Timeout ampliado a 15 min para renders de Video pesados
+
+                const doneCt = toPoll.filter(t => t.done).length;
+                setRenderProgress(Math.round((doneCt / toPoll.length) * 100));
+
+                if (toPoll.every(t => t.done) || attempts > 150) {
                     clearInterval(pollInterval);
-                    if(finalOptions.length === 0){
-                         finalOptions.push({ provider: 'Simulación de Reserva', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80', isVideo: false });
-                    }
-                    const newDraftId = guardarDraftFinal(finalOptions, rawPrompt);
                     setRenderingAI(false);
                 }
             }, 6000);
+
         } catch (error) {
             console.error('Error Live Gen', error);
-            alert(`Error de Live Mode: ${error.message}`);
             setRenderingAI(false);
         }
     };
 
+
     if (isLoading) return <div className="p-10 text-center text-neutral-400 font-bold flex items-center justify-center h-full">Iniciando Estudio IA...</div>;
+
 
     // ─── Injected CSS for ken-burns, scanline sweep, glow pulse ───
     const GALLERY_CSS = `
@@ -1212,8 +1193,145 @@ export default function CockersStudio({ adminProfile }) {
                     );
                 })()}
 
-                {/* Si no hay drafts ni generación, Mostramos el "Explore Gallery" — DIVIDIDO por modo */}
-                {!renderingAI && (!selectedDraft || !selectedDraft.media_options?.length) && (
+                {/* ── PROGRESSIVE LIVE SLOTS ── Aparece en cuanto se da clic en Generar */}
+                {liveSlots.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute inset-0 overflow-auto custom-scrollbar pt-24 pb-10 px-6"
+                    >
+                        <style>{GALLERY_CSS}</style>
+                        <div className="max-w-5xl mx-auto">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em]">Generaciones en Vivo</p>
+                                    <h2 className="text-xl font-black text-white flex items-center gap-3">
+                                        Generations Ready
+                                        <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded font-bold">{liveSlots.filter(s => s.status === 'done').length} / {liveSlots.length} listos</span>
+                                    </h2>
+                                </div>
+                                {renderingAI && (
+                                    <div className="flex items-center gap-2 text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                        Generando... {renderProgress}%
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Slot Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {liveSlots.map((slot, i) => {
+                                    const arStyle = {
+                                        '16:9': 'aspect-video',
+                                        '9:16': 'aspect-[9/16]',
+                                        '1:1':  'aspect-square',
+                                        '4:3':  'aspect-[4/3]',
+                                        '3:4':  'aspect-[3/4]',
+                                    }[slot.aspect_ratio] || 'aspect-video';
+
+                                    return (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.4, delay: i * 0.06 }}
+                                            className="rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/40 transition-colors shadow-xl shadow-black/60 bg-[#0a0a0a]"
+                                        >
+                                            {/* Media Area */}
+                                            <div className={`${arStyle} relative w-full overflow-hidden bg-neutral-900 flex`}>
+                                                {slot.status === 'loading' ? (
+                                                    /* Skeleton con progreso */
+                                                    <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-neutral-900 to-black gap-3 relative overflow-hidden">
+                                                        {/* Shimmer sweep */}
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[scanSweep_1.8s_linear_infinite] bg-[length:200%_100%]" />
+                                                        <div className="w-7 h-7 border-2 border-neutral-700 border-t-[#CC0000] rounded-full animate-spin" />
+                                                        <span className="text-[8px] text-neutral-500 font-black uppercase tracking-widest">{slot.provider}</span>
+                                                        {/* Progress Bar */}
+                                                        <div className="w-2/3 h-1 bg-neutral-800 rounded-full overflow-hidden mt-1">
+                                                            <div
+                                                                className="h-full bg-gradient-to-r from-[#CC0000] to-red-400 rounded-full transition-all duration-500"
+                                                                style={{ width: `${slot.progress || 0}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-[7px] text-neutral-600 font-bold">{slot.progress || 0}%</span>
+                                                    </div>
+                                                ) : slot.status === 'failed' ? (
+                                                    /* Error State */
+                                                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                                                        <span className="text-2xl">⚠️</span>
+                                                        <span className="text-[8px] text-red-400 font-black uppercase tracking-widest text-center px-3">{slot.provider} falló</span>
+                                                    </div>
+                                                ) : slot.isVideo ? (
+                                                    /* Video Done */
+                                                    <div className="flex-1 relative cursor-pointer" onClick={() => handleMediaClick(slot.url)}>
+                                                        {getYouTubeId(slot.url) ? (
+                                                            <iframe src={`https://www.youtube.com/embed/${getYouTubeId(slot.url)}?autoplay=1&mute=1&loop=1`} className="absolute inset-0 w-full h-full" allowFullScreen />
+                                                        ) : (
+                                                            <video src={slot.url} className="w-full h-full object-cover" autoPlay loop muted playsInline controls />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    /* Image Done — split Original / GotSora */
+                                                    <>
+                                                        <div className="flex-1 relative cursor-pointer group/orig" onClick={() => handleMediaClick(slot.url)}>
+                                                            <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
+                                                            <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
+                                                        </div>
+                                                        {/* GotSora Pane */}
+                                                        <div className="flex-1 relative border-l border-white/5 bg-[#0f0f0f] group/ref hover:border-indigo-500/40 transition-colors">
+                                                            {slot.refinedUrl === 'loading' ? (
+                                                                <div className="flex flex-col items-center justify-center h-full gap-2">
+                                                                    <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
+                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">GotSora...</span>
+                                                                </div>
+                                                            ) : slot.refinedUrl && slot.refinedUrl !== 'error' ? (
+                                                                <>
+                                                                    <img src={slot.refinedUrl} alt="refined" onClick={() => handleMediaClick(slot.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
+                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">GotSora HQ ✨</div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center h-full gap-2">
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); triggerSingleRefine(slot, i, Date.now(), finalPrompt); }}
+                                                                        className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[8px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <span>✨</span> Aplicar Filtro
+                                                                    </button>
+                                                                    <span className="text-[7px] text-neutral-600">GotSora Engine</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Footer del slot */}
+                                            <div className="px-3 py-2 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">{slot.provider}</p>
+                                                    <p className="text-[10px] text-neutral-300 truncate max-w-[130px]">{finalPrompt.substring(0, 40)}...</p>
+                                                </div>
+                                                {slot.status === 'done' && (
+                                                    <a href={slot.url} download={`${slot.provider}_output`} target="_blank" rel="noreferrer"
+                                                        className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-700"
+                                                        title="Descargar"
+                                                    >
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Si no hay liveSlots ni generación, mostramos el Explore Gallery */}
+                {!renderingAI && liveSlots.length === 0 && (
+
                     <motion.div 
                         key={genMode}
                         initial={{ opacity: 0 }}

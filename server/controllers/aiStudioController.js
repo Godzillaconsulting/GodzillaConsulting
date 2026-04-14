@@ -124,12 +124,14 @@ export const generateRenderJob = async (req, res) => {
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
-            // Mapa de motor a modelo Veo exacto (solo modelos públicamente disponibles)
+            // Mapa de motor a modelo Veo exacto (cuenta Ultra — acceso completo)
             let veoModel;
-            if (engine === 'Veo 3.1') {
-                veoModel = 'veo-2.0-generate-001'; // Veo 3.1 requiere lista blanca - usamos la versión pública
+            if (engine === 'Veo 3') {
+                veoModel = 'veo-3.0-generate-preview';
+            } else if (engine === 'Veo 3 Fast') {
+                veoModel = 'veo-3.0-fast-generate-preview';
             } else {
-                veoModel = 'veo-2.0-generate-001'; // Veo 3.1 Fast - mismo modelo, más rápido por defecto
+                veoModel = 'veo-2.0-generate-001'; // Veo 2 — GA estable
             }
             console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
 

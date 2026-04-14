@@ -116,17 +116,80 @@ export const generateRenderJob = async (req, res) => {
             }
             return res.status(200).json({ job_id: data.data.task_id, status: "processing", provider: engine });
 
-        } else if (engine.includes('Veo') || engine.includes('Video')) {
-            console.log(`[STUDIO] Generando Video con Veo / API Mock. Prompt: ${prompt}`);
+        } else if (engine.includes('Veo')) {
+            console.log(`[STUDIO] 🎬 Iniciando Generación de Video Nativa Google ${engine}. Prompt: ${prompt}`);
             if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
 
-            // Google Generative AI Node SDK no exporta Veo video gen publicamente en la clase estándar todavía.
-            // Para mantener consistencia, devolveremos fallback a Kling o modo fail-safe.
-            return res.status(200).json({ 
-                job_id: "veo_sim_" + Date.now(), 
-                status: "processing", 
-                provider: engine 
-            });
+            const taskId = 'veo_live_' + Date.now();
+            postProcessJobs.set(taskId, { status: 'working', progress: 5 });
+            const finalPromptToUse = optimizedPrompt || prompt;
+
+            // Mapa de motor a modelo Veo exacto
+            let veoModel;
+            if (engine.includes('3.1 Fast') || engine.includes('Fast')) {
+                veoModel = 'veo-3.1-fast-generate-preview';
+            } else if (engine.includes('3.1')) {
+                veoModel = 'veo-3.1-generate-preview';
+            } else if (engine.includes('3.0') || engine.includes('3')) {
+                veoModel = 'veo-3.0-generate-001';
+            } else {
+                veoModel = 'veo-2.0-generate-001';
+            }
+            console.log(`[VEO] Motor seleccionado: ${veoModel}`);
+
+            (async () => {
+                try {
+                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                    const ratio = (config?.aspect_ratio === '9:16') ? '9:16' : '16:9';
+
+                    let operation = await ai.models.generateVideos({
+                        model: veoModel,
+                        prompt: finalPromptToUse,
+                        config: {
+                            aspectRatio: ratio,
+                            numberOfVideos: 1
+                        }
+                    });
+
+                    // Poll hasta que la operación long-running termine
+                    let attempts = 0;
+                    while (!operation.done && attempts < 60) {
+                        await new Promise(r => setTimeout(r, 10000)); // espera 10s
+                        operation = await ai.operations.getVideosOperation({ operation });
+                        attempts++;
+                        postProcessJobs.set(taskId, { status: 'working', progress: Math.min(5 + attempts * 1.5, 90) });
+                        console.log(`[VEO] Polling ${veoModel} - intento ${attempts} - done: ${operation.done}`);
+                    }
+
+                    if (!operation.done || !operation.response?.generatedVideos?.[0]?.video?.uri) {
+                        throw new Error(`${veoModel}: Timeout o sin URI de video en la respuesta.`);
+                    }
+
+                    const videoUri = operation.response.generatedVideos[0].video.uri;
+                    console.log(`[VEO] ✅ Video URI recibida: ${videoUri.substring(0, 60)}...`);
+
+                    // Descargar el video binario y guardarlo en disco para servir localmente
+                    const videoDir = 'E:/GodzillaSora_Outputs';
+                    if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
+                    const videoPath = path.join(videoDir, `${taskId}.mp4`);
+
+                    // El URI de Google requiere el API Key para descargarse
+                    const dlRes = await fetch(`${videoUri}&key=${process.env.GEMINI_API_KEY}`);
+                    if (!dlRes.ok) throw new Error(`Fallo descarga video: HTTP ${dlRes.status}`);
+                    const arrBuf = await dlRes.arrayBuffer();
+                    fs.writeFileSync(videoPath, Buffer.from(arrBuf));
+
+                    const localUrl = `/api/sora/media/${taskId}.mp4`;
+                    postProcessJobs.set(taskId, { status: 'done', localUrl });
+                    console.log(`[VEO] 🎉 Video guardado: ${videoPath}`);
+
+                } catch (e) {
+                    console.error(`[VEO] ❌ Error (${engine}):`, e.message);
+                    postProcessJobs.set(taskId, { status: 'failed', error: e.message });
+                }
+            })();
+
+            return res.status(200).json({ job_id: taskId, status: 'processing', provider: engine });
 
         } else if (engine.includes('Luma') || engine.includes('Runway')) {
             // Future-proofing for Runway Gen-3 and Luma Dream Machine
@@ -151,12 +214,10 @@ export const generateRenderJob = async (req, res) => {
 
                     // Motor a elegir segun el tipo solicitado
                     let modelName;
-                    if (engine.includes('Imagen') || engine.includes('Ultra')) {
-                        modelName = 'imagen-4.0-ultra-generate-001';
-                    } else if (engine.includes('Pro')) {
-                        modelName = 'gemini-3-pro-image-preview';
+                    if (engine.includes('Imagen 3') || engine.includes('Ultra')) {
+                        modelName = 'imagen-3.0-generate-002';
                     } else {
-                        modelName = 'gemini-3.1-flash-image-preview';
+                        modelName = 'gemini-2.0-flash-preview-image-generation';
                     }
 
                     const finalPromptToUse = optimizedPrompt || prompt;
@@ -261,6 +322,34 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             });
         }
         
+        // Manejar Veo Video Jobs guardados en Server RAM
+        if (taskId.startsWith("veo_live_")) {
+            const job = postProcessJobs.get(taskId);
+            if (!job) {
+                return res.status(400).json({ error: "Job de Video expirado o no existe en RAM" });
+            }
+            if (job.status === 'done') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'succeed',
+                    progress: 100,
+                    result_url: job.localUrl,
+                    isVideo: true
+                });
+            } else if (job.status === 'failed') {
+                postProcessJobs.delete(taskId);
+                return res.status(200).json({ status: 'failed', error: job.error });
+            } else {
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'processing',
+                    progress: job.progress || 10,
+                    result_url: ''
+                });
+            }
+        }
+
         // Manejar Google Vision Nativos guardados en Server RAM
         if (taskId.startsWith("googleimg_")) {
             const job = postProcessJobs.get(taskId);

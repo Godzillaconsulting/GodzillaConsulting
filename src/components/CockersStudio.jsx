@@ -429,14 +429,18 @@ export default function CockersStudio({ adminProfile }) {
                 }
             };
 
-            // Motores a invocar - Exclusivo Motores Fotográficos
-            const enginesToRun = ['Google Imagen 3 (Ultra)', 'Google Vision (Pro)', 'Google Vision (Fast)'];
+            // Motores a invocar - seleccionamos según modo
+            const enginesToRun = genMode === 'video'
+                ? ['Veo 3.1 Fast', 'Veo 3', 'Veo 2']
+                : ['Imagen 4.0 Ultra', 'Gemini 3 Pro Vision', 'Gemini 3.1 Flash Vision'];
             
             // Re-armar el prompt base si tiene filtros
             const promptAmentado = selectedFilters.length > 0 
                 ? `${finalPrompt}. ${selectedFilters.join(', ')}`
                 : finalPrompt;
             
+            const isVideoMode = genMode === 'video';
+
             const promises = enginesToRun.map(async (engineName) => {
                 const updatedConfig = { ...builderData, refImage: refImage };
                 
@@ -446,17 +450,17 @@ export default function CockersStudio({ adminProfile }) {
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ 
                             prompt: promptAmentado, 
-                            mode: isCockers ? genMode : 'imagen', 
+                            mode: isVideoMode ? 'video' : 'imagen', 
                             engine: engineName, 
                             config: updatedConfig 
                         })
                     });
                     let data = await resFetch.json();
                     if (!resFetch.ok) throw new Error(data.error || 'Server error');
-                    return { engineName, data };
+                    return { engineName, data, isVideoMode };
                 } catch (e) {
                     console.error("Error for engine", engineName, e);
-                    return { engineName, data: { status: 'error', error: e.message } };
+                    return { engineName, data: { status: 'error', error: e.message }, isVideoMode };
                 }
             });
 
@@ -467,17 +471,17 @@ export default function CockersStudio({ adminProfile }) {
             // Repartir síncronos y asíncronos
             initialResults.forEach(res => {
                 if (res.status === 'fulfilled') {
-                    const { engineName, data } = res.value;
+                    const { engineName, data, isVideoMode } = res.value;
                     if (data.status === 'succeed' && data.result_url) {
                         if (Array.isArray(data.result_url)) {
                             data.result_url.forEach((url, i) => {
-                                finalOptions.push({ provider: `${engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: genMode === 'video' });
+                                finalOptions.push({ provider: `${engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: isVideoMode || !!data.isVideo });
                             });
                         } else {
-                            finalOptions.push({ provider: engineName, url: data.result_url, isVideo: genMode === 'video' });
+                            finalOptions.push({ provider: engineName, url: data.result_url, isVideo: isVideoMode || !!data.isVideo });
                         }
                     } else if (data.status === 'processing' && data.job_id) {
-                        tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false });
+                        tasksToPoll.push({ engineName, job_id: data.job_id, progress: 0, done: false, isVideoMode });
                     }
                 }
             });
@@ -523,10 +527,10 @@ export default function CockersStudio({ adminProfile }) {
                              if(statusData.result_url) {
                                  if (Array.isArray(statusData.result_url)) {
                                      statusData.result_url.forEach((url, i) => {
-                                         finalOptions.push({ provider: `${task.engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: genMode === 'video' });
+                                         finalOptions.push({ provider: `${task.engineName} (Opción ${String.fromCharCode(65+i)})`, url: url, isVideo: task.isVideoMode || !!statusData.isVideo });
                                      });
                                  } else {
-                                     finalOptions.push({ provider: task.engineName, url: statusData.result_url, isVideo: genMode === 'video' });
+                                     finalOptions.push({ provider: task.engineName, url: statusData.result_url, isVideo: task.isVideoMode || !!statusData.isVideo });
                                  }
                              }
                         } else if (statusData.status === 'failed') {

@@ -377,23 +377,27 @@ async def sampling_pipeline_simulation(task_id: str, steps: int, mode: str, seed
             
             if canny_image is not None and getattr(ai_pipeline, "controlnet_pipe", None) is not None:
                 print(f"[SYSTEM] Lanzando ControlNetPipeline")
-                output = ai_pipeline.controlnet_pipe(
-                    prompt=prompt,
-                    image=canny_image,
-                    num_inference_steps=inf_steps, 
-                    guidance_scale=1.5,
-                    controlnet_conditioning_scale=0.8,
-                    width=WIDTH,
-                    height=HEIGHT
-                )
+                def run_control():
+                    return ai_pipeline.controlnet_pipe(
+                        prompt=prompt,
+                        image=canny_image,
+                        num_inference_steps=inf_steps, 
+                        guidance_scale=1.5,
+                        controlnet_conditioning_scale=0.8,
+                        width=WIDTH,
+                        height=HEIGHT
+                    )
+                output = await asyncio.to_thread(run_control)
             else:
-                output = ai_pipeline(
-                    prompt=prompt,
-                    num_inference_steps=inf_steps, 
-                    guidance_scale=1.0, 
-                    width=WIDTH,
-                    height=HEIGHT
-                )
+                def run_pipe():
+                    return ai_pipeline(
+                        prompt=prompt,
+                        num_inference_steps=inf_steps, 
+                        guidance_scale=1.0, 
+                        width=WIDTH,
+                        height=HEIGHT
+                    )
+                output = await asyncio.to_thread(run_pipe)
             final_ai_image = output.images[0]
             
             # Aggressive Garbage Collection

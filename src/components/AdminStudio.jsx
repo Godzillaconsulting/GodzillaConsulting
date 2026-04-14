@@ -232,7 +232,12 @@ export default function AdminStudio() {
              headers: { 'Authorization': `Bearer ${token}` }
          })
          .then(r => r.json())
-         .then(data => { if(data.success) setAdminProfile(data.profile); })
+         .then(data => { 
+             if(data.success) {
+                 setAdminProfile(data.profile);
+                 localStorage.setItem('godzilla_cached_profile', JSON.stringify(data.profile));
+             }
+         })
          .catch(err => console.error('Error al cargar perfil', err));
      }
  }, []);

@@ -151,10 +151,12 @@ export const generateRenderJob = async (req, res) => {
 
                     // Motor a elegir segun el tipo solicitado
                     let modelName;
-                    if (engine.includes('Imagen 3') || engine.includes('Ultra')) {
-                        modelName = 'imagen-3.0-generate-002';
+                    if (engine.includes('Imagen') || engine.includes('Ultra')) {
+                        modelName = 'imagen-4.0-ultra-generate-001';
+                    } else if (engine.includes('Pro')) {
+                        modelName = 'gemini-3-pro-image-preview';
                     } else {
-                        modelName = 'gemini-2.0-flash-preview-image-generation';
+                        modelName = 'gemini-3.1-flash-image-preview';
                     }
 
                     const finalPromptToUse = optimizedPrompt || prompt;
@@ -198,7 +200,27 @@ export const generateRenderJob = async (req, res) => {
 
                 } catch (e) {
                     console.error(`[GOOGLE-VISION] ❌ Error (${engine}):`, e.message);
-                    postProcessJobs.set(taskId, { status: 'failed', error: e.message });
+                    console.log(`[GOOGLE-VISION] 🔄 Fallback a GODZILLA NATIVE TENSOR (Local GPU)...`);
+                    try {
+                        const localRes = await fetch('http://127.0.0.1:5000/sora-start', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                prompt: finalPromptToUse || prompt,
+                                mode: 'photo',
+                                diffusion_steps: 4
+                            })
+                        });
+                        const localData = await localRes.json();
+                        if (localData.success) {
+                            postProcessJobs.set(taskId, { status: 'delegated', local_task_id: localData.task_id });
+                        } else {
+                            throw new Error("Sora Engine Rejected.");
+                        }
+                    } catch (localErr) {
+                         console.error("[STUDIO] Local Fallback falló también:", localErr.message);
+                         postProcessJobs.set(taskId, { status: 'failed', error: e.message + " | Fallback: " + localErr.message });
+                    }
                 }
             })();
             
@@ -256,6 +278,25 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             } else if (job.status === 'failed') {
                 postProcessJobs.delete(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
+            } else if (job.status === 'delegated') {
+                try {
+                    const lres = await fetch(`http://127.0.0.1:5000/sora-status/${job.local_task_id}`);
+                    const ldata = await lres.json();
+                    if (ldata.status === 'succeed') {
+                        postProcessJobs.delete(taskId);
+                        let soraUrl = ldata.result_url;
+                        if (soraUrl.startsWith('/outputs/')) soraUrl = `/api/sora/media/${soraUrl.replace('/outputs/', '')}`;
+                        else if (!soraUrl.startsWith('http') && !soraUrl.startsWith('/api')) soraUrl = `/api/sora/media/${soraUrl}`;
+                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: soraUrl });
+                    } else if (ldata.status === 'failed') {
+                        postProcessJobs.delete(taskId);
+                        return res.status(200).json({ status: 'failed', error: ldata.error || "Falla en Local Engine GPU." });
+                    } else {
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
+                    }
+                } catch(pe) {
+                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                }
             } else {
                 return res.status(200).json({
                     task_id: taskId,

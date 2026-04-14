@@ -149,12 +149,22 @@ export default function CockersStudio({ adminProfile }) {
                         clearInterval(pollTimer);
                         setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
                         
-                        // Replace the url in selectedDraft
+                        // ADD side-by-side rather than replace
                         setSelectedDraft(prev => {
                             if (!prev) return prev;
                             const newOpts = [...prev.media_options];
-                            newOpts[optionIndex] = { ...newOpts[optionIndex], url: stData.result_url, provider: 'GotSora RefinedHQ' };
-                            return { ...prev, media_options: newOpts };
+                            const origOpt = newOpts[optionIndex];
+                            
+                            // Insertar la nueva inmediatamente después de la original
+                            newOpts.splice(optionIndex + 1, 0, {
+                                url: stData.result_url,
+                                provider: origOpt.provider + ' + ✨ GotSora RefinedHQ',
+                                isVideo: origOpt.isVideo
+                            });
+                            
+                            const newState = { ...prev, media_options: newOpts };
+                            setQueue(q => q.map(post => post.id === prev.id ? newState : post));
+                            return newState;
                         });
                     } else if (stData.status === 'failed' || stData.status === 'error') {
                         clearInterval(pollTimer);

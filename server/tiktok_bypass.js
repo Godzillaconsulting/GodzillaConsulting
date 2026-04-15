@@ -492,13 +492,48 @@ export const initTikTokBypass = async (isHeadless = true) => {
     })();
 };
 
+async function forceKillBrowser() {
+    if (browserClient) {
+        try {
+            console.log('[TikTok] 🛑 Forzando cierre de Chrome/Puppeteer...');
+            // puppeteer-extra might use .process() 
+            const browserProc = browserClient.process ? browserClient.process() : null;
+            if (browserProc && browserProc.pid) {
+                process.kill(browserProc.pid, 'SIGKILL');
+            }
+            if (browserClient.close) await browserClient.close().catch(()=>null);
+            else if (browserClient.destroy) await browserClient.destroy().catch(()=>null);
+            console.log('[TikTok] ✅ Chrome cerrado limpiamente.');
+        } catch (e) {
+            console.error('[TikTok] ⚠️ Error cerrando Chrome:', e.message);
+        }
+    }
+}
+
 // AUTO-START for PM2 standalone
 const isLoginMode = process.argv.includes('--login');
-initTikTokBypass(!isLoginMode);
+initTikTokBypass(!isLoginMode).catch(async err => {
+    console.error('[TikTok] ❌ Fatal:', err.message);
+    await forceKillBrowser();
+    process.exit(1);
+});
 
 // PM2 Cleanup
-process.on('SIGINT', async () => {
-    console.log('🛑 [SIGINT] Apagando TikTok Chromium...');
-    if (browserClient) await browserClient.destroy();
-    process.exit(0);
+process.on('SIGINT', async () => { await forceKillBrowser(); process.exit(0); });
+process.on('SIGTERM', async () => { await forceKillBrowser(); process.exit(0); });
+process.on('message', async (msg) => {
+    if (msg === 'shutdown') {
+        await forceKillBrowser();
+        process.exit(0);
+    }
+});
+process.on('uncaughtException', async (err) => {
+    console.error('[TikTok] Uncaught Exception:', err.message);
+    await forceKillBrowser();
+    process.exit(1);
+});
+process.on('unhandledRejection', async (reason) => {
+    console.error('[TikTok] Unhandled Rejection:', reason);
+    await forceKillBrowser();
+    process.exit(1);
 });

@@ -560,7 +560,7 @@ export default function CockersStudio({ adminProfile }) {
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'GotSora T2I', 'Gemini 3.1 Flash Image'];
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -1294,17 +1294,17 @@ export default function CockersStudio({ adminProfile }) {
                                                             <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                             <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
                                                         </div>
-                                                        {/* GotSora Pane */}
+                                                        {/* Gemini Ultra Pane */}
                                                         <div className="flex-1 relative border-l border-white/5 bg-[#0f0f0f] group/ref hover:border-indigo-500/40 transition-colors">
                                                             {slot.refinedUrl === 'loading' ? (
                                                                 <div className="flex flex-col items-center justify-center h-full gap-2">
                                                                     <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
-                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">GotSora...</span>
+                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">Gemini Ultra...</span>
                                                                 </div>
                                                             ) : slot.refinedUrl && slot.refinedUrl !== 'error' ? (
                                                                 <>
                                                                     <img src={slot.refinedUrl} alt="refined" onClick={() => handleMediaClick(slot.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
-                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">GotSora HQ ✨</div>
+                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">Ultra HQ ✨</div>
                                                                 </>
                                                             ) : (
                                                                 <div className="flex flex-col items-center justify-center h-full gap-2 p-2">
@@ -1317,7 +1317,7 @@ export default function CockersStudio({ adminProfile }) {
                                                                     >
                                                                         <span>✨</span> {slot.refinedUrl === 'error' ? 'Reintentar Filtro' : 'Aplicar Filtro'}
                                                                     </button>
-                                                                    <span className="text-[7px] text-neutral-600">GotSora Engine</span>
+                                                                    <span className="text-[7px] text-neutral-600">Gemini Ultra</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1530,25 +1530,25 @@ export default function CockersStudio({ adminProfile }) {
                                                         {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
                                                     </div>
 
-                                                    {/* Auto-Refined GotSora Pane */}
+                                                    {/* Auto-Refined Gemini Pane */}
                                                     {!opt.provider.includes('GotSora') && (
                                                         <div className="flex-1 rounded-xl overflow-hidden relative border border-transparent hover:border-indigo-500/50 transition-colors group/ref bg-[#0f0f0f]">
                                                             {opt.refinedUrl === 'loading' ? (
                                                                 <div className="flex flex-col items-center justify-center h-full w-full bg-indigo-900/10">
                                                                     <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mb-2"></div>
-                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">Aplicando GotSora...</span>
+                                                                    <span className="text-[7px] text-indigo-400 font-black uppercase tracking-widest animate-pulse">Aplicando Ultra...</span>
                                                                 </div>
                                                             ) : opt.refinedUrl === 'error' || !opt.refinedUrl ? (
                                                                 <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-900/30">
                                                                     <button onClick={(e) => { e.stopPropagation(); triggerSingleRefine(opt, i, selectedDraft.id, finalPrompt || selectedDraft.visual_prompt); }} className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[9px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 xl:scale-100 scale-90">
-                                                                        <span>✨</span> Aplicar Filtro
+                                                                        <span>✨</span> Aplicar Filtro Ultra
                                                                     </button>
-                                                                    <span className="text-[7px] text-neutral-600 mt-2">GotSora Engine Local</span>
+                                                                    <span className="text-[7px] text-neutral-600 mt-2">Gemini Ultra Engine</span>
                                                                 </div>
                                                             ) : (
                                                                 <>
                                                                     <img src={opt.refinedUrl} alt="refined" onClick={() => handleMediaClick(opt.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
-                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_10px_rgba(79,70,229,0.5)]">GotSora HQ ✨</div>
+                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_10px_rgba(79,70,229,0.5)]">Ultra HQ ✨</div>
                                                                 </>
                                                             )}
                                                         </div>

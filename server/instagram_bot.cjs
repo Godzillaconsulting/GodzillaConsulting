@@ -230,6 +230,7 @@ async function processAndReply(userId, text, replyFn) {
 // ── Main Loop ──────────────────────────────────────────────────────────────────
 const seenItems = new Set();
 const userDataDir = path.join(__dirname, '.puppeteer_ig_profile');
+let browserClient;
 
 async function startBot() {
     if (!existsSync(userDataDir)) {
@@ -248,14 +249,13 @@ async function startBot() {
         args: [
             '--disable-gpu',
             '--disable-dev-shm-usage',
-            '--no-sandbox',
-            '--single-process'
         ]
     });
+    browserClient = browser;
 
     const page = await browser.newPage();
     // Navegamos a Instagram para inicializar cookies completas y entorno web nativo
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     let cookies = await page.cookies();
     let csrfToken = cookies.find(c => c.name === 'csrftoken')?.value;
@@ -332,7 +332,47 @@ async function startBot() {
     }
 }
 
-startBot().catch(err => {
-    console.error('[Instagram] Fatal:', err.message);
+async function forceKillBrowser() {
+    if (browserClient) {
+        try {
+            console.log('[Instagram] 🛑 Forzando cierre de Chrome/Puppeteer...');
+            const browserProc = browserClient.process();
+            if (browserProc && browserProc.pid) {
+                // Precaution for Windows
+                process.kill(browserProc.pid, 'SIGKILL');
+            }
+            await browserClient.close().catch(()=>null);
+            console.log('[Instagram] ✅ Chrome cerrado limpiamente.');
+        } catch (e) {
+            console.error('[Instagram] ⚠️ Error cerrando Chrome:', e.message);
+        }
+    }
+}
+
+startBot().catch(async err => {
+    console.error('[Instagram] ❌ Fatal:', err.message);
+    await forceKillBrowser();
+    process.exit(1);
+});
+
+// ==========================================
+// 🛡️ PM2 GRACEFUL SHUTDOWN (WINDOWS FIX)
+// ==========================================
+process.on('SIGINT', async () => { await forceKillBrowser(); process.exit(0); });
+process.on('SIGTERM', async () => { await forceKillBrowser(); process.exit(0); });
+process.on('message', async (msg) => {
+    if (msg === 'shutdown') {
+        await forceKillBrowser();
+        process.exit(0);
+    }
+});
+process.on('uncaughtException', async (err) => {
+    console.error('[Instagram] Uncaught Exception:', err.message);
+    await forceKillBrowser();
+    process.exit(1);
+});
+process.on('unhandledRejection', async (reason) => {
+    console.error('[Instagram] Unhandled Rejection:', reason);
+    await forceKillBrowser();
     process.exit(1);
 });

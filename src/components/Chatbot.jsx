@@ -16,8 +16,7 @@ const Chatbot = () => {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
-
-    const API_URL = '' || '';
+    const API_URL = 'https://bot.godzillaconsulting.ai';
 
     useEffect(() => {
         // Initial delay before showing the tooltip for the first time

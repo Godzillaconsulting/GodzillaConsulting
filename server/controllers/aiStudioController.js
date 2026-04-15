@@ -39,9 +39,7 @@ export const generateRenderJob = async (req, res) => {
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
                 const aiDirector = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
                 let instruction = '';
-                if (engine.includes('Sora')) {
-                    instruction = `You are an expert Photography Director. Translate this concept into an advanced technical prompt in ENGLISH for Stable Diffusion. Use extreme perspectives, experimental angles or asymmetric compositions. Respond ONLY with the prompt: ${prompt}`;
-                } else if (engine.includes('Google Imagen') || engine.includes('Google Vision')) {
+                if (engine.includes('Google Imagen') || engine.includes('Google Vision')) {
                     instruction = `You are a commercial photography director. Translate this concept into a detailed photographic direction prompt in English. Focus on lighting, composition, mood and technical camera details. Respond ONLY with the prompt, no preamble: ${prompt}`;
                 }
 
@@ -61,27 +59,7 @@ export const generateRenderJob = async (req, res) => {
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
         let response;
-        if (engine.includes('Sora')) {
-            console.log(`[STUDIO] Despertando In-House GoTSora. Prompt optimizado: ${optimizedPrompt.substring(0, 50)}...`);
-            try {
-                // Fetch to local Node proxy (puerto 5000 directamente)
-                const response = await fetch('http://127.0.0.1:5000/sora-start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                         prompt: optimizedPrompt,
-                         mode: engine.includes('LCM') ? 'photo' : 'video',
-                         diffusion_steps: 4,
-                         ref_image: config.refImage || null
-                    })
-                });
-                const data = await response.json();
-                if (!data.success) throw new Error(data.error || "Falla en Local Backend");
-                return res.status(200).json({ job_id: data.task_id, status: "processing", provider: engine });
-            } catch (err) {
-                 return res.status(400).json({ error: "Sora Cluster Apagado o Desconectado" });
-            }
-        } else if (engine.includes('Kling')) {
+        if (engine.includes('Kling')) {
             let token;
             try {
                 token = generateKlingAuthToken();
@@ -250,28 +228,6 @@ export const generateRenderJob = async (req, res) => {
                 try {
                     const finalPromptToUse = optimizedPrompt || prompt;
 
-                    // Shortcut para generación 100% nativa LCM (GotSora 6to Modelo)
-                    if (engine === 'GotSora (T2I Local)') {
-                        console.log(`[STUDIO] Activando Motor GPU Local (GotSora T2I)...`);
-                        const localRes = await fetch('http://127.0.0.1:5000/sora-start', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                prompt: finalPromptToUse,
-                                mode: 'photo',
-                                diffusion_steps: 4,
-                                input_image: config?.refImage || null
-                            })
-                        });
-                        const localData = await localRes.json();
-                        if (localData.success) {
-                            postProcessJobs.set(taskId, { status: 'delegated', local_task_id: localData.task_id });
-                            return; // Terminamos aquí, sin usar Google.
-                        } else {
-                            throw new Error("Sora Engine Rejected: " + (localData.error || "Unknown"));
-                        }
-                    }
-
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
@@ -409,45 +365,6 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             } else if (job.status === 'failed') {
                 postProcessJobs.delete(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
-            } else if (job.status === 'delegated') {
-                try {
-                    const lres = await fetch(`http://127.0.0.1:5000/sora-status/${job.local_task_id}`);
-                    const ldata = await lres.json();
-                    if (ldata.status === 'succeed') {
-                        let soraUrl = ldata.result_url;
-                        if (!soraUrl.startsWith('http')) soraUrl = 'http://127.0.0.1:5000' + soraUrl; // Asegurar full url
-                        
-                        try {
-                            const imgRes = await fetch(soraUrl);
-                            const arrBuf = await imgRes.arrayBuffer();
-                            const buffer = Buffer.from(arrBuf);
-                            
-                            const saveDir = 'E:/GodzillaSora_Outputs';
-                            if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
-                            const filename = `gotsora_refined_${Date.now()}.jpg`;
-                            fs.writeFileSync(path.join(saveDir, filename), buffer);
-                            
-                            const localUrl = `/api/sora/media/${filename}`;
-                            postProcessJobs.delete(taskId);
-                            return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: localUrl });
-                        } catch (saveErr) {
-                            postProcessJobs.delete(taskId);
-                            return res.status(200).json({ status: 'failed', error: "Fallo guardando a E: " + saveErr.message });
-                        }
-                    } else if (ldata.status === 'failed') {
-                        postProcessJobs.delete(taskId);
-                        return res.status(200).json({ status: 'failed', error: ldata.error || "Falla en Local Engine GPU." });
-                    } else {
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
-                    }
-                } catch(pe) {
-                    job.retries = (job.retries || 0) + 1;
-                    if (job.retries > 3) {
-                        postProcessJobs.delete(taskId);
-                        return res.status(200).json({ status: 'failed', error: "Motor GPU PyTorch Offline o inaccesible (127.0.0.1:5000)" });
-                    }
-                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
-                }
             }
         }
 
@@ -468,30 +385,6 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             } else if (job.status === 'failed') {
                 postProcessJobs.delete(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
-            } else if (job.status === 'delegated') {
-                try {
-                    const lres = await fetch(`http://127.0.0.1:5000/sora-status/${job.local_task_id}`);
-                    const ldata = await lres.json();
-                    if (ldata.status === 'succeed') {
-                        postProcessJobs.delete(taskId);
-                        let soraUrl = ldata.result_url;
-                        if (soraUrl.startsWith('/outputs/')) soraUrl = `/api/sora/media/${soraUrl.replace('/outputs/', '')}`;
-                        else if (!soraUrl.startsWith('http') && !soraUrl.startsWith('/api')) soraUrl = `/api/sora/media/${soraUrl}`;
-                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: soraUrl });
-                    } else if (ldata.status === 'failed') {
-                        postProcessJobs.delete(taskId);
-                        return res.status(200).json({ status: 'failed', error: ldata.error || "Falla en Local Engine GPU." });
-                    } else {
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: ldata.progress || 50, result_url: '' });
-                    }
-                } catch(pe) {
-                    job.retries = (job.retries || 0) + 1;
-                    if (job.retries > 3) {
-                        postProcessJobs.delete(taskId);
-                        return res.status(200).json({ status: 'failed', error: "Motor GPU PyTorch Offline o inaccesible (127.0.0.1:5000)" });
-                    }
-                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
-                }
             } else {
                 return res.status(200).json({
                     task_id: taskId,
@@ -576,39 +469,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             }
         }
         
-        // Manejar Sora In-House
-        if (taskId.startsWith("sora_live_")) {
-            try {
-                const response = await fetch(`http://127.0.0.1:5000/sora-status/${taskId}`);
-                const data = await response.json();
-                if (data.status === 'succeed') {
-                    let soraUrl = data.result_url;
-                    if (soraUrl.startsWith('/outputs/')) {
-                        soraUrl = `/api/sora/media/${soraUrl.replace('/outputs/', '')}`;
-                    } else if (!soraUrl.startsWith('http') && !soraUrl.startsWith('/api')) {
-                        soraUrl = `/api/sora/media/${soraUrl}`;
-                    }
 
-                    return res.status(200).json({
-                        task_id: taskId,
-                        status: 'succeed',
-                        progress: 100,
-                        result_url: soraUrl
-                    });
-                } else if (data.status === 'failed') {
-                    return res.status(400).json({ error: data.error });
-                } else {
-                    return res.status(200).json({
-                        task_id: taskId,
-                        status: 'processing',
-                        progress: data.progress || 10,
-                        result_url: ''
-                    });
-                }
-            } catch (err) {
-                return res.status(400).json({ error: "Sora Offline" });
-            }
-        }
 
         if (taskId.startsWith("veo_")) {
             const rawOpName = taskId.replace("veo_", "");
@@ -863,53 +724,63 @@ export const generateScriptChat = async (req, res) => {
 export const refineRenderJob = async (req, res) => {
     try {
         const { imageUrl, prompt } = req.body;
-        console.log(`[STUDIO] Iniciando Refinado GotSora para: ${imageUrl}`);
+        console.log(`[STUDIO] Iniciando Refinado Ultra para: ${imageUrl}`);
 
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+        }
+
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
         let base64Image = null;
-        let localDiskPath = null;
+        let mimeType = 'image/jpeg';
+        
         if (imageUrl.startsWith('http')) {
             const imgRes = await fetch(imageUrl);
             const arrayBuffer = await imgRes.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            
-            // Garantizar escritura asincrona a Disco E: ANTES de notificar a GotSora
-            const saveDir = 'E:/GodzillaSora_Outputs';
-            if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
-            localDiskPath = path.join(saveDir, `temp_refine_${Date.now()}.jpg`);
-            fs.writeFileSync(localDiskPath, buffer);
-            
-            console.log(`[STUDIO] GotSora Sequence 1/2: Imagen Original 100% grabada en ${localDiskPath}`);
-
-            // Seguimos enviando base64 si el UI así lo requiere, pero el pipeline 
-            // ya asegura retención en disco para failsafes de RAM.
             base64Image = buffer.toString('base64');
-            const contentType = imgRes.headers.get('content-type') || 'image/png';
-            base64Image = `data:${contentType};base64,${base64Image}`;
+            mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+        } else if (imageUrl.startsWith('data:')) {
+            const split = imageUrl.split(';base64,');
+            mimeType = split[0].replace('data:', '');
+            base64Image = split[1];
         }
 
-        const optimizedPrompt = (prompt || 'high quality, masterpiece, 8k, raw photo, film grain') + ', Cinematic/Godzilla style, premium rendering';
-        
-        console.log(`[STUDIO] GotSora Sequence 2/2: Input a Engine. Tareas de render a iniciar.`);
+        const optimizedPrompt = (prompt || '') + ' Refine and enhance this image exactly as it is but with Cinematic lighting, ultra-detailed 8k masterpiece quality, professional color grading.';
 
-        const response = await fetch('http://127.0.0.1:5000/sora-start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                 prompt: optimizedPrompt,
-                 mode: 'photo',
-                 diffusion_steps: 5,
-                 ref_image: base64Image,
-                 local_path: localDiskPath // Pasamos el hint al motor Python por si soporta optimizacion directa
-            })
+        const response = await ai.models.generateContent({
+             model: 'gemini-2.0-flash', 
+             contents: [
+                 {
+                     role: 'user',
+                     parts: [
+                         { text: optimizedPrompt },
+                         { inlineData: { data: base64Image, mimeType: mimeType } }
+                     ]
+                 }
+             ],
+             config: {
+                 responseModalities: ["IMAGE"]
+             }
         });
 
-        const data = await response.json();
-        if (!data.success) throw new Error(data.error || 'Falla en Local Backend GoTSora');
+        if (!response || !response.candidates || response.candidates.length === 0) {
+            throw new Error('Sin respuesta válida del modelo Ultra.');
+        }
 
-        const refineTaskId = "refine_" + data.task_id;
-        postProcessJobs.set(refineTaskId, { status: 'delegated', local_task_id: data.task_id });
+        const generatedImagePart = response.candidates[0].content.parts.find(p => p.inlineData);
+        if (!generatedImagePart) throw new Error('No se generó la imagen.');
+        
+        const generatedBase64 = generatedImagePart.inlineData.data;
+        const outMimeType = generatedImagePart.inlineData.mimeType || 'image/png';
+        const finalUrl = `data:${outMimeType};base64,${generatedBase64}`;
 
-        return res.status(200).json({ job_id: refineTaskId, status: 'processing', provider: 'GotSora Refined' });
+        const refineTaskId = "refine_ultra_" + Date.now();
+        // Respond as done immediately since Gemini returns it sync.
+        postProcessJobs.set(refineTaskId, { status: 'done', localUrl: finalUrl });
+
+        return res.status(200).json({ job_id: refineTaskId, status: 'processing', provider: 'Gemini Ultra Refined' });
 
     } catch (error) {
         console.error(error);

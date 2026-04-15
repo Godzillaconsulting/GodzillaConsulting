@@ -122,29 +122,6 @@ module.exports = {
         NODE_ENV: "production",
         QUEUE_DELAY_MS: "2000"    // 2 segundos entre correos
       }
-    },
-    {
-      name: "godzilla-sora-engine",
-      script: "godzilla_inference_bridge.py",
-      cwd: "./server/core_engine",
-      interpreter: "python",
-      instances: 1,
-      exec_mode: "fork",
-      max_memory_restart: "14G", // C++ Native Array Map allowance
-      watch: false,
-      env: {
-        NODE_ENV: "production",
-        OUTPUTS_DIR_FALLBACK: "E:\\GodzillaSora_Outputs"
-      }
-    },
-    {
-      name: "godzilla-sora-watchdog",
-      script: "gpu_monitor.py",
-      cwd: "./server/core_engine",
-      interpreter: "python",
-      instances: 1,
-      exec_mode: "fork",
-      watch: false
     }
   ]
 };

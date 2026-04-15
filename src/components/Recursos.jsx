@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
-import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
@@ -46,7 +45,7 @@ const Recursos = () => {
     const [magnetsState, setMagnetsState] = useState(defaultMagnets);
 
     // Importamos nuestra conexión hook al backend (Esto sustituye temporalmente o acompaña a la simulación visual)
-    const { captureLead, status, errorMessage, resetStatus } = useLeadCapture();
+    const { captureLead, status, errorMessage } = useLeadCapture();
 
     useEffect(() => {
         client

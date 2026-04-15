@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { injectSectionDefaults } from '../utils/studioConfig';
 
 const SiteContext = createContext();
@@ -12,7 +12,7 @@ export function SiteProvider({ children }) {
   const [previewOverride, setPreviewOverrideState] = useState(null);
 
   // Load all nodes with retry logic for Neon DB cold starts
-  const fetchNodes = async (retries = 3) => {
+  const fetchNodes = useCallback(async (retries = 3) => {
     try {
       if (retries === 3) setLoading(true);
 
@@ -46,11 +46,11 @@ export function SiteProvider({ children }) {
           setTimeout(() => fetchNodes(retries - 1), 1500); // Darle tiempo a Neon DB de despertar (silencioso)
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNodes();
-  }, []);
+  }, [fetchNodes]);
 
   // Devuelve datos del nodo. Si hay un previewOverride activo para ese ID,
   // devuelve el draft (en tiempo real) en lugar del published_data.

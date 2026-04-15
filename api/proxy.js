@@ -1,31 +1,66 @@
-export const maxDuration = 60; // Configuración nativa Vercel
+/**
+ * api/proxy.js — Función Serverless de Vercel
+ * Actúa como proxy transparente hacia bot.godzillaconsulting.ai
+ * Supera el bloqueo de Cloudflare que rechaza rewrites directos de Vercel Edge
+ */
+
+const BACKEND = 'https://bot.godzillaconsulting.ai';
 
 export default async function handler(req, res) {
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+    // Reconstruir la ruta original: /api/proxy?path=chat => /api/chat
+    const subpath = req.query.path || '';
+    const targetUrl = `${BACKEND}/api/${subpath}`;
+
+    // Pasar query params adicionales (excluyendo 'path' que es nuestro)
+    const extraParams = Object.entries(req.query)
+        .filter(([k]) => k !== 'path')
+        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+        .join('&');
+    const finalUrl = extraParams ? `${targetUrl}?${extraParams}` : targetUrl;
 
     try {
-        const bodyStr = JSON.stringify(req.body);
+        // Construir headers a pasar al backend (filtrar los que Vercel inyecta)
+        const forwardHeaders = {
+            'Content-Type': req.headers['content-type'] || 'application/json',
+            'X-Forwarded-For': req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            'X-Vercel-Proxy': '1', // Identificador para whitelist futura
+        };
+        if (req.headers.authorization) forwardHeaders['Authorization'] = req.headers.authorization;
 
-        console.log(`[PROXY] Forwarding to: https://bot.godzillaconsulting.ai${req.url}`);
-        
-        const response = await fetch(`https://bot.godzillaconsulting.ai${req.url}`, {
+        // Body: solo para métodos que lo admiten
+        let body = undefined;
+        if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+            body = JSON.stringify(req.body);
+        }
+
+        const backendRes = await fetch(finalUrl, {
             method: req.method,
-            headers: {
-                'Content-Type': 'application/json',
-                // Agregar User-Agent y bypass de browser stuff para que CF lo vea como server auth
-                'User-Agent': 'Vercel-Serverless-Proxy/1.0'
-            },
-            body: ['GET', 'HEAD'].includes(req.method) ? undefined : bodyStr
+            headers: forwardHeaders,
+            body,
+            signal: AbortSignal.timeout(55000), // 55s < 60s maxDuration
         });
 
-        const data = await response.json();
-        
-        return res.status(response.status).json(data);
-    } catch (error) {
-        console.error('[PROXY] Error forwarding request:', error);
-        return res.status(500).json({ error: 'Proxy forwarding failed', message: error.message });
+        // Copiar status y headers de respuesta relevantes
+        res.status(backendRes.status);
+        const ct = backendRes.headers.get('content-type');
+        if (ct) res.setHeader('Content-Type', ct);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'no-store');
+
+        // Stream la respuesta
+        const data = await backendRes.text();
+        res.send(data);
+
+    } catch (err) {
+        console.error('[PROXY ERROR]', err.message);
+        res.status(502).json({ error: 'Proxy Error: ' + err.message });
     }
 }
+
+// Configuración de Vercel para deshabilitar el body parser automático (lo hacemos manualmente)
+export const config = {
+    api: {
+        bodyParser: true,
+        externalResolver: true,
+    },
+};

@@ -8,9 +8,14 @@ import { getYouTubeId } from './MediaPicker';
  */
 export default function DynamicMedia({ src, alt, className, style, ...props }) {
     let finalSrc = src;
-    if (typeof src === 'string' && src.startsWith('/api/media')) {
-        const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-        finalSrc = `${API_URL}${src}?v=cf2`;
+    if (typeof src === 'string') {
+        if (src.startsWith('/api/media')) {
+            const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+            finalSrc = `${API_URL}${src}`;
+        }
+        if (finalSrc.includes('/api/media') && !finalSrc.includes('v=cf2')) {
+            finalSrc += (finalSrc.includes('?') ? '&' : '?') + 'v=cf2';
+        }
     }
 
     const videoRef = useRef(null);

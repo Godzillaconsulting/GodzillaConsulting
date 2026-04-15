@@ -26,8 +26,13 @@ const Cultura = () => {
       ? nodeData.bgVideoUrl 
       : (nodeData.bgVideoUrl === '' ? '' : culturaVideo);
 
-  if (typeof finalBgVideo === 'string' && finalBgVideo.startsWith('/api/media')) {
-      finalBgVideo = `${API_URL}${finalBgVideo}?v=cf2`;
+  if (typeof finalBgVideo === 'string') {
+      if (finalBgVideo.startsWith('/api/media')) {
+          finalBgVideo = `${API_URL}${finalBgVideo}`;
+      }
+      if (finalBgVideo.includes('/api/media') && !finalBgVideo.includes('v=cf2')) {
+          finalBgVideo += (finalBgVideo.includes('?') ? '&' : '?') + 'v=cf2';
+      }
   }
 
   const [currentSlide, setCurrentSlide] = useState(0);

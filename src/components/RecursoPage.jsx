@@ -50,9 +50,14 @@ const RecursoPage = ({ previewRecursoId }) => {
                    ? nodeData.mainImageUrl 
                    : (defaultData?.imageUrl || nodeData?.mainImageUrl);
       
-      if (typeof imgUrl === 'string' && imgUrl.startsWith('/api/media')) {
-          const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-          imgUrl = `${API_URL}${imgUrl}?v=cf2`;
+      if (typeof imgUrl === 'string') {
+          if (imgUrl.startsWith('/api/media')) {
+              const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+              imgUrl = `${API_URL}${imgUrl}`;
+          }
+          if (imgUrl.includes('/api/media') && !imgUrl.includes('v=cf2')) {
+              imgUrl += (imgUrl.includes('?') ? '&' : '?') + 'v=cf2';
+          }
       }
 
       return {

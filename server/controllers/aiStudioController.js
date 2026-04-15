@@ -756,7 +756,7 @@ export const refineRenderJob = async (req, res) => {
             base64Image = split[1];
         }
 
-        const optimizedPrompt = (prompt || '') + ' Refine and enhance this image exactly as it is but with Cinematic lighting, ultra-detailed 8k masterpiece quality, professional color grading.';
+        const optimizedPrompt = 'Using this image as a structural reference, create a stunning, hyper-realistic new variation. Take creative liberties to enhance the composition, add cinematic lighting, ultra-detailed 8k masterpiece quality, and professional color grading. Do not just color-correct; generate a completely reimagined version that strongly follows this original concept: ' + (prompt || '');
 
         const response = await ai.models.generateContent({
              model: 'gemini-3.1-flash-image-preview', 

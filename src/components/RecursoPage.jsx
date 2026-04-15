@@ -108,7 +108,7 @@ const RecursoPage = ({ previewRecursoId }) => {
                           setStatus('loading');
                           setErrorMessage('');
                           try {
-                              const res = await fetch(`${'' || ''}/api/resources/send`, {
+                              const res = await fetch(`/api/resources/send`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ email, recursoId })
@@ -120,7 +120,7 @@ const RecursoPage = ({ previewRecursoId }) => {
                                   setStatus('error');
                                   setErrorMessage(resData.error || 'Hubo un error al enviar el recurso.');
                               }
-                          } catch (err) {
+                          } catch {
                               setStatus('error');
                               setErrorMessage('No pudimos conectar con el servidor.');
                           }

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import React, { useState, useEffect, memo, Suspense } from 'react';
 import CustomCursor from './components/CustomCursor';
 import PrivateRoute from './components/PrivateRoute';
-import { SiteProvider } from './context/SiteContext';
+import { SiteProvider, useSiteData } from './context/SiteContext';
 
 // Eliminando CONSTANTS de ColorBends ya que usa ParticleField en Hero
 
@@ -164,7 +164,12 @@ function GlobalSuspenseFallback() {
 
 function AppLayout() {
   const { pathname } = useLocation();
+  const { loading } = useSiteData();
   const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
+
+  if (loading) {
+    return <GlobalSuspenseFallback />;
+  }
 
   return (
     <div className="font-sans text-white bg-[#050505] min-h-screen flex flex-col relative w-full overflow-hidden">

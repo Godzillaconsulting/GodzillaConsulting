@@ -20,7 +20,7 @@ const pool = new Pool({
     ssl: isNeon ? { rejectUnauthorized: false } : false,
     max: 50,                               // Aumentado a 50 para soportar MultiTenant y bots en paralelo
     idleTimeoutMillis: 30_000,             // 30s 
-    connectionTimeoutMillis: 5_000,        // 5s para detectar caídas rápido
+    connectionTimeoutMillis: 15_000,       // 15s para permitir que Neon.tech levante de Cold Start
     allowExitOnIdle: false,
     keepAlive: true,                       // Previene cortes TCP silenciosos del OS
     keepAliveInitialDelayMillis: 10_000,

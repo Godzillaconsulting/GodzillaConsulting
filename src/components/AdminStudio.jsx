@@ -362,8 +362,9 @@ export default function AdminStudio() {
  body: JSON.stringify({ draft_data: draftData })
  });
  if (!res.ok) {
+     const txt = await res.text().catch(()=>'');
      if (res.status === 401 || res.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
-     throw new Error('El servidor rechazó los cambios.');
+     throw new Error(`El servidor rechazó los cambios: HTTP ${res.status} ${txt}`);
  }
  await fetchNodes();
  setHasUnsavedChanges(false);
@@ -380,13 +381,15 @@ export default function AdminStudio() {
  try {
  const resDraft = await fetch(`${base}/api/nodes/${selectedNodeId}/draft`, { method: 'PUT', headers, body: JSON.stringify({ draft_data: draftData }) });
  if (!resDraft.ok) {
+     const txt = await resDraft.text().catch(()=>'');
      if (resDraft.status === 401 || resDraft.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
-     throw new Error('Error guardando el borrador');
+     throw new Error(`Error guardando el borrador: HTTP ${resDraft.status} ${txt}`);
  }
  const resPub = await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers });
  if (!resPub.ok) {
+     const txt = await resPub.text().catch(()=>'');
      if (resPub.status === 401 || resPub.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
-     throw new Error('Error aplicando la publicación final');
+     throw new Error(`Error aplicando la publicación final: HTTP ${resPub.status} ${txt}`);
  }
  await fetchNodes();
  setShowPublishModal(false);

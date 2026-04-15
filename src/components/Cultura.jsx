@@ -4,8 +4,8 @@ import { useSiteData } from '../context/SiteContext';
 import { getYouTubeId } from './MediaPicker';
 import DynamicMedia from './DynamicMedia';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-const culturaImage = `${API_URL}/api/media/assets/Nuestra%20cultura%20image.jpg`;
-const culturaVideo = `${API_URL}/api/media/assets/Particulas%20Rojas.mp4`;
+const culturaImage = `${API_URL}/api/media/assets/Nuestra%20cultura%20image.jpg?v=cf2`;
+const culturaVideo = `${API_URL}/api/media/assets/Particulas%20Rojas.mp4?v=cf2`;
 import { trackGodzillaEvent } from '../utils/analyticsHelper';
 
 const Cultura = () => {
@@ -27,7 +27,7 @@ const Cultura = () => {
       : (nodeData.bgVideoUrl === '' ? '' : culturaVideo);
 
   if (typeof finalBgVideo === 'string' && finalBgVideo.startsWith('/api/media')) {
-      finalBgVideo = `${API_URL}${finalBgVideo}`;
+      finalBgVideo = `${API_URL}${finalBgVideo}?v=cf2`;
   }
 
   const [currentSlide, setCurrentSlide] = useState(0);

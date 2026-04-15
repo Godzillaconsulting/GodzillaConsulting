@@ -10,7 +10,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
     let finalSrc = src;
     if (typeof src === 'string' && src.startsWith('/api/media')) {
         const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-        finalSrc = `${API_URL}${src}`;
+        finalSrc = `${API_URL}${src}?v=cf2`;
     }
 
     const videoRef = useRef(null);

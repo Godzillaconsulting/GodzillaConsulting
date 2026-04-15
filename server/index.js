@@ -53,6 +53,7 @@ if (!process.env.VERCEL) {
     app.use(helmet({
         contentSecurityPolicy: false, // CSP custom en prod si se necesita
         crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false, // Permitir cargar imágenes desde el frontend cross-origin
         hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
         referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
         xContentTypeOptions: true,      // Previene MIME sniffing

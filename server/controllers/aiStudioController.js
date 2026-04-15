@@ -243,7 +243,7 @@ Concept: ${prompt}`;
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
-                    const modelName = getModelId(engine) || 'gemini-2.0-flash-preview-image-generation';
+                    let modelName = getModelId(engine) || 'gemini-2.0-flash-preview-image-generation';
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
@@ -276,7 +276,7 @@ Concept: ${prompt}`;
                         const response = await ai.models.generateContent({
                             model: modelName,
                             contents: [{ role: 'user', parts: contentPayload }],
-                            config: { responseModalities: ['TEXT', 'IMAGE'] }
+                            config: { responseModalities: ['IMAGE'] }
                         });
 
                         for (const part of (response.candidates?.[0]?.content?.parts || [])) {
@@ -301,7 +301,7 @@ Concept: ${prompt}`;
                     console.log(`[GOOGLE-VISION] ✅ Imagen generada correctamente. Job: ${taskId}`);
 
                 } catch (e) {
-                    const usedPrompt = finalPromptToUse || prompt;
+                    const usedPrompt = optimizedPrompt || prompt;
                     console.error(`[GOOGLE-VISION] ❌ Error (${engine}):`, e.message);
                     console.log(`[GOOGLE-VISION] 🔄 Fallback a GODZILLA NATIVE TENSOR (Local GPU)...`);
                     try {

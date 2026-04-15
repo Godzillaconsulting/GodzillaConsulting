@@ -1,33 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import React, { useState, useEffect, memo } from 'react';
-import ColorBends from './components/ColorBends';
+import React, { useState, useEffect, memo, Suspense } from 'react';
 import CustomCursor from './components/CustomCursor';
-const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
 import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider } from './context/SiteContext';
 
-// Constantes globales inmutables para no forzar re-renders del fondo animado
-const COLOR_BENDS_PROPS = {
-  colors: ["#ff0000", "#cc0000", "#990000"],
-  rotation: -51,
-  speed: 0.2,
-  scale: 1,
-  frequency: 1,
-  warpStrength: 1,
-  mouseInfluence: 1,
-  parallax: 0.5,
-  noise: 0.1,
-  transparent: true,
-  autoRotate: -5,
-  color: "#ff0000"
-};
+// Eliminando CONSTANTS de ColorBends ya que usa ParticleField en Hero
 
-// Layout fijo aislado (React.memo blinda contra renders del Router)
-const PersistentBackground = memo(() => (
-  <div className="bg-brand-black" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, overflow: 'hidden' }}>
-    <ColorBends {...COLOR_BENDS_PROPS} />
-  </div>
-));
+// Componentes críticos cargados inmediatamente (First Contentful Paint)
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Cultura from './components/Cultura';
@@ -38,23 +17,28 @@ import Paquetes from './components/Paquetes';
 import Responsabilidades from './components/Responsabilidades';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
-import TerminosYCondiciones from './components/TerminosYCondiciones';
-import AvisoPrivacidad from './components/AvisoPrivacidad';
-import PoliticaCookies from './components/PoliticaCookies';
 import Chatbot from './components/Chatbot';
-import Bots from './components/Bots';
-import ProduccionAudiovisual from './components/ProduccionAudiovisual';
-import EmbudosDeVenta from './components/EmbudosDeVenta';
-import GestionRedesSociales from './components/GestionRedesSociales';
-import OptimizacionWebSeo from './components/OptimizacionWebSeo';
-import CrmSaas from './components/CrmSaas';
-import LandingPaqueteDynamic from './components/LandingPaqueteDynamic';
-import Login from './components/Login';
-const Dashboard = React.lazy(() => import('./components/Dashboard'));
-import PreguntasFrecuentes from './components/PreguntasFrecuentes';
-import RecursoPage from './components/RecursoPage';
-const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
 import whatsappIcon from './assets/icons/WhatsApp (white).png';
+
+// Lazy loading para optimizar el peso del compilado de Vite
+const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
+const TerminosYCondiciones = React.lazy(() => import('./components/TerminosYCondiciones'));
+const AvisoPrivacidad = React.lazy(() => import('./components/AvisoPrivacidad'));
+const PoliticaCookies = React.lazy(() => import('./components/PoliticaCookies'));
+const Bots = React.lazy(() => import('./components/Bots'));
+const ProduccionAudiovisual = React.lazy(() => import('./components/ProduccionAudiovisual'));
+const EmbudosDeVenta = React.lazy(() => import('./components/EmbudosDeVenta'));
+const GestionRedesSociales = React.lazy(() => import('./components/GestionRedesSociales'));
+const OptimizacionWebSeo = React.lazy(() => import('./components/OptimizacionWebSeo'));
+const CrmSaas = React.lazy(() => import('./components/CrmSaas'));
+const LandingPaqueteDynamic = React.lazy(() => import('./components/LandingPaqueteDynamic'));
+const Login = React.lazy(() => import('./components/Login'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
+const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
+const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
+
+// Animación principal gobernada de forma particular por el Componente Hero.jsx. No requiere background global.
 
 function ScrollToHash() {
   const { hash } = useLocation();
@@ -89,11 +73,9 @@ function PixelTracker() {
 
   useEffect(() => {
     if (isFirstRender.current) {
-      // El index.html ya mandó el primer PageView, así que lo omitimos
       isFirstRender.current = false;
       return;
     }
-    // Solo registrará los cambios de ruta reales (SPA)
     if (window.fbq) {
       window.fbq('track', 'PageView');
     }
@@ -172,42 +154,52 @@ function Home() {
   );
 }
 
+function GlobalSuspenseFallback() {
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#CC0000] font-black text-xl tracking-widest z-50 fixed top-0 left-0">
+      <span className="animate-pulse">CARGANDO RECURSOS...</span>
+    </div>
+  );
+}
+
 function AppLayout() {
   const { pathname } = useLocation();
   const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
 
   return (
-    <div className="font-sans text-white bg-transparent min-h-screen flex flex-col relative w-full overflow-hidden">
-      <PersistentBackground />
-      
+    <div className="font-sans text-white bg-[#050505] min-h-screen flex flex-col relative w-full overflow-hidden">
       {/* Wrapper transparente para eventos del mouse */}
       <div className="relative z-10 flex flex-col flex-grow pointer-events-none">
         <div className="pointer-events-auto w-full">
           {!hideChrome && <Navbar />}
         </div>
+        
         <div className="flex-grow pointer-events-auto">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/terminos" element={<TerminosYCondiciones />} />
-          <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
-          <Route path="/politica-cookies" element={<PoliticaCookies />} />
-          <Route path="/bots" element={<Bots />} />
-          <Route path="/audiovisual" element={<ProduccionAudiovisual />} />
-          <Route path="/embudos" element={<EmbudosDeVenta />} />
-          <Route path="/redes" element={<GestionRedesSociales />} />
-          <Route path="/seo" element={<OptimizacionWebSeo />} />
-          <Route path="/crm" element={<CrmSaas />} />
-          <Route path="/admin" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO GODZILLA STUDIO...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
-          <Route path="/cm" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-blue-500 font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO ASISTENTE CM...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
-          <Route path="/studio" element={<React.Suspense fallback={<div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0a0a] text-[#CC0000] font-black text-xl tracking-widest"><span className="animate-pulse">CARGANDO MOTOR IA...</span></div>}><PrivateRoute><AdminStudio /></PrivateRoute></React.Suspense>} />
-          <Route path="/godzilla-sora" element={<React.Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#05050A] text-white">INICIALIZANDO CLUSTER...</div>}><PrivateRoute><GodzillaSora /></PrivateRoute></React.Suspense>} />
-          <Route path="/recursos/:recursoId" element={<RecursoPage />} />
-          <Route path="/:slug" element={<LandingPaqueteDynamic />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<React.Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center bg-[#0a0a0a] text-white">Cargando panel...</div>}><PrivateRoute><Dashboard /></PrivateRoute></React.Suspense>} />
-          <Route path="/faq" element={<PreguntasFrecuentes />} />
-        </Routes>
-      </div>
+          {/* El Suspense envuelve todas las rutas Lazy */}
+          <Suspense fallback={<GlobalSuspenseFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/terminos" element={<TerminosYCondiciones />} />
+              <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
+              <Route path="/politica-cookies" element={<PoliticaCookies />} />
+              <Route path="/bots" element={<Bots />} />
+              <Route path="/audiovisual" element={<ProduccionAudiovisual />} />
+              <Route path="/embudos" element={<EmbudosDeVenta />} />
+              <Route path="/redes" element={<GestionRedesSociales />} />
+              <Route path="/seo" element={<OptimizacionWebSeo />} />
+              <Route path="/crm" element={<CrmSaas />} />
+              <Route path="/admin" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
+              <Route path="/cm" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
+              <Route path="/studio" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
+              <Route path="/godzilla-sora" element={<PrivateRoute><GodzillaSora /></PrivateRoute>} />
+              <Route path="/recursos/:recursoId" element={<RecursoPage />} />
+              <Route path="/:slug" element={<LandingPaqueteDynamic />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/faq" element={<PreguntasFrecuentes />} />
+            </Routes>
+          </Suspense>
+        </div>
 
         <div className="pointer-events-auto">
           {!hideChrome && <Chatbot />}

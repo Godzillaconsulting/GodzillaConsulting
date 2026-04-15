@@ -246,7 +246,11 @@ export const generateRenderJob = async (req, res) => {
                         });
                         if (response.generatedImages?.[0]?.image?.imageBytes) {
                             const b64 = response.generatedImages[0].image.imageBytes;
-                            resultUrl = `data:image/jpeg;base64,${b64}`;
+                            const buffer = Buffer.from(b64, 'base64');
+                            const fileName = `${taskId}.jpg`;
+                            const savePath = path.join('E:/assets', fileName);
+                            fs.writeFileSync(savePath, buffer);
+                            resultUrl = `/api/sora/media/${fileName}`;
                         }
                     } else {
                         // Gemini 3 Pro Image / Gemini 3.1 Flash Image — generateContent + responseModalities
@@ -266,7 +270,12 @@ export const generateRenderJob = async (req, res) => {
                         for (const part of (response.candidates?.[0]?.content?.parts || [])) {
                             if (part.inlineData?.data) {
                                 const mime = part.inlineData.mimeType || 'image/png';
-                                resultUrl = `data:${mime};base64,${part.inlineData.data}`;
+                                const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1] || 'png';
+                                const buffer = Buffer.from(part.inlineData.data, 'base64');
+                                const fileName = `${taskId}.${ext}`;
+                                const savePath = path.join('E:/assets', fileName);
+                                fs.writeFileSync(savePath, buffer);
+                                resultUrl = `/api/sora/media/${fileName}`;
                                 break;
                             }
                         }

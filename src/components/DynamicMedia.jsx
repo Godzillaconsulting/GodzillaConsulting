@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { getYouTubeId } from './MediaPicker';
 
 /**
@@ -25,23 +25,27 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
 
         if (milestone > 0) {
             hasTracked.current[milestone] = true;
-            // Temporarily disabled /api/analytics/video because the local backend tunnel yields 502 Bad Gateway,
-            // which causes severe UI jank on browsers with strict shields (Brave).
-            /*
-            const backendUrl = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
-            fetch(`${backendUrl}/api/analytics/video`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: sessionStorage.getItem('gz_session_id') || 'unknown',
-                    video_id: src.split('/').pop().substring(0, 50),
-                    percentage: milestone,
-                    drop_off_second: Math.floor(currentTime)
-                })
-            }).catch(() => {});
-            */
+            // Analytics disabled due to Failsafe
         }
     };
+
+    useEffect(() => {
+        if (!videoRef.current) return;
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                // Return gracefully if browsers block autoplay
+                videoRef.current.play().catch(() => {});
+            } else {
+                videoRef.current.pause();
+            }
+        }, { threshold: 0.05 }); // Start buffering slightly before fully visible
+        
+        observer.observe(videoRef.current);
+        return () => {
+            if (videoRef.current) observer.unobserve(videoRef.current);
+            observer.disconnect();
+        };
+    }, [src]);
 
     if (!src || typeof src !== 'string') return null;
 
@@ -68,7 +72,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
                 src={src} 
                 className={className} 
                 style={style} 
-                autoPlay 
+                preload="metadata"
                 loop 
                 muted 
                 playsInline 
@@ -84,6 +88,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
             alt={alt || "Media"} 
             className={className} 
             style={style} 
+            loading="lazy"
             {...props} 
         />
     );

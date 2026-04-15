@@ -38,15 +38,17 @@ const Hero = () => {
                 if (isUploaded) {
                     logos.push(url);
                 } else {
-                    const list = [logoCeoCuts, logoCircleOne, logoDonElote, logoFacemaker, logoGrupoMrg, logoMedhaus, logoNutrisa, logoSanAntonio, logoArtika];
                     const decoded = decodeURIComponent(url).toLowerCase();
-                    const match = list.find(src => {
-                        if(!src) return false;
-                        const dSrc = decodeURIComponent(src).toLowerCase();
-                        const terms = ['ceo cuts', 'circle one', 'don elote', 'facemaker', 'grupo mrg', 'medhaus', 'nutrisa', 'san antonio', 'artika'];
-                        return terms.some(t => dSrc.includes(t) && decoded.includes(t));
-                    });
-                    logos.push(match || url);
+                    if (decoded.includes('ceo cut')) logos.push(logoCeoCuts);
+                    else if (decoded.includes('circle one') || decoded.includes('circle')) logos.push(logoCircleOne);
+                    else if (decoded.includes('don elote') || decoded.includes('elote')) logos.push(logoDonElote);
+                    else if (decoded.includes('facemaker')) logos.push(logoFacemaker);
+                    else if (decoded.includes('mrg') || decoded.includes('grupo') || decoded.includes('banquetes')) logos.push(logoGrupoMrg);
+                    else if (decoded.includes('medhaus') || decoded.includes('médico')) logos.push(logoMedhaus);
+                    else if (decoded.includes('nutrisa')) logos.push(logoNutrisa);
+                    else if (decoded.includes('san antonio')) logos.push(logoSanAntonio);
+                    else if (decoded.includes('artika')) logos.push(logoArtika);
+                    else logos.push(url); // Último recurso
                 }
             }
         }

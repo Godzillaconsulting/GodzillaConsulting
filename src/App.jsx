@@ -22,6 +22,7 @@ import whatsappIcon from './assets/icons/WhatsApp (white).png';
 
 // Lazy loading para optimizar el peso del compilado de Vite
 const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
+const ErrorBoundary = React.lazy(() => import('./components/ErrorBoundary'));
 const TerminosYCondiciones = React.lazy(() => import('./components/TerminosYCondiciones'));
 const AvisoPrivacidad = React.lazy(() => import('./components/AvisoPrivacidad'));
 const PoliticaCookies = React.lazy(() => import('./components/PoliticaCookies'));
@@ -193,14 +194,14 @@ function AppLayout() {
               <Route path="/redes" element={<GestionRedesSociales />} />
               <Route path="/seo" element={<OptimizacionWebSeo />} />
               <Route path="/crm" element={<CrmSaas />} />
-              <Route path="/admin" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
-              <Route path="/cm" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
-              <Route path="/studio" element={<PrivateRoute><AdminStudio /></PrivateRoute>} />
-              <Route path="/godzilla-sora" element={<PrivateRoute><GodzillaSora /></PrivateRoute>} />
+              <Route path="/admin" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+              <Route path="/cm" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+              <Route path="/studio" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+              <Route path="/godzilla-sora" element={<ErrorBoundary><PrivateRoute><GodzillaSora /></PrivateRoute></ErrorBoundary>} />
               <Route path="/recursos/:recursoId" element={<RecursoPage />} />
               <Route path="/:slug" element={<LandingPaqueteDynamic />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/dashboard" element={<ErrorBoundary><PrivateRoute><Dashboard /></PrivateRoute></ErrorBoundary>} />
               <Route path="/faq" element={<PreguntasFrecuentes />} />
             </Routes>
           </Suspense>

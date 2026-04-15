@@ -46,15 +46,22 @@ const RecursoPage = ({ previewRecursoId }) => {
   // Merge the dynamically pulled node data with our base RECURSOS_DATA fallback
   const data = React.useMemo(() => {
       if (!defaultData) return null;
+      let imgUrl = (nodeData?.mainImageUrl && (nodeData.mainImageUrl.startsWith('http') || nodeData.mainImageUrl.startsWith('/api/media')) && !nodeData.mainImageUrl.includes('/assets/')) 
+                   ? nodeData.mainImageUrl 
+                   : (defaultData?.imageUrl || nodeData?.mainImageUrl);
+      
+      if (typeof imgUrl === 'string' && imgUrl.startsWith('/api/media')) {
+          const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+          imgUrl = `${API_URL}${imgUrl}`;
+      }
+
       return {
           title: nodeData?.title || defaultData.title,
           description: nodeData?.description || defaultData.description,
           bottomText: nodeData?.bottomText || defaultData.bottomText,
           buttonText: nodeData?.buttonText || 'Download Resource',
           buttonDestination: nodeData?.buttonDestination || defaultData.downloadUrl || '#',
-          imageUrl: (nodeData?.mainImageUrl && (nodeData.mainImageUrl.startsWith('http') || nodeData.mainImageUrl.startsWith('/api/media')) && !nodeData.mainImageUrl.includes('/assets/')) 
-                       ? nodeData.mainImageUrl 
-                       : (defaultData?.imageUrl || nodeData?.mainImageUrl)
+          imageUrl: imgUrl
       };
   }, [nodeData, defaultData]);
 

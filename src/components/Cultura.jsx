@@ -3,8 +3,9 @@ import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import { getYouTubeId } from './MediaPicker';
 import DynamicMedia from './DynamicMedia';
-const culturaImage = '/api/media/assets/Nuestra cultura image.jpg';
-const culturaVideo = '/api/media/assets/Particulas Rojas.mp4';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const culturaImage = `${API_URL}/api/media/assets/Nuestra%20cultura%20image.jpg`;
+const culturaVideo = `${API_URL}/api/media/assets/Particulas%20Rojas.mp4`;
 import { trackGodzillaEvent } from '../utils/analyticsHelper';
 
 const Cultura = () => {
@@ -21,9 +22,13 @@ const Cultura = () => {
   }
 
   // Prevenir que un string vacío reviva a Godzilla en el fondo:
-  const finalBgVideo = nodeData.bgVideoUrl !== undefined && nodeData.bgVideoUrl !== '' 
+  let finalBgVideo = nodeData.bgVideoUrl !== undefined && nodeData.bgVideoUrl !== '' 
       ? nodeData.bgVideoUrl 
       : (nodeData.bgVideoUrl === '' ? '' : culturaVideo);
+
+  if (typeof finalBgVideo === 'string' && finalBgVideo.startsWith('/api/media')) {
+      finalBgVideo = `${API_URL}${finalBgVideo}`;
+  }
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);

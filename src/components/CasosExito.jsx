@@ -85,21 +85,29 @@ const CasosExito = () => {
 
     const getLogoSrc = (item) => {
         // 1. Si viene de Sanity con imagen
-        if (item.logo) return urlFor(item.logo).width(500).url();
+        if (item.logo) {
+            try {
+                return urlFor(item.logo).width(500).url();
+            } catch(e) {
+                console.warn('Sanity image-url deprecated fail', e);
+            }
+        }
 
-        // 2. Check if the logoSrc is a valid absolute uploaded URL (Vercel blob, etc)
-        const isUploaded = item.logoSrc && (item.logoSrc.startsWith('http') || item.logoSrc.startsWith('/api/media')) && !item.logoSrc.startsWith('/assets/') && !item.logoSrc.includes('../assets/');
-        if (isUploaded) return item.logoSrc;
+        // 2. Fallback inquebrantable para asegurar que las imágenes estáticas nunca rompan
+        if (item.logoSrc && typeof item.logoSrc === 'string') {
+            const lc = item.logoSrc.toLowerCase();
+            if (lc.includes('medhaus')) return logoMedhaus;
+            if (lc.includes('artika')) return logoArtika;
+            if (lc.includes('mrg')) return logoGrupoMrg;
+            if (lc.includes('facemaker')) return logoFacemaker;
+            if (lc.includes('circle')) return logoCircleOne;
+            if (lc.includes('ceo')) return logoCeoCuts;
+            
+            // Si es un Blob subido en local o nube
+            if (lc.startsWith('http') || lc.startsWith('/api/media')) return item.logoSrc; 
+        }
 
-        // 3. Fallback: Si es una ruta local vieja (/assets/...) se rompe en producción debido a los hashes de Vite.
-        // Buscamos el import estático actual basado en el nombre.
-        const fallback = defaultCases.find(d =>
-            item.nombre && d.nombre &&
-            (item.nombre.toLowerCase().includes(d.nombre.toLowerCase()) ||
-                d.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
-        );
-
-        return fallback ? fallback.logoSrc : (item.logoSrc || null);
+        return logoFacemaker; // Fallback definitivo anti-cuadro-negro
     };
 
     // Auto-scroll loop usando RAF

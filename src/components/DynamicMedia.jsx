@@ -25,6 +25,9 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
 
         if (milestone > 0) {
             hasTracked.current[milestone] = true;
+            // Temporarily disabled /api/analytics/video because the local backend tunnel yields 502 Bad Gateway,
+            // which causes severe UI jank on browsers with strict shields (Brave).
+            /*
             const backendUrl = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
             fetch(`${backendUrl}/api/analytics/video`, {
                 method: 'POST',
@@ -36,6 +39,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
                     drop_off_second: Math.floor(currentTime)
                 })
             }).catch(() => {});
+            */
         }
     };
 

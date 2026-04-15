@@ -385,11 +385,19 @@ export default function AdminStudio() {
      if (resDraft.status === 401 || resDraft.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
      throw new Error(`Error guardando el borrador: HTTP ${resDraft.status} ${txt}`);
  }
- const resPub = await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers });
+ await new Promise(r => setTimeout(r, 600)); // Debounce TCP proxy pipeline delays
+ 
+ let resPub;
+ for (let i = 0; i < 3; i++) {
+     resPub = await fetch(`${base}/api/nodes/${selectedNodeId}/publish`, { method:'POST', headers, body: JSON.stringify({}) }); // Agregado payload {} para WAFs
+     if (resPub.ok || resPub.status !== 502) break; // Si funcionó, o si es un error controlable (401, 500), sal del retry. Solo reintenta caídas 502/504
+     await new Promise(r => setTimeout(r, 1200));   // Esperar antes de reintentar
+ }
+ 
  if (!resPub.ok) {
      const txt = await resPub.text().catch(()=>'');
      if (resPub.status === 401 || resPub.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
-     throw new Error(`Error aplicando la publicación final: HTTP ${resPub.status} ${txt}`);
+     throw new Error(`Error aplicando la publicación final tras reintentos: HTTP ${resPub.status} ${txt}`);
  }
  await fetchNodes();
  setShowPublishModal(false);

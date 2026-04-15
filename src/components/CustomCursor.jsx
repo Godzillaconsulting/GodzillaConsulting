@@ -90,10 +90,10 @@ export default function CustomCursor() {
           y: cursorY,
           opacity: isVisible ? 1 : 0
         }}
-        className="fixed top-0 left-0 w-2.5 h-2.5 bg-[#CC0000] rounded-full pointer-events-none z-[99999] -translate-x-1/2 -translate-y-1/2"
+        className="fixed top-0 left-0 w-3 h-3 bg-[#CC0000] border-[1px] border-white/60 shadow-[0_0_8px_rgba(255,255,255,0.4)] rounded-full pointer-events-none z-[99999] -translate-x-1/2 -translate-y-1/2"
       />
 
-      {/* Trailing Outline Ring (Delayed Spring) */}
+      {/* Cinematic Motion Blur Trail (Delayed Spring) */}
       <motion.div
         style={{
           x: cursorXSpring,
@@ -101,13 +101,12 @@ export default function CustomCursor() {
           opacity: isVisible ? 1 : 0,
         }}
         animate={{
-          width: isHovering ? 48 : 32,
-          height: isHovering ? 48 : 32,
-          backgroundColor: isHovering ? 'rgba(204, 0, 0, 0.15)' : 'rgba(204, 0, 0, 0)',
-          borderColor: isHovering ? 'rgba(204, 0, 0, 0)' : 'rgba(204, 0, 0, 0.5)'
+          width: isHovering ? 60 : 36,
+          height: isHovering ? 60 : 36,
+          backgroundColor: isHovering ? 'rgba(204, 0, 0, 0.4)' : 'rgba(204, 0, 0, 0.6)',
         }}
-        transition={{ type: "tween", duration: 0.15, ease: "easeOut" }}
-        className="fixed top-0 left-0 pointer-events-none z-[99999] rounded-full border border-[#CC0000] -translate-x-1/2 -translate-y-1/2"
+        transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+        className="fixed top-0 left-0 pointer-events-none z-[99998] rounded-full blur-[5px] mix-blend-screen -translate-x-1/2 -translate-y-1/2"
       />
     </>
   );

@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 
-import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
+import { SYSTEM_PROMPT, chatTools, withTimeout } from "../config/zilla-prompt.js";
 import { GOYI_SYSTEM_PROMPT, goyiChatTools } from "../config/goyi-prompt.js";
 
 // Helper: extrae datos de cita del texto de la conversación
@@ -75,7 +75,7 @@ export const processChatMessage = async (req, res) => {
 
         let history = messages.slice(0, -1).map(m => ({
             role: m.role === "assistant" || m.role === "model" ? "model" : "user",
-            parts: [{ text: m.content || m.text || "" }]
+            parts: [{ text: m.content || m.text ? String(m.content || m.text) : " " }]
         }));
         
         let validIndex = history.findIndex(m => m.role === "user");
@@ -83,6 +83,11 @@ export const processChatMessage = async (req, res) => {
             history = [];
         } else if (validIndex > 0) {
             history = history.slice(validIndex);
+        }
+
+        // REGLA ESTRICTA DE GEMINI: Si el historial no es par (termina en 'user'), Gemini colapsa arrojando Error 400.
+        if (history.length > 0 && history[history.length - 1].role === "user") {
+            history.pop(); // Removemos el último 'user' atrapado en limbo para restaurar el balance.
         }
 
         // --- CEREBRO ENJAMBRE DE GOYI (Memoria de todos los usuarios) ---
@@ -102,9 +107,9 @@ export const processChatMessage = async (req, res) => {
 
         const chat = model.startChat({ history });
         const lastMsgRaw = messages[messages.length - 1];
-        const lastMsg = lastMsgRaw.content || lastMsgRaw.text || "Hola";
+        const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        let result = await chat.sendMessage(lastMsg);
+        let result = await withTimeout(chat.sendMessage(lastMsg), "Lo siento, mis circuitos están tardando más de lo usual analizando tus datos. ¿Podrías ser más específico con tu solicitud?");
         let responseText = "";
         try { responseText = result.response.text(); } catch(e) {}
 
@@ -117,48 +122,44 @@ export const processChatMessage = async (req, res) => {
             for (const call of functionCalls) {
                 let fRes = {};
                 if (call.name === "check_availability") {
-                    const { fecha, hora } = call.args;
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                    const disponible = parseInt(r.rows[0].count) === 0;
-                    fRes = { disponible };
+                    try {
+                        const { fecha, hora } = call.args;
+                        if (!fecha || !hora) throw new Error("Parámetros incompletos de IA");
+                        const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
+                        const disponible = parseInt(r.rows[0].count) === 0;
+                        fRes = { disponible };
 
-                    // ── GUARDADO AUTOMÁTICO ─────────────────────────────────────────────
-                    // Si hay disponibilidad Y tenemos todos los datos, guardamos aquí
-                    // como respaldo por si Gemini no llama save_appointment por separado
-                    if (disponible) {
-                        const fullText = messages.map(m => m.content || m.text || '').join(' ');
-                        const appt = extractAppointmentData(fullText);
+                        // ── GUARDADO AUTOMÁTICO ─────────────────────────────────────────────
+                        if (disponible) {
+                            const fullText = messages.map(m => m.content || m.text || '').join(' ');
+                            const appt = extractAppointmentData(fullText);
 
-                        if (appt.hasAll) {
-                            console.log(`[AutoSave] Activado para ${appt.nombre} (${appt.correo}) - ${fecha} ${hora}`);
-                            try {
-                                const googleRes = await agendarEnGoogleCalendar({
-                                    nombre: appt.nombre,
-                                    correo: appt.correo,
-                                    telefono: appt.telefono,
-                                    servicio: appt.servicio,
-                                    fecha, hora,
-                                    notas: appt.notas
-                                });
-                                if (googleRes && googleRes.id) {
-                                    const saved = await pool.query(
-                                        `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
-                                         VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
-                                        [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas, googleRes.id]
-                                     );
-                                     console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.id}`);
-                                     // Enviar confirmación por email (fire & forget)
-                                     sendCitaConfirmationEmail({
-                                         nombre: appt.nombre, email: appt.correo,
-                                         fecha, hora, tipoSesion: appt.servicio,
-                                         personalCalendarLink: googleRes.personalCalendarLink,
-                                     }).catch(e => console.error('[AutoSave] Email falló:', e.message));
-                                     fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
-                                }
-                            } catch (autoErr) {
-                                console.error('[AutoSave] ❌ Error:', autoErr.message);
+                            if (appt.hasAll) {
+                                console.log(`[AutoSave] Activado para ${appt.nombre} (${appt.correo}) - ${fecha} ${hora}`);
+                                try {
+                                    const googleRes = await agendarEnGoogleCalendar({
+                                        nombre: appt.nombre, correo: appt.correo, telefono: appt.telefono,
+                                        servicio: appt.servicio, fecha, hora, notas: appt.notas
+                                    });
+                                    if (googleRes && googleRes.id) {
+                                        const saved = await pool.query(
+                                            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
+                                             VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
+                                            [appt.nombre, appt.correo, appt.telefono, appt.servicio, fecha, hora, appt.notas, googleRes.id]
+                                         );
+                                         console.log(`[AutoSave] ✅ Cita #${saved.rows[0].id} guardada. Calendar: ${googleRes.id}`);
+                                         sendCitaConfirmationEmail({
+                                             nombre: appt.nombre, email: appt.correo, fecha, hora, tipoSesion: appt.servicio,
+                                             personalCalendarLink: googleRes.personalCalendarLink,
+                                         }).catch(e => console.error('[AutoSave] Email falló:', e.message));
+                                         fRes = { disponible: true, auto_saved: true, cita_id: saved.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink, google_link: googleRes.htmlLink };
+                                    }
+                                } catch (autoErr) { console.error('[AutoSave] ❌ Error:', autoErr.message); }
                             }
                         }
+                    } catch (dbErr) {
+                        console.error('[check_availability] Error:', dbErr.message);
+                        fRes = { error: "Error en base de datos. Pide al usuario clarificar la fecha y hora." };
                     }
                 } else if (call.name === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
@@ -195,8 +196,10 @@ export const processChatMessage = async (req, res) => {
                         fRes = { success: false, error: err.message };
                     }
                 } else if (call.name === "get_available_downloads") {
-                    const r = await pool.query("SELECT title, slug FROM lead_magnets");
-                    fRes = { resources: r.rows };
+                    try {
+                        const r = await pool.query("SELECT title, slug FROM lead_magnets");
+                        fRes = { resources: r.rows };
+                    } catch(e) { fRes = { error: "Base de datos inactiva."}; }
                 } else if (call.name === "view_file") {
                     const isGodMode = ["jareg", "godzilla_admin"].includes(currentUser?.toLowerCase());
                     if (!isGodMode) {
@@ -228,7 +231,7 @@ export const processChatMessage = async (req, res) => {
                 });
             }
             
-            result = await chat.sendMessage(functionResponses);
+            result = await withTimeout(chat.sendMessage(functionResponses), "Procesé los datos en mis bases pero surgió un contratiempo. ¿Continuamos?");
             try { responseText = result.response.text(); } catch(e) {}
         }
 

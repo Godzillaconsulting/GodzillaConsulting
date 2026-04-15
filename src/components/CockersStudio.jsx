@@ -38,7 +38,7 @@ export default function CockersStudio({ adminProfile }) {
             const refineRes = await fetch('/api/studio/refine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ imageUrl: slot.url, prompt: prompt || 'hyper-realistic', 'high quality, masterpiece, 8k, ultra detail' })
+                body: JSON.stringify({ imageUrl: slot.url, prompt: `${prompt || 'hyper-realistic'}, high quality, masterpiece, 8k, ultra detail` })
             });
             const refineData = await refineRes.json();
             if (!refineRes.ok || !refineData.job_id) throw new Error(refineData.error || 'Error iniciando Ultra Variant');

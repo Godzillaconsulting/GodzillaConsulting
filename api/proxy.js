@@ -20,10 +20,12 @@ export default async function handler(req, res) {
 
     try {
         // Construir headers a pasar al backend (filtrar los que Vercel inyecta)
+        const PROXY_SECRET = process.env.PROXY_SECRET || 'Zilla-5uper-S3cr3t-2026';
         const forwardHeaders = {
             'Content-Type': req.headers['content-type'] || 'application/json',
             'X-Forwarded-For': req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-            'X-Vercel-Proxy': '1', // Identificador para whitelist futura
+            'X-Vercel-Proxy': '1', 
+            'X-Vercel-Proxy-Secret': PROXY_SECRET
         };
         if (req.headers.authorization) forwardHeaders['Authorization'] = req.headers.authorization;
 

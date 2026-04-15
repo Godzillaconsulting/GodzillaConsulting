@@ -72,3 +72,11 @@ server/ig_setup.mjs
 
 # Puppeteer IG session
 server/.puppeteer_ig_profile/
+
+# Archivos temporales / test scripts — NUNCA subir al repositorio
+tmp/
+*.test.js
+*.spec.js
+test_*.js
+*_test.js
+debug_*.js

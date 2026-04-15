@@ -46,13 +46,12 @@ const Footer = () => {
                     </div>
 
                     {/* Legal Links */}
-                    <div className="lg:px-8 xl:px-12 lg:border-l border-white/30 flex flex-col justify-end pb-1 pt-12 lg:pt-0">
+                    <div className="lg:px-8 xl:px-12 lg:border-l border-white/30 pt-12 lg:pt-0">
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{fd.legalTitle || 'Legal'}</h4>
                         <div className="flex flex-col gap-4">
-                            {fd.legalLink1 && fd.legalUrl1 && <Link to={fd.legalUrl1} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink1}</Link>}
-                            {fd.legalLink2 && fd.legalUrl2 && <Link to={fd.legalUrl2} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink2}</Link>}
-                            {fd.legalLink3 && fd.legalUrl3 && <Link to={fd.legalUrl3} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink3}</Link>}
-                            {fd.legalLink4 && fd.legalUrl4 && <Link to={fd.legalUrl4} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink4}</Link>}
-                            {fd.legalLink5 && fd.legalUrl5 && <Link to={fd.legalUrl5} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink5}</Link>}
+                            <Link to={fd.legalUrl1 || '/terminos'} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink1 || 'Términos y condiciones'}</Link>
+                            <Link to={fd.legalUrl2 || '/aviso-privacidad'} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink2 || 'Aviso de Privacidad'}</Link>
+                            <Link to={fd.legalUrl3 || '/politica-cookies'} className="hover:text-red-200 transition-colors font-medium text-sm">{fd.legalLink3 || 'Política de cookies'}</Link>
                         </div>
                     </div>
 

@@ -9,9 +9,12 @@ import { getYouTubeId } from './MediaPicker';
 export default function DynamicMedia({ src, alt, className, style, ...props }) {
     let finalSrc = src;
     if (typeof src === 'string') {
-        if (src.startsWith('/api/media')) {
+        if (finalSrc.includes('godzillaconsulting.ai/api/media')) {
+            finalSrc = finalSrc.replace(/https?:\/\/(www\.)?godzillaconsulting\.ai/g, 'https://bot.godzillaconsulting.ai');
+        }
+        if (finalSrc.startsWith('/api/media')) {
             const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-            finalSrc = `${API_URL}${src}`;
+            finalSrc = `${API_URL}${finalSrc}`;
         }
         if (finalSrc.includes('/api/media') && !finalSrc.includes('v=cf2')) {
             finalSrc += (finalSrc.includes('?') ? '&' : '?') + 'v=cf2';

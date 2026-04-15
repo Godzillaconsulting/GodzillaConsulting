@@ -27,6 +27,9 @@ const Cultura = () => {
       : (nodeData.bgVideoUrl === '' ? '' : culturaVideo);
 
   if (typeof finalBgVideo === 'string') {
+      if (finalBgVideo.includes('godzillaconsulting.ai/api/media')) {
+          finalBgVideo = finalBgVideo.replace(/https?:\/\/(www\.)?godzillaconsulting\.ai/g, 'https://bot.godzillaconsulting.ai');
+      }
       if (finalBgVideo.startsWith('/api/media')) {
           finalBgVideo = `${API_URL}${finalBgVideo}`;
       }

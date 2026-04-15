@@ -51,6 +51,9 @@ const RecursoPage = ({ previewRecursoId }) => {
                    : (defaultData?.imageUrl || nodeData?.mainImageUrl);
       
       if (typeof imgUrl === 'string') {
+          if (imgUrl.includes('godzillaconsulting.ai/api/media')) {
+              imgUrl = imgUrl.replace(/https?:\/\/(www\.)?godzillaconsulting\.ai/g, 'https://bot.godzillaconsulting.ai');
+          }
           if (imgUrl.startsWith('/api/media')) {
               const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
               imgUrl = `${API_URL}${imgUrl}`;

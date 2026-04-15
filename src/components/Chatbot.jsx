@@ -41,6 +41,11 @@ const Chatbot = () => {
         scrollToBottom();
     }, [messages, isOpen]);
 
+    // En producción llama directo al backend — bypass completo del proxy de Vercel
+    const API_BASE = import.meta.env.DEV
+        ? 'http://localhost:3000'
+        : 'https://bot.godzillaconsulting.ai';
+
     // Retry automático: si el túnel falla intermitentemente, reintenta hasta 3 veces antes de mostrar error
     const fetchChatWithRetry = async (messages, maxRetries = 3) => {
         const ERROR_MARKER = 'Lo siento, ha ocurrido un error';
@@ -49,7 +54,7 @@ const Chatbot = () => {
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                const response = await fetch('/api/chat', {
+                const response = await fetch(`${API_BASE}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messages: cleanMessages }),

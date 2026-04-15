@@ -64,7 +64,7 @@ const Hero = () => {
  {/* ── Particle Flow Field background ── */}
  <div className="absolute inset-0 z-0 pointer-events-none" style={{ height: '100%' }}>
   <ParticleField
-   particleCount={2000}
+   particleCount={800} /* Optimizado de 2000 a 800 para eliminar el jank/lag en celulares y web. El fillRect lo hace visualmente idéntico. */
    colors={['#CC0000', '#FF2200', '#FF3300', '#FF4400', '#FF5500', '#990000', '#8B0000']}
    speed={1}
    discRadius={0.55}

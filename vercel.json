@@ -1,5 +1,10 @@
 {
     "version": 2,
+    "functions": {
+        "api/proxy.js": {
+            "maxDuration": 60
+        }
+    },
     "builds": [
         {
             "src": "package.json",
@@ -12,7 +17,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://bot.godzillaconsulting.ai/api/:path*"
+            "destination": "/api/proxy?path=:path*"
         },
         {
             "source": "/:path*",

@@ -47,9 +47,9 @@ export default async function handler(req, res) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'no-store');
 
-        // Stream la respuesta
-        const data = await backendRes.text();
-        res.send(data);
+        // Stream la respuesta soportando archivos binarios
+        const arrayBuffer = await backendRes.arrayBuffer();
+        res.send(Buffer.from(arrayBuffer));
 
     } catch (err) {
         console.error('[PROXY ERROR]', err.message);

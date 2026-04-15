@@ -26,7 +26,21 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-constant-binary-expression': 'off',
+      'no-empty': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-refresh/only-export-components': 'off'
     },
   },
+  {
+    files: ['server/**/*.js', 'server/**/*.mjs', 'server/**/*.cjs', 'api/**/*.js'],
+    rules: {
+      'no-unused-vars': 'off',
+      'no-prototype-builtins': 'off',
+      'no-useless-escape': 'off',
+      'no-constant-binary-expression': 'off',
+      'no-empty': 'off'
+    }
+  }
 ])

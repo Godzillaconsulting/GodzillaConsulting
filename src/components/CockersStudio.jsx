@@ -559,8 +559,8 @@ export default function CockersStudio({ adminProfile }) {
         }
 
         const enginesToRun = genMode === 'video'
-            ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
+            ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos', 'Kling V1']
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image', 'GotSora T2I'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -1431,16 +1431,7 @@ export default function CockersStudio({ adminProfile }) {
                     </motion.div>
                 )}
 
-                {renderingAI && (
-                    <div className="flex flex-col items-center justify-center p-12 bg-neutral-900/50 rounded-3xl border border-neutral-800 shadow-2xl backdrop-blur-md">
-                        <div className="w-16 h-16 border-4 border-neutral-700 border-t-white rounded-full animate-spin mb-6 relative flex items-center justify-center">
-                            <span className="absolute text-[10px] font-bold text-white mt-1.5">{renderProgress > 0 ? `${renderProgress}%` : ''}</span>
-                        </div>
-                        <p className="text-lg font-bold text-white tracking-widest">The Trinity Engines are rendering...</p>
-                        {renderProgress > 0 && <p className="text-[#CC0000] font-black tracking-widest text-sm mt-2">{renderProgress}% Completado</p>}
-                        <p className="text-xs text-neutral-500 mt-2">Patience, director.</p>
-                    </div>
-                )}
+                {/* Loader removido a peticion del director, el espacio ahora es para el 4to motor */}
 
                 {/* Resultados: Opciones Renderizadas */}
                 {selectedDraft && selectedDraft.media_options?.length > 0 && !renderingAI && (

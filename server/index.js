@@ -60,6 +60,17 @@ if (!process.env.VERCEL) {
     }));
 }
 
+// Protección contra Accesos Directos sin Proxy
+const PROXY_SECRET = process.env.PROXY_SECRET || 'Zilla-5uper-S3cr3t-2026';
+app.use((req, res, next) => {
+    if (req.headers['x-vercel-proxy'] === '1') {
+        if (req.headers['x-vercel-proxy-secret'] !== PROXY_SECRET) {
+            return res.status(403).json({ error: '🚨 Firewall: Secret Invalido. Acceso denegado.' });
+        }
+    }
+    next();
+});
+
 // Cabecera anti-fingerprinting: oculta que es Express
 app.disable('x-powered-by');
 
@@ -73,10 +84,11 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app') || origin.includes('localhost')) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('vercel.app')) {
             callback(null, true);
         } else {
-            callback(new Error('Bloqueado por CORS: Origen no permitido.'));
+            callback(new Error('Bloqueado por CORS de Godzilla: Origen no autorizado.'));
         }
     },
     methods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
@@ -360,6 +372,14 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
 });
 
+// Global Error Handler (Prevents crashes like SyntaxError from body-parser)
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: 'JSON malformado' });
+    }
+    console.error('[GLOBAL ERROR HANDLER]', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
 
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)

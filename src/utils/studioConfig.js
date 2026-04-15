@@ -50,18 +50,22 @@ export function injectSectionDefaults(nodeId, draftSource) {
   }
 
 
-  // Inject logos for Hero section so they can be modified
-  if (nodeId === 'hero' && combinedData.logoUrl1 === undefined) {
-    combinedData.logoUrl1 = logoCeoCuts;
-    combinedData.logoUrl2 = logoCircleOne;
-    combinedData.logoUrl3 = logoDonElote;
-    combinedData.logoUrl4 = logoFacemaker;
-    combinedData.logoUrl5 = logoGrupoMrg;
-    combinedData.logoUrl6 = logoMedhaus;
-    combinedData.logoUrl7 = logoNutrisa;
-    combinedData.logoUrl8 = logoSanAntonio;
-    combinedData.logoUrl9 = logoArtika;
-    combinedData.logoUrl10 = '';
+  // Inject logos and text fields for Hero section so they can be modified
+  if (nodeId === 'hero') {
+    if (combinedData.title === undefined) combinedData.title = "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
+    if (combinedData.subtitle === undefined) combinedData.subtitle = 'El único sistema de marketing que instala un "Recepcionista Digital" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.';
+    if (combinedData.ctaText === undefined) combinedData.ctaText = "Ver planes y garantías";
+
+    if (combinedData.logoUrl1 === undefined) combinedData.logoUrl1 = logoCeoCuts;
+    if (combinedData.logoUrl2 === undefined) combinedData.logoUrl2 = logoCircleOne;
+    if (combinedData.logoUrl3 === undefined) combinedData.logoUrl3 = logoDonElote;
+    if (combinedData.logoUrl4 === undefined) combinedData.logoUrl4 = logoFacemaker;
+    if (combinedData.logoUrl5 === undefined) combinedData.logoUrl5 = logoGrupoMrg;
+    if (combinedData.logoUrl6 === undefined) combinedData.logoUrl6 = logoMedhaus;
+    if (combinedData.logoUrl7 === undefined) combinedData.logoUrl7 = logoNutrisa;
+    if (combinedData.logoUrl8 === undefined) combinedData.logoUrl8 = logoSanAntonio;
+    if (combinedData.logoUrl9 === undefined) combinedData.logoUrl9 = logoArtika;
+    if (combinedData.logoUrl10 === undefined) combinedData.logoUrl10 = '';
   }
 
   // Inject video and gifs for Servicios section so they can be modified

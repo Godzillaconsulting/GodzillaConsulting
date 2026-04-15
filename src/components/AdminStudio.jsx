@@ -652,6 +652,9 @@ export default function AdminStudio() {
   <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
   </button>
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'social_studio') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <CockersStudio adminProfile={adminProfile} />
+  </div>
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
  ) : activeSection ==='profile' ? (
@@ -661,7 +664,7 @@ export default function AdminStudio() {
   ) : activeSection ==='social' ? (
       <CMCalendar adminProfile={adminProfile} />
 ) : activeSection === 'social_studio' ? (
-      <CockersStudio adminProfile={adminProfile} />
+      null /* Renderizado persistentemente arriba para evitar pérdida de estado de renders IA */
   ) : activeSection === 'db_studio' ? (
       <DBStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'bugs' ? (

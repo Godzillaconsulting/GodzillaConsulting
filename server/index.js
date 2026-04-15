@@ -361,6 +361,15 @@ app.get('*', (req, res) => {
 });
 
 
+// Global Error Handler (Prevents crashes like SyntaxError from body-parser)
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: 'JSON malformado' });
+    }
+    console.error('[GLOBAL ERROR HANDLER]', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
+
 // ==========================================
 // 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================

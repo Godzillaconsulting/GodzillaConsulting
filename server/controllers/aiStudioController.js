@@ -41,6 +41,8 @@ export const generateRenderJob = async (req, res) => {
                 let instruction = '';
                 if (engine.includes('Google Imagen') || engine.includes('Google Vision')) {
                     instruction = `You are a commercial photography director. Translate this concept into a detailed photographic direction prompt in English. Focus on lighting, composition, mood and technical camera details. Respond ONLY with the prompt, no preamble: ${prompt}`;
+                } else {
+                    instruction = `You are a professional video AI cinematographer. The user has provided a concept. You must translate and summarize it into a concise, highly visual prompt in English specifically for video generation models (like Sora, Kling, Veo). CRITICAL: Keep it well UNDER 800 characters! Focus on subject action, camera movement, and overall aesthetic. Strip out excessive micro-details. Respond ONLY with the prompt, no preamble: ${prompt}`;
                 }
 
                 if (instruction) {
@@ -173,7 +175,7 @@ export const generateRenderJob = async (req, res) => {
                     const hBody = {
                         model: engine.includes('Fast') ? 'higgsfield-fast' : 'cosmos',
                         prompt: finalPromptToUse,
-                        duration: config?.duration || 5,
+                        duration: parseInt(config?.duration || "5", 10),
                         aspect_ratio: config?.aspect_ratio || '16:9'
                     };
 
@@ -204,7 +206,7 @@ export const generateRenderJob = async (req, res) => {
             
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
-            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.
+            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-2.0-flash' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.
             console.log(`[STUDIO] Generando Foto Comercial simulando llamada Google. Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -217,13 +219,12 @@ export const generateRenderJob = async (req, res) => {
 
             // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)
             (async () => {
+                const finalPromptToUse = optimizedPrompt || prompt;
                 try {
-                    const finalPromptToUse = optimizedPrompt || prompt;
-
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
-                    const modelName = getModelId(engine) || 'gemini-3.1-flash-image-preview';
+                    const modelName = getModelId(engine) || 'gemini-2.0-flash';
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 

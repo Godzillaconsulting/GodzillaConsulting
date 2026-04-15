@@ -76,4 +76,5 @@ export function SiteProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSiteData = () => useContext(SiteContext);

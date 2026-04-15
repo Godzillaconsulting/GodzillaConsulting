@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 export default function CustomCursor() {
@@ -63,8 +64,14 @@ export default function CustomCursor() {
     };
   }, [cursorX, cursorY, isVisible]);
 
-  // If touch device or SSR, render nothing
-  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+  const { pathname } = useLocation();
+  const hiddenRoutes = ['/admin', '/cm', '/studio', '/login', '/dashboard', '/godzilla-sora'];
+
+  // If touch device, SSR, or inside an admin/system route, render nothing (revert to native cursor)
+  if (
+    (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) ||
+    hiddenRoutes.some(route => pathname.startsWith(route))
+  ) {
     return null;
   }
 

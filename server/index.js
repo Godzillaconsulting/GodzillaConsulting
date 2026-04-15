@@ -53,6 +53,7 @@ if (!process.env.VERCEL) {
     app.use(helmet({
         contentSecurityPolicy: false, // CSP custom en prod si se necesita
         crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false, // Permitir cargar imágenes desde el frontend cross-origin
         hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
         referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
         xContentTypeOptions: true,      // Previene MIME sniffing
@@ -63,6 +64,7 @@ if (!process.env.VERCEL) {
 // Protección contra Accesos Directos sin Proxy
 const PROXY_SECRET = process.env.PROXY_SECRET || 'Zilla-5uper-S3cr3t-2026';
 app.use((req, res, next) => {
+    // Si la cabecera dice Vercel Proxy, exigimos el secreto.
     if (req.headers['x-vercel-proxy'] === '1') {
         if (req.headers['x-vercel-proxy-secret'] !== PROXY_SECRET) {
             return res.status(403).json({ error: '🚨 Firewall: Secret Invalido. Acceso denegado.' });
@@ -84,6 +86,7 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
+        // En prod, si origin existe y no está en la lista blanca, bloquearlo.
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('vercel.app')) {
             callback(null, true);

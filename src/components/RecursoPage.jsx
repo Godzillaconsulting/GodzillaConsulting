@@ -46,15 +46,30 @@ const RecursoPage = ({ previewRecursoId }) => {
   // Merge the dynamically pulled node data with our base RECURSOS_DATA fallback
   const data = React.useMemo(() => {
       if (!defaultData) return null;
+      let imgUrl = (nodeData?.mainImageUrl && (nodeData.mainImageUrl.startsWith('http') || nodeData.mainImageUrl.startsWith('/api/media')) && !nodeData.mainImageUrl.includes('/assets/')) 
+                   ? nodeData.mainImageUrl 
+                   : (defaultData?.imageUrl || nodeData?.mainImageUrl);
+      
+      if (typeof imgUrl === 'string') {
+          if (imgUrl.includes('godzillaconsulting.ai/api/media')) {
+              imgUrl = imgUrl.replace(/https?:\/\/(www\.)?godzillaconsulting\.ai/g, 'https://bot.godzillaconsulting.ai');
+          }
+          if (imgUrl.startsWith('/api/media')) {
+              const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+              imgUrl = `${API_URL}${imgUrl}`;
+          }
+          if (imgUrl.includes('/api/media') && !imgUrl.includes('v=cf2')) {
+              imgUrl += (imgUrl.includes('?') ? '&' : '?') + 'v=cf2';
+          }
+      }
+
       return {
           title: nodeData?.title || defaultData.title,
           description: nodeData?.description || defaultData.description,
           bottomText: nodeData?.bottomText || defaultData.bottomText,
           buttonText: nodeData?.buttonText || 'Download Resource',
           buttonDestination: nodeData?.buttonDestination || defaultData.downloadUrl || '#',
-          imageUrl: (nodeData?.mainImageUrl && (nodeData.mainImageUrl.startsWith('http') || nodeData.mainImageUrl.startsWith('/api/media')) && !nodeData.mainImageUrl.includes('/assets/')) 
-                       ? nodeData.mainImageUrl 
-                       : (defaultData?.imageUrl || nodeData?.mainImageUrl)
+          imageUrl: imgUrl
       };
   }, [nodeData, defaultData]);
 
@@ -93,7 +108,7 @@ const RecursoPage = ({ previewRecursoId }) => {
                           setStatus('loading');
                           setErrorMessage('');
                           try {
-                              const res = await fetch(`${'' || ''}/api/resources/send`, {
+                              const res = await fetch(`/api/resources/send`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ email, recursoId })
@@ -105,7 +120,7 @@ const RecursoPage = ({ previewRecursoId }) => {
                                   setStatus('error');
                                   setErrorMessage(resData.error || 'Hubo un error al enviar el recurso.');
                               }
-                          } catch (err) {
+                          } catch {
                               setStatus('error');
                               setErrorMessage('No pudimos conectar con el servidor.');
                           }

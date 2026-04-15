@@ -41,6 +41,41 @@ const Chatbot = () => {
         scrollToBottom();
     }, [messages, isOpen]);
 
+    // Retry automático: si el túnel falla intermitentemente, reintenta hasta 3 veces antes de mostrar error
+    const fetchChatWithRetry = async (messages, maxRetries = 3) => {
+        const ERROR_MARKER = 'Lo siento, ha ocurrido un error';
+        // Filtrar mensajes de error previos del historial — no contaminar el contexto de Gemini
+        const cleanMessages = messages.filter(m => !(m.role === 'model' && m.text.startsWith(ERROR_MARKER)));
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: cleanMessages }),
+                    signal: AbortSignal.timeout(28000), // 28s antes del timeout de Vercel (30s)
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.reply) return data.reply;
+                    throw new Error('Respuesta vacía');
+                }
+                // 502/503: reintenta
+                if ((response.status === 502 || response.status === 503) && attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 1200 * attempt)); // backoff: 1.2s, 2.4s
+                    continue;
+                }
+                throw new Error(`HTTP ${response.status}`);
+            } catch (err) {
+                if (attempt < maxRetries && err.name !== 'TimeoutError') {
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                    continue;
+                }
+                throw err;
+            }
+        }
+    };
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!inputValue.trim()) return;
@@ -51,23 +86,10 @@ const Chatbot = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ messages: newMessages }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al conectar con el servidor.');
-            }
-
-            const data = await response.json();
-
-            setMessages((prev) => [...prev, { role: 'model', text: data.reply }]);
+            const reply = await fetchChatWithRetry(newMessages);
+            setMessages((prev) => [...prev, { role: 'model', text: reply }]);
         } catch (error) {
-            console.error('Error in chat:', error);
+            console.error('Error in chat (agotados reintentos):', error);
             setMessages((prev) => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
         } finally {
             setIsLoading(false);

@@ -36,19 +36,40 @@ export const generateRenderJob = async (req, res) => {
         let optimizedPrompt = prompt;
         try {
             if (process.env.GEMINI_API_KEY) {
-                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const aiDirector = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+                // Plan Ultra: usamos Gemini 2.5 Pro como AI Director para máxima calidad de prompt
+                const aiSDK = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
                 let instruction = '';
-                if (engine.includes('Google Imagen') || engine.includes('Google Vision')) {
-                    instruction = `You are a commercial photography director. Translate this concept into a detailed photographic direction prompt in English. Focus on lighting, composition, mood and technical camera details. Respond ONLY with the prompt, no preamble: ${prompt}`;
+
+                const isImageEngine = !engine.includes('Veo') && !engine.includes('Higgsfield') && !engine.includes('Kling');
+                const isVeoEngine  = engine.includes('Veo');
+
+                if (isImageEngine) {
+                    instruction = `You are a world-class commercial photography director working with the Google Imagen 3 AI.
+Translate the following concept into a detailed English photographic prompt.
+Focus on: lighting style (golden hour, studio, neon), lens (85mm, macro f/2.8, wide-angle), mood, color palette, composition rules, and real-world details.
+CRITICAL: Respond ONLY with the prompt. No preamble, no labels, no explanation. Max 300 characters.
+
+Concept: ${prompt}`;
+                } else if (isVeoEngine) {
+                    instruction = `You are a professional video director and cinematographer for Google Veo 2.
+Translate the following concept into a concise, highly visual English prompt for AI video generation.
+Focus on: camera movement (dolly, tracking, FPV, pan), subject action, lighting, environment, and cinematic style.
+CRITICAL: Keep it well under 700 characters. No narration, no dialogue. Respond ONLY with the prompt.
+
+Concept: ${prompt}`;
+                } else {
+                    // Higgsfield / Kling
+                    instruction = `Translate this video concept into a concise English AI generation prompt under 600 characters. Focus on visual action, camera motion, atmosphere. Respond ONLY with the prompt: ${prompt}`;
                 }
 
-                if (instruction) {
-                    const translation = await aiDirector.generateContent(instruction);
-                    if (translation && translation.response) {
-                        optimizedPrompt = translation.response.text().trim();
-                        console.log(`[AI DIRECTOR] Prompt derivado para ${engine}:\n${optimizedPrompt}`);
-                    }
+                const directorRes = await aiSDK.models.generateContent({
+                    model: 'gemini-2.5-pro-preview-05-06',
+                    contents: [{ role: 'user', parts: [{ text: instruction }] }]
+                });
+                const rawText = directorRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                if (rawText.trim().length > 10) {
+                    optimizedPrompt = rawText.trim();
+                    console.log(`[AI DIRECTOR 🤖 Gemini 2.5 Pro] Prompt para ${engine}:\n${optimizedPrompt}`);
                 }
             }
         } catch (dirErr) {
@@ -173,11 +194,11 @@ export const generateRenderJob = async (req, res) => {
                     const hBody = {
                         model: engine.includes('Fast') ? 'higgsfield-fast' : 'cosmos',
                         prompt: finalPromptToUse,
-                        duration: config?.duration || 5,
+                        duration: parseInt(config?.duration || "5", 10),
                         aspect_ratio: config?.aspect_ratio || '16:9'
                     };
 
-                    const hRes = await fetch('https://api.higgsfield.ai/v1/generation/text-to-video', {
+                    const hRes = await fetch('https://api.higgsfield.ai/v1/videos/generations', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -204,7 +225,7 @@ export const generateRenderJob = async (req, res) => {
             
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
-            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.
+            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-2.0-flash' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.
             console.log(`[STUDIO] Generando Foto Comercial simulando llamada Google. Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -217,20 +238,19 @@ export const generateRenderJob = async (req, res) => {
 
             // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)
             (async () => {
+                const finalPromptToUse = optimizedPrompt || prompt;
                 try {
-                    const finalPromptToUse = optimizedPrompt || prompt;
-
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
-                    const modelName = getModelId(engine) || 'gemini-3.1-flash-image-preview';
+                    let modelName = getModelId(engine) || 'gemini-2.0-flash-preview-image-generation';
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
                     let resultUrl = null;
 
                     if (modelName.startsWith('imagen')) {
-                        // Imagen 4: usa generateImages del SDK @google/genai
+                        // Imagen 3: usa generateImages del SDK @google/genai
                         const response = await ai.models.generateImages({
                             model: modelName,
                             prompt: finalPromptToUse,
@@ -245,7 +265,7 @@ export const generateRenderJob = async (req, res) => {
                             resultUrl = `/api/sora/media/${fileName}`;
                         }
                     } else {
-                        // Gemini 3 Pro Image / Gemini 3.1 Flash Image — generateContent + responseModalities
+                        // Gemini Flash Preview Image Generation — multimodal, acepta imagen de referencia
                         const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')
                             ? [
                                 { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
@@ -256,7 +276,7 @@ export const generateRenderJob = async (req, res) => {
                         const response = await ai.models.generateContent({
                             model: modelName,
                             contents: [{ role: 'user', parts: contentPayload }],
-                            config: { responseModalities: ['TEXT', 'IMAGE'] }
+                            config: { responseModalities: ['IMAGE'] }
                         });
 
                         for (const part of (response.candidates?.[0]?.content?.parts || [])) {
@@ -281,7 +301,7 @@ export const generateRenderJob = async (req, res) => {
                     console.log(`[GOOGLE-VISION] ✅ Imagen generada correctamente. Job: ${taskId}`);
 
                 } catch (e) {
-                    const usedPrompt = finalPromptToUse || prompt;
+                    const usedPrompt = optimizedPrompt || prompt;
                     console.error(`[GOOGLE-VISION] ❌ Error (${engine}):`, e.message);
                     console.log(`[GOOGLE-VISION] 🔄 Fallback a GODZILLA NATIVE TENSOR (Local GPU)...`);
                     try {
@@ -472,35 +492,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
         
 
 
-        if (taskId.startsWith("veo_")) {
-            const rawOpName = taskId.replace("veo_", "");
-            
-            // Poll natively via Google REST as operations API is complex via direct fetch
-            const apiKey = process.env.GEMINI_API_KEY;
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${rawOpName}?key=${apiKey}`);
-            const opData = await response.json();
-            
-            if (opData.error) {
-                return res.status(400).json({ error: opData.error.message });
-            }
-
-            let status = 'processing';
-            let outputUrl = '';
-            
-            if (opData.done) {
-                status = 'succeed';
-                if (opData.response && opData.response.generateVideoResponse) {
-                     outputUrl = opData.response.generateVideoResponse.generatedSamples[0].video.uri;
-                }
-            }
-
-            return res.status(200).json({
-                task_id: taskId,
-                status: status,
-                progress: status === 'succeed' ? 100 : 50,
-                result_url: outputUrl
-            });
-        }
+        // NOTE: veo_live_ jobs are handled above. No other veo_ prefix is used.
 
         let token;
         try {
@@ -635,7 +627,7 @@ export const getInspirationGallery = async (req, res) => {
         Each object must have:
         1. "prompt": hyper-detailed cinematic description in english. VERY IMPORTANT: KEEP PROMPT UNDER 150 CHARACTERS to prevent URL crashes. Make them avant-garde, macro photography, unreal engine 5 style, or dark fantasy.
         2. "tag": short catchy name in spanish (e.g. "Cyberpunk", "Macro Lente", "Cinemático").
-        3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "GotSora T2I", "Higgsfield Cosmos".
+        3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "Higgsfield Cosmos", "Veo 3".
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
         const resp = await ai.generateContent({
@@ -751,7 +743,7 @@ export const refineRenderJob = async (req, res) => {
         const optimizedPrompt = 'Using this image as a structural reference, create a stunning, hyper-realistic new variation. Take creative liberties to enhance the composition, add cinematic lighting, ultra-detailed 8k masterpiece quality, and professional color grading. Do not just color-correct; generate a completely reimagined version that strongly follows this original concept: ' + (prompt || '');
 
         const response = await ai.models.generateContent({
-             model: 'gemini-3.1-flash-image-preview', 
+             model: 'gemini-2.0-flash-preview-image-generation', 
              contents: [
                  {
                      role: 'user',

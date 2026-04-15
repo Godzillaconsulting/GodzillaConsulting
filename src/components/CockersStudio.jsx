@@ -29,8 +29,8 @@ export default function CockersStudio({ adminProfile }) {
     const [renderProgress, setRenderProgress] = useState(0);
     const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
 
-    // Aplica filtro GotSora a un slot específico de liveSlots
-    const triggerSlotRefine = useCallback(async (slot, slotIdx, prompt) => {
+    // Aplica Filtro Ultra (Gemini imagen) a un slot específico de liveSlots
+    const triggerUltraVariant = useCallback(async (slot, slotIdx, prompt) => {
         if (!slot.url) return;
         const token = localStorage.getItem('adminToken');
         setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'loading' } : s));
@@ -38,23 +38,34 @@ export default function CockersStudio({ adminProfile }) {
             const refineRes = await fetch('/api/studio/refine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ imageUrl: slot.url, prompt: prompt || 'high quality, masterpiece, 8k, raw photo' })
+                body: JSON.stringify({ imageUrl: slot.url, prompt: `${prompt || 'hyper-realistic'}, high quality, masterpiece, 8k, ultra detail` })
             });
             const refineData = await refineRes.json();
-            if (!refineRes.ok || !refineData.job_id) throw new Error(refineData.error || 'Error iniciando GotSora');
+            if (!refineRes.ok || !refineData.job_id) throw new Error(refineData.error || 'Error iniciando Ultra Variant');
 
             let refAttempts = 0;
+            const MAX_REFINE_ATTEMPTS = 30; // ~150s timeout
             const refPoll = setInterval(async () => {
                 refAttempts++;
+                if (refAttempts > MAX_REFINE_ATTEMPTS) {
+                    clearInterval(refPoll);
+                    setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: 'Tiempo de espera agotado' } : s));
+                    return;
+                }
                 try {
                     const sRes = await fetch(`/api/studio/status/${encodeURIComponent(refineData.job_id)}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (!sRes.ok) { // 400 = job expirado en RAM del servidor
+                        clearInterval(refPoll);
+                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: 'Job expirado en servidor' } : s));
+                        return;
+                    }
                     const sData = await sRes.json();
                     if (sData.status === 'succeed' && sData.result_url) {
                         clearInterval(refPoll);
                         setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: sData.result_url } : s));
-                    } else if (sData.status === 'failed' || refAttempts > 40) {
+                    } else if (sData.status === 'failed') {
                         clearInterval(refPoll);
-                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: sData.error || 'GotSora Failure' } : s));
+                        setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: sData.error || 'Falla Ultra Engine' } : s));
                     }
                 } catch { clearInterval(refPoll); setLiveSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, refinedUrl: 'error', refinedError: 'Server Timeout' } : s)); }
             }, 5000);
@@ -175,14 +186,29 @@ export default function CockersStudio({ adminProfile }) {
             if (data.job_id) {
                 setPurifyingStatus('processing');
                 
-                // Poll checkRenderStatus
+                // Poll checkRenderStatus con timeout máximo y manejo de 400
+                let purifyAttempts = 0;
+                const MAX_PURIFY_ATTEMPTS = 60; // ~3min timeout
                 const pollTimer = setInterval(async () => {
+                    purifyAttempts++;
+                    if (purifyAttempts > MAX_PURIFY_ATTEMPTS) {
+                        clearInterval(pollTimer);
+                        setPurifyingStatus(null);
+                        alert('Tiempo de purificación agotado. El servidor puede haber reiniciado.');
+                        return;
+                    }
                     try {
                         const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}?t=${Date.now()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
+                        if (!stRes.ok) { // 400 = job no existe en RAM
+                            clearInterval(pollTimer);
+                            setPurifyingStatus(null);
+                            alert('El job de purificación expiró — el servidor pudo haberse reiniciado.');
+                            return;
+                        }
                         const stData = await stRes.json();
-                        
+                        setPurifyPercent(stData.progress || 0);
                         if (stData.status === 'succeed') {
                             clearInterval(pollTimer);
                             setPurifyingStatus(null);
@@ -207,7 +233,8 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
-    const refineWithGotSora = async (url, promptContext, optionIndex) => {
+    // Ultra Variant para selectedDraft (panel de resultados guardados)
+    const refineWithUltra = async (url, promptContext, optionIndex) => {
         setRefiningTasks(prev => ({ ...prev, [optionIndex]: true }));
         try {
             const token = localStorage.getItem('adminToken');
@@ -219,38 +246,48 @@ export default function CockersStudio({ adminProfile }) {
             const data = await res.json();
             
             if (data.status === 'processing' && data.job_id) {
-                // Poll status
+                let ultraAttempts = 0;
+                const MAX_ULTRA_ATTEMPTS = 30; // ~90s timeout
                 const pollTimer = setInterval(async () => {
-                    const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}?t=${Date.now()}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const stData = await stRes.json();
-                    
-                    if (stData.status === 'succeed') {
+                    ultraAttempts++;
+                    if (ultraAttempts > MAX_ULTRA_ATTEMPTS) {
                         clearInterval(pollTimer);
                         setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
-                        
-                        // ADD side-by-side rather than replace
-                        setSelectedDraft(prev => {
-                            if (!prev) return prev;
-                            const newOpts = [...prev.media_options];
-                            const origOpt = newOpts[optionIndex];
-                            
-                            // Insertar la nueva inmediatamente después de la original
-                            newOpts.splice(optionIndex + 1, 0, {
-                                url: stData.result_url,
-                                provider: origOpt.provider + ' + ✨ GotSora RefinedHQ',
-                                isVideo: origOpt.isVideo
-                            });
-                            
-                            const newState = { ...prev, media_options: newOpts };
-                            setQueue(q => q.map(post => post.id === prev.id ? newState : post));
-                            return newState;
+                        return;
+                    }
+                    try {
+                        const stRes = await fetch(`${'' || ''}/api/studio/status/${data.job_id}?t=${Date.now()}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
                         });
-                    } else if (stData.status === 'failed' || stData.status === 'error') {
+                        if (!stRes.ok) { clearInterval(pollTimer); setRefiningTasks(prev => ({ ...prev, [optionIndex]: false })); return; }
+                        const stData = await stRes.json();
+                        
+                        if (stData.status === 'succeed') {
+                            clearInterval(pollTimer);
+                            setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
+                            
+                            // Añadir variante ultra al lado del original
+                            setSelectedDraft(prev => {
+                                if (!prev) return prev;
+                                const newOpts = [...prev.media_options];
+                                const origOpt = newOpts[optionIndex];
+                                newOpts.splice(optionIndex + 1, 0, {
+                                    url: stData.result_url,
+                                    provider: origOpt.provider + ' + ✨ Ultra HQ',
+                                    isVideo: origOpt.isVideo
+                                });
+                                const newState = { ...prev, media_options: newOpts };
+                                setQueue(q => q.map(post => post.id === prev.id ? newState : post));
+                                return newState;
+                            });
+                        } else if (stData.status === 'failed' || stData.status === 'error') {
+                            clearInterval(pollTimer);
+                            setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
+                            alert("Error en filtro Ultra: " + (stData.error || "Falla desconocida"));
+                        }
+                    } catch (e) {
                         clearInterval(pollTimer);
                         setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
-                        alert("Error refinando con GotSora: " + (stData.error || "Falla desconocida"));
                     }
                 }, 3000);
             }
@@ -272,7 +309,7 @@ export default function CockersStudio({ adminProfile }) {
         }));
     };
 
-    const triggerSingleRefine = async (opt, optIndex, draftId, promptText) => {
+    const triggerUltraOnOption = async (opt, optIndex, draftId, promptText) => {
         updateOption(draftId, optIndex, { refinedUrl: 'loading' });
         try {
             const token = localStorage.getItem('adminToken');
@@ -284,11 +321,16 @@ export default function CockersStudio({ adminProfile }) {
             const data = await res.json();
             
             if (data.status === 'processing' && data.job_id) {
+                let singleAttempts = 0;
+                const MAX_SINGLE_ATTEMPTS = 30;
                 const pollTimer = setInterval(async () => {
+                    singleAttempts++;
+                    if (singleAttempts > MAX_SINGLE_ATTEMPTS) { clearInterval(pollTimer); updateOption(draftId, optIndex, { refinedUrl: 'error' }); return; }
                     try {
                         const stRes = await fetch(`${'' || ''}/api/studio/status/${encodeURIComponent(data.job_id)}?t=${Date.now()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
+                        if (!stRes.ok) { clearInterval(pollTimer); updateOption(draftId, optIndex, { refinedUrl: 'error' }); return; }
                         const stData = await stRes.json();
                         
                         if (stData.status === 'succeed') {
@@ -298,7 +340,7 @@ export default function CockersStudio({ adminProfile }) {
                             clearInterval(pollTimer);
                             updateOption(draftId, optIndex, { refinedUrl: 'error' });
                         }
-                    } catch(e) {}
+                    } catch(e) { clearInterval(pollTimer); updateOption(draftId, optIndex, { refinedUrl: 'error' }); }
                 }, 4000);
             } else {
                 updateOption(draftId, optIndex, { refinedUrl: 'error' });
@@ -308,10 +350,10 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
-    const triggerAutoRefine = async (optionsList, promptText, draftId) => {
+    const triggerAutoUltra = async (optionsList, promptText, draftId) => {
         optionsList.forEach((opt, i) => {
-             if (!opt.isVideo && !opt.provider.includes('GotSora')) {
-                 triggerSingleRefine(opt, i, draftId, promptText);
+             if (!opt.isVideo) {
+                 triggerUltraOnOption(opt, i, draftId, promptText);
              }
         });
     };
@@ -560,7 +602,7 @@ export default function CockersStudio({ adminProfile }) {
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos', 'Kling V1']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image', 'GotSora T2I'];
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -1312,12 +1354,12 @@ export default function CockersStudio({ adminProfile }) {
                                                                         <span className="text-[8px] text-center text-red-500 font-bold mb-1 leading-tight">{slot.refinedError || 'Error al conectar'}</span>
                                                                     )}
                                                                     <button
-                                                                        onClick={(e) => { e.stopPropagation(); triggerSlotRefine(slot, i, finalPrompt); }}
+                                                                        onClick={(e) => { e.stopPropagation(); triggerUltraVariant(slot, i, finalPrompt); }}
                                                                         className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[8px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
                                                                     >
-                                                                        <span>✨</span> {slot.refinedUrl === 'error' ? 'Reintentar Filtro' : 'Aplicar Filtro'}
+                                                                        <span>✨</span> {slot.refinedUrl === 'error' ? 'Reintentar Ultra' : '+ Variante Ultra'}
                                                                     </button>
-                                                                    <span className="text-[7px] text-neutral-600">Gemini Ultra</span>
+                                                                    <span className="text-[7px] text-neutral-600">Gemini Ultra Engine</span>
                                                                 </div>
                                                             )}
                                                         </div>

@@ -15,7 +15,10 @@ export default defineConfig([
     ],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -31,7 +34,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['server/**/*.js', 'api/**/*.js', 'tmp/**/*.js', 'tmp_*.js'],
+    files: ['server/**/*.js', 'server/**/*.mjs', 'server/**/*.cjs', 'api/**/*.js', 'tmp/**/*.js', 'tmp_*.js'],
     rules: {
       'no-unused-vars': 'off',
       'no-prototype-builtins': 'off',

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
-import whatsapp3d from '../assets/images/whatsapp_3d_icon.png';
 import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
-const API_URL = import.meta.env.VITE_BACKEND_URL || '' || '';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
 const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
 const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
@@ -46,7 +45,7 @@ const Recursos = () => {
     const [magnetsState, setMagnetsState] = useState(defaultMagnets);
 
     // Importamos nuestra conexión hook al backend (Esto sustituye temporalmente o acompaña a la simulación visual)
-    const { captureLead, status, errorMessage, resetStatus } = useLeadCapture();
+    const { captureLead, status, errorMessage } = useLeadCapture();
 
     useEffect(() => {
         client

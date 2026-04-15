@@ -7,6 +7,20 @@ import { getYouTubeId } from './MediaPicker';
  * En caso contrario, renderiza un <img> estándar o un iframe de YouTube si es un enlace de YT.
  */
 export default function DynamicMedia({ src, alt, className, style, ...props }) {
+    let finalSrc = src;
+    if (typeof src === 'string') {
+        if (finalSrc.includes('godzillaconsulting.ai/api/media')) {
+            finalSrc = finalSrc.replace(/https?:\/\/(www\.)?godzillaconsulting\.ai/g, 'https://bot.godzillaconsulting.ai');
+        }
+        if (finalSrc.startsWith('/api/media')) {
+            const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+            finalSrc = `${API_URL}${finalSrc}`;
+        }
+        if (finalSrc.includes('/api/media') && !finalSrc.includes('v=cf2')) {
+            finalSrc += (finalSrc.includes('?') ? '&' : '?') + 'v=cf2';
+        }
+    }
+
     const videoRef = useRef(null);
     const hasTracked = useRef({ 25: false, 50: false, 75: false, 100: false });
 
@@ -47,9 +61,9 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
         };
     }, [src]);
 
-    if (!src || typeof src !== 'string') return null;
+    if (!finalSrc || typeof finalSrc !== 'string') return null;
 
-    const ytId = getYouTubeId(src);
+    const ytId = getYouTubeId(finalSrc);
     if (ytId) {
         return (
             <iframe
@@ -63,13 +77,13 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
         );
     }
 
-    const isVideo = src.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
+    const isVideo = finalSrc.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
 
     if (isVideo) {
         return (
             <video 
                 ref={videoRef}
-                src={src} 
+                src={finalSrc} 
                 className={className} 
                 style={style} 
                 preload="metadata"
@@ -84,7 +98,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
 
     return (
         <img 
-            src={src} 
+            src={finalSrc} 
             alt={alt || "Media"} 
             className={className} 
             style={style} 

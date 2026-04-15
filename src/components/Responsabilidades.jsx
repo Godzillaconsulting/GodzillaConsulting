@@ -28,8 +28,7 @@ const Responsabilidades = () => {
  <span className="text-[#111111] text-lg font-medium leading-relaxed">
  {/* Split the first few words to bold them since the PDF highlights the start of the sentence */}
  {(() => {
- const firstSpace = point.indexOf('');
- const boldPart = point.split('').slice(0, 3).join('');
+ const boldPart = point.split(' ').slice(0, 3).join(' ');
  const restPart = point.substring(boldPart.length);
  return (
  <>

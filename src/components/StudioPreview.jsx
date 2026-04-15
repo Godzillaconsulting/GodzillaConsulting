@@ -44,7 +44,7 @@ class PreviewErrorBoundary extends Component {
 }
 
 // ── Preview simplificada para paquetes (sin dependencias de router/video) ─────
-function LandingCardPreview({ nodeId, draftData }) {
+function LandingCardPreview({ draftData }) {
  if (!draftData) return null;
  const d = draftData;
  return (
@@ -191,7 +191,7 @@ const COMPONENT_MAP = {
 // ── ScaledSection ─────────────────────────────────────────────────────────────
 const PREVIEW_ID ='studio-preview-scaled';
 
-function ScaledSection({ nodeId, draftData }) {
+function ScaledSection({ nodeId }) {
  const wrapperRef = useRef(null);
  const [scale, setScale] = useState(0.4);
 

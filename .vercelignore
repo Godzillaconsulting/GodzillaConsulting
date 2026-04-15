@@ -12,6 +12,7 @@ server/core_engine/
 server/core_engine/__pycache__/
 server/.wwebjs_cache/
 server/.wwebjs_auth/
+server/.puppeteer_ig_profile/
 scratch/
 __pycache__/
 *.mp4

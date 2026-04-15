@@ -750,7 +750,7 @@ export const refineRenderJob = async (req, res) => {
         const optimizedPrompt = (prompt || '') + ' Refine and enhance this image exactly as it is but with Cinematic lighting, ultra-detailed 8k masterpiece quality, professional color grading.';
 
         const response = await ai.models.generateContent({
-             model: 'gemini-2.0-flash', 
+             model: 'gemini-3.1-flash-image-preview', 
              contents: [
                  {
                      role: 'user',

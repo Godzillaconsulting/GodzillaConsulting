@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import { Readable } from 'stream';
 import { fileURLToPath } from 'url';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
@@ -267,6 +268,28 @@ app.post('/api/sora-restore', async (req, res) => {
 // Servir los Assets Multimedia de Video estáticamente en el mismo origen (Node.js)
 // Evita el error de CORS/CORB que causaba el redirect 302 hacia Python en el reproductor de React.
 app.use('/api/sora/media', express.static('E:/GodzillaSora_Outputs', { maxAge: '1y', immutable: true }));
+
+app.get('/api/sora/proxy-veo', async (req, res) => {
+    try {
+        const { uri } = req.query;
+        if (!uri) return res.status(400).send('No URI');
+        const fetch = (await import('node-fetch')).default; // Use native or node-fetch for compatibility
+        const dlRes = await fetch(`${uri}&key=${process.env.GEMINI_API_KEY}`);
+        if (!dlRes.ok) return res.status(dlRes.status).send('Video fetch failed from Google API');
+        
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for frontend
+        
+        if (dlRes.body.pipe) {
+            dlRes.body.pipe(res); // Node-fetch usa Node Readable stream
+        } else {
+            Readable.fromWeb(dlRes.body).pipe(res); // Native fetch usa Web stream
+        }
+    } catch (e) {
+        console.error('Proxy Error:', e);
+        res.status(500).send('Proxy streaming error');
+    }
+});
 
 
 // Servir archivos subidos como estáticos en /media/* (y también /api/media/ para compatibilidad con Vite)

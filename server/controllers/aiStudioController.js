@@ -138,20 +138,12 @@ export const generateRenderJob = async (req, res) => {
                     const videoUri = operation.response.generatedVideos[0].video.uri;
                     console.log(`[VEO] ✅ Video URI recibida: ${videoUri.substring(0, 60)}...`);
 
-                    // Descargar el video binario y guardarlo en disco para servir localmente
-                    const videoDir = 'E:/GodzillaSora_Outputs';
-                    if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
-                    const videoPath = path.join(videoDir, `${taskId}.mp4`);
+                    // El usuario solicitó NO guardar el video físicamente hasta que él lo decida descargar
+                    // Por lo tanto, pasaremos la URI al backend proxy para hacer streaming temporal sin revelar la ApiKey
+                    const proxyUrl = "/api/sora/proxy-veo?uri=" + encodeURIComponent(videoUri);
 
-                    // El URI de Google requiere el API Key para descargarse
-                    const dlRes = await fetch(`${videoUri}&key=${process.env.GEMINI_API_KEY}`);
-                    if (!dlRes.ok) throw new Error(`Fallo descarga video: HTTP ${dlRes.status}`);
-                    const arrBuf = await dlRes.arrayBuffer();
-                    fs.writeFileSync(videoPath, Buffer.from(arrBuf));
-
-                    const localUrl = `/api/sora/media/${taskId}.mp4`;
-                    postProcessJobs.set(taskId, { status: 'done', localUrl });
-                    console.log(`[VEO] 🎉 Video guardado: ${videoPath}`);
+                    postProcessJobs.set(taskId, { status: 'done', localUrl: proxyUrl });
+                    console.log(`[VEO] 🎉 Video listo (modo streaming proxy sin guardar): ${taskId}`);
 
                 } catch (e) {
                     console.error(`[VEO] ❌ Error (${engine}):`, e.message);
@@ -248,7 +240,7 @@ export const generateRenderJob = async (req, res) => {
                             const b64 = response.generatedImages[0].image.imageBytes;
                             const buffer = Buffer.from(b64, 'base64');
                             const fileName = `${taskId}.jpg`;
-                            const savePath = path.join('E:/assets', fileName);
+                            const savePath = path.join('E:/GodzillaSora_Outputs', fileName);
                             fs.writeFileSync(savePath, buffer);
                             resultUrl = `/api/sora/media/${fileName}`;
                         }
@@ -273,7 +265,7 @@ export const generateRenderJob = async (req, res) => {
                                 const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1] || 'png';
                                 const buffer = Buffer.from(part.inlineData.data, 'base64');
                                 const fileName = `${taskId}.${ext}`;
-                                const savePath = path.join('E:/assets', fileName);
+                                const savePath = path.join('E:/GodzillaSora_Outputs', fileName);
                                 fs.writeFileSync(savePath, buffer);
                                 resultUrl = `/api/sora/media/${fileName}`;
                                 break;

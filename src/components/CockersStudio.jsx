@@ -126,11 +126,53 @@ export default function CockersStudio({ adminProfile }) {
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
     const [selectedFilters, setSelectedFilters] = useState([]);
-    
-    const [dynamicFilters, setDynamicFilters] = useState([
-        { id: 'cinematic_base', label: '⏳ Cargando filtros IA...', prompt: '' }
-    ]);
+    const [showCustomFilterModal, setShowCustomFilterModal] = useState(false);
+    const [customFilterForm, setCustomFilterForm] = useState({ label: '', lens: '', lighting: '', grain: '', mood: '', extra: '' });
+
+    // ── Banco base FIJO de filtros profesionales ──────────────────────────
+    const BASE_PHOTO_FILTERS = [
+        // Realismo fotográfico
+        { id: 'ultra_real',     label: '📷 Ultra Realismo',    prompt: 'Photorealistic, ultra-detailed, sharp focus, natural light, Sony A7R V, 8K resolution, RAW file quality, no filters, documentary realism' },
+        { id: 'hyper_real',     label: '🔬 Hiper Real',        prompt: 'Hyperrealism, every pore and texture visible, clinical sharpness, studio controlled lighting, Canon EF 100mm macro, ultra high definition' },
+        // Lentes analógicas
+        { id: 'lens_28mm',      label: '🎞️ 28mm Gran Angular',  prompt: '28mm wide-angle lens, slight barrel distortion, deep depth of field, architectural perspective, street photography aesthetic, analogue film grain' },
+        { id: 'lens_35mm_40s',  label: '📽️ 35mm Cine 40s',     prompt: '35mm film, 1940s cinematic look, soft grain, warm sepia-to-silver tones, dramatic chiaroscuro, classic Hollywood golden era cinematography' },
+        { id: 'lens_35mm',      label: '📸 35mm Analógico',    prompt: '35mm analog film photography, authentic grain texture, Kodak Portra 400, warm color rendition, slightly desaturated highlights, photojournalism style' },
+        { id: 'lens_40mm',      label: '🎯 40mm Pancake',      prompt: '40mm pancake lens, natural perspective, compact street photography, moderate bokeh, Leica-style rendering, reportage documentary feel' },
+        { id: 'lens_50mm',      label: '👁️ 50mm Ojo Humano',   prompt: '50mm standard lens, natural human perspective, shallow depth of field f/1.8, beautiful circular bokeh, portrait photography, Nikon D850' },
+        { id: 'lens_85mm',      label: '👠 85mm Retrato',      prompt: '85mm portrait lens f/1.4, silky smooth bokeh background, razor-sharp subject focus, flattering facial compression, professional portrait studio' },
+        // Formatos cine
+        { id: 'cine_scope',     label: '🎬 Cinemascope 2.39:1', prompt: 'Anamorphic widescreen 2.39:1 aspect ratio, oval bokeh lens flares, horizontal letterbox, Hollywood blockbuster cinematography, ARRI ALEXA camera' },
+        { id: 'cine_16mm',      label: '🎥 16mm Indie',        prompt: '16mm film stock, heavy organic grain, desaturated muted palette, raw handheld aesthetic, indie documentary cinema, gritty emotional realism' },
+        { id: 'cine_lut',       label: '🌈 LUT Cine Pro',      prompt: 'Professional color grading LUT applied, teal-orange complementary color scheme, lifted blacks, crushed highlights, Hollywood blockbuster grade' },
+        { id: 'cine_vhs',       label: '📼 VHS Retro',         prompt: 'VHS tape analog artifacts, color bleeding chromatic aberration, scan lines, low resolution noise, 80s 90s lo-fi camcorder aesthetic' },
+        // Ilustración y caricatura
+        { id: 'cartoon_toon',   label: '🎨 Cartoon Studio',    prompt: 'Cartoon illustration style, bold clean outlines, flat vibrant colors, expressive exaggerated features, modern 2D animation aesthetic, Disney Pixar inspired' },
+        { id: 'cartoon_comic',  label: '💥 Cómic Book',        prompt: 'Comic book style, bold black ink outlines, Ben-Day dot pattern, over-saturated primary colors, dramatic speech bubble composition, Marvel DC aesthetic' },
+        { id: 'anime_ghibli',   label: '🌸 Anime Ghibli',      prompt: 'Studio Ghibli anime style, soft watercolor backgrounds, lush nature details, warm earthy palette, hand-drawn 2D animation, Hayao Miyazaki aesthetic' },
+        { id: 'anime_modern',   label: '⚡ Anime Dark',        prompt: 'High-budget dark anime art, sharp shading, dramatic lighting contrasts, detailed character design, Attack on Titan aesthetic, vibrant action composition' },
+        { id: 'claymation',     label: '🧸 Stop Motion',       prompt: 'Stop motion claymation style, plasticine textures, visible fingerprint marks, tilt-shift miniature effect, Aardman Wallace Gromit aesthetic' },
+        { id: 'watercolor',     label: '🖌️ Acuarela',          prompt: 'Traditional watercolor painting, visible paper texture, soft wet-on-wet bleeding edges, transparent layered washes, impressionist looseness' },
+        { id: 'oil_painting',   label: '🖼️ Óleo Clásico',      prompt: 'Oil painting classical style, visible textured brushstrokes, impasto technique, Rembrandt dramatic lighting, museum quality old master aesthetic' },
+        { id: 'pixel_16bit',    label: '🕹️ Pixel Art 16-bit',  prompt: '16-bit pixel art style, isometric perspective, limited color palette, retro SNES SEGA era sprites, sharp pixel edges, nostalgic gaming aesthetic' },
+        // Corrección / Mejora fotográfica
+        { id: 'fix_sharp',      label: '🔭 Súper Definición',  prompt: 'AI-enhanced sharpness, denoised, restored detail in shadows and highlights, professional retouching, no chromatic aberration, tack-sharp studio quality' },
+        { id: 'fix_hdr',        label: '☀️ HDR Natural',       prompt: 'Natural HDR processing, balanced exposure across highlights and shadows, rich color depth, detailed sky gradients, no tone-mapping halo artifacts' },
+        { id: 'fix_bw',         label: '⬛ B&N Dramático',     prompt: 'Black and white photography, high contrast dramatic tones, deep rich blacks, bright whites, silver gelatin print aesthetic, Ansel Adams style' },
+        { id: 'fix_golden',     label: '🌅 Golden Hour',       prompt: 'Golden hour natural sunlight, warm orange amber tones, long soft shadows, rim lighting effect, atmospheric haze, landscape photography magic hour' },
+        { id: 'fix_lowlight',   label: '🌙 Noche ISO Alta',    prompt: 'Night photography, high ISO grain texture, long exposure light trails, available light only, moody dark atmosphere, luminous point lights bokeh' },
+        { id: 'fix_commercial', label: '💎 Foto Comercial',    prompt: 'Commercial product photography, clean white cyclorama background, controlled studio strobe lighting, professional retouching, advertising catalog quality' },
+    ];
+
+    const [savedCustomFilters, setSavedCustomFilters] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('godzilla_custom_filters_v2') || '[]'); } catch { return []; }
+    });
+
+    // Todos los filtros activos = base fija + custom guardados + dinámicos de IA
+    const [dynamicFilters, setDynamicFilters] = useState([]);
     const [isFetchingFilters, setIsFetchingFilters] = useState(false);
+
+    const ALL_FILTERS = [...BASE_PHOTO_FILTERS, ...savedCustomFilters, ...dynamicFilters];
 
     const fetchDynamicFilters = async () => {
         setIsFetchingFilters(true);
@@ -149,9 +191,37 @@ export default function CockersStudio({ adminProfile }) {
         setIsFetchingFilters(false);
     };
 
+    const saveCustomFilter = () => {
+        if (!customFilterForm.label.trim()) { alert('Ponle un nombre al filtro.'); return; }
+        const parts = [
+            customFilterForm.lens    && `lens: ${customFilterForm.lens}`,
+            customFilterForm.lighting && `lighting: ${customFilterForm.lighting}`,
+            customFilterForm.grain   && `grain/texture: ${customFilterForm.grain}`,
+            customFilterForm.mood    && `mood: ${customFilterForm.mood}`,
+            customFilterForm.extra   && customFilterForm.extra,
+        ].filter(Boolean);
+        if (parts.length === 0) { alert('Agrega al menos un parámetro técnico.'); return; }
+        const newFilter = {
+            id: 'custom_' + Date.now(),
+            label: '⚙️ ' + customFilterForm.label.trim(),
+            prompt: parts.join(', ')
+        };
+        const updated = [...savedCustomFilters, newFilter];
+        setSavedCustomFilters(updated);
+        localStorage.setItem('godzilla_custom_filters_v2', JSON.stringify(updated));
+        setCustomFilterForm({ label: '', lens: '', lighting: '', grain: '', mood: '', extra: '' });
+        setShowCustomFilterModal(false);
+    };
+
+    const deleteCustomFilter = (id) => {
+        const updated = savedCustomFilters.filter(f => f.id !== id);
+        setSavedCustomFilters(updated);
+        localStorage.setItem('godzilla_custom_filters_v2', JSON.stringify(updated));
+        setSelectedFilters(prev => prev.filter(p => !updated.find(u => u.prompt === p)));
+    };
+
     useEffect(() => {
         fetchDynamicFilters();
-        // ... (el otro useEffect se queda intacto en su declaración)
     }, []);
 
     const toggleFilter = (filterPrompt) => {
@@ -590,22 +660,11 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
-    // Enviar slot en vivo — Alex auto-aprueba con nota; otros envían a revisión de Judith
+    // Enviar slot en vivo a revisión — funciona SIN necesitar selectedDraft existente
     const sendSlotToReview = async (slot) => {
         if (!slot.url) return;
-
-        // Pedir nota obligatoria: Alex explica brevemente por qué sube esto
-        const nota = window.prompt(
-            `📝 Deja una nota explicando por qué subes este activo de "${slot.provider}".\n\n` +
-            `(Ej: "Imagen para el post del martes sobre automatización")\n\n` +
-            `Esta nota quedará registrada para el equipo:`
-        );
-        if (nota === null) return; // Usuario canceló
-        if (!nota.trim()) {
-            alert('⚠️ La nota es obligatoria. Describe brevemente el motivo de la subida.');
-            return;
-        }
-
+        if (!window.confirm(`¿Enviar resultado de "${slot.provider}" a revisión para CEO Estudio?`)) return;
+        
         const token = localStorage.getItem('adminToken');
         try {
             // Si hay draft ya cargado, solo actualizamos su estado
@@ -621,17 +680,16 @@ export default function CockersStudio({ adminProfile }) {
                 const d = await res.json();
                 if (!d.success) throw new Error(d.message || 'Error actualizando tarea');
                 setQueue(q => q.map(t => t.id === selectedDraft.id ? { ...t, status: 'pending_cm_approval' } : t));
-                alert(`✅ Enviado a revisión para Judith.`);
+                alert(`✅ Enviado a revisión. Revísalo en CEO Estudio.`);
                 return;
             }
-            // Crear tarea nueva — el backend decide el status según el rol:
-            // Alex (cockers) → approved automáticamente con nota
-            // Otros → pending_cm_approval
+            
+            // Si NO hay draft, creamos tarea nueva en pending_cm_approval
             const res = await fetch('/api/studio/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    title: nota.trim(),          // La nota queda como título visible para el equipo
+                    title: finalPrompt.substring(0, 100) || `Arte de ${slot.provider}`,
                     prompt: finalPrompt,
                     ig_publish_date: new Date(Date.now() + 86400000 * 2).toISOString(),
                     media_payload: JSON.stringify([{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }])
@@ -640,9 +698,9 @@ export default function CockersStudio({ adminProfile }) {
             const d = await res.json();
             if (!d.success) throw new Error(d.message || 'Error creando tarea');
 
-            // Mensaje de confirmación — siempre va a revisión
-            alert(`✅ Activo enviado a revisión.\n\n📌 Nota registrada: "${nota}"\n\n🔔 El equipo fue notificado. Revísalo en CEO Estudio → Pendientes.`);
-            setQueue(q => [{ id: d.task?.id || Date.now(), status: d.selfApproved ? 'approved' : 'pending_cm_approval', caption: nota, visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
+            // Mensaje de confirmación
+            alert(`✅ Activo enviado a revisión. Revísalo en CEO Estudio.`);
+            setQueue(q => [{ id: d.task?.id || Date.now(), status: 'pending_cm_approval', caption: finalPrompt.substring(0, 100), visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
         } catch (e) {
             console.error(e);
             alert(`⚠️ Error: ${e.message}`);
@@ -1024,43 +1082,119 @@ export default function CockersStudio({ adminProfile }) {
                                 </div>
                                 
                                 {/* Estilos Fotográficos / Filtros */}
+                                {/* Estilos Fotográficos / Filtros — Banco Profesional */}
                                 <div className="mt-2 pt-2 border-t border-white/5">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center justify-between">
                                         Filtros de Estilo
-                                        <span className="text-[8px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{selectedFilters.length} activos</span>
+                                        <span className="flex items-center gap-1.5">
+                                            <span className="text-[8px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{selectedFilters.length} activos</span>
+                                            <button onClick={() => setSelectedFilters([])} className="text-[7px] text-neutral-600 hover:text-red-400 transition-colors">Limpiar</button>
+                                        </span>
                                     </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {dynamicFilters.map(filter => {
+
+                                    {/* ─ Base Fija ─ */}
+                                    <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 mt-1">📐 Lentes / Realismo / Arte</p>
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {BASE_PHOTO_FILTERS.map(filter => {
                                             const isActive = selectedFilters.includes(filter.prompt);
                                             return (
                                                 <button
                                                     key={filter.id}
                                                     onClick={() => toggleFilter(filter.prompt)}
+                                                    title={filter.prompt}
                                                     className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border flex items-center gap-1.5 ${isActive ? 'bg-[#CC0000] text-white border-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.5)]' : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-600 hover:text-white'}`}
                                                 >
                                                     {filter.label}
-                                                    {isActive && <span className="text-[7px] bg-red-900/40 hover:bg-black/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
-                                                </button>
-                                            );
-                                        })}
-                                        {/* Píldoras especiales comunitarias inyectadas desde la galería */}
-                                        {selectedFilters.map(sf => {
-                                            if (dynamicFilters.find(pf => pf.prompt === sf)) return null;
-                                            const comm = COMMUNITY_GALLERY_POOL.find(c => c.prompt === sf);
-                                            const label = comm ? comm.tag : 'Estilo Mágico';
-                                            return (
-                                                <button
-                                                    key={sf}
-                                                    onClick={() => toggleFilter(sf)}
-                                                    className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border bg-indigo-600 text-white border-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.5)] flex items-center gap-1.5`}
-                                                    title="Filtro seleccionado de la Galería Comunitaria"
-                                                >
-                                                    ✨ {label}
-                                                    <span className="text-[7px] bg-indigo-900/40 hover:bg-black/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>
+                                                    {isActive && <span className="text-[7px] bg-red-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
                                                 </button>
                                             );
                                         })}
                                     </div>
+
+                                    {/* ─ Custom Guardados ─ */}
+                                    {savedCustomFilters.length > 0 && (
+                                        <>
+                                            <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5">⚙️ Mis Filtros Personalizados</p>
+                                            <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {savedCustomFilters.map(filter => {
+                                                    const isActive = selectedFilters.includes(filter.prompt);
+                                                    return (
+                                                        <div key={filter.id} className="flex items-center gap-0.5">
+                                                            <button
+                                                                onClick={() => toggleFilter(filter.prompt)}
+                                                                title={filter.prompt}
+                                                                className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-l-full transition-all border-y border-l flex items-center gap-1.5 ${isActive ? 'bg-violet-600 text-white border-violet-500 shadow-[0_0_10px_rgba(139,92,246,0.4)]' : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-violet-600/50 hover:text-white'}`}
+                                                            >
+                                                                {filter.label}
+                                                                {isActive && <span className="text-[7px] bg-violet-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deleteCustomFilter(filter.id)}
+                                                                title="Eliminar filtro"
+                                                                className="px-1 py-1.5 text-[8px] text-neutral-700 hover:text-red-400 border-y border-r border-neutral-800 hover:border-red-500/30 rounded-r-full transition-colors"
+                                                            >🗑</button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* ─ IA Dinámicos ─ */}
+                                    {dynamicFilters.length > 0 && (
+                                        <>
+                                            <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 flex items-center justify-between">
+                                                🤖 IA Generativa
+                                                <button onClick={fetchDynamicFilters} disabled={isFetchingFilters}
+                                                    className="text-[7px] text-indigo-500/60 hover:text-indigo-400 transition-colors disabled:opacity-40 ml-2">
+                                                    {isFetchingFilters ? '⏳' : '↺ Nuevos'}
+                                                </button>
+                                            </p>
+                                            <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {dynamicFilters.map(filter => {
+                                                    const isActive = selectedFilters.includes(filter.prompt);
+                                                    return (
+                                                        <button
+                                                            key={filter.id}
+                                                            onClick={() => toggleFilter(filter.prompt)}
+                                                            title={filter.prompt}
+                                                            className={`px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all border flex items-center gap-1.5 ${isActive ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-transparent text-neutral-600 border-neutral-800/60 hover:border-indigo-500/40 hover:text-neutral-300'}`}
+                                                        >
+                                                            {filter.label}
+                                                            {isActive && <span className="text-[7px] bg-indigo-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* ─ Botón crear filtro ─ */}
+                                    <button
+                                        onClick={() => setShowCustomFilterModal(true)}
+                                        className="w-full mt-1 border border-dashed border-violet-600/40 hover:border-violet-500 text-violet-500/60 hover:text-violet-400 text-[9px] font-black uppercase tracking-widest py-2 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>+</span> Crear Filtro Personalizado
+                                    </button>
+
+                                    {/* ─ Píldoras de galería comunitaria activas ─ */}
+                                    {selectedFilters.some(sf => !ALL_FILTERS.find(f => f.prompt === sf)) && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {selectedFilters.map(sf => {
+                                                if (ALL_FILTERS.find(f => f.prompt === sf)) return null;
+                                                const comm = COMMUNITY_GALLERY_POOL.find(c => c.prompt === sf);
+                                                const label = comm ? comm.tag : 'Galería';
+                                                return (
+                                                    <button key={sf} onClick={() => toggleFilter(sf)}
+                                                        className="px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full border bg-indigo-600 text-white border-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.5)] flex items-center gap-1.5"
+                                                        title="Filtro seleccionado de la Galería">
+                                                        ✨ {label}
+                                                        <span className="text-[7px] bg-indigo-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : activeTab === 'Ingredientes' ? (
@@ -1754,6 +1888,56 @@ export default function CockersStudio({ adminProfile }) {
                 )}
 
             </div>
+
+            {/* Modal: Crear Filtro Personalizado */}
+            {showCustomFilterModal && (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-[#111] border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative">
+                        <button onClick={() => setShowCustomFilterModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition-colors">✕</button>
+                        
+                        <h3 className="text-xl font-black text-white mb-1">Crea tu Filtro Estético</h3>
+                        <p className="text-xs text-neutral-500 mb-6 font-light">Este filtro se guardará localmente. No necesitas llenar todo, solo lo que quieras forzar en la IA.</p>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block mb-1">Nombre (Obligatorio)</label>
+                                <input type="text" value={customFilterForm.label} onChange={e=>setCustomFilterForm({...customFilterForm, label: e.target.value})} placeholder="Ej: Mi Estilo Dark..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Lente / Cámara</label>
+                                    <input type="text" value={customFilterForm.lens} onChange={e=>setCustomFilterForm({...customFilterForm, lens: e.target.value})} placeholder="Ej: 35mm film, f/1.4..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Iluminación</label>
+                                    <input type="text" value={customFilterForm.lighting} onChange={e=>setCustomFilterForm({...customFilterForm, lighting: e.target.value})} placeholder="Ej: Cinematic studio, neon..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Grano / Textura</label>
+                                    <input type="text" value={customFilterForm.grain} onChange={e=>setCustomFilterForm({...customFilterForm, grain: e.target.value})} placeholder="Ej: Heavy analogue grain..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Mood / Tono</label>
+                                    <input type="text" value={customFilterForm.mood} onChange={e=>setCustomFilterForm({...customFilterForm, mood: e.target.value})} placeholder="Ej: Dark, gritty, warm..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Extras (Técnicas, calidades, etc)</label>
+                                <input type="text" value={customFilterForm.extra} onChange={e=>setCustomFilterForm({...customFilterForm, extra: e.target.value})} placeholder="Ej: 8k resolution, award winning, masterpiece..." className="w-full bg-[#1a1a1a] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors" />
+                            </div>
+                        </div>
+
+                        <button onClick={saveCustomFilter} className="w-full mt-6 bg-violet-600 hover:bg-violet-500 text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all">
+                            Guardar y Aplicar Filtro
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

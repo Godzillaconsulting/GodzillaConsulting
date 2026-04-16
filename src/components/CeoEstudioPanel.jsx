@@ -25,8 +25,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // Alex puede aprobar y publicar; Judith también. Ambos ven CEO Estudio.
     const canReview  = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
     const canPublish = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
-    // Alex debe dejar nota al publicar; Judith no
-    const publishNeedsReason = isCockers;
+    // Alex debe dejar nota al APROBAR; Judith no
+    const approveNeedsReason = isCockers;
 
     const token = localStorage.getItem('adminToken');
 
@@ -93,6 +93,18 @@ export default function CeoEstudioPanel({ adminProfile }) {
         return () => evtSource.close();
     }, []);
 
+    // ── Tecla ESQ para cerrar modales ──────────────────────────
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                if (showPublish) setShowPublish(false);
+                else if (selected) setSelected(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showPublish, selected]);
+
     // ── Action: approve / reject ──────────────────────────────
     const handleAction = async (action) => {
         if (!selected) return;
@@ -100,16 +112,37 @@ export default function CeoEstudioPanel({ adminProfile }) {
             alert('Debes escribir notas de corrección para devolver la pieza.');
             return;
         }
+
+        let finalTitle = selected.caption || selected.title;
+
+        if (action === 'approve' && approveNeedsReason) {
+            const nota = window.prompt(
+                `📝 ¿Por qué apruebas este activo?\n\n` +
+                `(Ej: "Acordado con Judith / Urgente campaña")\n\n` +
+                `Esta nota quedará en el registro del equipo:`
+            );
+            if (nota === null) return; // Canceló
+            if (!nota.trim()) {
+                alert('⚠️ La nota es obligatoria para aprobar directamente.');
+                return;
+            }
+            finalTitle = nota.trim();
+        }
+
         const newStatus = action === 'approve' ? 'approved' : 'rejected';
         try {
             const res = await fetch(`/api/studio/tasks/${selected.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ status: newStatus, feedback_notes: feedback.trim() || undefined })
+                body: JSON.stringify({ 
+                    status: newStatus, 
+                    title: finalTitle,
+                    feedback_notes: feedback.trim() || undefined 
+                })
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.message);
-            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus } : t));
+            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus, caption: finalTitle } : t));
             setSelected(null);
             setFeedback('');
         } catch (e) { alert('Error: ' + e.message); }
@@ -155,7 +188,10 @@ export default function CeoEstudioPanel({ adminProfile }) {
             });
             if (res.ok) {
                 setTasks(prev => prev.filter(t => t.id !== id));
-                if (selected?.id === id) setSelected(null);
+                if (selected?.id === id) {
+                    setSelected(null);
+                    setShowPublish(false);
+                }
             } else {
                 alert('Error al eliminar.');
             }
@@ -360,10 +396,17 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         {/* Panel lateral */}
                         <div className="w-full md:w-96 bg-neutral-950 p-6 flex flex-col border-l border-neutral-800 overflow-y-auto">
                             <div className="mb-4">
-                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${STATUS_MAP[selected.status]?.color || 'text-neutral-400 border-neutral-700'}`}>
-                                    {STATUS_MAP[selected.status]?.label || selected.status}
-                                </span>
-                                <h3 className="text-lg font-black text-white mt-3 mb-1 leading-snug">{selected.caption || '(Sin título)'}</h3>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${STATUS_MAP[selected.status]?.color || 'text-neutral-400 border-neutral-700'}`}>
+                                        {STATUS_MAP[selected.status]?.label || selected.status}
+                                    </span>
+                                    {canReview && (
+                                        <button onClick={(e) => handleDelete(selected.id, e)} className="text-[10px] font-bold text-red-500 hover:text-white border border-red-500/30 hover:bg-red-500 px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 focus:outline-none">
+                                            🗑 Borrar Activo
+                                        </button>
+                                    )}
+                                </div>
+                                <h3 className="text-lg font-black text-white mb-1 leading-snug">{selected.caption || '(Sin título)'}</h3>
                                 <p className="text-[10px] text-neutral-600 mb-1">por <span className="text-neutral-400 font-bold">{selected.uploader}</span></p>
                                 {selected.prompt && (
                                     <p className="text-[10px] text-neutral-600 border border-neutral-800 bg-neutral-900 rounded-lg p-2 mt-2 leading-relaxed line-clamp-3">
@@ -431,23 +474,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         </div>
                                     )}
                                     {canPublish && selected.status !== 'published' && firstMedia?.url && (
-                                        <button onClick={() => {
-                                            if (publishNeedsReason) {
-                                                const nota = window.prompt(
-                                                    `📝 ¿Por qué publicas este activo ahora?\n\n` +
-                                                    `(Ej: "Urgente para campaña de hoy / Acordado con Judith")\n\n` +
-                                                    `Esta nota quedará en el registro del equipo:`
-                                                );
-                                                if (nota === null) return; // Canceló
-                                                if (!nota.trim()) {
-                                                    alert('⚠️ La nota es obligatoria para publicar directamente.');
-                                                    return;
-                                                }
-                                                // Guardar la nota en caption como contexto visible en el HUD
-                                                setCaption(prev => prev || nota.trim());
-                                            }
-                                            setShowPublish(true);
-                                        }}
+                                        <button onClick={() => setShowPublish(true)}
                                             className="mt-auto w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">
                                             📱 PUBLICAR AHORA
                                         </button>
@@ -470,7 +497,14 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         <div className="flex-1 bg-neutral-900 border border-neutral-700 rounded-3xl p-6 flex flex-col">
                             <div className="flex items-center justify-between border-b border-neutral-800 pb-4 mb-4">
                                 <h3 className="text-xl font-bold">Publicar Activo</h3>
-                                <button onClick={() => { setShowPublish(false); setPublishReport(null); }} className="text-neutral-500 hover:text-white">✕ Cancelar</button>
+                                <div className="flex items-center gap-4">
+                                    {canReview && (
+                                        <button onClick={(e) => handleDelete(selected.id, e)} className="text-[10px] font-bold text-red-500 hover:text-white border border-red-500/30 hover:bg-red-500 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5 focus:outline-none">
+                                            🗑 Borrar
+                                        </button>
+                                    )}
+                                    <button onClick={() => { setShowPublish(false); setPublishReport(null); }} className="text-neutral-500 hover:text-white text-sm focus:outline-none">✕ Cancelar</button>
+                                </div>
                             </div>
 
                             <label className="text-xs font-bold text-neutral-400 mb-2">Red Social Destino</label>

@@ -215,7 +215,7 @@ router.delete('/tasks/:id', authenticateToken, requireCMOrCockers, async (req, r
 router.put('/tasks/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, media_payload, publish_targets, ig_publish_date } = req.body;
+        const { status, media_payload, publish_targets, ig_publish_date, title } = req.body;
 
         const taskRes = await pool.query('SELECT * FROM studio_tasks WHERE id = $1', [id]);
         if (taskRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Tarea no encontrada' });
@@ -227,6 +227,7 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
         const updatedMedia = media_payload !== undefined ? JSON.stringify(media_payload) : currentTask.media_payload;
         const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : currentTask.publish_targets;
         const updatedIgDate = ig_publish_date !== undefined ? ig_publish_date : currentTask.ig_publish_date;
+        const updatedTitle = title !== undefined ? title : currentTask.title;
 
         // <--- INJECT: Trigger Publisher --->
         let publishReport = null;
@@ -238,7 +239,7 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
                 if (Array.isArray(parsed) && parsed.length > 0) mediaUrl = parsed[0].url;
                 else if (parsed && parsed.url) mediaUrl = parsed.url;
                 
-                const captionText = currentTask.prompt || currentTask.title || 'Studio AutoPublish';
+                const captionText = currentTask.prompt || updatedTitle || 'Studio AutoPublish';
                 
                 if (mediaUrl) {
                     publishReport = {};
@@ -261,13 +262,13 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
 
         const query = `
             UPDATE studio_tasks 
-            SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, feedback_notes = COALESCE($6, feedback_notes), updated_at = CURRENT_TIMESTAMP
+            SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, title = $6, feedback_notes = COALESCE($7, feedback_notes), updated_at = CURRENT_TIMESTAMP
             WHERE id = $5
             RETURNING *;
         `;
 
         const feedbackNotes = req.body.feedback_notes !== undefined ? req.body.feedback_notes : null;
-        const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id, feedbackNotes];
+        const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id, updatedTitle, feedbackNotes];
         const result = await pool.query(query, values);
         
         const updatedTask = result.rows[0];

@@ -12,6 +12,22 @@ const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.m
 const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
  const { getNodeData, loading } = useSiteData();
+ const { i18n } = useTranslation();
+ const isIntl = !i18n.language.startsWith('es');
+ const exchangeRate = 20;
+
+ const formatPrice = (priceStr) => {
+     if (!priceStr || typeof priceStr !== 'string') return priceStr;
+     const rawNumStr = priceStr.replace(/[^\d.]/g, '');
+     const baseMxn = parseFloat(rawNumStr);
+     if (isNaN(baseMxn) || baseMxn === 0) return priceStr;
+     
+     return isIntl 
+         ? Math.round(baseMxn / exchangeRate).toLocaleString('en-US')
+         : baseMxn.toLocaleString('es-MX');
+ };
+
+ const currencySuffix = isIntl ? ' USD' : ' MXN';
  const { t, i18n } = useTranslation();
  const isIntl = !!(i18n && i18n.language && !i18n.language.startsWith('es'));
  
@@ -184,7 +200,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  )}
  </td>
  <td translate="no" className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
- {formatPrice(feature.price, isIntl) || ''}
+ {feature.price ? `$${formatPrice(feature.price)}${currencySuffix}` : ''}
  </td>
  </tr>
  ))}
@@ -192,13 +208,13 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.totalValue && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.totalLabel || 'VALOR TOTAL DEL SISTEMA:'}</td>
- <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.totalValue, isIntl)}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">${formatPrice(content.totalValue)}{currencySuffix}</td>
  </tr>
  )}
  {content.normalPrice && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.normalLabel || 'INVERSIÓN NORMAL:'}</td>
- <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.normalPrice, isIntl)}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">${formatPrice(content.normalPrice)}{currencySuffix}</td>
  </tr>
  )}
 
@@ -211,9 +227,11 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
  )}
  <div className="flex justify-center items-baseline gap-2 mb-8">
- <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white whitespace-nowrap">{content.planPrice ? formatPrice(content.planPrice, isIntl) : 'Consúltalo'}</span>
- {content.planPrice && content.planPeriod && (
- <span className="text-xl text-gray-300 font-medium">{content.planPeriod}</span>
+ <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ? `$${formatPrice(content.planPrice)}` : 'Consúltalo'}</span>
+ {content.planPrice && (
+ <span className="text-xl text-gray-300 font-medium ml-1">
+     {isIntl ? 'USD / mo' : (content.planPeriod || 'MXN / mes')}
+ </span>
  )}
  </div>
  <a href="#contacto" className="block text-center w-full max-w-sm mx-auto bg-[#CC0000] text-white py-4 rounded-full font-bold text-xl hover:bg-white hover:text-[#CC0000] transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-transparent hover:border-[#CC0000]">

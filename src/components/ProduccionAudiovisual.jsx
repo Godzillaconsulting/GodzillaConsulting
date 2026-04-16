@@ -3,14 +3,15 @@ import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Video, Scissors, Star, PlayCircle, Smartphone, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
-const gifBot = '/api/media/assets/Bot.gif';
-const gifVideo = '/api/media/assets/Video.gif';
-const gifEmbudo = '/api/media/assets/Embudo.gif';
-const gifRedes = '/api/media/assets/Redes Sociales.gif';
-const gifSeo = '/api/media/assets/Red Social Optimizar.gif';
-const gifCrm = '/api/media/assets/Estadistica.gif';
-// const audiovisualVideo = '/api/media/assets/GC_VideoEImagenWebPage_AM_181225.mp4'; // TEMP: Comentado por falta de archivo
+const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
+const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
+const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
+const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
+const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
+const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+// const audiovisualVideo = `${API_URL}/api/media/assets/GC_VideoEImagenWebPage_AM_181225.mp4`; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
     title: 'Producción\naudiovisual',

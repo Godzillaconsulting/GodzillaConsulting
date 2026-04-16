@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
-const bgVideo = '/api/media/assets/Particulas Rojas.mp4';
-const gifBot = '/api/media/assets/Bot.gif';
-const gifVideo = '/api/media/assets/Video.gif';
-const gifEmbudo = '/api/media/assets/Embudo.gif';
-const gifRedes = '/api/media/assets/Redes Sociales.gif';
-const gifSeo = '/api/media/assets/Red Social Optimizar.gif';
-const gifCrm = '/api/media/assets/Estadistica.gif';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const bgVideo = `${API_URL}/api/media/assets/Particulas Rojas.mp4`;
+const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
+const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
+const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
+const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
+const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
+const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
 
 const defaultServices = [
     { _id: 'default-bots', orden: 1, id: { current: 'bots' }, iconSrc: gifBot, title: 'Automatización de Bots', enlace: '/bots', desc: 'Automatiza tu atención al cliente 24/7 con bots entrenados en tu negocio, que responden dudas, califican prospectos y los llevan directo a la cita o a la venta. Integrados con WhatsApp, redes sociales y tu CRM.' },

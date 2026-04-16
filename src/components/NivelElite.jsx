@@ -3,7 +3,8 @@ import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { client } from '../sanityClient';
-const backgroundVideo = '/api/media/assets/Particulas Rojas LANDINGS.mp4';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.mp4`;
 
 const defaultContent = {
     heroTopText: 'Organiza un sistema que capture, atienda y organice a tus prospectos sin que tú muevas un dedo',

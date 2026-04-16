@@ -13,7 +13,7 @@ const defaultMagnets = [
     {
         id: 1,
         orden: 1,
-        title: 'La bóveda de scripts de IA',
+        title: `La bóveda de scripts de IA',
         description: 'Acceso a los 7 pasos estructurales que te permitirán automatizar tus respuestas y gestionar la atención de tus prospectos en segundos. Incluye pautas fundamentales y la técnica de "Doble Opción" para incrementar considerablemente tus tasas de agendamiento sin perder la naturalidad humana.',
         image: gifBot,
     },

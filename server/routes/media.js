@@ -185,6 +185,12 @@ router.post('/upload-video', requireAdmin, (req, res, next) => {
 router.get('/file/:id', async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Evitar que UUIDs y cadenas corruptas lleguen a Postgres (si la columna ID es Integer)
+        if (!/^\d+$/.test(id)) {
+            return res.status(400).send('Formato de ID inválido');
+        }
+
         const result = await pool.query('SELECT file_data, mimetype FROM media_storage WHERE id = $1', [id]);
 
         if (result.rows.length === 0) {
@@ -276,6 +282,9 @@ router.delete('/:type/:filename', requireAdmin, async (req, res) => {
 
     // Imágenes: borrar de DB
     try {
+        if (!/^\d+$/.test(filename)) {
+            return res.status(400).json({ error: 'Formato de ID inválido' });
+        }
         const result = await pool.query('DELETE FROM media_storage WHERE id = $1 RETURNING id', [filename]);
         if (result.rowCount === 0) return res.status(404).json({ error: 'Archivo inexistente en DB' });
         console.log(`[Media-DB] Archivo evaporado de la DB: ${filename}`);

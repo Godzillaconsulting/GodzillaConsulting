@@ -42,7 +42,7 @@ export const removeWatermark = async (inputPath, outputPath, onProgress = () => 
                 ])
                 .outputOptions([
                     '-c:v libx264',
-                    '-crf 18',       // Preserva la máxima calidad del video
+                    '-crf 12',       // Calidad Near-Lossless (Casi Cero Pérdida) solicitado por admin
                     '-preset slow',  // Más pesado de compilar, pero preserva más detalle
                     '-c:a copy'      // No destrozar ni recomprimir el audio original
                 ])

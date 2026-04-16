@@ -261,12 +261,12 @@ Concept: ${prompt}`;
                         const response = await ai.models.generateImages({
                             model: modelName,
                             prompt: finalPromptToUse,
-                            config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
+                            config: { numberOfImages: 1, outputMimeType: 'image/png' }
                         });
                         if (response.generatedImages?.[0]?.image?.imageBytes) {
                             const b64 = response.generatedImages[0].image.imageBytes;
                             const buffer = Buffer.from(b64, 'base64');
-                            const fileName = `${taskId}.jpg`;
+                            const fileName = `${taskId}.png`;
                             const savePath = path.join('E:/GodzillaSora_Outputs', fileName);
                             fs.writeFileSync(savePath, buffer);
                             resultUrl = `/api/sora/media/${fileName}`;
@@ -633,7 +633,7 @@ export const getInspirationGallery = async (req, res) => {
         const promptInstruction = `Return a JSON array of 12 extremely creative, breathtaking, and unique cinematic visual prompts. 
         Each object must have:
         1. "prompt": hyper-detailed cinematic description in english. VERY IMPORTANT: KEEP PROMPT UNDER 150 CHARACTERS to prevent URL crashes. Make them avant-garde, macro photography, unreal engine 5 style, or dark fantasy.
-        2. "tag": short catchy name in spanish (e.g. "Cyberpunk", "Macro Lente", "Cinemático").
+        2. "tag": short catchy name in spanish representing the aesthetic style. BE CREATIVE. DO NOT USE GENERIC ONES. Invent completely new wild labels for each (e.g., "Bio-Terror", "Cyber-Gótico", "Luz Alienígena", "Plástico Fundido"). DO NOT REPEAT TAGS.
         3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "Higgsfield Cosmos", "Veo 3".
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
@@ -745,6 +745,18 @@ export const refineRenderJob = async (req, res) => {
             const split = imageUrl.split(';base64,');
             mimeType = split[0].replace('data:', '');
             base64Image = split[1];
+        } else if (imageUrl.startsWith('/api/sora/media/')) {
+            // Resolver archivo local generado previamente
+            const fileName = imageUrl.replace('/api/sora/media/', '');
+            const localPath = path.join('E:/GodzillaSora_Outputs', fileName);
+            if (!fs.existsSync(localPath)) throw new Error('Imagen original no encontrada en el disco.');
+            const buffer = fs.readFileSync(localPath);
+            base64Image = buffer.toString('base64');
+            mimeType = fileName.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        }
+
+        if (!base64Image) {
+            throw new Error('Formato de imagen de entrada no soportado.');
         }
 
         const optimizedPrompt = 'Using this image as a structural reference, create a stunning, hyper-realistic new variation. Take creative liberties to enhance the composition, add cinematic lighting, ultra-detailed 8k masterpiece quality, and professional color grading. Do not just color-correct; generate a completely reimagined version that strongly follows this original concept: ' + (prompt || '');

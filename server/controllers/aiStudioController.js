@@ -63,7 +63,7 @@ Concept: ${prompt}`;
                 }
 
                 const directorRes = await aiSDK.models.generateContent({
-                    model: 'gemini-2.5-pro-preview-05-06',
+                    model: 'gemini-2.0-flash',
                     contents: [{ role: 'user', parts: [{ text: instruction }] }]
                 });
                 const rawText = directorRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -706,6 +706,46 @@ export const getInspirationGallery = async (req, res) => {
         res.status(200).json({ success: true, gallery: finalGallery });
     } catch (error) {
         console.error("Error getInspirationGallery:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const getDynamicFilters = async (req, res) => {
+    try {
+        if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for dynamic filters");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        
+        const promptInstruction = `Return a JSON array of 15 extremely creative, diverse, and unique photography/cinematography aesthetic filters.
+        I want them to be COMPLETELY DIFFERENT every single time this is triggered. 
+        Each object must have:
+        1. "id": very short unique string (e.g. "neon_noir").
+        2. "label": short, catchy label in Spanish with precisely ONE emoji at the start (e.g., "👽 Neon Noir", "📼 VHS Roto", "🦅 Lente Extraño"). Be extremely creative with styling names.
+        3. "prompt": hyper-detailed english prompt instructions for the AI engine to apply this visual style. (Focus on lighting, camera lens, color grading, mood, medium format, rendering engine etc). Max 200 characters.
+        Return ONLY valid JSON array with 15 objects. Do not include markdown \`\`\` blocks.`;
+        
+        const resp = await ai.generateContent({
+             contents: [{role: 'user', parts: [{text: promptInstruction}]}],
+             generationConfig: { responseMimeType: "application/json", temperature: 1.5 }
+        });
+        
+        let jsonStr = resp.response.text().trim();
+        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
+        if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+        
+        let filtersList;
+        try {
+            filtersList = JSON.parse(jsonStr.trim());
+        } catch(err) {
+            console.error("Gemini failed filters JSON", err);
+            throw new Error("Fallo al generar filtros dinámicos.");
+        }
+        
+        res.status(200).json({ success: true, filters: filtersList });
+    } catch (error) {
+        console.error("Error getDynamicFilters:", error);
+        // Fallback a unos muy creativos por si falla
         res.status(500).json({ success: false, error: error.message });
     }
 };

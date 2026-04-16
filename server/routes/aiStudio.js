@@ -3,7 +3,7 @@ import multer from 'multer';
 import os from 'os';
 
 const upload = multer({ dest: os.tmpdir() });
-import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo } from '../controllers/aiStudioController.js';
+import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -52,6 +52,8 @@ router.get('/inspiration', authenticateToken, async (req, res) => {
         res.status(500).json({ success: false, error: 'Error recabando galería' });
     }
 });
+
+router.get('/dynamic-filters', authenticateToken, getDynamicFilters);
 
 // ==========================================
 // In-House Cluster (Sora / Python Local Bridge)

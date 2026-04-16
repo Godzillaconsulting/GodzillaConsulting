@@ -482,6 +482,24 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     {selected.status === 'published' && (
                                         <div className="mt-auto text-center text-[10px] text-neutral-600 uppercase tracking-widest">Publicada — visible en el Calendario Global</div>
                                     )}
+
+                                    {/* Controles secundarios directos desde el modal */}
+                                    {canReview && (
+                                        <div className="flex gap-2 mt-4 pt-4 border-t border-neutral-800">
+                                            <button 
+                                                onClick={(e) => handleUnpublish(selected.id, e)}
+                                                className="flex-1 border border-yellow-500/40 text-yellow-500 hover:bg-yellow-500 hover:text-black py-2 rounded-xl text-xs font-bold transition-colors"
+                                            >
+                                                ↩ Regresar a Pendiente
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handleDelete(selected.id, e)}
+                                                className="flex-1 border border-red-500/40 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors"
+                                            >
+                                                ✕ Eliminar Activo
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

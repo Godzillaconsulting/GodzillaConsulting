@@ -120,11 +120,17 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 
                 {/* Visualizador */}
                 <div className="flex-1 bg-black flex items-center justify-center relative p-4">
-                    <img src={selectedMedia.url} className="max-w-full max-h-full object-contain rounded-lg shadow-lg" />
-                    <button onClick={() => setSelectedMedia(null)} className="absolute top-4 left-4 w-10 h-10 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-colors">✕</button>
-                    {activeTab === 'devueltas' && (
-                        <a href={selectedMedia.url} download className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors">⬇️ Descargar Archivo</a>
+                    {selectedMedia.type === 'video' ? (
+                        <video src={selectedMedia.url} controls className="max-w-full max-h-full rounded-lg shadow-lg" />
+                    ) : (
+                        <img src={selectedMedia.url} className="max-w-full max-h-full object-contain rounded-lg shadow-lg" alt="Asset" />
                     )}
+                    <button onClick={() => setSelectedMedia(null)} className="absolute top-4 left-4 w-10 h-10 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-colors">✕</button>
+                    {/* Botón de descarga siempre disponible */}
+                    <a href={selectedMedia.url} download={`asset_${selectedMedia.id}`} target="_blank" rel="noreferrer"
+                        className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2">
+                        ⬇️ Descargar Archivo
+                    </a>
                 </div>
 
                 {/* Panel de Control Lateral */}
@@ -132,6 +138,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                     <h3 className="text-xl font-black text-white mb-1 uppercase">Gestión de Activo</h3>
                     <p className="text-xs text-neutral-500 mb-6">Subeido por: <span className="text-white">{selectedMedia.uploader}</span></p>
 
+                    {/* Panel para uploader (Alex) en pestaña PENDIENTES: solo muestra estado */}
                     {activeTab === 'pendientes' && canReview && (
                         <div className="flex-1 flex flex-col">
                             <label className="text-xs font-bold text-neutral-400 mb-2 block uppercase tracking-widest">Notas de Corrección (Obligatorio si se devuelve):</label>
@@ -149,7 +156,29 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         </div>
                     )}
 
-                    {activeTab === 'devueltas' && (
+                    {activeTab === 'pendientes' && !canReview && (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mb-4">
+                                <span className="text-2xl">⏳</span>
+                            </div>
+                            <p className="font-black text-white uppercase tracking-widest mb-2">En Revisión</p>
+                            <p className="text-xs text-neutral-400">Este activo está en manos de Judith para revisión y aprobación. Recibirás notificación cuando sea aprobado o devuelto.</p>
+                        </div>
+                    )}
+
+                    {activeTab === 'devueltas' && canUpload && (
+                         <div className="flex-1 flex flex-col">
+                            <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl mb-4">
+                                <p className="text-xs font-bold text-red-400 mb-2 uppercase">Notas de Devolución:</p>
+                                <p className="text-sm text-white">{selectedMedia.feedback || 'Sin notas.'}</p>
+                            </div>
+                            <div className="mt-auto space-y-3">
+                                <p className="text-xs text-center text-neutral-500">Este archivo se purgará en 7 días. Corrige y vuelve a subir.</p>
+                            </div>
+                         </div>
+                    )}
+
+                    {activeTab === 'devueltas' && !canUpload && canReview && (
                          <div className="flex-1 flex flex-col">
                             <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl mb-4">
                                 <p className="text-xs font-bold text-red-400 mb-2 uppercase">Notas de Devolución:</p>

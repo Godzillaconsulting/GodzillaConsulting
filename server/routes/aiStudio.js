@@ -23,7 +23,7 @@ router.get('/inspiration', authenticateToken, async (req, res) => {
     try {
         // Traer tareas publicadas o aprobadas para usar como inspiración comunitaria
         const result = await pool.query(`
-            SELECT visual_prompt, media_payload 
+            SELECT prompt, title, media_payload 
             FROM studio_tasks 
             WHERE status IN ('approved', 'published', 'cockers_review') 
             AND media_payload IS NOT NULL 
@@ -40,7 +40,7 @@ router.get('/inspiration', authenticateToken, async (req, res) => {
                 // Sacar solo la primera imagen de la opción
                 gallery.push({
                     img: media[0].url,
-                    prompt: row.visual_prompt || 'Visual Concept',
+                    prompt: row.prompt || row.title || 'Visual Concept',
                     tag: 'Comunidad',
                     model: media[0].provider || 'AI Engine'
                 });

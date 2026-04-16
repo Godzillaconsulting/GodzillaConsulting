@@ -153,11 +153,9 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
         const uploader = req.admin?.username || 'unknown';
         const isSelfPost = uploader.toLowerCase() === 'alex' || req.admin?.role === 'cockers';
         
-        // Alex tiene autonomía: sus subidas van directo a aprobado (sin pasar por revisión)
-        // pero DEBE incluir una nota de razón en el campo `title`
-        const initialStatus = media_payload 
-            ? (isSelfPost ? 'approved' : 'pending_cm_approval') 
-            : 'draft';
+        // Todos los envíos desde el Studio van a revisión (pending_cm_approval)
+        // Alex y Judith pueden aprobar en CEO Estudio, pero el envío es siempre una solicitud de revisión
+        const initialStatus = media_payload ? 'pending_cm_approval' : 'draft';
         
         const query = `
             INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload)
@@ -181,18 +179,18 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
         const newTask = result.rows[0];
         broadcast('CREATE', newTask);
         
-        // Notificar al equipo que Alex subió algo directamente (auto-aprobado)
-        if (isSelfPost && media_payload) {
+        // Notificar a todos los que pueden aprobar: que hay algo nuevo pendiente de revisión
+        if (media_payload) {
             broadcast('NOTIFICATION', {
-                type: 'SELF_POST',
-                message: `📌 ${uploader} publicó un activo directamente (auto-aprobado). Razón: "${title || 'Sin nota'}". Revísalo en CEO Estudio → Aprobadas.`,
+                type: 'REVIEW_REQUESTED',
+                message: `🔔 ${uploader} envió un activo a revisión. Nota: "${title || 'Sin nota'}". Revísalo en CEO Estudio → Pendientes.`,
                 taskId: newTask.id,
                 uploader,
                 reason: title || 'Sin nota'
             });
         }
         
-        res.status(201).json({ success: true, task: newTask, selfApproved: isSelfPost });
+        res.status(201).json({ success: true, task: newTask, selfApproved: false });
     } catch (error) {
         console.error('Error POST /tasks:', error);
         res.status(500).json({ success: false, message: 'Error al crear tarea', error: error.message });

@@ -640,12 +640,8 @@ export default function CockersStudio({ adminProfile }) {
             const d = await res.json();
             if (!d.success) throw new Error(d.message || 'Error creando tarea');
 
-            // Mensaje contextual según si fue auto-aprobado o enviado a revisión
-            if (d.selfApproved) {
-                alert(`✅ Activo subido y aprobado directamente.\n\n📌 Nota registrada: "${nota}"\n\nEl equipo fue notificado.`);
-            } else {
-                alert(`✅ Enviado a revisión.\n\n📌 Nota: "${nota}"\n\nJudith lo verá en "Enviados y Devueltos".`);
-            }
+            // Mensaje de confirmación — siempre va a revisión
+            alert(`✅ Activo enviado a revisión.\n\n📌 Nota registrada: "${nota}"\n\n🔔 El equipo fue notificado. Revísalo en CEO Estudio → Pendientes.`);
             setQueue(q => [{ id: d.task?.id || Date.now(), status: d.selfApproved ? 'approved' : 'pending_cm_approval', caption: nota, visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
         } catch (e) {
             console.error(e);

@@ -22,8 +22,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
     const username  = adminProfile?.username?.toLowerCase() || '';
     const isCockers = adminProfile?.role === 'cockers' || username === 'alex' || username === 'cockers';
-    const canReview = ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
-    const canPublish = canReview;
+    // Alex puede aprobar SU propio trabajo y cualquier otro; Judith aprueba todo
+    const canReview = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    const canPublish = ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin; // Publicar sigue siendo solo Judith/Admin
 
     const token = localStorage.getItem('adminToken');
 

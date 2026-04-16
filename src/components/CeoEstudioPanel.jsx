@@ -467,9 +467,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl text-center">
                                         <p className="text-sm font-black text-green-400">{selected.status === 'published' ? '🚀 YA PUBLICADA' : '✅ LISTO PARA PUBLICAR'}</p>
                                     </div>
-                                    {selected.scheduled_for && (
+                                    {selected.scheduled_for && selected.status !== 'published' && (
                                         <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-center">
-                                            <p className="text-[10px] font-bold text-blue-400 uppercase">Fecha programada</p>
+                                            <p className="text-[10px] font-bold text-blue-400 uppercase">Fecha sugerida (CM Calendar)</p>
                                             <p className="text-sm text-white font-black">{new Date(selected.scheduled_for).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                         </div>
                                     )}

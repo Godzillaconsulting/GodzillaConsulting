@@ -22,7 +22,8 @@ export async function generateAndSendAutoNewsletter() {
     const genAI = getClient();
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
-        systemInstruction: "Eres Godzilla AI, brazo derecho del CEO de Godzilla Consulting. Escrito experto B2B."
+        systemInstruction: "Eres Godzilla AI... Escrito experto B2B.",
+        generationConfig: { responseMimeType: "application/json" }
     });
 
     const prompt = `Crea la edición semanal de hoy del boletín para empresarios de tu base de datos.
@@ -44,50 +45,67 @@ DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
 
     console.log("✅ Contenido IA Generado. Construyendo PDF Corporativo...");
 
-    // 2. CREACIÓN DEL REPORTE PDF (En memoria)
-    const pdfBuffer = await new Promise((resolve, reject) => {
-        try {
-            const doc = new PDFDocument({ margin: 50 });
-            const buffers = [];
-            
-            doc.on('data', buffers.push.bind(buffers));
-            doc.on('end', () => {
-                resolve(Buffer.concat(buffers));
-            });
+    // 2. CREACIÓN DEL REPORTE PDF (En memoria) y MANEJO DE ERRORES
+    let pdfBuffer = null;
+    let attachmentUrl = null;
 
-            // Diseño del PDF
-            doc.rect(0, 0, doc.page.width, 120).fill('#111111');
-            doc.fillColor('#CC0000').fontSize(24).font('Helvetica-Bold').text('GODZILLA CONSULTING', 50, 45);
-            doc.fillColor('#ffffff').fontSize(10).font('Helvetica').text('REPORTE EJECUTIVO SEMANAL', 50, 75);
+    try {
+        pdfBuffer = await new Promise((resolve, reject) => {
+            try {
+                const doc = new PDFDocument({ margin: 50 });
+                const buffers = [];
+                
+                doc.on('data', buffers.push.bind(buffers));
+                doc.on('end', () => {
+                    resolve(Buffer.concat(buffers));
+                });
+                // doc.on('error', reject); // just in case
 
-            doc.moveDown(4); // Espacio después del header negro
+                // Diseño del PDF
+                doc.rect(0, 0, doc.page.width, 120).fill('#111111');
+                doc.fillColor('#CC0000').fontSize(24).font('Helvetica-Bold').text('GODZILLA CONSULTING', 50, 45);
+                doc.fillColor('#ffffff').fontSize(10).font('Helvetica').text('REPORTE EJECUTIVO SEMANAL', 50, 75);
 
-            doc.fillColor('#000000').fontSize(18).font('Helvetica-Bold').text(data.pdfTitle, { align: 'left' });
-            doc.moveDown(1);
-            
-            doc.fillColor('#333333').fontSize(11).font('Helvetica').lineGap(6).text(data.pdfBody, { align: 'justify' });
+                doc.moveDown(4); // Espacio después del header negro
 
-            doc.moveDown(2);
-            doc.fillColor('#CC0000').fontSize(12).font('Helvetica-Bold').text('A la vanguardia corporativa. Agenda hoy en godzillaconsulting.ai');
+                doc.fillColor('#000000').fontSize(18).font('Helvetica-Bold').text(data.pdfTitle, { align: 'left' });
+                doc.moveDown(1);
+                
+                doc.fillColor('#333333').fontSize(11).font('Helvetica').lineGap(6).text(data.pdfBody, { align: 'justify' });
 
-            doc.end();
-        } catch (e) {
-            reject(e);
-        }
-    });
+                doc.moveDown(2);
+                doc.fillColor('#CC0000').fontSize(12).font('Helvetica-Bold').text('A la vanguardia corporativa. Agenda hoy en godzillaconsulting.ai');
 
-    console.log("✅ PDF Compilado (" + (pdfBuffer.length / 1024).toFixed(1) + " KB). Inyectando a Base de Datos Local...");
+                doc.end();
+            } catch (e) {
+                reject(e);
+            }
+        });
 
-    // 3. SUBIDA A DISCO LOCAL (BYPASS DB Local LIMITS) Y GENERACIÓN DE ENLACE
-    const filename = `Reporte-Ejecutivo-Godzilla-${Date.now()}.pdf`;
-    const targetPath = path.join(ASSETS_DIR, filename);
-    await fs.promises.writeFile(targetPath, pdfBuffer);
+        console.log("✅ PDF Compilado (" + (pdfBuffer.length / 1024).toFixed(1) + " KB). Inyectando a Base de Datos Local...");
 
-    // La URL oficial pública que usa media.js para el directorio estático:
-    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
-    const attachmentUrl = `${botBase}/api/media/assets/${filename}`;
+        // SUBIDA A DISCO LOCAL (BYPASS DB Local LIMITS) Y GENERACIÓN DE ENLACE
+        const filename = `Reporte-Ejecutivo-Godzilla-${Date.now()}.pdf`;
+        const targetPath = path.join(ASSETS_DIR, filename);
+        await fs.promises.writeFile(targetPath, pdfBuffer);
 
-    console.log("✅ PDF Guardado Físicamente. URL Estática:", attachmentUrl);
+        // La URL oficial pública que usa media.js para el directorio estático:
+        const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+        attachmentUrl = `${botBase}/api/media/assets/${filename}`;
+
+        console.log("✅ PDF Guardado Físicamente. URL Estática:", attachmentUrl);
+    } catch (pdfErr) {
+        console.error("⚠️ [CRITICAL] Fallo en empaquetado PDF. Enviando notificación en lugar del archivo.", pdfErr.message);
+        data.emailHTML += `
+<br><hr><br>
+<div style="background-color: #fff3f3; border-left: 4px solid #CC0000; padding: 15px; margin-top: 20px;">
+    <p style="color:#CC0000; font-size:13px; font-weight:bold; margin-top:0;">⚠️ AVISO DEL SISTEMA AUTOMATIZADO</p>
+    <p style="color:#555; text-align:justify; font-size:12px; margin-bottom:0;">
+        Nuestro bot detectó un fallo al ensamblar en tiempo real el archivo PDF interactivo adjunto a este envío de hoy. 
+        El equipo de inteligencia de Godzilla Consulting ya fue notificado y está empaquetando manualmente la información del archivo dañado para subirlo pronto a la plataforma. Disculpa los inconvenientes.
+    </p>
+</div>`;
+    }
 
     // 4. CREACIÓN DEL BORRADOR & ENCOLAMIENTO
     console.log("🚀 Desplegando en Bandeja de Salida para TODOS los suscriptores...");

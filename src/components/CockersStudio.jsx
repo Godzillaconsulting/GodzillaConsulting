@@ -859,7 +859,7 @@ export default function CockersStudio({ adminProfile }) {
     );
 
     return (
-        <div className="flex h-full bg-[#0a0a09] text-white overflow-hidden relative">
+        <div className="flex w-full h-full bg-[#0a0a09] text-white overflow-hidden relative">
             
             {/* LEFT SIDEBAR: Panel de Parámetros (Estilo Kling / Flow) */}
             <div className="w-[380px] bg-[#0f0f0e] border-r border-[#222] flex flex-col shrink-0 h-full overflow-y-auto custom-scrollbar z-20">
@@ -1393,18 +1393,15 @@ export default function CockersStudio({ adminProfile }) {
                 {/* Si no hay liveSlots ni generación, mostramos el Explore Gallery */}
                 {!renderingAI && liveSlots.length === 0 && (
 
-                    <motion.div 
+                    <div 
                         key={genMode}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="absolute inset-0 overflow-auto custom-scrollbar"
+                        className="absolute inset-0 overflow-auto custom-scrollbar animate-fade-in"
                     >
                         {/* Inject dynamic CSS */}
                         <style>{GALLERY_CSS}</style>
 
                         {/* Ambient background orbs */}
-                        <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
                             <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#CC0000]/8 rounded-full blur-[120px] animate-pulse" />
                             <div className="absolute top-1/2 -right-48 w-[400px] h-[400px] bg-indigo-900/12 rounded-full blur-[100px]" style={{animation:'floatBob 8s ease-in-out infinite'}} />
                             <div className="absolute bottom-0 left-1/3 w-[300px] h-[300px] bg-violet-900/10 rounded-full blur-[80px]" style={{animation:'floatBob 12s ease-in-out infinite reverse'}} />
@@ -1470,7 +1467,7 @@ export default function CockersStudio({ adminProfile }) {
                                     ))}
                                 </Masonry>
                             </div>
-                    </motion.div>
+                    </div>
                 )}
 
                 {/* Loader removido a peticion del director, el espacio ahora es para el 4to motor */}

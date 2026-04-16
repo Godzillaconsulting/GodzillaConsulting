@@ -5,14 +5,11 @@ import { Check, Play, Pause, Volume2, VolumeX } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.mp4`;
-import NivelExpansion from'./NivelExpansion';
-import NivelElite from'./NivelElite';
-import Bots from'./Bots';
-// API_URL moved up
+import { injectSectionDefaults } from '../utils/studioConfig';
 
 const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
- const { getNodeData } = useSiteData();
+ const { getNodeData, loading } = useSiteData();
 
  // Map incoming URL slug or Admin Studio prop to Local Node IDs
  const slugLower = slug ? slug.toLowerCase() :'';
@@ -25,8 +22,11 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
      else nodeId ='paquete-' + slugLower;
  }
 
- const contentData = getNodeData(nodeId);
- const content = contentData?.heroTitle ? contentData : null;
+ let contentData = getNodeData(nodeId);
+ if (!contentData) {
+     contentData = injectSectionDefaults(nodeId, {});
+ }
+ const content = contentData;
  const videoRef = useRef(null);
  const [isPlaying, setIsPlaying] = useState(true);
  const [isMuted, setIsMuted] = useState(true);
@@ -69,14 +69,16 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  return { __html: (rawHTML ||'').replace(/\n/g,'<br />') };
  };
 
- if (!content) {
- // Fallbacks estáticos para Producción donde el Dashboard aún no envía datos a Vercel
- 
- if (slugLower.includes('control') || slugLower.includes('bot')) return <Bots />;
- if (slugLower.includes('expansion')) return <NivelExpansion />;
- if (slugLower.includes('elite')) return <NivelElite />;
+ if (loading && !previewNodeId) {
+     return (
+         <div className="bg-black min-h-screen flex items-center justify-center pt-20">
+            <div className="text-gray-400 font-medium text-lg animate-pulse">Cargando servidor...</div>
+         </div>
+     );
+ }
 
- return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold">Página en mantenimiento...</div></div>;
+ if (!content || !content.heroTitle) {
+     return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold">Página en mantenimiento...</div></div>;
  }
 
  return (

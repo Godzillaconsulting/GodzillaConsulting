@@ -245,7 +245,9 @@ function ScaledSection({ nodeId }) {
  background:'linear-gradient(135deg, #0a0a0a 0%, #110000 40%, #0a0a0a 100%)',
  minHeight:'100vh',
  }}>
- {inner}
+   <MemoryRouter>
+    {inner}
+   </MemoryRouter>
  </div>
  </div>
  </div>

@@ -10,38 +10,25 @@ const Navbar = () => {
 
  // Login redireccionado a la ruta /login completada
 
- const navLinks = [
-  { name:'INICIO', href:'/#inicio', id: 'inicio' },
-  { name:'CULTURA', href:'/#cultura', id: 'cultura' },
-  { name:'SERVICIOS', href:'/#servicios', id: 'servicios' },
-  { name:'PORTAFOLIO', href:'/#portafolio', id: 'portafolio' },
-  { name:'RECURSOS', href:'/#recursos', id: 'recursos' },
-  { name:'PAQUETES', href:'/#paquetes', id: 'paquetes' },
- ];
+    const location = useLocation();
+    
+    const navLinks = [
+        { name:'INICIO', href:'/' },
+        { name:'CULTURA', href:'/cultura' },
+        { name:'SERVICIOS', href:'/servicios' },
+        { name:'PORTAFOLIO', href:'/portafolio' },
+        { name:'RECURSOS', href:'/recursos' },
+        { name:'PAQUETES', href:'/paquetes' },
+    ];
 
- useEffect(() => {
- const handleScroll = () => {
-  const scrollY = window.scrollY;
-  setIsScrolled(scrollY > 50);
-
-  // Determinar en qué sección estamos
-  let currentSection = '/#inicio'; // por defecto
-  for (let i = navLinks.length - 1; i >= 0; i--) {
-   const link = navLinks[i];
-   const element = document.getElementById(link.id);
-   if (element) {
-    if (scrollY >= element.offsetTop - 250) {
-     currentSection = link.href;
-     break;
-    }
-   }
-  }
-  setActiveTab(currentSection);
- };
- window.addEventListener('scroll', handleScroll);
- handleScroll();
- return () => window.removeEventListener('scroll', handleScroll);
- }, []);
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
  return (
  <>
@@ -56,7 +43,7 @@ const Navbar = () => {
  {/* Desktop Nav */}
  <nav className="hidden xl:flex items-center gap-8">
  {navLinks.map((link) => {
-  const isActive = activeTab === link.href;
+  const isActive = location.pathname === link.href || (link.href !== '/' && location.pathname.startsWith(link.href));
   return (
    <Link 
      key={link.name} 

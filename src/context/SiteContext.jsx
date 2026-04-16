@@ -12,9 +12,9 @@ export function SiteProvider({ children }) {
   const [previewOverride, setPreviewOverrideState] = useState(null);
 
   // Load all nodes with retry logic for Neon DB cold starts
-  const fetchNodes = useCallback(async (retries = 3) => {
+  const fetchNodes = useCallback(async (retries = 3, silent = false) => {
     try {
-      if (retries === 3) setLoading(true);
+      if (retries === 3 && !silent) setLoading(true);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s límite máximo absoluto

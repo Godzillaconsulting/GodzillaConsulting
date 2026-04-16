@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import React, { useState, useEffect, memo, Suspense } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import CustomCursor from './components/CustomCursor';
 import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider, useSiteData } from './context/SiteContext';
@@ -34,6 +35,7 @@ const OptimizacionWebSeo = React.lazy(() => import('./components/OptimizacionWeb
 const CrmSaas = React.lazy(() => import('./components/CrmSaas'));
 const LandingPaqueteDynamic = React.lazy(() => import('./components/LandingPaqueteDynamic'));
 const Login = React.lazy(() => import('./components/Login'));
+const SEOPageWrapper = React.lazy(() => import('./components/SEOPageWrapper'));
 
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
 const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
@@ -184,7 +186,41 @@ function AppLayout() {
           {/* El Suspense envuelve todas las rutas Lazy */}
           <Suspense fallback={<GlobalSuspenseFallback />}>
             <Routes>
+              {/* Mega-Embudo principal */}
               <Route path="/" element={<Home />} />
+
+              {/* Rutas SEO Satélite Independientes */}
+              <Route path="/servicios" element={
+                <SEOPageWrapper title="Servicios B2B y Motores IA" description="Descubre los servicios de automatización de inteligencia artificial e implementación B2B.">
+                  <Servicios />
+                </SEOPageWrapper>
+              } />
+              
+              <Route path="/paquetes" element={
+                <SEOPageWrapper title="Paquetes de Suscripción" description="Cotiza y contrata las suscripciones mensuales de automatización IA y gestión omnicanal.">
+                  <Paquetes />
+                </SEOPageWrapper>
+              } />
+              
+              <Route path="/portafolio" element={
+                <SEOPageWrapper title="Casos de Éxito y Portafolio" description="Casos reales de aumento de retorno de inversión mediante la integración de IA autónoma.">
+                  <CasosExito />
+                </SEOPageWrapper>
+              } />
+              
+              <Route path="/cultura" element={
+                <SEOPageWrapper title="Manifiesto y Cultura" description="Nuestra filosofía estricta de aceleración empresarial corporativa.">
+                  <Cultura />
+                </SEOPageWrapper>
+              } />
+              
+              <Route path="/recursos" element={
+                <SEOPageWrapper title="Recursos Gratuitos de IA" description="Informes ejecutivos y guías para directores y estrategas de marketing.">
+                  <Recursos />
+                </SEOPageWrapper>
+              } />
+
+              {/* Políticas y Legacy */}
               <Route path="/terminos" element={<TerminosYCondiciones />} />
               <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
               <Route path="/politica-cookies" element={<PoliticaCookies />} />
@@ -218,16 +254,18 @@ function AppLayout() {
 
 function App() {
   return (
-    <SiteProvider>
-      <Router>
-        <CustomCursor />
-        <ScrollToHash />
-        <ScrollToTop />
-        <PixelTracker />
-        <GodzillaTracker />
-        <AppLayout />
-      </Router>
-    </SiteProvider>
+    <HelmetProvider>
+      <SiteProvider>
+        <Router>
+          <CustomCursor />
+          <ScrollToHash />
+          <ScrollToTop />
+          <PixelTracker />
+          <GodzillaTracker />
+          <AppLayout />
+        </Router>
+      </SiteProvider>
+    </HelmetProvider>
   );
 }
 

@@ -18,31 +18,37 @@ const getClient = () => {
 export async function generateAndSendAutoNewsletter(draftOnly = false) {
     console.log("🤖 Iniciando Auto-Generador de Godzilla Newsletter...");
     
-    // 1. GENERACIÓN DE ESTRATEGIA (Gemini)
+    // 1. GENERACIÓN DE ESTRATEGIA (Agente de Noticias con Grounding)
     const genAI = getClient();
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
-        systemInstruction: "Eres Godzilla AI... Escrito experto B2B.",
-        generationConfig: { responseMimeType: "application/json" }
+        systemInstruction: "Eres Godzilla AI, investigador corporativo y analista B2B. Tu información debe ser quirúrgica, basada en hechos recientes y citando empresas reales.",
+        tools: [
+            { googleSearch: {} }
+        ]
     });
 
-    const prompt = `Crea la edición semanal de hoy del boletín para empresarios de tu base de datos.
-El tema principal: "Despliegue de Motores Inteligentes y Agentes Autónomos."
-El objetivo es enganchar por correo pero entregarles un reporte PDF estructurado mediante un link adjunto.
-INSTRUCCIÓN CRÍTICA PARA EL PDF: El PDF debe verse extremadamente profesional y analítico, no como si fue generado en 1 minuto. Utiliza referencias del mundo real (Ej. cifras de McKinsey, Gartner, Harvard Business Review sobre automatización y agilidad). El tono debe ser impecable, profundo y útil.
+    const prompt = `Crea la edición semanal de hoy del reporte de inteligencia corporativa para nuestra base de datos.
+TAREA CRÍTICA: Debes navegar a Internet AHORA MISMO y hacer una investigación profunda sobre los últimos 7 días de Inteligencia Artificial. No uses conocimiento obsoleto.
+Busca y cubre obligatoriamente:
+1. Gigantes y Modelos: ¿Qué lanzaron o anunciaron OpenAI, Anthropic, Google o DeepSeek esta semana?
+2. Entorno Open Source, MCPs o Frameworks de Agentes: ¿Qué herramienta de código o arquitectura está dominando en GitHub o noticias?
+3. Impactos, Regulación o Riesgos: Juicios, alucinaciones, fallos de seguridad o nuevas leyes de IA recientes.
 
-DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
+INSTRUCCIÓN CRÍTICA DE PDF: Crea contenido súper ejecutivo, digno de McKinsey o MIT.
+
+DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA (todo en español):
 {
-    "subject": "Asunto de correo (incluye emoji ejecutivo)",
-    "emailHTML": "<h2 style=\\"color:#CC0000;\\">Titular Correo...</h2><p>Texto gancho persuasivo del correo</p>",
-    "pdfTitle": "TÍTULO FORMAL DEL REPORTE EJECUTIVO",
-    "pdfSubtitle": "Subtítulo analítico (ej. 'El impacto en la rentabilidad B2B y tendencias globales')",
-    "pdfIntro": "Párrafo introductorio de alto nivel en formato ejecutivo.",
+    "subject": "Asunto (con emoji serio y urgente)",
+    "emailHTML": "<h2 style=\\"color:#CC0000;\\">Titular</h2><p>Resumen persuasivo en HTML para que descarguen el reporte.</p>",
+    "pdfTitle": "TÍTULO DEL REPORTE",
+    "pdfSubtitle": "Subtítulo analítico + Fecha Actual",
+    "pdfIntro": "Párrafo introductorio de alto nivel.",
     "pdfSections": [
-        { "heading": "Título de Subsección Métrica", "content": "Párrafo con análisis y referencias reales B2B (Gartner/Harvard/etc)." }
+        { "heading": "Subtítulo de la noticia", "content": "Párrafo analizando el impacto empresarial de esa noticia." }
     ],
-    "pdfQuote": "\\"Cita de alto impacto o Insight crudo sobre IA e Innovación.\\"",
-    "pdfConclusion": "Conclusión estratégica orientada a retorno de inversión técnica."
+    "pdfQuote": "\\"Insight de la semana sobre supervivencia tecnológica.\\"",
+    "pdfConclusion": "Conclusión orientada al ROI y agilidad empresarial."
 }`;
 
     const result = await model.generateContent(prompt);
@@ -181,20 +187,17 @@ DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
 </div>`;
     }
 
-    // 4. CREACIÓN DEL BORRADOR & ENCOLAMIENTO
-    console.log(`🚀 Generando Borrador (ID o Envío directo)... draftOnly=${draftOnly}`);
+    // 4. CREACIÓN DEL BORRADOR EN DB
+    // Solamente insertamos como borrador. El envío se hace manual desde UI 
+    // o forzado por otro cron automático.
     const nlRes = await pool.query(
         `INSERT INTO newsletters (subject, body_html, attachment_url, status)
-         VALUES ($1, $2, $3, 'draft') RETURNING id`, 
+         VALUES ($1, $2, $3, 'draft') RETURNING id`,
         [data.subject, data.emailHTML, attachmentUrl]
     );
     const newsletterId = nlRes.rows[0].id;
 
-    let total = 0;
-    if (!draftOnly) {
-        total = await enqueueNewsletter(newsletterId);
-        console.log(`🎉 ¡Éxito Masivo! Boletín [ID: ${newsletterId}] liberado para ${total} suscriptores.`);
-    }
+    console.log(`🎉 Borrador de Boletín [ID: ${newsletterId}] ensamblado con Inteligencia de Internet.`);
 
-    return { newsletterId, total, attachmentUrl, subject: data.subject, bodyHtml: data.emailHTML };
+    return { newsletterId, total: 0, attachmentUrl, subject: data.subject, bodyHtml: data.emailHTML };
 }

@@ -48,9 +48,9 @@ export function getLeadMagnetTemplate(subject, bodyText, fileUrl) {
             <!-- Footer -->
             <tr>
               <td style="background:#fcfcfc;padding:24px 40px;border-top:1px solid #f0f0f0;text-align:center;">
-                <p style="font-size:12px;color:#888888;margin:0;">
-                  © ${year} Godzilla Consulting<br/>
-                  Este es un correo automático de entrega de recursos.
+                <p style="font-size:12px;color:#888888;margin:0;line-height:1.5;">
+                  © ${year} Godzilla Consulting — Ciudad Juárez, Chih.<br/>
+                  Este es un correo automático de entrega de recursos. Si no lo solicitaste, puedes ignorarlo con seguridad.
                 </p>
               </td>
             </tr>

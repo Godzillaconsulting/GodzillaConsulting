@@ -19,6 +19,40 @@ router.get('/status/:taskId', authenticateToken, checkRenderStatus);
 router.get('/elite-prompts', authenticateToken, getElitePrompts);
 router.post('/script-chat', authenticateToken, generateScriptChat);
 
+router.get('/inspiration', authenticateToken, async (req, res) => {
+    try {
+        // Traer tareas publicadas o aprobadas para usar como inspiración comunitaria
+        const result = await pool.query(`
+            SELECT visual_prompt, media_payload 
+            FROM studio_tasks 
+            WHERE status IN ('approved', 'published', 'cockers_review') 
+            AND media_payload IS NOT NULL 
+            ORDER BY RANDOM() LIMIT 12
+        `);
+        
+        let gallery = [];
+        for (let row of result.rows) {
+            let media = row.media_payload;
+            if (typeof media === 'string') {
+                try { media = JSON.parse(media); } catch (e) { continue; }
+            }
+            if (Array.isArray(media) && media.length > 0 && media[0].url) {
+                // Sacar solo la primera imagen de la opción
+                gallery.push({
+                    img: media[0].url,
+                    prompt: row.visual_prompt || 'Visual Concept',
+                    tag: 'Comunidad',
+                    model: media[0].provider || 'AI Engine'
+                });
+            }
+        }
+        res.json({ success: true, gallery });
+    } catch (error) {
+        console.error('Error fetching inspiration:', error);
+        res.status(500).json({ success: false, error: 'Error recabando galería' });
+    }
+});
+
 // ==========================================
 // In-House Cluster (Sora / Python Local Bridge)
 // ==========================================

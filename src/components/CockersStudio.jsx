@@ -100,7 +100,7 @@ export default function CockersStudio({ adminProfile }) {
             });
             const data = await res.json();
             if (data.success && data.gallery) {
-                setCommunityGallery(data.gallery);
+                setCommunityGallery(data.gallery.length > 0 ? data.gallery : COMMUNITY_GALLERY_POOL.slice(0, 12));
             } else {
                 alert("Falló la IA: " + data.error);
             }

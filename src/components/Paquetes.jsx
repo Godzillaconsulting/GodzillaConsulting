@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight } from'lucide-react';
 import { Link } from'react-router-dom';
 import { client } from'../sanityClient';
 import { useSiteData } from'../context/SiteContext';
+import { useTranslation } from 'react-i18next';
 
 import godzillaHover from'../assets/images/Godzilla-Holding.png';
 
@@ -56,6 +57,10 @@ const Paquetes = () => {
  ];
 
  const { getNodeData } = useSiteData();
+ const { t, i18n } = useTranslation();
+ const isEng = i18n.language.startsWith('en');
+ const exchangeRate = 20; // 1 USD = 20 MXN
+ 
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
 
@@ -114,10 +119,10 @@ const Paquetes = () => {
  <div className="container mx-auto px-4 max-w-7xl">
  <div className="text-center mb-16">
  <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
- {nodeData.title || 'PAQUETES'}
+ {isEng ? t('packages.title', 'PACKAGES') : (nodeData.title || 'PAQUETES')}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
- {nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.'}
+ {isEng ? t('packages.subtitle', 'Learn more about the most suitable strategy to boost your business. Everything is protected by contract.') : (nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.')}
  </p>
  </div>
 
@@ -157,8 +162,21 @@ const Paquetes = () => {
  {pkg.title}
  </h3>
  <div className="flex items-baseline justify-center gap-1 mb-8">
- <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">{pkg.price}</span>
- <span className="text-xs font-medium text-gray-500 tracking-widest"> {pkg.period}</span>
+ <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
+  {(() => {
+    // Conversión de formato string "$7,900" a número
+    const rawPriceStr = typeof pkg.price === 'string' ? pkg.price.replace(/[$,\sMXNUSD]/ig, '') : pkg.price;
+    const baseMxn = parseFloat(rawPriceStr) || 0;
+    if (baseMxn === 0) return pkg.price; // fallback if NaN
+    
+    return isEng 
+       ? `$${(baseMxn / exchangeRate).toLocaleString('en-US', {maximumFractionDigits: 0})}` 
+       : `$${baseMxn.toLocaleString('es-MX')}`;
+  })()}
+ </span>
+ <span className="text-xs font-medium text-gray-500 tracking-widest pl-1">
+  {isEng ? 'USD / mo' : 'MXN / mes'}
+ </span>
  </div>
 
  {/*"Ideal para" section */}
@@ -222,10 +240,16 @@ const Paquetes = () => {
 
  <div className="text-center mt-12 text-gray-500 text-sm">
  <p>
- Los precios mostrados se muestran en MXN. Para más detalles, consulta nuestros <Link to="/terminos" className="underline hover:text-white">Términos y Condiciones</Link>.
+ {isEng 
+     ? <>The prices shown are in USD. For more details, see our <Link to="/terminos" className="underline hover:text-white">Terms and Conditions</Link>.</>
+     : <>Los precios mostrados se muestran en MXN. Para más detalles, consulta nuestros <Link to="/terminos" className="underline hover:text-white">Términos y Condiciones</Link>.</>
+ }
  </p>
  <p className="mt-2">
- ¿Tienes más dudas? Consulta nuestro <Link to="/faq" className="underline hover:text-white">FAQ</Link>.
+ {isEng 
+     ? <>Have more questions? Check our <Link to="/faq" className="underline hover:text-white">FAQ</Link>.</>
+     : <>¿Tienes más dudas? Consulta nuestro <Link to="/faq" className="underline hover:text-white">FAQ</Link>.</>
+ }
  </p>
  </div>
 

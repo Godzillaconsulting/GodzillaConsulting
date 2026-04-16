@@ -4,6 +4,7 @@ import { MessageCircle } from'lucide-react';
 import AnimatedHeadline from'./AnimatedHeadline';
 import { getYouTubeId } from './MediaPicker';
 import ParticleField from './ParticleField';
+import { useTranslation } from 'react-i18next';
 
 import logoCeoCuts from'../assets/Logos/CEO Cuts Logo@2x.png';
 import logoCircleOne from'../assets/Logos/Circle One Logo@2x.png';
@@ -17,12 +18,17 @@ import logoArtika from'../assets/Logos/Artika Logo@2x.png';
 
 const Hero = () => {
  const { getNodeData } = useSiteData();
+    const { t, i18n } = useTranslation();
     const data = getNodeData('hero') || {};
-    // Fallbacks si la data del CMS está vacía
+    
+    // Si la página está en inglés, priorizamos el diccionario.
+    // Si está en español, usamos el CMS (o el diccionario si CMS vacío).
+    const isEng = i18n.language.startsWith('en');
+    
     const overline = data.overline || "Sistemas de crecimiento para negocios en la frontera";
-    const title = data.title || "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.";
-    const subtitle = data.subtitle || 'El único sistema de marketing que instala un "Recepcionista Digital" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.';
-    const ctaText = data.ctaText || "Ver planes y garantías";
+    const title = isEng ? t('hero.title') : data.title || t('hero.title');
+    const subtitle = isEng ? t('hero.subtitle') : data.subtitle || t('hero.subtitle');
+    const ctaText = isEng ? t('hero.ctaText') : data.ctaText || t('hero.ctaText');
     const ctaLink = data.ctaLink || "/#paquetes";
  // Fondo editable desde CMS (se superpone al ColorBends animado)
  const bgVideoUrl = data.bgVideoUrl || data.videoUrl || null;

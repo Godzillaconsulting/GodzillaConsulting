@@ -19,6 +19,11 @@ const resources = {
         about: "Sobre Nosotros",
         login: "Iniciar Sesión",
         start_now: "Comenzar Proyecto"
+      },
+      hero: {
+        title: "DETÉN LA FUGA DE LEADS Y ESCALA TU FACTURACIÓN CON INTELIGENCIA ARTIFICIAL.",
+        subtitle: "El único sistema de marketing que instala un \"Recepcionista Digital\" 24/7, reactiva tu base de datos y te garantiza resultados por contrato. Si no cumplimos, no pagas.",
+        ctaText: "Ver planes y garantías"
       }
     }
   },
@@ -37,6 +42,11 @@ const resources = {
         about: "About Us",
         login: "Login",
         start_now: "Start Project"
+      },
+      hero: {
+        title: "STOP LEAD LEAKAGE AND SCALE YOUR REVENUE WITH ARTIFICIAL INTELLIGENCE.",
+        subtitle: 'The only marketing system that installs a 24/7 "Digital Receptionist", reactivates your database, and guarantees results by contract. If we don\'t deliver, you don\'t pay.',
+        ctaText: "View plans & guarantees"
       }
     }
   }

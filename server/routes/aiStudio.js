@@ -197,6 +197,20 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
     }
 });
 
+// DELETE: Eliminar tarea permanentemente (solo CM/Cockers)
+router.delete('/tasks/:id', authenticateToken, requireCMOrCockers, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM studio_tasks WHERE id = $1 RETURNING id', [id]);
+        if (result.rowCount === 0) return res.status(404).json({ success: false, message: 'Tarea no encontrada' });
+        broadcast('DELETE', { id: parseInt(id) });
+        res.json({ success: true, deleted: id });
+    } catch (error) {
+        console.error('Error DELETE /tasks/:id:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar tarea', error: error.message });
+    }
+});
+
 // PUT: Actualizar estado, anexar media generada (Kling/Nano) o fijar fecha programada para publicar
 router.put('/tasks/:id', authenticateToken, async (req, res) => {
     try {

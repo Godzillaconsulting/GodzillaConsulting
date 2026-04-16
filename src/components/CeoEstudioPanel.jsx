@@ -144,6 +144,42 @@ export default function CeoEstudioPanel({ adminProfile }) {
         setPublishing(false);
     };
 
+    // ── Action: delete task ───────────────────────────────────
+    const handleDelete = async (id, e) => {
+        e?.stopPropagation();
+        if (!window.confirm('¿Eliminar este activo permanentemente? Esta acción no se puede deshacer.')) return;
+        try {
+            const res = await fetch(`/api/studio/tasks/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setTasks(prev => prev.filter(t => t.id !== id));
+                if (selected?.id === id) setSelected(null);
+            } else {
+                alert('Error al eliminar.');
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    };
+
+    // ── Action: unpublish (dar de baja de aprobadas) ──────────
+    const handleUnpublish = async (id, e) => {
+        e?.stopPropagation();
+        if (!window.confirm('¿Dar de baja este activo? Volverá a pendientes para su revisión.')) return;
+        try {
+            const res = await fetch(`/api/studio/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'pending_cm_approval' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'pending_cm_approval' } : t));
+                if (selected?.id === id) setSelected(null);
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    };
+
 
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {
@@ -257,6 +293,26 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 <div className={`absolute top-2 right-2 text-[8px] font-black px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
                                     {statusInfo.label}
                                 </div>
+
+                                {/* Botones de acción rápida — aparecen en hover */}
+                                {canReview && (
+                                    <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {/* Dar de baja — solo en aprobadas/publicadas */}
+                                        {(item.status === 'approved' || item.status === 'published') && (
+                                            <button
+                                                onClick={(e) => handleUnpublish(item.id, e)}
+                                                title="Dar de baja (volver a pendientes)"
+                                                className="w-7 h-7 rounded-full bg-yellow-500/20 hover:bg-yellow-500 border border-yellow-500/40 text-yellow-400 hover:text-black text-[10px] font-black flex items-center justify-center transition-all"
+                                            >↩</button>
+                                        )}
+                                        {/* Borrar permanentemente */}
+                                        <button
+                                            onClick={(e) => handleDelete(item.id, e)}
+                                            title="Eliminar permanentemente"
+                                            className="w-7 h-7 rounded-full bg-red-500/20 hover:bg-red-500 border border-red-500/40 text-red-400 hover:text-white text-[11px] font-black flex items-center justify-center transition-all"
+                                        >✕</button>
+                                    </div>
+                                )}
                             </div>
                             <div className="p-3 flex-1 flex flex-col justify-between">
                                 <p className="text-xs text-white font-bold line-clamp-2 mb-1">{item.caption || item.prompt || '(Sin título)'}</p>

@@ -58,7 +58,8 @@ const Paquetes = () => {
 
  const { getNodeData } = useSiteData();
  const { t, i18n } = useTranslation();
- const isEng = i18n.language.startsWith('en');
+ // Mostrar USD para CUALQUIER idioma que no sea español.
+ const isIntl = !i18n.language.startsWith('es');
  const exchangeRate = 20; // 1 USD = 20 MXN
  
  const nodeData = getNodeData('paquetes') || {};
@@ -119,10 +120,10 @@ const Paquetes = () => {
  <div className="container mx-auto px-4 max-w-7xl">
  <div className="text-center mb-16">
  <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
- {isEng ? t('packages.title', 'PACKAGES') : (nodeData.title || 'PAQUETES')}
+ {isIntl ? t('packages.title', 'PACKAGES') : (nodeData.title || 'PAQUETES')}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
- {isEng ? t('packages.subtitle', 'Learn more about the most suitable strategy to boost your business. Everything is protected by contract.') : (nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.')}
+ {isIntl ? t('packages.subtitle', 'Learn more about the most suitable strategy to boost your business. Everything is protected by contract.') : (nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.')}
  </p>
  </div>
 
@@ -169,13 +170,13 @@ const Paquetes = () => {
     const baseMxn = parseFloat(rawPriceStr) || 0;
     if (baseMxn === 0) return pkg.price; // fallback if NaN
     
-    return isEng 
+    return isIntl 
        ? `$${(baseMxn / exchangeRate).toLocaleString('en-US', {maximumFractionDigits: 0})}` 
        : `$${baseMxn.toLocaleString('es-MX')}`;
   })()}
  </span>
  <span className="text-xs font-medium text-gray-500 tracking-widest pl-1">
-  {isEng ? 'USD / mo' : 'MXN / mes'}
+  {isIntl ? 'USD / mo' : 'MXN / mes'}
  </span>
  </div>
 
@@ -240,13 +241,13 @@ const Paquetes = () => {
 
  <div className="text-center mt-12 text-gray-500 text-sm">
  <p>
- {isEng 
+ {isIntl 
      ? <>The prices shown are in USD. For more details, see our <Link to="/terminos" className="underline hover:text-white">Terms and Conditions</Link>.</>
      : <>Los precios mostrados se muestran en MXN. Para más detalles, consulta nuestros <Link to="/terminos" className="underline hover:text-white">Términos y Condiciones</Link>.</>
  }
  </p>
  <p className="mt-2">
- {isEng 
+ {isIntl 
      ? <>Have more questions? Check our <Link to="/faq" className="underline hover:text-white">FAQ</Link>.</>
      : <>¿Tienes más dudas? Consulta nuestro <Link to="/faq" className="underline hover:text-white">FAQ</Link>.</>
  }

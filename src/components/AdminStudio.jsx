@@ -268,17 +268,18 @@ export default function AdminStudio() {
  // ── Permisos por Rol Avanzados ──────────────────────────────────────────
  const username = adminProfile?.username?.toLowerCase() || '';
  const isSuperAdmin = adminProfile?.is_superadmin === true;
- const isCEO = isSuperAdmin || username === 'godzilla_admin'; 
+ // JareG es God-level: acceso total igual que el CEO/superadmin
+ const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg'; 
  
  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
- const isEditor = adminProfile?.role === 'admin' || isSuperAdmin;
+ const isEditor = adminProfile?.role === 'admin' || isSuperAdmin || username === 'jareg';
  const canEditSite = isEditor;
 
  // Lógica explícita de vistas
- const canSeeDBEstudio = isCEO || ['jareg', 'dani'].includes(username);
+ const canSeeDBEstudio    = isCEO || ['dani'].includes(username);
  const canSeePanelMaestro = isCEO || ['oscar', 'dani'].includes(username);
- const canSeeCeoEstudio = isCEO || ['judith', 'alex'].includes(username);
- const canSeeSqlAtaques = isCEO || ['dani'].includes(username);
+ const canSeeCeoEstudio   = isCEO || ['judith', 'alex'].includes(username);
+ const canSeeSqlAtaques   = isCEO || ['dani'].includes(username);
 
  // Sync draftData → preview
  useEffect(() => {

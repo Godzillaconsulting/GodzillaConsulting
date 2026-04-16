@@ -321,7 +321,7 @@ export default function AdminStudio() {
      if (res.status === 401 || res.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
      throw new Error(`El servidor rechazó los cambios: HTTP ${res.status} ${txt}`);
  }
- await fetchNodes();
+ await fetchNodes(3, true);
  setHasUnsavedChanges(false);
  alert('✅ Borrador guardado. Ahora presiona 🚀 Actualizar cambios para verlo en el sitio.');
  } catch (err) { 
@@ -354,7 +354,7 @@ export default function AdminStudio() {
      if (resPub.status === 401 || resPub.status === 403) throw new Error('Sesión expirada o token inválido. Por favor, recarga y vuelve a iniciar sesión.');
      throw new Error(`Error aplicando la publicación final tras reintentos: HTTP ${resPub.status} ${txt}`);
  }
- await fetchNodes();
+ await fetchNodes(3, true);
  setShowPublishModal(false);
  alert('🚀 Publicado');
  } catch (err) { alert(`❌ Error al publicar: ${err.message}`); }

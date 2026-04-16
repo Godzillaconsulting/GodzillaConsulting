@@ -4,6 +4,7 @@ import { Link, useParams } from'react-router-dom';
 import { Check, Play, Pause, Volume2, VolumeX } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
 import { injectSectionDefaults } from '../utils/studioConfig';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.mp4`;
@@ -11,6 +12,24 @@ const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.m
 const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
  const { getNodeData, loading } = useSiteData();
+ const { t, i18n } = useTranslation();
+ const isIntl = !!(i18n && i18n.language && !i18n.language.startsWith('es'));
+ 
+ const formatPrice = (val, asUSD) => {
+     if (!val || typeof val !== 'string') return val;
+     // Extraer solo dígitos y comas/puntos
+     const match = val.match(/([\d,.]+)/);
+     if (!match) return val;
+     const mxnVal = parseFloat(match[1].replace(/,/g, ''));
+     if (isNaN(mxnVal)) return val;
+     
+     const converted = asUSD ? mxnVal / 20 : mxnVal;
+     const newFormatted = asUSD 
+        ? `$${Math.round(converted).toLocaleString('en-US')} USD` 
+        : `$${mxnVal.toLocaleString('es-MX')} MXN`;
+        
+     return val.replace(/[\$]?[\d,.]+/, newFormatted).replace('MXN', '').trim();
+ };
 
  // Map incoming URL slug or Admin Studio prop to Local Node IDs
  const slugLower = slug ? slug.toLowerCase() :'';
@@ -164,8 +183,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <span className="text-gray-300 text-sm leading-relaxed"> <span dangerouslySetInnerHTML={renderHTML(feature.desc)} /></span>
  )}
  </td>
- <td className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
- {feature.price || ''}
+ <td translate="no" className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
+ {formatPrice(feature.price, isIntl) || ''}
  </td>
  </tr>
  ))}
@@ -173,13 +192,13 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.totalValue && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.totalLabel || 'VALOR TOTAL DEL SISTEMA:'}</td>
- <td className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{content.totalValue}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.totalValue, isIntl)}</td>
  </tr>
  )}
  {content.normalPrice && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.normalLabel || 'INVERSIÓN NORMAL:'}</td>
- <td className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{content.normalPrice}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.normalPrice, isIntl)}</td>
  </tr>
  )}
 
@@ -192,7 +211,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
  )}
  <div className="flex justify-center items-baseline gap-2 mb-8">
- <span className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ||'Consúltalo'}</span>
+ <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white whitespace-nowrap">{content.planPrice ? formatPrice(content.planPrice, isIntl) : 'Consúltalo'}</span>
  {content.planPrice && content.planPeriod && (
  <span className="text-xl text-gray-300 font-medium">{content.planPeriod}</span>
  )}

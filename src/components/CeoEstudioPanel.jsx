@@ -22,9 +22,11 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
     const username  = adminProfile?.username?.toLowerCase() || '';
     const isCockers = adminProfile?.role === 'cockers' || username === 'alex' || username === 'cockers';
-    // Alex puede aprobar SU propio trabajo y cualquier otro; Judith aprueba todo
-    const canReview = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
-    const canPublish = ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin; // Publicar sigue siendo solo Judith/Admin
+    // Alex puede aprobar y publicar; Judith también. Ambos ven CEO Estudio.
+    const canReview  = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    const canPublish = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    // Alex debe dejar nota al publicar; Judith no
+    const publishNeedsReason = isCockers;
 
     const token = localStorage.getItem('adminToken');
 
@@ -118,13 +120,20 @@ export default function CeoEstudioPanel({ adminProfile }) {
         if (!selected || !selected.media_options?.[0]?.url) return;
         setPublishing(true);
         try {
+            // Convertir URLs relativas (/api/sora/media/...) a absolutas para que Meta pueda acceder
+            const BASE_URL = 'https://godzillaconsulting.ai';
+            const absoluteMedia = selected.media_options.map(m => ({
+                ...m,
+                url: m.url?.startsWith('http') ? m.url : `${BASE_URL}${m.url}`
+            }));
+
             const res = await fetch(`/api/studio/tasks/${selected.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     status: 'published',
                     publish_targets: [network],
-                    media_payload: selected.media_options
+                    media_payload: absoluteMedia
                 })
             });
             const data = await res.json();
@@ -134,6 +143,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
         } catch (e) { alert('Error publicando: ' + e.message); }
         setPublishing(false);
     };
+
 
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {

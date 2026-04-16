@@ -3,9 +3,10 @@ import ContactForm from'./ContactForm';
 import { Link, useParams } from'react-router-dom';
 import { Check, Play, Pause, Volume2, VolumeX } from'lucide-react';
 import { useSiteData } from'../context/SiteContext';
+import { injectSectionDefaults } from '../utils/studioConfig';
+
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.mp4`;
-import { injectSectionDefaults } from '../utils/studioConfig';
 
 const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();

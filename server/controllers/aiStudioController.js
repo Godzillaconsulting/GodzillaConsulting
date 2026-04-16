@@ -125,7 +125,7 @@ Concept: ${prompt}`;
             const finalPromptToUse = optimizedPrompt || prompt;
 
             // Importar IDs desde la v4 (purga automatizada de modelos V2)
-            const veoModel = getModelId(engine) || 'veo-3.0-generate-001';
+            const veoModel = getModelId(engine) || 'veo-3.1-generate-preview';
             console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
 
             (async () => {
@@ -190,15 +190,22 @@ Concept: ${prompt}`;
                     const finalPromptToUse = optimizedPrompt || prompt;
                     console.log(`[STUDIO] Activando Higgsfield AI Cosmos API...`);
 
-                    // Endpoint correcto de Higgsfield para text-to-video
-                    const hBody = {
+                    const isImage = engine.includes('Image');
+                    const endpoint = isImage 
+                        ? 'https://api.higgsfield.ai/v1/images/generations'
+                        : 'https://api.higgsfield.ai/v1/videos/generations';
+
+                    const hBody = isImage ? {
+                        prompt: finalPromptToUse,
+                        aspect_ratio: config?.aspect_ratio || '16:9'
+                    } : {
                         model: engine.includes('Fast') ? 'higgsfield-fast' : 'cosmos',
                         prompt: finalPromptToUse,
                         duration: parseInt(config?.duration || "5", 10),
                         aspect_ratio: config?.aspect_ratio || '16:9'
                     };
 
-                    const hRes = await fetch('https://api.higgsfield.ai/v1/videos/generations', {
+                    const hRes = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -225,7 +232,7 @@ Concept: ${prompt}`;
             
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
-            const targetModel = engine.includes('Imagen 3.0') ? 'gemini-2.0-flash' : 'gemini-2.0-flash'; // 2.0-flash will not natively output images via simple SDK call without special arguments, falling back.
+            const targetModel = engine.includes('Imagen 4') ? 'gemini-2.5-flash' : 'gemini-2.5-flash'; // Fallback text models if standard doesn't work.
             console.log(`[STUDIO] Generando Foto Comercial simulando llamada Google. Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -243,7 +250,7 @@ Concept: ${prompt}`;
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
-                    let modelName = getModelId(engine) || 'gemini-2.0-flash-preview-image-generation';
+                    let modelName = getModelId(engine) || 'gemini-3.1-flash-image-preview';
 
                     console.log(`[GOOGLE-VISION] Motor real: ${modelName} | Engine UI: ${engine} | Prompt: ${finalPromptToUse.substring(0, 80)}...`);
 
@@ -743,7 +750,7 @@ export const refineRenderJob = async (req, res) => {
         const optimizedPrompt = 'Using this image as a structural reference, create a stunning, hyper-realistic new variation. Take creative liberties to enhance the composition, add cinematic lighting, ultra-detailed 8k masterpiece quality, and professional color grading. Do not just color-correct; generate a completely reimagined version that strongly follows this original concept: ' + (prompt || '');
 
         const response = await ai.models.generateContent({
-             model: 'gemini-2.0-flash-preview-image-generation', 
+             model: 'gemini-3.1-flash-image-preview', 
              contents: [
                  {
                      role: 'user',

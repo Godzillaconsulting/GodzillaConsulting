@@ -114,41 +114,58 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
 export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl }) => {
     const unsubUrl = `https://godzillaconsulting.ai/api/newsletter/unsubscribe?email=${encodeURIComponent(to)}`;
 
+    // Asegurarse de quitar literales \n que la IA a veces inyecta erróneamente en el HTML
+    const cleanBodyHtml = String(bodyHtml).replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>');
+
     const html = `
     <!DOCTYPE html>
     <html>
-    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+    <body style="margin:0;padding:0;background-color:#f6f6f6;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6;padding:40px 0;">
         <tr><td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);position:relative;">
+          <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;">
+            <!-- Top brand line -->
+            <tr><td style="height:4px;background-color:#CC0000;font-size:0;line-height:0;">&nbsp;</td></tr>
+            
             <!-- Header con Logo Visual -->
             <tr>
-              <td style="background:#111111;padding:28px 40px;text-align:center;border-bottom:4px solid #CC0000;">
-                 <h1 style="margin:0;color:#CC0000;font-size:28px;font-weight:900;font-family:system-ui,-apple-system,sans-serif;letter-spacing:-1px;">
-                    <span style="color:#CC0000;">GODZILLA</span><span style="color:#ffffff;"> CONSULTING</span>
+              <td style="background-color:#ffffff;padding:32px 40px 20px 40px;text-align:center;">
+                 <h1 style="margin:0;color:#111111;font-size:24px;font-weight:900;letter-spacing:-0.5px;display:inline-flex;align-items:center;gap:8px;">
+                    <span style="color:#CC0000;font-size:28px;">🦖</span> GODZILLA <span style="font-weight:400;color:#666666;margin-left:4px;">CONSULTING</span>
                  </h1>
               </td>
             </tr>
-            <!-- Body con Marca de Agua -->
+            
+            <!-- Separator -->
             <tr>
-              <td style="padding:40px;color:#111111;font-size:15px;line-height:1.7;background-color:#ffffff;background-image:url('https://bot.godzillaconsulting.ai/api/media/assets/Godzilla_Watermark_Op2.png');background-repeat:no-repeat;background-position:center;background-size:200px;">
-                <div style="position:relative;z-index:2;background:rgba(255,255,255,0.85);padding:10px;border-radius:8px;">
-                ${bodyHtml}
-                ${attachmentUrl ? `
-                <div style="text-align:center;margin:32px 0;">
-                  <a href="${attachmentUrl}" style="background:#CC0000;color:#fff;font-weight:bold;padding:14px 32px;text-decoration:none;border-radius:30px;display:inline-block;">
-                    📎 Descargar Recurso
-                  </a>
-                </div>` : ''}
-                </div>
+              <td style="padding:0 40px;">
+                <div style="height:1px;background-color:#eeeeee;width:100%;"></div>
               </td>
             </tr>
+
+            <!-- Body Area -->
+            <tr>
+              <td style="padding:32px 40px;color:#333333;font-size:16px;line-height:1.6;">
+                ${cleanBodyHtml}
+                
+                ${attachmentUrl ? `
+                <div style="margin-top:40px;">
+                  <a href="${attachmentUrl}" style="background-color:#CC0000;color:#ffffff;font-size:15px;font-weight:bold;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block;">
+                    Descargar Informe PDF
+                  </a>
+                </div>
+                ` : ''}
+              </td>
+            </tr>
+
             <!-- Footer -->
             <tr>
-              <td style="background:#f9f9f9;padding:24px 40px;border-top:1px solid #eee;text-align:center;">
-                <p style="font-size:12px;color:#888;margin:0;">
-                  © ${new Date().getFullYear()} Godzilla Consulting — Ciudad Juárez, Chih.<br/>
-                  <a href="${unsubUrl}" style="color:#CC0000;text-decoration:none;">Cancelar suscripción</a>
+              <td style="background-color:#f9f9f9;padding:24px 40px;border-top:1px solid #eeeeee;text-align:center;">
+                <p style="font-size:12px;color:#888888;margin:0;line-height:1.5;">
+                  <strong>Godzilla Consulting</strong><br/>
+                  Ciudad Juárez, Chihuahua.<br/><br/>
+                  Recibes este correo porque estás suscrito a nuestro portal corporativo.<br/>
+                  <a href="${unsubUrl}" style="color:#CC0000;text-decoration:underline;">Darse de baja</a>
                 </p>
               </td>
             </tr>

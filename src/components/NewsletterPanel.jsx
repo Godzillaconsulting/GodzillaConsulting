@@ -14,7 +14,7 @@ export default function NewsletterPanel() {
 
  // Compose state
  const [subject, setSubject] = useState('Boletín #1 | Actualizaciones Globales de IA');
- const [bodyHtml, setBodyHtml] = useState('<h2>Saludos,</h2>\\n<p>Aquí tienes la edición de esta semana de nuestro boletín estratégico de <strong>Godzilla Consulting</strong>.</p>\\n<p>En el documento adjunto a este correo encontrarás un reporte consolidado con los anuncios, herramientas y avances más importantes del mundo en Inteligencia Artificial.</p>\\n<p>Toda la información ha sido corroborada y contiene las ligas oficiales para que mantengas a tu negocio siempre un paso adelante.</p>\\n<p>Descarga tu recurso a continuación.</p>');
+ const [bodyHtml, setBodyHtml] = useState('<h2>Saludos,</h2><p>Aquí tienes la edición de esta semana de nuestro boletín estratégico de <strong>Godzilla Consulting</strong>.</p><p>En el documento adjunto a este correo encontrarás un reporte consolidado con los anuncios, herramientas y avances más importantes del mundo en Inteligencia Artificial.</p><p>Toda la información ha sido corroborada y contiene las ligas oficiales para que mantengas a tu negocio siempre un paso adelante.</p><p>Descarga tu recurso a continuación.</p>');
     const [attachmentUrl, setAttachmentUrl] = useState('');
     const [sending, setSending] = useState(false);
     const [sendResult, setSendResult] = useState(null);
@@ -196,7 +196,7 @@ export default function NewsletterPanel() {
  <label className="text-xs font-semibold text-gray-400">Vista previa</label>
  <div
  className="bg-white rounded-xl p-4 text-sm text-black max-h-48 overflow-y-auto"
- dangerouslySetInnerHTML={{ __html: bodyHtml }}
+ dangerouslySetInnerHTML={{ __html: String(bodyHtml).replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>') }}
  />
  </div>
  )}

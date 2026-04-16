@@ -72,6 +72,25 @@ export const requireCM = (req, res, next) => {
 };
 
 // ──────────────────────────────────────────────────────────
+// 3b. CM, Admin, O Cockers (Alex puede enviar tareas a revisión)
+// ──────────────────────────────────────────────────────────
+export const requireCMOrCockers = (req, res, next) => {
+    const user = req.admin;
+    if (!user) return res.status(401).json({ success: false, message: 'No autenticado.' });
+    
+    const allowed = user.role === 'admin' || user.role === 'cm' || user.role === 'cockers' ||
+        ['jareg', 'oscar', 'godzilla_admin', 'judith', 'alex', 'cockers'].includes(user.username?.toLowerCase());
+    
+    if (!allowed) {
+        return res.status(403).json({ 
+            success: false, 
+            message: 'Acceso restringido.'
+        });
+    }
+    next();
+};
+
+// ──────────────────────────────────────────────────────────
 // 4. Registro de intentos fallidos (para audit log)
 // ──────────────────────────────────────────────────────────
 export const logFailedLogin = async (username, ip) => {

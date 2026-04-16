@@ -4,7 +4,7 @@ import os from 'os';
 
 const upload = multer({ dest: os.tmpdir() });
 import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters } from '../controllers/aiStudioController.js';
-import { verifyAdminToken as authenticateToken, requireCM } from '../middleware/adminAuth.js';
+import { verifyAdminToken as authenticateToken, requireCM, requireCMOrCockers } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -146,30 +146,52 @@ router.get('/tasks', authenticateToken, async (req, res) => {
     }
 });
 
-// POST: Admin crea una nueva tarea (Script/Guion)
-router.post('/tasks', authenticateToken, requireCM, async (req, res) => {
+// POST: Cockers o Admin crea/envía una tarea a revisión
+router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) => {
     try {
-        const { title, prompt, assigned_to, tags, priority, content_type, ig_publish_date } = req.body;
+        const { title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, media_payload } = req.body;
+        const uploader = req.admin?.username || 'unknown';
+        const isSelfReview = uploader.toLowerCase() === 'alex' || req.admin?.role === 'cockers';
+        
+        // Si Alex sube directamente sin revisarse vía CM, estampamos una nota de auto-revisión
+        const selfReviewNote = isSelfReview 
+            ? `[AUTO-REVISIÓN] Subido y pre-aprobado por ${uploader}. Pendiente de confirmación por Judith.`
+            : null;
+
+        // Si viene media_payload, se creó desde Cockers Studio - va directo a revisión
+        const initialStatus = media_payload ? 'pending_cm_approval' : 'draft';
         
         const query = `
-            INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *;
         `;
         
         const values = [
-            title, 
+            title || selfReviewNote || 'Revisión solicitada por ' + uploader, 
             prompt, 
-            assigned_to || 'alex_cockers', 
+            assigned_to || uploader, 
             JSON.stringify(tags || []),
             priority || 'Media',
-            content_type || 'Video',
-            ig_publish_date || null
+            content_type || 'Imagen',
+            ig_publish_date || null,
+            initialStatus,
+            media_payload ? JSON.stringify(media_payload) : null
         ];
 
         const result = await pool.query(query, values);
         const newTask = result.rows[0];
         broadcast('CREATE', newTask);
+        
+        // Notificar a los admins de que Alex subió algo
+        if (isSelfReview && media_payload) {
+            broadcast('NOTIFICATION', {
+                type: 'SELF_REVIEW',
+                message: `🔔 ${uploader} subió un nuevo activo a revisión. Requiere aprobación por Judith.`,
+                taskId: newTask.id,
+                uploader
+            });
+        }
         
         res.status(201).json({ success: true, task: newTask });
     } catch (error) {

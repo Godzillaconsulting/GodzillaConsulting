@@ -375,7 +375,23 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         </div>
                                     )}
                                     {canPublish && selected.status !== 'published' && firstMedia?.url && (
-                                        <button onClick={() => setShowPublish(true)}
+                                        <button onClick={() => {
+                                            if (publishNeedsReason) {
+                                                const nota = window.prompt(
+                                                    `📝 ¿Por qué publicas este activo ahora?\n\n` +
+                                                    `(Ej: "Urgente para campaña de hoy / Acordado con Judith")\n\n` +
+                                                    `Esta nota quedará en el registro del equipo:`
+                                                );
+                                                if (nota === null) return; // Canceló
+                                                if (!nota.trim()) {
+                                                    alert('⚠️ La nota es obligatoria para publicar directamente.');
+                                                    return;
+                                                }
+                                                // Guardar la nota en caption como contexto visible en el HUD
+                                                setCaption(prev => prev || nota.trim());
+                                            }
+                                            setShowPublish(true);
+                                        }}
                                             className="mt-auto w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">
                                             📱 PUBLICAR AHORA
                                         </button>

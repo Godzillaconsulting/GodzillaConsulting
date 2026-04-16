@@ -12,6 +12,9 @@ import GoyiAdmin from './GoyiAdmin';
 import BugReporterModal from './BugReporterModal';
 import DBStudioPanel from './DBStudioPanel';
 import BugTrackerUI from './BugTrackerUI';
+import CeoEstudioPanel from './CeoEstudioPanel';
+import PanelMaestroPanel from './PanelMaestroPanel';
+import SqlAtaquesPanel from './SqlAtaquesPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields } from '../utils/editorParser';
@@ -104,6 +107,9 @@ export default function AdminStudio() {
     if (location.pathname.includes('/profile')) return 'profile';
     if (location.pathname.includes('/bugs')) return 'bugs';
     if (location.pathname.includes('/newsletter')) return 'newsletter';
+    if (location.pathname.includes('/ceo')) return 'ceo_estudio';
+    if (location.pathname.includes('/master')) return 'panel_maestro';
+    if (location.pathname.includes('/sql')) return 'sql_ataques';
     return 'editor';
   }, [location.pathname]);
 
@@ -259,14 +265,20 @@ export default function AdminStudio() {
  }, [selectedNodeId, adminProfile]);
 
 
- // ── Permisos por Rol ─────────────────────────────────────────────────────
- // isCM        → role='cm' (Judith): solo calendario/studio
- // isEditor    → role='admin' (Cockers/Alex/dani/JareG/Oscar): edita todo
- // isSuperAdmin→ is_superadmin=true (Oscar/JareG): además borra usuarios
- const isCM        = adminProfile?.role === 'cm' && adminProfile?.username?.toLowerCase() !== 'oscar';
- const isEditor    = adminProfile?.role === 'admin' || adminProfile?.is_superadmin === true;
- const isSuperAdmin= adminProfile?.is_superadmin === true;
+ // ── Permisos por Rol Avanzados ──────────────────────────────────────────
+ const username = adminProfile?.username?.toLowerCase() || '';
+ const isSuperAdmin = adminProfile?.is_superadmin === true;
+ const isCEO = isSuperAdmin || username === 'godzilla_admin'; 
+ 
+ const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
+ const isEditor = adminProfile?.role === 'admin' || isSuperAdmin;
  const canEditSite = isEditor;
+
+ // Lógica explícita de vistas
+ const canSeeDBEstudio = isCEO || ['jareg', 'dani'].includes(username);
+ const canSeePanelMaestro = isCEO || ['oscar', 'dani'].includes(username);
+ const canSeeCeoEstudio = isCEO || ['judith', 'alex'].includes(username);
+ const canSeeSqlAtaques = isCEO || ['dani'].includes(username);
 
  // Sync draftData → preview
  useEffect(() => {
@@ -558,10 +570,31 @@ export default function AdminStudio() {
    <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
    
-   {(adminProfile?.is_superadmin || ['jareg', 'oscar'].includes(adminProfile?.username?.toLowerCase())) && (
+   {canSeeDBEstudio && (
        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/db'); setSelectedNodeId(null); }}
        className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='db_studio' ?'bg-neutral-900 text-[#00ff88] border-[#00ff88]/50 shadow-[0_0_15px_rgba(0,255,136,0.2)]' :'text-neutral-300 border-transparent hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 hover:text-white' }`}>
        <span className="text-xs mr-2 drop-shadow-sm">🗄️</span> DB Studio
+       </button>
+   )}
+
+   {canSeeCeoEstudio && (
+       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/ceo'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ceo_estudio' ?'bg-neutral-900 text-[#d946ef] border-[#d946ef]/50 shadow-[0_0_15px_rgba(217,70,239,0.2)]' :'text-neutral-300 border-transparent hover:border-[#d946ef]/40 hover:bg-[#d946ef]/5 hover:text-white' }`}>
+       <span className="text-xs mr-2 drop-shadow-sm">👑</span> CEO Estudio
+       </button>
+   )}
+
+   {canSeePanelMaestro && (
+       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/master'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='panel_maestro' ?'bg-neutral-900 text-[#fbbf24] border-[#fbbf24]/50 shadow-[0_0_15px_rgba(251,191,36,0.2)]' :'text-neutral-300 border-transparent hover:border-[#fbbf24]/40 hover:bg-[#fbbf24]/5 hover:text-white' }`}>
+       <span className="text-xs mr-2 drop-shadow-sm">🏛️</span> Panel Maestro
+       </button>
+   )}
+
+   {canSeeSqlAtaques && (
+       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/sql'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='sql_ataques' ?'bg-neutral-900 text-[#ef4444] border-[#ef4444]/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :'text-neutral-300 border-transparent hover:border-[#ef4444]/40 hover:bg-[#ef4444]/5 hover:text-white' }`}>
+       <span className="text-xs mr-2 drop-shadow-sm">🛡️</span> Ataques SQL
        </button>
    )}
    
@@ -622,6 +655,12 @@ export default function AdminStudio() {
       null /* Renderizado persistentemente arriba para evitar pérdida de estado de renders IA */
   ) : activeSection === 'db_studio' ? (
       <DBStudioPanel adminProfile={adminProfile} />
+  ) : activeSection === 'ceo_estudio' ? (
+      <CeoEstudioPanel adminProfile={adminProfile} />
+  ) : activeSection === 'panel_maestro' ? (
+      <PanelMaestroPanel adminProfile={adminProfile} />
+  ) : activeSection === 'sql_ataques' ? (
+      <SqlAtaquesPanel adminProfile={adminProfile} />
   ) : activeSection === 'bugs' ? (
       <BugTrackerUI />
   ) : (<>

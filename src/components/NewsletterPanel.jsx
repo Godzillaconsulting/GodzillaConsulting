@@ -17,6 +17,7 @@ export default function NewsletterPanel() {
  const [bodyHtml, setBodyHtml] = useState('<h2>Saludos,</h2><p>Aquí tienes la edición de esta semana de nuestro boletín estratégico de <strong>Godzilla Consulting</strong>.</p><p>En el documento adjunto a este correo encontrarás un reporte consolidado con los anuncios, herramientas y avances más importantes del mundo en Inteligencia Artificial.</p><p>Toda la información ha sido corroborada y contiene las ligas oficiales para que mantengas a tu negocio siempre un paso adelante.</p><p>Descarga tu recurso a continuación.</p>');
     const [attachmentUrl, setAttachmentUrl] = useState('');
     const [sending, setSending] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const [sendResult, setSendResult] = useState(null);
     const [currentDraftId, setCurrentDraftId] = useState(null);
 
@@ -72,6 +73,31 @@ export default function NewsletterPanel() {
  setSendResult({ success: false, message: err.message });
  }
  setSending(false);
+ };
+
+ const handleGenerateDraft = async () => {
+    if(!window.confirm("¿Estás seguro de que deseas que Godzilla AI redacte y ensamble el reporte semanal automáticamente? Esto tomará unos segundos.")) return;
+    setGenerating(true);
+    setSendResult(null);
+    try {
+        const r = await fetch(`${API_BASE}/api/newsletter/generate-draft`, {
+            method: 'POST',
+            headers: authHeaders()
+        });
+        const d = await r.json();
+        if (d.success) {
+            setSubject(d.subject || 'Boletín Generado');
+            setBodyHtml(d.bodyHtml || '');
+            setAttachmentUrl(d.attachmentUrl || '');
+            setCurrentDraftId(d.newsletterId);
+            setSendResult({ success: true, message: 'Borrador Inteligente ensamblado con éxito. Puedes revisarlo antes de enviarlo.' });
+        } else {
+            setSendResult({ success: false, message: d.error || 'Error al generar borrador con IA' });
+        }
+    } catch (err) {
+        setSendResult({ success: false, message: err.message });
+    }
+    setGenerating(false);
  };
 
  const statusBadge = (status) => {
@@ -150,9 +176,14 @@ export default function NewsletterPanel() {
  </div>
  )}
 
- {/* Asunto */}
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400">Asunto del correo</label>
+ {/* Acciones Principales y Asunto */}
+ <div className="space-y-3">
+     <div className="flex items-center justify-between">
+         <label className="text-xs font-semibold text-gray-400">Asunto del correo</label>
+         <button onClick={handleGenerateDraft} disabled={generating || sending} className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black px-3 py-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black rounded-lg transition-colors border border-yellow-500/30">
+            {generating ? <><Loader size={12} className="animate-spin" /> Ensamblando Reporte y PDF...</> : <>🤖 Inteligencia Godzilla (Borrador)</>}
+         </button>
+     </div>
  <input
  type="text"
  value={subject}

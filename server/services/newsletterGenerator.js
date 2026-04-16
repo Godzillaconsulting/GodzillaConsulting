@@ -15,7 +15,7 @@ const getClient = () => {
     return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 };
 
-export async function generateAndSendAutoNewsletter() {
+export async function generateAndSendAutoNewsletter(draftOnly = false) {
     console.log("🤖 Iniciando Auto-Generador de Godzilla Newsletter...");
     
     // 1. GENERACIÓN DE ESTRATEGIA (Gemini)
@@ -182,17 +182,19 @@ DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
     }
 
     // 4. CREACIÓN DEL BORRADOR & ENCOLAMIENTO
-    console.log("🚀 Desplegando en Bandeja de Salida para TODOS los suscriptores...");
-    // El usuario pidió "Haz una prueba, dejé mi correo." Lo vamos a insertar como 'sending' directamente
+    console.log(`🚀 Generando Borrador (ID o Envío directo)... draftOnly=${draftOnly}`);
     const nlRes = await pool.query(
         `INSERT INTO newsletters (subject, body_html, attachment_url, status)
-         VALUES ($1, $2, $3, 'draft') RETURNING id`, // Lo pondremos en status draft pero llamaremos a enqueue
+         VALUES ($1, $2, $3, 'draft') RETURNING id`, 
         [data.subject, data.emailHTML, attachmentUrl]
     );
     const newsletterId = nlRes.rows[0].id;
 
-    const total = await enqueueNewsletter(newsletterId);
-    console.log(`🎉 ¡Éxito Masivo! Boletín [ID: ${newsletterId}] liberado para ${total} suscriptores.`);
+    let total = 0;
+    if (!draftOnly) {
+        total = await enqueueNewsletter(newsletterId);
+        console.log(`🎉 ¡Éxito Masivo! Boletín [ID: ${newsletterId}] liberado para ${total} suscriptores.`);
+    }
 
-    return { newsletterId, total, attachmentUrl };
+    return { newsletterId, total, attachmentUrl, subject: data.subject, bodyHtml: data.emailHTML };
 }

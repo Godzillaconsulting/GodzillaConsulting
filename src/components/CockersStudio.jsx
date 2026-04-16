@@ -602,7 +602,7 @@ export default function CockersStudio({ adminProfile }) {
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos', 'Higgsfield Fast', 'Kling V1']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image', 'Higgsfield Image'];
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;

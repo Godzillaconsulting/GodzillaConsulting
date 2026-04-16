@@ -22,7 +22,7 @@ router.post('/send',          requireAdmin, sendNewsletter);
 router.get ('/history',       requireAdmin, getHistory);
 router.post('/generate-draft', requireAdmin, async (req, res) => {
     try {
-        const result = await generateAndSendAutoNewsletter();
+        const result = await generateAndSendAutoNewsletter(true);
         res.json({ success: true, ...result });
     } catch (e) {
         console.error("Generator Error", e);

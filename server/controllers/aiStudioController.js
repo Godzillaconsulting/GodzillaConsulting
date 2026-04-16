@@ -202,7 +202,7 @@ Concept: ${prompt}`;
             return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway." });
         } else if (engine.includes('Higgsfield')) {
             if (!process.env.HIGGSFIELD_API_KEY) {
-                return res.status(400).json({ error: "La conexión API hacia Higgsfield Cosmos requiere tu llave de desarrollador. Agrégala a las variables de entorno (.env)." });
+                return res.status(400).json({ error: "HIGGSFIELD_API_KEY no configurada en el servidor." });
             }
             
             const taskId = 'higgsfield_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
@@ -211,46 +211,63 @@ Concept: ${prompt}`;
             (async () => {
                 try {
                     const finalPromptToUse = optimizedPrompt || prompt;
-                    console.log(`[STUDIO] Activando Higgsfield AI Cosmos API...`);
+                    console.log(`[HIGGSFIELD] 🎥 Iniciando generación con motor: ${engine}`);
 
-                    const isImage = engine.includes('Image');
-                    const endpoint = isImage 
-                        ? 'https://api.higgsfield.ai/v1/images/generations'
-                        : 'https://api.higgsfield.ai/v1/videos/generations';
-
-                    const hBody = isImage ? {
-                        prompt: finalPromptToUse,
-                        aspect_ratio: config?.aspect_ratio || '16:9'
-                    } : {
-                        model: engine.includes('Fast') ? 'higgsfield-fast' : 'cosmos',
-                        prompt: finalPromptToUse,
-                        duration: parseInt(config?.duration || "5", 10),
-                        aspect_ratio: config?.aspect_ratio || '16:9'
+                    // Mapeo de nombre de motor en UI a modelo real de la API
+                    const modelMap = {
+                        'Higgsfield Soul':       'higgsfield-ai/soul/standard',
+                        'Higgsfield Standard':   'higgsfield-ai/soul/standard',
+                        'Higgsfield DoP Lite':   'higgsfield-ai/dop/lite',
+                        'Higgsfield DoP Standard':'higgsfield-ai/dop/standard',
+                        'Higgsfield DoP Turbo':  'higgsfield-ai/dop/turbo',
+                        'Higgsfield Cosmos':     'higgsfield-ai/dop/standard', // Alias legacy
+                        'Higgsfield Fast':       'higgsfield-ai/dop/turbo',    // Alias legacy
                     };
+                    const modelId = modelMap[engine] || 'higgsfield-ai/soul/standard';
+                    const isVideo = modelId.includes('/dop/');
 
+                    // Nueva API: platform.higgsfield.ai
+                    const endpoint = `https://platform.higgsfield.ai/${modelId}`;
+                    const hBody = {
+                        inputs: [
+                            { name: 'prompt', value: finalPromptToUse }
+                        ]
+                    };
+                    if (isVideo && config?.aspect_ratio) hBody.inputs.push({ name: 'aspect_ratio', value: config.aspect_ratio });
+                    if (isVideo && config?.duration)     hBody.inputs.push({ name: 'duration', value: parseInt(config.duration, 10) });
+
+                    // Auth: "Key {key_id}:{key_secret}" pero la clave que guardamos en .env ya es el token completo
+                    const authHeader = process.env.HIGGSFIELD_API_KEY.startsWith('Key ') 
+                        ? process.env.HIGGSFIELD_API_KEY 
+                        : `Bearer ${process.env.HIGGSFIELD_API_KEY}`;
+
+                    console.log(`[HIGGSFIELD] POST ${endpoint}`);
                     const hRes = await fetch(endpoint, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}`
-                        },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
                         body: JSON.stringify(hBody)
                     });
                     const rawText = await hRes.text();
                     let hData;
-                    try {
-                        hData = JSON.parse(rawText);
-                    } catch (err) {
-                        throw new Error(`Falla en Higgsfield (Server Caído - HTTP ${hRes.status}): ${rawText.substring(0, 60)}...`);
+                    try { hData = JSON.parse(rawText); } catch (e) {
+                        throw new Error(`Higgsfield respuesta inválida (HTTP ${hRes.status}): ${rawText.substring(0, 120)}`);
                     }
-                    if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Error Higgsfield");
 
-                    // Higgsfield devuelve id del job
-                    const jobId = hData.id || hData.task_id || hData.request_id;
-                    if (!jobId) throw new Error('Higgsfield no devolvió un job ID válido');
+                    if (!hRes.ok) {
+                        const errMsg = hData?.error || hData?.detail || hData?.message || JSON.stringify(hData);
+                        // Detectar error de créditos
+                        if (hRes.status === 402 || (typeof errMsg === 'string' && errMsg.toLowerCase().includes('credit'))) {
+                            throw new Error(`💳 Saldo insuficiente en Higgsfield. Recarga créditos en cloud.higgsfield.ai/billing`);
+                        }
+                        throw new Error(`Error Higgsfield (HTTP ${hRes.status}): ${errMsg}`);
+                    }
 
-                    postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: jobId });
-                    console.log(`[HIGGSFIELD] ✅ Job creado: ${jobId}`);
+                    const requestId = hData.request_id || hData.id || hData.task_id;
+                    if (!requestId) throw new Error(`Higgsfield no devolvió request_id. Respuesta: ${JSON.stringify(hData).substring(0, 120)}`);
+
+                    postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: requestId, isVideo });
+                    console.log(`[HIGGSFIELD] ✅ Job creado: ${requestId} | Modelo: ${modelId}`);
+
                 } catch (e) {
                     console.error("[HIGGSFIELD] ❌ Error:", e.message);
                     postProcessJobs.set(taskId, { status: 'failed', error: e.message });
@@ -258,7 +275,7 @@ Concept: ${prompt}`;
             })();
             
             return res.status(200).json({ job_id: taskId, status: 'processing', provider: engine });
-            
+
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
             const targetModel = engine.includes('Imagen 4') ? 'gemini-2.5-flash' : 'gemini-2.5-flash'; // Fallback text models if standard doesn't work.
@@ -451,7 +468,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                 });
             }
         }
-        // Manejar Higgsfield Cosmos Video Jobs guardados en Server RAM
+        // Manejar Higgsfield Jobs guardados en Server RAM (generación delegada)
         if (taskId.startsWith("higgsfield_")) {
             const job = postProcessJobs.get(taskId);
             if (!job) {
@@ -460,11 +477,8 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             if (job.status === 'done') {
                 postProcessJobs.delete(taskId);
                 return res.status(200).json({
-                    task_id: taskId,
-                    status: 'succeed',
-                    progress: 100,
-                    result_url: job.localUrl,
-                    isVideo: true
+                    task_id: taskId, status: 'succeed', progress: 100,
+                    result_url: job.localUrl, isVideo: job.isVideo || false
                 });
             } else if (job.status === 'failed') {
                 postProcessJobs.delete(taskId);
@@ -472,17 +486,23 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
             } else if (job.status === 'delegated') {
                 try {
                     const abortController = new AbortController();
-                    const timeoutId = setTimeout(() => abortController.abort(), 3500);
+                    const timeoutId = setTimeout(() => abortController.abort(), 4000);
 
-                    const hRes = await fetch(`https://api.higgsfield.ai/v1/generations/${job.provider_job_id}`, {
-                        headers: { 'Authorization': `Bearer ${process.env.HIGGSFIELD_API_KEY}` },
+                    // Nueva API: platform.higgsfield.ai/requests/{id}/status
+                    const statusUrl = `https://platform.higgsfield.ai/requests/${job.provider_job_id}/status`;
+                    const authHeader = process.env.HIGGSFIELD_API_KEY.startsWith('Key ') 
+                        ? process.env.HIGGSFIELD_API_KEY 
+                        : `Bearer ${process.env.HIGGSFIELD_API_KEY}`;
+
+                    const hRes = await fetch(statusUrl, {
+                        headers: { 'Authorization': authHeader },
                         signal: abortController.signal
                     });
                     clearTimeout(timeoutId);
                     
                     if (hRes.status === 502 || hRes.status === 504) {
                         job.retries = (job.retries || 0) + 1;
-                        if (job.retries > 5) {
+                        if (job.retries > 8) {
                             job.status = 'failed';
                             job.error = "Higgsfield timeout (502). Múltiples reintentos fallidos.";
                             return res.status(200).json({ status: 'failed', error: job.error });
@@ -492,43 +512,39 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                     
                     const rawText = await hRes.text();
                     let hData;
-                    try {
-                        hData = JSON.parse(rawText);
-                    } catch (err) {
-                        throw new Error(`Higgsfield Status Error (HTTP ${hRes.status}): ${rawText.substring(0, 60)}...`);
+                    try { hData = JSON.parse(rawText); } catch (e) {
+                        throw new Error(`Higgsfield Status Error (HTTP ${hRes.status}): ${rawText.substring(0, 60)}`);
                     }
-                    if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Polling fallido a Higgsfield");
+                    if (!hRes.ok) throw new Error(hData?.error || hData?.message || hData?.detail || `HTTP ${hRes.status}`);
                     
-                    if (hData.state === 'completed' || hData.status === 'completed' || hData.status === 'succeed') {
-                        const videoUrl = hData.video?.url || hData.output?.url || hData.url;
-                        if (!videoUrl) throw new Error("Higgsfield finalizó pero no regresó URL de video");
+                    const status = hData.status || hData.state;
+                    if (status === 'completed' || status === 'succeed' || status === 'succeeded') {
+                        // Extraer URL del média generado
+                        const mediaUrl = hData.videos?.[0]?.url 
+                            || hData.images?.[0]?.url 
+                            || hData.output?.url 
+                            || hData.url;
+                        if (!mediaUrl) throw new Error(`Higgsfield completó pero sin URL en respuesta: ${JSON.stringify(hData).substring(0, 80)}`);
                         
                         job.status = 'done';
-                        job.localUrl = videoUrl;
-                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: videoUrl, isVideo: true });
-                    } else if (hData.state === 'failed' || hData.status === 'failed' || hData.status === 'error') {
-                        job.status = 'failed';
-                        job.error = "Fallo interno en motor de Higgsfield: " + (hData.error?.message || "Error desconocido");
-                        return res.status(200).json({ status: 'failed', error: job.error });
+                        job.localUrl = mediaUrl;
+                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: mediaUrl, isVideo: job.isVideo || false });
+                    } else if (status === 'failed' || status === 'error') {
+                        const errMsg = hData.error || hData.message || 'Error interno en Higgsfield';
+                        job.status = 'failed'; job.error = errMsg;
+                        return res.status(200).json({ status: 'failed', error: errMsg });
                     } else {
-                        // Sigue procesando
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: hData.progress || 50, result_url: '' });
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: hData.progress || 40, result_url: '' });
                     }
                 } catch(pe) {
                     if (pe.name === 'AbortError') {
-                        console.log("[HIGGSFIELD] Async Polling Timeout (3.5s). Retrying next cycle sin bloquear Node.");
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 40, result_url: '' });
                     }
-                    console.error("Higgsfield Polling Error: ", pe);
-                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
+                    console.error("[HIGGSFIELD] Polling Error:", pe.message);
+                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 40, result_url: '' });
                 }
             } else {
-                return res.status(200).json({
-                    task_id: taskId,
-                    status: 'processing',
-                    progress: job.progress || 10,
-                    result_url: ''
-                });
+                return res.status(200).json({ task_id: taskId, status: 'processing', progress: job.progress || 10, result_url: '' });
             }
         }
         

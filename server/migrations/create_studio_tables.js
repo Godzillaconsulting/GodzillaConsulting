@@ -24,7 +24,10 @@ const runMigration = async () => {
         `);
         console.log('✅ Tabla studio_tasks creada/verificada.');
 
-        // Tabla para el aprendizaje continuo del bot
+        // Agregar columna feedback_notes si no existe (safe alter)
+        await pool.query(`ALTER TABLE studio_tasks ADD COLUMN IF NOT EXISTS feedback_notes TEXT;`);
+        console.log('✅ Columna feedback_notes verificada.');
+
         await pool.query(`
             CREATE TABLE IF NOT EXISTS goyi_learning (
                 id SERIAL PRIMARY KEY,

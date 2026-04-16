@@ -28,14 +28,21 @@ export async function generateAndSendAutoNewsletter() {
 
     const prompt = `Crea la edición semanal de hoy del boletín para empresarios de tu base de datos.
 El tema principal: "Despliegue de Motores Inteligentes y Agentes Autónomos."
-El objetivo es enganchar por corro pero entregarles un reporte PDF estructurado mediante un link adjunto.
+El objetivo es enganchar por correo pero entregarles un reporte PDF estructurado mediante un link adjunto.
+INSTRUCCIÓN CRÍTICA PARA EL PDF: El PDF debe verse extremadamente profesional y analítico, no como si fue generado en 1 minuto. Utiliza referencias del mundo real (Ej. cifras de McKinsey, Gartner, Harvard Business Review sobre automatización y agilidad). El tono debe ser impecable, profundo y útil.
 
 DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
 {
     "subject": "Asunto de correo (incluye emoji ejecutivo)",
     "emailHTML": "<h2 style=\\"color:#CC0000;\\">Titular Correo...</h2><p>Texto gancho persuasivo del correo</p>",
-    "pdfTitle": "TÍTULO FORMAL DEL REPORTE PARA EL PDF",
-    "pdfBody": "Varios párrafos largos de 150 palabras analizando métricas, herramientas de IA (ej Gemini, Agentes) y estrategia que irán dentro del interior del reporte en PDF."
+    "pdfTitle": "TÍTULO FORMAL DEL REPORTE EJECUTIVO",
+    "pdfSubtitle": "Subtítulo analítico (ej. 'El impacto en la rentabilidad B2B y tendencias globales')",
+    "pdfIntro": "Párrafo introductorio de alto nivel en formato ejecutivo.",
+    "pdfSections": [
+        { "heading": "Título de Subsección Métrica", "content": "Párrafo con análisis y referencias reales B2B (Gartner/Harvard/etc)." }
+    ],
+    "pdfQuote": "\\"Cita de alto impacto o Insight crudo sobre IA e Innovación.\\"",
+    "pdfConclusion": "Conclusión estratégica orientada a retorno de inversión técnica."
 }`;
 
     const result = await model.generateContent(prompt);
@@ -52,29 +59,96 @@ DEVUELVE ÚNICAMENTE UN JSON válido sin markdown, con la siguiente estructura:
     try {
         pdfBuffer = await new Promise((resolve, reject) => {
             try {
-                const doc = new PDFDocument({ margin: 50 });
+                // Buffer creation must allow manual page addition for footers
+                const doc = new PDFDocument({ margin: 50, bufferPages: true, autoFirstPage: true });
                 const buffers = [];
+                const logoPath = path.join(__dirname, '../../public/favicon.png');
                 
                 doc.on('data', buffers.push.bind(buffers));
                 doc.on('end', () => {
                     resolve(Buffer.concat(buffers));
                 });
-                // doc.on('error', reject); // just in case
 
-                // Diseño del PDF
-                doc.rect(0, 0, doc.page.width, 120).fill('#111111');
-                doc.fillColor('#CC0000').fontSize(24).font('Helvetica-Bold').text('GODZILLA CONSULTING', 50, 45);
-                doc.fillColor('#ffffff').fontSize(10).font('Helvetica').text('REPORTE EJECUTIVO SEMANAL', 50, 75);
+                // Function: Add background watermark on pages
+                const paintWatermark = () => {
+                   doc.save();
+                   doc.opacity(0.04);
+                   if (fs.existsSync(logoPath)) {
+                       doc.image(logoPath, (doc.page.width - 350)/2, (doc.page.height - 350)/2 + 20, { width: 350 });
+                   }
+                   doc.restore();
+                };
 
-                doc.moveDown(4); // Espacio después del header negro
+                doc.on('pageAdded', paintWatermark);
+                paintWatermark(); // Paint heavily on 1st page
 
-                doc.fillColor('#000000').fontSize(18).font('Helvetica-Bold').text(data.pdfTitle, { align: 'left' });
-                doc.moveDown(1);
+                // ----- HEADER CORPORATIVO (Solo página 1) -----
+                doc.rect(0, 0, doc.page.width, 10).fill('#CC0000');
                 
-                doc.fillColor('#333333').fontSize(11).font('Helvetica').lineGap(6).text(data.pdfBody, { align: 'justify' });
+                if (fs.existsSync(logoPath)) {
+                    doc.image(logoPath, 50, 30, { width: 30 });
+                }
+                doc.fillColor('#CC0000').fontSize(16).font('Helvetica-Bold').text('GODZILLA CONSULTING', 90, 35);
+                doc.fillColor('#888888').fontSize(9).font('Helvetica').text('RESERVED CORPORATE INTELLIGENCE REPORT', 90, 52);
+                doc.moveTo(50, 75).lineTo(doc.page.width - 50, 75).lineWidth(0.5).stroke('#CCCCCC');
 
+                doc.moveDown(4);
+
+                // ----- CUERPO DEL DOCUMENTO -----
+                doc.fillColor('#111111').fontSize(24).font('Helvetica-Bold').text(data.pdfTitle, 50, null, { align: 'left', lineGap: 4 });
+                doc.moveDown(0.5);
+                if (data.pdfSubtitle) {
+                    doc.fillColor('#CC0000').fontSize(14).font('Helvetica').text(data.pdfSubtitle, { align: 'left' });
+                }
                 doc.moveDown(2);
-                doc.fillColor('#CC0000').fontSize(12).font('Helvetica-Bold').text('A la vanguardia corporativa. Agenda hoy en godzillaconsulting.ai');
+                
+                // INTRO
+                doc.fillColor('#333333').fontSize(11).font('Helvetica').lineGap(7).text(data.pdfIntro || data.pdfBody || '', { align: 'justify' });
+                doc.moveDown(2);
+
+                // SECTIONS
+                if (data.pdfSections && Array.isArray(data.pdfSections)) {
+                    for (const sec of data.pdfSections) {
+                        doc.fillColor('#111111').fontSize(13).font('Helvetica-Bold').text(sec.heading, { align: 'left' });
+                        doc.moveDown(0.5);
+                        doc.fillColor('#444444').fontSize(11).font('Helvetica').lineGap(6).text(sec.content, { align: 'justify' });
+                        doc.moveDown(1.5);
+                    }
+                }
+
+                // HIGH-IMPACT QUOTE
+                if (data.pdfQuote) {
+                    doc.moveDown(1);
+                    const currentY = doc.y;
+                    doc.rect(50, currentY, 3, 35).fill('#CC0000');
+                    doc.fillColor('#555555').fontSize(12).font('Helvetica-Oblique').text(data.pdfQuote, 65, currentY + 3, { align: 'left', lineGap: 4, width: doc.page.width - 120 });
+                    doc.moveDown(2);
+                }
+
+                // CONCLUSION
+                if (data.pdfConclusion) {
+                    doc.fillColor('#111111').fontSize(13).font('Helvetica-Bold').text('Conclusión Ejecutiva', { align: 'left' });
+                    doc.moveDown(0.5);
+                    doc.fillColor('#444444').fontSize(11).font('Helvetica').lineGap(6).text(data.pdfConclusion, { align: 'justify' });
+                }
+
+                doc.moveDown(3);
+                doc.fillColor('#CC0000').fontSize(12).font('Helvetica-Bold').text('Lidera con Inteligencia. Agenda evaluación B2B en godzillaconsulting.ai', { align: 'center' });
+
+                // ----- FOOTERS E INDEXACIÓN -----
+                let pages = doc.bufferedPageRange();
+                for (let i = 0; i < pages.count; i++) {
+                    doc.switchToPage(i);
+                    const isFirstPage = i === 0;
+                    if (!isFirstPage) { // Red bar on following pages
+                        doc.rect(0, 0, doc.page.width, 5).fill('#CC0000');
+                    }
+                    doc.moveTo(50, doc.page.height - 50).lineTo(doc.page.width - 50, doc.page.height - 50).lineWidth(0.5).stroke('#E5E5E5');
+                    doc.fillColor('#999999').fontSize(8).font('Helvetica').text(
+                        `Propiedad Privada Integral de Godzilla Consulting AI • Página ${i + 1} de ${pages.count} • Producido ${new Date().toLocaleDateString()}`,
+                        50, doc.page.height - 35, { align: 'center' }
+                    );
+                }
 
                 doc.end();
             } catch (e) {

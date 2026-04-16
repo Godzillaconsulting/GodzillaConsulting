@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 
 export default function GoyiAdmin() {
     const [isOpen, setIsOpen] = useState(false);
@@ -61,8 +63,9 @@ export default function GoyiAdmin() {
 
             const data = await response.json();
             
-            // Reemplazar *...* por <b>...</b>
-            const textResponse = (data.reply || "No entiendo la solicitud.").replace(/\*(.*?)\*/g, '<b>$1</b>');
+            const rawMarkdown = data.reply || "No entiendo la solicitud.";
+            const parsedHtml = await marked.parse(rawMarkdown);
+            const textResponse = DOMPurify.sanitize(parsedHtml);
             
             setMessages(prev => [...prev, { role: 'model', text: textResponse }]);
         } catch (error) {

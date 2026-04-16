@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import React, { useState, useEffect, memo, Suspense } from 'react';
 import CustomCursor from './components/CustomCursor';
 import PrivateRoute from './components/PrivateRoute';
@@ -34,7 +34,7 @@ const OptimizacionWebSeo = React.lazy(() => import('./components/OptimizacionWeb
 const CrmSaas = React.lazy(() => import('./components/CrmSaas'));
 const LandingPaqueteDynamic = React.lazy(() => import('./components/LandingPaqueteDynamic'));
 const Login = React.lazy(() => import('./components/Login'));
-const Dashboard = React.lazy(() => import('./components/Dashboard'));
+
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
 const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
 const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
@@ -124,7 +124,7 @@ function GodzillaTracker() {
 
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
-  const hiddenRoutes = ['/login', '/dashboard', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio', '/godzilla-sora'];
+  const hiddenRoutes = ['/login', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio', '/godzilla-sora'];
 
   if (hiddenRoutes.some(route => pathname.startsWith(route))) return null;
 
@@ -166,7 +166,7 @@ function GlobalSuspenseFallback() {
 function AppLayout() {
   const { pathname } = useLocation();
   const { loading } = useSiteData();
-  const hideChrome = ['/login', '/dashboard', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
+  const hideChrome = ['/login', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
 
   if (loading) {
     return <GlobalSuspenseFallback />;
@@ -194,14 +194,13 @@ function AppLayout() {
               <Route path="/redes" element={<GestionRedesSociales />} />
               <Route path="/seo" element={<OptimizacionWebSeo />} />
               <Route path="/crm" element={<CrmSaas />} />
-              <Route path="/admin" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
-              <Route path="/cm" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
-              <Route path="/studio" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+              <Route path="/admin/*" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+              <Route path="/cm" element={<Navigate to="/admin/calendar" replace />} />
+              <Route path="/studio" element={<Navigate to="/admin/studio" replace />} />
               <Route path="/godzilla-sora" element={<ErrorBoundary><PrivateRoute><GodzillaSora /></PrivateRoute></ErrorBoundary>} />
               <Route path="/recursos/:recursoId" element={<RecursoPage />} />
               <Route path="/:slug" element={<LandingPaqueteDynamic />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<ErrorBoundary><PrivateRoute><Dashboard /></PrivateRoute></ErrorBoundary>} />
               <Route path="/faq" element={<PreguntasFrecuentes />} />
             </Routes>
           </Suspense>

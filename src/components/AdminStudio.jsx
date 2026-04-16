@@ -14,6 +14,7 @@ import DBStudioPanel from './DBStudioPanel';
 import BugTrackerUI from './BugTrackerUI';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
+import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields } from '../utils/editorParser';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function EditorField({ fieldKey, onHover, children }) {
@@ -32,64 +33,7 @@ function EditorField({ fieldKey, onHover, children }) {
 
 // PAGE_SECTIONS moved to studioConfig.js
 
-// ── Detección automática de campos de texto en draftData ───────────────────
-const NON_TEXT_KEYS = new Set(['ctaLink','enlace','link','href','url','src','elements','planFeaturesExtended']);
-const MEDIA_PATTERNS = /url|src|image|video|logo|icon|thumbnail|cover|photo|gif|bg|media|banner|foto/i;
-const SKIP_MEDIA = new Set(['ctaLink','enlace','link','href']);
 
-function detectTextFields(data) {
- return Object.entries(data || {}).filter(([key, val]) =>
- typeof val === 'string' &&
- !MEDIA_PATTERNS.test(key) &&
- !NON_TEXT_KEYS.has(key) &&
- !key.startsWith('#') &&
- !/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/.test(key)
- ).sort(([a], [b]) => {
-     const numA = parseInt(a.match(/\d+/) ? a.match(/\d+/)[0] : '0', 10);
-     const numB = parseInt(b.match(/\d+/) ? b.match(/\d+/)[0] : '0', 10);
-     if (numA !== numB) return numA - numB;
-     return a.localeCompare(b);
- });
-}
-
-function detectMediaFields(data) {
- return Object.entries(data || {}).filter(([key, val]) =>
- typeof val ==='string' &&
- MEDIA_PATTERNS.test(key) &&
- !SKIP_MEDIA.has(key)
- ).sort(([a], [b]) => {
-     const numA = parseInt(a.match(/\d+/) ? a.match(/\d+/)[0] : '0', 10);
-     const numB = parseInt(b.match(/\d+/) ? b.match(/\d+/)[0] : '0', 10);
-     if (numA !== numB) return numA - numB;
-     return a.localeCompare(b);
- });
-}
-
-// Convierte camelCase/snakeCase a label legible
-function toLabel(key) {
- return key
- .replace(/([A-Z])/g,' $1')
- .replace(/[_-]/g,'')
- .replace(/\b\w/g, c => c.toUpperCase())
- .trim();
-}
-
-// Agrupa campos numerados: service1Title, service2Desc → grupos por número
-function detectGroupedFields(data) {
- const groups = {};
- Object.keys(data || {}).forEach(key => {
- const m = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
- if (m) {
- const [, prefix, num, field] = m;
- if (!groups[prefix]) groups[prefix] = {};
- if (!groups[prefix][num]) groups[prefix][num] = {};
- groups[prefix][num][field] = data[key];
- groups[prefix][num]['_keys'] = groups[prefix][num]['_keys'] || {};
- groups[prefix][num]['_keys'][field] = key; // original key
- }
- });
- return groups;
-}
 
 // ── Componente color + tipografía ──────────────────────────────────────────
 function ColorField({ label, fieldKey, draftData, onChange }) {
@@ -149,10 +93,21 @@ const GOOGLE_FONTS = ['Inter','Roboto','Outfit','Poppins','Montserrat','Lato','P
 // ── Componente principal ────────────────────────────────────────────────────
 export default function AdminStudio() {
  const navigate = useNavigate();
- const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
- const [selectedNodeId, setSelectedNodeId] = useState(null);
- const [activeSection, setActiveSection] = useState(window.location.pathname.includes('/cm') ? 'social' : window.location.pathname.includes('/studio') ? 'social_studio' : 'editor'); //'editor' |'newsletter' | 'profile'
- const [activeTab, setActiveTab] = useState('textos');
+  const location = useLocation();
+  const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  
+  const activeSection = useMemo(() => {
+    if (location.pathname.includes('/calendar')) return 'social';
+    if (location.pathname.includes('/studio')) return 'social_studio';
+    if (location.pathname.includes('/db')) return 'db_studio';
+    if (location.pathname.includes('/profile')) return 'profile';
+    if (location.pathname.includes('/bugs')) return 'bugs';
+    if (location.pathname.includes('/newsletter')) return 'newsletter';
+    return 'editor';
+  }, [location.pathname]);
+
+  const [activeTab, setActiveTab] = useState('textos');
  const [adminProfile, setAdminProfile] = useState(() => {
         try { return JSON.parse(localStorage.getItem('godzilla_cached_profile')) || null; } catch { return null; }
  });
@@ -328,7 +283,7 @@ export default function AdminStudio() {
  setActiveTab('textos');
  setSelectedElementIndex(null);
  setSelectedFeatureIndex(null);
- setActiveSection('editor');
+ navigate('/admin');
  
   let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
   combinedData = injectSectionDefaults(node.id, combinedData);
@@ -589,28 +544,28 @@ export default function AdminStudio() {
   </div>
 
    <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">
-   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection(s => s ==='newsletter' ?'editor' :'newsletter'); setSelectedNodeId(null); }}
+   <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
   className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-[#CC0000] text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
   📧 Newsletter
   </button>
   
-   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social_studio'); setSelectedNodeId(null); navigate('/studio'); }}
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/studio'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
    <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
    </button>
-   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('social'); setSelectedNodeId(null); navigate('/cm'); }}
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
    <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
    
    {(adminProfile?.is_superadmin || ['jareg', 'oscar'].includes(adminProfile?.username?.toLowerCase())) && (
-       <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('db_studio'); setSelectedNodeId(null); }}
+       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/db'); setSelectedNodeId(null); }}
        className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='db_studio' ?'bg-neutral-900 text-[#00ff88] border-[#00ff88]/50 shadow-[0_0_15px_rgba(0,255,136,0.2)]' :'text-neutral-300 border-transparent hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 hover:text-white' }`}>
        <span className="text-xs mr-2 drop-shadow-sm">🗄️</span> DB Studio
        </button>
    )}
    
-   <button onClick={() => { setIsAnalyticsMode(false); setActiveSection('profile'); setSelectedNodeId(null); }}
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
        <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
@@ -636,7 +591,7 @@ export default function AdminStudio() {
       const isIT = ['jareg', 'godzilla_admin', 'dani', 'oscar'].includes(adminProfile?.username?.toLowerCase());
       if (isIT) {
           setIsAnalyticsMode(false);
-          setActiveSection('bugs');
+          navigate('/admin/bugs');
           setSelectedNodeId(null);
       } else {
           setShowFeedbackModal(true);

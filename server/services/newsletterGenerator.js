@@ -4,12 +4,12 @@ import { enqueueNewsletter } from './emailQueue.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import { ARCHIVOS_PESADOS_DIR } from '../routes/media.js';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ASSETS_DIR = path.join(__dirname, '..', 'uploads', 'assets');
-try { if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true }); } catch (e) { console.warn("FS Warning:", e); }
+const ASSETS_DIR = ARCHIVOS_PESADOS_DIR;
 
 const getClient = () => {
     return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);

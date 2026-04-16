@@ -164,8 +164,8 @@ const Paquetes = () => {
  <div className="flex items-baseline justify-center gap-1 mb-8">
  <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
   {(() => {
-    // Conversión de formato string "$7,900" a número
-    const rawPriceStr = typeof pkg.price === 'string' ? pkg.price.replace(/[$,\sMXNUSD]/ig, '') : pkg.price;
+    // Extraer solo algas numéricas y decimales para evitar problemas de parsing
+    const rawPriceStr = typeof pkg.price === 'string' ? pkg.price.replace(/[^\d.]/g, '') : pkg.price;
     const baseMxn = parseFloat(rawPriceStr) || 0;
     if (baseMxn === 0) return pkg.price; // fallback if NaN
     

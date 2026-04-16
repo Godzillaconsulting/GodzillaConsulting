@@ -6,23 +6,23 @@ export const AI_MODELS = {
     // ══════════════════════════════════════════════
     //  IMÁGENES — Google Imagen + Gemini Image Gen
     // ══════════════════════════════════════════════
-    // Imagen 3 Ultra: máxima calidad, fotorrealismo, sin filtros de seguridad duros
-    'Imagen 4 Ultra': 'imagen-3.0-generate-001',
-    // Imagen 3 Fast: misma arquitectura, generación 3x más rápida
-    'Imagen 4 Pro': 'imagen-3.0-fast-generate-001',
-    // Gemini 2.0 Flash con image output — multimodal, acepta imagen de referencia
-    'Gemini 3.1 Flash Image': 'gemini-2.0-flash-preview-image-generation',
+    // Imagen 4 Ultra: máxima calidad, fotorrealismo, sin filtros de seguridad duros
+    'Imagen 4 Ultra': 'imagen-4.0-ultra-generate-001',
+    // Imagen 4 Pro/Fast: misma arquitectura, generación rápida
+    'Imagen 4 Pro': 'imagen-4.0-fast-generate-001',
+    // Gemini 3.1 Flash con image output — multimodal, acepta imagen de referencia
+    'Gemini 3.1 Flash Image': 'gemini-3.1-flash-image-preview',
 
     // ══════════════════════════════════════════════
-    //  VIDEO — Google Veo 2
+    //  VIDEO — Google Veo 3.1
     // ══════════════════════════════════════════════
-    // Veo 2: calidad cinematográfica 1080p, física realista, 5-8 segundos
-    'Veo 3': 'veo-2.0-generate-001',
-    // Veo 2 también en ruta fast (mismo modelo, la diferencia la pone la config)
-    'Veo 3 Fast': 'veo-2.0-generate-001',
+    // Veo 3.1: calidad cinematográfica, física realista
+    'Veo 3': 'veo-3.1-generate-preview',
+    // Veo 3.1 Fast
+    'Veo 3 Fast': 'veo-3.1-fast-generate-preview',
 
     // ══════════════════════════════════════════════
-    //  VIDEO — Higgsfield Cosmos
+    //  VIDEO E IMÁGENES — Higgsfield Cosmos
     // ══════════════════════════════════════════════
     'Higgsfield Cosmos': 'higgsfield-cosmos',
 

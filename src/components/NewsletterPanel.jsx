@@ -272,6 +272,11 @@ export default function NewsletterPanel() {
  <div className="flex items-start justify-between gap-2">
  <p className="text-xs font-bold text-white leading-snug flex-1">{n.subject || 'Sin Asunto'}</p>
  <div className="flex items-center gap-2">
+ {n.attachment_url && (
+     <a href={n.attachment_url} target="_blank" rel="noopener noreferrer" title="Abrir reporte PDF adjunto" className="text-sky-400 bg-sky-400/10 hover:bg-sky-400 hover:text-white px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1">
+         📄 Ver PDF
+     </a>
+ )}
  {n.status === 'draft' && (
  <button 
  onClick={() => {

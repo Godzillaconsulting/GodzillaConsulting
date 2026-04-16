@@ -151,15 +151,13 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
     try {
         const { title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, media_payload } = req.body;
         const uploader = req.admin?.username || 'unknown';
-        const isSelfReview = uploader.toLowerCase() === 'alex' || req.admin?.role === 'cockers';
+        const isSelfPost = uploader.toLowerCase() === 'alex' || req.admin?.role === 'cockers';
         
-        // Si Alex sube directamente sin revisarse vía CM, estampamos una nota de auto-revisión
-        const selfReviewNote = isSelfReview 
-            ? `[AUTO-REVISIÓN] Subido y pre-aprobado por ${uploader}. Pendiente de confirmación por Judith.`
-            : null;
-
-        // Si viene media_payload, se creó desde Cockers Studio - va directo a revisión
-        const initialStatus = media_payload ? 'pending_cm_approval' : 'draft';
+        // Alex tiene autonomía: sus subidas van directo a aprobado (sin pasar por revisión)
+        // pero DEBE incluir una nota de razón en el campo `title`
+        const initialStatus = media_payload 
+            ? (isSelfPost ? 'approved' : 'pending_cm_approval') 
+            : 'draft';
         
         const query = `
             INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload)
@@ -168,7 +166,7 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
         `;
         
         const values = [
-            title || selfReviewNote || 'Revisión solicitada por ' + uploader, 
+            title || 'Subida directa por ' + uploader, 
             prompt, 
             assigned_to || uploader, 
             JSON.stringify(tags || []),
@@ -183,17 +181,18 @@ router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) =>
         const newTask = result.rows[0];
         broadcast('CREATE', newTask);
         
-        // Notificar a los admins de que Alex subió algo
-        if (isSelfReview && media_payload) {
+        // Notificar al equipo que Alex subió algo directamente (auto-aprobado)
+        if (isSelfPost && media_payload) {
             broadcast('NOTIFICATION', {
-                type: 'SELF_REVIEW',
-                message: `🔔 ${uploader} subió un nuevo activo a revisión. Requiere aprobación por Judith.`,
+                type: 'SELF_POST',
+                message: `📌 ${uploader} publicó un activo directamente (auto-aprobado). Razón: "${title || 'Sin nota'}". Revísalo en CEO Estudio → Aprobadas.`,
                 taskId: newTask.id,
-                uploader
+                uploader,
+                reason: title || 'Sin nota'
             });
         }
         
-        res.status(201).json({ success: true, task: newTask });
+        res.status(201).json({ success: true, task: newTask, selfApproved: isSelfPost });
     } catch (error) {
         console.error('Error POST /tasks:', error);
         res.status(500).json({ success: false, message: 'Error al crear tarea', error: error.message });
@@ -250,12 +249,13 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
 
         const query = `
             UPDATE studio_tasks 
-            SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, updated_at = CURRENT_TIMESTAMP
+            SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, feedback_notes = COALESCE($6, feedback_notes), updated_at = CURRENT_TIMESTAMP
             WHERE id = $5
             RETURNING *;
         `;
 
-        const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id];
+        const feedbackNotes = req.body.feedback_notes !== undefined ? req.body.feedback_notes : null;
+        const values = [updatedStatus, updatedMedia, updatedTargets, updatedIgDate, id, feedbackNotes];
         const result = await pool.query(query, values);
         
         const updatedTask = result.rows[0];

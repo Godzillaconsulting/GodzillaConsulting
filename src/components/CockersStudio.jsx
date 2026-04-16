@@ -590,10 +590,22 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
-    // Enviar slot en vivo a revisión — funciona SIN necesitar selectedDraft existente
+    // Enviar slot en vivo — Alex auto-aprueba con nota; otros envían a revisión de Judith
     const sendSlotToReview = async (slot) => {
         if (!slot.url) return;
-        if (!window.confirm(`¿Enviar resultado de "${slot.provider}" a revisión para Judith?`)) return;
+
+        // Pedir nota obligatoria: Alex explica brevemente por qué sube esto
+        const nota = window.prompt(
+            `📝 Deja una nota explicando por qué subes este activo de "${slot.provider}".\n\n` +
+            `(Ej: "Imagen para el post del martes sobre automatización")\n\n` +
+            `Esta nota quedará registrada para el equipo:`
+        );
+        if (nota === null) return; // Usuario canceló
+        if (!nota.trim()) {
+            alert('⚠️ La nota es obligatoria. Describe brevemente el motivo de la subida.');
+            return;
+        }
+
         const token = localStorage.getItem('adminToken');
         try {
             // Si hay draft ya cargado, solo actualizamos su estado
@@ -609,25 +621,32 @@ export default function CockersStudio({ adminProfile }) {
                 const d = await res.json();
                 if (!d.success) throw new Error(d.message || 'Error actualizando tarea');
                 setQueue(q => q.map(t => t.id === selectedDraft.id ? { ...t, status: 'pending_cm_approval' } : t));
-                alert(`✅ Enviado. Judith lo verá en "Enviados y Devueltos".`);
+                alert(`✅ Enviado a revisión para Judith.`);
                 return;
             }
-            // Si NO hay draft, creamos tarea nueva en pending_cm_approval
+            // Crear tarea nueva — el backend decide el status según el rol:
+            // Alex (cockers) → approved automáticamente con nota
+            // Otros → pending_cm_approval
             const res = await fetch('/api/studio/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    title: finalPrompt.substring(0, 100) || `Arte de ${slot.provider}`,
+                    title: nota.trim(),          // La nota queda como título visible para el equipo
                     prompt: finalPrompt,
-                    status: 'pending_cm_approval',
                     ig_publish_date: new Date(Date.now() + 86400000 * 2).toISOString(),
                     media_payload: JSON.stringify([{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }])
                 })
             });
             const d = await res.json();
             if (!d.success) throw new Error(d.message || 'Error creando tarea');
-            setQueue(q => [{ id: d.task?.id || Date.now(), status: 'pending_cm_approval', caption: finalPrompt.substring(0, 100), visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
-            alert(`✅ Tarea creada y enviada a revisión. Judith la verá en "Enviados y Devueltos".`);
+
+            // Mensaje contextual según si fue auto-aprobado o enviado a revisión
+            if (d.selfApproved) {
+                alert(`✅ Activo subido y aprobado directamente.\n\n📌 Nota registrada: "${nota}"\n\nEl equipo fue notificado.`);
+            } else {
+                alert(`✅ Enviado a revisión.\n\n📌 Nota: "${nota}"\n\nJudith lo verá en "Enviados y Devueltos".`);
+            }
+            setQueue(q => [{ id: d.task?.id || Date.now(), status: d.selfApproved ? 'approved' : 'pending_cm_approval', caption: nota, visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
         } catch (e) {
             console.error(e);
             alert(`⚠️ Error: ${e.message}`);
@@ -1022,7 +1041,7 @@ export default function CockersStudio({ adminProfile }) {
                                         <span className="text-[8px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{selectedFilters.length} activos</span>
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {PHOTO_FILTERS.map(filter => {
+                                        {dynamicFilters.map(filter => {
                                             const isActive = selectedFilters.includes(filter.prompt);
                                             return (
                                                 <button
@@ -1037,7 +1056,7 @@ export default function CockersStudio({ adminProfile }) {
                                         })}
                                         {/* Píldoras especiales comunitarias inyectadas desde la galería */}
                                         {selectedFilters.map(sf => {
-                                            if (PHOTO_FILTERS.find(pf => pf.prompt === sf)) return null;
+                                            if (dynamicFilters.find(pf => pf.prompt === sf)) return null;
                                             const comm = COMMUNITY_GALLERY_POOL.find(c => c.prompt === sf);
                                             const label = comm ? comm.tag : 'Estilo Mágico';
                                             return (

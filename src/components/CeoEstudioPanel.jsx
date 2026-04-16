@@ -12,8 +12,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
   const [network, setNetwork] = useState('instagram');
 
   const username = adminProfile?.username?.toLowerCase() || '';
-  const canUpload = ['alex', 'godzilla_admin'].includes(username);
+  const canUpload = ['alex', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
   const canReview = ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+  const canPublish = canReview; // Solo quien aprueba o superadmin puede publicar directamente
 
   // Mock fetch function para Phase 1 / TBD Backend integration
   const fetchMedia = async () => {
@@ -168,9 +169,15 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             
                             <p className="text-xs text-neutral-400 mb-4 text-center">Inicia el flujo de publicación oficial emulando el HUD nativo de las redes sociales.</p>
                             
-                            <button onClick={() => setShowPublishHUD(true)} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                                📱 PUBLICAR AHORA
-                            </button>
+                            {canPublish ? (
+                                <button onClick={() => setShowPublishHUD(true)} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                                    📱 PUBLICAR AHORA
+                                </button>
+                            ) : (
+                                <button disabled className="w-full bg-neutral-800/50 text-neutral-500 font-black py-4 rounded-xl text-lg flex items-center justify-center gap-2 cursor-not-allowed border border-neutral-800">
+                                    🔒 PENDIENTE DE PUBLICACIÓN DE JUDITH
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

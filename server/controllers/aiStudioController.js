@@ -124,50 +124,73 @@ Concept: ${prompt}`;
             postProcessJobs.set(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
-            // Importar IDs desde la v4 (purga automatizada de modelos V2)
-            const veoModel = getModelId(engine) || 'veo-3.1-generate-preview';
-            console.log(`[VEO] Motor seleccionado: ${veoModel} (para engine UI: ${engine})`);
+            // Cascade de modelos: intenta el solicitado primero, luego el estable
+            const primaryModel  = getModelId(engine) || 'veo-3.1-generate-preview';
+            const fallbackModel = 'veo-2.0-generate-001';
+            console.log(`[VEO] Motor primario: ${primaryModel} | Fallback: ${fallbackModel}`);
 
             (async () => {
-                try {
-                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                    const ratio = (config?.aspect_ratio === '9:16') ? '9:16' : '16:9';
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                const ratio = (config?.aspect_ratio === '9:16') ? '9:16' : '16:9';
 
-                    let operation = await ai.models.generateVideos({
-                        model: veoModel,
+                const tryGenerate = async (modelId) => {
+                    console.log(`[VEO] Intentando con modelo: ${modelId}...`);
+                    const operation = await ai.models.generateVideos({
+                        model: modelId,
                         prompt: finalPromptToUse,
-                        config: {
-                            aspectRatio: ratio,
-                            numberOfVideos: 1
-                        }
+                        config: { aspectRatio: ratio, numberOfVideos: 1 }
                     });
+                    // Validar que la operación tiene nombre antes de hacer polling
+                    if (!operation || !operation.name) {
+                        throw new Error(`${modelId}: La API no devolvió un ID de operación válido. Verifica que tu cuenta tenga acceso a este modelo.`);
+                    }
+                    console.log(`[VEO] ✅ Operación iniciada: ${operation.name}`);
+                    return operation;
+                };
 
-                    // Poll hasta que la operación long-running termine
+                try {
+                    let operation;
+
+                    // Intentar modelo primario, con fallback automático
+                    try {
+                        operation = await tryGenerate(primaryModel);
+                    } catch (primaryErr) {
+                        console.warn(`[VEO] ⚠️ Modelo ${primaryModel} falló: ${primaryErr.message}`);
+                        console.log(`[VEO] 🔄 Usando fallback: ${fallbackModel}`);
+                        postProcessJobs.set(taskId, { status: 'working', progress: 8, info: `Fallback a ${fallbackModel}` });
+                        operation = await tryGenerate(fallbackModel);
+                    }
+
+                    // Poll hasta que la operación long-running termine (máx 10 min)
                     let attempts = 0;
                     while (!operation.done && attempts < 60) {
                         await new Promise(r => setTimeout(r, 10000)); // espera 10s
                         operation = await ai.operations.getVideosOperation({ operation });
                         attempts++;
-                        postProcessJobs.set(taskId, { status: 'working', progress: Math.min(5 + attempts * 1.5, 90) });
-                        console.log(`[VEO] Polling ${veoModel} - intento ${attempts} - done: ${operation.done}`);
+                        const progress = Math.min(5 + attempts * 1.5, 90);
+                        postProcessJobs.set(taskId, { status: 'working', progress });
+                        console.log(`[VEO] Polling - intento ${attempts}/60 - done: ${operation.done} - error: ${operation.error?.message || 'ninguno'}`);
+                    }
+
+                    // Verificar error en la operación final
+                    if (operation.error) {
+                        throw new Error(`Error de Google Veo: ${operation.error.message || JSON.stringify(operation.error)}`);
                     }
 
                     if (!operation.done || !operation.response?.generatedVideos?.[0]?.video?.uri) {
-                        throw new Error(`${veoModel}: Timeout o sin URI de video en la respuesta.`);
+                        throw new Error(`Timeout o sin URI de video en la respuesta. Intentos: ${attempts}`);
                     }
 
                     const videoUri = operation.response.generatedVideos[0].video.uri;
                     console.log(`[VEO] ✅ Video URI recibida: ${videoUri.substring(0, 60)}...`);
 
-                    // El usuario solicitó NO guardar el video físicamente hasta que él lo decida descargar
-                    // Por lo tanto, pasaremos la URI al backend proxy para hacer streaming temporal sin revelar la ApiKey
                     const proxyUrl = "/api/sora/proxy-veo?uri=" + encodeURIComponent(videoUri);
-
                     postProcessJobs.set(taskId, { status: 'done', localUrl: proxyUrl });
-                    console.log(`[VEO] 🎉 Video listo (modo streaming proxy sin guardar): ${taskId}`);
+                    console.log(`[VEO] 🎉 Video listo: ${taskId}`);
 
                 } catch (e) {
-                    console.error(`[VEO] ❌ Error (${engine}):`, e.message);
+                    console.error(`[VEO] ❌ Error final (${engine}):`, e.message);
+                    // Guardar el mensaje de error COMPLETO para que el frontend lo muestre
                     postProcessJobs.set(taskId, { status: 'failed', error: e.message });
                 }
             })();
@@ -213,7 +236,13 @@ Concept: ${prompt}`;
                         },
                         body: JSON.stringify(hBody)
                     });
-                    const hData = await hRes.json();
+                    const rawText = await hRes.text();
+                    let hData;
+                    try {
+                        hData = JSON.parse(rawText);
+                    } catch (err) {
+                        throw new Error(`Falla en Higgsfield (Server Caído - HTTP ${hRes.status}): ${rawText.substring(0, 60)}...`);
+                    }
                     if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Error Higgsfield");
 
                     // Higgsfield devuelve id del job
@@ -461,7 +490,13 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                         return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
                     }
                     
-                    const hData = await hRes.json();
+                    const rawText = await hRes.text();
+                    let hData;
+                    try {
+                        hData = JSON.parse(rawText);
+                    } catch (err) {
+                        throw new Error(`Higgsfield Status Error (HTTP ${hRes.status}): ${rawText.substring(0, 60)}...`);
+                    }
                     if (!hRes.ok) throw new Error(hData.error?.message || hData.message || hData.detail || "Polling fallido a Higgsfield");
                     
                     if (hData.state === 'completed' || hData.status === 'completed' || hData.status === 'succeed') {

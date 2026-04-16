@@ -582,6 +582,50 @@ export default function CockersStudio({ adminProfile }) {
         }
     };
 
+    // Enviar slot en vivo a revisión — funciona SIN necesitar selectedDraft existente
+    const sendSlotToReview = async (slot) => {
+        if (!slot.url) return;
+        if (!window.confirm(`¿Enviar resultado de "${slot.provider}" a revisión para Judith?`)) return;
+        const token = localStorage.getItem('adminToken');
+        try {
+            // Si hay draft ya cargado, solo actualizamos su estado
+            if (selectedDraft && selectedDraft.id && selectedDraft.id !== 999) {
+                const res = await fetch(`/api/studio/tasks/${selectedDraft.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        status: 'pending_cm_approval',
+                        media_payload: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }]
+                    })
+                });
+                const d = await res.json();
+                if (!d.success) throw new Error(d.message || 'Error actualizando tarea');
+                setQueue(q => q.map(t => t.id === selectedDraft.id ? { ...t, status: 'pending_cm_approval' } : t));
+                alert(`✅ Enviado. Judith lo verá en "Enviados y Devueltos".`);
+                return;
+            }
+            // Si NO hay draft, creamos tarea nueva en pending_cm_approval
+            const res = await fetch('/api/studio/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    title: finalPrompt.substring(0, 100) || `Arte de ${slot.provider}`,
+                    prompt: finalPrompt,
+                    status: 'pending_cm_approval',
+                    ig_publish_date: new Date(Date.now() + 86400000 * 2).toISOString(),
+                    media_payload: JSON.stringify([{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }])
+                })
+            });
+            const d = await res.json();
+            if (!d.success) throw new Error(d.message || 'Error creando tarea');
+            setQueue(q => [{ id: d.task?.id || Date.now(), status: 'pending_cm_approval', caption: finalPrompt.substring(0, 100), visual_prompt: finalPrompt, media_options: [{ url: slot.url, provider: slot.provider, isVideo: slot.isVideo || false }] }, ...q]);
+            alert(`✅ Tarea creada y enviada a revisión. Judith la verá en "Enviados y Devueltos".`);
+        } catch (e) {
+            console.error(e);
+            alert(`⚠️ Error: ${e.message}`);
+        }
+    };
+
     const simulateAIGeneration = async () => {
         if (!finalPrompt.trim()) return alert('Escribe un prompt antes de generar.');
         setRenderingAI(true);
@@ -1368,20 +1412,49 @@ export default function CockersStudio({ adminProfile }) {
                                             </div>
 
                                             {/* Footer del slot */}
-                                            <div className="px-3 py-2 flex items-center justify-between">
-                                                <div>
+                                            <div className="px-3 py-2 flex items-center justify-between gap-2">
+                                                <div className="min-w-0">
                                                     <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">{slot.provider}</p>
-                                                    <p className="text-[10px] text-neutral-300 truncate max-w-[130px]">{finalPrompt.substring(0, 40)}...</p>
+                                                    <p className="text-[10px] text-neutral-300 truncate max-w-[100px]">{finalPrompt.substring(0, 30)}...</p>
                                                 </div>
-                                                {slot.status === 'done' && (
-                                                    <a href={slot.url} download={`${slot.provider}_output`} target="_blank" rel="noreferrer"
-                                                        className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-700"
-                                                        title="Descargar"
-                                                    >
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                    </a>
+                                                {slot.status === 'done' && !slot.isVideo && (
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {/* Botón "Enviar a Revisión" — solo para Alex/Cockers */}
+                                                        {isCockers && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); sendSlotToReview(slot); }}
+                                                                title="Enviar a revisión para Judith"
+                                                                className="flex items-center gap-1 bg-[#CC0000]/15 hover:bg-[#CC0000] border border-[#CC0000]/40 hover:border-[#CC0000] text-[#CC0000] hover:text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full transition-all"
+                                                            >
+                                                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                                                Revisión
+                                                            </button>
+                                                        )}
+                                                        {/* Botón de Descargar */}
+                                                        <a href={slot.url} download={`${slot.provider}_output`} target="_blank" rel="noreferrer"
+                                                            className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-700 shrink-0"
+                                                            title="Descargar"
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                {slot.status === 'done' && slot.isVideo && (
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {isCockers && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); sendSlotToReview(slot); }}
+                                                                title="Enviar video a revisión para Judith"
+                                                                className="flex items-center gap-1 bg-[#CC0000]/15 hover:bg-[#CC0000] border border-[#CC0000]/40 hover:border-[#CC0000] text-[#CC0000] hover:text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full transition-all"
+                                                            >
+                                                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                                                Revisión
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
+
                                         </motion.div>
                                     );
                                 })}

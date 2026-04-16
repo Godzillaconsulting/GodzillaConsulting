@@ -28,24 +28,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  };
 
  const currencySuffix = isIntl ? ' USD' : ' MXN';
- const { t, i18n } = useTranslation();
- const isIntl = !!(i18n && i18n.language && !i18n.language.startsWith('es'));
- 
- const formatPrice = (val, asUSD) => {
-     if (!val || typeof val !== 'string') return val;
-     // Extraer solo dígitos y comas/puntos
-     const match = val.match(/([\d,.]+)/);
-     if (!match) return val;
-     const mxnVal = parseFloat(match[1].replace(/,/g, ''));
-     if (isNaN(mxnVal)) return val;
-     
-     const converted = asUSD ? mxnVal / 20 : mxnVal;
-     const newFormatted = asUSD 
-        ? `$${Math.round(converted).toLocaleString('en-US')} USD` 
-        : `$${mxnVal.toLocaleString('es-MX')} MXN`;
-        
-     return val.replace(/[\$]?[\d,.]+/, newFormatted).replace('MXN', '').trim();
- };
+
 
  // Map incoming URL slug or Admin Studio prop to Local Node IDs
  const slugLower = slug ? slug.toLowerCase() :'';

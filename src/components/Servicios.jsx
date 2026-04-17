@@ -188,7 +188,7 @@ const Servicios = () => {
                         <div className="mt-8">
                             <Link
                                 to={getEnlace(services[activeIdx])}
-                                className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold transition-all shadow-md hover:shadow-lg inline-flex items-center gap-2"
+                                className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold transition-all shadow-md hover:shadow-lg inline-flex items-center gap-2 border-2 border-transparent hover:border-[#CC0000]"
                             >
                                 {t('services.learn_more', 'Saber más')} <ChevronRight size={18} />
                             </Link>
@@ -219,7 +219,7 @@ const Servicios = () => {
                                         </p>
                                         <Link
                                             to={getEnlace(srv)}
-                                            className="bg-[#CC0000] text-white w-full py-3 rounded-full font-bold shadow-md flex justify-center items-center gap-2 hover:bg-white hover:text-[#CC0000] border border-transparent hover:border-[#CC0000] transition-colors"
+                                            className="bg-[#CC0000] text-white w-full py-3 rounded-full font-bold shadow-md flex justify-center items-center gap-2 hover:bg-white hover:text-[#CC0000] transition-colors border-2 border-transparent hover:border-[#CC0000]"
                                         >
                                             {t('services.learn_more', 'Saber más')} <ChevronRight size={18} />
                                         </Link>

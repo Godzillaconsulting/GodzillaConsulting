@@ -124,8 +124,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    // fallbackLng defines what happens if the language detected is not available.
-    fallbackLng: "en",
+    // Idioma base: español. Si el navegador es inglés u otro → se detecta automáticamente.
+    fallbackLng: "es",
 
     interpolation: {
       escapeValue: false // React already escapes values to prevent XSS
@@ -133,13 +133,14 @@ i18n
 
     detection: {
       // Order and from where user language should be detected
-      order: ['querystring', 'localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
+      // localStorage se quitó para que NO persista ?lng=en en futuras visitas sin parámetro
+      order: ['querystring', 'navigator', 'htmlTag'],
       // Only detect based on language region code e.g. en-US -> en
       nonExplicitSupportedLngs: true,
       // keys or params to lookup language from
       lookupQuerystring: 'lng',
-      lookupLocalStorage: 'i18nextLng',
-      lookupSessionStorage: 'i18nextLng',
+      // No cachear selección de idioma — cada visita detecta fresco del navegador
+      caches: [],
     }
   });
 

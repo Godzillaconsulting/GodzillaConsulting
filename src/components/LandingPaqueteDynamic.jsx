@@ -232,12 +232,22 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.offerLabel && (
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
  )}
- <span className="text-xl md:text-2xl font-bold">{isIntl ? 'TOTAL VALUE' : 'VALOR TOTAL'}</span>
- <div className="text-[#CC0000] text-3xl font-black line-through opacity-70">
-     {content.tableTotalOriginal ? formatPrice(content.tableTotalOriginal, true) : (isIntl ? '$1,000 USD' : '$20,000 MXN')}
- </div>
- <div className="text-white text-4xl font-black mt-2 mb-8">
-     {content.tableTotalPromo ? formatPrice(content.tableTotalPromo, true) : (isIntl ? '$500 USD' : '$10,000 MXN')}
+ <div className="flex justify-center items-baseline gap-2 mb-8">
+ <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">
+   {(() => {
+     const raw = typeof content.planPrice === 'string' ? content.planPrice.replace(/[^\d.,]/g, '').replace(/,/g, '') : '';
+     const mxn = parseFloat(raw) || 0;
+     if (mxn === 0) return content.planPrice || (isIntl ? 'Contact us' : 'Consúltalo');
+     return isIntl
+       ? `$${Math.round(mxn / exchangeRate).toLocaleString('en-US')}`
+       : `$${mxn.toLocaleString('es-MX')}`;
+   })()}
+ </span>
+ {content.planPrice && (
+ <span className="text-xl text-gray-300 font-medium ml-1">
+   {isIntl ? 'USD / mo' : (content.planPeriod || 'MXN / mes')}
+ </span>
+ )}
  </div>
  <a href="#contacto" className="block text-center w-full max-w-sm mx-auto bg-[#CC0000] text-white py-4 rounded-full font-bold text-xl hover:bg-white hover:text-[#CC0000] transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-transparent hover:border-[#CC0000]">
  {isIntl ? 'Contact us' : 'Contáctanos'}

@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import HttpApi from 'i18next-http-backend';
 
 import esTranslation from './locales/es.json';
 import enTranslation from './locales/en.json';
@@ -120,11 +121,16 @@ const resources = {
 };
 
 i18n
+  .use(HttpApi)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    // Si el idioma del dispositivo no es soportado (Ej. Francés, Alemán, Italiano) -> Fallback universal a Inglés (USD)
+    partialBundledLanguages: true,
+    backend: {
+      loadPath: '/api/locales/{{lng}}'
+    },
+    // Si el idioma del dispositivo falla la traducción JIT o es desconocido, fallback
     fallbackLng: "en",
 
     interpolation: {

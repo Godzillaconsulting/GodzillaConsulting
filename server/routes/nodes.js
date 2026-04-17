@@ -4,6 +4,7 @@ import pool from '../config/db.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 import { logAction } from './users.js';
 import { translateNodePayload } from '../services/translateService.js';
+import { ensureNodesTranslation } from '../utils/nodeTranslator.js';
 
 const router = express.Router();
 
@@ -83,13 +84,17 @@ router.post('/presence', requireAdmin, (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM site_nodes');
+        const lng = (req.query.lng || 'es').split('-')[0].toLowerCase();
+        
+        // Procesador JIT multi-lenguaje (asegurar capa de traduccion)
+        const processedRows = await ensureNodesTranslation(result.rows, lng);
         
         // Anti-Caché para que Vercel y el navegador siempre sirvan el cambio fresco
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        res.json(result.rows);
+        res.json(processedRows);
     } catch (err) {
         console.error('Error fetching nodes:', err);
         res.status(500).json({ error: 'Failed to fetch site nodes' });

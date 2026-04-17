@@ -12,16 +12,19 @@ export const subscribe = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email inválido.' });
         }
 
+        const language = req.body.language || 'es';
+
         // Upsert: si ya existe y estaba desuscrito, lo reactiva
         const result = await pool.query(`
-            INSERT INTO subscribers (email, name, source, status, subscribed_at)
-            VALUES ($1, $2, $3, 'active', NOW())
+            INSERT INTO subscribers (email, name, source, status, language, subscribed_at)
+            VALUES ($1, $2, $3, 'active', $4, NOW())
             ON CONFLICT (email) DO UPDATE
               SET status        = 'active',
                   subscribed_at = NOW(),
+                  language      = EXCLUDED.language,
                   name          = COALESCE(EXCLUDED.name, subscribers.name)
             RETURNING id, email, status
-        `, [email, name, source]);
+        `, [email, name, source, language]);
 
         const isNew = result.rows[0].status === 'active';
         return res.json({

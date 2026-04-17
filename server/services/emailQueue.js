@@ -1,15 +1,11 @@
 /**
  * EMAIL QUEUE — Lista Enlazada con persistencia en DB
- * ─────────────────────────────────────────────────────
- * Patrón: Linked List de Nodos de Envío
- * Cada nodo contiene: email, newsletterId, queueLogId
- * Persistencia: DB Local (queue_log) → survive PM2 restarts
+ * Patrón: Linked List de Nodos de Envío Multi-idioma
  */
 
 import pool from '../config/db.js';
 import { sendNewsletterEmail } from './emailService.js';
 
-// ── Nodo de la Lista Enlazada ────────────────────────────────────────────────
 class EmailNode {
     constructor(email, newsletterId, queueLogId, subject, bodyHtml, attachmentUrl) {
         this.email         = email;
@@ -22,7 +18,6 @@ class EmailNode {
     }
 }
 
-// ── Lista Enlazada de Envíos ─────────────────────────────────────────────────
 class EmailQueue {
     constructor() {
         this.head       = null;
@@ -32,7 +27,6 @@ class EmailQueue {
         this.delayMs    = parseInt(process.env.QUEUE_DELAY_MS || '2000');
     }
 
-    // Agregar nodo al final de la lista
     enqueue(email, newsletterId, queueLogId, subject, bodyHtml, attachmentUrl) {
         const node = new EmailNode(email, newsletterId, queueLogId, subject, bodyHtml, attachmentUrl);
         if (!this.tail) {
@@ -45,7 +39,6 @@ class EmailQueue {
         this.size++;
     }
 
-    // Tomar el primer nodo (FIFO)
     dequeue() {
         if (!this.head) return null;
         const node = this.head;
@@ -57,7 +50,6 @@ class EmailQueue {
 
     isEmpty() { return this.size === 0; }
 
-    // Procesar la lista de forma escalonada (un correo cada QUEUE_DELAY_MS ms)
     async process() {
         if (this.processing) return;
         this.processing = true;
@@ -75,11 +67,9 @@ class EmailQueue {
         console.log('✅ [Queue] Cola de correos procesada completamente.');
     }
 
-    // Enviar un nodo individual y actualizar DB
     async _sendNode(node) {
         const client = await pool.connect();
         try {
-            // Marcar como intentando
             await client.query(
                 `UPDATE queue_log SET attempts = attempts + 1, last_attempt = NOW() WHERE id = $1`,
                 [node.queueLogId]
@@ -121,38 +111,45 @@ class EmailQueue {
     }
 }
 
-// ── Singleton de la Queue ────────────────────────────────────────────────────
 export const emailQueue = new EmailQueue();
 
-/**
- * Carga desde DB los nodos pendientes (para resume tras reinicio PM2)
- */
 export async function resumeQueueFromDB() {
     const client = await pool.connect();
     try {
+        await client.query(`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS language VARCHAR(5) DEFAULT 'es'`);
+    } catch(e){}
+
+    try {
         const result = await client.query(`
             SELECT ql.id, ql.subscriber_email, ql.newsletter_id,
-                   n.subject, n.body_html, n.attachment_url
+                   n.subject, n.body_html, n.attachment_url,
+                   s.language
             FROM   queue_log ql
             JOIN   newsletters n ON n.id = ql.newsletter_id
+            LEFT JOIN subscribers s ON s.email = ql.subscriber_email
             WHERE  ql.status = 'pending'
             ORDER  BY ql.id ASC
         `);
 
         if (result.rows.length === 0) return;
 
-        console.log(`🔄 [Queue] Reanudando ${result.rows.length} correos pendientes desde DB...`);
+        console.log(`🔄 [Queue] Reanudando ${result.rows.length} correos pendientes desde DB (Renderizando en i18n)...`);
         for (const row of result.rows) {
+            let finalSubject = row.subject;
+            let finalBodyHtml = row.body_html;
+            try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.en || jSub.es) : (jSub.es || row.subject); } catch(e){}
+            try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.en || jBody.es) : (jBody.es || row.body_html); } catch(e){}
+
             emailQueue.enqueue(
                 row.subscriber_email,
                 row.newsletter_id,
                 row.id,
-                row.subject,
-                row.body_html,
+                finalSubject,
+                finalBodyHtml,
                 row.attachment_url
             );
         }
-        emailQueue.process(); // arrancar procesamiento inmediatamente
+        emailQueue.process(); 
     } catch (err) {
         console.error('❌ [Queue] Error al reanudar desde DB:', err.message);
     } finally {
@@ -160,14 +157,11 @@ export async function resumeQueueFromDB() {
     }
 }
 
-/**
- * Encolar un newsletter completo para todos los suscriptores activos
- * @param {number} newsletterId - ID del newsletter en DB
- */
 export async function enqueueNewsletter(newsletterId) {
     const client = await pool.connect();
     try {
-        // Obtener datos del newsletter
+        try { await client.query(`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS language VARCHAR(5) DEFAULT 'es'`); } catch(e) {}
+
         const nlRes = await client.query(
             `SELECT * FROM newsletters WHERE id = $1`,
             [newsletterId]
@@ -175,9 +169,8 @@ export async function enqueueNewsletter(newsletterId) {
         if (nlRes.rows.length === 0) throw new Error('Newsletter no encontrado');
         const nl = nlRes.rows[0];
 
-        // Obtener suscriptores activos (sin duplicados)
         const subsRes = await client.query(
-            `SELECT DISTINCT email FROM subscribers WHERE status = 'active'`
+            `SELECT email, language FROM subscribers WHERE status = 'active'`
         );
         const subs = subsRes.rows;
 
@@ -186,30 +179,36 @@ export async function enqueueNewsletter(newsletterId) {
             return 0;
         }
 
-        // Actualizar total_recipients y status → 'sending'
         await client.query(
             `UPDATE newsletters SET total_recipients = $1, status = 'sending' WHERE id = $2`,
             [subs.length, newsletterId]
         );
 
-        // Crear nodos en queue_log e insertar en Lista Enlazada
         for (const sub of subs) {
             const logRes = await client.query(
                 `INSERT INTO queue_log (newsletter_id, subscriber_email, status)
                  VALUES ($1, $2, 'pending') RETURNING id`,
                 [newsletterId, sub.email]
             );
+
+            // RENDERIZADO DINÁMICO EN VUELO
+            let finalSubject = nl.subject;
+            let finalBodyHtml = nl.body_html;
+            const lang = sub.language || 'es';
+
+            try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.en || jSub.es) : (jSub.es || nl.subject); } catch(e){}
+            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html); } catch(e){}
+
             emailQueue.enqueue(
                 sub.email,
                 newsletterId,
                 logRes.rows[0].id,
-                nl.subject,
-                nl.body_html,
+                finalSubject,
+                finalBodyHtml,
                 nl.attachment_url
             );
         }
 
-        // Arrancar procesamiento (no blocking)
         emailQueue.process().then(async () => {
             await pool.query(
                 `UPDATE newsletters SET status = 'done' WHERE id = $1`,

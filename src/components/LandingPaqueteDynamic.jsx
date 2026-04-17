@@ -72,8 +72,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
      contentData = injectSectionDefaults(nodeId, {});
  }
  const content = contentData;
- // English landing translations from DB (primary) or local json (fallback)
- const enLanding = isIntl ? (content.translations?.en || t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
+ const activeLng = i18n.resolvedLanguage ? i18n.resolvedLanguage.split('-')[0].toLowerCase() : 'en';
+ const localizedLanding = isIntl ? (content.translations?.[activeLng] || content.translations?.en || t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
  const videoRef = useRef(null);
  const [isPlaying, setIsPlaying] = useState(true);
  const [isMuted, setIsMuted] = useState(true);
@@ -151,7 +151,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <h1
  className="text-[2rem] sm:text-[3rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] font-bold leading-[1.1] md:leading-[0.95] tracking-tight mb-8 md:mb-16 drop-shadow-2xl w-full max-w-full"
  style={{ overflowWrap: 'normal', wordBreak: 'normal' }}
- dangerouslySetInnerHTML={renderHTML(isIntl && enLanding.heroTitle ? enLanding.heroTitle : content.heroTitle)}
+ dangerouslySetInnerHTML={renderHTML(isIntl && localizedLanding.heroTitle ? localizedLanding.heroTitle : content.heroTitle)}
  />
 
  <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
@@ -185,11 +185,11 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  className="text-[1.8rem] sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight break-words max-w-full"
  style={{ wordBreak:'break-word', hyphens:'auto' }}
  >
- {isIntl && enLanding.heroTitle ? enLanding.heroTitle.replace(/\n/g, ' ') : (content.cardTitle || content.heroTitle || '').replace('\n', ' ')}
+ {isIntl && localizedLanding.heroTitle ? localizedLanding.heroTitle.replace(/\n/g, ' ') : (content.cardTitle || content.heroTitle || '').replace('\n', ' ')}
  </h2>
 
  <div className="bg-[#FACC15] text-black font-bold text-sm px-4 py-2 rounded-lg inline-block mb-10 w-fit">
- {isIntl && enLanding.heroSubtitle ? enLanding.heroSubtitle : content.planTarget}
+ {isIntl && localizedLanding.heroSubtitle ? localizedLanding.heroSubtitle : content.planTarget}
  </div>
 
  {/* Pricing Table */}

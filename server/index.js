@@ -21,6 +21,7 @@ import resourcesRoutes from './routes/resources.js';
 import adminMigrationRoutes from './routes/adminMigration.js';
 import aiStudioRoutes from './routes/aiStudio.js';
 import bugsRoutes from './routes/bugs.js';
+import localesRoutes from './routes/locales.js';
 import { connectDB } from './config/db.js';
 
 import chatRoutes from './routes/chat.js';
@@ -185,6 +186,7 @@ app.use('/api/bugs', bugsRoutes); // IT Bugs Router
 app.use('/api/chat', chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api/locales', localesRoutes);
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.

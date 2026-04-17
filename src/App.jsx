@@ -265,7 +265,9 @@ function App() {
           <ScrollToTop />
           <PixelTracker />
           <GodzillaTracker />
-          <AppLayout />
+          <Suspense fallback={<div className="bg-black min-h-screen flex items-center justify-center text-white"><div className="animate-pulse tracking-widest text-sm">LOADING ASSETS...</div></div>}>
+            <AppLayout />
+          </Suspense>
         </Router>
       </SiteProvider>
     </HelmetProvider>

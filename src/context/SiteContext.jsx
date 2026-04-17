@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { injectSectionDefaults } from '../utils/studioConfig';
 
 const SiteContext = createContext();
@@ -19,7 +21,10 @@ export function SiteProvider({ children }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s límite máximo absoluto
 
-      const res = await fetch(import.meta.env.DEV ? 'http://localhost:3000/api/nodes' : '/api/nodes?t=' + new Date().getTime(), {
+      const lng = i18n.resolvedLanguage ? i18n.resolvedLanguage.split('-')[0].toLowerCase() : 'es';
+      const devUrl = `http://localhost:3000/api/nodes?lng=${lng}`;
+      const prodUrl = `/api/nodes?t=${new Date().getTime()}&lng=${lng}`;
+      const res = await fetch(import.meta.env.DEV ? devUrl : prodUrl, {
         cache: 'no-store',
         signal: controller.signal,
         headers: {
@@ -50,6 +55,10 @@ export function SiteProvider({ children }) {
 
   useEffect(() => {
     fetchNodes();
+    // Refresh nodes when language changes to fetch JIT new translations
+    const handleLngChange = () => fetchNodes();
+    i18n.on('languageChanged', handleLngChange);
+    return () => i18n.off('languageChanged', handleLngChange);
   }, [fetchNodes]);
 
   // Devuelve datos del nodo. Si hay un previewOverride activo para ese ID,

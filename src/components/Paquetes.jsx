@@ -63,8 +63,8 @@ const Paquetes = () => {
  
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
- // English package content from DB translations fallback to i18n
- const enItems = nodeData.translations?.en?.elements || t('packages.items', { returnObjects: true }) || [];
+ const activeLng = i18n.resolvedLanguage ? i18n.resolvedLanguage.split('-')[0].toLowerCase() : 'en';
+ const localizedItems = nodeData.translations?.[activeLng]?.elements || nodeData.translations?.en?.elements || t('packages.items', { returnObjects: true }) || [];
 
  const scrollContainerRef = useRef(null);
  const [isDragging, setIsDragging] = useState(false);
@@ -161,7 +161,7 @@ const Paquetes = () => {
  >
  <div className="relative z-10">
  <h3 className="text-xl font-bold mb-4 text-center text-white">
- {isIntl ? (enItems[index]?.title || pkg.title) : pkg.title}
+ {isIntl ? (localizedItems[index]?.title || pkg.title) : pkg.title}
  </h3>
  <div className="flex items-baseline justify-center gap-1 mb-8">
  <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
@@ -185,7 +185,7 @@ const Paquetes = () => {
   <div className="text-center mb-6">
     <div className="bg-[#FACC15] text-black font-bold text-[11px] md:text-sm px-4 py-2 rounded-lg inline-block w-fit text-balance leading-tight">
       {isIntl ? t('packages.idealFor') : 'Ideal para:'} {isIntl
-        ? (enItems[index]?.target || pkg.planTarget || '')
+        ? (localizedItems[index]?.target || pkg.planTarget || '')
         : (pkg.planTarget || (pkg.title === 'Expansión' ? 'Conseguir volumen de prospectos nuevos cada semana.' : 'Impulsar el crecimiento y la presencia digital.'))}
     </div>
   </div>
@@ -193,8 +193,8 @@ const Paquetes = () => {
  <ul className="space-y-4">
  {(() => {
    let rawFeatures = [];
-   if (isIntl && enItems[index]?.features) {
-     const cleanStr = typeof enItems[index].features === 'string' ? enItems[index].features.replace(/\\n/g, '\n') : enItems[index].features;
+   if (isIntl && localizedItems[index]?.features) {
+     const cleanStr = typeof localizedItems[index].features === 'string' ? localizedItems[index].features.replace(/\\n/g, '\n') : localizedItems[index].features;
      rawFeatures = typeof cleanStr === 'string' ? cleanStr.split('\n') : cleanStr;
    } else {
      const cleanStrEs = typeof pkg.features === 'string' ? pkg.features.replace(/\\n/g, '\n') : pkg.features;
@@ -223,7 +223,7 @@ const Paquetes = () => {
  {pkg.guarantee && (
  <p className="text-[10px] text-center font-medium mb-6 px-1 leading-relaxed text-gray-400">
  {(() => {
-  const g = (isIntl && enItems[index]?.guarantee) ? enItems[index].guarantee : (pkg.guarantee || '');
+  const g = (isIntl && localizedItems[index]?.guarantee) ? localizedItems[index].guarantee : (pkg.guarantee || '');
   const ci = g.indexOf(':');
   if (ci > 0) return <><strong className="text-gray-200 font-bold">{g.slice(0, ci)}:</strong>{g.slice(ci + 1)}</>;
   return g;

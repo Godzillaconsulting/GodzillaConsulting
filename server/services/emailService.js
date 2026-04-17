@@ -115,62 +115,55 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     const unsubUrl = `https://godzillaconsulting.ai/api/newsletter/unsubscribe?email=${encodeURIComponent(to)}`;
 
     // Asegurarse de quitar literales \n que la IA a veces inyecta erróneamente en el HTML
-    const cleanBodyHtml = String(bodyHtml).replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>');
+    const cleanBodyHtml = String(bodyHtml).replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>').replace(/```html/g, '').replace(/```/g, '');
 
     const html = `
     <!DOCTYPE html>
     <html>
-    <body style="margin:0;padding:0;background-color:#f6f6f6;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6;padding:40px 0;">
-        <tr><td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;">
-            <!-- Top brand line -->
-            <tr><td style="height:4px;background-color:#CC0000;font-size:0;line-height:0;">&nbsp;</td></tr>
-            
-            <!-- Header con Logo Visual -->
-            <tr>
-              <td style="background-color:#ffffff;padding:32px 40px 20px 40px;text-align:center;">
-                 <h1 style="margin:0;color:#111111;font-size:24px;font-weight:900;letter-spacing:-0.5px;display:inline-flex;align-items:center;gap:8px;">
-                    <span style="color:#CC0000;font-size:28px;">🦖</span> GODZILLA <span style="font-weight:400;color:#666666;margin-left:4px;">CONSULTING</span>
-                 </h1>
-              </td>
-            </tr>
-            
-            <!-- Separator -->
-            <tr>
-              <td style="padding:0 40px;">
-                <div style="height:1px;background-color:#eeeeee;width:100%;"></div>
-              </td>
-            </tr>
+    <body style="margin:0;padding:40px 20px;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        
+        <!-- Brand Header minimalist -->
+        <tr>
+          <td style="padding-bottom:25px;border-bottom:1px solid #e5e5e5;">
+             <h1 style="margin:0;font-size:20px;font-weight:900;letter-spacing:-0.5px;color:#111111;">
+                <span style="color:#CC0000;">🦖</span> GODZILLA CONSULTING
+             </h1>
+             <p style="margin:4px 0 0 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.5px;font-weight:bold;">
+                Daily Corporate Intelligence
+             </p>
+          </td>
+        </tr>
 
-            <!-- Body Area -->
-            <tr>
-              <td style="padding:32px 40px;color:#333333;font-size:16px;line-height:1.6;">
-                ${cleanBodyHtml}
-                
-                ${attachmentUrl ? `
-                <div style="margin-top:40px;">
-                  <a href="${attachmentUrl}" style="background-color:#CC0000;color:#ffffff;font-size:15px;font-weight:bold;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block;">
-                    Descargar Informe PDF
-                  </a>
-                </div>
-                ` : ''}
-              </td>
-            </tr>
+        <!-- Body Area -->
+        <tr>
+          <td style="padding:40px 0;font-size:16px;line-height:1.7;color:#222222;">
+            ${cleanBodyHtml}
+            
+            ${attachmentUrl ? `
+            <div style="margin-top:50px;padding:30px;background-color:#fafafa;border-radius:12px;text-align:center;border:1px solid #eaeaea;">
+              <h3 style="margin:0 0 10px 0;font-size:16px;color:#111;font-weight:bold;">Carpeta Ejecutiva Limitada (Deep-Dive)</h3>
+              <p style="margin:0 0 24px 0;font-size:14px;color:#666;line-height:1.5;">El PDF Premium con todo el análisis profundo detallado del día está disponible para los Socios Godzilla Business.</p>
+              <a href="https://godzillaconsulting.ai/socios" style="background-color:#CC0000;color:#ffffff;font-size:14px;font-weight:bold;padding:14px 28px;text-decoration:none;border-radius:6px;display:inline-block;">
+                Desbloquear Premium B2B ($1 USD)
+              </a>
+            </div>
+            ` : ''}
+          </td>
+        </tr>
 
-            <!-- Footer -->
-            <tr>
-              <td style="background-color:#f9f9f9;padding:24px 40px;border-top:1px solid #eeeeee;text-align:center;">
-                <p style="font-size:12px;color:#888888;margin:0;line-height:1.5;">
-                  <strong>Godzilla Consulting</strong><br/>
-                  Ciudad Juárez, Chihuahua.<br/><br/>
-                  Recibes este correo porque estás suscrito a nuestro portal corporativo.<br/>
-                  <a href="${unsubUrl}" style="color:#CC0000;text-decoration:underline;">Darse de baja</a>
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
+        <!-- Footer B2B -->
+        <tr>
+          <td style="padding-top:40px;border-top:1px solid #eeeeee;text-align:left;">
+            <p style="font-size:11px;color:#999999;margin:0;line-height:1.6;">
+              <strong>© ${new Date().getFullYear()} Godzilla Consulting LLC.</strong> Todos los derechos reservados.<br/>
+              Inteligencia Artificial y Desarrollo Corporativo.<br/><br/>
+              Recibes este correo analítico confidencial porque eres socio o administrador.<br/>
+              <br/>
+              <a href="${unsubUrl}" style="color:#CC0000;text-decoration:none;">Darse de baja</a>
+            </p>
+          </td>
+        </tr>
       </table>
     </body>
     </html>`;

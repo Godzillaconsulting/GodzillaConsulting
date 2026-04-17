@@ -3,6 +3,7 @@ import pool from '../config/db.js';
 
 import { requireAdmin } from '../middleware/adminAuth.js';
 import { logAction } from './users.js';
+import { translateNodePayload } from '../services/translateService.js';
 
 const router = express.Router();
 
@@ -112,7 +113,21 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/draft', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { draft_data } = req.body;
+        let { draft_data } = req.body;
+        
+        // Auto-Translate marketing dynamic nodes
+        if (id === 'paquetes' || id.startsWith('paquete-')) {
+            const translatedPayload = await translateNodePayload(draft_data, id);
+            if (translatedPayload) {
+                draft_data = {
+                    ...draft_data,
+                    translations: {
+                        ...draft_data.translations,
+                        en: translatedPayload
+                    }
+                };
+            }
+        }
         
         const result = await pool.query(`
             INSERT INTO site_nodes (id, draft_data, updated_at)

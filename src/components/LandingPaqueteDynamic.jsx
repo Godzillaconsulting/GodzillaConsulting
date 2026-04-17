@@ -72,8 +72,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
      contentData = injectSectionDefaults(nodeId, {});
  }
  const content = contentData;
- // English landing translations keyed by slug
- const enLanding = isIntl ? (t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
+ // English landing translations from DB (primary) or local json (fallback)
+ const enLanding = isIntl ? (content.translations?.en || t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
  const videoRef = useRef(null);
  const [isPlaying, setIsPlaying] = useState(true);
  const [isMuted, setIsMuted] = useState(true);

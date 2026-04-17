@@ -63,8 +63,8 @@ const Paquetes = () => {
  
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
- // English package content from i18n
- const enItems = t('packages.items', { returnObjects: true }) || [];
+ // English package content from DB translations fallback to i18n
+ const enItems = nodeData.translations?.en?.elements || t('packages.items', { returnObjects: true }) || [];
 
  const scrollContainerRef = useRef(null);
  const [isDragging, setIsDragging] = useState(false);

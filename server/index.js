@@ -49,14 +49,18 @@ const port = process.env.PORT || 3000;
 // ==========================================
 
 // ─── MIDDLEWARE: Cross-Origin-Resource-Policy para GIFs y medios estáticos ──
-// Debe ir ANTES de Helmet y del static middleware para que los headers no sean sobrescritos.
-// Esto permite que godzillaconsulting.ai cargue recursos desde bot.godzillaconsulting.ai.
+// Debe ir ANTES de Helmet y del static middleware.
+// Elimina cross-origin-opener-policy (que Cloudflare puede cachear) y fuerza CORP+CORS correctos.
 app.use((req, res, next) => {
     if (req.path.startsWith('/media') || req.path.startsWith('/api/media')) {
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Timing-Allow-Origin', '*');
+        // Evitar que Cloudflare cachee versiones sin los headers correctos
+        res.setHeader('Vary', 'Origin');
+        // Eliminar header problemático que Helmet puede inyectar
+        res.removeHeader('Cross-Origin-Opener-Policy');
     }
     next();
 });

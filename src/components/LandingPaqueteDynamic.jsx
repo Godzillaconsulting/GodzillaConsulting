@@ -72,6 +72,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
      contentData = injectSectionDefaults(nodeId, {});
  }
  const content = contentData;
+ // English landing translations keyed by slug
+ const enLanding = isIntl ? (t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
  const videoRef = useRef(null);
  const [isPlaying, setIsPlaying] = useState(true);
  const [isMuted, setIsMuted] = useState(true);
@@ -149,7 +151,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <h1
  className="text-[2rem] sm:text-[3rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] font-bold leading-[1.1] md:leading-[0.95] tracking-tight mb-8 md:mb-16 drop-shadow-2xl w-full max-w-full"
  style={{ overflowWrap: 'normal', wordBreak: 'normal' }}
- dangerouslySetInnerHTML={renderHTML(content.heroTitle)}
+ dangerouslySetInnerHTML={renderHTML(isIntl && enLanding.heroTitle ? enLanding.heroTitle : content.heroTitle)}
  />
 
  <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
@@ -183,11 +185,11 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  className="text-[1.8rem] sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight break-words max-w-full"
  style={{ wordBreak:'break-word', hyphens:'auto' }}
  >
- {(content.cardTitle || content.heroTitle || '').replace('\n',' ')}
+ {isIntl && enLanding.heroTitle ? enLanding.heroTitle.replace(/\n/g, ' ') : (content.cardTitle || content.heroTitle || '').replace('\n', ' ')}
  </h2>
 
  <div className="bg-[#FACC15] text-black font-bold text-sm px-4 py-2 rounded-lg inline-block mb-10 w-fit">
- {content.planTarget}
+ {isIntl && enLanding.heroSubtitle ? enLanding.heroSubtitle : content.planTarget}
  </div>
 
  {/* Pricing Table */}
@@ -233,7 +235,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <div className="text-center pt-6">
  {content.offerLabel && (
- <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
+ <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{isIntl ? t('landing.takeOffer') : content.offerLabel.replace(/:$/, '')}</p>
  )}
  <div className="flex justify-center items-baseline gap-2 mb-8">
  <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">
@@ -310,20 +312,20 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
     </div>
  ) : (
  <div className="w-full bg-[#1c1c1c] border border-gray-800 rounded-[2.5rem] min-h-[250px] md:min-h-[300px] lg:min-h-[350px] flex items-center justify-center">
-<span className="text-gray-700 font-medium select-none text-sm border border-gray-800 px-4 py-2 rounded-full">Recurso audiovisual pendiente</span>
+<span className="text-gray-700 font-medium select-none text-sm border border-gray-800 px-4 py-2 rounded-full">{isIntl ? 'Audiovisual resource pending' : 'Recurso audiovisual pendiente'}</span>
  </div>
  )}
 
  <div className="text-center max-w-sm">
  <h3 className="text-3xl font-bold text-white mb-6 leading-tight">
- {content.guaranteeTitle ||'GARANTÍA DE SATISFACCIÓN'}
+ {isIntl ? (enLanding.guarantee || 'SATISFACTION GUARANTEE') : (content.guaranteeTitle || 'GARANTÍA DE SATISFACCIÓN')}
  </h3>
  <div className="bg-[#FACC15] text-black font-bold px-8 py-3 rounded-full inline-block mb-6 text-sm hover:scale-105 transition-transform cursor-default">
- {content.guaranteeBadge ||'Resultados garantizados 100%'}
+ {isIntl ? (enLanding.guaranteeBtn || '100% guaranteed results') : (content.guaranteeBadge || 'Resultados garantizados 100%')}
  </div>
  <p
  className="text-xs md:text-sm text-gray-100 leading-relaxed font-light px-2 text-balance"
- dangerouslySetInnerHTML={renderHTML(content.guaranteeText)}
+ dangerouslySetInnerHTML={renderHTML(isIntl && enLanding.guaranteeText ? enLanding.guaranteeText + (enLanding.guaranteeCondition ? '<br/><br/>' + enLanding.guaranteeCondition : '') : content.guaranteeText)}
  />
  </div>
  </div>

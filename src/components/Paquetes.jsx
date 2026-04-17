@@ -63,6 +63,8 @@ const Paquetes = () => {
  
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
+ // English package content from i18n
+ const enItems = t('packages.items', { returnObjects: true }) || [];
 
  const scrollContainerRef = useRef(null);
  const [isDragging, setIsDragging] = useState(false);
@@ -159,7 +161,7 @@ const Paquetes = () => {
  >
  <div className="relative z-10">
  <h3 className="text-xl font-bold mb-4 text-center text-white">
- {pkg.title}
+ {isIntl ? (enItems[index]?.title || pkg.title) : pkg.title}
  </h3>
  <div className="flex items-baseline justify-center gap-1 mb-8">
  <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
@@ -182,24 +184,31 @@ const Paquetes = () => {
  {/*"Ideal para" section */}
   <div className="text-center mb-6">
     <div className="bg-[#FACC15] text-black font-bold text-[11px] md:text-sm px-4 py-2 rounded-lg inline-block w-fit text-balance leading-tight">
-      Ideal para: {pkg.planTarget || (pkg.title ==='Expansión' ?'Conseguir volumen de prospectos nuevos cada semana.' :'Impulsar el crecimiento y la presencia digital.')}
+      {isIntl ? t('packages.idealFor') : 'Ideal para:'} {isIntl
+        ? (enItems[index]?.target || pkg.planTarget || '')
+        : (pkg.planTarget || (pkg.title === 'Expansión' ? 'Conseguir volumen de prospectos nuevos cada semana.' : 'Impulsar el crecimiento y la presencia digital.'))}
     </div>
   </div>
 
  <ul className="space-y-4">
- {(Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : [])).map((feature, i) => {
- const colonIdx = typeof feature === 'string' ? feature.indexOf(':') : -1;
- return (
- <li key={i} className="flex items-start gap-3">
- <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-[#25D366]" />
- <span className="text-sm leading-tight text-gray-300">
- {colonIdx > 0 ? (
- <><strong className="text-white font-semibold">{feature.slice(0, colonIdx)}:</strong>{feature.slice(colonIdx + 1)}</>
- ) : feature}
- </span>
- </li>
- );
- })}
+ {(() => {
+   const rawFeatures = isIntl && enItems[index]?.features?.length
+     ? enItems[index].features
+     : (Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : []));
+   return rawFeatures.map((feature, i) => {
+     const colonIdx = typeof feature === 'string' ? feature.indexOf(':') : -1;
+     return (
+       <li key={i} className="flex items-start gap-3">
+         <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-[#25D366]" />
+         <span className="text-sm leading-tight text-gray-300">
+           {colonIdx > 0 ? (
+             <><strong className="text-white font-semibold">{feature.slice(0, colonIdx)}:</strong>{feature.slice(colonIdx + 1)}</>
+           ) : feature}
+         </span>
+       </li>
+     );
+   });
+ })()}
  </ul>
  </div>
 
@@ -207,10 +216,10 @@ const Paquetes = () => {
  {pkg.guarantee && (
  <p className="text-[10px] text-center font-medium mb-6 px-1 leading-relaxed text-gray-400">
  {(() => {
- const g = pkg.guarantee || '';
- const ci = g.indexOf(':');
- if (ci > 0) return <><strong className="text-gray-200 font-bold">{g.slice(0, ci)}:</strong>{g.slice(ci + 1)}</>;
- return g;
+  const g = (isIntl && enItems[index]?.guarantee) ? enItems[index].guarantee : (pkg.guarantee || '');
+  const ci = g.indexOf(':');
+  if (ci > 0) return <><strong className="text-gray-200 font-bold">{g.slice(0, ci)}:</strong>{g.slice(ci + 1)}</>;
+  return g;
  })()}
  </p>
  )}
@@ -218,7 +227,7 @@ const Paquetes = () => {
  to={`/${pkg.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'')}`}
  className="block text-center w-full py-3.5 rounded-full font-black text-sm tracking-widest transition-all duration-300 shadow-xl bg-[#CC0000] text-white hover:bg-white hover:text-[#CC0000] hover:scale-105"
  >
- {pkg.buttonText || 'Ver Garantía'}
+ {isIntl ? t('packages.guarantee') : (pkg.buttonText || 'Ver Garantía')}
  </Link>
  </div>
  </div>

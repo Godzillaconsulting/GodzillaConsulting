@@ -125,7 +125,94 @@
     "guarantee": "SEE GUARANTEE",
     "includes": "Includes:",
     "consult": "Talk to sales",
-    "idealFor": "Ideal for:"
+    "idealFor": "Ideal for:",
+    "items": [
+      {
+        "title": "Social Positioning",
+        "target": "Businesses that need to grow their brand presence and audience engagement.",
+        "features": [
+          "Omnichannel Content Strategy: Presence on TikTok, IG & FB",
+          "Direct Response Copywriting: Texts that sell",
+          "Community Management: DMs converted into appointments",
+          "Growth Hacking: Accelerated organic reach"
+        ],
+        "guarantee": "GUARANTEE: If in 14 days you don't see a real increase in engagement, the next month is FREE."
+      },
+      {
+        "title": "AI Control",
+        "target": "Businesses that want to automate sales and customer service 24/7.",
+        "features": [
+          "AI Digital Brain (Web + WhatsApp): Setup & access",
+          "Lead Capture & Update System: Automatically filter curiosity",
+          "Menu Support & Optimization: Your AI every day",
+          "Automated Scheduling: Only qualified leads proceed"
+        ],
+        "guarantee": "GUARANTEE: If it's not working in 10 days, the next month is FREE."
+      },
+      {
+        "title": "Expansion",
+        "target": "Businesses seeking to generate a volume of new qualified prospects every week.",
+        "features": [
+          "Includes everything: AI Control or Social Positioning",
+          "High-impact bilingual traffic: Meta & Google Campaigns",
+          "Landing page: Conversion-optimized to turn visits into appointments",
+          "Cost-per-lead optimization: Weekly adjustments to maximize your budget"
+        ],
+        "guarantee": "GUARANTEE: If we don't generate leads in 30 days, we return your MONEY."
+      },
+      {
+        "title": "Elite",
+        "target": "Established businesses ready to scale aggressively.",
+        "features": [
+          "Complete Godfather Strategy",
+          "Database Reactivation",
+          "Monthly Consulting & Closing Support"
+        ],
+        "guarantee": "GUARANTEE: If we don't increase your appointments by 20% in 90 days, we work for FREE."
+      }
+    ],
+    "landing": {
+      "posicionamiento-social": {
+        "heroTitle": "SOCIAL POSITIONING",
+        "heroSubtitle": "Position your brand where your audience actually engages",
+        "guarantee": "SATISFACTION GUARANTEE",
+        "guaranteeBtn": "100% guaranteed results",
+        "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
+        "guaranteeCondition": "If in 14 days you don't see a real increase in engagement and brand quality, the next month is FREE.",
+        "tableHeader1": "The Deliverable (What you get)",
+        "tableHeader2": "Real Monthly Value"
+      },
+      "control-ia": {
+        "heroTitle": "AI CONTROL",
+        "heroSubtitle": "Serve, qualify, and schedule automatically 24 hours a day",
+        "guarantee": "SATISFACTION GUARANTEE",
+        "guaranteeBtn": "100% guaranteed results",
+        "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
+        "guaranteeCondition": "If it's not working in 10 days, the next month is FREE.",
+        "tableHeader1": "The Deliverable (What you get)",
+        "tableHeader2": "Real Monthly Value"
+      },
+      "expansion": {
+        "heroTitle": "EXPANSION",
+        "heroSubtitle": "Generate a constant flow of qualified leads every week",
+        "guarantee": "SATISFACTION GUARANTEE",
+        "guaranteeBtn": "100% guaranteed results",
+        "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
+        "guaranteeCondition": "If we don't generate leads in 30 days, we return your MONEY.",
+        "tableHeader1": "The Deliverable (What you get)",
+        "tableHeader2": "Real Monthly Value"
+      },
+      "elite": {
+        "heroTitle": "ELITE",
+        "heroSubtitle": "The complete system to dominate your market",
+        "guarantee": "SATISFACTION GUARANTEE",
+        "guaranteeBtn": "100% guaranteed results",
+        "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
+        "guaranteeCondition": "If we don't increase your appointments by 20% in 90 days, we work for FREE.",
+        "tableHeader1": "The Deliverable (What you get)",
+        "tableHeader2": "Real Monthly Value"
+      }
+    }
   },
   "resources": {
     "title": "OUR",

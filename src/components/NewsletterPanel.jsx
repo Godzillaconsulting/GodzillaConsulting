@@ -115,6 +115,31 @@ export default function NewsletterPanel() {
         setGenerating(false);
     };
 
+    const handleApproveFromHistory = async (n) => {
+        if (!window.confirm("¿Segurísimo que deseas APROBAR y ENVIAR este boletín a TODA la base de suscriptores ahora mismo?")) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/newsletter/send`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ 
+                    id: n.id, 
+                    subject: n.subject, 
+                    bodyHtml: n.body_html, 
+                    attachmentUrl: n.attachment_url || null 
+                }),
+            });
+            const d = await r.json();
+            if (d.success) {
+                alert(`¡Éxito! El boletín fue aprobado y se encoló para ${d.totalRecipients} suscriptores.`);
+                fetchHistory(); // refresca historial
+            } else {
+                alert(d.message || 'Error al aprobar boletín');
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm("¿Estás seguro de que deseas borrar este reporte permanentemente del historial?")) return;
         try {
@@ -334,7 +359,12 @@ export default function NewsletterPanel() {
                 {/* ─ HISTORY ─ */}
                 {tab === 'history' && (
                     <div className="space-y-3">
-                        <p className="text-xs font-bold text-neutral-500 tracking-widest">Últimos envíos</p>
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-neutral-500 tracking-widest">Últimos envíos</p>
+                            <span className="text-[10px] text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded-full font-bold border border-orange-400/20">
+                                ⚠️ Borradores IA se envían automáticamente a las 7:00 AM (Juárez)
+                            </span>
+                        </div>
                         {loadingHist ? (
                             <div className="flex items-center justify-center py-12 gap-2 text-neutral-500">
                                 <Loader size={16} className="animate-spin" /> Cargando...
@@ -352,9 +382,14 @@ export default function NewsletterPanel() {
                                             <p className="text-xs font-bold text-white leading-snug flex-1">{hSub}</p>
                                             <div className="flex items-center gap-2">
                                                 {n.attachment_url && (
-                                                    <a href={n.attachment_url} target="_blank" rel="noopener noreferrer" title="Abrir reporte PDF adjunto" className="text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500 hover:text-black border border-yellow-500/20 px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1">
+                                                    <a href={n.attachment_url + "?preview=true"} target="_blank" rel="noopener noreferrer" title="Abrir reporte PDF adjunto" className="text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500 hover:text-black border border-yellow-500/20 px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1">
                                                         💎 Ver Premium
                                                     </a>
+                                                )}
+                                                {n.status === 'draft' && (
+                                                    <button onClick={() => handleApproveFromHistory(n)} className="text-green-500 bg-green-500/10 hover:bg-green-500 hover:text-black px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1" title="Aprobar y Desplegar Masivamente Ahora Mismo">
+                                                        ✅ Aprobar / Enviar
+                                                    </button>
                                                 )}
                                                 {n.status === 'draft' && (
                                                     <button onClick={() => {
@@ -364,7 +399,7 @@ export default function NewsletterPanel() {
                                                         setAttachmentUrl(n.attachment_url || '');
                                                         setTab('compose');
                                                     }} className="text-[#CC0000] bg-white/5 hover:bg-[#CC0000] hover:text-white px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1">
-                                                        ✏️ Editar
+                                                        ✏️ Edición Manual
                                                     </button>
                                                 )}
                                                 <button onClick={() => handleDelete(n.id)} className="text-neutral-500 hover:text-red-500 hover:bg-neutral-800 px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1" title="Borrar Reporte">

@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
 import logoCeoCuts from '../assets/Logos/CEO Cuts Logo@2x.png';
@@ -78,24 +77,10 @@ const CasosExito = () => {
     }, [rawTitle, startTyping]);
 
     useEffect(() => {
-        client
-            .fetch(`*[_type == "casoExito"] | order(orden asc)`)
-            .then((data) => {
-                if (data && data.length > 0) setCases(data);
-            })
-            .catch((error) => console.error('Error cargando casos de éxito de Sanity:', error));
+        // Fallback or future fetch logic
     }, []);
 
     const getLogoSrc = (item) => {
-        // 1. Si viene de Sanity con imagen
-        if (item.logo) {
-            try {
-                return urlFor(item.logo).width(500).url();
-            } catch(e) {
-                console.warn('Sanity image-url deprecated fail', e);
-            }
-        }
-
         // 2. Fallback inquebrantable para asegurar que las imágenes estáticas nunca rompan
         if (item.logoSrc && typeof item.logoSrc === 'string') {
             const lc = item.logoSrc.toLowerCase();

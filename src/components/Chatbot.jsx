@@ -1,17 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageSquare, X, Send, CalendarCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import zillaIcon from '../assets/Icono de chatbot.jpeg';
 import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 
 const Chatbot = () => {
     const { pathname } = useLocation();
+    const { t, i18n } = useTranslation();
+    const isEng = i18n.language.startsWith('en');
+    
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipDismissed, setTooltipDismissed] = useState(false);
+    
+    const initialMessage = isEng ? t('chat.greeting') : '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
     const [messages, setMessages] = useState([
-        { role: 'model', text: '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' }
+        { role: 'model', text: initialMessage }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -110,8 +116,8 @@ const Chatbot = () => {
                 <div
                     className={`relative z-20 mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
-                    ¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?
-                    <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">✕</button>
+                    {isEng ? <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span> : <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</>}
+                    <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black hover:bg-gray-100 w-4 h-4 rounded-full flex items-center justify-center transition-colors">✕</button>
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
                 </div>
                 <div className="relative pointer-events-auto flex items-center justify-center">

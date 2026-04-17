@@ -64,5 +64,54 @@
     "overline": "SUCCESS CASES",
     "title": "SUCCESS CASES",
     "subtitle": "We don't just run campaigns, we build systems"
+  },
+  "chat": {
+    "greeting": "Hi! I am Zilla. 😊 How can I help you today?"
+  },
+  "culture": {
+    "title": "OUR",
+    "titleRed": "CULTURE",
+    "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\n\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\n\nWe design campaigns and systems that prioritize sales and profitability.",
+    "mission": "Our Mission",
+    "missionText": "To drive scalable growth for B2B businesses by implementing intelligent funnels, advanced automation, and omnichannel strategies.",
+    "vision": "Our Vision",
+    "visionText": "To become the go-to agency, leading digital transformation with AI so that companies don't just sell, but systematize their success.",
+    "values": "Core Values",
+    "values1": "Relentless Innovation",
+    "values2": "Radical Transparency",
+    "values3": "Result-oriented Design",
+    "values4": "Extreme Adaptability",
+    "values5": "Passion for Data",
+    "values6": "Customer Obsession"
+  },
+  "packages": {
+    "title": "OUR",
+    "titleRed": "SYSTEMS",
+    "subtitle": "Comprehensive growth solutions",
+    "btn": "Start now",
+    "includes": "Includes:",
+    "consult": "Talk to sales"
+  },
+  "resources": {
+    "title": "OUR",
+    "titleRed": "RESOURCES",
+    "subtitle": "Free tools to systematize your business",
+    "btn": "Download now"
+  },
+  "responsibilities": {
+    "title": "Client",
+    "subtitle": "Responsibilities",
+    "h3": "We work together, we deliver together",
+    "p": "The delivery times we promise are real, but they depend on a key ingredient: teamwork. We bring all our experience and agility, but we need you to be available for feedback, approvals, and delivering materials. When we both do our part, results arrive on time.",
+    "points": [
+      "Signature of the service agreement before starting the project",
+      "Delivery of required information and materials within the established deadlines to avoid delays",
+      "Responses and feedback within a maximum of 48-72 business hours",
+      "Necessary access (social media, domain, hosting, ad platforms) provided at the start",
+      "Availability for scheduled follow-up meetings in advance",
+      "Clear, written approvals to proceed to the next project stages",
+      "Designated point of contact with decision-making authority"
+    ],
+    "warning": "Failure to comply with these points may result in an extension of the originally agreed delivery times."
   }
 }

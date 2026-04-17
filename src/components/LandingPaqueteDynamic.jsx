@@ -18,25 +18,35 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  const formatPrice = (priceStr, addSuffix = true) => {
      if (!priceStr || typeof priceStr !== 'string') return priceStr;
-     if (!isIntl) return priceStr; // Español / Original: se muestra tal cual
      
-     // Si está en Inglés (isIntl = true), intentamos extraer el número y convertir a USD
+     // 1. Calculate and replace
      const match = priceStr.match(/([\d,.]+)/);
-     if (!match) return priceStr; // Si no hay número (ej: "Incluido"), no tocamos nada
+     let convertedStr = priceStr;
      
-     const mxnVal = parseFloat(match[1].replace(/,/g, ''));
-     if (isNaN(mxnVal) || mxnVal === 0) return priceStr;
+     if (match) {
+         const mxnVal = parseFloat(match[1].replace(/,/g, ''));
+         if (!isNaN(mxnVal) && mxnVal > 0) {
+             if (isIntl) {
+                 const usdVal = Math.round(mxnVal / exchangeRate).toLocaleString('en-US');
+                 convertedStr = priceStr.replace(match[1], usdVal);
+             } else {
+                 convertedStr = priceStr;
+             }
+         }
+     }
      
-     const usdVal = Math.round(mxnVal / exchangeRate).toLocaleString('en-US');
-     let convertedStr = priceStr.replace(match[1], usdVal);
-     
-     // Traducir términos comunes
-     convertedStr = convertedStr.replace(/MXN/gi, 'USD');
-     convertedStr = convertedStr.replace(/\/\s*mes/gi, '/ mo');
-     
-     // Si no trae el currency y es un precio de tabla, se lo agregamos para clarificar
-     if (addSuffix && !convertedStr.toLowerCase().includes('usd')) {
-         convertedStr += ' USD';
+     // 2. Translate text only if English mode
+     if (isIntl) {
+         convertedStr = convertedStr.replace(/al mes/gi, '/ mo');
+         convertedStr = convertedStr.replace(/\/\s*mes/gi, '/ mo');
+         convertedStr = convertedStr.replace(/MXN/gi, 'USD');
+         if (addSuffix && !convertedStr.toLowerCase().includes('usd')) {
+             if (convertedStr.match(/[\d]/)) convertedStr += ' USD';
+         }
+     } else {
+        if (addSuffix && convertedStr.match(/[\d]/) && !convertedStr.toLowerCase().includes('mxn')) {
+             convertedStr += ' MXN';
+         }
      }
      
      return convertedStr;
@@ -182,8 +192,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <table className="w-full text-left border-collapse">
  <thead>
  <tr className="border-b border-gray-600">
- <th className="py-3 pr-4 text-sm font-bold text-gray-300">{content.tableHeaderLeft || 'El Entregable (Lo que recibes)'}</th>
- <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">{content.tableHeaderRight || 'Valor Real Mensual'}</th>
+ <th className="py-3 pr-4 text-sm font-bold text-gray-300">{isIntl ? 'The Deliverable (What you receive)' : (content.tableHeaderLeft || 'El Entregable (Lo que recibes)')}</th>
+ <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">{isIntl ? 'Real Monthly Value' : (content.tableHeaderRight || 'Valor Real Mensual')}</th>
  </tr>
  </thead>
  <tbody>
@@ -222,16 +232,15 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.offerLabel && (
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
  )}
- <div className="flex justify-center items-baseline gap-2 mb-8">
- <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ? formatPrice(content.planPrice, false) : 'Consúltalo'}</span>
- {content.planPrice && (
- <span className="text-xl text-gray-300 font-medium ml-1">
-     {isIntl ? 'USD / mo' : (content.planPeriod || '')}
- </span>
- )}
+ <span className="text-xl md:text-2xl font-bold">{isIntl ? 'TOTAL VALUE' : 'VALOR TOTAL'}</span>
+ <div className="text-[#CC0000] text-3xl font-black line-through opacity-70">
+     {content.tableTotalOriginal ? formatPrice(content.tableTotalOriginal, true) : (isIntl ? '$1,000 USD' : '$20,000 MXN')}
+ </div>
+ <div className="text-white text-4xl font-black mt-2 mb-8">
+     {content.tableTotalPromo ? formatPrice(content.tableTotalPromo, true) : (isIntl ? '$500 USD' : '$10,000 MXN')}
  </div>
  <a href="#contacto" className="block text-center w-full max-w-sm mx-auto bg-[#CC0000] text-white py-4 rounded-full font-bold text-xl hover:bg-white hover:text-[#CC0000] transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-transparent hover:border-[#CC0000]">
- Contáctanos
+ {isIntl ? 'Contact us' : 'Contáctanos'}
  </a>
  </div>
  </div>

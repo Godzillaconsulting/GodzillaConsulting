@@ -64,5 +64,53 @@
     "overline": "CASOS DE ÉXITO",
     "title": "CASOS DE ÉXITO",
     "subtitle": "No hacemos solo campañas, construimos sistemas"
+  },
+  "chat": {
+    "greeting": "¡Hola! Soy Zilla. 😊 ¿Cómo puedo ayudarte?"
+  },
+  "culture": {
+    "title": "NUESTRA",
+    "titleRed": "CULTURA",
+    "mission": "Nuestra Misión",
+    "missionText": "Impulsar el crecimiento escalable de negocios B2B mediante la implementación de embudos inteligentes, automatización avanzada y estrategias omnicanal.",
+    "vision": "La Visión",
+    "visionText": "Convertirnos en la agencia integral de referencia, liderando la transformación digital con IA para que las empresas no sólo vendan, sino que sistematicen su éxito.",
+    "values": "Nuestros Valores",
+    "values1": "Innovación implacable",
+    "values2": "Transparencia radical",
+    "values3": "Diseño centrado en resultados",
+    "values4": "Adaptabilidad extrema",
+    "values5": "Pasión por los datos",
+    "values6": "Obsesión por el cliente"
+  },
+  "packages": {
+    "title": "NUESTROS",
+    "titleRed": "SISTEMAS",
+    "subtitle": "Soluciones integrales de crecimiento",
+    "btn": "Contratar ahora",
+    "includes": "Incluye:",
+    "consult": "Hablar con ventas"
+  },
+  "resources": {
+    "title": "NUESTROS",
+    "titleRed": "RECURSOS",
+    "subtitle": "Herramientas gratuitas para automatizar tu negocio",
+    "btn": "Descargar ahora"
+  },
+  "responsibilities": {
+    "title": "Responsabilidades",
+    "subtitle": "de nuestros clientes",
+    "h3": "Trabajamos juntos, entregamos juntos",
+    "p": "Los tiempos de entrega que prometemos son reales, pero dependen de un ingrediente clave: el trabajo en equipo. Nosotros ponemos toda nuestra experiencia y agilidad, pero necesitamos que estés disponible para feedback, aprobaciones y entrega de materiales. Cuando ambos cumplimos nuestra parte, los resultados llegan a tiempo.",
+    "points": [
+      "Firma del contrato de prestación de servicios antes de iniciar el proyecto",
+      "Entrega de información y materiales solicitados dentro de los plazos establecidos para evitar retrasos",
+      "Respuestas y feedback en máximo 48-72 horas hábiles",
+      "Accesos necesarios (redes sociales, dominio, hosting, plataformas publicitarias) proporcionados al inicio",
+      "Disponibilidad para juntas de seguimiento programadas con anticipación",
+      "Aprobaciones claras y por escrito para avanzar a las siguientes etapas del proyecto",
+      "Punto de contacto designado que tenga autoridad para tomar decisiones"
+    ],
+    "warning": "El incumplimiento de estos puntos puede resultar en extensión de los tiempos de entrega originalmente acordados."
   }
 }

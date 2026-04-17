@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
-import { client } from '../sanityClient';
+
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.mp4`;
 

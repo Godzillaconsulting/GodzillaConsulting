@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import CustomCursor from './components/CustomCursor';
 import PrivateRoute from './components/PrivateRoute';
 import { SiteProvider, useSiteData } from './context/SiteContext';
+import { useTranslation } from 'react-i18next';
 
 // Eliminando CONSTANTS de ColorBends ya que usa ParticleField en Hero
 
@@ -158,9 +159,11 @@ function Home() {
 }
 
 function GlobalSuspenseFallback() {
+  const { i18n } = useTranslation();
+  const isEng = i18n.language.startsWith('en');
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#CC0000] font-black text-xl tracking-widest z-50 fixed top-0 left-0">
-      <span className="animate-pulse">CARGANDO RECURSOS...</span>
+      <span className="animate-pulse">{isEng ? 'LOADING RESOURCES...' : 'CARGANDO RECURSOS...'}</span>
     </div>
   );
 }

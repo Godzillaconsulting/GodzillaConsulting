@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from'react';
 import { CheckCircle2, ChevronLeft, ChevronRight } from'lucide-react';
 import { Link } from'react-router-dom';
-import { client } from'../sanityClient';
 import { useSiteData } from'../context/SiteContext';
 import { useTranslation } from 'react-i18next';
 

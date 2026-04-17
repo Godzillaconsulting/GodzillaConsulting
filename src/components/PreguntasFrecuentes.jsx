@@ -1,7 +1,6 @@
 import { Link } from'react-router-dom';
 import { ChevronDown } from'lucide-react';
-import { useState, useEffect } from'react';
-import { client } from'../sanityClient';
+import { useState } from'react';
 import { useTranslation } from 'react-i18next';
 
 const defaultFaqs = [
@@ -80,17 +79,6 @@ function FAQItem({ item }) {
 export default function PreguntasFrecuentes() {
  const [faqs, setFaqs] = useState(defaultFaqs);
  const { t } = useTranslation();
-
- useEffect(() => {
- client
- .fetch(`*[_type =="faq"] | order(orden asc)`)
- .then((data) => {
- if (data && data.length > 0) {
- setFaqs(data);
- }
- })
- .catch((error) => console.error('Error cargando FAQs de Sanity:', error));
- }, []);
 
  return (
  <div className="min-h-screen bg-[#0d0d0d] pt-[100px] pb-24">

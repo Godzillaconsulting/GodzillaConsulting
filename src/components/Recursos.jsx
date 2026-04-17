@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
-import { client, urlFor } from '../sanityClient';
 import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
+import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
 const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
@@ -34,6 +34,8 @@ const defaultMagnets = [
 ];
 
 const Recursos = () => {
+    const { t, i18n } = useTranslation();
+    const isEng = i18n.language.startsWith('en');
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('recursos') || {};
 
@@ -48,20 +50,10 @@ const Recursos = () => {
     const { captureLead, status, errorMessage } = useLeadCapture();
 
     useEffect(() => {
-        client
-            .fetch(`*[_type == "recurso"] | order(orden asc)`)
-            .then((data) => {
-                if (data && data.length > 0) {
-                    setMagnetsState(data);
-                }
-            })
-            .catch((error) => console.error('Error cargando recursos de Sanity:', error));
+        // Fallback or future resource logic
     }, []);
 
     const getImageSrc = (item) => {
-        if (item.image && typeof item.image === 'object' && item.image.asset) {
-            return urlFor(item.image).width(800).url();
-        }
         const isUploaded = typeof item.image === 'string' && (item.image.startsWith('http') || item.image.startsWith('/api/media')) && !item.image.includes('/assets/');
         if (isUploaded) return item.image;
         
@@ -110,10 +102,10 @@ const Recursos = () => {
                         </span>
                     )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
-                        {nodeData.title || 'RECURSOS'}
+                        {isEng ? t('resources.titleRed') : nodeData.title || 'RECURSOS'}
                     </h2>
                     <p className="text-xl text-gray-300 font-medium max-w-2xl mx-auto">
-                        {nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.'}
+                        {isEng ? t('resources.subtitle') : nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.'}
                     </p>
                 </div>
 
@@ -136,7 +128,7 @@ const Recursos = () => {
                                             }}
                                             className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500"
                                         >
-                                            {nodeData.ctaText || 'DESCARGAR'} <Download size={18} />
+                                            {isEng ? t('resources.btn') : nodeData.ctaText || 'DESCARGAR'} <Download size={18} />
                                         </button>
                                     </div>
                                 </div>

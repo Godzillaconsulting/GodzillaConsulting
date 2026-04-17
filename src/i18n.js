@@ -133,7 +133,7 @@ i18n
 
     detection: {
       // Order and from where user language should be detected
-      order: ['navigator', 'htmlTag', 'path', 'subdomain'],
+      order: ['querystring', 'localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
       // Only detect based on language region code e.g. en-US -> en
       nonExplicitSupportedLngs: true,
       // keys or params to lookup language from

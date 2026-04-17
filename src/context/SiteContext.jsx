@@ -11,7 +11,7 @@ export function SiteProvider({ children }) {
   // { nodeId: string, data: object } | null
   const [previewOverride, setPreviewOverrideState] = useState(null);
 
-  // Load all nodes with retry logic for Neon DB cold starts
+  // Load all nodes with retry logic for API cold starts
   const fetchNodes = useCallback(async (retries = 3, silent = false) => {
     try {
       if (retries === 3 && !silent) setLoading(true);
@@ -43,7 +43,7 @@ export function SiteProvider({ children }) {
       
       if (retries > 0) {
           console.warn(`Reintentando conexión a base de datos... quedan ${retries} intentos`);
-          setTimeout(() => fetchNodes(retries - 1), 1500); // Darle tiempo a Neon DB de despertar (silencioso)
+          setTimeout(() => fetchNodes(retries - 1), 1500); // Darle tiempo a la DB de despertar (silencioso)
       }
     }
   }, []);

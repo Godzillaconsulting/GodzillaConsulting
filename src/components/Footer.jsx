@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
     const { t, i18n } = useTranslation();
-    const isEng = i18n.resolvedLanguage?.startsWith('en');
+    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     const { getNodeData } = useSiteData();
     const fd = getNodeData('footer') || {};
     return (
@@ -20,7 +20,7 @@ const Footer = () => {
 
                     {/* Contact Info */}
                     <div className="space-y-6 lg:pr-8 xl:pr-12 whitespace-pre-line">
-                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isEng ? t('footer.contact') : (fd.contactTitle || t('footer.contact'))}</h4>
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isSpanish ? (fd.contactTitle || t('footer.contact') : t('footer.contact'))}</h4>
                         <a href={`mailto:${fd.contactEmail || 'info@godzillaconsulting.ai'}`} className="flex items-center gap-3 hover:text-red-200 transition-colors">
                             <Mail size={18} />
                             <span className="font-medium">{fd.contactEmail || 'info@godzillaconsulting.ai'}</span>
@@ -33,28 +33,28 @@ const Footer = () => {
 
                     {/* Navigation */}
                     <div className="lg:px-8 xl:px-12 lg:border-l border-white/30">
-                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isEng ? t('footer.nav') : (fd.navTitle || t('footer.nav'))}</h4>
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isSpanish ? (fd.navTitle || t('footer.nav') : t('footer.nav'))}</h4>
                         <div className="grid grid-cols-2 gap-y-4">
                             <div className="flex flex-col gap-4">
-                                <Link to="/#inicio" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.home') : (fd.navLink1 || t('footer.home'))}</Link>
-                                <Link to="/#cultura" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.culture') : (fd.navLink2 || t('footer.culture'))}</Link>
-                                <Link to="/#servicios" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.services') : (fd.navLink3 || t('footer.services'))}</Link>
+                                <Link to="/#inicio" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink1 || t('footer.home') : t('footer.home'))}</Link>
+                                <Link to="/#cultura" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink2 || t('footer.culture') : t('footer.culture'))}</Link>
+                                <Link to="/#servicios" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink3 || t('footer.services') : t('footer.services'))}</Link>
                             </div>
                             <div className="flex flex-col gap-4">
-                                <Link to="/#paquetes" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.packages') : (fd.navLink4 || t('footer.packages'))}</Link>
-                                <Link to="/#portafolio" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.portfolio') : (fd.navLink5 || t('footer.portfolio'))}</Link>
-                                <Link to="/#recursos" className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.resources') : (fd.navLink6 || t('footer.resources'))}</Link>
+                                <Link to="/#paquetes" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink4 || t('footer.packages') : t('footer.packages'))}</Link>
+                                <Link to="/#portafolio" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink5 || t('footer.portfolio') : t('footer.portfolio'))}</Link>
+                                <Link to="/#recursos" className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.navLink6 || t('footer.resources') : t('footer.resources'))}</Link>
                             </div>
                         </div>
                     </div>
 
                     {/* Legal Links */}
                     <div className="lg:px-8 xl:px-12 lg:border-l border-white/30 pt-12 lg:pt-0">
-                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isEng ? t('footer.legal') : (fd.legalTitle || t('footer.legal'))}</h4>
+                        <h4 className="text-2xl font-bold tracking-tight mb-8">{isSpanish ? (fd.legalTitle || t('footer.legal') : t('footer.legal'))}</h4>
                         <div className="flex flex-col gap-4">
-                            <Link to={fd.legalUrl1 || '/terminos'} className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.terms') : (fd.legalLink1 || t('footer.terms'))}</Link>
-                            <Link to={fd.legalUrl2 || '/aviso-privacidad'} className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.privacy') : (fd.legalLink2 || t('footer.privacy'))}</Link>
-                            <Link to={fd.legalUrl3 || '/politica-cookies'} className="hover:text-red-200 transition-colors font-medium text-sm">{isEng ? t('footer.cookies') : (fd.legalLink3 || t('footer.cookies'))}</Link>
+                            <Link to={fd.legalUrl1 || '/terminos'} className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.legalLink1 || t('footer.terms') : t('footer.terms'))}</Link>
+                            <Link to={fd.legalUrl2 || '/aviso-privacidad'} className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.legalLink2 || t('footer.privacy') : t('footer.privacy'))}</Link>
+                            <Link to={fd.legalUrl3 || '/politica-cookies'} className="hover:text-red-200 transition-colors font-medium text-sm">{isSpanish ? (fd.legalLink3 || t('footer.cookies') : t('footer.cookies'))}</Link>
                         </div>
                     </div>
 
@@ -69,7 +69,7 @@ const Footer = () => {
 
                 {/* Copyright */}
                 <div className="text-center mt-12 pt-8 text-sm font-medium text-white/70">
-                    © {new Date().getFullYear()} {isEng ? t('footer.copyright') : (fd.copyrightText || t('footer.copyright'))}
+                    © {new Date().getFullYear()} {isSpanish ? (fd.copyrightText || t('footer.copyright') : t('footer.copyright'))}
                 </div>
             </div>
         </footer>

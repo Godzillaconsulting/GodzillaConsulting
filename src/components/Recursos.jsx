@@ -35,7 +35,7 @@ const defaultMagnets = [
 
 const Recursos = () => {
     const { t, i18n } = useTranslation();
-    const isEng = i18n.resolvedLanguage?.startsWith('en');
+    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('recursos') || {};
 
@@ -102,10 +102,10 @@ const Recursos = () => {
                         </span>
                     )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
-                        {isEng ? t('resources.titleRed') : nodeData.title || 'RECURSOS'}
+                        {isSpanish ? (nodeData.title || 'RECURSOS') : t('resources.titleRed')}
                     </h2>
                     <p className="text-xl text-gray-300 font-medium max-w-2xl mx-auto">
-                        {isEng ? t('resources.subtitle') : nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.'}
+                        {isSpanish ? (nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.') : t('resources.subtitle')}
                     </p>
                 </div>
 
@@ -128,7 +128,7 @@ const Recursos = () => {
                                             }}
                                             className="bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500"
                                         >
-                                            {isEng ? t('resources.btn') : nodeData.ctaText || 'DESCARGAR'} <Download size={18} />
+                                            {isSpanish ? (nodeData.ctaText || 'DESCARGAR') : t('resources.btn')} <Download size={18} />
                                         </button>
                                     </div>
                                 </div>
@@ -150,7 +150,7 @@ const Recursos = () => {
                                     }}
                                     className="inline-flex items-center gap-2 text-[#CC0000] hover:text-red-400 font-bold text-lg border-b-2 border-transparent hover:border-[#CC0000] pb-1 transition-all"
                                 >
-                                    {isEng ? t('resources.clickDownload') : 'Haz clic aquí para descargar.'}
+                                    {isSpanish ? 'Haz clic aquí para descargar.' : t('resources.clickDownload')}
                                 </button>
                             </div>
 
@@ -181,7 +181,7 @@ const Recursos = () => {
                                 <div className="w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Check size={32} className="text-white" strokeWidth={3} />
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">{isEng ? t('resources.modalSuccess1') : '¡Todo listo!'}</h3>
+                                <h3 className="text-2xl font-bold text-white mb-2">{isSpanish ? '¡Todo listo!' : t('resources.modalSuccess1')}</h3>
                                 <p className="text-gray-300 text-base leading-relaxed mb-8">
                                     {isEng ? <>{t('resources.modalSuccess2')} "{activeItem?.title}" {t('resources.modalSuccess3')} <span className="text-white font-bold">{email}</span>.<br /><br />{t('resources.modalSuccess4')}</> : <>Hemos enviado "{activeItem?.title}" al correo <span className="text-white font-bold">{email}</span>.<br /><br />Por favor, espera un par de minutos y revisa tu bandeja de entrada (y la carpeta de spam por si acaso).</> }
                                 </p>
@@ -195,13 +195,13 @@ const Recursos = () => {
                                     }}
                                     className="w-full bg-white hover:bg-gray-200 text-black py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl"
                                 >
-                                    {isEng ? t('resources.modalUnderstood') : 'Entendido'}
+                                    {isSpanish ? 'Entendido' : t('resources.modalUnderstood')}
                                 </button>
                             </div>
                         ) : (
                             <>
                                 <div className="text-center mb-6">
-                                    <h3 className="text-2xl font-bold text-white mb-2">{isEng ? t('resources.modalTitle') : '¡Recurso listo para descargar!'}</h3>
+                                    <h3 className="text-2xl font-bold text-white mb-2">{isSpanish ? '¡Recurso listo para descargar!' : t('resources.modalTitle')}</h3>
                                     <p className="text-gray-400 text-sm">
                                         {isEng ? t('resources.modalSubtitle') : <>Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.</>}
                                     </p>
@@ -257,8 +257,8 @@ const Recursos = () => {
                                             }`}
                                     >
                                         {status === 'loading'
-                                          ? (isEng ? t('resources.modalSending') : 'Enviando email...')
-                                          : (isEng ? t('resources.modalSend') : 'Enviar a mi correo')
+                                          ? (isSpanish ? 'Enviando email...' : t('resources.modalSending'))
+                                          : (isSpanish ? 'Enviar a mi correo' : t('resources.modalSend'))
                                         }
                                     </button>
 
@@ -267,7 +267,7 @@ const Recursos = () => {
                                         <p className="text-red-400 text-sm mt-3 text-center">{errorMessage || 'Error enviando correo'}</p>
                                     )}
                                     <p className="text-xs text-gray-500 mt-4 text-center">
-                                        {isEng ? t('resources.modalSpam') : 'Prometemos no enviarte spam. Puedes desuscribirte en cualquier momento.'}
+                                        {isSpanish ? 'Prometemos no enviarte spam. Puedes desuscribirte en cualquier momento.' : t('resources.modalSpam')}
                                     </p>
                                 </form>
                             </>

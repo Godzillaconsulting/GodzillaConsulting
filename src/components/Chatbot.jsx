@@ -9,13 +9,13 @@ import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 const Chatbot = () => {
     const { pathname } = useLocation();
     const { t, i18n } = useTranslation();
-    const isEng = i18n.resolvedLanguage?.startsWith('en');
+    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipDismissed, setTooltipDismissed] = useState(false);
     
-    const initialMessage = isEng ? t('chat.greeting') : '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
+    const initialMessage = isSpanish ? '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' : t('chat.greeting');
     const [messages, setMessages] = useState([
         { role: 'model', text: initialMessage }
     ]);
@@ -96,7 +96,7 @@ const Chatbot = () => {
             setMessages((prev) => [...prev, { role: 'model', text: reply }]);
         } catch (error) {
             console.error('Error in chat (agotados reintentos):', error);
-            setMessages((prev) => [...prev, { role: 'model', text: isEng ? 'Sorry, an error occurred while connecting to Zilla. Please try reloading the page.' : 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
+            setMessages((prev) => [...prev, { role: 'model', text: isSpanish ? 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' : 'Sorry, an error occurred while connecting to Zilla. Please try reloading the page.' }]);
         } finally {
             setIsLoading(false);
         }

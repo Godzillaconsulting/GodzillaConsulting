@@ -23,12 +23,12 @@ const Hero = () => {
     
     // Si la página está en inglés, priorizamos el diccionario.
     // Si está en español, usamos el CMS (o el diccionario si CMS vacío).
-    const isEng = i18n.resolvedLanguage?.startsWith('en');
+    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     
     const overline = data.overline || "Sistemas de crecimiento para negocios en la frontera";
-    const title = isEng ? t('hero.title') : data.title || t('hero.title');
-    const subtitle = isEng ? t('hero.subtitle') : data.subtitle || t('hero.subtitle');
-    const ctaText = isEng ? t('hero.ctaText') : data.ctaText || t('hero.ctaText');
+    const title = isSpanish ? (data.title || t('hero.title')) : t('hero.title');
+    const subtitle = isSpanish ? (data.subtitle || t('hero.subtitle')) : t('hero.subtitle');
+    const ctaText = isSpanish ? (data.ctaText || t('hero.ctaText')) : t('hero.ctaText');
     const ctaLink = data.ctaLink || "/#paquetes";
  // Fondo editable desde CMS (se superpone al ColorBends animado)
  const bgVideoUrl = data.bgVideoUrl || data.videoUrl || null;

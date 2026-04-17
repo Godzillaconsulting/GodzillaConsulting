@@ -4,6 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { translateNodePayload } from '../services/translateService.js';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const esData = require('../../src/locales/es.json');
+const enData = require('../../src/locales/en.json');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,15 +22,14 @@ router.get('/:lng', async (req, res) => {
     // Parse language code safely (e.g. 'de-DE' -> 'de')
     lng = lng.split('-')[0].toLowerCase();
 
-    // 1. If it's the base bundled language, serve from disk directly.
-    if (lng === 'es' || lng === 'en') {
-        const filePath = path.join(SRC_LOCALES_PATH, `${lng}.json`);
-        if (fs.existsSync(filePath)) {
-            return res.sendFile(filePath);
-        }
-    }
+    // 1. If it's the base bundled language, serve from memory directly.
+    if (lng === 'es') return res.json(esData);
+    if (lng === 'en') return res.json(enData);
 
     try {
+        // Asegurar esquema en Producción Neon DB (Serverless Auto-Migration)
+        await pool.query(`CREATE TABLE IF NOT EXISTS global_locales (lng VARCHAR(10) PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        
         // 2. Check if we already have it deeply cached via AI
         const result = await pool.query('SELECT data FROM global_locales WHERE lng = $1', [lng]);
         if (result.rows.length > 0) {
@@ -34,15 +38,6 @@ router.get('/:lng', async (req, res) => {
 
         // 3. Fallback to generating it JIT
         console.log(`[JIT LOCALE] Generating Universal Translation for locale [${lng}]...`);
-        const esFilePath = path.join(SRC_LOCALES_PATH, 'es.json');
-        
-        let esData;
-        try {
-            esData = JSON.parse(fs.readFileSync(esFilePath, 'utf-8'));
-        } catch (err) {
-            console.error('[JIT LOCALE] Failed to read base es.json:', err);
-            return res.status(500).json({ error: 'Base language file missing.' });
-        }
 
         // Call Gemini
         // We modify translateNodePayload params slightly to specify target language
@@ -91,11 +86,7 @@ Rules:
     } catch (error) {
         console.error('[JIT LOCALE] Error:', error);
         // Fallback to English if translation mechanism crashes
-        const fallbackPath = path.join(SRC_LOCALES_PATH, `en.json`);
-        if (fs.existsSync(fallbackPath)) {
-            return res.sendFile(fallbackPath);
-        }
-        res.status(500).json({ error: 'Failed to negotiate locale translation.' });
+        return res.json(enData);
     }
 });
 

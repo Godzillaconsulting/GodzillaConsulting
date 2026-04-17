@@ -57,9 +57,9 @@ const Paquetes = () => {
 
  const { getNodeData } = useSiteData();
  const { t, i18n } = useTranslation();
- // Mostrar USD para CUALQUIER idioma que no sea español.
- const isIntl = !i18n.language.startsWith('es');
- const exchangeRate = 20; // 1 USD = 20 MXN
+ // Solo USD cuando el idioma es explícitamente inglés; alemán/francés/etc. → MXN
+ const isIntl = i18n.language.startsWith('en');
+ const exchangeRate = 20;
  
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;

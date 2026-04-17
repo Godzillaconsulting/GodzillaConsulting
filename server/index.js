@@ -201,8 +201,11 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/social', socialRoutes);
+import { router as premiumRoutes } from './routes/premium.js';
+
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
+app.use('/api/premium', premiumRoutes); // Endpoint JIT Multilenguaje
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
 app.use('/api/calendar', calendarRoutes);       // 📅 Calendario Colaborativo (SSE + CRUD)
 app.use('/api/sheets', sheetsRoutes);           // 📊 Google Sheets Importer

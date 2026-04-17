@@ -20,6 +20,7 @@ export default function NewsletterPanel() {
     const [sending, setSending] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [sendResult, setSendResult] = useState(null);
+    const [successPulse, setSuccessPulse] = useState(false);
     const [currentDraftId, setCurrentDraftId] = useState(null);
 
     // Subscribers
@@ -69,6 +70,8 @@ export default function NewsletterPanel() {
             setSendResult(d);
             if (d.success) { 
                 setSubject(''); setBodyHtml(''); setAttachmentUrl(''); setFeedback(''); setCurrentDraftId(null); 
+                setSuccessPulse(true);
+                setTimeout(() => setSuccessPulse(false), 4000);
             }
         } catch (err) {
             setSendResult({ success: false, message: err.message });
@@ -190,22 +193,7 @@ export default function NewsletterPanel() {
                 {tab === 'compose' && (
                     <div className="space-y-4">
 
-                        {sendResult && (
-                            <div className={`flex items-start gap-3 p-3 rounded-xl border text-sm ${
-                                sendResult.success
-                                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
-                            }`}>
-                                {sendResult.success ? <CheckCircle size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
-                                <div>
-                                    <p className="font-bold">{sendResult.success ? '¡Éxito!' : 'Error'}</p>
-                                    <p className="text-xs opacity-80">{sendResult.message}</p>
-                                    {sendResult.totalRecipients && (
-                                        <p className="text-xs mt-1">👥 {sendResult.totalRecipients} destinatarios encolados</p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Moved send result near the button action */}
 
                         <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl space-y-3 mb-4">
                             <h3 className="text-xs font-bold text-yellow-500 flex items-center gap-1.5"><Wand2 size={14}/> Afinador de Borrador IA</h3>
@@ -274,15 +262,33 @@ export default function NewsletterPanel() {
                                 />
                             </div>
                         )}
+                        
+                        {sendResult && (
+                            <div className={`flex items-start gap-3 p-3 rounded-xl border text-sm animate-fade-in ${
+                                sendResult.success
+                                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                            }`}>
+                                {sendResult.success ? <CheckCircle size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
+                                <div>
+                                    <p className="font-bold">{sendResult.success ? '¡Completado!' : 'Error'}</p>
+                                    <p className="text-xs opacity-90">{sendResult.message}</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Botón enviar */}
                         <button
                             onClick={handleSend}
-                            disabled={sending || !subject.trim() || !bodyHtml.trim()}
-                            className="w-full flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-red-600 text-white py-3 rounded-xl font-black text-sm transition shadow-[0_4px_20px_rgba(204,0,0,0.4)] disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={sending || (!subject.trim() && !successPulse) || (!bodyHtml.trim() && !successPulse)}
+                            className={`w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-black text-sm transition shadow-[0_4px_20px_rgba(204,0,0,0.4)] disabled:opacity-40 disabled:cursor-not-allowed ${
+                                successPulse ? 'bg-green-600 hover:bg-green-500' : 'bg-[#CC0000] hover:bg-red-600'
+                            }`}
                         >
                             {sending
                                 ? <><Loader size={16} className="animate-spin" /> Encolando envíos...</>
+                                : successPulse
+                                ? <><CheckCircle size={16} /> ¡Enviado Exitosamente!</>
                                 : <><Send size={16} /> Enviar (Con Paywall de PDF inclúido)</>
                             }
                         </button>

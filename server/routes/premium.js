@@ -1,0 +1,68 @@
+import express from 'express';
+import pool from '../config/db.js';
+import { buildPremiumPDF } from '../services/pdfPremiumBuilder.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+export const router = express.Router();
+
+const translatePremiumJSON = async (baseJson, targetLang) => {
+    if (targetLang === 'es') return JSON.parse(baseJson);
+
+    console.log(`🌍 [JIT Translation] Traduciendo PDF JSON base a idioma: ${targetLang}...`);
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: "You are Godzilla AI Translator. You receive a JSON object of a B2B newsletter. You must translate ALL string values into the target ISO language perfectly, adapting the B2B executive tone. Keep the exact same JSON schema and structure. Return ONLY pure valid JSON, without any markdown formatting."
+        });
+
+        const prompt = `Translate this entire JSON into language ISO code: [${targetLang}].\n\nJSON:\n${baseJson}`;
+        
+        const result = await model.generateContent(prompt);
+        let text = result.response.text();
+        text = text.replace(/```json/i, '').replace(/```/i, '').trim();
+        return JSON.parse(text);
+    } catch (e) {
+        console.error("❌ Fallo en JIT Translation:", e.message);
+        // Fallback to original spanish if crash occurs
+        return JSON.parse(baseJson);
+    }
+};
+
+router.get('/download/:id', async (req, res) => {
+    try {
+        const newsletterId = req.params.id;
+        
+        // Magia de Detección de Dispositivo Nativo (Safari, Chrome, iPhone, Mac)
+        let reqLang = req.query.lang;
+        if (!reqLang || reqLang === 'es') { 
+            const acceptHeader = req.headers['accept-language'];
+            if (acceptHeader) {
+                // Toma cosas como 'en-US,en;q=0.9,ja;q=0.8' y extrae 'en' o 'ja' (2 letras Iso)
+                reqLang = acceptHeader.split(',')[0].split('-')[0].toLowerCase();
+            } else {
+                reqLang = 'es';
+            }
+        }
+        const nlRes = await pool.query(`SELECT base_json FROM newsletters WHERE id = $1`, [newsletterId]);
+        if (nlRes.rows.length === 0 || !nlRes.rows[0].base_json) {
+            return res.status(404).send("Reporte Premium no encontrado o Data no disponible.");
+        }
+
+        const baseJsonStr = nlRes.rows[0].base_json;
+        
+        // JIT Trnaslation if needed
+        const dataForPDF = await translatePremiumJSON(baseJsonStr, reqLang);
+
+        // Build doc
+        const pdfBuffer = await buildPremiumPDF(dataForPDF, reqLang);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Godzilla-Premium-Report-${reqLang}.pdf"`);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error("[PDF Dynamic API] Error:", error);
+        res.status(500).send("Error generando el Reporte Ejecutivo bajo demanda.");
+    }
+});

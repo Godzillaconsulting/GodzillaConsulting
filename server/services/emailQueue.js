@@ -137,8 +137,11 @@ export async function resumeQueueFromDB() {
         for (const row of result.rows) {
             let finalSubject = row.subject;
             let finalBodyHtml = row.body_html;
+            let finalAttachmentUrl = row.attachment_url;
             try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.en || jSub.es) : (jSub.es || row.subject); } catch(e){}
             try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.en || jBody.es) : (jBody.es || row.body_html); } catch(e){}
+
+            if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${row.language || 'es'}`;
 
             emailQueue.enqueue(
                 row.subscriber_email,
@@ -146,7 +149,7 @@ export async function resumeQueueFromDB() {
                 row.id,
                 finalSubject,
                 finalBodyHtml,
-                row.attachment_url
+                finalAttachmentUrl
             );
         }
         emailQueue.process(); 
@@ -194,10 +197,13 @@ export async function enqueueNewsletter(newsletterId) {
             // RENDERIZADO DINÁMICO EN VUELO
             let finalSubject = nl.subject;
             let finalBodyHtml = nl.body_html;
+            let finalAttachmentUrl = nl.attachment_url;
             const lang = sub.language || 'es';
 
             try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.en || jSub.es) : (jSub.es || nl.subject); } catch(e){}
             try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html); } catch(e){}
+            
+            if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${lang}`;
 
             emailQueue.enqueue(
                 sub.email,
@@ -205,7 +211,7 @@ export async function enqueueNewsletter(newsletterId) {
                 logRes.rows[0].id,
                 finalSubject,
                 finalBodyHtml,
-                nl.attachment_url
+                finalAttachmentUrl
             );
         }
 

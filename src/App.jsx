@@ -41,6 +41,7 @@ const SEOPageWrapper = React.lazy(() => import('./components/SEOPageWrapper'));
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
 const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
 const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
+const SociosGodzilla = React.lazy(() => import('./components/SociosGodzilla'));
 
 // Animación principal gobernada de forma particular por el Componente Hero.jsx. No requiere background global.
 
@@ -241,6 +242,11 @@ function AppLayout() {
               <Route path="/:slug" element={<LandingPaqueteDynamic />} />
               <Route path="/login" element={<Login />} />
               <Route path="/faq" element={<PreguntasFrecuentes />} />
+              <Route path="/socios" element={
+                <SEOPageWrapper title="Socios Executive" description="Desbloquea el PDF Ejecutivo Inteligente">
+                  <SociosGodzilla />
+                </SEOPageWrapper>
+              } />
             </Routes>
           </Suspense>
         </div>

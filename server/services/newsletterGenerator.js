@@ -80,7 +80,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
             try {
                 // Buffer creation con bottom margin alto para evitar que doc.text accidental dispare hojas
                 const doc = new PDFDocument({ 
-                    margin: 40,
+                    margins: { top: 40, bottom: 85, left: 40, right: 40 },
                     size: 'LETTER',
                     bufferPages: true,
                     autoFirstPage: true 
@@ -98,7 +98,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
                 const colorAccent = '#DDAA00';  
                 
                 const checkPageWrap = (requiredHeight) => {
-                    if (doc.y + requiredHeight > doc.page.height - 60) {
+                    if (doc.y + requiredHeight > doc.page.height - 85) {
                         doc.addPage();
                         doc.y = 50;
                     }

@@ -37,7 +37,7 @@ const CasosExito = () => {
     const [cases, setCases] = useState(defaultCases);
 
     // --- Typewriter Effect Logic ---
-    const rawTitle = isSpanish ? (nodeData.title || t('portfolio.title') : t('portfolio.title'));
+    const rawTitle = isSpanish ? (nodeData.title || t('portfolio.title')) : t('portfolio.title');
     const [typedTitle, setTypedTitle] = useState('');
     const [startTyping, setStartTyping] = useState(false);
     const titleContainerRef = useRef(null);
@@ -201,14 +201,14 @@ const CasosExito = () => {
                 <div ref={titleContainerRef} className="text-center mb-16">
                     {nodeData.overline && (
                         <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
-                            {isSpanish ? (nodeData.overline || t('portfolio.overline') : t('portfolio.overline'))}
+                            {isSpanish ? (nodeData.overline || t('portfolio.overline')) : t('portfolio.overline')}
                         </span>
                     )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter inline-block animate-blink-cursor">
                         {typedTitle}
                     </h2>
                     <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
-                        {isSpanish ? (nodeData.subtitle || t('portfolio.subtitle') : t('portfolio.subtitle'))}
+                        {isSpanish ? (nodeData.subtitle || t('portfolio.subtitle')) : t('portfolio.subtitle')}
                     </p>
                 </div>
 

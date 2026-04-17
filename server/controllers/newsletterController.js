@@ -130,3 +130,18 @@ export const getHistory = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// ── DELETE /api/newsletter/delete/:id ────────────────────────────────────────
+export const deleteNewsletter = async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ success: false, message: 'ID requerido' });
+        
+        await pool.query(`DELETE FROM queue_log WHERE newsletter_id = $1`, [id]);
+        await pool.query(`DELETE FROM newsletters WHERE id = $1`, [id]);
+
+        return res.json({ success: true, message: 'Newsletter borrado exitosamente.' });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};

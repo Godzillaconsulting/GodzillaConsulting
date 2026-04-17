@@ -112,6 +112,24 @@ export default function NewsletterPanel() {
         setGenerating(false);
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm("¿Estás seguro de que deseas borrar este reporte permanentemente del historial?")) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/newsletter/delete/${id}`, {
+                method: 'DELETE',
+                headers: authHeaders(),
+            });
+            const d = await r.json();
+            if (d.success) {
+                fetchHistory();
+            } else {
+                alert(d.message || "Error al borrar");
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
     const statusBadge = (status) => {
         const map = {
             done: { color: 'text-green-400 bg-green-400/10', icon: <CheckCircle size={12} />, label: 'Enviado' },
@@ -343,6 +361,9 @@ export default function NewsletterPanel() {
                                                         ✏️ Editar
                                                     </button>
                                                 )}
+                                                <button onClick={() => handleDelete(n.id)} className="text-neutral-500 hover:text-red-500 hover:bg-neutral-800 px-2 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1" title="Borrar Reporte">
+                                                     🗑️
+                                                </button>
                                                 {statusBadge(n.status)}
                                             </div>
                                         </div>

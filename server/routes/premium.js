@@ -32,7 +32,16 @@ const translatePremiumJSON = async (baseJson, targetLang) => {
 router.get('/download/:id', async (req, res) => {
     try {
         const newsletterId = req.params.id;
+        const isPreview = req.query.preview === 'true'; // Backdoor para Admins probando borradores
         
+        // PAYWALL INTERCEPTOR (EN VIVO) 🔒
+        // Si no es un admin probando desde el panel, rebota inmediato a cobrarle suscripción:
+        if (!isPreview) {
+            const frontendUrl = process.env.FRONTEND_URL || 'https://godzillaconsulting.ai';
+            return res.redirect(`${frontendUrl}/socios`);
+            // NOTA FUTURA: Aquí meteríamos la validación del Token de Suscriptor Real (sub.tier === 'premium')
+        }
+
         // Magia de Detección de Dispositivo Nativo (Safari, Chrome, iPhone, Mac)
         let reqLang = req.query.lang;
         if (!reqLang || reqLang === 'es') { 
@@ -44,6 +53,7 @@ router.get('/download/:id', async (req, res) => {
                 reqLang = 'es';
             }
         }
+        
         const nlRes = await pool.query(`SELECT base_json FROM newsletters WHERE id = $1`, [newsletterId]);
         if (nlRes.rows.length === 0 || !nlRes.rows[0].base_json) {
             return res.status(404).send("Reporte Premium no encontrado o Data no disponible.");

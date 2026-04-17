@@ -123,15 +123,10 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     <body style="margin:0;padding:40px 20px;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
         
-        <!-- Brand Header minimalist -->
+        <!-- Brand Header minimalist Apple-style -->
         <tr>
-          <td style="padding-bottom:25px;border-bottom:1px solid #e5e5e5;">
-             <h1 style="margin:0;font-size:20px;font-weight:900;letter-spacing:-0.5px;color:#111111;">
-                <span style="color:#CC0000;">🦖</span> GODZILLA CONSULTING
-             </h1>
-             <p style="margin:4px 0 0 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.5px;font-weight:bold;">
-                Daily Corporate Intelligence
-             </p>
+          <td style="padding-bottom:30px;text-align:center;">
+             <img src="https://godzillaconsulting.ai/favicon.png" alt="Godzilla Consulting" width="50" height="50" style="display:block;margin:0 auto;" />
           </td>
         </tr>
 
@@ -209,11 +204,10 @@ export const sendCitaConfirmationEmail = async ({ nombre, email, fecha, hora, ti
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
         <tr><td align="center">
           <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-            <!-- Header -->
+            <!-- Header Apple-style -->
             <tr>
-              <td style="background:#111111;padding:28px 40px;text-align:center;">
-                <span style="color:#CC0000;font-size:24px;font-weight:900;letter-spacing:-1px;">GODZILLA</span>
-                <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:-1px;"> CONSULTING</span>
+              <td style="background:#ffffff;padding:35px 40px 10px 40px;text-align:center;">
+                <img src="https://godzillaconsulting.ai/favicon.png" alt="Godzilla Consulting" width="55" height="55" style="display:block;margin:0 auto;" />
               </td>
             </tr>
             <!-- Contenido -->

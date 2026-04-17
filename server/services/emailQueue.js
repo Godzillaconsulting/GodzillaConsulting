@@ -138,8 +138,8 @@ export async function resumeQueueFromDB() {
             let finalSubject = row.subject;
             let finalBodyHtml = row.body_html;
             let finalAttachmentUrl = row.attachment_url;
-            try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.en || jSub.es) : (jSub.es || row.subject); } catch(e){}
-            try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.en || jBody.es) : (jBody.es || row.body_html); } catch(e){}
+            try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.subject_en || jSub.subject_es) : (jSub.subject_es || row.subject); } catch(e){}
+            try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.emailHTML_en || jBody.emailHTML_es) : (jBody.emailHTML_es || row.body_html); } catch(e){}
 
             if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${row.language || 'es'}`;
 
@@ -200,8 +200,8 @@ export async function enqueueNewsletter(newsletterId) {
             let finalAttachmentUrl = nl.attachment_url;
             const lang = sub.language || 'es';
 
-            try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.en || jSub.es) : (jSub.es || nl.subject); } catch(e){}
-            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html); } catch(e){}
+            try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.subject_en || jSub.subject_es) : (jSub.subject_es || nl.subject); } catch(e){}
+            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.emailHTML_en || jBody.emailHTML_es) : (jBody.emailHTML_es || nl.body_html); } catch(e){}
             
             if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${lang}`;
 

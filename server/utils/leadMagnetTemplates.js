@@ -22,10 +22,10 @@ export function getLeadMagnetTemplate(subject, bodyText, fileUrl) {
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fa;padding:40px 0;">
         <tr><td align="center">
           <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #eaeaea;box-shadow:0 4px 20px rgba(0,0,0,0.03);">
-            <!-- Header -->
+            <!-- Header Apple-style -->
             <tr>
-              <td style="padding:30px 40px 20px 40px;border-bottom:1px solid #f0f0f0;">
-                <span style="color:#111111;font-size:22px;font-weight:900;letter-spacing:-0.5px;">GODZILLA CONSULTING</span>
+              <td style="padding:35px 40px 10px 40px;text-align:center;">
+                <img src="https://godzillaconsulting.ai/favicon.png" alt="Godzilla Consulting" width="55" height="55" style="display:block;margin:0 auto;" />
               </td>
             </tr>
             <!-- Contenido Dinámico -->

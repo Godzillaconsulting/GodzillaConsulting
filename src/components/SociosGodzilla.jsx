@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const SociosGodzilla = () => {
     const [loading, setLoading] = useState(false);
+    const { t, i18n } = useTranslation();
+    const isEng = i18n.language.startsWith('en');
 
     const handleSubscribe = () => {
         setLoading(true);
-        // Simulación: Aquí irá la pasarela de Stripe/MercadoPago en vivo.
         setTimeout(() => {
-            alert("Redirigiendo a pasarela segura cifrada 256-bit...");
+            alert(isEng ? "Redirecting to AES-256 secure payment gateway..." : "Redirigiendo a pasarela segura cifrada 256-bit...");
             setLoading(false);
         }, 1500);
     };
@@ -21,32 +23,33 @@ const SociosGodzilla = () => {
                 
                 <div style={styles.separator}></div>
                 
-                <h2 style={styles.subtext}>Inteligencia C-Level en Tiempo Real</h2>
+                <h2 style={styles.subtext}>{isEng ? 'Real-Time C-Level Intelligence' : 'Inteligencia C-Level en Tiempo Real'}</h2>
                 <p style={styles.description}>
-                    Decodificamos el ecosistema corporativo diario usando I.A. Obtén acceso absoluto a reportes PDF avanzados, 
-                    métricas visuales y estrategias accionables diseñadas para directivos.
+                    {isEng 
+                    ? 'We decode the daily corporate ecosystem using strictly applied AI. Get absolute access to advanced PDF reports, geometric metrics, and actionable strategies designed exclusively for directors.' 
+                    : 'Decodificamos el ecosistema corporativo diario usando I.A. Obtén acceso absoluto a reportes PDF avanzados, métricas visuales y estrategias accionables diseñadas para directivos.'}
                 </p>
 
                 <ul style={styles.features}>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> Análisis Corporativos y Geográficos</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> Vectores Geométricos B2B Exclusivos</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> Acceso Cero-Fricción Universal Multi-idioma</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> Repositorios Periodísticos HD</li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Geopolitical and Corporate Analysis' : 'Análisis Corporativos y Geográficos'}</li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Exclusive B2B Geometric Vectors' : 'Vectores Geométricos B2B Exclusivos'}</li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Zero-Friction Universal Multi-language Access' : 'Acceso Cero-Fricción Universal Multi-idioma'}</li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'HD Journalistic Photography Assets' : 'Repositorios Periodísticos HD'}</li>
                 </ul>
 
             </div>
 
             <div style={styles.rightColumn}>
                 <div style={styles.checkoutBox}>
-                    <h3 style={styles.checkoutTitle}>Membresía Socio Executive</h3>
+                    <h3 style={styles.checkoutTitle}>{isEng ? 'Executive Partnership' : 'Membresía Socio Executive'}</h3>
                     
                     <div style={styles.priceContainer}>
                         <span style={styles.currency}>$</span>
                         <span style={styles.price}>1.00</span>
-                        <span style={styles.period}>USD / Quincena</span>
+                        <span style={styles.period}>{isEng ? 'USD / Bi-weekly' : 'USD / Quincena'}</span>
                     </div>
                     
-                    <p style={styles.guarantee}><span style={styles.lock}>🔒</span> Cobro Seguro y Cancelación 1 Click</p>
+                    <p style={styles.guarantee}><span style={styles.lock}>🔒</span> {isEng ? 'Secure Billing & 1-Click Cancel' : 'Cobro Seguro y Cancelación 1 Click'}</p>
                     
                     <div style={styles.ccBanner}>
                         <img src="https://cdn-icons-png.flaticon.com/128/196/196578.png" alt="Visa" style={styles.ccIcon} />
@@ -55,8 +58,9 @@ const SociosGodzilla = () => {
                     </div>
 
                     <p style={styles.infoText}>
-                        Aceptamos todas las tarjetas de crédito corporativas y débito.<br/> 
-                        Desbloquea instantáneamente tu Biblioteca Premium PDF.
+                        {isEng 
+                        ? <>We accept all corporate credit and debit cards.<br/>Instantly unlock your Premium PDF Library.</>
+                        : <>Aceptamos todas las tarjetas de crédito corporativas y débito.<br/>Desbloquea instantáneamente tu Biblioteca Premium PDF.</>}
                     </p>
 
                     <button 
@@ -64,11 +68,13 @@ const SociosGodzilla = () => {
                         onClick={handleSubscribe}
                         disabled={loading}
                     >
-                        {loading ? 'Inicializando Pasarela...' : 'Convertirme en Socio (Pagar $1 USD)'}
+                        {loading 
+                        ? (isEng ? 'Initializing Gateway...' : 'Inicializando Pasarela...') 
+                        : (isEng ? 'Become a Partner (Pay $1 USD)' : 'Convertirme en Socio (Pagar $1 USD)')}
                     </button>
 
                     <p style={styles.terms}>
-                        Suscripción auto-renovable periódica. Términos y condiciones aplicables.
+                        {isEng ? 'Auto-renewable subscription. Special terms and conditions apply.' : 'Suscripción auto-renovable periódica. Términos y condiciones aplicables.'}
                     </p>
                 </div>
             </div>

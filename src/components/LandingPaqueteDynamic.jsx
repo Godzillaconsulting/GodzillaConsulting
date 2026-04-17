@@ -16,18 +16,31 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const isIntl = !i18n.language.startsWith('es');
  const exchangeRate = 20;
 
- const formatPrice = (priceStr) => {
+ const formatPrice = (priceStr, addSuffix = true) => {
      if (!priceStr || typeof priceStr !== 'string') return priceStr;
-     const rawNumStr = priceStr.replace(/[^\d.]/g, '');
-     const baseMxn = parseFloat(rawNumStr);
-     if (isNaN(baseMxn) || baseMxn === 0) return priceStr;
+     if (!isIntl) return priceStr; // Español / Original: se muestra tal cual
      
-     return isIntl 
-         ? Math.round(baseMxn / exchangeRate).toLocaleString('en-US')
-         : baseMxn.toLocaleString('es-MX');
+     // Si está en Inglés (isIntl = true), intentamos extraer el número y convertir a USD
+     const match = priceStr.match(/([\d,.]+)/);
+     if (!match) return priceStr; // Si no hay número (ej: "Incluido"), no tocamos nada
+     
+     const mxnVal = parseFloat(match[1].replace(/,/g, ''));
+     if (isNaN(mxnVal) || mxnVal === 0) return priceStr;
+     
+     const usdVal = Math.round(mxnVal / exchangeRate).toLocaleString('en-US');
+     let convertedStr = priceStr.replace(match[1], usdVal);
+     
+     // Traducir términos comunes
+     convertedStr = convertedStr.replace(/MXN/gi, 'USD');
+     convertedStr = convertedStr.replace(/\/\s*mes/gi, '/ mo');
+     
+     // Si no trae el currency y es un precio de tabla, se lo agregamos para clarificar
+     if (addSuffix && !convertedStr.toLowerCase().includes('usd')) {
+         convertedStr += ' USD';
+     }
+     
+     return convertedStr;
  };
-
- const currencySuffix = isIntl ? ' USD' : ' MXN';
 
 
  // Map incoming URL slug or Admin Studio prop to Local Node IDs
@@ -183,7 +196,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  )}
  </td>
  <td translate="no" className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
- {feature.price ? `$${formatPrice(feature.price)}${currencySuffix}` : ''}
+ {feature.price ? formatPrice(feature.price, true) : ''}
  </td>
  </tr>
  ))}
@@ -191,13 +204,13 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.totalValue && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.totalLabel || 'VALOR TOTAL DEL SISTEMA:'}</td>
- <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">${formatPrice(content.totalValue)}{currencySuffix}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.totalValue, true)}</td>
  </tr>
  )}
  {content.normalPrice && (
  <tr className="border-b border-gray-600">
  <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.normalLabel || 'INVERSIÓN NORMAL:'}</td>
- <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">${formatPrice(content.normalPrice)}{currencySuffix}</td>
+ <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.normalPrice, true)}</td>
  </tr>
  )}
 
@@ -210,10 +223,10 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{content.offerLabel.replace(/:$/, '')}</p>
  )}
  <div className="flex justify-center items-baseline gap-2 mb-8">
- <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ? `$${formatPrice(content.planPrice)}` : 'Consúltalo'}</span>
+ <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">{content.planPrice ? formatPrice(content.planPrice, false) : 'Consúltalo'}</span>
  {content.planPrice && (
  <span className="text-xl text-gray-300 font-medium ml-1">
-     {isIntl ? 'USD / mo' : (content.planPeriod || 'MXN / mes')}
+     {isIntl ? 'USD / mo' : (content.planPeriod || '')}
  </span>
  )}
  </div>

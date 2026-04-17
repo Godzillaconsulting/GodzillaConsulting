@@ -23,7 +23,7 @@ const Hero = () => {
     
     // Si la página está en inglés, priorizamos el diccionario.
     // Si está en español, usamos el CMS (o el diccionario si CMS vacío).
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage?.startsWith('en');
     
     const overline = data.overline || "Sistemas de crecimiento para negocios en la frontera";
     const title = isEng ? t('hero.title') : data.title || t('hero.title');

@@ -26,7 +26,7 @@ const Servicios = () => {
     const { getNodeData } = useSiteData();
     const [activeIdx, setActiveIdx] = useState(0);
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage?.startsWith('en');
     
     const nodeData = getNodeData('servicios') || {};
     

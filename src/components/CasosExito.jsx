@@ -25,7 +25,7 @@ const CasosExito = () => {
     const { t, i18n } = useTranslation();
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('portafolio') || {};
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage?.startsWith('en');
 
     const scrollContainerRef = useRef(null);
     const animFrameRef = useRef(null);

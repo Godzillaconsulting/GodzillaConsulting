@@ -35,7 +35,7 @@ const defaultMagnets = [
 
 const Recursos = () => {
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage?.startsWith('en');
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('recursos') || {};
 

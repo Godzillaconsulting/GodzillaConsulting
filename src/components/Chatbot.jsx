@@ -9,7 +9,7 @@ import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 const Chatbot = () => {
     const { pathname } = useLocation();
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage?.startsWith('en');
     
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);

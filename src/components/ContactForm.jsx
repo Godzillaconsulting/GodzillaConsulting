@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 const ContactForm = ({ showNewsletter = true }) => {
  const { t, i18n } = useTranslation();
- const isEng = i18n.language.startsWith('en');
+ const isEng = i18n.resolvedLanguage?.startsWith('en');
  const [isSubmitted, setIsSubmitted] = useState(false);
  const [sessionType, setSessionType] = useState('video'); //'video' |'presencial'
  const [calendarLink, setCalendarLink] = useState('');

@@ -13,8 +13,8 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
  const { getNodeData, loading } = useSiteData();
  const { t, i18n } = useTranslation();
- // Solo USD cuando el idioma es explícitamente inglés; cualquier otro idioma → MXN
- const isIntl = i18n.language.startsWith('en');
+ // Si la página se muestra en español (idioma resuelto) → MXN. Cualquier otro idioma → USD.
+ const isIntl = !i18n.resolvedLanguage?.startsWith('es');
  const exchangeRate = 20;
 
  const tr = (key, fallback) => isIntl ? t(key, fallback) : fallback;

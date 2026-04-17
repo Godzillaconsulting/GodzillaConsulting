@@ -48,16 +48,30 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
+// ─── MIDDLEWARE: Cross-Origin-Resource-Policy para GIFs y medios estáticos ──
+// Debe ir ANTES de Helmet y del static middleware para que los headers no sean sobrescritos.
+// Esto permite que godzillaconsulting.ai cargue recursos desde bot.godzillaconsulting.ai.
+app.use((req, res, next) => {
+    if (req.path.startsWith('/media') || req.path.startsWith('/api/media')) {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Timing-Allow-Origin', '*');
+    }
+    next();
+});
+
 // [Restaurado con prevención de Vercel] Helmet estaba causando crash de FUNCTION_INVOCATION_FAILED en Vercel Serverless
 if (!process.env.VERCEL) {
     app.use(helmet({
-        contentSecurityPolicy: false, // CSP custom en prod si se necesita
-        crossOriginEmbedderPolicy: false,
-        crossOriginResourcePolicy: false, // Permitir cargar imágenes desde el frontend cross-origin
+        contentSecurityPolicy: false,         // CSP custom en prod si se necesita
+        crossOriginEmbedderPolicy: false,     // No bloquear recursos externos embed
+        crossOriginResourcePolicy: false,     // No sobrescribir CORP manual de arriba
+        crossOriginOpenerPolicy: false,       // No bloquear ventanas cross-origin
         hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
         referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-        xContentTypeOptions: true,      // Previene MIME sniffing
-        xFrameOptions: { action: 'DENY' }, // Previene clickjacking
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'DENY' },
     }));
 }
 

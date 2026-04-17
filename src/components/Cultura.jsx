@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const Cultura = () => {
   const { t, i18n } = useTranslation();
-  const isEng = i18n.language.startsWith('en');
+  const isEng = i18n.resolvedLanguage?.startsWith('en');
   const { getNodeData } = useSiteData();
   const nodeData = getNodeData('cultura') || {};
 

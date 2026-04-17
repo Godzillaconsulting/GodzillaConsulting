@@ -309,8 +309,18 @@ app.get('/api/sora/proxy-veo', async (req, res) => {
 
 // Servir archivos subidos como estáticos en /media/* (y también /api/media/ para compatibilidad con Vite)
 // Cloudflare CDN Cache: 1h para estabilizar conexiones recurrentes simultaneas
-app.use('/media', express.static(path.join(__dirname, 'uploads'), { maxAge: '1h' }));
-app.use('/api/media', express.static(path.join(__dirname, 'uploads'), { maxAge: '1h' }));
+// Cross-Origin-Resource-Policy: cross-origin → permite carga de imágenes/GIFs cross-origin (godzillaconsulting.ai → bot.godzillaconsulting.ai)
+const staticMediaOptions = {
+    maxAge: '1h',
+    setHeaders: (res) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+    }
+};
+app.use('/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
+app.use('/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
+
 
 // Configuración para servir el Front-End compilado (React/Vite)
 // Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)

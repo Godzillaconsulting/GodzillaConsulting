@@ -12,9 +12,11 @@ const backgroundVideo = `${API_URL}/api/media/assets/Particulas Rojas LANDINGS.m
 const LandingPaqueteDynamic = ({ previewNodeId }) => {
  const { slug } = useParams();
  const { getNodeData, loading } = useSiteData();
- const { i18n } = useTranslation();
+ const { t, i18n } = useTranslation();
  const isIntl = !i18n.language.startsWith('es');
  const exchangeRate = 20;
+
+ const tr = (key, fallback) => isIntl ? t(key, fallback) : fallback;
 
  const formatPrice = (priceStr, addSuffix = true) => {
      if (!priceStr || typeof priceStr !== 'string') return priceStr;
@@ -114,13 +116,13 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  if (loading && !previewNodeId) {
      return (
          <div className="bg-black min-h-screen flex items-center justify-center pt-20">
-            <div className="text-gray-400 font-medium text-lg animate-pulse">Cargando servidor...</div>
+            <div className="text-gray-400 font-medium text-lg animate-pulse">{isIntl ? t('landing.loading') : 'Cargando servidor...'}</div>
          </div>
      );
  }
 
  if (!content || !content.heroTitle) {
-     return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold">Página en mantenimiento...</div></div>;
+     return <div className="bg-black min-h-screen flex items-center justify-center pt-20"><div className="text-white text-2xl font-bold">{isIntl ? t('landing.maintenance') : 'Página en mantenimiento...'}</div></div>;
  }
 
  return (
@@ -151,10 +153,10 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
  <a href="#detalles" className="bg-white text-black px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105 text-center">
- Descubre más
+ {isIntl ? t('landing.discoverMore') : 'Descubre más'}
  </a>
  <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105 text-center">
- Ver otros paquetes
+ {isIntl ? t('landing.otherPackages') : 'Ver otros paquetes'}
  </Link>
  </div>
 
@@ -173,7 +175,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {/* Left Card */}
  <div className="w-full lg:w-[55%] bg-[#1c1c1c] border border-red-600 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative">
  <div className="inline-block border border-gray-600 bg-transparent text-sm text-gray-200 px-5 py-1.5 rounded-full mb-8 font-medium">
- Detalles del plan
+ {isIntl ? t('landing.planDetails') : 'Detalles del plan'}
  </div>
 
  <h2
@@ -213,13 +215,13 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {/* Summary rows */}
  {content.totalValue && (
  <tr className="border-b border-gray-600">
- <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.totalLabel || 'VALOR TOTAL DEL SISTEMA:'}</td>
+ <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{isIntl ? t('landing.totalSystem') : (content.totalLabel || 'VALOR TOTAL DEL SISTEMA:')}</td>
  <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.totalValue, true)}</td>
  </tr>
  )}
  {content.normalPrice && (
  <tr className="border-b border-gray-600">
- <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{content.normalLabel || 'INVERSIÓN NORMAL:'}</td>
+ <td className="py-3 pr-4 text-sm font-black text-white uppercase tracking-wide">{isIntl ? t('landing.normalInvestment') : (content.normalLabel || 'INVERSIÓN NORMAL:')}</td>
  <td translate="no" className="py-3 pl-4 text-right text-sm font-black text-white whitespace-nowrap">{formatPrice(content.normalPrice, true)}</td>
  </tr>
  )}

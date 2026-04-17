@@ -16,11 +16,21 @@
   },
   "contact": {
     "title": "LET'S START THE WAR",
+    "h3": "Schedule a meeting with us",
     "subtitle": "Stop losing money on ineffective campaigns. Complete the form to schedule a strategic diagnostic call.",
     "name": "Full Name",
     "company": "Company Name",
     "email": "Business Email",
-    "phone": "Phone (Optional)",
+    "phone": "Phone Number",
+    "sessionLabel": "How do you prefer your session?",
+    "sessionVideo": "Video Call (Zoom)",
+    "sessionInPerson": "In-Person (Ciudad Juárez)",
+    "dateLabel": "Date (Mon-Fri)",
+    "timeLabel": "Time",
+    "timePlaceholder": "Select a time",
+    "required": "Required fields",
+    "noOffice": "Can't visit our office?",
+    "visitText": "We visit your business!",
     "revenue": "Current or projected monthly revenue",
     "revenue_options": {
       "new": "New Business ($0 - $5,000)",
@@ -29,10 +39,22 @@
       "enterprise": "Enterprise ($50,000+)"
     },
     "message": "What is the main challenge you want to solve?",
-    "submit": "APPLY NOW",
+    "submit": "SCHEDULE NOW",
     "submitting": "SENDING...",
     "success": "Information received correctly.",
-    "error": "Error establishing connection. Please try again."
+    "error": "Error establishing connection. Please try again.",
+    "confirmed": "APPOINTMENT CONFIRMED!",
+    "thankyou": "THANK YOU FOR YOUR TIME!",
+    "appointmentSet": "Your appointment has been scheduled. We will contact you soon.",
+    "addCalendar": "Add to my Google Calendar",
+    "backForm": "Back to form",
+    "newsletter": "Subscribe to our newsletter",
+    "newsletterPlaceholder": "Enter your email address",
+    "newsletterLatest": "Get the latest news on marketing and AI.",
+    "followUs": "Follow us on social media",
+    "subscribedOk": "Successfully subscribed! Check your inbox soon.",
+    "subscribedError": "Error processing subscription.",
+    "networkError": "Network error. Please try again later."
   },
   "banner": {
     "limited": "LIMITED TIME",
@@ -63,15 +85,26 @@
   "portfolio": {
     "overline": "SUCCESS CASES",
     "title": "SUCCESS CASES",
-    "subtitle": "We don't just run campaigns, we build systems"
+    "subtitle": "We don't just run campaigns, we build systems",
+    "categories": {
+      "Estética": "Aesthetics",
+      "Clínica Estética": "Aesthetic Clinic",
+      "Hotelería": "Hospitality",
+      "Barbería": "Barbershop",
+      "Sector Médico": "Medical Sector",
+      "Heladerías": "Ice Cream Shops",
+      "Banquetes y Eventos": "Banquets & Events",
+      "Sector Alimenticio": "Food Industry",
+      "Iluminación / Arquitectura": "Lighting / Architecture"
+    }
   },
   "chat": {
-    "greeting": "Hi! I am Zilla. 😊 How can I help you today?"
+    "greeting": "Hi! I am Zilla. \ud83d\ude0a How can I help you today?"
   },
   "culture": {
     "title": "OUR",
     "titleRed": "CULTURE",
-    "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\n\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\n\nWe design campaigns and systems that prioritize sales and profitability.",
+    "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\\n\\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\\n\\nWe design campaigns and systems that prioritize sales and profitability.",
     "mission": "Our Mission",
     "missionText": "To drive scalable growth for B2B businesses by implementing intelligent funnels, advanced automation, and omnichannel strategies.",
     "vision": "Our Vision",
@@ -87,16 +120,54 @@
   "packages": {
     "title": "OUR",
     "titleRed": "SYSTEMS",
-    "subtitle": "Comprehensive growth solutions",
+    "subtitle": "Comprehensive growth solutions protected by contract.",
     "btn": "Start now",
+    "guarantee": "SEE GUARANTEE",
     "includes": "Includes:",
-    "consult": "Talk to sales"
+    "consult": "Talk to sales",
+    "idealFor": "Ideal for:"
   },
   "resources": {
     "title": "OUR",
     "titleRed": "RESOURCES",
     "subtitle": "Free tools to systematize your business",
-    "btn": "Download now"
+    "btn": "Download now",
+    "clickDownload": "Click here to download.",
+    "modalTitle": "Resource ready to download!",
+    "modalSubtitle": "Enter your email below. The file will download immediately and we'll also send you a backup copy to your inbox.",
+    "modalSuccess1": "All set!",
+    "modalSuccess2": "We sent",
+    "modalSuccess3": "to the address",
+    "modalSuccess4": "Please wait a couple of minutes and check your inbox (and spam folder just in case).",
+    "modalUnderstood": "Got it",
+    "modalSending": "Sending email...",
+    "modalSend": "Send to my email",
+    "modalSpam": "We promise no spam. You can unsubscribe at any time.",
+    "magnets": [
+      {
+        "title": "The AI Scripts Vault",
+        "description": "Access the 7 structural steps that will allow you to automate your responses and manage your prospects' attention in seconds. Includes core guidelines and the 'Double Option' technique to considerably increase your scheduling rates without losing natural human interaction."
+      },
+      {
+        "title": "The Lazarus Protocol (Lead Resurrection)",
+        "description": "Access the 7 strategic scripts designed to reactivate inactive prospects in less than 7 days. Applies a zero-risk defensive psychology that makes it easy to resume conversations stuck in limbo naturally and frictionlessly."
+      },
+      {
+        "title": "The Sales Control Dashboard",
+        "description": "This document has been meticulously structured to help you detect operational leaks in your funnel and recover up to 30% of your lost sales. Includes tools like the Lead Traffic Light to manage timely contacts before they go cold."
+      }
+    ]
+  },
+  "landing": {
+    "discoverMore": "Discover more",
+    "otherPackages": "See other packages",
+    "planDetails": "Plan details",
+    "normalInvestment": "REGULAR INVESTMENT:",
+    "totalSystem": "TOTAL SYSTEM VALUE:",
+    "takeOffer": "TAKE ADVANTAGE OF THIS OFFER",
+    "contactUs": "Contact us",
+    "loading": "Loading server...",
+    "maintenance": "Page under maintenance..."
   },
   "responsibilities": {
     "title": "Client",

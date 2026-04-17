@@ -136,9 +136,11 @@ const Recursos = () => {
 
                             {/* Text Content */}
                             <div className="w-full md:w-2/3">
-                                <h3 className="text-3xl font-bold text-white mb-6 leading-tight">{item.title}</h3>
+                                <h3 className="text-3xl font-bold text-white mb-6 leading-tight">
+                                    {isEng ? (t(`resources.magnets`, { returnObjects: true })[index]?.title || item.title) : item.title}
+                                </h3>
                                 <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                                    {item.description}
+                                    {isEng ? (t(`resources.magnets`, { returnObjects: true })[index]?.description || item.description) : item.description}
                                 </p>
                                 <button
                                     onClick={(e) => {
@@ -148,7 +150,7 @@ const Recursos = () => {
                                     }}
                                     className="inline-flex items-center gap-2 text-[#CC0000] hover:text-red-400 font-bold text-lg border-b-2 border-transparent hover:border-[#CC0000] pb-1 transition-all"
                                 >
-                                    Haz clic aquí para descargar.
+                                    {isEng ? t('resources.clickDownload') : 'Haz clic aquí para descargar.'}
                                 </button>
                             </div>
 
@@ -179,11 +181,9 @@ const Recursos = () => {
                                 <div className="w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Check size={32} className="text-white" strokeWidth={3} />
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-4">¡Todo listo!</h3>
+                                <h3 className="text-2xl font-bold text-white mb-2">{isEng ? t('resources.modalSuccess1') : '¡Todo listo!'}</h3>
                                 <p className="text-gray-300 text-base leading-relaxed mb-8">
-                                    Hemos enviado "{activeItem?.title}" al correo <span className="text-white font-bold">{email}</span>.
-                                    <br /><br />
-                                    Por favor, espera un par de minutos y revisa tu bandeja de entrada (y la carpeta de spam por si acaso).
+                                    {isEng ? <>{t('resources.modalSuccess2')} "{activeItem?.title}" {t('resources.modalSuccess3')} <span className="text-white font-bold">{email}</span>.<br /><br />{t('resources.modalSuccess4')}</> : <>Hemos enviado "{activeItem?.title}" al correo <span className="text-white font-bold">{email}</span>.<br /><br />Por favor, espera un par de minutos y revisa tu bandeja de entrada (y la carpeta de spam por si acaso).</> }
                                 </p>
                                 <button
                                     onClick={() => {
@@ -195,15 +195,15 @@ const Recursos = () => {
                                     }}
                                     className="w-full bg-white hover:bg-gray-200 text-black py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl"
                                 >
-                                    Entendido
+                                    {isEng ? t('resources.modalUnderstood') : 'Entendido'}
                                 </button>
                             </div>
                         ) : (
                             <>
                                 <div className="text-center mb-6">
-                                    <h3 className="text-2xl font-bold text-white mb-2">¡Recurso listo para descargar!</h3>
+                                    <h3 className="text-2xl font-bold text-white mb-2">{isEng ? t('resources.modalTitle') : '¡Recurso listo para descargar!'}</h3>
                                     <p className="text-gray-400 text-sm">
-                                        Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.
+                                        {isEng ? t('resources.modalSubtitle') : <>Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.</>}
                                     </p>
                                 </div>
 
@@ -256,7 +256,10 @@ const Recursos = () => {
                                                 : 'bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] hover:shadow-xl'
                                             }`}
                                     >
-                                        {status === 'loading' ? 'Enviando email...' : 'Enviar a mi correo'}
+                                        {status === 'loading'
+                                          ? (isEng ? t('resources.modalSending') : 'Enviando email...')
+                                          : (isEng ? t('resources.modalSend') : 'Enviar a mi correo')
+                                        }
                                     </button>
 
                                     {/* Mostrar Errores de API si existieran sin trabar la UI */}
@@ -264,7 +267,7 @@ const Recursos = () => {
                                         <p className="text-red-400 text-sm mt-3 text-center">{errorMessage || 'Error enviando correo'}</p>
                                     )}
                                     <p className="text-xs text-gray-500 mt-4 text-center">
-                                        Prometemos no enviarte spam. Puedes desuscribirte en cualquier momento.
+                                        {isEng ? t('resources.modalSpam') : 'Prometemos no enviarte spam. Puedes desuscribirte en cualquier momento.'}
                                     </p>
                                 </form>
                             </>

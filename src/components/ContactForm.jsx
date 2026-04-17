@@ -9,7 +9,8 @@ import linkedinIcon from'../assets/icons/1715491568linkedin-icon-png.png';
 import { useTranslation } from 'react-i18next';
 
 const ContactForm = ({ showNewsletter = true }) => {
- const { t } = useTranslation();
+ const { t, i18n } = useTranslation();
+ const isEng = i18n.language.startsWith('en');
  const [isSubmitted, setIsSubmitted] = useState(false);
  const [sessionType, setSessionType] = useState('video'); //'video' |'presencial'
  const [calendarLink, setCalendarLink] = useState('');
@@ -102,15 +103,15 @@ const ContactForm = ({ showNewsletter = true }) => {
   const data = await res.json();
   if (data.success) {
       setNlStatus('success');
-      setNlMsg('¡Suscrito exitosamente! Revisa tu bandeja pronto.');
+      setNlMsg(t('contact.subscribedOk'));
       setNlEmail('');
   } else {
       setNlStatus('error');
-      setNlMsg(data.message || 'Error al procesar suscripción.');
+      setNlMsg(data.message || t('contact.subscribedError'));
   }
   } catch (err) {
       setNlStatus('error');
-      setNlMsg('Error de red. Inténtalo más tarde.');
+      setNlMsg(t('contact.networkError'));
   }
   // Auto-hide success/error message after 5 seconds
   setTimeout(() => { setNlStatus('idle'); setNlMsg(''); }, 5000);
@@ -205,16 +206,16 @@ const ContactForm = ({ showNewsletter = true }) => {
  {t('contact.title')}
  </h2>
  <h3 className="text-3xl font-bold text-[#111111] mb-6 tracking-tight">
- Agenda una cita con nosotros
+ {t('contact.h3')}
  </h3>
  <p className="text-xl text-gray-700 leading-relaxed font-medium mb-12">
  {t('contact.subtitle')}
  </p>
 
  <div className="mt-8">
- <p className="text-lg italic text-gray-600 mb-2 font-medium">¿No puedes acudir a nuestras oficinas?</p>
+ <p className="text-lg italic text-gray-600 mb-2 font-medium">{t('contact.noOffice')}</p>
  <h4 className="text-2xl font-black text-[#111111] tracking-wide">
- ¡Te visitamos en tu negocio!
+ {t('contact.visitText')}
  </h4>
  </div>
  </div>
@@ -244,7 +245,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Teléfono */}
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
- Número de teléfono <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.phone')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <div className="flex bg-white">
  <select className="bg-transparent text-gray-700 px-3 py-3 border-r border-gray-300 outline-none appearance-none cursor-pointer text-center" style={{ backgroundImage:"url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat:'no-repeat', backgroundPosition:'right 0.5rem center', backgroundSize:'1em', paddingRight:'2rem' }}>
@@ -258,7 +259,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Preferencia de sesión */}
  <div className="pt-2">
  <label className="flex items-center text-sm font-bold mb-4">
- ¿Cómo prefieres tu sesión? <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.sessionLabel')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <div className="flex flex-col gap-4">
  <button
@@ -267,7 +268,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  className={`group flex items-center justify-center gap-3 py-4 rounded-full font-bold italic transition-all ${sessionType ==='video' ?'bg-[#CC0000] text-white shadow-[0_4px_14px_rgba(204,0,0,0.4)] hover:bg-white hover:text-[#CC0000]' :'bg-transparent text-white border border-white hover:bg-white hover:border-white hover:text-[#CC0000]'}`}
  >
  <Video size={20} className={sessionType ==='video' ?'text-current fill-current' :'text-current group-hover:fill-current'} />
- Videollamada (Zoom)
+ {t('contact.sessionVideo')}
  </button>
  <button
  type="button"
@@ -275,7 +276,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  className={`group flex items-center justify-center gap-3 py-4 rounded-full font-bold italic transition-all ${sessionType ==='presencial' ?'bg-[#CC0000] text-white shadow-[0_4px_14px_rgba(204,0,0,0.4)] hover:bg-white hover:text-[#CC0000]' :'bg-transparent text-white border border-white hover:bg-white hover:border-white hover:text-[#CC0000]'}`}
  >
  <MapPin size={20} className={sessionType ==='presencial' ?'text-current fill-current' :'text-current group-hover:fill-current'} />
- Presencial (Ciudad Juárez)
+ {t('contact.sessionInPerson')}
  </button>
  </div>
  </div>
@@ -284,7 +285,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  <div className="grid grid-cols-2 gap-6 pt-2">
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
- Fecha (lun-vie) <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.dateLabel')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <input
  type="date"
@@ -297,10 +298,10 @@ const ContactForm = ({ showNewsletter = true }) => {
  </div>
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
- Hora <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.timeLabel')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <select required value={hora} onChange={(e) => setHora(e.target.value)} className="w-full bg-white text-gray-800 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000] appearance-none cursor-pointer" style={{ backgroundImage:"url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat:'no-repeat', backgroundPosition:'right 1rem center', backgroundSize:'1em' }}>
- <option value="" disabled className="text-gray-500">Seleccionar hora</option>
+ <option value="" disabled className="text-gray-500">{t('contact.timePlaceholder')}</option>
  <option value="09:00">09:00 AM</option>
  <option value="12:00">12:00 PM</option>
  <option value="15:00">03:00 PM</option>
@@ -315,7 +316,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {isLoading ? t('contact.submitting') : t('contact.submit')}
  </button>
  <p className="mt-6 text-sm font-bold italic text-white flex items-center">
- Campos obligatorios <span className="text-[#CC0000] text-lg leading-none ml-1">*</span>
+ {t('contact.required')} <span className="text-[#CC0000] text-lg leading-none ml-1">*</span>
  </p>
  </div>
  </form>
@@ -323,13 +324,13 @@ const ContactForm = ({ showNewsletter = true }) => {
  <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
  <CheckCircle size={80} className="text-[#25D366] mb-8 animate-bounce" />
  <p className="text-[#25D366] font-bold text-sm tracking-widest mb-4">
- ¡CITA CONFIRMADA!
+ {t('contact.confirmed')}
  </p>
  <h3 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
- ¡MUCHAS GRACIAS<br />POR TU TIEMPO!
+ {t('contact.thankyou')}
  </h3>
  <p className="text-gray-300 text-lg mb-8 max-w-sm mx-auto">
- Tu cita quedó agendada. Pronto te contactaremos.
+ {t('contact.appointmentSet')}
  </p>
  {calendarLink && (
  <a
@@ -338,11 +339,11 @@ const ContactForm = ({ showNewsletter = true }) => {
  rel="noopener noreferrer"
  className="flex items-center gap-2 bg-[#CC0000] text-white px-8 py-4 rounded-full font-bold text-base mb-8 hover:bg-white hover:text-[#CC0000] transition-all shadow-lg"
  >
- 📅 Agregar a mi Google Calendar
+ 📅 {t('contact.addCalendar')}
  </a>
  )}
  <button onClick={resetForm} className="bg-transparent text-white border-2 border-white px-10 py-3 rounded-full font-bold hover:bg-white hover:text-[#111111] transition-colors">
- Regresar al formulario
+ {t('contact.backForm')}
  </button>
  </div>
  )}
@@ -354,7 +355,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  <div className="mt-28 max-w-[350px] mx-auto flex flex-col items-center justify-center text-center">
  <img src={godzillaLogoCircle} alt="Godzilla Consulting Logo" className="w-[124px] h-[124px] object-contain mb-8" />
   <h4 className="text-3xl font-black text-[#111111] mb-8 leading-tight tracking-tight">
-  Suscríbete a <br /> nuestro boletín
+  {t('contact.newsletter')}
   </h4>
   <form onSubmit={handleNewsletterSubmit} className="w-full flex items-center border-b border-gray-400 pb-2 mb-2 group cursor-pointer focus-within:border-[#CC0000] focus-within:border-b-2 transition-all">
   <input
@@ -363,7 +364,7 @@ const ContactForm = ({ showNewsletter = true }) => {
   onChange={e => setNlEmail(e.target.value)}
   required
   disabled={nlStatus === 'loading'}
-  placeholder="Ingresa tu correo electrónico"
+  placeholder={t('contact.newsletterPlaceholder')}
   className="w-full bg-transparent outline-none text-[#111111] placeholder-gray-500 font-medium text-sm disabled:opacity-50"
   />
   <button type="submit" disabled={nlStatus === 'loading'} className="text-[#111111] group-hover:text-[#CC0000] transition-colors focus:outline-none ml-2 disabled:opacity-50">
@@ -373,12 +374,12 @@ const ContactForm = ({ showNewsletter = true }) => {
   <div className="h-6 w-full text-left">
     {nlStatus === 'success' && <p className="text-[10px] text-green-600 font-bold tracking-wide">{nlMsg}</p>}
     {nlStatus === 'error' && <p className="text-[10px] text-red-600 font-bold tracking-wide">{nlMsg}</p>}
-    {nlStatus === 'idle' && <p className="text-[10px] text-gray-500 font-medium tracking-wide">Obtén las últimas noticias sobre marketing e IA.</p>}
+    {nlStatus === 'idle' && <p className="text-[10px] text-gray-500 font-medium tracking-wide">{t('contact.newsletterLatest')}</p>}
   </div>
 
   <div className="mb-16"></div>
 
-  <h5 className="font-bold text-[#111111] mb-6">Síguenos en redes</h5>
+  <h5 className="font-bold text-[#111111] mb-6">{t('contact.followUs')}</h5>
  <div className="flex justify-center items-center gap-8">
  <a href="https://www.instagram.com/godzilla_consulting/" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
  <img src={instagramIcon} alt="Instagram" className="w-10 h-10 object-contain" />

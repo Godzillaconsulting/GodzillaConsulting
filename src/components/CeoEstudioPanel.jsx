@@ -7,6 +7,13 @@ const STATUS_MAP = {
     published:           { label: '🚀 Publicada',   tab: 'aprobadas',  color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
 };
 
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const resolveMedia = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export default function CeoEstudioPanel({ adminProfile }) {
     const [activeTab, setActiveTab] = useState('pendientes');
     const [tasks, setTasks]         = useState([]);
@@ -316,9 +323,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             <div className="h-40 bg-black flex items-center justify-center overflow-hidden relative">
                                 {media?.url ? (
                                     media.isVideo || media.url.match(/\.(mp4|webm|mov)$/i) ? (
-                                        <video src={media.url} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" muted playsInline />
+                                        <video src={resolveMedia(media.url)} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" muted playsInline />
                                     ) : (
-                                        <img src={media.url} alt="Media" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                                        <img src={resolveMedia(media.url)} alt="Media" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                                     )
                                 ) : (
                                     <div className="flex flex-col items-center justify-center opacity-40">
@@ -371,9 +378,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         <div className="flex-1 bg-black flex items-center justify-center relative p-4 min-h-[50%]">
                             {firstMedia?.url ? (
                                 isVideo ? (
-                                    <video src={firstMedia.url} controls autoPlay muted className="max-w-full max-h-full rounded-xl" />
+                                    <video src={resolveMedia(firstMedia.url)} controls autoPlay muted className="max-w-full max-h-full rounded-xl" />
                                 ) : (
-                                    <img src={firstMedia.url} className="max-w-full max-h-full object-contain rounded-xl" alt="Asset" />
+                                    <img src={resolveMedia(firstMedia.url)} className="max-w-full max-h-full object-contain rounded-xl" alt="Asset" />
                                 )
                             ) : (
                                 <div className="text-neutral-600 flex flex-col items-center gap-2">
@@ -386,7 +393,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 ✕
                             </button>
                             {firstMedia?.url && (
-                                <a href={firstMedia.url} download={`asset_${selected.id}`} target="_blank" rel="noreferrer"
+                                <a href={resolveMedia(firstMedia.url)} download={`asset_${selected.id}`} target="_blank" rel="noreferrer"
                                     className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2">
                                     ⬇️ Descargar
                                 </a>

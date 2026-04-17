@@ -39,7 +39,14 @@ export const getYouTubeId = (url) => {
 };
 
 // ─── API BASE ─────────────────────────────────────────────────────────────
-const getAPI = () => import.meta.env.DEV ? 'http://localhost:3000' : '';
+export const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+const getAPI = () => API_URL;
+
+export const resolveMedia = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 // ─── Mapear evento de DB al shape del cliente ─────────────────────────────
 const mapEvent = (row) => ({
@@ -764,7 +771,7 @@ export default function CMCalendar({ adminProfile }) {
                 {event.media_url && (
                     <div className="relative h-16 bg-black overflow-hidden">
                         <img
-                            src={event.media_url}
+                            src={resolveMedia(event.media_url)}
                             alt=""
                             className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
                             onError={e => { e.target.style.display = 'none'; }}
@@ -954,7 +961,7 @@ export default function CMCalendar({ adminProfile }) {
                         </div>
                         <p className="font-bold text-sm">godzillaconsulting</p>
                     </div>
-                    {event.media_url && <img src={event.media_url} className="w-full aspect-square object-cover" alt="post" />}
+                    {event.media_url && <img src={resolveMedia(event.media_url)} className="w-full aspect-square object-cover" alt="post" />}
                     <div className="p-3">
                         <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
                         <p className="font-bold text-sm mb-1">1,234 Me gusta</p>
@@ -969,13 +976,13 @@ export default function CMCalendar({ adminProfile }) {
                         <div><p className="font-bold text-[15px] leading-tight">Godzilla Consulting</p><p className="text-xs text-gray-500">Publicado • Hace 2 min • 🌎</p></div>
                     </div>
                     <div className="px-3 pb-3 text-[14px] text-gray-800"><p className="whitespace-pre-wrap line-clamp-3">{event.caption}</p></div>
-                    {event.media_url && <img src={event.media_url} className="w-full h-52 object-cover" alt="post" />}
+                    {event.media_url && <img src={resolveMedia(event.media_url)} className="w-full h-52 object-cover" alt="post" />}
                     <div className="p-3 border-t border-gray-200 flex justify-between text-gray-500 text-sm font-semibold"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↪️ Compartir</span></div>
                 </div>
             )}
             {event.platform === 'tiktok' && (
                 <div className="relative bg-black text-white h-[350px] flex items-center justify-center overflow-hidden">
-                    {event.media_url && <img src={event.media_url} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="post" />}
+                    {event.media_url && <img src={resolveMedia(event.media_url)} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="post" />}
                     <div className="absolute right-2 bottom-12 flex flex-col items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden shadow-lg"><img src="/logo192.png" className="w-full h-full object-cover bg-black" alt="logo" /></div>
                         <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">❤️</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
@@ -1110,7 +1117,7 @@ export default function CMCalendar({ adminProfile }) {
                                         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/0 via-yellow-400 to-yellow-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <div className="flex gap-3 mb-2">
                                             <div className="w-12 h-12 bg-black rounded shrink-0 overflow-hidden relative">
-                                                {mediaUrl ? (isVideo ? <video src={mediaUrl} className="w-full h-full object-cover" /> : <img src={mediaUrl} className="w-full h-full object-cover" />) : <span className="text-lg absolute inset-0 flex items-center justify-center">📷</span>}
+                                                {mediaUrl ? (isVideo ? <video src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" /> : <img src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" />) : <span className="text-lg absolute inset-0 flex items-center justify-center">📷</span>}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-xs font-bold text-white line-clamp-2">{task.caption || task.que}</p>

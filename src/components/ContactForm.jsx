@@ -6,8 +6,10 @@ import facebookIcon from'../assets/icons/1730342312_facebook-logo-2024.png';
 import tiktokIcon from'../assets/icons/tik-tok-png-logo-dad7.png';
 import youtubeIcon from'../assets/icons/1701508703YouTube-Icon-PNG.png';
 import linkedinIcon from'../assets/icons/1715491568linkedin-icon-png.png';
+import { useTranslation } from 'react-i18next';
 
 const ContactForm = ({ showNewsletter = true }) => {
+ const { t } = useTranslation();
  const [isSubmitted, setIsSubmitted] = useState(false);
  const [sessionType, setSessionType] = useState('video'); //'video' |'presencial'
  const [calendarLink, setCalendarLink] = useState('');
@@ -200,13 +202,13 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Left Text Column */}
  <div className="lg:w-1/2 flex flex-col justify-start lg:pt-4">
  <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#CC0000] mb-8 leading-tight tracking-tighter drop-shadow-sm">
- Estamos aquí para ayudarte a hacer crecer tu negocio.
+ {t('contact.title')}
  </h2>
  <h3 className="text-3xl font-bold text-[#111111] mb-6 tracking-tight">
  Agenda una cita con nosotros
  </h3>
  <p className="text-xl text-gray-700 leading-relaxed font-medium mb-12">
- Llena el formulario y nos contactaremos contigo lo más pronto posible.
+ {t('contact.subtitle')}
  </p>
 
  <div className="mt-8">
@@ -226,7 +228,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Nombre */}
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
- Nombre completo <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.name')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required placeholder="Juan José Pérez Rojas" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
  </div>
@@ -234,7 +236,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Email */}
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
- E-mail <span className="text-[#CC0000] mx-1">*</span>
+ {t('contact.email')} <span className="text-[#CC0000] mx-1">*</span>
  </label>
  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Juanjoseprojas@outlook.com" className="w-full bg-white text-gray-800 placeholder-gray-500 italic px-4 py-3 outline-none focus:ring-2 focus:ring-[#CC0000]" />
  </div>
@@ -310,7 +312,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  {/* Submit */}
  <div className="flex flex-col items-center pt-8">
  <button type="submit" disabled={isLoading} className={`hover:bg-white text-white hover:text-[#CC0000] px-10 py-4 rounded-full font-bold text-lg w-auto transition-all hover:scale-105 shadow-[0_4px_14px_rgba(204,0,0,0.4)] ${isLoading ?'bg-gray-500 cursor-not-allowed' :'bg-[#CC0000]'}`}>
- {isLoading ?'ENVIANDO...' :'CONFIRMAR CITA'}
+ {isLoading ? t('contact.submitting') : t('contact.submit')}
  </button>
  <p className="mt-6 text-sm font-bold italic text-white flex items-center">
  Campos obligatorios <span className="text-[#CC0000] text-lg leading-none ml-1">*</span>

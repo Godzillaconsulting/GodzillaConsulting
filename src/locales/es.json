@@ -1,0 +1,68 @@
+{
+  "footer": {
+    "contact": "Información de contacto",
+    "nav": "Navegación",
+    "legal": "Legal",
+    "home": "Inicio",
+    "culture": "Cultura",
+    "services": "Servicios",
+    "packages": "Paquetes",
+    "portfolio": "Portafolio",
+    "resources": "Recursos",
+    "terms": "Términos y Condiciones",
+    "privacy": "Aviso de Privacidad",
+    "cookies": "Política de cookies",
+    "copyright": "Godzilla Co. Todos los derechos reservados."
+  },
+  "contact": {
+    "title": "EMPECEMOS LA GUERRA",
+    "subtitle": "Deja de perder dinero en campañas que no funcionan. Completa el formulario para agendar una sesión estratégica de diagnóstico.",
+    "name": "Nombre completo",
+    "company": "Empresa o Proyecto",
+    "email": "Correo empresarial",
+    "phone": "Teléfono (Opcional)",
+    "revenue": "Facturación actual o proyectada",
+    "revenue_options": {
+      "new": "Apenas iniciando ($0 - $5,000 USD)",
+      "growing": "Creciendo ($5,000 - $20,000 USD)",
+      "scaling": "Escalando ($20,000 - $50,000 USD)",
+      "enterprise": "Empresa establecida ($50,000+ USD)"
+    },
+    "message": "¿Cuál es tu reto principal a resolver?",
+    "submit": "APLICAR AHORA",
+    "submitting": "ENVIANDO...",
+    "success": "Información recibida correctamente.",
+    "error": "Error al conectar. Por favor intenta de nuevo."
+  },
+  "banner": {
+    "limited": "TIEMPO LIMITADO",
+    "getBonus": "Descarga el Reporte Ejecutivo",
+    "close": "Cerrar"
+  },
+  "faq": {
+    "title": "PREGUNTAS FRECUENTES",
+    "subtitle": "Respuestas claras sobre nuestra forma de operar."
+  },
+  "leadmagnet": {
+    "title": "7 Prompts de IA comprobados",
+    "subtitle": "Déjanos tu correo y recíbelos al instante.",
+    "placeholder": "Tu mejor correo...",
+    "btnDownloading": "Enviando...",
+    "btnDownload": "Descargar",
+    "success": "¡El recurso va en camino a tu bandeja de entrada!",
+    "alreadySent": "¡Ya habíamos enviado este documento a tu correo antes! Revisa tu bandeja de spam.",
+    "emptyEmail": "Escribe un email válido."
+  },
+  "faqPage": {
+    "title1": "PREGUNTAS",
+    "title2": "FRECUENTES",
+    "subtitle": "Todo lo que necesitas saber sobre Godzilla Consulting",
+    "notFound": "¿No encontraste lo que buscabas?",
+    "contact": "Contáctanos directamente"
+  },
+  "portfolio": {
+    "overline": "CASOS DE ÉXITO",
+    "title": "CASOS DE ÉXITO",
+    "subtitle": "No hacemos solo campañas, construimos sistemas"
+  }
+}

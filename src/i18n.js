@@ -2,6 +2,9 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+import esTranslation from './locales/es.json';
+import enTranslation from './locales/en.json';
+
 // Import local locales inline for start, later can be moved to JSON files if it gets big.
 const resources = {
   es: {
@@ -55,7 +58,8 @@ const resources = {
             desc: "Implementamos plataformas CRM y soluciones SaaS a la medida para centralizar contactos, automatizar seguimientos y facilitar la gestión comercial de tu equipo."
           }
         }
-      }
+      },
+      ...esTranslation
     }
   },
   en: {
@@ -109,7 +113,8 @@ const resources = {
             desc: "We implement tailor-made CRM platforms and SaaS solutions to centralize your contacts, automate follow-ups, and streamline your team's commercial management."
           }
         }
-      }
+      },
+      ...enTranslation
     }
   }
 };

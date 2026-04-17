@@ -8,6 +8,7 @@ import logoFacemaker from '../assets/Logos/Facemaker Logo@2x.png';
 import logoGrupoMrg from '../assets/Logos/Grupo MRG Logo@2x.png';
 import logoMedhaus from '../assets/Logos/Medhaus Logo@2x.png';
 import logoArtika from '../assets/Logos/Artika Logo@2x.png';
+import { useTranslation } from 'react-i18next';
 
 const defaultCases = [
     { _id: 'default-1', orden: 1, logoSrc: logoFacemaker, nombre: 'Facemaker', category: 'Clínica Estética' },
@@ -22,8 +23,10 @@ const CARD_WIDTH = 350 + 24; // w-[350px] + gap-6
 const SPEED = 0.6; // px por frame
 
 const CasosExito = () => {
+    const { t, i18n } = useTranslation();
     const { getNodeData } = useSiteData();
     const nodeData = getNodeData('portafolio') || {};
+    const isEng = i18n.language.startsWith('en');
 
     const scrollContainerRef = useRef(null);
     const animFrameRef = useRef(null);
@@ -35,7 +38,7 @@ const CasosExito = () => {
     const [cases, setCases] = useState(defaultCases);
 
     // --- Typewriter Effect Logic ---
-    const rawTitle = nodeData.title || 'CASOS DE ÉXITO';
+    const rawTitle = isEng ? t('portfolio.title') : (nodeData.title || t('portfolio.title'));
     const [typedTitle, setTypedTitle] = useState('');
     const [startTyping, setStartTyping] = useState(false);
     const titleContainerRef = useRef(null);
@@ -213,14 +216,14 @@ const CasosExito = () => {
                 <div ref={titleContainerRef} className="text-center mb-16">
                     {nodeData.overline && (
                         <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
-                            {nodeData.overline}
+                            {isEng ? t('portfolio.overline') : (nodeData.overline || t('portfolio.overline'))}
                         </span>
                     )}
                     <h2 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tighter inline-block animate-blink-cursor">
                         {typedTitle}
                     </h2>
                     <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
-                        {nodeData.subtitle || 'No hacemos solo campañas, construimos sistemas'}
+                        {isEng ? t('portfolio.subtitle') : (nodeData.subtitle || t('portfolio.subtitle'))}
                     </p>
                 </div>
 

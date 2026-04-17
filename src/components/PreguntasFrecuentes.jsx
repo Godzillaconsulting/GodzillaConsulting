@@ -2,6 +2,7 @@ import { Link } from'react-router-dom';
 import { ChevronDown } from'lucide-react';
 import { useState, useEffect } from'react';
 import { client } from'../sanityClient';
+import { useTranslation } from 'react-i18next';
 
 const defaultFaqs = [
  {
@@ -78,6 +79,7 @@ function FAQItem({ item }) {
 
 export default function PreguntasFrecuentes() {
  const [faqs, setFaqs] = useState(defaultFaqs);
+ const { t } = useTranslation();
 
  useEffect(() => {
  client
@@ -98,12 +100,12 @@ export default function PreguntasFrecuentes() {
  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] bg-[#CC0000]/10 blur-[80px] rounded-full pointer-events-none" />
 
  <h1 className="relative z-10 text-5xl md:text-7xl font-black tracking-widest text-white drop-shadow-lg">
- PREGUNTAS
+ {t('faqPage.title1')}
  <br />
- <span className="text-[#CC0000]">FRECUENTES</span>
+ <span className="text-[#CC0000]">{t('faqPage.title2')}</span>
  </h1>
  <p className="relative z-10 mt-4 text-gray-400 text-lg max-w-xl">
- Todo lo que necesitas saber sobre Godzilla Consulting
+ {t('faqPage.subtitle')}
  </p>
  </div>
 
@@ -118,13 +120,13 @@ export default function PreguntasFrecuentes() {
  {/* CTA */}
  <div className="mt-12 text-center">
  <p className="text-gray-400 mb-4 text-base">
- ¿No encontraste lo que buscabas?
+ {t('faqPage.notFound')}
  </p>
  <Link
  to="/#contacto"
  className="inline-flex items-center gap-2 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] px-8 py-3 rounded-full font-bold transition-all shadow-lg hover:shadow-xl"
  >
- Contáctanos directamente
+ {t('faqPage.contact')}
  </Link>
  </div>
  </div>

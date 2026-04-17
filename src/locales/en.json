@@ -1,0 +1,68 @@
+{
+  "footer": {
+    "contact": "Contact Information",
+    "nav": "Navigation",
+    "legal": "Legal",
+    "home": "Home",
+    "culture": "Culture",
+    "services": "Services",
+    "packages": "Packages",
+    "portfolio": "Portfolio",
+    "resources": "Resources",
+    "terms": "Terms and Conditions",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookies Policy",
+    "copyright": "Godzilla Co. All Rights Reserved."
+  },
+  "contact": {
+    "title": "LET'S START THE WAR",
+    "subtitle": "Stop losing money on ineffective campaigns. Complete the form to schedule a strategic diagnostic call.",
+    "name": "Full Name",
+    "company": "Company Name",
+    "email": "Business Email",
+    "phone": "Phone (Optional)",
+    "revenue": "Current or projected monthly revenue",
+    "revenue_options": {
+      "new": "New Business ($0 - $5,000)",
+      "growing": "Growing ($5,000 - $20,000)",
+      "scaling": "Scaling ($20,000 - $50,000)",
+      "enterprise": "Enterprise ($50,000+)"
+    },
+    "message": "What is the main challenge you want to solve?",
+    "submit": "APPLY NOW",
+    "submitting": "SENDING...",
+    "success": "Information received correctly.",
+    "error": "Error establishing connection. Please try again."
+  },
+  "banner": {
+    "limited": "LIMITED TIME",
+    "getBonus": "Download the Executive Report",
+    "close": "Close"
+  },
+  "faq": {
+    "title": "FREQUENTLY ASKED QUESTIONS",
+    "subtitle": "Clear answers about how we operate."
+  },
+  "leadmagnet": {
+    "title": "7 Proven AI Prompts",
+    "subtitle": "Leave your email and receive them instantly.",
+    "placeholder": "Your best email...",
+    "btnDownloading": "Sending...",
+    "btnDownload": "Download",
+    "success": "The resource is on its way to your inbox!",
+    "alreadySent": "We already sent this document to your email! Check your spam folder.",
+    "emptyEmail": "Please enter a valid email."
+  },
+  "faqPage": {
+    "title1": "FREQUENTLY ASKED",
+    "title2": "QUESTIONS",
+    "subtitle": "Everything you need to know about us",
+    "notFound": "Didn't find what you were looking for?",
+    "contact": "Contact us directly"
+  },
+  "portfolio": {
+    "overline": "SUCCESS CASES",
+    "title": "SUCCESS CASES",
+    "subtitle": "We don't just run campaigns, we build systems"
+  }
+}

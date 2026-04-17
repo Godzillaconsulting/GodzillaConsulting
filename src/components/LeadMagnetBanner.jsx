@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
 
+import { useTranslation } from 'react-i18next';
+
 /**
  * Ejemplo Funcional de cómo utilizar tu Hook de Leads
  * Este componente es 100% reutilizable.
  * @param slug - El identificador ('prompts-ia-marketing' o 'boveda-scripts') 
  */
-const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de IA comprobados", subtitle = "Déjanos tu correo y recíbelos al instante." }) => {
+const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title, subtitle }) => {
+    const { t } = useTranslation();
 
     const [emailInput, setEmailInput] = useState('');
     const [website, setWebsite] = useState(''); // Estado para Honeypot
@@ -31,10 +34,10 @@ const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de
     // Mensajes de Exito Inteligentes
     const renderFeedback = () => {
         if (status === 'success') {
-            return <p className="text-green-400 font-bold text-sm mt-3 animate-pulse">¡El recurso va en camino a tu bandeja de entrada!</p>;
+            return <p className="text-green-400 font-bold text-sm mt-3 animate-pulse">{t('leadmagnet.success')}</p>;
         }
         if (status === 'already_sent') {
-            return <p className="text-yellow-400 font-bold text-sm mt-3">¡Ya habíamos enviado este documento a tu correo antes! Revisa tu bandeja de spam.</p>;
+            return <p className="text-yellow-400 font-bold text-sm mt-3">{t('leadmagnet.alreadySent')}</p>;
         }
         if (status === 'error') {
             return <p className="text-red-400 font-bold text-sm mt-3">{errorMessage}</p>;
@@ -44,8 +47,8 @@ const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de
 
     return (
         <div className="bg-[#18181b] p-8 md:p-12 rounded-3xl shadow-2xl max-w-2xl mx-auto border border-white/10 text-center">
-            <h3 className="text-2xl md:text-3xl font-black text-white mb-2">{title}</h3>
-            <p className="text-gray-400 mb-8">{subtitle}</p>
+            <h3 className="text-2xl md:text-3xl font-black text-white mb-2">{title || t('leadmagnet.title')}</h3>
+            <p className="text-gray-400 mb-8">{subtitle || t('leadmagnet.subtitle')}</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto relative">
 
@@ -56,7 +59,7 @@ const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de
 
                 <input
                     type="email"
-                    placeholder="Tu mejor correo..."
+                    placeholder={t('leadmagnet.placeholder')}
                     className="flex-1 bg-black text-white px-6 py-4 rounded-full border border-gray-700 outline-none focus:border-[#CC0000] transition-colors shadow-inner"
                     value={emailInput}
                     onChange={handleInputChange}
@@ -72,7 +75,7 @@ const LeadMagnetBanner = ({ slug = 'prompts-ia-marketing', title = "7 Prompts de
                             : 'bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000]'
                         }`}
                 >
-                    {status === 'loading' ? 'Enviando...' : 'Descargar'}
+                    {status === 'loading' ? t('leadmagnet.btnDownloading') : t('leadmagnet.btnDownload')}
                 </button>
             </form>
 

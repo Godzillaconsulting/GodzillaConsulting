@@ -124,8 +124,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    // Idioma base: español. Si el navegador es inglés u otro → se detecta automáticamente.
-    fallbackLng: "es",
+    // Si el idioma del dispositivo no es soportado (Ej. Francés, Alemán, Italiano) -> Fallback universal a Inglés (USD)
+    fallbackLng: "en",
 
     interpolation: {
       escapeValue: false // React already escapes values to prevent XSS

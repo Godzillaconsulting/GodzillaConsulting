@@ -96,7 +96,7 @@ const Chatbot = () => {
             setMessages((prev) => [...prev, { role: 'model', text: reply }]);
         } catch (error) {
             console.error('Error in chat (agotados reintentos):', error);
-            setMessages((prev) => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
+            setMessages((prev) => [...prev, { role: 'model', text: isEng ? 'Sorry, an error occurred while connecting to Zilla. Please try reloading the page.' : 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
         } finally {
             setIsLoading(false);
         }
@@ -158,7 +158,7 @@ const Chatbot = () => {
                                     alt="Zilla" 
                                     className="w-6 h-6 rounded-full object-cover" 
                                 />
-                                <span>Zilla - Asistente IA</span>
+                                <span>{isEng ? 'Zilla - AI Assistant' : 'Zilla - Asistente IA'}</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="hover:text-gray-200 transition-colors">
                                 <X size={20} />
@@ -201,7 +201,7 @@ const Chatbot = () => {
                                     type="text"
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
-                                    placeholder="Escribe un mensaje..."
+                                    placeholder={isEng ? 'Type a message...' : 'Escribe un mensaje...'}
                                     className="flex-1 bg-brand-black border border-gray-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors"
                                     disabled={isLoading}
                                 />

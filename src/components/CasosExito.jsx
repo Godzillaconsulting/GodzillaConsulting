@@ -246,7 +246,7 @@ const CasosExito = () => {
                                             />
                                         </div>
                                         <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
-                                            {isEng && item.category ? (t(`portfolio.categories.${item.category}`, item.category)) : item.category}
+                                            {isSpanish ? item.category : (item.category ? t(`portfolio.categories.${item.category}`, item.category) : item.category)}
                                         </div>
                                     </div>
                                 </>

@@ -116,7 +116,7 @@ const Chatbot = () => {
                 <div
                     className={`relative z-20 mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
-                    {isEng ? <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span> : <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</>}
+                    {isSpanish ? <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</> : <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span>}
                     <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black hover:bg-gray-100 w-4 h-4 rounded-full flex items-center justify-center transition-colors">✕</button>
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
                 </div>
@@ -158,7 +158,7 @@ const Chatbot = () => {
                                     alt="Zilla" 
                                     className="w-6 h-6 rounded-full object-cover" 
                                 />
-                                <span>{isEng ? 'Zilla - AI Assistant' : 'Zilla - Asistente IA'}</span>
+                                <span>{isSpanish ? 'Zilla - Asistente IA' : 'Zilla - AI Assistant'}</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="hover:text-gray-200 transition-colors">
                                 <X size={20} />
@@ -201,7 +201,7 @@ const Chatbot = () => {
                                     type="text"
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
-                                    placeholder={isEng ? 'Type a message...' : 'Escribe un mensaje...'}
+                                    placeholder={isSpanish ? 'Escribe un mensaje...' : 'Type a message...'}
                                     className="flex-1 bg-brand-black border border-gray-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors"
                                     disabled={isLoading}
                                 />

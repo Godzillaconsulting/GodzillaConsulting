@@ -137,10 +137,10 @@ const Recursos = () => {
                             {/* Text Content */}
                             <div className="w-full md:w-2/3">
                                 <h3 className="text-3xl font-bold text-white mb-6 leading-tight">
-                                    {isEng ? (t(`resources.magnets`, { returnObjects: true })[index]?.title || item.title) : item.title}
+                                    {isSpanish ? item.title : (t(`resources.magnets`, { returnObjects: true })[index]?.title || item.title)}
                                 </h3>
                                 <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                                    {isEng ? (t(`resources.magnets`, { returnObjects: true })[index]?.description || item.description) : item.description}
+                                    {isSpanish ? item.description : (t(`resources.magnets`, { returnObjects: true })[index]?.description || item.description)}
                                 </p>
                                 <button
                                     onClick={(e) => {
@@ -183,7 +183,7 @@ const Recursos = () => {
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-2">{isSpanish ? '¡Todo listo!' : t('resources.modalSuccess1')}</h3>
                                 <p className="text-gray-300 text-base leading-relaxed mb-8">
-                                    {isEng ? <>{t('resources.modalSuccess2')} "{activeItem?.title}" {t('resources.modalSuccess3')} <span className="text-white font-bold">{email}</span>.<br /><br />{t('resources.modalSuccess4')}</> : <>Hemos enviado "{activeItem?.title}" al correo <span className="text-white font-bold">{email}</span>.<br /><br />Por favor, espera un par de minutos y revisa tu bandeja de entrada (y la carpeta de spam por si acaso).</> }
+                                    {isSpanish ? <>Hemos enviado "{activeItem?.title}" al correo <span className="text-white font-bold">{email}</span>.<br /><br />Por favor, espera un par de minutos y revisa tu bandeja de entrada (y la carpeta de spam por si acaso).</> : <>{t('resources.modalSuccess2')} "{activeItem?.title}" {t('resources.modalSuccess3')} <span className="text-white font-bold">{email}</span>.<br /><br />{t('resources.modalSuccess4')}</>}
                                 </p>
                                 <button
                                     onClick={() => {
@@ -203,7 +203,7 @@ const Recursos = () => {
                                 <div className="text-center mb-6">
                                     <h3 className="text-2xl font-bold text-white mb-2">{isSpanish ? '¡Recurso listo para descargar!' : t('resources.modalTitle')}</h3>
                                     <p className="text-gray-400 text-sm">
-                                        {isEng ? t('resources.modalSubtitle') : <>Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.</>}
+                                        {isSpanish ? <>Ingresa tu correo abajo. El archivo se descargará <b>inmediatamente</b> y también te enviaremos una copia de seguridad a tu bandeja de entrada.</> : t('resources.modalSubtitle')}
                                     </p>
                                 </div>
 

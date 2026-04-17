@@ -206,9 +206,8 @@ const Cultura = () => {
  {/* Slide 1: Description */}
  <div style={{ width: '50%' }} className="flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
  <div className="space-y-6 text-xl md:text-3xl text-gray-300 font-light leading-relaxed whitespace-pre-line">
- {isEng ? (
- <p>{t('culture.description')}</p>
- ) : nodeData.description ? <p>{nodeData.description}</p> : (
+ {isSpanish ? (
+ nodeData.description ? <p>{nodeData.description}</p> : (
  <>
  <p>
  Somos una agencia de marketing digital ubicada en <strong className="text-white font-medium">Ciudad Juárez, Chihuahua</strong>.
@@ -220,6 +219,8 @@ const Cultura = () => {
  Diseñamos campañas y sistemas que priorizan <strong className="text-white font-medium border-b-2 border-[#CC0000]">ventas y rentabilidad</strong>.
  </p>
  </>
+ )) : (
+ <p>{t('culture.description')}</p>
  )}
  </div>
  </div>

@@ -113,7 +113,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  // Helper para procesar texto rico o tags primitivos y retornos de carro
  const renderHTML = (rawHTML) => {
- return { __html: (rawHTML ||'').replace(/\n/g,'<br />') };
+ return { __html: (typeof rawHTML === 'string' ? rawHTML.replace(/\\n/g, '<br />').replace(/\n/g, '<br />') : '') };
  };
 
  if (loading && !previewNodeId) {

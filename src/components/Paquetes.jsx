@@ -194,9 +194,11 @@ const Paquetes = () => {
  {(() => {
    let rawFeatures = [];
    if (isIntl && enItems[index]?.features) {
-     rawFeatures = typeof enItems[index].features === 'string' ? enItems[index].features.split('\n') : enItems[index].features;
+     const cleanStr = typeof enItems[index].features === 'string' ? enItems[index].features.replace(/\\n/g, '\n') : enItems[index].features;
+     rawFeatures = typeof cleanStr === 'string' ? cleanStr.split('\n') : cleanStr;
    } else {
-     rawFeatures = Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : []);
+     const cleanStrEs = typeof pkg.features === 'string' ? pkg.features.replace(/\\n/g, '\n') : pkg.features;
+     rawFeatures = Array.isArray(cleanStrEs) ? cleanStrEs : (typeof cleanStrEs === 'string' ? cleanStrEs.split('\n') : []);
    }
    if (!Array.isArray(rawFeatures)) rawFeatures = [];
    

@@ -5,12 +5,12 @@ import { Play, Pause, Volume2, VolumeX, ArrowRight, Share2, PenTool, MessageCirc
 import { useSiteData } from '../context/SiteContext';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
-const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifVideo = '/assets/icons/Video.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifRedes = '/assets/icons/Redes%20Sociales.gif';
+const gifSeo = '/assets/icons/Red%20Social%20Optimizar.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 // const redesVideo = `${API_URL}/api/media/assets/GC_SEOWebpage_AM_161225.mp4`; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {

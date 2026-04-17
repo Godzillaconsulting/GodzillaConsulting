@@ -6,12 +6,12 @@ import DynamicMedia from './DynamicMedia';
 import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const bgVideo = `${API_URL}/api/media/assets/Particulas Rojas.mp4`;
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
-const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifVideo = '/assets/icons/Video.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifRedes = '/assets/icons/Redes%20Sociales.gif';
+const gifSeo = '/assets/icons/Red%20Social%20Optimizar.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 
 const defaultServices = [
     { _id: 'default-bots', orden: 1, id: { current: 'bots' }, iconSrc: gifBot, title: 'Automatización de Bots', enlace: '/bots', desc: 'Automatiza tu atención al cliente 24/7 con bots entrenados en tu negocio, que responden dudas, califican prospectos y los llevan directo a la cita o a la venta. Integrados con WhatsApp, redes sociales y tu CRM.' },

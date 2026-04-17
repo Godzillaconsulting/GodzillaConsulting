@@ -5,9 +5,9 @@ import { useSiteData } from '../context/SiteContext';
 import DynamicMedia from './DynamicMedia';
 import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 
 const defaultMagnets = [
     {

@@ -1,4 +1,54 @@
 {
+  "navbar": {
+    "home": "Home",
+    "culture": "Culture",
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "resources": "Resources",
+    "packages": "Packages",
+    "digital_marketing": "Digital Marketing",
+    "ecommerce": "Ecommerce & Software",
+    "ai_solutions": "AI Solutions",
+    "about": "About Us",
+    "login": "Login",
+    "start_now": "Start Project"
+  },
+  "hero": {
+    "title": "STOP LEAD LEAKAGE AND SCALE YOUR REVENUE WITH ARTIFICIAL INTELLIGENCE.",
+    "subtitle": "The only marketing system that installs a 24/7 \"Digital Receptionist\", reactivates your database, and guarantees results by contract. If we don't deliver, you don't pay.",
+    "ctaText": "View plans & guarantees"
+  },
+  "services": {
+    "overline": "High-Impact Solutions",
+    "title": "SERVICES",
+    "learn_more": "Learn more",
+    "items": {
+      "bots": {
+        "title": "Bot Automation",
+        "desc": "Automate your 24/7 customer service with AI bots trained on your business. They answer questions, qualify leads, and drive them straight to an appointment or sale. Fully integrated with WhatsApp, social media, and your CRM."
+      },
+      "video": {
+        "title": "Audiovisual Production",
+        "desc": "We create strategic audiovisual content that builds trust, establishes authority, strengthens your brand, communicates your value proposition, and boosts conversion rates across social media campaigns."
+      },
+      "funnels": {
+        "title": "Sales Funnels",
+        "desc": "We build result-oriented digital funnels that turn raw traffic into qualified appointments and measurable business opportunities."
+      },
+      "social": {
+        "title": "Social Media Management",
+        "desc": "We manage your brand's digital presence with a professional content strategy focused on positioning, reputation management, and lead generation."
+      },
+      "seo": {
+        "title": "Web & SEO Optimization",
+        "desc": "We optimize your website and its SEO structure to improve search engine visibility, user experience, and the generation of highly qualified leads."
+      },
+      "crm": {
+        "title": "Custom CRM & SaaS",
+        "desc": "We implement tailor-made CRM platforms and SaaS solutions to centralize your contacts, automate follow-ups, and streamline your team's commercial management."
+      }
+    }
+  },
   "footer": {
     "contact": "Contact Information",
     "nav": "Navigation",

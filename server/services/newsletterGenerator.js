@@ -27,7 +27,6 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         systemInstruction: "Eres Godzilla AI, consultor B2B. Escribes reportes ejecutivos dirigidos de 'tú a tú' al líder empresarial. Prohibido usar relleno paja.\nREGLA DE SEGURIDAD JSON: NUNCA uses comillas dobles (\") dentro de los valores de texto. Usa comillas simples ('') siempre que necesites citar algo, porque corrompes el parser JSON.",
-        generationConfig: { responseMimeType: "application/json" },
         tools: [
             { googleSearch: {} }
         ]

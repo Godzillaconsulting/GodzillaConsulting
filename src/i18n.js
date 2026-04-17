@@ -28,7 +28,10 @@ i18n
     resources,
     partialBundledLanguages: true,
     backend: {
-      loadPath: '/api/locales/{{lng}}'
+      loadPath: `/api/locales/{{lng}}?v=${Date.now()}`,
+      requestOptions: {
+        cache: 'no-store'
+      }
     },
     // Si el idioma del dispositivo falla la traducción JIT o es desconocido, fallback
     fallbackLng: "en",

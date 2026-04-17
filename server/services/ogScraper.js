@@ -46,3 +46,19 @@ export async function scrapeOgImage(url) {
         return null;
     }
 }
+
+export async function extractOgImageUrl(url) {
+    if (!url) return null;
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'text/html' } });
+        clearTimeout(timeoutId);
+        if (!response.ok) return null;
+        
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        let ogImageUrl = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
+        return ogImageUrl || null;
+    } catch (e) { return null; }
+}

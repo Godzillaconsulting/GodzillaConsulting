@@ -5,6 +5,7 @@
 
 import pool from '../config/db.js';
 import { sendNewsletterEmail } from './emailService.js';
+import { extractOgImageUrl } from './ogScraper.js';
 
 class EmailNode {
     constructor(email, newsletterId, queueLogId, subject, bodyHtml, attachmentUrl) {
@@ -177,6 +178,58 @@ export async function enqueueNewsletter(newsletterId) {
         );
         const subs = subsRes.rows;
 
+        // INYECCIÓN B2B (Foto y Gráficas dentro del Correo antes del envío O(1) Fetching)
+        let visualHtml_es = '';
+        let visualHtml_en = '';
+        try {
+            const dBase = typeof nl.base_json === 'string' ? JSON.parse(nl.base_json) : (nl.base_json || {});
+            const newsUrl = dBase?.pdfSections?.[0]?.url;
+            let coverHtml = '';
+            if (newsUrl) {
+                const ogUrl = await extractOgImageUrl(newsUrl);
+                if (ogUrl) {
+                    coverHtml = `
+                    <div style="margin-bottom:30px;border-radius:10px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,0.1);border:1px solid #eaeaea;">
+                        <img src="${ogUrl}" alt="Corporate Review" style="width:100%;height:auto;display:block;max-height:280px;object-fit:cover;" />
+                    </div>`;
+                }
+            }
+            
+            let chartHtml_es = ''; let chartHtml_en = '';
+            if (dBase?.pdfChart?.data) {
+                const cData = dBase.pdfChart.data;
+                const colors = ['#CC0000', '#111111', '#555555', '#999999'];
+                
+                const buildChart = (title) => {
+                    let cHTML = `<div style="margin-top:40px;padding:25px;background:#fdfdfd;border-left:4px solid #CC0000;border-radius:0 12px 12px 0;border:1px solid #eee;border-left:4px solid #CC0000;">`;
+                    cHTML += `<h4 style="margin:0 0 20px 0;font-size:14px;color:#111;text-transform:uppercase;letter-spacing:1px;font-weight:900;">${title}</h4>`;
+                    cData.forEach((item, idx) => {
+                        const c = colors[idx % colors.length];
+                        cHTML += `
+                        <div style="margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#444;margin-bottom:5px;font-weight:bold;">
+                                <span style="font-family:Arial,sans-serif">${item.label}</span><span style="color:${c}">${item.value}%</span>
+                            </div>
+                            <div style="width:100%;background:#efefef;height:6px;border-radius:3px;overflow:hidden;">
+                                <div style="width:${item.value}%;background:${c};height:100%;"></div>
+                            </div>
+                        </div>`;
+                    });
+                    cHTML += `</div>`;
+                    return cHTML;
+                };
+                chartHtml_es = buildChart('Análisis Geométrico de Mercado');
+                chartHtml_en = buildChart('Geometric Market Analysis');
+            }
+            
+            visualHtml_es = coverHtml; 
+            visualHtml_en = coverHtml;
+            // The chart will be appended at the end of the content body in the loop
+            nl.chart_es = chartHtml_es;
+            nl.chart_en = chartHtml_en;
+
+        } catch(e) { console.error('Error inyectando Visuales HTML en DB: ', e); }
+
         if (subs.length === 0) {
             console.log('⚠️  No hay suscriptores activos.');
             return 0;
@@ -203,6 +256,9 @@ export async function enqueueNewsletter(newsletterId) {
             try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.subject_en || jSub.subject_es) : (jSub.subject_es || nl.subject); } catch(e){}
             try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.emailHTML_en || jBody.emailHTML_es) : (jBody.emailHTML_es || nl.body_html); } catch(e){}
             
+            // CONCATENACIÓN EDITORIAL (Foto Arriba, Texto Medio, Gráfica Abajo)
+            finalBodyHtml = (lang === 'en' ? visualHtml_en : visualHtml_es) + finalBodyHtml + (lang === 'en' ? (nl.chart_en || '') : (nl.chart_es || ''));
+
             if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${lang}`;
 
             emailQueue.enqueue(

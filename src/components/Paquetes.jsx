@@ -192,9 +192,14 @@ const Paquetes = () => {
 
  <ul className="space-y-4">
  {(() => {
-   const rawFeatures = isIntl && enItems[index]?.features?.length
-     ? enItems[index].features
-     : (Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : []));
+   let rawFeatures = [];
+   if (isIntl && enItems[index]?.features) {
+     rawFeatures = typeof enItems[index].features === 'string' ? enItems[index].features.split('\n') : enItems[index].features;
+   } else {
+     rawFeatures = Array.isArray(pkg.features) ? pkg.features : (typeof pkg.features === 'string' ? pkg.features.split('\n') : []);
+   }
+   if (!Array.isArray(rawFeatures)) rawFeatures = [];
+   
    return rawFeatures.map((feature, i) => {
      const colonIdx = typeof feature === 'string' ? feature.indexOf(':') : -1;
      return (

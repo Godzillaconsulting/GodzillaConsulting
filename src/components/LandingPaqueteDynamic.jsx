@@ -146,7 +146,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center h-full pt-10 pb-8">
  <p className="text-base md:text-2xl font-bold mb-4 md:mb-6 drop-shadow-lg max-w-2xl text-[#f3f3f3]">
- {content.heroTopText}
+ {isIntl && localizedLanding.heroTopText ? localizedLanding.heroTopText : content.heroTopText}
  </p>
  <h1
  className="text-[2rem] sm:text-[3rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] font-bold leading-[1.1] md:leading-[0.95] tracking-tight mb-8 md:mb-16 drop-shadow-2xl w-full max-w-full"
@@ -165,7 +165,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <p
  className="text-xs md:text-sm font-light italic max-w-3xl mx-auto text-gray-300 px-4 mt-auto drop-shadow-md"
- dangerouslySetInnerHTML={renderHTML(content.heroDisclaimer)}
+ dangerouslySetInnerHTML={renderHTML(isIntl && localizedLanding.heroDisclaimer ? localizedLanding.heroDisclaimer : content.heroDisclaimer)}
  />
  </div>
  </section>
@@ -295,7 +295,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
         })()}
         
         {/* Video Controls Overlay */}
-        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
             <button
                 onClick={togglePlay}
                 className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"

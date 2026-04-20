@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Share2, PenTool, MessageCircle, TrendingUp, BarChart2, ChevronDown } from 'lucide-react';
-import { useSiteData } from '../context/SiteContext';
+import { useSiteData } from '../context/SiteContext';\nimport { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
 const gifBot = '/assets/icons/Bot.gif';
@@ -28,14 +28,14 @@ const GestionRedesSociales = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Share2 size={20} className="shrink-0" />, title: content.accTitle1 || "Estrategia de Contenido Omnicanal", desc: content.accDesc1 || "Presencia donde tu \"Dream 100\" interactúa diariamente." },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PenTool size={20} className="shrink-0" />, title: content.accTitle2 || "Copywriting de Respuesta Directa", desc: content.accDesc2 || "Textos que incitan a la acción, no solo al like." },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageCircle size={20} className="shrink-0" />, title: content.accTitle3 || "Gestión de Comunidad Activa", desc: content.accDesc3 || "Convertimos comentarios y DMs en oportunidades de venta reales." },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <TrendingUp size={20} className="shrink-0" />, title: content.accTitle4 || "Growth Hacking Orgánico", desc: content.accDesc4 || "Tácticas para escalar tu alcance sin depender únicamente de pauta." },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <BarChart2 size={20} className="shrink-0" />, title: content.accTitle5 || "Análisis de Sentimiento y KPIs", desc: content.accDesc5 || "Reportes mensuales de crecimiento de audiencia y engagement real." }
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Share2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle1") : (content.accTitle1 || "Estrategia de Contenido Omnicanal"), desc: isEng ? t("services.items.social.accDesc1") : (content.accDesc1 || "Presencia donde tu \")Dream 100\" interactúa diariamente." },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PenTool size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle2") : (content.accTitle2 || "Copywriting de Respuesta Directa"), desc: isEng ? t("services.items.social.accDesc2") : (content.accDesc2 || "Textos que incitan a la acción, no solo al like.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageCircle size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle3") : (content.accTitle3 || "Gestión de Comunidad Activa"), desc: isEng ? t("services.items.social.accDesc3") : (content.accDesc3 || "Convertimos comentarios y DMs en oportunidades de venta reales.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <TrendingUp size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle4") : (content.accTitle4 || "Growth Hacking Orgánico"), desc: isEng ? t("services.items.social.accDesc4") : (content.accDesc4 || "Tácticas para escalar tu alcance sin depender únicamente de pauta.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <BarChart2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle5") : (content.accTitle5 || "Análisis de Sentimiento y KPIs"), desc: isEng ? t("services.items.social.accDesc5") : (content.accDesc5 || "Reportes mensuales de crecimiento de audiencia y engagement real.") }
     ];
 
-    const { getNodeData } = useSiteData();
+    const { t, i18n } = useTranslation();\n    const isEng = !i18n.resolvedLanguage?.startsWith('es');\n    const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-redes');
 
     useEffect(() => {
@@ -128,7 +128,7 @@ const GestionRedesSociales = () => {
                         )}
 
                         {/* Video Controls Overlay */}
-                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                             <button
                                 onClick={togglePlay}
                                 className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"
@@ -174,11 +174,11 @@ const GestionRedesSociales = () => {
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.social.title') : content.title).replace(/\n/g, '<br />') }}
                             />
                                                         {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {content.subtitle}
+                                {isEng ? t('services.items.social.desc') : content.subtitle}
                             </p>
                             
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
@@ -211,7 +211,7 @@ const GestionRedesSociales = () => {
                                 onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
                             >
-                                {content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
+                                {isEng ? 'Schedule appointment' : content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
                             </button>
                         </div>
                     </div>

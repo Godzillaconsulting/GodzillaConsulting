@@ -25,27 +25,87 @@
     "items": {
       "bots": {
         "title": "Bot Automation",
-        "desc": "Automate your 24/7 customer service with AI bots trained on your business. They answer questions, qualify leads, and drive them straight to an appointment or sale. Fully integrated with WhatsApp, social media, and your CRM."
+        "desc": "Automate your 24/7 customer service with AI bots trained on your business. They answer questions, qualify leads, and drive them straight to an appointment or sale. Fully integrated with WhatsApp, social media, and your CRM.",
+        "accTitle1": "Real-time Lead Qualification",
+        "accDesc1": "Filter window-shoppers from clients with a real budget automatically.",
+        "accTitle2": "Direct Scheduling without Intervention",
+        "accDesc2": "Full synchronization with your calendar to fill your appointment schedule.",
+        "accTitle3": "Multichannel AI Support",
+        "accDesc3": "Simultaneous support on WhatsApp, Instagram, and Web.",
+        "accTitle4": "Automated Nurturing",
+        "accDesc4": "Intelligent follow-up for prospects who didn't buy on the first contact.",
+        "accTitle5": "Native CRM Integration",
+        "accDesc5": "Data from each conversation go straight to your database."
       },
       "video": {
         "title": "Audiovisual Production",
-        "desc": "We create strategic audiovisual content that builds trust, establishes authority, strengthens your brand, communicates your value proposition, and boosts conversion rates across social media campaigns."
+        "desc": "We create strategic audiovisual content that builds trust, establishes authority, strengthens your brand, communicates your value proposition, and boosts conversion rates across social media campaigns.",
+        "accTitle1": "Strategic Storytelling",
+        "accDesc1": "Scripts designed with the 'Epiphany Bridge' to connect emotionally.",
+        "accTitle2": "High-Retention Editing",
+        "accDesc2": "Content optimized to capture attention in the first 3 seconds.",
+        "accTitle3": "Cinematic Aesthetics",
+        "accDesc3": "Visual quality that justifies premium pricing and attracts high-value clients.",
+        "accTitle4": "Video Sales Letters (VSL)",
+        "accDesc4": "Production focused 100% on your sales funnel conversion.",
+        "accTitle5": "Viral Micro-Content",
+        "accDesc5": "Optimized snippets for Reels, TikTok, and YouTube Shorts."
       },
       "funnels": {
         "title": "Sales Funnels",
-        "desc": "We build result-oriented digital funnels that turn raw traffic into qualified appointments and measurable business opportunities."
+        "desc": "We build result-oriented digital funnels that turn raw traffic into qualified appointments and measurable business opportunities.",
+        "accTitle1": "Value Ladder Architecture",
+        "accDesc1": "Designing stepping stones from lead magnet to your premium offer.",
+        "accTitle2": "Optimized Landing Pages",
+        "accDesc2": "Optimized with neuro-marketing principles for High Conversion.",
+        "accTitle3": "Follow-up Email Marketing",
+        "accDesc3": "'Soap Opera' sequences to nurture and convert.",
+        "accTitle4": "Payment Gateway Integration",
+        "accDesc4": "Smooth and secure one-click purchasing experience.",
+        "accTitle5": "Continuous A/B Testing",
+        "accDesc5": "Constant split-testing of headlines and offers to maximize your ROI."
       },
       "social": {
         "title": "Social Media Management",
-        "desc": "We manage your brand's digital presence with a professional content strategy focused on positioning, reputation management, and lead generation."
+        "desc": "We manage your brand's digital presence with a professional content strategy focused on positioning, reputation management, and lead generation.",
+        "accTitle1": "Omnichannel Content Strategy",
+        "accDesc1": "Presence where your 'Dream 100' interacts daily.",
+        "accTitle2": "Direct Response Copywriting",
+        "accDesc2": "Texts that prompt action, not just a like.",
+        "accTitle3": "Active Community Management",
+        "accDesc3": "We turn comments and DMs into real sales opportunities.",
+        "accTitle4": "Organic Growth Hacking",
+        "accDesc4": "Tactics to scale your reach without purely relying on ads.",
+        "accTitle5": "Sentiment Analysis & KPIs",
+        "accDesc5": "Monthly audience growth and real engagement reports."
       },
       "seo": {
         "title": "Web & SEO Optimization",
-        "desc": "We optimize your website and its SEO structure to improve search engine visibility, user experience, and the generation of highly qualified leads."
+        "desc": "We optimize your website and its SEO structure to improve search engine visibility, user experience, and the generation of highly qualified leads.",
+        "accTitle1": "Keyword Audit",
+        "accDesc1": "We identify terms that generate transactions, not just volume.",
+        "accTitle2": "Technical & On-Page SEO",
+        "accDesc2": "Speed and structure optimization so Google loves you.",
+        "accTitle3": "Link Building Strategy",
+        "accDesc3": "Quality backlinks that elevate your competitive relevance.",
+        "accTitle4": "Content Marketing",
+        "accDesc4": "Thematic articles that answer questions and position your expertise.",
+        "accTitle5": "Google Business Profile",
+        "accDesc5": "Local map dominance to capture nearby, ready-to-buy clients."
       },
       "crm": {
         "title": "Custom CRM & SaaS",
-        "desc": "We implement tailor-made CRM platforms and SaaS solutions to centralize your contacts, automate follow-ups, and streamline your team's commercial management."
+        "desc": "We implement tailor-made CRM platforms and SaaS solutions to centralize your contacts, automate follow-ups, and streamline your team's commercial management.",
+        "accTitle1": "Visual Sales Pipeline",
+        "accDesc1": "Total control over which stage each potential client is in.",
+        "accTitle2": "Workflow Automation",
+        "accDesc2": "Automatic triggers for emails, SMS, and tasks for your team.",
+        "accTitle3": "Real-Time Metrics Dashboard",
+        "accDesc3": "Visualize your CAC, LTV, and closing rates instantly.",
+        "accTitle4": "Channel Centralization",
+        "accDesc4": "Answer WhatsApp, Instagram, and Email from a single inbox.",
+        "accTitle5": "Intelligent Lead Assignment",
+        "accDesc5": "Automatic distribution of prospects to your best salespeople."
       }
     }
   },
@@ -149,12 +209,12 @@
     }
   },
   "chat": {
-    "greeting": "Hi! I am Zilla. \ud83d\ude0a How can I help you today?"
+    "greeting": "Hi! I am Zilla. 😊 How can I help you today?"
   },
   "culture": {
     "title": "OUR",
     "titleRed": "CULTURE",
-    "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\\n\\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\\n\\nWe design campaigns and systems that prioritize sales and profitability.",
+    "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\n\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\n\nWe design campaigns and systems that prioritize sales and profitability.",
     "mission": "Our Mission",
     "missionText": "To drive scalable growth for B2B businesses by implementing intelligent funnels, advanced automation, and omnichannel strategies.",
     "vision": "Our Vision",
@@ -230,7 +290,9 @@
         "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
         "guaranteeCondition": "If in 14 days you don't see a real increase in engagement and brand quality, the next month is FREE.",
         "tableHeader1": "The Deliverable (What you get)",
-        "tableHeader2": "Real Monthly Value"
+        "tableHeader2": "Real Monthly Value",
+        "heroTopText": "Position your brand where your audience really interacts",
+        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">14 days</span> you don't see a real increase in engagement and the quality of your brand, the next month is <span class=\"font-bold text-[#CC0000] not-italic\">FREE</span>."
       },
       "control-ia": {
         "heroTitle": "AI CONTROL",
@@ -240,7 +302,9 @@
         "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
         "guaranteeCondition": "If it's not working in 10 days, the next month is FREE.",
         "tableHeader1": "The Deliverable (What you get)",
-        "tableHeader2": "Real Monthly Value"
+        "tableHeader2": "Real Monthly Value",
+        "heroTopText": "Attend, qualify, and schedule automatically 24 hours a day",
+        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">7 business days</span> your system is not installed, responding to messages, and capturing customer data automatically, we will give you the next month of service completely <span class=\"font-bold text-white not-italic\">FREE</span>."
       },
       "expansion": {
         "heroTitle": "EXPANSION",
@@ -250,7 +314,9 @@
         "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
         "guaranteeCondition": "If we don't generate leads in 30 days, we return your MONEY.",
         "tableHeader1": "The Deliverable (What you get)",
-        "tableHeader2": "Real Monthly Value"
+        "tableHeader2": "Real Monthly Value",
+        "heroTopText": "Organize a system that captures, attends, and organizes your prospects without you lifting a finger",
+        "heroDisclaimer": "If in <span class=\"font-bold text-[#CC0000] not-italic\">30 business days</span> we do not generate a single lead, we will refund <span class=\"font-bold text-[#CC0000] not-italic\">100%</span> of your money."
       },
       "elite": {
         "heroTitle": "ELITE",
@@ -260,7 +326,9 @@
         "guaranteeText": "We are so confident in our results that we offer a total guarantee.",
         "guaranteeCondition": "If we don't increase your appointments by 20% in 90 days, we work for FREE.",
         "tableHeader1": "The Deliverable (What you get)",
-        "tableHeader2": "Real Monthly Value"
+        "tableHeader2": "Real Monthly Value",
+        "heroTopText": "The complete system to dominate your market in all aspects",
+        "heroDisclaimer": "If we do not increase your appointments by <span class=\"font-bold text-white not-italic\">20% in 90 business days</span>, we will work for <span class=\"font-bold text-white not-italic\">free</span>."
       }
     }
   },

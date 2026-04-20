@@ -144,7 +144,7 @@ router.put('/:id/draft', requireAdmin, async (req, res) => {
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
         
-        await logAction(req.admin.id, 'SAVE_DRAFT', { section: id });
+        // Se eliminó el log de SAVE_DRAFT para no inundar la auditoría
         
         res.json(result.rows[0]);
     } catch (err) {
@@ -168,7 +168,7 @@ router.post('/:id/publish', requireAdmin, async (req, res) => {
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
         
-        await logAction(req.admin.id, 'PUBLISH_SECTION', { section: id });
+        // Se eliminó el log de PUBLISH_SECTION para no inundar la auditoría
         
         res.json({ success: true, node: result.rows[0] });
     } catch (err) {

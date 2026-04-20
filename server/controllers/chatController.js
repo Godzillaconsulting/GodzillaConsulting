@@ -125,7 +125,24 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        let result = await withTimeout(chat.sendMessage(lastMsg), "Lo siento, mis circuitos están tardando más de lo usual analizando tus datos. ¿Podrías ser más específico con tu solicitud?");
+        // Retry con backoff exponencial para errores 429 de Gemini
+        let result;
+        const maxGeminiRetries = 3;
+        for (let attempt = 1; attempt <= maxGeminiRetries; attempt++) {
+            try {
+                result = await withTimeout(chat.sendMessage(lastMsg), "Lo siento, mis circuitos están tardando más de lo usual analizando tus datos. ¿Podrías ser más específico con tu solicitud?");
+                break; // Éxito — salir del loop
+            } catch (geminiErr) {
+                const is429 = geminiErr?.status === 429 || geminiErr?.message?.includes('429') || geminiErr?.message?.includes('Resource exhausted');
+                if (is429 && attempt < maxGeminiRetries) {
+                    const waitMs = 3000 * attempt; // 3s, 6s, 9s
+                    console.warn(`[Gemini] 429 recibido, reintentando en ${waitMs/1000}s... (intento ${attempt}/${maxGeminiRetries})`);
+                    await new Promise(r => setTimeout(r, waitMs));
+                    continue;
+                }
+                throw geminiErr; // No es 429 o agotamos reintentos
+            }
+        }
         let responseText = "";
         try { responseText = result.response.text(); } catch(e) {}
 

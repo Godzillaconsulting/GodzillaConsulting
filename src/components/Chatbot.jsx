@@ -9,20 +9,28 @@ import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 const Chatbot = () => {
     const { pathname } = useLocation();
     const { t, i18n } = useTranslation();
-    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
+    // Detectar idioma activo — default español si no resuelve
+    const currentLang = i18n.resolvedLanguage || 'es';
+    const isSpanish = currentLang.startsWith('es');
     
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipDismissed, setTooltipDismissed] = useState(false);
     
-    const initialMessage = isSpanish ? '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?' : t('chat.greeting');
+    // Mensaje inicial multilingüe sin depender de t() — evita undefined si i18n no cargó
+    const getInitialMessage = () => {
+        if (isSpanish) return '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
+        const tKey = t('chat.greeting');
+        // Fallback si la clave i18n aún no cargó o devuelve la clave misma
+        if (!tKey || tKey === 'chat.greeting') return 'Hi! I am Zilla 😊 Your AI Marketing Specialist at Godzilla Consulting. How can I help you grow your business today?';
+        return tKey;
+    };
     const [messages, setMessages] = useState([
-        { role: 'model', text: initialMessage }
+        { role: 'model', text: getInitialMessage() }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
-    const API_URL = 'https://bot.godzillaconsulting.ai';
 
     useEffect(() => {
         // Initial delay before showing the tooltip for the first time
@@ -49,10 +57,19 @@ const Chatbot = () => {
 
     // Retry automático: si el túnel falla intermitentemente, reintenta hasta 3 veces antes de mostrar error
     const fetchChatWithRetry = async (messages, maxRetries = 3) => {
-        // Filtrar mensajes de error previos del historial — no contaminar el contexto de Gemini
+        // Filtrar mensajes de error previos E inválidos — no contaminar el contexto de Gemini
         const cleanMessages = messages.filter(m => {
+            // Descartar mensajes sin texto válido (undefined, null, vacío)
+            if (!m.text || typeof m.text !== 'string' || m.text.trim() === '') return false;
             if (m.role !== 'model') return true;
-            return !(m.text.startsWith('Lo siento, ha ocurrido un error') || m.text.startsWith('Sorry, an error occurred') || m.text.includes('Error en mis engranajes'));
+            // Descartar mensajes de error previos en cualquier idioma
+            return !(
+                m.text.startsWith('Lo siento, ha ocurrido un error') ||
+                m.text.startsWith('Sorry, an error occurred') ||
+                m.text.includes('Error en mis engranajes') ||
+                m.text.includes('Intenta recargar') ||
+                m.text.includes('try reloading')
+            );
         });
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -61,7 +78,7 @@ const Chatbot = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messages: cleanMessages }),
-                    signal: AbortSignal.timeout(28000), // 28s antes del timeout de Vercel (30s)
+                    signal: AbortSignal.timeout(55000), // 55s — alineado con maxDuration de Vercel
                 });
                 if (response.ok) {
                     const data = await response.json();

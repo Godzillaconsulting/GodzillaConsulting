@@ -5,11 +5,12 @@
 // ============================================================
 
 import { createHmac } from 'crypto';
+import Groq from 'groq-sdk';
 
 const BACKEND_URL = 'https://bot.godzillaconsulting.ai';
 const PROXY_SECRET = process.env.PROXY_SECRET || 'Zilla-5uper-S3cr3t-2026';
 const JWT_SECRET   = process.env.JWT_SECRET   || 'Godzilla_Secret_Key_2026_!@#';
-const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+// Se usa Groq SDK, no requerimos la URL de Gemini directo.
 
 // ── Prompts ──────────────────────────────────────────────────
 const ZILLA_PROMPT = `
@@ -114,25 +115,47 @@ function verifyJWT(token, secret) {
     } catch { return null; }
 }
 
-async function callGemini(apiKey, systemPrompt, tools, contents) {
-    const body = { system_instruction: { parts: [{ text: systemPrompt }] }, contents };
-    if (tools && tools.length > 0) body.tools = [{ function_declarations: tools }];
+async function callGroq(apiKey, systemPrompt, tools, messages) {
+    const groq = new Groq({ apiKey });
+
+    const formattedMessages = [
+        { role: 'system', content: systemPrompt },
+        ...messages
+    ];
+
+    const body = {
+        model: 'llama-3.3-70b-versatile',
+        messages: formattedMessages,
+    };
+
+    if (tools && tools.length > 0) {
+        body.tools = tools.map(t => ({
+            type: "function",
+            function: {
+                name: t.name,
+                description: t.description,
+                parameters: {
+                    type: "object",
+                    properties: t.parameters.properties,
+                    required: t.parameters.required
+                }
+            }
+        }));
+        body.tool_choice = "auto";
+    }
 
     for (let attempt = 1; attempt <= 3; attempt++) {
-        const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-            signal: AbortSignal.timeout(50000)
-        });
-        if (res.ok) return res.json();
-        const err = await res.json();
-        if (res.status === 429 && attempt < 3) {
-            console.warn(`[Gemini] 429 - reintentando ${attempt}/3...`);
-            await new Promise(r => setTimeout(r, 4000 * attempt));
-            continue;
+        try {
+            const chatCompletion = await groq.chat.completions.create(body);
+            return chatCompletion.choices[0].message;
+        } catch (error) {
+            if (error.status === 429 && attempt < 3) {
+                console.warn(`[Groq] 429 - reintentando ${attempt}/3...`);
+                await new Promise(r => setTimeout(r, 4000 * attempt));
+                continue;
+            }
+            throw error;
         }
-        throw Object.assign(new Error(err.error?.message || 'Gemini error'), { status: res.status });
     }
 }
 
@@ -171,8 +194,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'messages array required' });
     }
 
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured in Vercel' });
+    const apiKey = (process.env.GROQ_API_KEY || '').trim();
+    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY no configurado en Vercel. Ve al Dashboard y añade la variable de entorno GROQ_API_KEY.' });
 
     try {
         // ── Inyección de idioma ──
@@ -197,56 +220,53 @@ export default async function handler(req, res) {
             }
         }
 
-        // ── Construir historial ──
+        // ── Construir historial (Formato Groq/OpenAI) ──
         let history = messages.slice(0, -1)
-            .filter(m => m.text && typeof m.text === 'string' && m.text.trim())
+            .filter(m => (m.text || m.content) && typeof (m.text || m.content) === 'string' && String(m.text || m.content).trim())
             .map(m => ({
-                role: (m.role === 'model' || m.role === 'assistant') ? 'model' : 'user',
-                parts: [{ text: String(m.text || m.content || ' ') }]
+                role: (m.role === 'model' || m.role === 'assistant') ? 'assistant' : 'user',
+                content: String(m.text || m.content || ' ').trim()
             }));
 
-        // Gemini requiere que el historial empiece en 'user'
         const firstUser = history.findIndex(m => m.role === 'user');
         if (firstUser > 0) history = history.slice(firstUser);
-        // No puede terminar en 'user' (el mensaje actual va separado)
-        if (history.length > 0 && history[history.length - 1].role === 'user') history.pop();
 
         // ── Goyi: swarm brain ──
         if (isGoyi) {
             const colmenaRows = await getGoyiContext();
             const colmena = Array.isArray(colmenaRows) ? colmenaRows.flatMap(row => [
-                { role: 'user',  parts: [{ text: `[Feedback Global]: ${row.original_prompt}` }] },
-                { role: 'model', parts: [{ text: row.improved_prompt }] }
+                { role: 'user',  content: `[Feedback Global]: ${row.original_prompt}` },
+                { role: 'assistant', content: row.improved_prompt }
             ]) : [];
             history = [...colmena, ...history];
         }
 
         const lastMsg = String(messages[messages.length - 1].text || messages[messages.length - 1].content || 'Hola');
-        const contents = [...history, { role: 'user', parts: [{ text: lastMsg }] }];
+        const contents = [...history, { role: 'user', content: lastMsg }];
 
-        // ── Primera llamada a Gemini ──
-        let geminiData = await callGemini(apiKey, systemPrompt, tools, contents);
-        const candidate = geminiData.candidates?.[0];
-        const parts = candidate?.content?.parts || [];
-
-        // ── Manejo de Function Calls ──
-        const fcPart = parts.find(p => p.functionCall);
+        // ── Primera llamada a Groq ──
+        let groqMessage = await callGroq(apiKey, systemPrompt, tools, contents);
         let responseText = '';
 
-        if (fcPart) {
-            const { name, args } = fcPart.functionCall;
+        // ── Manejo de Function Calls ──
+        if (groqMessage.tool_calls && groqMessage.tool_calls.length > 0) {
+            const toolCall = groqMessage.tool_calls[0];
+            const name = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+
             const toolResult = await executeTool(name, args);
 
             // Segunda llamada con resultado del tool
             const contents2 = [
                 ...contents,
-                { role: 'model', parts: [{ functionCall: fcPart.functionCall }] },
-                { role: 'user',  parts: [{ functionResponse: { name, response: toolResult } }] }
+                groqMessage,
+                { role: 'tool', tool_call_id: toolCall.id, name: name, content: JSON.stringify(toolResult) }
             ];
-            const geminiData2 = await callGemini(apiKey, systemPrompt, tools, contents2);
-            responseText = geminiData2.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+            
+            const groqMessage2 = await callGroq(apiKey, systemPrompt, tools, contents2);
+            responseText = groqMessage2.content || '';
         } else {
-            responseText = parts.find(p => p.text)?.text || '';
+            responseText = groqMessage.content || '';
         }
 
         // ── Goyi: guardar aprendizaje ──
@@ -261,7 +281,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ reply: responseText });
 
     } catch (e) {
-        console.error('[chat.js] Error:', e.message, e.status);
+        console.error('[chat.js Groq] Error:', e.message, e.status);
         return res.status(500).json({ error: 'Internal Error', details: e.message });
     }
 }

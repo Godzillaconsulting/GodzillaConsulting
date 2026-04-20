@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Layers, LayoutTemplate, Mail, CreditCard, SplitSquareHorizontal, ChevronDown } from 'lucide-react';
-import { useSiteData } from '../context/SiteContext';\nimport { useTranslation } from 'react-i18next';
+import { useSiteData } from '../context/SiteContext';
+import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
 const gifBot = '/assets/icons/Bot.gif';
@@ -35,7 +36,9 @@ const EmbudosDeVenta = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <SplitSquareHorizontal size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle5") : (content.accTitle5 || "A/B Testing Continuo"), desc: isEng ? t("services.items.funnels.accDesc5") : (content.accDesc5 || "Pruebas constantes de encabezados y ofertas para maximizar tu ROI.") }
     ];
 
-    const { t, i18n } = useTranslation();\n    const isEng = !i18n.resolvedLanguage?.startsWith('es');\n    const { getNodeData } = useSiteData();
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-embudos');
 
     useEffect(() => {

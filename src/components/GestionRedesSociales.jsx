@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Share2, PenTool, MessageCircle, TrendingUp, BarChart2, ChevronDown } from 'lucide-react';
-import { useSiteData } from '../context/SiteContext';\nimport { useTranslation } from 'react-i18next';
+import { useSiteData } from '../context/SiteContext';
+import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
 const gifBot = '/assets/icons/Bot.gif';
@@ -35,7 +36,9 @@ const GestionRedesSociales = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <BarChart2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle5") : (content.accTitle5 || "Análisis de Sentimiento y KPIs"), desc: isEng ? t("services.items.social.accDesc5") : (content.accDesc5 || "Reportes mensuales de crecimiento de audiencia y engagement real.") }
     ];
 
-    const { t, i18n } = useTranslation();\n    const isEng = !i18n.resolvedLanguage?.startsWith('es');\n    const { getNodeData } = useSiteData();
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-redes');
 
     useEffect(() => {

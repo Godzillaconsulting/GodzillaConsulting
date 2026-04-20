@@ -28,7 +28,9 @@ const OptimizacionWebSeo = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Search size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle1") : (content.accTitle1 || "Auditoría de Palabras Clave"), desc: isEng ? t("services.items.seo.accDesc1") : (content.accDesc1 || "Identificamos los términos que generan transacciones, no solo volumen.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Code size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle2") : (content.accTitle2 || "SEO On-Page y Técnico"), desc: isEng ? t("services.items.seo.accDesc2") : (content.accDesc2 || "Optimización de velocidad y estructura para que Google te ame.") },
         { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <LinkIcon size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle3") : (content.accTitle3 || "Estrategia de Link Building"), desc: isEng ? t("services.items.seo.accDesc3") : (content.accDesc3 || "Backlinks de calidad que elevan tu relevancia competitiva.") },
@@ -36,9 +38,7 @@ const OptimizacionWebSeo = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MapPin size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle5") : (content.accTitle5 || "Google Business Profile"), desc: isEng ? t("services.items.seo.accDesc5") : (content.accDesc5 || "Dominio del mapa local para captar clientes cercanos y listos para comprar.") }
     ];
 
-    const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
-      const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-seo');
 
     useEffect(() => {

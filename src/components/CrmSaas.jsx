@@ -28,7 +28,9 @@ const CrmSaas = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Kanban size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle1") : (content.accTitle1 || "Pipeline de Ventas Visual"), desc: isEng ? t("services.items.crm.accDesc1") : (content.accDesc1 || "Control total de en qué etapa se encuentra cada cliente potencial.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Zap size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle2") : (content.accTitle2 || "Automatización de Workflows"), desc: isEng ? t("services.items.crm.accDesc2") : (content.accDesc2 || "Disparadores automáticos de correos, SMS y tareas para tu equipo.") },
         { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PieChart size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle3") : (content.accTitle3 || "Dashboard de Métricas Real-Time"), desc: isEng ? t("services.items.crm.accDesc3") : (content.accDesc3 || "Visualiza tu CAC, LTV y tasa de cierre al instante y sin demoras.") },
@@ -36,9 +38,7 @@ const CrmSaas = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <UserPlus size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle5") : (content.accTitle5 || "Asignación Inteligente de Leads"), desc: isEng ? t("services.items.crm.accDesc5") : (content.accDesc5 || "Distribución automática de prospectos a tus mejores vendedores.") }
     ];
 
-    const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
-      const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-crm');
 
     useEffect(() => {

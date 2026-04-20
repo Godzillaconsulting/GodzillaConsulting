@@ -28,7 +28,9 @@ const Bots = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle1") : (content.accTitle1 || "Cualificación de leads en tiempo real"), desc: isEng ? t("services.items.bots.accDesc1") : (content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle2") : (content.accTitle2 || "Agendamiento directo sin intervención"), desc: isEng ? t("services.items.bots.accDesc2") : (content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas.") },
         { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle3") : (content.accTitle3 || "Soporte de IA multicanal"), desc: isEng ? t("services.items.bots.accDesc3") : (content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea.") },
@@ -36,9 +38,7 @@ const Bots = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle5") : (content.accTitle5 || "Integración nativa con tu CRM"), desc: isEng ? t("services.items.bots.accDesc5") : (content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos.") },
     ];
 
-    const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
-      const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-bots');
 
     useEffect(() => {

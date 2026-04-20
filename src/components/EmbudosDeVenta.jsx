@@ -28,7 +28,9 @@ const EmbudosDeVenta = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Layers size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle1") : (content.accTitle1 || "Arquitectura de Value Ladder"), desc: isEng ? t("services.items.funnels.accDesc1") : (content.accDesc1 || "Diseño de escalones desde el imán de leads hasta tu oferta premium.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <LayoutTemplate size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle2") : (content.accTitle2 || "Páginas de Aterrizaje Optimizadas"), desc: isEng ? t("services.items.funnels.accDesc2") : (content.accDesc2 || "Optimizadas con principios de neuro-marketing para Alta Conversión.") },
         { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Mail size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle3") : (content.accTitle3 || "Email Marketing de Seguimiento"), desc: isEng ? t("services.items.funnels.accDesc3") : (content.accDesc3 || "Secuencias \"Soap Opera\" para nutrir y convertir.") },
@@ -36,9 +38,7 @@ const EmbudosDeVenta = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <SplitSquareHorizontal size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle5") : (content.accTitle5 || "A/B Testing Continuo"), desc: isEng ? t("services.items.funnels.accDesc5") : (content.accDesc5 || "Pruebas constantes de encabezados y ofertas para maximizar tu ROI.") }
     ];
 
-    const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
-      const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-embudos');
 
     useEffect(() => {

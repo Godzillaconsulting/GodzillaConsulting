@@ -28,7 +28,9 @@ const ProduccionAudiovisual = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Video size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle1") : (content.accTitle1 || "Storytelling Estratégico"), desc: isEng ? t("services.items.video.accDesc1") : (content.accDesc1 || "Guiones diseñados con el \"Epiphany Bridge\" para conectar emocionalmente.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Scissors size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle2") : (content.accTitle2 || "Edición de Alto Retener"), desc: isEng ? t("services.items.video.accDesc2") : (content.accDesc2 || "Contenido optimizado para captar la atención en los primeros 3 segundos.") },
         { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Star size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle3") : (content.accTitle3 || "Estética de Cine"), desc: isEng ? t("services.items.video.accDesc3") : (content.accDesc3 || "Calidad visual que justifica precios premium y atrae clientes de alto valor.") },
@@ -36,9 +38,7 @@ const ProduccionAudiovisual = () => {
         { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Smartphone size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle5") : (content.accTitle5 || "Micro-Contenido Viral"), desc: isEng ? t("services.items.video.accDesc5") : (content.accDesc5 || "Fragmentos optimizados para Reels, TikTok y YouTube Shorts.") }
     ];
 
-    const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
-      const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-audiovisual');
 
     useEffect(() => {

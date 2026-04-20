@@ -1,0 +1,108 @@
+// ============================================================
+// api/translate.js — Vercel Serverless Function
+// Traduce el sitio completo a cualquier idioma usando Gemini.
+// Cacheable en CDN (7 días) y en localStorage del cliente.
+// ============================================================
+
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// ISO 639-1 → nombre del idioma para el prompt
+const LANG_NAMES = {
+  fr: 'French', de: 'German', pt: 'Portuguese', it: 'Italian',
+  ar: 'Arabic', zh: 'Simplified Chinese', ja: 'Japanese', ko: 'Korean',
+  ru: 'Russian', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian',
+  da: 'Danish', fi: 'Finnish', pl: 'Polish', tr: 'Turkish',
+  hi: 'Hindi', id: 'Indonesian', vi: 'Vietnamese', th: 'Thai',
+  he: 'Hebrew', ro: 'Romanian', hu: 'Hungarian', cs: 'Czech',
+  sk: 'Slovak', uk: 'Ukrainian', el: 'Greek', bg: 'Bulgarian'
+};
+
+// Traducción base en inglés (copiada de src/locales/en.json)
+// Se mantiene aquí para que Vercel no dependa del filesystem del cliente
+const EN_TRANSLATION = {
+  "navbar": { "home": "Home", "culture": "Culture", "services": "Services", "portfolio": "Portfolio", "resources": "Resources", "packages": "Packages", "digital_marketing": "Digital Marketing", "ecommerce": "Ecommerce & Software", "ai_solutions": "AI Solutions", "about": "About Us", "login": "Login", "start_now": "Start Project" },
+  "hero": { "title": "STOP LEAD LEAKAGE AND SCALE YOUR REVENUE WITH ARTIFICIAL INTELLIGENCE.", "subtitle": "The only marketing system that installs a 24/7 \"Digital Receptionist\", reactivates your database, and guarantees results by contract. If we don't deliver, you don't pay.", "ctaText": "View plans & guarantees" },
+  "services": { "overline": "High-Impact Solutions", "title": "SERVICES", "learn_more": "Learn more", "items": { "bots": { "title": "Bot Automation", "desc": "Automate your 24/7 customer service with AI bots trained on your business. They answer questions, qualify leads, and drive them straight to an appointment or sale. Fully integrated with WhatsApp, social media, and your CRM.", "accTitle1": "Real-time Lead Qualification", "accDesc1": "Filter window-shoppers from clients with a real budget automatically.", "accTitle2": "Direct Scheduling without Intervention", "accDesc2": "Full synchronization with your calendar to fill your appointment schedule.", "accTitle3": "Multichannel AI Support", "accDesc3": "Simultaneous support on WhatsApp, Instagram, and Web.", "accTitle4": "Automated Nurturing", "accDesc4": "Intelligent follow-up for prospects who didn't buy on the first contact.", "accTitle5": "Native CRM Integration", "accDesc5": "Data from each conversation go straight to your database." }, "video": { "title": "Audiovisual Production", "desc": "We create strategic audiovisual content that builds trust, establishes authority, strengthens your brand, communicates your value proposition, and boosts conversion rates across social media campaigns.", "accTitle1": "Strategic Storytelling", "accDesc1": "Scripts designed with the 'Epiphany Bridge' to connect emotionally.", "accTitle2": "High-Retention Editing", "accDesc2": "Content optimized to capture attention in the first 3 seconds.", "accTitle3": "Cinematic Aesthetics", "accDesc3": "Visual quality that justifies premium pricing and attracts high-value clients.", "accTitle4": "Video Sales Letters (VSL)", "accDesc4": "Production focused 100% on your sales funnel conversion.", "accTitle5": "Viral Micro-Content", "accDesc5": "Optimized snippets for Reels, TikTok, and YouTube Shorts." }, "funnels": { "title": "Sales Funnels", "desc": "We build result-oriented digital funnels that turn raw traffic into qualified appointments and measurable business opportunities.", "accTitle1": "Value Ladder Architecture", "accDesc1": "Designing stepping stones from lead magnet to your premium offer.", "accTitle2": "Optimized Landing Pages", "accDesc2": "Optimized with neuro-marketing principles for High Conversion.", "accTitle3": "Follow-up Email Marketing", "accDesc3": "'Soap Opera' sequences to nurture and convert.", "accTitle4": "Payment Gateway Integration", "accDesc4": "Smooth and secure one-click purchasing experience.", "accTitle5": "Continuous A/B Testing", "accDesc5": "Constant split-testing of headlines and offers to maximize your ROI." }, "social": { "title": "Social Media Management", "desc": "We manage your brand's digital presence with a professional content strategy focused on positioning, reputation management, and lead generation.", "accTitle1": "Omnichannel Content Strategy", "accDesc1": "Presence where your 'Dream 100' interacts daily.", "accTitle2": "Direct Response Copywriting", "accDesc2": "Texts that prompt action, not just a like.", "accTitle3": "Active Community Management", "accDesc3": "We turn comments and DMs into real sales opportunities.", "accTitle4": "Organic Growth Hacking", "accDesc4": "Tactics to scale your reach without purely relying on ads.", "accTitle5": "Sentiment Analysis & KPIs", "accDesc5": "Monthly audience growth and real engagement reports." }, "seo": { "title": "Web & SEO Optimization", "desc": "We optimize your website and its SEO structure to improve search engine visibility, user experience, and the generation of highly qualified leads.", "accTitle1": "Keyword Audit", "accDesc1": "We identify terms that generate transactions, not just volume.", "accTitle2": "Technical & On-Page SEO", "accDesc2": "Speed and structure optimization so Google loves you.", "accTitle3": "Link Building Strategy", "accDesc3": "Quality backlinks that elevate your competitive relevance.", "accTitle4": "Content Marketing", "accDesc4": "Thematic articles that answer questions and position your expertise.", "accTitle5": "Google Business Profile", "accDesc5": "Local map dominance to capture nearby, ready-to-buy clients." }, "crm": { "title": "Custom CRM & SaaS", "desc": "We implement tailor-made CRM platforms and SaaS solutions to centralize your contacts, automate follow-ups, and streamline your team's commercial management.", "accTitle1": "Visual Sales Pipeline", "accDesc1": "Total control over which stage each potential client is in.", "accTitle2": "Workflow Automation", "accDesc2": "Automatic triggers for emails, SMS, and tasks for your team.", "accTitle3": "Real-Time Metrics Dashboard", "accDesc3": "Visualize your CAC, LTV, and closing rates instantly.", "accTitle4": "Channel Centralization", "accDesc4": "Answer WhatsApp, Instagram, and Email from a single inbox.", "accTitle5": "Intelligent Lead Assignment", "accDesc5": "Automatic distribution of prospects to your best salespeople." } } },
+  "footer": { "contact": "Contact Information", "nav": "Navigation", "legal": "Legal", "home": "Home", "culture": "Culture", "services": "Services", "packages": "Packages", "portfolio": "Portfolio", "resources": "Resources", "terms": "Terms and Conditions", "privacy": "Privacy Policy", "cookies": "Cookies Policy", "copyright": "Godzilla Co. All Rights Reserved." },
+  "contact": { "title": "LET'S START THE WAR", "h3": "Schedule a meeting with us", "subtitle": "Stop losing money on ineffective campaigns. Complete the form to schedule a strategic diagnostic call.", "name": "Full Name", "company": "Company Name", "email": "Business Email", "phone": "Phone Number", "sessionLabel": "How do you prefer your session?", "sessionVideo": "Video Call (Zoom)", "sessionInPerson": "In-Person (Ciudad Juárez)", "dateLabel": "Date (Mon-Fri)", "timeLabel": "Time", "timePlaceholder": "Select a time", "required": "Required fields", "noOffice": "Can't visit our office?", "visitText": "We visit your business!", "revenue": "Current or projected monthly revenue", "revenue_options": { "new": "New Business ($0 - $5,000)", "growing": "Growing ($5,000 - $20,000)", "scaling": "Scaling ($20,000 - $50,000)", "enterprise": "Enterprise ($50,000+)" }, "message": "What is the main challenge you want to solve?", "submit": "SCHEDULE NOW", "submitting": "SENDING...", "success": "Information received correctly.", "error": "Error establishing connection. Please try again.", "confirmed": "APPOINTMENT CONFIRMED!", "thankyou": "THANK YOU FOR YOUR TIME!", "appointmentSet": "Your appointment has been scheduled. We will contact you soon.", "addCalendar": "Add to my Google Calendar", "backForm": "Back to form", "newsletter": "Subscribe to our newsletter", "newsletterPlaceholder": "Enter your email address", "newsletterLatest": "Get the latest news on marketing and AI.", "followUs": "Follow us on social media", "subscribedOk": "Successfully subscribed! Check your inbox soon.", "subscribedError": "Error processing subscription.", "networkError": "Network error. Please try again later." },
+  "banner": { "limited": "LIMITED TIME", "getBonus": "Download the Executive Report", "close": "Close" },
+  "faq": { "title": "FREQUENTLY ASKED QUESTIONS", "subtitle": "Clear answers about how we operate." },
+  "leadmagnet": { "title": "7 Proven AI Prompts", "subtitle": "Leave your email and receive them instantly.", "placeholder": "Your best email...", "btnDownloading": "Sending...", "btnDownload": "Download", "success": "The resource is on its way to your inbox!", "alreadySent": "We already sent this document to your email! Check your spam folder.", "emptyEmail": "Please enter a valid email." },
+  "faqPage": { "title1": "FREQUENTLY ASKED", "title2": "QUESTIONS", "subtitle": "Everything you need to know about us", "notFound": "Didn't find what you were looking for?", "contact": "Contact us directly" },
+  "portfolio": { "overline": "SUCCESS CASES", "title": "SUCCESS CASES", "subtitle": "We don't just run campaigns, we build systems", "categories": { "Estética": "Aesthetics", "Clínica Estética": "Aesthetic Clinic", "Hotelería": "Hospitality", "Barbería": "Barbershop", "Sector Médico": "Medical Sector", "Heladerías": "Ice Cream Shops", "Banquetes y Eventos": "Banquets & Events", "Sector Alimenticio": "Food Industry", "Iluminación / Arquitectura": "Lighting / Architecture" } },
+  "chat": { "greeting": "Hi! I am Zilla. 😊 How can I help you today?" },
+  "culture": { "title": "OUR", "titleRed": "CULTURE", "description": "We are a digital marketing agency located in Ciudad Juárez, Chihuahua.\n\nWe have worked with doctors, aesthetic clinics, lawyers, hotels, restaurants, and more.\n\nWe design campaigns and systems that prioritize sales and profitability.", "mission": "Our Mission", "missionText": "To drive scalable growth for B2B businesses by implementing intelligent funnels, advanced automation, and omnichannel strategies.", "vision": "Our Vision", "visionText": "To become the go-to agency, leading digital transformation with AI so that companies don't just sell, but systematize their success.", "values": "Core Values", "values1": "Relentless Innovation", "values2": "Radical Transparency", "values3": "Result-oriented Design", "values4": "Extreme Adaptability", "values5": "Passion for Data", "values6": "Customer Obsession" },
+  "packages": { "title": "OUR", "titleRed": "SYSTEMS", "subtitle": "Comprehensive growth solutions protected by contract.", "btn": "Start now", "guarantee": "SEE GUARANTEE", "includes": "Includes:", "consult": "Talk to sales", "idealFor": "Ideal for:", "items": [{ "title": "Social Positioning", "target": "Businesses that need to grow their brand presence and audience engagement.", "features": ["Omnichannel Content Strategy: Presence on TikTok, IG & FB", "Direct Response Copywriting: Texts that sell", "Community Management: DMs converted into appointments", "Growth Hacking: Accelerated organic reach"], "guarantee": "GUARANTEE: If in 14 days you don't see a real increase in engagement, the next month is FREE." }, { "title": "AI Control", "target": "Businesses that want to automate sales and customer service 24/7.", "features": ["AI Digital Brain (Web + WhatsApp): Setup & access", "Lead Capture & Update System: Automatically filter curiosity", "Menu Support & Optimization: Your AI every day", "Automated Scheduling: Only qualified leads proceed"], "guarantee": "GUARANTEE: If it's not working in 10 days, the next month is FREE." }, { "title": "Expansion", "target": "Businesses seeking to generate a volume of new qualified prospects every week.", "features": ["Includes everything: AI Control or Social Positioning", "High-impact bilingual traffic: Meta & Google Campaigns", "Landing page: Conversion-optimized to turn visits into appointments", "Cost-per-lead optimization: Weekly adjustments to maximize your budget"], "guarantee": "GUARANTEE: If we don't generate leads in 30 days, we return your MONEY." }, { "title": "Elite", "target": "Established businesses ready to scale aggressively.", "features": ["Complete Godfather Strategy", "Database Reactivation", "Monthly Consulting & Closing Support"], "guarantee": "GUARANTEE: If we don't increase your appointments by 20% in 90 days, we work for FREE." }] },
+  "resources": { "title": "OUR", "titleRed": "RESOURCES", "subtitle": "Free tools to systematize your business", "btn": "Download now", "clickDownload": "Click here to download.", "modalTitle": "Resource ready to download!", "modalSubtitle": "Enter your email below. The file will download immediately and we'll also send you a backup copy to your inbox.", "modalSuccess1": "All set!", "modalSuccess2": "We sent", "modalSuccess3": "to the address", "modalSuccess4": "Please wait a couple of minutes and check your inbox (and spam folder just in case).", "modalUnderstood": "Got it", "modalSending": "Sending email...", "modalSend": "Send to my email", "modalSpam": "We promise no spam. You can unsubscribe at any time.", "magnets": [{ "title": "The AI Scripts Vault", "description": "Access the 7 structural steps that will allow you to automate your responses and manage your prospects' attention in seconds. Includes core guidelines and the 'Double Option' technique to considerably increase your scheduling rates without losing natural human interaction." }, { "title": "The Lazarus Protocol (Lead Resurrection)", "description": "Access the 7 strategic scripts designed to reactivate inactive prospects in less than 7 days. Applies a zero-risk defensive psychology that makes it easy to resume conversations stuck in limbo naturally and frictionlessly." }, { "title": "The Sales Control Dashboard", "description": "This document has been meticulously structured to help you detect operational leaks in your funnel and recover up to 30% of your lost sales. Includes tools like the Lead Traffic Light to manage timely contacts before they go cold." }] },
+  "landing": { "discoverMore": "Discover more", "otherPackages": "See other packages", "planDetails": "Plan details", "normalInvestment": "REGULAR INVESTMENT:", "totalSystem": "TOTAL SYSTEM VALUE:", "takeOffer": "TAKE ADVANTAGE OF THIS OFFER", "contactUs": "Contact us", "loading": "Loading server...", "maintenance": "Page under maintenance..." },
+  "responsibilities": { "title": "Client", "subtitle": "Responsibilities", "h3": "We work together, we deliver together", "p": "The delivery times we promise are real, but they depend on a key ingredient: teamwork. We bring all our experience and agility, but we need you to be available for feedback, approvals, and delivering materials. When we both do our part, results arrive on time.", "points": ["Signature of the service agreement before starting the project", "Delivery of required information and materials within the established deadlines to avoid delays", "Responses and feedback within a maximum of 48-72 business hours", "Necessary access (social media, domain, hosting, ad platforms) provided at the start", "Availability for scheduled follow-up meetings in advance", "Clear, written approvals to proceed to the next project stages", "Designated point of contact with decision-making authority"], "warning": "Failure to comply with these points may result in an extension of the originally agreed delivery times." }
+};
+
+export default async function handler(req, res) {
+    const lang = (req.query.lang || '').toLowerCase().split('-')[0];
+
+    if (!lang || lang === 'en' || lang === 'es') {
+        return res.status(400).json({ error: 'Use existing locale files for en/es' });
+    }
+
+    const langName = LANG_NAMES[lang] || lang;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+
+    const prompt = `You are a professional translator. Translate the following JSON object from English to ${langName}.
+
+RULES (CRITICAL):
+1. Translate ONLY the string VALUES. NEVER translate the JSON keys.
+2. Preserve all special characters: {{variable}}, \\n, &, HTML tags like <span ...>, etc.
+3. Keep proper nouns in English: "Godzilla Consulting", "Ciudad Juárez", "WhatsApp", "TikTok", "CRM", "SaaS", "ROI", "SEO", "KPI", "CAC", "LTV", "VSL", "Meta", "Google", "Instagram", "Facebook", "Reels", "YouTube", "Shorts", "Zoom".
+4. Maintain the same JSON structure and hierarchy.
+5. Return ONLY valid JSON — no markdown, no code fences, no explanation.
+
+JSON to translate:
+${JSON.stringify(EN_TRANSLATION)}`;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            const geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
+                }),
+                signal: AbortSignal.timeout(55000)
+            });
+
+            if (!geminiRes.ok) {
+                const err = await geminiRes.json();
+                if (geminiRes.status === 429 && attempt < 2) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    continue;
+                }
+                throw new Error(err.error?.message || `Gemini error ${geminiRes.status}`);
+            }
+
+            const data = await geminiRes.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+            // Extract JSON from response (sometimes Gemini wraps in ```json)
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error('No JSON in Gemini response');
+
+            const translated = JSON.parse(jsonMatch[0]);
+
+            // Cache en CDN por 7 días, en browser por 1 día
+            res.setHeader('Cache-Control', 's-maxage=604800, max-age=86400');
+            res.setHeader('Content-Type', 'application/json');
+            return res.status(200).json(translated);
+
+        } catch (e) {
+            console.error(`[translate] Error (attempt ${attempt}):`, e.message);
+            if (attempt === 2) {
+                return res.status(500).json({ error: e.message });
+            }
+        }
+    }
+}
+
+export const config = { api: { bodyParser: false, externalResolver: true } };

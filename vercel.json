@@ -1,8 +1,9 @@
 {
     "version": 2,
     "functions": {
-        "api/proxy.js": { "maxDuration": 60 },
-        "api/chat.js":  { "maxDuration": 60 }
+        "api/proxy.js":     { "maxDuration": 60 },
+        "api/chat.js":      { "maxDuration": 60 },
+        "api/translate.js": { "maxDuration": 60 }
     },
     "rewrites": [
         {

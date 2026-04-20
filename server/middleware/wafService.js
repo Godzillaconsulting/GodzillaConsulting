@@ -17,20 +17,20 @@ const sqlInjectionPatterns = [
     /(--|\/\*|\*\/)/, // Comentarios SQL
 ];
 const xssPatterns = [
-    /(<script\b|javascript:|onerror\s*=|onload\s*=)/i, // Optimizamos el Regex para evitar ReDoS (Denial of Service mediante Regex Backtracking)
+    /(<script\b|javascript:|onerror\s*=|onload\s*=)/i,
     /(<iframe\b|<object\b|<embed\b)/i
 ];
 
 const rceLfiPatterns = [
     /(\.\.\/|\.\.\\)/, // Path Traversal (LFI/RFI)
-    /(etc\/passwd|windows\\system32|boot\.ini)/i, // Archivos sensibles
-    /(;\s*ls\b|;\s*cat\b|;\s*wget\b|;\s*curl\b|\|\s*bash)/i, // Command Injection (RCE)
-    /(\$cfg\[|\$GLOBALS\[|\$_GET\[|\$_POST\[)/i // PHP Injection fallback
+    /(etc\/passwd|windows\\system32|boot\.ini)/i,
+    /(;\s*ls\b|;\s*cat\b|;\s*wget\b|;\s*curl\b|\|\s*bash)/i,
+    /(\$cfg\[|\$GLOBALS\[|\$_GET\[|\$_POST\[)/i
 ];
 
 const noSqlPatterns = [
-    /(\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$regex|\$exists)/i, // MongoDB / NoSQL Injection
-    /(__proto__|constructor\.prototype)/i // Prototype Pollution
+    /(\$where|\$ne|\$gt|\$lt|\$gte|\$lte|\$regex|\$exists)/i,
+    /(__proto__|constructor\.prototype)/i
 ];
 
 // Bot comunes de IA y Web Scrapers rudimentarios
@@ -43,7 +43,6 @@ const aiBotPatterns = [
 ];
 
 // Prevención de Memory Leak: Limpiamos las IPs expiradas cada 10 minutos
-// Evita que un ataque distribuido agote la RAM de Node.js rellenando el Map de blockedIPs.
 setInterval(() => {
     const now = Date.now();
     for (const [ip, data] of blockedIPs.entries()) {
@@ -54,7 +53,6 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 export const wafMiddleware = (req, res, next) => {
-    // 1. Limpieza de Blocked IPs expiradas ocasionalmente (Lazy Eval)
     const now = Date.now();
     
     // Obtener IP real detrás de Cloudflare/Vercel
@@ -66,37 +64,34 @@ export const wafMiddleware = (req, res, next) => {
         if (now < banData.expiration) {
             return res.status(403).json({ error: '🚨 IP Bloqueada temporalmente por Godzilla WAF.' });
         } else {
-            blockedIPs.delete(ip); // Liberar de cárcel
+            blockedIPs.delete(ip);
         }
     }
 
-    // Unir todo el input para escaneo rápido
+    // Declarar variables ANTES de usarlas
+    let riskLevel = null;
+    let categoryName = null;
     let decodedUrl = '';
-    let risk = null;
-    let category = null;
+
     try {
         decodedUrl = decodeURIComponent(req.originalUrl || '');
     } catch (e) {
-        // Si arroja URIError (ej. un payload "%C0%AF" malformado), es automáticamente un ataque malicioso.
+        // Si arroja URIError (payload "%C0%AF" malformado), es automáticamente un ataque.
         decodedUrl = req.originalUrl;
-        risk = "Crítico";
-        category = "URL Malformada (Evasión)";
+        riskLevel = 'Crítico';
+        categoryName = 'URL Malformada (Evasión)';
     }
 
     const safeUserAgent = req.headers['user-agent'] || '';
 
     const inputString = [
-        decodedUrl, // URL y Query
-        JSON.stringify(req.body || {}),          // Body
-        safeUserAgent          // Agente de usuario
+        decodedUrl,
+        JSON.stringify(req.body || {}),
+        safeUserAgent
     ].join(' | ');
 
-    let riskLevel = risk; // Mantiene el riesgo de URL malformada si ya se detectó
-    let categoryName = category;
-
-    // A. Detección de Bots de IA y Scrapers (Evitación de data poisoning)
+    // A. Detección de Bots de IA y Scrapers
     if (!riskLevel && aiBotPatterns.some(regex => regex.test(safeUserAgent))) {
-        // Excluimos bots amigables de redes sociales y Google si SEO es critico
         if (!/facebookexternalhit|twitterbot|linkedinbot|googlebot/i.test(safeUserAgent)) {
             riskLevel = 'Alto';
             categoryName = 'AI/Scraping Bot';
@@ -123,14 +118,11 @@ export const wafMiddleware = (req, res, next) => {
 
     // Si detectamos riesgo, registrar y bloquear la petición
     if (riskLevel) {
-        // Castigamos a la IP (15 minutos a la sombra)
         blockedIPs.set(ip, { expiration: now + MAX_IP_BLOCK_TIME, count: (blockedIPs.get(ip)?.count || 0) + 1 });
         totalAttacksBlocked++;
 
-        // Extraer un segmento corto del payload malicioso para el log
         const payloadPreview = inputString.length > 50 ? inputString.substring(0, 50) + '...' : inputString;
 
-        // Añadir al inicio del Ring Buffer
         wafLogs.unshift({
             id: now,
             ip: ip,
@@ -138,7 +130,6 @@ export const wafMiddleware = (req, res, next) => {
             risk: riskLevel
         });
 
-        // Mantener maximo tamaño
         if (wafLogs.length > MAX_LOGS) {
             wafLogs.pop();
         }
@@ -152,12 +143,11 @@ export const wafMiddleware = (req, res, next) => {
 };
 
 export const getWafStats = () => {
-    // Calculamos una carga de CPU fake/estimada del Firewall basada en los bloqueos recientes
-    const recentBlocks = wafLogs.filter(log => (Date.now() - log.id) < 60000).length; // bloqueos en el ultimo min
-    const firewallLoad = Math.min(100, Math.floor((recentBlocks / 50) * 100) + 5); // Base 5%, sube con volumen
+    const recentBlocks = wafLogs.filter(log => (Date.now() - log.id) < 60000).length;
+    const firewallLoad = Math.min(100, Math.floor((recentBlocks / 50) * 100) + 5);
 
     return {
-        logs: wafLogs.slice(0, 50), // Devolver maximo los ultimos 50 al front
+        logs: wafLogs.slice(0, 50),
         stats: {
             total24h: totalAttacksBlocked,
             ipsBlocked: blockedIPs.size,

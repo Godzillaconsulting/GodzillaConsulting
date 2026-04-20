@@ -98,11 +98,11 @@ Operas única y exclusivamente dentro del Admin Panel (Godzilla Studio). Tu debe
 
 // ── Tools de Zilla ────────────────────────────────────────────
 const ZILLA_TOOLS = [
-    { name: "check_availability", description: "Consulta disponibilidad para una cita en una fecha y hora específica.", parameters: { type: "OBJECT", properties: { fecha: { type: "STRING", description: "Fecha YYYY-MM-DD" }, hora: { type: "STRING", description: "Hora HH:MM" } }, required: ["fecha", "hora"] } },
-    { name: "save_appointment", description: "Guarda la cita en DB y Google Calendar.", parameters: { type: "OBJECT", properties: { nombre: { type: "STRING" }, correo: { type: "STRING" }, telefono: { type: "STRING" }, servicio: { type: "STRING" }, fecha: { type: "STRING" }, hora: { type: "STRING" }, notas: { type: "STRING" } }, required: ["nombre", "correo", "telefono", "servicio", "fecha", "hora"] } },
-    { name: "cancel_appointment", description: "Cancela una cita por teléfono del cliente.", parameters: { type: "OBJECT", properties: { telefono: { type: "STRING" } }, required: ["telefono"] } },
-    { name: "reschedule_appointment", description: "Reagenda una cita existente.", parameters: { type: "OBJECT", properties: { telefono: { type: "STRING" }, nueva_fecha: { type: "STRING" }, nueva_hora: { type: "STRING" } }, required: ["telefono", "nueva_fecha", "nueva_hora"] } },
-    { name: "get_available_downloads", description: "Obtiene recursos descargables disponibles.", parameters: { type: "OBJECT", properties: {} } }
+    { name: "check_availability", description: "Consulta disponibilidad para una cita en una fecha y hora específica.", parameters: { type: "object", properties: { fecha: { type: "string", description: "Fecha YYYY-MM-DD" }, hora: { type: "string", description: "Hora HH:MM" } }, required: ["fecha", "hora"] } },
+    { name: "save_appointment", description: "Guarda la cita en DB y Google Calendar.", parameters: { type: "object", properties: { nombre: { type: "string" }, correo: { type: "string" }, telefono: { type: "string" }, servicio: { type: "string" }, fecha: { type: "string" }, hora: { type: "string" }, notas: { type: "string" } }, required: ["nombre", "correo", "telefono", "servicio", "fecha", "hora"] } },
+    { name: "cancel_appointment", description: "Cancela una cita por teléfono del cliente.", parameters: { type: "object", properties: { telefono: { type: "string" } }, required: ["telefono"] } },
+    { name: "reschedule_appointment", description: "Reagenda una cita existente.", parameters: { type: "object", properties: { telefono: { type: "string" }, nueva_fecha: { type: "string" }, nueva_hora: { type: "string" } }, required: ["telefono", "nueva_fecha", "nueva_hora"] } },
+    { name: "get_available_downloads", description: "Obtiene recursos descargables disponibles.", parameters: { type: "object", properties: {} } }
 ];
 
 // ── Helpers ───────────────────────────────────────────────────

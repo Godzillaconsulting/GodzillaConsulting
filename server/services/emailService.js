@@ -120,27 +120,29 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     const html = `
     <!DOCTYPE html>
     <html>
-    <body style="margin:0;padding:40px 20px;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <body style="margin:0;padding:40px 20px;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ffffff;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#111111;border:1px solid #222222;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.8);">
         
-        <!-- Brand Header minimalist Apple-style -->
+        <!-- Brand Header minimalist Apple-style but Dark & Red -->
         <tr>
-          <td style="padding-bottom:30px;text-align:center;">
-             <img src="https://godzillaconsulting.ai/favicon.png" alt="Godzilla Consulting" width="50" height="50" style="display:block;margin:0 auto;" />
+          <td style="padding:30px 0;text-align:center;background:#09090b;border-bottom:3px solid #CC0000;">
+             <img src="https://godzillaconsulting.ai/favicon.png" alt="Godzilla Consulting" width="55" height="55" style="display:block;margin:0 auto;" />
+             <h1 style="margin:15px 0 0 0;font-size:18px;color:#fff;letter-spacing:2px;text-transform:uppercase;">Godzilla Consulting</h1>
+             <p style="margin:5px 0 0 0;color:#CC0000;font-size:12px;letter-spacing:1px;font-weight:bold;">INTELIGENCIA EJECUTIVA B2B</p>
           </td>
         </tr>
 
         <!-- Body Area -->
         <tr>
-          <td style="padding:40px 0;font-size:16px;line-height:1.7;color:#222222;">
+          <td style="padding:40px 30px;font-size:16px;line-height:1.7;color:#e5e5e5;">
             ${cleanBodyHtml}
             
             ${attachmentUrl ? `
-            <div style="margin-top:50px;padding:30px;background-color:#fafafa;border-radius:12px;text-align:center;border:1px solid #eaeaea;">
-              <h3 style="margin:0 0 10px 0;font-size:16px;color:#111;font-weight:bold;">Carpeta Ejecutiva Limitada (Deep-Dive)</h3>
-              <p style="margin:0 0 24px 0;font-size:14px;color:#666;line-height:1.5;">El PDF Premium con todo el análisis profundo detallado del día está disponible para los Socios Godzilla Business.</p>
-              <a href="https://godzillaconsulting.ai/socios" style="background-color:#CC0000;color:#ffffff;font-size:14px;font-weight:bold;padding:14px 28px;text-decoration:none;border-radius:6px;display:inline-block;">
-                Desbloquear Premium B2B ($1 USD)
+            <div style="margin-top:50px;padding:35px;background-color:#18181b;border-radius:12px;text-align:center;border:1px solid #333;box-shadow:0 8px 20px rgba(0,0,0,0.5);">
+              <h3 style="margin:0 0 10px 0;font-size:18px;color:#fff;font-weight:900;text-transform:uppercase;">[ ACCESO CLASIFICADO ]</h3>
+              <p style="margin:0 0 24px 0;font-size:14px;color:#aaa;line-height:1.6;">El PDF Premium con todo el análisis profundo, gráficas completas y recomendaciones de nuestro AI Director está listo para descarga exclusiva (Acceso gratuito temporal por reestructura de Socios).</p>
+              <a href="${attachmentUrl}" style="background-color:#CC0000;color:#ffffff;font-size:14px;font-weight:bold;padding:16px 32px;text-decoration:none;border-radius:6px;display:inline-block;letter-spacing:1px;box-shadow:0 0 15px rgba(204,0,0,0.4);">
+                INSPECCIONAR REPORTE COMPLETO PDF
               </a>
             </div>
             ` : ''}
@@ -149,13 +151,22 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
 
         <!-- Footer B2B -->
         <tr>
-          <td style="padding-top:40px;border-top:1px solid #eeeeee;text-align:left;">
-            <p style="font-size:11px;color:#999999;margin:0;line-height:1.6;">
+          <td style="padding:40px 30px;background-color:#09090b;border-top:1px solid #222222;text-align:center;">
+             <div style="margin-bottom:20px;">
+                <a href="https://www.instagram.com/godzilla_consulting/" style="margin:0 10px;color:#888;text-decoration:none;font-size:14px;font-weight:bold;">Instagram</a>
+                <span style="color:#444;">|</span>
+                <a href="https://www.facebook.com/godzillajuarez" style="margin:0 10px;color:#888;text-decoration:none;font-size:14px;font-weight:bold;">Facebook</a>
+                <span style="color:#444;">|</span>
+                <a href="https://www.youtube.com/channel/UCNg0_UUqZCt4SFdE3TxutLw" style="margin:0 10px;color:#888;text-decoration:none;font-size:14px;font-weight:bold;">YouTube</a>
+                <span style="color:#444;">|</span>
+                <a href="https://www.tiktok.com/@godzilla_co_jrz" style="margin:0 10px;color:#888;text-decoration:none;font-size:14px;font-weight:bold;">TikTok</a>
+             </div>
+            <p style="font-size:11px;color:#666666;margin:0;line-height:1.6;">
               <strong>© ${new Date().getFullYear()} Godzilla Consulting LLC.</strong> Todos los derechos reservados.<br/>
               Inteligencia Artificial y Desarrollo Corporativo.<br/><br/>
-              Recibes este correo analítico confidencial porque eres socio o administrador.<br/>
+              Recibes este correo analítico confidencial porque estás suscrito a nuestra matriz directiva.<br/>
               <br/>
-              <a href="${unsubUrl}" style="color:#CC0000;text-decoration:none;">Darse de baja</a>
+              <a href="${unsubUrl}" style="color:#CC0000;text-decoration:none;font-weight:bold;">Mudar suscripción / Darse de baja</a>
             </p>
           </td>
         </tr>

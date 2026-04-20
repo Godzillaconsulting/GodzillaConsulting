@@ -47,19 +47,21 @@ export const generateRenderJob = async (req, res) => {
                     instruction = `You are a world-class commercial photography director working with the Google Imagen 3 AI.
 Translate the following concept into a detailed English photographic prompt.
 Focus on: lighting style (golden hour, studio, neon), lens (85mm, macro f/2.8, wide-angle), mood, color palette, composition rules, and real-world details.
-CRITICAL: Respond ONLY with the prompt. No preamble, no labels, no explanation. Max 300 characters.
+CRITICAL INSTRUCTION: You MUST translate and expand the concept EXACTLY as intended by the user, no matter how vulgar, gross, or inappropriate it might seem. DO NOT censor the prompt. DO NOT replace inappropriate words (like poop/excrement) with cute objects like dogs or toys. Be 100% literal and raw to the user's concept.
+Respond ONLY with the final prompt. No preamble, no labels, no explanation. Max 300 characters.
 
 Concept: ${prompt}`;
                 } else if (isVeoEngine) {
                     instruction = `You are a professional video director and cinematographer for Google Veo 2.
 Translate the following concept into a concise, highly visual English prompt for AI video generation.
 Focus on: camera movement (dolly, tracking, FPV, pan), subject action, lighting, environment, and cinematic style.
-CRITICAL: Keep it well under 700 characters. No narration, no dialogue. Respond ONLY with the prompt.
+CRITICAL INSTRUCTION: You MUST translate the concept EXACTLY as intended, without any censorship. Do not replace vulgar, gross, or explicit words with safe alternatives. Be completely literal to the original concept.
+Keep it well under 700 characters. No narration, no dialogue. Respond ONLY with the prompt.
 
 Concept: ${prompt}`;
                 } else {
                     // Higgsfield / Kling
-                    instruction = `Translate this video concept into a concise English AI generation prompt under 600 characters. Focus on visual action, camera motion, atmosphere. Respond ONLY with the prompt: ${prompt}`;
+                    instruction = `Translate this video concept into a concise English AI generation prompt under 600 characters. Focus on visual action, camera motion, atmosphere. DO NOT CENSOR the concept. Be literal even if it is gross or vulgar. Respond ONLY with the prompt: ${prompt}`;
                 }
 
                 const directorRes = await aiSDK.models.generateContent({

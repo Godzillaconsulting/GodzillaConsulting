@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSiteData } from '../context/SiteContext';
+import { injectSectionDefaults } from '../utils/studioConfig';
 
 const SociosGodzilla = () => {
     const [loading, setLoading] = useState(false);
     const { t, i18n } = useTranslation();
     const isEng = i18n.language.startsWith('en');
+    
+    const { getNodeData } = useSiteData();
+    let content = getNodeData('socio-godzilla');
+    if (!content) {
+        content = injectSectionDefaults('socio-godzilla', {});
+    }
 
     const handleSubscribe = () => {
         setLoading(true);
@@ -19,37 +27,33 @@ const SociosGodzilla = () => {
             <div style={styles.leftColumn}>
                 
                 <img src="/favicon.png" alt="Godzilla Consulting" style={styles.logo} />
-                <h1 style={styles.heroText}>Godzilla Business Insights</h1>
+                <h1 style={styles.heroText} dangerouslySetInnerHTML={{ __html: content.heroText }} />
                 
                 <div style={styles.separator}></div>
                 
-                <h2 style={styles.subtext}>{isEng ? 'Real-Time C-Level Intelligence' : 'Inteligencia C-Level en Tiempo Real'}</h2>
-                <p style={styles.description}>
-                    {isEng 
-                    ? 'We decode the daily corporate ecosystem using strictly applied AI. Get absolute access to advanced PDF reports, geometric metrics, and actionable strategies designed exclusively for directors.' 
-                    : 'Decodificamos el ecosistema corporativo diario usando I.A. Obtén acceso absoluto a reportes PDF avanzados, métricas visuales y estrategias accionables diseñadas para directivos.'}
-                </p>
+                <h2 style={styles.subtext} dangerouslySetInnerHTML={{ __html: content.subtext }} />
+                <p style={styles.description} dangerouslySetInnerHTML={{ __html: content.description }} />
 
                 <ul style={styles.features}>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Geopolitical and Corporate Analysis' : 'Análisis Corporativos y Geográficos'}</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Exclusive B2B Geometric Vectors' : 'Vectores Geométricos B2B Exclusivos'}</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'Zero-Friction Universal Multi-language Access' : 'Acceso Cero-Fricción Universal Multi-idioma'}</li>
-                    <li style={styles.featureItem}><span style={styles.check}>✓</span> {isEng ? 'HD Journalistic Photography Assets' : 'Repositorios Periodísticos HD'}</li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature1 }} /></li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature2 }} /></li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature3 }} /></li>
+                    <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature4 }} /></li>
                 </ul>
 
             </div>
 
             <div style={styles.rightColumn}>
                 <div style={styles.checkoutBox}>
-                    <h3 style={styles.checkoutTitle}>{isEng ? 'Executive Partnership' : 'Membresía Socio Executive'}</h3>
+                    <h3 style={styles.checkoutTitle} dangerouslySetInnerHTML={{ __html: content.checkoutTitle }} />
                     
                     <div style={styles.priceContainer}>
                         <span style={styles.currency}>$</span>
-                        <span style={styles.price}>1.00</span>
-                        <span style={styles.period}>{isEng ? 'USD / Bi-weekly' : 'USD / Quincena'}</span>
+                        <span style={styles.price}>{content.price}</span>
+                        <span style={styles.period} dangerouslySetInnerHTML={{ __html: content.period }} />
                     </div>
                     
-                    <p style={styles.guarantee}><span style={styles.lock}>🔒</span> {isEng ? 'Secure Billing & 1-Click Cancel' : 'Cobro Seguro y Cancelación 1 Click'}</p>
+                    <p style={styles.guarantee}><span style={styles.lock}>🔒</span> <span dangerouslySetInnerHTML={{ __html: content.guarantee }} /></p>
                     
                     <div style={styles.ccBanner}>
                         <img src="https://cdn-icons-png.flaticon.com/128/196/196578.png" alt="Visa" style={styles.ccIcon} />
@@ -57,11 +61,7 @@ const SociosGodzilla = () => {
                         <img src="https://cdn-icons-png.flaticon.com/128/196/196539.png" alt="Amex" style={styles.ccIcon} />
                     </div>
 
-                    <p style={styles.infoText}>
-                        {isEng 
-                        ? <>We accept all corporate credit and debit cards.<br/>Instantly unlock your Premium PDF Library.</>
-                        : <>Aceptamos todas las tarjetas de crédito corporativas y débito.<br/>Desbloquea instantáneamente tu Biblioteca Premium PDF.</>}
-                    </p>
+                    <p style={styles.infoText} dangerouslySetInnerHTML={{ __html: content.infoText.replace(/\n/g, '<br/>') }} />
 
                     <button 
                         style={loading ? {...styles.button, ...styles.buttonLoading} : styles.button} 
@@ -70,12 +70,10 @@ const SociosGodzilla = () => {
                     >
                         {loading 
                         ? (isEng ? 'Initializing Gateway...' : 'Inicializando Pasarela...') 
-                        : (isEng ? 'Become a Partner (Pay $1 USD)' : 'Convertirme en Socio (Pagar $1 USD)')}
+                        : content.buttonText}
                     </button>
 
-                    <p style={styles.terms}>
-                        {isEng ? 'Auto-renewable subscription. Special terms and conditions apply.' : 'Suscripción auto-renovable periódica. Términos y condiciones aplicables.'}
-                    </p>
+                    <p style={styles.terms} dangerouslySetInnerHTML={{ __html: content.terms }} />
                 </div>
             </div>
             

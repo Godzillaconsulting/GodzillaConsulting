@@ -139,8 +139,8 @@ export async function resumeQueueFromDB() {
             let finalSubject = row.subject;
             let finalBodyHtml = row.body_html;
             let finalAttachmentUrl = row.attachment_url;
-            try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.subject_en || jSub.subject_es) : (jSub.subject_es || row.subject); } catch(e){}
-            try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.emailHTML_en || jBody.emailHTML_es) : (jBody.emailHTML_es || row.body_html); } catch(e){}
+            try { const jSub = JSON.parse(row.subject); finalSubject = row.language === 'en' ? (jSub.en || jSub.es) : (jSub.es || row.subject); } catch(e){}
+            try { const jBody = JSON.parse(row.body_html); finalBodyHtml = row.language === 'en' ? (jBody.en || jBody.es) : (jBody.es || row.body_html); } catch(e){}
 
             if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${row.language || 'es'}`;
 
@@ -183,34 +183,53 @@ export async function enqueueNewsletter(newsletterId) {
         let visualHtml_en = '';
         try {
             const dBase = typeof nl.base_json === 'string' ? JSON.parse(nl.base_json) : (nl.base_json || {});
-            const newsUrl = dBase?.pdfSections?.[0]?.url;
+            
             let coverHtml = '';
-            if (newsUrl) {
-                const ogUrl = await extractOgImageUrl(newsUrl);
-                if (ogUrl) {
-                    coverHtml = `
-                    <div style="margin-bottom:30px;border-radius:10px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,0.1);border:1px solid #eaeaea;">
-                        <img src="${ogUrl}" alt="Corporate Review" style="width:100%;height:auto;display:block;max-height:280px;object-fit:cover;" />
-                    </div>`;
+            // Si la IA generó una portada estilo TIME, la usamos.
+            if (nl.cover_url) {
+                coverHtml = `
+                <div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:2px solid #CC0000;background:#000;">
+                    <img src="${nl.cover_url}" alt="Godzilla AI Cover" style="width:100%;height:auto;display:block;max-height:450px;object-fit:cover;min-height:200px;" />
+                </div>`;
+            } else {
+                // Fallback a opengraph si por alguna razon falló la IA del cover
+                const newsUrl = dBase?.pdfSections?.[0]?.url;
+                if (newsUrl) {
+                    const ogUrl = await extractOgImageUrl(newsUrl);
+                    if (ogUrl) {
+                        coverHtml = `
+                        <div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,0.5);border:1px solid #333;">
+                            <img src="${ogUrl}" alt="Corporate Review" style="width:100%;height:auto;display:block;max-height:280px;object-fit:cover;" />
+                        </div>`;
+                    }
                 }
             }
+
+            // Inyectamos el enganche (teaser) que la IA generó justo debajo de la portada
+            const buildTeaser = (text) => text ? `
+            <div style="background:#111;padding:25px;border-radius:0 0 12px 12px;margin-bottom:30px;border:1px solid #333;border-top:none;">
+                <p style="margin:0;font-size:16px;color:#fff;font-style:italic;line-height:1.6;font-weight:600;">"${text}"</p>
+            </div>` : '';
+
+            visualHtml_es = coverHtml + buildTeaser(dBase?.miniSummary_es);
+            visualHtml_en = coverHtml + buildTeaser(dBase?.miniSummary_en);
             
             let chartHtml_es = ''; let chartHtml_en = '';
             if (dBase?.pdfChart?.data) {
                 const cData = dBase.pdfChart.data;
-                const colors = ['#CC0000', '#111111', '#555555', '#999999'];
+                const colors = ['#CC0000', '#990000', '#660000', '#330000'];
                 
                 const buildChart = (title) => {
-                    let cHTML = `<div style="margin-top:40px;padding:25px;background:#fdfdfd;border-left:4px solid #CC0000;border-radius:0 12px 12px 0;border:1px solid #eee;border-left:4px solid #CC0000;">`;
-                    cHTML += `<h4 style="margin:0 0 20px 0;font-size:14px;color:#111;text-transform:uppercase;letter-spacing:1px;font-weight:900;">${title}</h4>`;
+                    let cHTML = `<div style="margin-top:40px;padding:25px;background:#18181b;border-left:4px solid #CC0000;border-radius:0 12px 12px 0;border:1px solid #333;border-left:4px solid #CC0000;">`;
+                    cHTML += `<h4 style="margin:0 0 20px 0;font-size:14px;color:#fff;text-transform:uppercase;letter-spacing:1px;font-weight:900;">${title}</h4>`;
                     cData.forEach((item, idx) => {
                         const c = colors[idx % colors.length];
                         cHTML += `
                         <div style="margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#444;margin-bottom:5px;font-weight:bold;">
-                                <span style="font-family:Arial,sans-serif">${item.label}</span><span style="color:${c}">${item.value}%</span>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-bottom:5px;font-weight:bold;">
+                                <span style="font-family:Arial,sans-serif">${item.label}</span><span style="color:#fff">${item.value}%</span>
                             </div>
-                            <div style="width:100%;background:#efefef;height:6px;border-radius:3px;overflow:hidden;">
+                            <div style="width:100%;background:#000;height:6px;border-radius:3px;overflow:hidden;">
                                 <div style="width:${item.value}%;background:${c};height:100%;"></div>
                             </div>
                         </div>`;
@@ -222,9 +241,6 @@ export async function enqueueNewsletter(newsletterId) {
                 chartHtml_en = buildChart('Geometric Market Analysis');
             }
             
-            visualHtml_es = coverHtml; 
-            visualHtml_en = coverHtml;
-            // The chart will be appended at the end of the content body in the loop
             nl.chart_es = chartHtml_es;
             nl.chart_en = chartHtml_en;
 
@@ -253,8 +269,8 @@ export async function enqueueNewsletter(newsletterId) {
             let finalAttachmentUrl = nl.attachment_url;
             const lang = sub.language || 'es';
 
-            try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.subject_en || jSub.subject_es) : (jSub.subject_es || nl.subject); } catch(e){}
-            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.emailHTML_en || jBody.emailHTML_es) : (jBody.emailHTML_es || nl.body_html); } catch(e){}
+            try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.en || jSub.es) : (jSub.es || nl.subject); } catch(e){}
+            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html); } catch(e){}
             
             // CONCATENACIÓN EDITORIAL (Foto Arriba, Texto Medio, Gráfica Abajo)
             finalBodyHtml = (lang === 'en' ? visualHtml_en : visualHtml_es) + finalBodyHtml + (lang === 'en' ? (nl.chart_en || '') : (nl.chart_es || ''));

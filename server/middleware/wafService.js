@@ -72,6 +72,8 @@ export const wafMiddleware = (req, res, next) => {
 
     // Unir todo el input para escaneo rápido
     let decodedUrl = '';
+    let risk = null;
+    let category = null;
     try {
         decodedUrl = decodeURIComponent(req.originalUrl || '');
     } catch (e) {

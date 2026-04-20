@@ -5,13 +5,12 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import esTranslation from './locales/es.json';
 import enTranslation from './locales/en.json';
 
-const SUPPORTED_NATIVE = ['en', 'es'];
+const SUPPORTED_NATIVE = ['es'];
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 días
 
-// ── Recursos base (ES + EN siempre disponibles) ───────────────
+// ── Recursos base (ES siempre disponible maestro) ───────────────
 const resources = {
-    es: { translation: { ...esTranslation } },
-    en: { translation: { ...enTranslation } }
+    es: { translation: { ...esTranslation } }
 };
 
 // ── Detectar idioma base del dispositivo ─────────────────────
@@ -25,10 +24,10 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        // Si el idioma necesita traducción dinámica, arrancamos en inglés
-        // y luego cambiamos cuando llegue la traducción
-        lng: NEEDS_TRANSLATION ? 'en' : undefined,
-        fallbackLng: 'en',
+        // Si el idioma necesita traducción dinámica, arrancamos en español
+        // y luego cambiamos cuando llegue la traducción. El sitio base es español.
+        lng: NEEDS_TRANSLATION ? 'es' : undefined,
+        fallbackLng: 'es',
         interpolation: { escapeValue: false },
         detection: {
             order: ['querystring', 'navigator', 'htmlTag'],
@@ -78,8 +77,8 @@ async function loadDynamicLanguage(lang) {
         console.log(`[i18n] ✅ Idioma "${lang}" cargado correctamente`);
 
     } catch (err) {
-        console.warn(`[i18n] ⚠️ No se pudo cargar idioma "${lang}":`, err.message, '→ usando inglés');
-        // Mantiene inglés como fallback
+        console.warn(`[i18n] ⚠️ No se pudo cargar idioma "${lang}":`, err.message, '→ usando español');
+        // Mantiene español como fallback
     }
 }
 

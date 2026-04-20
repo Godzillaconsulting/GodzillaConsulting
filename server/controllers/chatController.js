@@ -62,62 +62,66 @@ export const processChatMessage = async (req, res) => {
 
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
-        
-        const contents = [...history, { role: 'user', content: lastMsg }];
-        
-        const body = {
-            model: 'llama-3.1-8b-instant',
-            messages: [{ role: 'system', content: systemPrompt }, ...contents],
-            temperature: 0.1,
-            top_p: 0.95
-        };
 
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        let geminiTools = undefined;
         if (tools && tools.length > 0) {
-            body.tools = tools.map(t => ({
-                type: "function",
-                function: {
+            geminiTools = [{
+                functionDeclarations: tools.map(t => ({
                     name: t.name,
                     description: t.description,
                     parameters: {
-                        type: "object",
-                        properties: t.parameters.properties,
-                        required: t.parameters.required
+                        type: "OBJECT",
+                        properties: Object.fromEntries(
+                            Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                        ),
+                        ...(t.parameters.required ? { required: t.parameters.required } : {})
                     }
-                }
-            }));
-            body.tool_choice = "auto";
+                }))
+            }];
         }
 
-        const groq = new Groq({ apiKey });
-        
-        let groqMessage = null;
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: systemPrompt,
+            ...(geminiTools ? { tools: geminiTools } : {})
+        });
+
+        const firstUserIdx = history.findIndex(m => m.role === 'user');
+        if (firstUserIdx > 0) history = history.slice(firstUserIdx);
+
+        const chat = model.startChat({ history });
+
+        let chatCompletion = null;
+        let responseText = '';
+        let functionCalls = [];
+
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
-                const chatCompletion = await groq.chat.completions.create(body);
-                groqMessage = chatCompletion.choices[0].message;
+                chatCompletion = await chat.sendMessage(lastMsg);
+                if (chatCompletion && chatCompletion.response) {
+                    const response = chatCompletion.response;
+                    try { responseText = response.text() || ''; } catch(e){}
+                    const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+                    if (calls && calls.length > 0) {
+                        functionCalls = calls;
+                    }
+                }
                 break;
             } catch (error) {
-                if (error.status === 429 && attempt < 3) {
+                if (error.message && error.message.includes('429') && attempt < 3) {
                     await new Promise(r => setTimeout(r, 4000 * attempt));
-                    continue;
-                }
-                if (error.error && error.error.code === 'tool_use_failed' && attempt < 3) {
-                    console.warn('[Groq] Tool use failed (hallucination). Retrying without tools...');
-                    delete body.tools;
-                    delete body.tool_choice;
                     continue;
                 }
                 throw error;
             }
         }
 
-        let responseText = groqMessage.content || '';
-
-        // Tools Handling
-        if (groqMessage.tool_calls && groqMessage.tool_calls.length > 0) {
-            const toolCall = groqMessage.tool_calls[0];
-            const name = toolCall.function.name;
-            const args = JSON.parse(toolCall.function.arguments || '{}');
+        if (functionCalls.length > 0) {
+            const toolCall = functionCalls[0];
+            const name = toolCall.name;
+            const args = toolCall.args || {};
             
             let resultMessage = "Operación realizada correctamente.";
             try {
@@ -136,24 +140,18 @@ export const processChatMessage = async (req, res) => {
                 }
             } catch(e) { resultMessage = "Error interno ejecutando la herramienta."; }
 
-            const contents2 = [
-                ...body.messages,
-                groqMessage,
-                { role: 'tool', tool_call_id: toolCall.id, name: name, content: JSON.stringify({ status: resultMessage }) }
-            ];
-
-            const chatCompletion2 = await groq.chat.completions.create({
-                model: 'llama-3.1-8b-instant',
-                messages: contents2,
-                temperature: 0.1,
-                top_p: 0.95
-            });
-            responseText = chatCompletion2.choices[0].message.content || responseText;
+            const chatCompletion2 = await chat.sendMessage([{
+                functionResponse: { name: name, response: { status: resultMessage } }
+            }]);
+            
+            if (chatCompletion2 && chatCompletion2.response) {
+                try { responseText = chatCompletion2.response.text() || responseText; } catch(e){}
+            }
         }
 
         res.json({ reply: responseText });
     } catch (e) {
-        console.error("❌ Error en chatController procesando Groq", e);
+        console.error("❌ Error en chatController procesando Gemini", e);
         res.status(500).json({ error: "Internal Error", details: e.message });
     }
 };

@@ -14,10 +14,8 @@ const model = genAI.getGenerativeModel({
     generationConfig: { responseMimeType: "application/json" }
 });
 
-import Groq from 'groq-sdk';
-
 export async function generarGuionDelDia(tema) {
-    console.log(`🧠 [Fase 1] Invocando al Cerebro Llama 3 (Groq) para crear contenido sobre: "${tema}"...`);
+    console.log(`🧠 [Fase 1] Invocando al Cerebro Gemini para crear contenido sobre: "${tema}"...`);
     
     // Personalidad del GEM: Aquí puedes tunear la voz oficial de la marca.
     const promptDelSistema = `
@@ -30,17 +28,14 @@ export async function generarGuionDelDia(tema) {
     `;
 
     try {
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        const chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.1-8b-instant",
-            messages: [
-                { role: "system", content: promptDelSistema },
-                { role: "user", content: `Genera el contenido para el tema: ${tema}` }
-            ],
-            response_format: { type: "json_object" }
+        const guionModel = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-pro",
+            systemInstruction: promptDelSistema,
+            generationConfig: { responseMimeType: "application/json" }
         });
         
-        let text = chatCompletion.choices[0].message.content;
+        const result = await guionModel.generateContent(`Genera el contenido para el tema: ${tema}`);
+        let text = result.response.text();
         
         // Anti-errores: Borrar código residual de markdown si la IA es testaruda
         text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -56,7 +51,7 @@ export async function generarGuionDelDia(tema) {
 
         return contenidoObj;
     } catch (error) {
-        console.error('❌ Error fatal al exprimir a Groq:', error);
+        console.error('❌ Error fatal al exprimir a Gemini:', error);
     }
 }
 

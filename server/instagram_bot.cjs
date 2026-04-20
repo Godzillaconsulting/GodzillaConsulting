@@ -164,7 +164,7 @@ async function processAndReply(userId, text, replyFn) {
         }];
 
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             systemInstruction: finalSystemPrompt,
             tools: geminiTools,
             generationConfig: {
@@ -183,8 +183,9 @@ async function processAndReply(userId, text, replyFn) {
         if (chatCompletion && chatCompletion.response) {
             const response = chatCompletion.response;
             try { responseText = response.text() || responseText; } catch(e){}
-            if (response.functionCalls && response.functionCalls().length > 0) {
-                functionCalls = response.functionCalls();
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
             }
         }
 

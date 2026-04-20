@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 
@@ -95,60 +95,63 @@ export const receiveMessage = async (req, res) => {
 const userSessions = new Map();
 
 async function processAndReply(from, text, phoneNumberId, platform) {
-    const apiKey = (process.env.GROQ_API_KEY || "").trim();
-    if (!apiKey) return console.error(`[${platform}] Error: No GROQ API KEY`);
-
-    const groq = new Groq({ apiKey });
+    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+    if (!apiKey) return console.error(`[${platform}] Error: No GEMINI API KEY`);
 
     let history;
     if (!userSessions.has(from)) {
-        history = [
-            { role: "system", content: SYSTEM_PROMPT }
-        ];
+        history = [];
         userSessions.set(from, history);
     } else {
         history = userSessions.get(from);
     }
 
     try {
-        history.push({ role: "user", content: text });
+        history.push({ role: "user", parts: [{ text }] });
 
-        const tool_config = chatTools.map(t => ({
-            type: "function",
-            function: {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // Format tools for Gemini 1.5
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
                 name: t.name,
                 description: t.description,
                 parameters: {
-                     type: "object",
-                     properties: t.parameters.properties,
-                     required: t.parameters.required
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
                 }
-            }
-        }));
+            }))
+        }];
 
-        let chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.1-8b-instant",
-            messages: history,
-            tools: tool_config,
-            tool_choice: "auto"
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: SYSTEM_PROMPT,
+            tools: geminiTools
         });
 
-        let responseMessage = null;
-        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-            responseMessage = chatCompletion.choices[0].message;
-        }
+        const chat = model.startChat({ history: history.slice(0, -1) });
+        const chatCompletion = await chat.sendMessage(text);
 
         let responseText = "Lo siento, fallé al entender.";
-        
-        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            const functionCalls = responseMessage.tool_calls;
-            history.push(responseMessage); // Add assistant tool-call to history
+        let functionCalls = [];
 
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { responseText = response.text() || responseText; } catch(e){}
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
+            }
+        }
+        
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                const callName = call.function.name;
-                let callArgs = {};
-                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+                const callName = call.name;
+                let callArgs = call.args || {};
 
                 if (callName === "check_availability") {
                     const { fecha, hora } = callArgs;
@@ -190,28 +193,19 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                     fRes = { error: 'El agendamiento directo de re-programación está en mantenimiento. Pide asistencia humana.' };
                 }
 
-                history.push({
-                    role: "tool",
-                    tool_call_id: call.id,
-                    name: callName,
-                    content: JSON.stringify(fRes)
-                });
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await chat.sendMessage([{
+                    functionResponse: { name: callName, response: fRes }
+                }]);
+                
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { responseText = chatCompletion2.response.text() || responseText; } catch(e){}
+                }
             }
-
-            chatCompletion = await groq.chat.completions.create({
-                model: "llama-3.1-8b-instant",
-                messages: history
-            });
-            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-                responseMessage = chatCompletion.choices[0].message;
-            }
-            console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.function.name).join(", "));
+            console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
         }
 
-        if (responseMessage && responseMessage.content) {
-            responseText = responseMessage.content;
-            history.push({ role: "assistant", content: responseText });
-        }
+        history.push({ role: "model", parts: [{ text: responseText }] });
 
         if (platform === 'whatsapp') {
             await sendWhatsAppMessage(phoneNumberId, from, responseText);

@@ -44,7 +44,7 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nConversación:\n${historyText}`;
@@ -117,7 +117,7 @@ async function handleAILogic(senderId, messageText) {
         }];
 
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             systemInstruction: finalSystemPrompt,
             tools: geminiTools
         });
@@ -137,8 +137,9 @@ async function handleAILogic(senderId, messageText) {
             const response = chatCompletion.response;
             try { botReply = response.text() || botReply; } catch(e){}
             
-            if (response.functionCalls && response.functionCalls().length > 0) {
-                functionCalls = response.functionCalls();
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
             }
         }
 

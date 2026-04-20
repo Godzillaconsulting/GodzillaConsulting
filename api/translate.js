@@ -62,7 +62,7 @@ ${JSON.stringify(EN_TRANSLATION)}`;
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             generationConfig: {
                 temperature: 0.1, // Evitar creatividad para que no rompa el JSON
                 responseMimeType: "application/json",

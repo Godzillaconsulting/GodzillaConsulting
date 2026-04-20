@@ -84,4 +84,4 @@ ${JSON.stringify(EN_TRANSLATION)}`;
     }
 }
 
-export const config = { api: { bodyParser: false, externalResolver: true } };ternalResolver: true } };
+export const config = { api: { bodyParser: false, externalResolver: true } };

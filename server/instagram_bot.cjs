@@ -382,7 +382,7 @@ async function startBot() {
             if (err.message && err.message.includes('detached')) {
                 console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Auto-Reparando pestaña...');
                 try {
-                    await page.reload({ waitUntil: 'domcontentloaded' });
+                    await page.goto('https://www.instagram.com/direct/inbox/', { waitUntil: 'domcontentloaded', timeout: 30000 });
                     // Recuperar info de sesión
                     cookies = await page.cookies();
                     csrfToken = cookies.find(c => c.name === 'csrftoken')?.value;

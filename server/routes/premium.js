@@ -35,12 +35,12 @@ router.get('/download/:id', async (req, res) => {
         const isPreview = req.query.preview === 'true'; // Backdoor para Admins probando borradores
         
         // PAYWALL INTERCEPTOR (EN VIVO) 🔒
-        // Si no es un admin probando desde el panel, rebota inmediato a cobrarle suscripción:
-        if (!isPreview) {
+        // [DESACTIVADO TEMPORALMENTE A PETICIÓN]
+        /* if (!isPreview) {
             const frontendUrl = process.env.FRONTEND_URL || 'https://godzillaconsulting.ai';
             return res.redirect(`${frontendUrl}/socios`);
             // NOTA FUTURA: Aquí meteríamos la validación del Token de Suscriptor Real (sub.tier === 'premium')
-        }
+        } */
 
         // Magia de Detección de Dispositivo Nativo (Safari, Chrome, iPhone, Mac)
         let reqLang = req.query.lang;

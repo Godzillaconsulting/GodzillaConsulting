@@ -154,6 +154,12 @@ async function callGroq(apiKey, systemPrompt, tools, messages) {
                 await new Promise(r => setTimeout(r, 4000 * attempt));
                 continue;
             }
+            if (error.error && error.error.code === 'tool_use_failed' && attempt < 3) {
+                console.warn('[Groq] Tool use failed (hallucination). Retrying without tools...');
+                delete body.tools;
+                delete body.tool_choice;
+                continue;
+            }
             throw error;
         }
     }

@@ -50,7 +50,7 @@ function extractAppointmentData(fullText) {
 }
 
 export const processChatMessage = async (req, res) => {
-    const { messages, isGoyi } = req.body;
+    const { messages, isGoyi, lang } = req.body;
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
@@ -69,7 +69,23 @@ export const processChatMessage = async (req, res) => {
             finalGoyiPrompt = `\n[SISTEMA DE SEGURIDAD]: ESTÁS HABLANDO CON EL USUARIO AUTENTICADO COMO: "${currentUser}". Usa esto para verificar sus permisos de forma estricta.\n${GOYI_SYSTEM_PROMPT}`;
         }
         
-        const p_prompt = isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT;
+        // Inyección de idioma: Zilla siempre responde en el idioma activo del sitio web
+        const langMap = {
+            'en': 'English',
+            'es': 'Spanish (Español)',
+            'pt': 'Portuguese (Português)',
+            'fr': 'French (Français)',
+            'de': 'German (Deutsch)',
+            'it': 'Italian (Italiano)',
+            'zh': 'Chinese (Mandarin)',
+            'ja': 'Japanese (日本語)',
+        };
+        const detectedLang = lang ? lang.split('-')[0].toLowerCase() : 'es';
+        const langName = langMap[detectedLang] || detectedLang;
+        const langInstruction = `\n\n[IDIOMA OBLIGATORIO]: La interfaz del usuario está en "${langName}". DEBES responder EXCLUSIVAMENTE en ${langName}. Sin excepciones.\n`;
+
+        const basePrompt = isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT;
+        const p_prompt = basePrompt + langInstruction;
         const p_tools = isGoyi ? goyiChatTools : chatTools;
         const { model, sessions } = getGeminiModel(apiKey, p_prompt, p_tools);
 

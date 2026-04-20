@@ -77,7 +77,7 @@ const Chatbot = () => {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: cleanMessages }),
+                    body: JSON.stringify({ messages: cleanMessages, lang: currentLang }),
                     signal: AbortSignal.timeout(55000), // 55s — alineado con maxDuration de Vercel
                 });
                 if (response.ok) {

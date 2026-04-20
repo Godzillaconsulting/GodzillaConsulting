@@ -15,6 +15,7 @@ const sqlInjectionPatterns = [
     /(INSERT\s+INTO\s+.*\s+VALUES)/i,
     /(UPDATE\s+.*\s+SET)/i,
     /(--|\/\*|\*\/)/, // Comentarios SQL
+];
 const xssPatterns = [
     /(<script\b|javascript:|onerror\s*=|onload\s*=)/i, // Optimizamos el Regex para evitar ReDoS (Denial of Service mediante Regex Backtracking)
     /(<iframe\b|<object\b|<embed\b)/i

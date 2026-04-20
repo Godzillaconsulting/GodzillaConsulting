@@ -318,14 +318,14 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <div className="text-center max-w-sm">
  <h3 className="text-3xl font-bold text-white mb-6 leading-tight">
- {isIntl ? (enLanding.guarantee || 'SATISFACTION GUARANTEE') : (content.guaranteeTitle || 'GARANTÍA DE SATISFACCIÓN')}
+ {isIntl ? (localizedLanding.guarantee || 'SATISFACTION GUARANTEE') : (content.guaranteeTitle || 'GARANTÍA DE SATISFACCIÓN')}
  </h3>
  <div className="bg-[#FACC15] text-black font-bold px-8 py-3 rounded-full inline-block mb-6 text-sm hover:scale-105 transition-transform cursor-default">
- {isIntl ? (enLanding.guaranteeBtn || '100% guaranteed results') : (content.guaranteeBadge || 'Resultados garantizados 100%')}
+ {isIntl ? (localizedLanding.guaranteeBtn || '100% guaranteed results') : (content.guaranteeBadge || 'Resultados garantizados 100%')}
  </div>
  <p
  className="text-xs md:text-sm text-gray-100 leading-relaxed font-light px-2 text-balance"
- dangerouslySetInnerHTML={renderHTML(isIntl && enLanding.guaranteeText ? enLanding.guaranteeText + (enLanding.guaranteeCondition ? '<br/><br/>' + enLanding.guaranteeCondition : '') : content.guaranteeText)}
+ dangerouslySetInnerHTML={renderHTML(isIntl && localizedLanding.guaranteeText ? localizedLanding.guaranteeText + (localizedLanding.guaranteeCondition ? '<br/><br/>' + localizedLanding.guaranteeCondition : '') : content.guaranteeText)}
  />
  </div>
  </div>

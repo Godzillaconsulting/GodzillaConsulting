@@ -32,6 +32,8 @@ import dbStudioRoutes from './routes/dbStudio.js';
 import calendarRoutes from './routes/calendar.js';
 import sheetsRoutes from './routes/sheets.js';
 import { verifyAdminToken, requireSuperAdmin } from './middleware/adminAuth.js';
+import { wafMiddleware } from './middleware/wafService.js';
+import adminWafRoutes from './routes/adminWaf.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
@@ -176,6 +178,11 @@ app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // ==========================================
+// FIREWALL WAF: BLOQUEA ATAQUES ANTES DE LAS RUTAS
+// ==========================================
+app.use(wafMiddleware);
+
+// ==========================================
 // 2. RUTAS DE LA API
 // ==========================================
 
@@ -204,6 +211,7 @@ app.use('/api/social', socialRoutes);
 import { router as premiumRoutes } from './routes/premium.js';
 
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
+app.use('/api/admin/waf', adminWafRoutes); // Interfaz del Firewall en vivo
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
 app.use('/api/premium', premiumRoutes); // Endpoint JIT Multilenguaje
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots

@@ -12,7 +12,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Groq } = require('groq-sdk');
 const { Pool } = require('pg');
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -106,8 +106,8 @@ const chatTools = [{
 }];
 
 // ── Gemini Sessions ────────────────────────────────────────────────────────────
-const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiSessions = new Map();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const chatSessions = new Map();
 
 let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
 let lastPromptCheck = 0;
@@ -121,7 +121,7 @@ async function getSystemPrompt() {
                 const newPrompt = res.rows[0].dm_system_prompt;
                 if (newPrompt !== currentSystemPrompt) {
                     currentSystemPrompt = newPrompt;
-                    geminiSessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
+                    chatSessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
                     console.log('[Instagram] 🔄 SYSTEM PROMPT actualizado y sincronizado desde Cerebro Central');
                 }
             }
@@ -133,37 +133,62 @@ async function getSystemPrompt() {
     return currentSystemPrompt;
 }
 
-async function getChat(userId) {
+async function getChatHistory(userId) {
     const activePrompt = await getSystemPrompt();
-    if (!geminiSessions.has(userId)) {
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
-            systemInstruction: { parts: [{ text: activePrompt }] },
-            tools: [{ function_declarations: chatTools }],
-        });
-        geminiSessions.set(userId, model.startChat({ history: [] }));
+    if (!chatSessions.has(userId)) {
+        chatSessions.set(userId, [
+            { role: 'system', content: activePrompt }
+        ]);
     }
-    return geminiSessions.get(userId);
+    return chatSessions.get(userId);
 }
 
 // ── Procesar mensaje y responder ──────────────────────────────────────────────
 async function processAndReply(userId, text, replyFn) {
-    const chat = await getChat(userId);
+    const history = await getChatHistory(userId);
     try {
-        let result = await chat.sendMessage(text);
-        
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
+        history.push({ role: 'user', content: text });
 
-        if (functionCalls?.length) {
-            const responses = [];
+        const tool_config = chatTools.map(t => ({
+            type: "function",
+            function: {
+                name: t.name,
+                description: t.description,
+                parameters: {
+                     type: "object",
+                     properties: t.parameters.properties,
+                     required: t.parameters.required
+                }
+            }
+        }));
+
+        let chatCompletion = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: history,
+            tools: tool_config,
+            tool_choice: "auto"
+        });
+
+        let responseMessage = null;
+        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+            responseMessage = chatCompletion.choices[0].message;
+        }
+
+        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            const functionCalls = responseMessage.tool_calls;
+            history.push(responseMessage); // Add assistant tool-call response to history
+
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === 'check_availability') {
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [call.args.fecha, call.args.hora]);
+                const callName = call.function.name;
+                let callArgs = {};
+                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+
+                if (callName === 'check_availability') {
+                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [callArgs.fecha, callArgs.hora]);
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
-                } else if (call.name === 'save_appointment') {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                } else if (callName === 'save_appointment') {
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                     try {
                         const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
                         if (dup.rows.length > 0) {
@@ -201,13 +226,29 @@ async function processAndReply(userId, text, replyFn) {
                         }
                     } catch(err) { fRes = { success: false, error: err.message }; }
                 }
-                responses.push({ functionResponse: { name: call.name, response: fRes } });
+
+                history.push({
+                    role: "tool",
+                    tool_call_id: call.id,
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
             }
-            result = await chat.sendMessage(responses);
+
+            chatCompletion = await groq.chat.completions.create({
+                model: 'llama-3.3-70b-versatile',
+                messages: history
+            });
+            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+                responseMessage = chatCompletion.choices[0].message;
+            }
         }
 
         let responseText = "Lo siento, fallé al entender.";
-        try { responseText = result.response.text(); } catch(e) {}
+        if (responseMessage && responseMessage.content) {
+            responseText = responseMessage.content;
+            history.push({ role: 'assistant', content: responseText });
+        }
         
         // Instagram DMs soportan ~1000 chars por mensaje
         if (responseText.length > 900) {
@@ -222,7 +263,7 @@ async function processAndReply(userId, text, replyFn) {
         console.log(`[Instagram] 🤖 Respondí a ${userId.toString().substring(0,8)}***`);
 
     } catch(err) {
-        console.error('[Instagram] Error Gemini:', err.message);
+        console.error('[Instagram] Error Groq:', err.message);
         try { await replyFn('Lo siento, tuve un error. Por favor intenta de nuevo 🦖'); } catch(_) {}
     }
 }

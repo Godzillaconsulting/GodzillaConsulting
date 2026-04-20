@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
-import { getGeminiModel } from "../config/geminiGlobal.js";
+import Groq from "groq-sdk";
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 
@@ -95,39 +95,68 @@ export const receiveMessage = async (req, res) => {
 const userSessions = new Map();
 
 async function processAndReply(from, text, phoneNumberId, platform) {
-    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-    if (!apiKey) return console.error(`[${platform}] Error: No Gemini API KEY`);
+    const apiKey = (process.env.GROQ_API_KEY || "").trim();
+    if (!apiKey) return console.error(`[${platform}] Error: No GROQ API KEY`);
 
-    const { model } = getGeminiModel(apiKey, SYSTEM_PROMPT, chatTools);
+    const groq = new Groq({ apiKey });
 
-    let chat;
+    let history;
     if (!userSessions.has(from)) {
-        chat = model.startChat({ history: [] });
-        userSessions.set(from, chat);
+        history = [
+            { role: "system", content: SYSTEM_PROMPT }
+        ];
+        userSessions.set(from, history);
     } else {
-        chat = userSessions.get(from);
+        history = userSessions.get(from);
     }
 
     try {
-        let result = await chat.sendMessage(text);
+        history.push({ role: "user", content: text });
+
+        const tool_config = chatTools.map(t => ({
+            type: "function",
+            function: {
+                name: t.name,
+                description: t.description,
+                parameters: {
+                     type: "object",
+                     properties: t.parameters.properties,
+                     required: t.parameters.required
+                }
+            }
+        }));
+
+        let chatCompletion = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: history,
+            tools: tool_config,
+            tool_choice: "auto"
+        });
+
+        let responseMessage = null;
+        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+            responseMessage = chatCompletion.choices[0].message;
+        }
 
         let responseText = "Lo siento, fallé al entender.";
-        try { responseText = result.response.text(); } catch(e) {}
+        
+        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            const functionCalls = responseMessage.tool_calls;
+            history.push(responseMessage); // Add assistant tool-call to history
 
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-        if (functionCalls && functionCalls.length > 0) {
-            const functionResponses = [];
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === "check_availability") {
-                    const { fecha, hora } = call.args;
+                const callName = call.function.name;
+                let callArgs = {};
+                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+
+                if (callName === "check_availability") {
+                    const { fecha, hora } = callArgs;
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
-                } else if (call.name === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                } else if (callName === "save_appointment") {
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                     try {
-                        // Verificar duplicado primero
                         const dup = await pool.query(
                             "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
                             [correo, fecha, hora]
@@ -152,19 +181,36 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                         console.error(`[${platform}] Error en save_appointment:`, err.message);
                         fRes = { success: false, error: err.message };
                     }
-                } else if (call.name === "get_available_downloads") {
+                } else if (callName === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
-                } else if (call.name === "cancel_appointment") {
+                } else if (callName === "cancel_appointment") {
                     fRes = { error: 'Funcionalidad de cancelación directa no disponible. Pide al humano que nos asista.' };
-                } else if (call.name === "reschedule_appointment") {
+                } else if (callName === "reschedule_appointment") {
                     fRes = { error: 'El agendamiento directo de re-programación está en mantenimiento. Pide asistencia humana.' };
                 }
-                functionResponses.push({ functionResponse: { name: call.name, response: fRes } });
+
+                history.push({
+                    role: "tool",
+                    tool_call_id: call.id,
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
             }
-            result = await chat.sendMessage(functionResponses);
-            try { responseText = result.response.text(); } catch(e) {}
-            console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
+
+            chatCompletion = await groq.chat.completions.create({
+                model: "llama-3.3-70b-versatile",
+                messages: history
+            });
+            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+                responseMessage = chatCompletion.choices[0].message;
+            }
+            console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.function.name).join(", "));
+        }
+
+        if (responseMessage && responseMessage.content) {
+            responseText = responseMessage.content;
+            history.push({ role: "assistant", content: responseText });
         }
 
         if (platform === 'whatsapp') {

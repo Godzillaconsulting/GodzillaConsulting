@@ -3,7 +3,7 @@ const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
 import qrcodeLib from 'qrcode';
 import express from 'express';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
 import { sendCitaConfirmationEmail } from './services/emailService.js';
@@ -42,9 +42,8 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
 
     try {
         console.log(`[Compresión WA] Iniciando compresión de memoria para ${senderId}...`);
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const apiKey = (process.env.GROQ_API_KEY || "").trim();
+        const groq = new Groq({ apiKey });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
 
@@ -53,8 +52,11 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
         }
 
-        const result = await model.generateContent(prompt);
-        const newSummary = result.response.text();
+        const chatCompletion = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }]
+        });
+        const newSummary = chatCompletion.choices[0].message.content;
 
         const query = `
             UPDATE sesiones_chat 
@@ -227,47 +229,63 @@ async function getSystemPromptWA() {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
-            let safeHistory = [];
-            let rawHistoryForGemini = historial_mensajes.slice(0, -1); 
+            let groqMessages = [
+                { role: "system", content: finalSystemPrompt }
+            ];
             
-            for (const msg of rawHistoryForGemini) {
-                if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === msg.role) {
-                    safeHistory[safeHistory.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.contenido}`;
-                } else {
-                    safeHistory.push({
-                        role: msg.role === "assistant" ? "model" : msg.role,
-                        parts: [{ text: msg.contenido }]
-                    });
+            let rawHistory = historial_mensajes.slice(0, -1);
+            for (const msg of rawHistory) {
+                groqMessages.push({
+                    role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
+                    content: msg.contenido
+                });
+            }
+            groqMessages.push({ role: "user", content: messageText });
+
+            const apiKey = (process.env.GROQ_API_KEY || "").trim();
+            const groq = new Groq({ apiKey });
+
+            const tool_config = chatTools.map(t => ({
+                type: "function",
+                function: {
+                    name: t.name,
+                    description: t.description,
+                    parameters: {
+                         type: "object",
+                         properties: t.parameters.properties,
+                         required: t.parameters.required
+                    }
                 }
-            }
-            
-            if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
-                safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
-            }
+            }));
 
-            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
-                systemInstruction: finalSystemPrompt,
-                tools: [{ functionDeclarations: chatTools }]
-            });
-
-            const chat = model.startChat({ history: safeHistory });
-            let result = await withTimeout(
-                chat.sendMessage(messageText), 
+            let chatCompletion = await withTimeout(
+                groq.chat.completions.create({
+                    model: "llama-3.3-70b-versatile",
+                    messages: groqMessages,
+                    tools: tool_config,
+                    tool_choice: "auto"
+                }),
                 "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
             );
-            let botReply = "Lo siento, fallé al entender.";
-            try { botReply = result.response.text(); } catch(e) {}
 
-            let rawFc = result.response.functionCalls;
-            const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-            if (functionCalls && functionCalls.length > 0) {
+            let botReply = "Lo siento, fallé al entender.";
+            let responseMessage = null;
+            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+                responseMessage = chatCompletion.choices[0].message;
+                botReply = responseMessage.content || botReply;
+            }
+
+            if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+                const functionCalls = responseMessage.tool_calls;
+                groqMessages.push(responseMessage); // Save assistant message to history prior to tool call
                 for (const call of functionCalls) {
                     let fRes = {};
-                    if (call.name === "check_availability") {
-                        const { fecha, hora } = call.args;
+                    const callName = call.function.name;
+                    let callArgs = {};
+                    try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+
+                    if (callName === "check_availability") {
+                        const { fecha, hora } = callArgs;
                         const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                         const isSunday = dateObj.getDay() === 0;
                         const hourInt = parseInt(hora.split(':')[0], 10);
@@ -288,9 +306,9 @@ async function getSystemPromptWA() {
                             fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                             console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
                         }
-                    } else if (call.name === "save_appointment") {
+                    } else if (callName === "save_appointment") {
                         try {
-                            const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                            const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                             
                             const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                             const isSunday = dateObj.getDay() === 0;
@@ -354,8 +372,8 @@ async function getSystemPromptWA() {
                             console.error("❌ Error WA Webhook Save_Appointment:", waErr);
                             fRes = { success: false, error: "Error de servidor interno." };
                         }
-                    } else if (call.name === "cancel_appointment") {
-                        const { telefono } = call.args;
+                    } else if (callName === "cancel_appointment") {
+                        const { telefono } = callArgs;
                         try {
                             const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
                             if (result.rows.length === 0) {
@@ -373,8 +391,8 @@ async function getSystemPromptWA() {
                             console.error("❌ Error cancelando:", err);
                             fRes = { success: false, error: "Error interno procesando cancelación." };
                         }
-                    } else if (call.name === "reschedule_appointment") {
-                        const { telefono, nueva_fecha, nueva_hora } = call.args;
+                    } else if (callName === "reschedule_appointment") {
+                        const { telefono, nueva_fecha, nueva_hora } = callArgs;
                         try {
                             const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
                             if (result.rows.length === 0) {
@@ -412,16 +430,30 @@ async function getSystemPromptWA() {
                             console.error("❌ Error reagendando:", err);
                             fRes = { success: false, error: "Error técnico reagendando, intenta de nuevo más tarde." };
                         }
-                    } else if (call.name === "get_available_downloads") {
+                    } else if (callName === "get_available_downloads") {
                         const r = await pool.query("SELECT title, slug FROM lead_magnets");
                         fRes = { resources: r.rows };
                     }
 
-                    result = await withTimeout(
-                        chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
-                        "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
-                    );
-                    try { botReply = result.response.text(); } catch(e) {}
+                    groqMessages.push({
+                        role: "tool",
+                        tool_call_id: call.id,
+                        name: callName,
+                        content: JSON.stringify(fRes)
+                    });
+                }
+
+                // Enviar resultados de tools de vuelta a Groq
+                const chatCompletion2 = await withTimeout(
+                    groq.chat.completions.create({
+                        model: "llama-3.3-70b-versatile",
+                        messages: groqMessages
+                    }),
+                    "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
+                );
+                
+                if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
+                     botReply = chatCompletion2.choices[0].message.content || 'Reserva procesada.';
                 }
             }
 

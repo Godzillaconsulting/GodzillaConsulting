@@ -33,15 +33,6 @@ router.get('/download/:id', async (req, res) => {
     try {
         const newsletterId = req.params.id;
         const isPreview = req.query.preview === 'true'; // Backdoor para Admins probando borradores
-        
-        // PAYWALL INTERCEPTOR (EN VIVO) 🔒
-        // [DESACTIVADO TEMPORALMENTE A PETICIÓN]
-        /* if (!isPreview) {
-            const frontendUrl = process.env.FRONTEND_URL || 'https://godzillaconsulting.ai';
-            return res.redirect(`${frontendUrl}/socios`);
-            // NOTA FUTURA: Aquí meteríamos la validación del Token de Suscriptor Real (sub.tier === 'premium')
-        } */
-
         // Magia de Detección de Dispositivo Nativo (Safari, Chrome, iPhone, Mac)
         let reqLang = req.query.lang;
         if (!reqLang || reqLang === 'es') { 
@@ -53,6 +44,22 @@ router.get('/download/:id', async (req, res) => {
                 reqLang = 'es';
             }
         }
+        
+        // EVASION DE VERCEL PROXY (PREVIENE PANTALLA NEGRA/CORRUPCION BINARIA)
+        if (req.headers.host && req.headers.host.includes('godzillaconsulting.ai') && !req.headers.host.includes('bot.')) {
+            // Si el request vino por Vercel, redirigir al Túnel Directo
+            return res.redirect(`https://bot.godzillaconsulting.ai/api/premium/download/${newsletterId}?lang=${reqLang || ''}`);
+        }
+
+        // PAYWALL INTERCEPTOR (EN VIVO) 🔒
+        // [DESACTIVADO TEMPORALMENTE A PETICIÓN]
+        /* if (!isPreview) {
+            const frontendUrl = process.env.FRONTEND_URL || 'https://godzillaconsulting.ai';
+            return res.redirect(`${frontendUrl}/socios`);
+            // NOTA FUTURA: Aquí meteríamos la validación del Token de Suscriptor Real (sub.tier === 'premium')
+        } */
+
+        
         
         const nlRes = await pool.query(`SELECT base_json FROM newsletters WHERE id = $1`, [newsletterId]);
         if (nlRes.rows.length === 0 || !nlRes.rows[0].base_json) {

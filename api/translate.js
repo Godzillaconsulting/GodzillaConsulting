@@ -4,7 +4,7 @@
 // Cacheable en CDN (7 días) y en localStorage del cliente.
 // ============================================================
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+import Groq from 'groq-sdk';
 
 // ISO 639-1 → nombre del idioma para el prompt
 const LANG_NAMES = {
@@ -18,7 +18,6 @@ const LANG_NAMES = {
 };
 
 // Traducción base en inglés (copiada de src/locales/en.json)
-// Se mantiene aquí para que Vercel no dependa del filesystem del cliente
 const EN_TRANSLATION = {
   "navbar": { "home": "Home", "culture": "Culture", "services": "Services", "portfolio": "Portfolio", "resources": "Resources", "packages": "Packages", "digital_marketing": "Digital Marketing", "ecommerce": "Ecommerce & Software", "ai_solutions": "AI Solutions", "about": "About Us", "login": "Login", "start_now": "Start Project" },
   "hero": { "title": "STOP LEAD LEAKAGE AND SCALE YOUR REVENUE WITH ARTIFICIAL INTELLIGENCE.", "subtitle": "The only marketing system that installs a 24/7 \"Digital Receptionist\", reactivates your database, and guarantees results by contract. If we don't deliver, you don't pay.", "ctaText": "View plans & guarantees" },
@@ -46,8 +45,8 @@ export default async function handler(req, res) {
     }
 
     const langName = LANG_NAMES[lang] || lang;
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    const apiKey = (process.env.GROQ_API_KEY || '').trim();
+    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
 
     const prompt = `You are a professional translator. Translate the following JSON object from English to ${langName}.
 
@@ -61,47 +60,29 @@ RULES (CRITICAL):
 JSON to translate:
 ${JSON.stringify(EN_TRANSLATION)}`;
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-            const geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
-                }),
-                signal: AbortSignal.timeout(55000)
-            });
+    try {
+        const groq = new Groq({ apiKey });
+        const chatCompletion = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,
+            max_tokens: 8000,
+            response_format: { type: "json_object" }
+        });
 
-            if (!geminiRes.ok) {
-                const err = await geminiRes.json();
-                if (geminiRes.status === 429 && attempt < 2) {
-                    await new Promise(r => setTimeout(r, 5000));
-                    continue;
-                }
-                throw new Error(err.error?.message || `Gemini error ${geminiRes.status}`);
-            }
+        const rawText = chatCompletion.choices[0].message.content || '';
+        
+        // El SDK devuelve json garantizado por response_format, pero igual verificamos
+        const translated = JSON.parse(rawText);
 
-            const data = await geminiRes.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        // Cache en CDN por 7 días, en browser por 1 día
+        res.setHeader('Cache-Control', 's-maxage=604800, max-age=86400');
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json(translated);
 
-            // Extract JSON from response (sometimes Gemini wraps in ```json)
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('No JSON in Gemini response');
-
-            const translated = JSON.parse(jsonMatch[0]);
-
-            // Cache en CDN por 7 días, en browser por 1 día
-            res.setHeader('Cache-Control', 's-maxage=604800, max-age=86400');
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(200).json(translated);
-
-        } catch (e) {
-            console.error(`[translate] Error (attempt ${attempt}):`, e.message);
-            if (attempt === 2) {
-                return res.status(500).json({ error: e.message });
-            }
-        }
+    } catch (e) {
+        console.error('[translate] Groq Error:', e.message);
+        return res.status(500).json({ error: e.message });
     }
 }
 

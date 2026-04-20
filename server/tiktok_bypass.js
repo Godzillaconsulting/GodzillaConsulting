@@ -4,14 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import pool from './config/db.js';
-import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
-import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
-import { sendCitaConfirmationEmail } from './services/emailService.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 puppeteer.use(StealthPlugin());
 
@@ -48,17 +42,19 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
     if (!historial_mensajes || historial_mensajes.length < 20) return;
     try {
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const apiKey = (process.env.GROQ_API_KEY || "").trim();
+        const groq = new Groq({ apiKey });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nConversación:\n${historyText}`;
         if (resumen_contexto) {
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nActualiza el resumen integrando la nueva parte:\n${historyText}`;
         }
-        const result = await model.generateContent(prompt);
-        const newSummary = result.response.text();
+        const chatCompletion = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }]
+        });
+        const newSummary = chatCompletion.choices[0].message.content;
 
         const query = `
             UPDATE sesiones_chat 
@@ -92,52 +88,63 @@ async function handleAILogic(senderId, messageText) {
         } catch(e) {}
 
         if (resumen_contexto && resumen_contexto.trim() !== '') {
-            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}`;
-        }
+            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto        let groqMessages = [
+            { role: "system", content: finalSystemPrompt }
+        ];
 
-        let safeHistory = [];
-        let rawHistoryForGemini = historial_mensajes.slice(0, -1); 
-        
-        for (const msg of rawHistoryForGemini) {
-            if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === msg.role) {
-                safeHistory[safeHistory.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.contenido}`;
-            } else {
-                safeHistory.push({
-                    role: msg.role === "assistant" ? "model" : msg.role,
-                    parts: [{ text: msg.contenido }]
-                });
+        let rawHistory = historial_mensajes.slice(0, -1);
+        for (const msg of rawHistory) {
+            groqMessages.push({
+                role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
+                content: msg.contenido
+            });
+        }
+        groqMessages.push({ role: "user", content: messageText });
+
+        const apiKey = (process.env.GROQ_API_KEY || "").trim();
+        const groq = new Groq({ apiKey });
+
+        const tool_config = chatTools.map(t => ({
+            type: "function",
+            function: {
+                name: t.name,
+                description: t.description,
+                parameters: {
+                     type: "object",
+                     properties: t.parameters.properties,
+                     required: t.parameters.required
+                }
             }
-        }
-        
-        if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
-            safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
-        }
+        }));
 
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: finalSystemPrompt,
-            tools: [{ functionDeclarations: chatTools }]
-        });
-
-        const chat = model.startChat({ history: safeHistory });
-        let result = await withTimeout(
-            chat.sendMessage(messageText), 
+        let chatCompletion = await withTimeout(
+            groq.chat.completions.create({
+                model: "llama-3.3-70b-versatile",
+                messages: groqMessages,
+                tools: tool_config,
+                tool_choice: "auto"
+            }),
             "Lo lamento, estoy saturado procesando respuestas. ¿Podemos seguir en unos minutos?"
         );
         
         let botReply = "Lo siento, fallé al entender.";
-        try { botReply = result.response.text(); } catch(e) {}
+        let responseMessage = null;
+        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+            responseMessage = chatCompletion.choices[0].message;
+            botReply = responseMessage.content || botReply;
+        }
 
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-        
-        if (functionCalls && functionCalls.length > 0) {
+        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            const functionCalls = responseMessage.tool_calls;
+            groqMessages.push(responseMessage); // Save assistant message to history prior to tool call
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === "check_availability") {
-                    const { fecha, hora } = call.args;
+                const callName = call.function.name;
+                let callArgs = {};
+                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+
+                if (callName === "check_availability") {
+                    const { fecha, hora } = callArgs;
                     const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                     const isSunday = dateObj.getDay() === 0;
                     const hourInt = parseInt(hora.split(':')[0], 10);
@@ -148,22 +155,22 @@ async function handleAILogic(senderId, messageText) {
                     } else if (isSunday) {
                         fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
                     } else if (hourInt < 9 || hourInt >= 19) {
-                        fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
+                        fRes = { disponible: false, razon: "Fuera de horario de oficina. Por favor solicita otra hora." };
                     } else {
                         const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                         const r = await pool.query(query, [fecha, hora]);
                         fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                     }
-                } else if (call.name === "save_appointment") {
+                } else if (callName === "save_appointment") {
                     try {
-                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                         const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                         const isSunday = dateObj.getDay() === 0;
                         const hourInt = parseInt(hora.split(':')[0], 10);
                         const now = new Date();
 
                         if (dateObj < now || isSunday || hourInt < 9 || hourInt >= 19) {
-                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario. Pide otra fecha/hora." };
+                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario." };
                         } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
@@ -204,11 +211,11 @@ async function handleAILogic(senderId, messageText) {
                     } catch (e) {
                         fRes = { success: false, error: "Error de servidor interno." };
                     }
-                } else if (call.name === "cancel_appointment") {
-                    const { telefono } = call.args;
+                } else if (callName === "cancel_appointment") {
+                    const { telefono } = callArgs;
                     try {
                         const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
-                        if (result.rows.length === 0) fRes = { success: false, error: "No encontré cita activa con ese número de teléfono." };
+                        if (result.rows.length === 0) fRes = { success: false, error: "No encontré cita activa." };
                         else {
                             const cita = result.rows[0];
                             if (cita.google_calendar_id) await cancelarEnGoogleCalendar(cita.google_calendar_id);
@@ -218,11 +225,25 @@ async function handleAILogic(senderId, messageText) {
                     } catch(e) { fRes = { success: false, error: "Error." }; }
                 }
 
-                result = await withTimeout(
-                    chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
-                    "Hubo un fallo temporal de procesamiento."
-                );
-                try { botReply = result.response.text(); } catch(e) {}
+                groqMessages.push({
+                    role: "tool",
+                    tool_call_id: call.id,
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
+            }
+
+            const chatCompletion2 = await withTimeout(
+                groq.chat.completions.create({
+                    model: "llama-3.3-70b-versatile",
+                    messages: groqMessages
+                }),
+                "Hubo un fallo temporal de procesamiento."
+            );
+            if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
+                botReply = chatCompletion2.choices[0].message.content || botReply;
+            }
+        }{}
             }
         }
 

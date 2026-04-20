@@ -32,7 +32,7 @@ export async function generarGuionDelDia(tema) {
     try {
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         const chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
             messages: [
                 { role: "system", content: promptDelSistema },
                 { role: "user", content: `Genera el contenido para el tema: ${tema}` }

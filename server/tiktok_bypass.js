@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 
 puppeteer.use(StealthPlugin());
@@ -42,19 +42,17 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
     if (!historial_mensajes || historial_mensajes.length < 20) return;
     try {
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
-        const apiKey = (process.env.GROQ_API_KEY || "").trim();
-        const groq = new Groq({ apiKey });
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nConversación:\n${historyText}`;
         if (resumen_contexto) {
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nActualiza el resumen integrando la nueva parte:\n${historyText}`;
         }
-        const chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: prompt }]
-        });
-        const newSummary = chatCompletion.choices[0].message.content;
+        const chatCompletion = await model.generateContent(prompt);
+        const newSummary = chatCompletion.response.text();
 
         const query = `
             UPDATE sesiones_chat 
@@ -88,60 +86,67 @@ async function handleAILogic(senderId, messageText) {
         } catch(e) {}
 
         if (resumen_contexto && resumen_contexto.trim() !== '') {
-            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto        let groqMessages = [
-            { role: "system", content: finalSystemPrompt }
-        ];
+            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
+        }
 
+        let geminiMessages = [];
         let rawHistory = historial_mensajes.slice(0, -1);
         for (const msg of rawHistory) {
-            groqMessages.push({
-                role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
-                content: msg.contenido
+            geminiMessages.push({
+                role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
+                parts: [{ text: msg.contenido }]
             });
         }
-        groqMessages.push({ role: "user", content: messageText });
 
-        const apiKey = (process.env.GROQ_API_KEY || "").trim();
-        const groq = new Groq({ apiKey });
-
-        const tool_config = chatTools.map(t => ({
-            type: "function",
-            function: {
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // Format tools for Gemini 1.5
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
                 name: t.name,
                 description: t.description,
                 parameters: {
-                     type: "object",
-                     properties: t.parameters.properties,
-                     required: t.parameters.required
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
                 }
-            }
-        }));
+            }))
+        }];
+
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: finalSystemPrompt,
+            tools: geminiTools
+        });
+
+        const chat = model.startChat({ history: geminiMessages });
 
         let chatCompletion = await withTimeout(
-            groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
-                messages: groqMessages,
-                tools: tool_config,
-                tool_choice: "auto"
-            }),
-            "Lo lamento, estoy saturado procesando respuestas. ¿Podemos seguir en unos minutos?"
+            chat.sendMessage(messageText),
+            "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
         );
-        
+
         let botReply = "Lo siento, fallé al entender.";
         let responseMessage = null;
-        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-            responseMessage = chatCompletion.choices[0].message;
-            botReply = responseMessage.content || botReply;
+        let functionCalls = [];
+
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { botReply = response.text() || botReply; } catch(e){}
+            
+            if (response.functionCalls && response.functionCalls().length > 0) {
+                functionCalls = response.functionCalls();
+            }
         }
 
-        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            const functionCalls = responseMessage.tool_calls;
-            groqMessages.push(responseMessage); // Save assistant message to history prior to tool call
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                const callName = call.function.name;
-                let callArgs = {};
-                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+                const callName = call.name;
+                let callArgs = call.args || {};
 
                 if (callName === "check_availability") {
                     const { fecha, hora } = callArgs;
@@ -225,25 +230,16 @@ async function handleAILogic(senderId, messageText) {
                     } catch(e) { fRes = { success: false, error: "Error." }; }
                 }
 
-                groqMessages.push({
-                    role: "tool",
-                    tool_call_id: call.id,
-                    name: callName,
-                    content: JSON.stringify(fRes)
-                });
-            }
-
-            const chatCompletion2 = await withTimeout(
-                groq.chat.completions.create({
-                    model: "llama-3.3-70b-versatile",
-                    messages: groqMessages
-                }),
-                "Hubo un fallo temporal de procesamiento."
-            );
-            if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
-                botReply = chatCompletion2.choices[0].message.content || botReply;
-            }
-        }{}
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await withTimeout(
+                    chat.sendMessage([{
+                        functionResponse: { name: callName, response: fRes }
+                    }]),
+                    "Hubo un fallo temporal de procesamiento."
+                );
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { botReply = chatCompletion2.response.text() || botReply; } catch(e){}
+                }
             }
         }
 
@@ -517,11 +513,8 @@ async function forceKillBrowser() {
     if (browserClient) {
         try {
             console.log('[TikTok] 🛑 Forzando cierre de Chrome/Puppeteer...');
-            // puppeteer-extra might use .process() 
-            const browserProc = browserClient.process ? browserClient.process() : null;
-            if (browserProc && browserProc.pid) {
-                process.kill(browserProc.pid, 'SIGKILL');
-            }
+            // On Windows, process.kill with SIGKILL leaves renderer and GPU child processes as zombies.
+            // Using browser.close() is the safest way to terminate all child processes gracefully.
             if (browserClient.close) await browserClient.close().catch(()=>null);
             else if (browserClient.destroy) await browserClient.destroy().catch(()=>null);
             console.log('[TikTok] ✅ Chrome cerrado limpiamente.');

@@ -12,7 +12,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const { Groq } = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Pool } = require('pg');
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ const chatTools = [{
 }];
 
 // ── Gemini Sessions ────────────────────────────────────────────────────────────
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const chatSessions = new Map();
 
 let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
@@ -136,53 +136,63 @@ async function getSystemPrompt() {
 async function getChatHistory(userId) {
     const activePrompt = await getSystemPrompt();
     if (!chatSessions.has(userId)) {
-        chatSessions.set(userId, [
-            { role: 'system', content: activePrompt }
-        ]);
+        chatSessions.set(userId, []);
     }
-    return chatSessions.get(userId);
+    return { history: chatSessions.get(userId), prompt: activePrompt };
 }
 
 // ── Procesar mensaje y responder ──────────────────────────────────────────────
 async function processAndReply(userId, text, replyFn) {
-    const history = await getChatHistory(userId);
+    const sessionData = await getChatHistory(userId);
+    const history = sessionData.history;
+    const finalSystemPrompt = sessionData.prompt;
     try {
-        history.push({ role: 'user', content: text });
+        history.push({ role: 'user', parts: [{ text }] });
 
-        const tool_config = chatTools.map(t => ({
-            type: "function",
-            function: {
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
                 name: t.name,
                 description: t.description,
                 parameters: {
-                     type: "object",
-                     properties: t.parameters.properties,
-                     required: t.parameters.required
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
                 }
-            }
-        }));
+            }))
+        }];
 
-        let chatCompletion = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
-            messages: history,
-            tools: tool_config,
-            tool_choice: "auto"
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: finalSystemPrompt,
+            tools: geminiTools,
+            generationConfig: {
+                temperature: 0.1,
+                topK: 40,
+                topP: 0.95
+            }
         });
 
-        let responseMessage = null;
-        if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-            responseMessage = chatCompletion.choices[0].message;
+        const chat = model.startChat({ history: history.slice(0, -1) });
+        let chatCompletion = await chat.sendMessage(text);
+        
+        let responseText = "Lo siento, fallé al entender.";
+        let functionCalls = [];
+
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { responseText = response.text() || responseText; } catch(e){}
+            if (response.functionCalls && response.functionCalls().length > 0) {
+                functionCalls = response.functionCalls();
+            }
         }
 
-        if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            const functionCalls = responseMessage.tool_calls;
-            history.push(responseMessage); // Add assistant tool-call response to history
-
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                const callName = call.function.name;
-                let callArgs = {};
-                try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+                const callName = call.name;
+                let callArgs = call.args || {};
 
                 if (callName === 'check_availability') {
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [callArgs.fecha, callArgs.hora]);
@@ -227,28 +237,18 @@ async function processAndReply(userId, text, replyFn) {
                     } catch(err) { fRes = { success: false, error: err.message }; }
                 }
 
-                history.push({
-                    role: "tool",
-                    tool_call_id: call.id,
-                    name: callName,
-                    content: JSON.stringify(fRes)
-                });
-            }
-
-            chatCompletion = await groq.chat.completions.create({
-                model: 'llama-3.3-70b-versatile',
-                messages: history
-            });
-            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-                responseMessage = chatCompletion.choices[0].message;
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await chat.sendMessage([{
+                    functionResponse: { name: callName, response: fRes }
+                }]);
+                
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { responseText = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
+                }
             }
         }
 
-        let responseText = "Lo siento, fallé al entender.";
-        if (responseMessage && responseMessage.content) {
-            responseText = responseMessage.content;
-            history.push({ role: 'assistant', content: responseText });
-        }
+        history.push({ role: 'model', parts: [{ text: responseText }] });
         
         // Instagram DMs soportan ~1000 chars por mensaje
         if (responseText.length > 900) {
@@ -338,6 +338,16 @@ async function startBot() {
                 const msgKey = `${thread.thread_id}_${lastMsg.item_id}`;
                 if (seenItems.has(msgKey)) continue;
                 seenItems.add(msgKey); // Estructura HASH O(1) ultrasónica para evitar Memory Leaks
+                
+                // --- GARBAGE COLLECTION ---
+                if (seenItems.size > 2000) {
+                    let iter = 0;
+                    for (const key of seenItems) { 
+                        if (iter++ < 1000) seenItems.delete(key); 
+                        else break; 
+                    }
+                    console.log('[Instagram] 🧹 Liberando memoria de historial (Garbage Collection).');
+                }
 
                 const userIdString = lastMsg.user_id.toString();
                 // Usamos el username para dar más contexto a la IA
@@ -367,6 +377,16 @@ async function startBot() {
 
         } catch(err) {
             console.error('[Instagram] Error polling (Web Request):', err.message);
+            // --- SELF-HEALING ---
+            if (err.message && err.message.includes('detached')) {
+                console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Auto-Reparando pestaña...');
+                try {
+                    await page.reload({ waitUntil: 'domcontentloaded' });
+                    // Recuperar info de sesión
+                    cookies = await page.cookies();
+                    csrfToken = cookies.find(c => c.name === 'csrftoken')?.value;
+                } catch(e){}
+            }
         }
 
         await new Promise(r => setTimeout(r, POLL_MS));
@@ -377,11 +397,8 @@ async function forceKillBrowser() {
     if (browserClient) {
         try {
             console.log('[Instagram] 🛑 Forzando cierre de Chrome/Puppeteer...');
-            const browserProc = browserClient.process();
-            if (browserProc && browserProc.pid) {
-                // Precaution for Windows
-                process.kill(browserProc.pid, 'SIGKILL');
-            }
+            // On Windows, process.kill with SIGKILL leaves renderer and GPU child processes as zombies.
+            // Using browser.close() is the safest way to terminate all child processes gracefully.
             await browserClient.close().catch(()=>null);
             console.log('[Instagram] ✅ Chrome cerrado limpiamente.');
         } catch (e) {

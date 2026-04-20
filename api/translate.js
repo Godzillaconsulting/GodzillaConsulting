@@ -63,7 +63,7 @@ ${JSON.stringify(EN_TRANSLATION)}`;
     try {
         const groq = new Groq({ apiKey });
         const chatCompletion = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.1,
             max_tokens: 8000,

@@ -127,7 +127,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
         }));
 
         let chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
             messages: history,
             tools: tool_config,
             tool_choice: "auto"
@@ -199,7 +199,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
             }
 
             chatCompletion = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
+                model: "llama-3.1-8b-instant",
                 messages: history
             });
             if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {

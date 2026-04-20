@@ -62,10 +62,10 @@ export const chatTools = [
         name: "check_availability",
         description: "Consulta disponibilidad para una cita en una fecha y hora específica.",
         parameters: {
-            type: "OBJECT",
+            type: "object",
             properties: {
-                fecha: { type: "STRING", description: "Fecha en formato YYYY-MM-DD" },
-                hora: { type: "STRING", description: "Hora en formato HH:MM (24 horas)" }
+                fecha: { type: "string", description: "Fecha en formato YYYY-MM-DD" },
+                hora: { type: "string", description: "Hora en formato HH:MM (24 horas)" }
             },
             required: ["fecha", "hora"]
         }
@@ -74,15 +74,15 @@ export const chatTools = [
         name: "save_appointment",
         description: "Guarda la cita del cliente en la base de datos y Google Calendar después de confirmar disponibilidad.",
         parameters: {
-            type: "OBJECT",
+            type: "object",
             properties: {
-                nombre:   { type: "STRING", description: "Nombre completo del cliente" },
-                correo:   { type: "STRING", description: "Correo electrónico del cliente" },
-                telefono: { type: "STRING", description: "Número de teléfono del cliente" },
-                servicio: { type: "STRING", description: "Servicio de interés (ej: Control IA, Expansión)" },
-                fecha:    { type: "STRING", description: "Fecha de la cita YYYY-MM-DD" },
-                hora:     { type: "STRING", description: "Hora de la cita HH:MM" },
-                notas:    { type: "STRING", description: "Notas adicionales del cliente" }
+                nombre:   { type: "string", description: "Nombre completo del cliente" },
+                correo:   { type: "string", description: "Correo electrónico del cliente" },
+                telefono: { type: "string", description: "Número de teléfono del cliente" },
+                servicio: { type: "string", description: "Servicio de interés (ej: Control IA, Expansión)" },
+                fecha:    { type: "string", description: "Fecha de la cita YYYY-MM-DD" },
+                hora:     { type: "string", description: "Hora de la cita HH:MM" },
+                notas:    { type: "string", description: "Notas adicionales del cliente" }
             },
             required: ["nombre", "correo", "telefono", "servicio", "fecha", "hora"]
         }
@@ -91,9 +91,9 @@ export const chatTools = [
         name: "cancel_appointment",
         description: "Cancela una cita activa del cliente por su número de teléfono.",
         parameters: {
-            type: "OBJECT",
+            type: "object",
             properties: {
-                telefono: { type: "STRING", description: "Número de teléfono del cliente" }
+                telefono: { type: "string", description: "Número de teléfono del cliente" }
             },
             required: ["telefono"]
         }
@@ -102,11 +102,11 @@ export const chatTools = [
         name: "reschedule_appointment",
         description: "Reagenda una cita existente a una nueva fecha y hora.",
         parameters: {
-            type: "OBJECT",
+            type: "object",
             properties: {
-                telefono:    { type: "STRING", description: "Número de teléfono del cliente" },
-                nueva_fecha: { type: "STRING", description: "Nueva fecha YYYY-MM-DD" },
-                nueva_hora:  { type: "STRING", description: "Nueva hora HH:MM" }
+                telefono:    { type: "string", description: "Número de teléfono del cliente" },
+                nueva_fecha: { type: "string", description: "Nueva fecha YYYY-MM-DD" },
+                nueva_hora:  { type: "string", description: "Nueva hora HH:MM" }
             },
             required: ["telefono", "nueva_fecha", "nueva_hora"]
         }
@@ -115,7 +115,7 @@ export const chatTools = [
         name: "get_available_downloads",
         description: "Obtiene lista de recursos descargables disponibles para el cliente.",
         parameters: {
-            type: "OBJECT",
+            type: "object",
             properties: {}
         }
     }

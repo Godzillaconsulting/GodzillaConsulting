@@ -124,8 +124,10 @@ async function callGroq(apiKey, systemPrompt, tools, messages) {
     ];
 
     const body = {
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: formattedMessages,
+        temperature: 0.1,
+        top_p: 0.95
     };
 
     if (tools && tools.length > 0) {

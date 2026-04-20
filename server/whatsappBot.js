@@ -3,7 +3,7 @@ const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode-terminal';
 import qrcodeLib from 'qrcode';
 import express from 'express';
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
 import { sendCitaConfirmationEmail } from './services/emailService.js';
@@ -42,8 +42,9 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
 
     try {
         console.log(`[Compresión WA] Iniciando compresión de memoria para ${senderId}...`);
-        const apiKey = (process.env.GROQ_API_KEY || "").trim();
-        const groq = new Groq({ apiKey });
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
 
@@ -52,11 +53,8 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
         }
 
-        const chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: prompt }]
-        });
-        const newSummary = chatCompletion.choices[0].message.content;
+        const chatCompletion = await model.generateContent(prompt);
+        const newSummary = chatCompletion.response.text();
 
         const query = `
             UPDATE sesiones_chat 
@@ -229,60 +227,69 @@ async function getSystemPromptWA() {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
-            let groqMessages = [
-                { role: "system", content: finalSystemPrompt }
-            ];
-            
+            let geminiMessages = [];
             let rawHistory = historial_mensajes.slice(0, -1);
             for (const msg of rawHistory) {
-                groqMessages.push({
-                    role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
-                    content: msg.contenido
+                geminiMessages.push({
+                    role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
+                    parts: [{ text: msg.contenido }]
                 });
             }
-            groqMessages.push({ role: "user", content: messageText });
 
-            const apiKey = (process.env.GROQ_API_KEY || "").trim();
-            const groq = new Groq({ apiKey });
-
-            const tool_config = chatTools.map(t => ({
-                type: "function",
-                function: {
+            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+            const genAI = new GoogleGenerativeAI(apiKey);
+            
+            // Format tools for Gemini 1.5
+            const geminiTools = [{
+                functionDeclarations: chatTools.map(t => ({
                     name: t.name,
                     description: t.description,
                     parameters: {
-                         type: "object",
-                         properties: t.parameters.properties,
-                         required: t.parameters.required
+                        type: "OBJECT",
+                        properties: Object.fromEntries(
+                            Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                        ),
+                        ...(t.parameters.required ? { required: t.parameters.required } : {})
                     }
+                }))
+            }];
+
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-1.5-flash",
+                systemInstruction: finalSystemPrompt,
+                tools: geminiTools,
+                generationConfig: {
+                    temperature: 0.1,
+                    topK: 40,
+                    topP: 0.95
                 }
-            }));
+            });
+
+            const chat = model.startChat({ history: geminiMessages });
 
             let chatCompletion = await withTimeout(
-                groq.chat.completions.create({
-                    model: "llama-3.3-70b-versatile",
-                    messages: groqMessages,
-                    tools: tool_config,
-                    tool_choice: "auto"
-                }),
+                chat.sendMessage(messageText),
                 "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
             );
 
             let botReply = "Lo siento, fallé al entender.";
             let responseMessage = null;
-            if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-                responseMessage = chatCompletion.choices[0].message;
-                botReply = responseMessage.content || botReply;
+            let functionCalls = [];
+
+            if (chatCompletion && chatCompletion.response) {
+                const response = chatCompletion.response;
+                try { botReply = response.text() || botReply; } catch(e){}
+                
+                if (response.functionCalls && response.functionCalls().length > 0) {
+                    functionCalls = response.functionCalls();
+                }
             }
 
-            if (responseMessage && responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-                const functionCalls = responseMessage.tool_calls;
-                groqMessages.push(responseMessage); // Save assistant message to history prior to tool call
+            if (functionCalls.length > 0) {
                 for (const call of functionCalls) {
                     let fRes = {};
-                    const callName = call.function.name;
-                    let callArgs = {};
-                    try { callArgs = JSON.parse(call.function.arguments || '{}'); } catch(e){}
+                    const callName = call.name;
+                    let callArgs = call.args || {};
 
                     if (callName === "check_availability") {
                         const { fecha, hora } = callArgs;
@@ -435,25 +442,20 @@ async function getSystemPromptWA() {
                         fRes = { resources: r.rows };
                     }
 
-                    groqMessages.push({
-                        role: "tool",
-                        tool_call_id: call.id,
-                        name: callName,
-                        content: JSON.stringify(fRes)
-                    });
-                }
-
-                // Enviar resultados de tools de vuelta a Groq
-                const chatCompletion2 = await withTimeout(
-                    groq.chat.completions.create({
-                        model: "llama-3.3-70b-versatile",
-                        messages: groqMessages
-                    }),
-                    "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
-                );
-                
-                if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
-                     botReply = chatCompletion2.choices[0].message.content || 'Reserva procesada.';
+                    // Send tool results back to Gemini via existing chat object
+                    const chatCompletion2 = await withTimeout(
+                        chat.sendMessage([{
+                            functionResponse: {
+                                name: callName,
+                                response: fRes
+                            }
+                        }]),
+                        "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
+                    );
+                    
+                    if (chatCompletion2 && chatCompletion2.response) {
+                         try { botReply = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
+                    }
                 }
             }
 
@@ -477,6 +479,19 @@ async function getSystemPromptWA() {
     // ==========================================
     // Escucha las señales de PM2 para destruir limpiamente Puppeteer
     // y evitar que quede congelado en memoria RAM tomando rehén la sesión.
+    
+    const emergencyShutdown = async (err, origin) => {
+        console.error(`🛑 [CRASH] Fatal Error (${origin}):`, err);
+        try {
+            console.log('Cerrando Chrome de emergencia...');
+            await client.destroy();
+        } catch (e) {}
+        process.exit(1);
+    };
+
+    process.on('uncaughtException', (err) => emergencyShutdown(err, 'uncaughtException'));
+    process.on('unhandledRejection', (err) => emergencyShutdown(err, 'unhandledRejection'));
+
     process.on('SIGINT', async () => {
         console.log('🛑 [SIGINT] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
         try {

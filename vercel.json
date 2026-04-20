@@ -11,6 +11,10 @@
             "destination": "/api/chat"
         },
         {
+            "source": "/api/translate",
+            "destination": "/api/translate"
+        },
+        {
             "source": "/api/:path*",
             "destination": "/api/proxy?path=:path*"
         },

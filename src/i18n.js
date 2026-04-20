@@ -14,12 +14,20 @@ const resources = {
     en: { translation: { ...enTranslation } }
 };
 
-// ── Inicializar i18next de forma sincrónica ───────────────────
+// ── Detectar idioma base del dispositivo ─────────────────────
+const RAW_LANG = (navigator.language || navigator.languages?.[0] || 'en');
+const DEVICE_LANG = RAW_LANG.split('-')[0].toLowerCase();
+const NEEDS_TRANSLATION = !SUPPORTED_NATIVE.includes(DEVICE_LANG);
+
+// ── Inicializar i18next ───────────────────────────────────────
 i18n
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
         resources,
+        // Si el idioma necesita traducción dinámica, arrancamos en inglés
+        // y luego cambiamos cuando llegue la traducción
+        lng: NEEDS_TRANSLATION ? 'en' : undefined,
         fallbackLng: 'en',
         interpolation: { escapeValue: false },
         detection: {
@@ -30,53 +38,54 @@ i18n
         }
     });
 
-// ── Carga dinámica de idiomas no incluidos ────────────────────
+// ── Carga dinámica de idiomas ─────────────────────────────────
 async function loadDynamicLanguage(lang) {
-    const baseLang = lang.split('-')[0].toLowerCase();
-
-    // Ya disponible nativamente
-    if (SUPPORTED_NATIVE.includes(baseLang)) return;
-
     // Verificar caché en localStorage
-    const cacheKey = `gz_i18n_${baseLang}`;
+    const cacheKey = `gz_i18n_${lang}`;
     try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
             const { data, ts } = JSON.parse(cached);
-            if (Date.now() - ts < CACHE_TTL_MS) {
-                i18n.addResourceBundle(baseLang, 'translation', data, true, true);
-                i18n.changeLanguage(baseLang);
+            if (Date.now() - ts < CACHE_TTL_MS && data && typeof data === 'object') {
+                console.log(`[i18n] Cargando "${lang}" desde caché`);
+                i18n.addResourceBundle(lang, 'translation', data, true, true);
+                await i18n.changeLanguage(lang);
                 return;
             }
         }
     } catch (_) {}
 
     // Obtener traducción desde Vercel
+    console.log(`[i18n] Descargando traducción para "${lang}"...`);
     try {
-        const res = await fetch(`/api/translate?lang=${baseLang}`, {
+        const res = await fetch(`/api/translate?lang=${lang}`, {
             signal: AbortSignal.timeout(60000)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+
+        if (!data || typeof data !== 'object' || data.error) {
+            throw new Error(data?.error || 'Invalid translation data');
+        }
 
         // Guardar en caché
         try {
             localStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
         } catch (_) {}
 
-        i18n.addResourceBundle(baseLang, 'translation', data, true, true);
-        i18n.changeLanguage(baseLang);
+        i18n.addResourceBundle(lang, 'translation', data, true, true);
+        await i18n.changeLanguage(lang);
+        console.log(`[i18n] ✅ Idioma "${lang}" cargado correctamente`);
+
     } catch (err) {
-        console.warn(`[i18n] No se pudo cargar idioma "${baseLang}":`, err.message);
-        // Fallback silencioso a inglés
+        console.warn(`[i18n] ⚠️ No se pudo cargar idioma "${lang}":`, err.message, '→ usando inglés');
+        // Mantiene inglés como fallback
     }
 }
 
-// ── Detectar idioma del dispositivo y cargar si es necesario ──
-const browserLang = (navigator.language || navigator.languages?.[0] || 'en').split('-')[0].toLowerCase();
-if (!SUPPORTED_NATIVE.includes(browserLang)) {
-    // Cargar async — el sitio empieza en EN mientras llega la traducción
-    loadDynamicLanguage(browserLang);
+// ── Ejecutar carga si el dispositivo usa otro idioma ─────────
+if (NEEDS_TRANSLATION) {
+    loadDynamicLanguage(DEVICE_LANG);
 }
 
 export default i18n;

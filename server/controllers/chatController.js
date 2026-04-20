@@ -200,28 +200,8 @@ export const processChatMessage = async (req, res) => {
                         const r = await pool.query("SELECT title, slug FROM lead_magnets");
                         fRes = { resources: r.rows };
                     } catch(e) { fRes = { error: "Base de datos inactiva."}; }
-                } else if (call.name === "view_file") {
-                    const isGodMode = ["jareg", "godzilla_admin"].includes(currentUser?.toLowerCase());
-                    if (!isGodMode) {
-                        fRes = { error: "ACCESO DENEGADO. REGLA ESTRICTA DE SEGURIDAD. SOLO JAREG PUEDE OPERAR AGENTES." };
-                    } else {
-                        try {
-                            const fullPath = path.resolve(process.cwd(), call.args.filePath);
-                            const content = fs.readFileSync(fullPath, 'utf-8');
-                            fRes = { content };
-                        } catch(e) { fRes = { error: e.message }; }
-                    }
-                } else if (call.name === "edit_file") {
-                    const isGodMode = ["jareg", "godzilla_admin"].includes(currentUser?.toLowerCase());
-                    if (!isGodMode) {
-                        fRes = { error: "ACCESO DENEGADO. REGLA ESTRICTA DE SEGURIDAD. SOLO JAREG PUEDE OPERAR AGENTES." };
-                    } else {
-                        try {
-                            const fullPath = path.resolve(process.cwd(), call.args.filePath);
-                            fs.writeFileSync(fullPath, call.args.newContent, 'utf-8');
-                            fRes = { success: true, message: `File ${call.args.filePath} updated successfully.` };
-                        } catch(e) { fRes = { error: e.message }; }
-                    }
+                } else if (call.name === "fake_placeholder") {
+                    fRes = { error: "Deprecado." };
                 }
                 functionResponses.push({
                     functionResponse: {

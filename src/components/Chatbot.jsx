@@ -49,9 +49,11 @@ const Chatbot = () => {
 
     // Retry automático: si el túnel falla intermitentemente, reintenta hasta 3 veces antes de mostrar error
     const fetchChatWithRetry = async (messages, maxRetries = 3) => {
-        const ERROR_MARKER = 'Lo siento, ha ocurrido un error';
         // Filtrar mensajes de error previos del historial — no contaminar el contexto de Gemini
-        const cleanMessages = messages.filter(m => !(m.role === 'model' && m.text.startsWith(ERROR_MARKER)));
+        const cleanMessages = messages.filter(m => {
+            if (m.role !== 'model') return true;
+            return !(m.text.startsWith('Lo siento, ha ocurrido un error') || m.text.startsWith('Sorry, an error occurred') || m.text.includes('Error en mis engranajes'));
+        });
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {

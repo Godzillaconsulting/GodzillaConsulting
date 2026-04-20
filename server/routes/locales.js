@@ -6,9 +6,16 @@ import { translateNodePayload } from '../services/translateService.js';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
-const require = createRequire(import.meta.url);
-const esData = require('../../src/locales/es.json');
-const enData = require('../../src/locales/en.json');
+
+function getLocalData(lng) {
+    try {
+        const filePath = path.join(SRC_LOCALES_PATH, `${lng}.json`);
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+        console.error(`Error loading local JSON for ${lng}:`, e);
+        return {};
+    }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,8 +30,8 @@ router.get('/:lng', async (req, res) => {
     lng = lng.split('-')[0].toLowerCase();
 
     // 1. If it's the base bundled language, serve from memory directly.
-    if (lng === 'es') return res.json(esData);
-    if (lng === 'en') return res.json(enData);
+    if (lng === 'es') return res.json(getLocalData('es'));
+    if (lng === 'en') return res.json(getLocalData('en'));
 
     try {
         // Asegurar esquema en Producción Neon DB (Serverless Auto-Migration)
@@ -86,7 +93,7 @@ Rules:
     } catch (error) {
         console.error('[JIT LOCALE] Error:', error);
         // Fallback to English if translation mechanism crashes
-        return res.json(enData);
+        return res.json(getLocalData('en'));
     }
 });
 

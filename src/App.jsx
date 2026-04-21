@@ -171,7 +171,11 @@ function GlobalSuspenseFallback() {
 function AppLayout() {
   const { pathname } = useLocation();
   const { loading } = useSiteData();
-  const hideChrome = ['/login', '/admin', '/cm', '/studio', '/godzilla-sora'].some(route => pathname.startsWith(route));
+  const hideChromeRoutes = [
+    '/login', '/admin', '/cm', '/studio', '/godzilla-sora',
+    '/posicionamiento-social', '/control-ia', '/expansion', '/elite'
+  ];
+  const hideChrome = hideChromeRoutes.some(route => pathname.startsWith(route));
 
   if (loading) {
     return <GlobalSuspenseFallback />;

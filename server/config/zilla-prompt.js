@@ -54,7 +54,7 @@ Utiliza esta información para resolver dudas frecuentes:
 
 ## PROTOCOLO DE AGENDAMIENTO
 Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
-**SIEMPRE** usa 'check_availability' antes de confirmar una cita.
+**NUNCA** uses 'check_availability' a menos que el usuario te haya mencionado EXPLÍCITAMENTE que desea agendar una cita y te haya proporcionado un día u hora tentativo.
 `;
 
 export const chatTools = [

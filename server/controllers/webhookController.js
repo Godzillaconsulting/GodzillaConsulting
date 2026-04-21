@@ -96,7 +96,10 @@ export const receiveMessage = async (req, res) => {
 const userSessions = new Map();
 
 async function processAndReply(from, text, phoneNumberId, platform) {
-    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+    
+        const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+        const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return console.error(`[${platform}] Error: No GEMINI API KEY`);
 
     let history;

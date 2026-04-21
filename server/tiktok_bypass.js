@@ -45,7 +45,10 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
     if (!historial_mensajes || historial_mensajes.length < 20) return;
     try {
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        
+        const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+        const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
+            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 

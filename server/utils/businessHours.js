@@ -1,4 +1,5 @@
 export function validateBusinessHours(fecha, hora) {
+    if (!fecha || !hora) return "Faltan parámetros de fecha u hora (YYYY-MM-DD, HH:MM). Solicita esos datos al cliente primero.";
     const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
     const now = new Date();
 

@@ -46,6 +46,7 @@ export default function DynamicMedia({ src, alt, className, style, ...props }) {
     useEffect(() => {
         if (!videoRef.current) return;
         const observer = new IntersectionObserver(([entry]) => {
+            if (!videoRef.current) return;
             if (entry.isIntersecting) {
                 // Return gracefully if browsers block autoplay
                 videoRef.current.play().catch(() => {});

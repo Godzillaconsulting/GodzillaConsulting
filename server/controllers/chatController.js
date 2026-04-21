@@ -32,7 +32,10 @@ export const processChatMessage = async (req, res) => {
         const langName = langMap[detectedLang] || detectedLang;
         const langInstruction = `\\n\\n[IDIOMA OBLIGATORIO]: La interfaz del usuario está en "${langName}". DEBES responder EXCLUSIVAMENTE en ${langName}. Sin excepciones.\\n`;
 
-        const basePrompt = isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT;
+        
+        const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+        const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
+        const basePrompt = (isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT) + systemPromptContexto;
         const systemPrompt = basePrompt + langInstruction;
         const tools = isGoyi ? goyiChatTools : chatTools;
 

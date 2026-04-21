@@ -59,6 +59,9 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
 
     try {
         console.log(`[Compresión WA] Iniciando compresión de memoria para ${senderId}...`);
+        
+        const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+        const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -326,7 +329,7 @@ export const initWhatsAppBot = async () => {
 
             const model = genAI.getGenerativeModel({ 
                 model: "gemini-2.5-flash",
-                systemInstruction: finalSystemPrompt,
+                systemInstruction: finalSystemPrompt + systemPromptContexto,
                 tools: geminiTools,
                 generationConfig: {
                     temperature: 0.1,

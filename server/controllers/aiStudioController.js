@@ -140,15 +140,15 @@ ${cacheBuster}`;
                         operation = await tryGenerate(fallbackModel);
                     }
 
-                    // Poll hasta que la operación long-running termine (máx 10 min)
+                    // Poll hasta que la operación long-running termine (máx 20 min)
                     let attempts = 0;
-                    while (!operation.done && attempts < 60) {
+                    while (!operation.done && attempts < 120) {
                         await new Promise(r => setTimeout(r, 10000)); // espera 10s
                         operation = await ai.operations.getVideosOperation({ operation });
                         attempts++;
                         const progress = Math.min(5 + attempts * 1.5, 90);
                         postProcessJobs.set(taskId, { status: 'working', progress });
-                        console.log(`[VEO] Polling - intento ${attempts}/60 - done: ${operation.done} - error: ${operation.error?.message || 'ninguno'}`);
+                        console.log(`[VEO] Polling - intento ${attempts}/120 - done: ${operation.done} - error: ${operation.error?.message || 'ninguno'}`);
                     }
 
                     // Verificar error en la operación final
@@ -157,7 +157,7 @@ ${cacheBuster}`;
                     }
 
                     if (!operation.done || !operation.response?.generatedVideos?.[0]?.video?.uri) {
-                        throw new Error(`Timeout o sin URI de video en la respuesta. Intentos: ${attempts}`);
+                        throw new Error(`Generación excedió el tiempo máximo (20 min) o no devolvió URI. Intentos: ${attempts}`);
                     }
 
                     const videoUri = operation.response.generatedVideos[0].video.uri;

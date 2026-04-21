@@ -810,15 +810,15 @@ export default function CockersStudio({ adminProfile }) {
 
                         if (!sData) {
                             task.failCt = (task.failCt || 0) + 1;
-                            // 5 retries antes de darlo por muerto en frontend
-                            if (task.failCt > 5) {
+                            // 25 retries antes de darlo por muerto en frontend (evita cortes por red inestable)
+                            if (task.failCt > 25) {
                                 task.done = true;
                                 updateSlot(task.idx, { status: 'failed', progress: 100 });
                             }
                             continue;
                         }
 
-                        updateSlot(task.idx, { progress: sData.progress || Math.min(attempts * 6, 92) });
+                        updateSlot(task.idx, { progress: sData.progress || Math.min(attempts * 2, 92) });
 
                         if (sData.status === 'succeed') {
                             task.done = true;
@@ -834,7 +834,7 @@ export default function CockersStudio({ adminProfile }) {
                 const doneCt = toPoll.filter(t => t.done).length;
                 setRenderProgress(Math.round((doneCt / toPoll.length) * 100));
 
-                if (toPoll.every(t => t.done) || attempts > 150) {
+                if (toPoll.every(t => t.done) || attempts > 350) {
                     clearInterval(pollInterval);
                     setRenderingAI(false);
                 }

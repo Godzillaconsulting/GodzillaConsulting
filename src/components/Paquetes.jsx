@@ -120,8 +120,12 @@ const Paquetes = () => {
  <section id="paquetes" className="py-24 bg-[#111111] overflow-hidden">
  <div className="container mx-auto px-4 max-w-7xl">
  <div className="text-center mb-16">
- <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
- {isIntl ? t('packages.title', 'PACKAGES') : (nodeData.title || 'PAQUETES')}
+ <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase">
+ {isIntl ? (
+   <>{t('packages.title', 'OUR')} <span className="text-[#CC0000]">{t('packages.titleRed', 'SYSTEMS')}</span></>
+ ) : (
+   <>{nodeData.title && nodeData.title !== 'PAQUETES' ? nodeData.title : 'NUESTROS'} <span className="text-[#CC0000]">{nodeData.titleRed || 'SISTEMAS'}</span></>
+ )}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
  {isIntl ? t('packages.subtitle', 'Learn more about the most suitable strategy to boost your business. Everything is protected by contract.') : (nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.')}

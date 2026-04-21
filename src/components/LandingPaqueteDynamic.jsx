@@ -154,13 +154,10 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  dangerouslySetInnerHTML={renderHTML(isIntl && localizedLanding.heroTitle ? localizedLanding.heroTitle : content.heroTitle)}
  />
 
- <div className="flex flex-col sm:flex-row gap-4 mb-8 md:mb-16 w-full max-w-xl justify-center z-20">
- <a href="#detalles" className="bg-white text-black px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-gray-200 transition-all flex-1 shadow-xl hover:scale-105 text-center">
+ <div className="flex justify-center mb-8 md:mb-16 w-full z-20">
+ <a href="#detalles" className="bg-white text-black px-10 md:px-16 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-gray-200 transition-all shadow-xl hover:scale-105 text-center">
  {isIntl ? t('landing.discoverMore') : 'Descubre más'}
  </a>
- <Link to="/#paquetes" className="bg-transparent border-2 border-white text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-bold text-base md:text-xl hover:bg-white/10 transition-all flex-1 shadow-xl hover:scale-105 text-center">
- {isIntl ? t('landing.otherPackages') : 'Ver otros paquetes'}
- </Link>
  </div>
 
  <p

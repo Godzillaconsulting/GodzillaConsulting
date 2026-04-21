@@ -1336,7 +1336,6 @@ export default function CockersStudio({ adminProfile }) {
                                 </button>
                             </div>
                         </div>
-                        </div>
                     </div>
                 )}
 

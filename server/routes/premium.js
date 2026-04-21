@@ -35,14 +35,20 @@ router.get('/download/:id', async (req, res) => {
         const isPreview = req.query.preview === 'true'; // Backdoor para Admins probando borradores
         // Magia de Detección de Dispositivo Nativo (Safari, Chrome, iPhone, Mac)
         let reqLang = req.query.lang;
-        if (!reqLang || reqLang === 'es') { 
+        if (!reqLang) { 
             const acceptHeader = req.headers['accept-language'];
-            if (acceptHeader) {
+            if (acceptHeader && acceptHeader !== '*') {
                 // Toma cosas como 'en-US,en;q=0.9,ja;q=0.8' y extrae 'en' o 'ja' (2 letras Iso)
                 reqLang = acceptHeader.split(',')[0].split('-')[0].toLowerCase();
             } else {
                 reqLang = 'es';
             }
+        }
+        
+        // Blindaje final: Si Vercel manda basura o ISOs raros, forzar a español para evitar alucinaciones IA
+        const validLangs = ['es', 'en', 'fr', 'pt', 'de', 'ja', 'it', 'zh'];
+        if (!reqLang || !validLangs.includes(reqLang)) {
+            reqLang = 'es';
         }
         
         // EVASION DE VERCEL PROXY (PREVIENE PANTALLA NEGRA/CORRUPCION BINARIA)

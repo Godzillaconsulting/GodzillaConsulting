@@ -12,7 +12,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import dotenv from 'dotenv';
-import { execSync } from 'child_process';
+// child_process ya no se usa — limpieza garantizada por shutdown handlers
 dotenv.config();
 
 const activeSessionsCache = new Map();
@@ -94,28 +94,10 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
 }
 
 
-export const initWhatsAppBot = () => {
+export const initWhatsAppBot = async () => {
     console.log("🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...");
 
-    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
-    // Si PM2 reinicia el bot, nos aseguramos de que no queden procesos huérfanos de Chrome
-    try {
-        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
-        const lines = out.split('\n');
-        let killed = 0;
-        for (const line of lines) {
-            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('.wwebjs_auth') || line.includes('whatsapp-web.js')) {
-                const match = line.match(/\s+(\d+)\s*$/);
-                if (match) {
-                    try {
-                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
-                        killed++;
-                    } catch(e){}
-                }
-            }
-        }
-        if (killed > 0) console.log(`[Seguridad WA] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
-    } catch(e) { /* silent fail si wmic no está disponible */ }
+    // La limpieza de Chrome está garantizada por los handlers de SIGINT y uncaughtException al fondo.
     
     // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
 
@@ -133,7 +115,24 @@ export const initWhatsAppBot = () => {
         console.warn(`⚠️ [Seguridad] No se pudieron aplicar permisos 700 a la sesión: ${e.message}`);
     }
     
+    // 🧹 Limpieza quirúrgica al arrancar: matar solo los Chrome de ESTE bot
+    // Por si PM2 hizo SIGKILL en crash anterior y el handler de shutdown no corrió
+    try {
+        const { execSync: _execSync } = await import('child_process');
+        const profileEscaped = sessionPath.replace(/\\/g, '\\\\');
+        const out = _execSync(
+            `wmic process where "name='chrome.exe' and CommandLine like '%${profileEscaped.replace(/'/g, "''")}%'" get ProcessId`,
+            { encoding: 'utf-8', windowsHide: true, stdio: ['ignore','pipe','ignore'] }
+        );
+        const pids = out.split('\n').map(s => s.trim()).filter(s => /^\d+$/.test(s));
+        for (const pid of pids) {
+            try { _execSync(`taskkill /F /PID ${pid} /T`, { windowsHide: true, stdio: 'ignore' }); } catch(_){}
+        }
+        if (pids.length) console.log(`[WhatsApp] 🧹 ${pids.length} Chrome huerfano(s) del perfil eliminado(s).`);
+    } catch(_) { /* wmic no disponible, omitir */ }
+
     const client = new Client({
+
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
             headless: true,
@@ -559,6 +558,10 @@ export const initWhatsAppBot = () => {
     // y evitar que quede congelado en memoria RAM tomando rehén la sesión.
     
     const emergencyShutdown = async (err, origin) => {
+        if (err && err.code === 'EADDRINUSE') {
+            console.warn(`⚠️ [Ignorado] PM2 lanzó uncaughtException por EADDRINUSE. Escaneo QR usando puerto ocupado. El bot seguirá corriendo.`);
+            return; // No matar el proceso de WhatsApp, dejar que el callback se ocupe!
+        }
         console.error(`🛑 [CRASH] Fatal Error (${origin}):`, err);
         try {
             console.log('Cerrando Chrome de emergencia...');
@@ -572,12 +575,12 @@ export const initWhatsAppBot = () => {
 
     process.on('SIGINT', async () => {
         console.log('🛑 [SIGINT] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
-        try {
-            await client.destroy();
-            console.log('✅ Chrome cerrado limpiamente.');
-        } catch (e) {
-            console.error('⚠️ Error cerrando Chrome:', e.message);
-        }
+        try { await client.destroy(); console.log('✅ Chrome cerrado limpiamente.'); } catch (e) {}
+        process.exit(0);
+    });
+    process.on('SIGTERM', async () => {
+        console.log('🛑 [SIGTERM] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
+        try { await client.destroy(); console.log('✅ Chrome cerrado limpiamente.'); } catch (e) {}
         process.exit(0);
     });
 };

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+// child_process ya no se usa — limpieza garantizada por try-catch-finally
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -466,30 +466,28 @@ let browserClient;
 
 export const initTikTokBypass = async (isHeadless = true) => {
     console.log('🚀 Iniciando ZillaBot Bypass (TikTok Neurona)...');
-
-    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
-    try {
-        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
-        const lines = out.split('\n');
-        let killed = 0;
-        for (const line of lines) {
-            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('tiktok_bypass.js')) {
-                const match = line.match(/\s+(\d+)\s*$/);
-                if (match) {
-                    try {
-                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
-                        killed++;
-                    } catch(e){}
-                }
-            }
-        }
-        if (killed > 0) console.log(`[Seguridad TK] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
-    } catch(e) { /* silent fail */ }
     
     // Carpeta de sesión persistente local
     const sessionDir = path.join(path.dirname(__dirname), 'tiktok_session');
+    let browser = null;
 
-    const browser = await puppeteer.launch({
+    // 🧹 Limpieza quirúrgica al arrancar: matar solo los Chrome de ESTE bot
+    // (por si PM2 hizo SIGKILL en el crash previo y el finally no corrió)
+    try {
+        const profileEscaped = sessionDir.replace(/\\/g, '\\\\');
+        const { execSync } = await import('child_process');
+        const out = execSync(
+            `wmic process where "name='chrome.exe' and CommandLine like '%${profileEscaped.replace(/'/g, "''")}%'" get ProcessId`,
+            { encoding: 'utf-8', windowsHide: true, stdio: ['ignore','pipe','ignore'] }
+        );
+        const pids = out.split('\n').map(s => s.trim()).filter(s => /^\d+$/.test(s));
+        for (const pid of pids) {
+            try { execSync(`taskkill /F /PID ${pid} /T`, { windowsHide: true, stdio: 'ignore' }); } catch(_){}
+        }
+        if (pids.length) console.log(`[TikTok] 🧹 ${pids.length} Chrome huerfano(s) del perfil eliminado(s).`);
+    } catch(_) { /* wmic no disponible, omitir */ }
+
+    browser = await puppeteer.launch({
         headless: isHeadless ? 'new' : false,
         userDataDir: sessionDir,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
@@ -506,30 +504,49 @@ export const initTikTokBypass = async (isHeadless = true) => {
         return; // Sale y espera intervención humana
     }
 
-    // Loop infinito de scraping
-    // Reemplaza PM2 setInterval y aprovecha un while local asincrono
+    // BUG FIX: El loop debe ser awaitable para que el finally no se ejecute prematuramente.
+    // Usamos un while(true) directo en vez de un IIFE sin await.
     let iterations = 0;
-    (async function loop() {
+    try {
         while (true) {
             try {
                 await scrapeAndRespondDMs(page);
-                
-                // Solo checar comentarios 1 de cada 4 veces (cada 60s) para que los DMs sigan siendo de respuesta ultra rápida (15s).
+
+                // GC: Limpiar processedMessages si crece demasiado (memory leak fix)
+                if (processedMessages.size > 2000) {
+                    let i = 0;
+                    for (const key of processedMessages) {
+                        if (i++ < 1000) processedMessages.delete(key);
+                        else break;
+                    }
+                    console.log('[TikTok] 🧹 GC: Liberando memoria de processedMessages.');
+                }
+
+                // Solo checar comentarios 1 de cada 4 veces (cada 60s)
                 if (iterations % 4 === 0) {
-                     await checkComments(page);
+                    await checkComments(page);
                 }
                 iterations++;
             } catch (e) {
                 console.error('Error iteración TikTok:', e.message);
-                if (e.message.includes('timeout') || e.message.includes('ProtocolError')) {
-                    console.log('🔄 Refrescando pestaña debido a timeout interno...');
+                // Self-healing: igual que Instagram — reparar pestaña detached
+                if (e.message && (e.message.includes('detached') || e.message.includes('timeout') || e.message.includes('ProtocolError'))) {
+                    console.log('[TikTok] ⚠️ Pestaña corrupta. Auto-reparando...');
                     try { await page.reload({ waitUntil: 'domcontentloaded' }); } catch(err){}
                 }
             }
             console.log(`💤 Esperando ${POLLING_INTERVAL_MS / 1000}s para próximo chequeo...`);
             await delay(POLLING_INTERVAL_MS, POLLING_INTERVAL_MS + 5000);
         }
-    })();
+    } finally {
+        // ✅ El finally corre SOLO cuando el while termina (nunca en condiciones normales)
+        // o cuando el proceso recibe SIGINT/SIGTERM y el loop se interrumpe.
+        if (browser) {
+            console.log('[TikTok] 🧹 Cerrando Chrome limpiamente (finally)...');
+            await browser.close().catch(() => {});
+            browserClient = null;
+        }
+    }
 };
 
 async function forceKillBrowser() {

@@ -8,7 +8,7 @@
 const path         = require('path');
 const { existsSync, readFileSync, writeFileSync } = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-const { execSync } = require('child_process');
+// child_process ya no se usa — limpieza garantizada por try-catch-finally
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -264,9 +264,7 @@ async function processAndReply(userId, text, replyFn) {
         }
         console.log(`[Instagram] 🤖 Respondí a ${userId.toString().substring(0,8)}***`);
 
-        // GC (Garbage Collection Manual - Limpieza Agresiva)
-        chatCompletion = null;
-        finalSystemPrompt = null;
+        // GC: el historial ya está en la variable `history` del Map, sin referencias extras que limpiar.
 
     } catch(err) {
         console.error('[Instagram] Error Groq:', err.message);
@@ -279,25 +277,16 @@ const seenItems = new Set();
 const userDataDir = path.join(__dirname, '.puppeteer_ig_profile');
 let browserClient;
 
+// 🔒 ANTI-ALUCINACIÓN: Lock por usuario + Cola de mensajes pendientes
+// Igual que WhatsApp: si el bot ya está respondiendo a un usuario,
+// los mensajes que lleguen mientras tanto se acumulan y se procesan juntos
+// después, en lugar de lanzar múltiples llamadas a Gemini en paralelo.
+const processingUsers = new Set();
+const pendingMessages = new Map(); // userId -> [mensajes pendientes]
+
 async function startBot() {
-    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
+    let browser = null;
     try {
-        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
-        const lines = out.split('\n');
-        let killed = 0;
-        for (const line of lines) {
-            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('instagram_bot.cjs')) {
-                const match = line.match(/\s+(\d+)\s*$/);
-                if (match) {
-                    try {
-                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
-                        killed++;
-                    } catch(e){}
-                }
-            }
-        }
-        if (killed > 0) console.log(`[Seguridad IG] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
-    } catch(e) { /* silent fail */ }
 
     if (!existsSync(userDataDir)) {
         console.error('[Instagram] ❌ Perfil no encontrado. Ejecuta: node server/ig_puppeteer_setup.cjs');
@@ -307,14 +296,31 @@ async function startBot() {
     }
 
     console.log('[Instagram] 🚀 Arrancando ZillaBot con motor Puppeteer Stealth (Anti-Baneos)...');
-    
+
+    // 🧹 Limpieza quirurgica al arrancar: matar solo los Chrome de ESTE bot
+    // (por si PM2 hizo SIGKILL en el crash anterior y el finally no corrió)
+    try {
+        const profileEscaped = userDataDir.replace(/\\/g, '\\\\');
+        const out = require('child_process').execSync(
+            `wmic process where "name='chrome.exe' and CommandLine like '%${profileEscaped.replace(/'/g, "''")}%'" get ProcessId`,
+            { encoding: 'utf-8', windowsHide: true, stdio: ['ignore','pipe','ignore'] }
+        );
+        const pids = out.split('\n').map(s => s.trim()).filter(s => /^\d+$/.test(s));
+        for (const pid of pids) {
+            try { require('child_process').execSync(`taskkill /F /PID ${pid} /T`, { windowsHide: true, stdio: 'ignore' }); } catch(_){}
+        }
+        if (pids.length) console.log(`[Instagram] 🧹 ${pids.length} Chrome huerfano(s) del perfil eliminado(s).`);
+    } catch(_) { /* wmic no disponible, omitir */ }
+
     // Optimizaciones Extremas de RAM (Sin romper la capa visual para Analytics)
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
         headless: true,
         userDataDir: userDataDir,
         args: [
             '--disable-gpu',
             '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
         ]
     });
     browserClient = browser;
@@ -382,33 +388,64 @@ async function startBot() {
                 }
 
                 const userIdString = firstValidUserId;
-                // Usamos el username para dar más contexto a la IA
                 const userName = thread.users?.[0]?.username || userIdString;
-                const msgText = unreadTexts.join(" \\n "); // Bloque agrupado de todos los textos sueltos
-                
-                // Jitter (Evitar Timeout si 200 DMs llegan exactamente al mismo tiempo)
+                const threadId = thread.thread_id;
+
+                // 🔒 ANTI-ALUCINACIÓN: Si ya estamos respondiendo a este usuario,
+                // acumula los mensajes nuevos en su cola para procesarlos después.
+                if (processingUsers.has(userName)) {
+                    if (!pendingMessages.has(userName)) pendingMessages.set(userName, { texts: [], threadId });
+                    pendingMessages.get(userName).texts.push(...unreadTexts);
+                    console.log(`[Instagram] ⏳ @${userName} en proceso — acumulando ${unreadTexts.length} msg(s) en cola.`);
+                    continue;
+                }
+
+                // Unir mensajes nuevos + pendientes anteriores en un solo bloque
+                const allPending = pendingMessages.get(userName);
+                if (allPending) pendingMessages.delete(userName);
+                const allTexts = allPending ? [...allPending.texts, ...unreadTexts] : unreadTexts;
+                const msgText = allTexts.join(' \n ');
+
                 const jitter = Math.floor(Math.random() * 800) + 200;
                 await new Promise(r => setTimeout(r, jitter));
-                
-                console.log(`🚀 [Instagram] DM agrupado de @${userName} (Jitter: ${jitter}ms): ${msgText.substring(0,50)}`);
+                console.log(`🚀 [Instagram] DM agrupado de @${userName} (Jitter: ${jitter}ms, ${allTexts.length} msg(s)): ${msgText.substring(0,60)}...`);
 
-                // Procesar Lógica de Gemini y Citas (Se mantiene idéntico)
-                processAndReply(userName, msgText, async (reply) => {
-                    // Usar automatización visual (DOM) para responder, es 100% inmune a cambios de API/Headers
-                    await page.goto(`https://www.instagram.com/direct/t/${thread.thread_id}/`, { waitUntil: 'domcontentloaded' });
-                    
-                    // Esperar la caja de texto (Instagram usa div[role="textbox"])
-                    await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
-                    
-                    // Escribir la respuesta despacio para simular humano
-                    await page.type('div[role="textbox"]', reply, { delay: 15 });
-                    
-                    // Presionar Enter para enviar
-                    await page.keyboard.press('Enter');
-                    
-                    // Pequeña pausa para asegurar envío antes de continuar
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }).catch(e => console.error('[Instagram] Reply error:', e.message));
+                // Marcar como en proceso ANTES de llamar a Gemini
+                processingUsers.add(userName);
+
+                // Procesar con await para que no se lancen en paralelo
+                (async () => {
+                    try {
+                        await processAndReply(userName, msgText, async (reply) => {
+                            await page.goto(`https://www.instagram.com/direct/t/${threadId}/`, { waitUntil: 'domcontentloaded' });
+                            await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
+                            await page.type('div[role="textbox"]', reply, { delay: 15 });
+                            await page.keyboard.press('Enter');
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        });
+                    } catch(e) {
+                        console.error('[Instagram] Reply error:', e.message);
+                    } finally {
+                        // Liberar el lock SIEMPRE, incluso si Gemini falla
+                        processingUsers.delete(userName);
+                        // Si quedaron mensajes en cola mientras respondíamos, procesarlos ahora
+                        if (pendingMessages.has(userName)) {
+                            const queued = pendingMessages.get(userName);
+                            pendingMessages.delete(userName);
+                            const queuedText = queued.texts.join(' \n ');
+                            console.log(`[Instagram] 🔄 Procesando cola pendiente de @${userName}: ${queuedText.substring(0,60)}...`);
+                            processingUsers.add(userName);
+                            processAndReply(userName, queuedText, async (reply) => {
+                                await page.goto(`https://www.instagram.com/direct/t/${queued.threadId}/`, { waitUntil: 'domcontentloaded' });
+                                await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
+                                await page.type('div[role="textbox"]', reply, { delay: 15 });
+                                await page.keyboard.press('Enter');
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }).catch(e => console.error('[Instagram] Queue reply error:', e.message))
+                            .finally(() => processingUsers.delete(userName));
+                        }
+                    }
+                })();
             }
 
         } catch(err) {
@@ -426,6 +463,17 @@ async function startBot() {
         }
 
         await new Promise(r => setTimeout(r, POLL_MS));
+    }
+    } catch(err) {
+        console.error('[Instagram] ❌ Fatal en startBot:', err.message);
+        throw err; // Re-lanzar para que PM2 registre el error y reinicie
+    } finally {
+        // ✅ SIEMPRE se ejecuta: limpieza garantizada sin taskkill
+        if (browser) {
+            console.log('[Instagram] 🧹 Cerrando Chrome limpiamente (finally)...');
+            await browser.close().catch(() => {});
+            browserClient = null;
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type } from 'lucide-react';
-import { Timeline, TimelineState } from '@xzdarcy/react-timeline-editor';
+import { Timeline } from '@xzdarcy/react-timeline-editor';
 
 // Datos dummy de inicialización para la línea de tiempo
 const initialEditorData = [
@@ -32,7 +32,7 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl }) {
 
     // Timeline Configuration
     const scale = 5; 
-    const timelineState = useRef(new TimelineState());
+    const timelineState = useRef(null);
 
     useEffect(() => {
         if (!isOpen) return;

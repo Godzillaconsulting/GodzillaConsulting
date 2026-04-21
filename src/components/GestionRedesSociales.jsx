@@ -29,7 +29,7 @@ const GestionRedesSociales = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Share2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle1") : (content.accTitle1 || "Estrategia de Contenido Omnicanal"), desc: isEng ? t("services.items.social.accDesc1") : (content.accDesc1 || "Presencia donde tu \"Dream 100\" interactúa diariamente.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PenTool size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle2") : (content.accTitle2 || "Copywriting de Respuesta Directa"), desc: isEng ? t("services.items.social.accDesc2") : (content.accDesc2 || "Textos que incitan a la acción, no solo al like.") },

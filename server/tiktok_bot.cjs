@@ -173,7 +173,6 @@ async function processComment(comment, videoId) {
         history.push({ role: 'assistant', content: reply });
 
         // TikTok permite hasta 150 chars en comentarios
-
         if (reply.length > 148) reply = reply.substring(0, 145) + '...';
 
         const postRes = await ttPost('/v2/video/comment/create/', {
@@ -187,6 +186,11 @@ async function processComment(comment, videoId) {
         } else {
             console.log(`[TikTok] 💬 Respondí a @${comment.username}: "${reply.substring(0, 60)}"`);
         }
+
+        // GC (Garbage Collection Manual - Limpieza Agresiva)
+        model = null;
+        geminiHistory = null;
+
     } catch(err) {
         console.error('[TikTok] Error Gemini:', err.message);
     }
@@ -250,10 +254,23 @@ async function poll() {
                 if (seenComments.has(comment.id)) continue;
                 seenComments.add(comment.id);
 
+                // Garbage Collection para el Set infinito
+                if (seenComments.size > 8000) {
+                    let iter = 0;
+                    for (const key of seenComments) {
+                        if (iter++ < 3000) seenComments.delete(key);
+                        else break;
+                    }
+                }
+
                 // Solo responder si tiene texto y no es propio
                 if (!comment.text || comment.open_id === OPEN_ID) continue;
 
-                console.log(`[TikTok] 💬 Nuevo comentario de @${comment.username}: "${comment.text?.substring(0, 60)}"`);
+                // Aplicar Jitter (Desfase Aleatorio Anti-Timeouts)
+                const jitter = Math.floor(Math.random() * 800) + 200;
+                console.log(`🚀 [TikTok] 💬 Nuevo comentario encolado de @${comment.username} (Jitter: ${jitter}ms): "${comment.text?.substring(0, 60)}"`);
+                await new Promise(r => setTimeout(r, jitter));
+
                 await processComment(comment, video.id);
                 await new Promise(r => setTimeout(r, 2000));
             }

@@ -29,7 +29,7 @@ const CrmSaas = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Kanban size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle1") : (content.accTitle1 || "Pipeline de Ventas Visual"), desc: isEng ? t("services.items.crm.accDesc1") : (content.accDesc1 || "Control total de en qué etapa se encuentra cada cliente potencial.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Zap size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle2") : (content.accTitle2 || "Automatización de Workflows"), desc: isEng ? t("services.items.crm.accDesc2") : (content.accDesc2 || "Disparadores automáticos de correos, SMS y tareas para tu equipo.") },

@@ -29,7 +29,7 @@ const Bots = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle1") : (content.accTitle1 || "Cualificación de leads en tiempo real"), desc: isEng ? t("services.items.bots.accDesc1") : (content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle2") : (content.accTitle2 || "Agendamiento directo sin intervención"), desc: isEng ? t("services.items.bots.accDesc2") : (content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas.") },

@@ -15,8 +15,8 @@ import zhTranslation from './locales/zh.json';
 
 // Recursos nativos pre-cargados (Carga Instantánea a Nivel Global, 0 latencia)
 const resources = {
-  es: { translation: { ...esTranslation } },
-  en: { translation: { ...enTranslation } },
+  // Solo inyectamos estáticamente idiomas adicionales que requieren traducción,
+  // permitiendo que 'es' y 'en' utilicen el texto más actualizado directo desde los componentes React (JSX)
   fr: { translation: { ...frTranslation } },
   pt: { translation: { ...ptTranslation } },
   de: { translation: { ...deTranslation } },

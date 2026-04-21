@@ -8,6 +8,7 @@
 const path         = require('path');
 const { existsSync, readFileSync, writeFileSync } = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+const { execSync } = require('child_process');
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -279,6 +280,25 @@ const userDataDir = path.join(__dirname, '.puppeteer_ig_profile');
 let browserClient;
 
 async function startBot() {
+    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
+    try {
+        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
+        const lines = out.split('\n');
+        let killed = 0;
+        for (const line of lines) {
+            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('instagram_bot.cjs')) {
+                const match = line.match(/\s+(\d+)\s*$/);
+                if (match) {
+                    try {
+                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
+                        killed++;
+                    } catch(e){}
+                }
+            }
+        }
+        if (killed > 0) console.log(`[Seguridad IG] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
+    } catch(e) { /* silent fail */ }
+
     if (!existsSync(userDataDir)) {
         console.error('[Instagram] ❌ Perfil no encontrado. Ejecuta: node server/ig_puppeteer_setup.cjs');
         console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena para evitar bucles de PM2...');

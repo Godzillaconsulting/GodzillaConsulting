@@ -162,7 +162,7 @@ function Home() {
 
 function GlobalSuspenseFallback() {
   const { i18n } = useTranslation();
-  const isEng = i18n.language.startsWith('en');
+  const isEng = i18n.resolvedLanguage ? i18n.resolvedLanguage.startsWith('en') : false;
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#CC0000] font-black text-xl tracking-widest z-50 fixed top-0 left-0">
       <span className="animate-pulse">{isEng ? 'LOADING RESOURCES...' : 'CARGANDO RECURSOS...'}</span>

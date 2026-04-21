@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 
@@ -463,6 +466,25 @@ let browserClient;
 
 export const initTikTokBypass = async (isHeadless = true) => {
     console.log('🚀 Iniciando ZillaBot Bypass (TikTok Neurona)...');
+
+    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
+    try {
+        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
+        const lines = out.split('\n');
+        let killed = 0;
+        for (const line of lines) {
+            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('tiktok_bypass.js')) {
+                const match = line.match(/\s+(\d+)\s*$/);
+                if (match) {
+                    try {
+                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
+                        killed++;
+                    } catch(e){}
+                }
+            }
+        }
+        if (killed > 0) console.log(`[Seguridad TK] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
+    } catch(e) { /* silent fail */ }
     
     // Carpeta de sesión persistente local
     const sessionDir = path.join(path.dirname(__dirname), 'tiktok_session');

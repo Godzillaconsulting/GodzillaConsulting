@@ -29,7 +29,7 @@ const EmbudosDeVenta = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Layers size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle1") : (content.accTitle1 || "Arquitectura de Value Ladder"), desc: isEng ? t("services.items.funnels.accDesc1") : (content.accDesc1 || "Diseño de escalones desde el imán de leads hasta tu oferta premium.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <LayoutTemplate size={20} className="shrink-0" />, title: isEng ? t("services.items.funnels.accTitle2") : (content.accTitle2 || "Páginas de Aterrizaje Optimizadas"), desc: isEng ? t("services.items.funnels.accDesc2") : (content.accDesc2 || "Optimizadas con principios de neuro-marketing para Alta Conversión.") },

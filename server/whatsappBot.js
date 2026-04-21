@@ -12,6 +12,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import dotenv from 'dotenv';
+import { execSync } from 'child_process';
 dotenv.config();
 
 const activeSessionsCache = new Map();
@@ -95,8 +96,29 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
 
 export const initWhatsAppBot = () => {
     console.log("🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...");
+
+    // 🔥 PREVENCIÓN DE HILOS ZOMBIES Y CONSUMO DE RAM 🔥
+    // Si PM2 reinicia el bot, nos aseguramos de que no queden procesos huérfanos de Chrome
+    try {
+        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
+        const lines = out.split('\n');
+        let killed = 0;
+        for (const line of lines) {
+            if (line.includes('--headless') || line.includes('puppeteer') || line.includes('.wwebjs_auth') || line.includes('whatsapp-web.js')) {
+                const match = line.match(/\s+(\d+)\s*$/);
+                if (match) {
+                    try {
+                        execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' });
+                        killed++;
+                    } catch(e){}
+                }
+            }
+        }
+        if (killed > 0) console.log(`[Seguridad WA] 🧹 Se asesinaron ${killed} procesos zombies de Chrome/Node antes de levantar.`);
+    } catch(e) { /* silent fail si wmic no está disponible */ }
     
     // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
+
     const sessionPath = path.join(os.homedir(), '.godzilla-sessions', 'whatsapp');
     
     // Rutina de Seguridad: Bloquear lectura externa (chmod 700)
@@ -200,12 +222,24 @@ export const initWhatsAppBot = () => {
         }
     });
 
-    const QR_PORT = process.env.QR_PORT || 3002;
-    qrApp.listen(QR_PORT, () => {
-        console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${QR_PORT}/qr`);
-    });
+        const QR_PORT_BASE = parseInt(process.env.QR_PORT || 3002, 10);
+    const tryListen = (port) => {
+        const server = qrApp.listen(port, () => {
+            console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${port}/qr`);
+        });
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.warn(`⚠️ [QR Server] Puerto ${port} ocupado, intentando ${port + 1}...`);
+                server.close();
+                if (port < QR_PORT_BASE + 8) tryListen(port + 1);
+                else console.warn('⚠️ [QR Server] No se encontró puerto libre. El servidor QR no estará disponible.');
+            }
+        });
+    };
+    tryListen(QR_PORT_BASE);
 
     let dynamicPromptWA = null;
+
     let lastPromptCheckWA = 0;
 
     async function getSystemPromptWA() {

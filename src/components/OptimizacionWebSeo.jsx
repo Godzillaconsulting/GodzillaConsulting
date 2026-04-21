@@ -29,7 +29,7 @@ const OptimizacionWebSeo = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Search size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle1") : (content.accTitle1 || "Auditoría de Palabras Clave"), desc: isEng ? t("services.items.seo.accDesc1") : (content.accDesc1 || "Identificamos los términos que generan transacciones, no solo volumen.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Code size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle2") : (content.accTitle2 || "SEO On-Page y Técnico"), desc: isEng ? t("services.items.seo.accDesc2") : (content.accDesc2 || "Optimización de velocidad y estructura para que Google te ame.") },

@@ -29,7 +29,7 @@ const ProduccionAudiovisual = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
           const accordionItems = [
         { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Video size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle1") : (content.accTitle1 || "Storytelling Estratégico"), desc: isEng ? t("services.items.video.accDesc1") : (content.accDesc1 || "Guiones diseñados con el \"Epiphany Bridge\" para conectar emocionalmente.") },
         { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Scissors size={20} className="shrink-0" />, title: isEng ? t("services.items.video.accTitle2") : (content.accTitle2 || "Edición de Alto Retener"), desc: isEng ? t("services.items.video.accDesc2") : (content.accDesc2 || "Contenido optimizado para captar la atención en los primeros 3 segundos.") },

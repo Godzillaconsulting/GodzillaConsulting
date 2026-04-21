@@ -98,7 +98,11 @@ const ContactForm = ({ showNewsletter = true }) => {
   const res = await fetch(`${base}/api/newsletter/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: nlEmail, source: 'website' })
+      body: JSON.stringify({ 
+          email: nlEmail, 
+          source: 'website',
+          language: i18n.resolvedLanguage?.split('-')[0] || 'es'
+      })
   });
   const data = await res.json();
   if (data.success) {

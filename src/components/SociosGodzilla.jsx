@@ -6,7 +6,7 @@ import { injectSectionDefaults } from '../utils/studioConfig';
 const SociosGodzilla = () => {
     const [loading, setLoading] = useState(false);
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    const isEng = i18n.resolvedLanguage ? i18n.resolvedLanguage.startsWith('en') : false;
     
     const { getNodeData } = useSiteData();
     let content = getNodeData('socio-godzilla');

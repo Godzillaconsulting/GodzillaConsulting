@@ -3,7 +3,7 @@ import multer from 'multer';
 import os from 'os';
 
 const upload = multer({ dest: os.tmpdir() });
-import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters } from '../controllers/aiStudioController.js';
+import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters, magicEditAnalysis } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM, requireCMOrCockers } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -18,40 +18,9 @@ router.post('/purify-video', authenticateToken, upload.single('file'), purifyVid
 router.get('/status/:taskId', authenticateToken, checkRenderStatus);
 router.get('/elite-prompts', authenticateToken, getElitePrompts);
 router.post('/script-chat', authenticateToken, generateScriptChat);
+router.post('/magicedit', authenticateToken, upload.single('audioBlob'), magicEditAnalysis);
 
-router.get('/inspiration', authenticateToken, async (req, res) => {
-    try {
-        // Traer tareas publicadas o aprobadas para usar como inspiración comunitaria
-        const result = await pool.query(`
-            SELECT prompt, title, media_payload 
-            FROM studio_tasks 
-            WHERE status IN ('approved', 'published', 'cockers_review') 
-            AND media_payload IS NOT NULL 
-            ORDER BY RANDOM() LIMIT 12
-        `);
-        
-        let gallery = [];
-        for (let row of result.rows) {
-            let media = row.media_payload;
-            if (typeof media === 'string') {
-                try { media = JSON.parse(media); } catch (e) { continue; }
-            }
-            if (Array.isArray(media) && media.length > 0 && media[0].url) {
-                // Sacar solo la primera imagen de la opción
-                gallery.push({
-                    img: media[0].url,
-                    prompt: row.prompt || row.title || 'Visual Concept',
-                    tag: 'Comunidad',
-                    model: media[0].provider || 'AI Engine'
-                });
-            }
-        }
-        res.json({ success: true, gallery });
-    } catch (error) {
-        console.error('Error fetching inspiration:', error);
-        res.status(500).json({ success: false, error: 'Error recabando galería' });
-    }
-});
+router.get('/inspiration', authenticateToken, getInspirationGallery);
 
 router.get('/dynamic-filters', authenticateToken, getDynamicFilters);
 

@@ -361,6 +361,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                     result_url: ''
                 });
             }
+        }
         // NOTE: veo_live_ jobs are handled above. No other veo_ prefix is used.
 
         return res.status(400).json({ error: "Tarea inválida o expirada" });
@@ -412,21 +413,23 @@ export const getElitePrompts = async (req, res) => {
 };
 
 export const getInspirationGallery = async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for inspiration");
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const ai = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
         const promptInstruction = `Return a JSON array of 12 extremely creative, breathtaking, and unique cinematic visual prompts. 
         Each object must have:
         1. "prompt": hyper-detailed cinematic description in english. VERY IMPORTANT: KEEP PROMPT UNDER 150 CHARACTERS to prevent URL crashes. Make them avant-garde, macro photography, unreal engine 5 style, or dark fantasy.
         2. "tag": short catchy name in spanish representing the aesthetic style. BE CREATIVE. DO NOT USE GENERIC ONES. Invent completely new wild labels for each (e.g., "Bio-Terror", "Cyber-Gótico", "Luz Alienígena", "Plástico Fundido"). DO NOT REPEAT TAGS.
         3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "Higgsfield Cosmos", "Veo 3".
+        Random Seed to ensure total uniqueness this time: ${Date.now()}.
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
         const resp = await ai.generateContent({
              contents: [{role: 'user', parts: [{text: promptInstruction}]}],
-             generationConfig: { responseMimeType: "application/json" }
+             generationConfig: { responseMimeType: "application/json", temperature: 2.0 }
         });
         
         // Limpiamos la respuesta en caso que Gemini devuelva markdown
@@ -466,7 +469,7 @@ export const getDynamicFilters = async (req, res) => {
     try {
         if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for dynamic filters");
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const ai = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
         const promptInstruction = `Return a JSON array of 15 extremely creative, diverse, and unique photography/cinematography aesthetic filters.
         I want them to be COMPLETELY DIFFERENT every single time this is triggered. 
@@ -511,18 +514,24 @@ export const generateScriptChat = async (req, res) => {
 
         console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const ai = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Actualizado a version estable actual
         
-        // Creamos el historial de chat combinando system prompt y previos (GoogleGenerativeAI)
-        let systemInstruction = "Eres Asistente de IA. Reglas estrictas: 1. NUNCA expongas tus pensamientos, no uses etiquetas para pensar ni detalles de razonamiento. 2. NO saludes, no digas 'Claro', no hagas preguntas. 3. TU ÚNICA RESPUESTA será escupir de 1 a 3 lineas con el Prompt Fotográfico (Ejemplo: 'A photorealistic close up of... cinematic lighting, 8k'). Responde de inmediato con el prompt perfecto.";
-        
-        let combinedText = systemInstruction + '\n\n';
-        if (chatHistory && chatHistory.length > 0) {
-            combinedText += chatHistory.map(m => `${m.role}: ${m.text}`).join('\n') + '\n';
-        }
-        combinedText += `user: ${message}\nai:`;
+        let systemInstruction = "Eres Asistente de IA. Reglas estrictas: 1. NUNCA expongas tus pensamientos, no uses etiquetas para pensar ni detalles de razonamiento. 2. NO saludes, no digas 'Claro', no hagas preguntas. 3. TU ÚNICA RESPUESTA será dar el Prompt Fotográfico o Guion solicitado. Sé creativo y detallado.";
 
-        const responseGenAI = await ai.generateContent(combinedText);
+        const ai = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: systemInstruction 
+        });
+        
+        let history = [];
+        if (chatHistory && chatHistory.length > 0) {
+            history = chatHistory.map(m => ({
+                role: m.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: m.text }]
+            }));
+        }
+
+        const chat = ai.startChat({ history });
+        const responseGenAI = await chat.sendMessage(message);
         let aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
         
         // Strip out any thinking / thought blocks produced by new reasoning models
@@ -672,5 +681,70 @@ export const purifyVideo = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
+    }
+};
+
+export const magicEditAnalysis = async (req, res) => {
+    try {
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ error: "Llave GEMINI API no encontrada en el backend." });
+        }
+        if (!req.file && !req.body.audioBase64) {
+             return res.status(400).json({ error: "No se proporcionó audio a analizar." });
+        }
+
+        const audioMime = req.file ? req.file.mimetype : req.body.mimeType || 'audio/webm';
+        let audioB64 = '';
+        if (req.file) {
+             const fs = await import('fs');
+             audioB64 = fs.readFileSync(req.file.path, { encoding: 'base64' });
+             fs.unlinkSync(req.file.path); // limpiar temp
+        } else {
+             audioB64 = req.body.audioBase64.split(',')[1] || req.body.audioBase64;
+        }
+
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+        const prompt = `Actúa como un Bot de Edición de Video Profesional.
+Analiza detenidamente esta pista de audio. Escucha las palabras exactas, las pausas y determina los tiempos exactos.
+1. Encuentra todos los silencios muertos o incómodos (pausas sin hablar).
+2. Encuentra todas las muletillas, tartamudeos o titubeos ("eehh", "ummm", "este...").
+3. Diseña los subtítulos (captions) segmentando las oraciones a medida que fluyen lógicamente.
+
+Devuelve ESTRICTAMENTE y ÚNICAMENTE una respuesta en formato JSON puro. Nada de código markdown antes o después. Sigue esta estructura exacta de "Edit Decision List" (EDL):
+
+{
+  "edits": [
+     { "action": "cut", "start": 0.0, "end": 1.2, "reason": "silencio" },
+     { "action": "cut", "start": 5.4, "end": 6.8, "reason": "muletilla 'eehh'" },
+     { "action": "caption", "start": 1.2, "end": 3.0, "text": "¡Hola a todos!" },
+     { "action": "caption", "start": 3.1, "end": 5.3, "text": "Bienvenidos al video." }
+  ]
+}
+
+IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales). NO MIENTAS, si tienes el tiempo, sé preciso.
+`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: prompt },
+                    { inlineData: { mimeType: audioMime, data: audioB64 } }
+                ]
+            }]
+        });
+
+        let textRes = response.candidates[0].content.parts[0].text;
+        textRes = textRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+        const edlData = JSON.parse(textRes);
+        res.json({ success: true, edl: edlData });
+
+    } catch (error) {
+        console.error("[MAGIC-BOT] Fallo el análisis Flash:", error);
+        res.status(500).json({ error: "Fallo durante el análisis IA del Bot Mágico.", details: error.message });
     }
 };

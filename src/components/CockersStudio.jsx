@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
+import VideoEditorModal from './VideoEditorModal';
 const COMMUNITY_GALLERY_POOL = [
     { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
     { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
@@ -79,6 +80,8 @@ export default function CockersStudio({ adminProfile }) {
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
     const [genMode, setGenMode] = useState('imagen'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
+    const [showEditorModal, setShowEditorModal] = useState(false);
+    const [editorVideoSrc, setEditorVideoSrc] = useState('');
     
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
@@ -1333,8 +1336,15 @@ export default function CockersStudio({ adminProfile }) {
                                 </button>
                             </div>
                         </div>
+                        </div>
                     </div>
                 )}
+
+            <VideoEditorModal 
+                isOpen={showEditorModal} 
+                onClose={() => {setShowEditorModal(false); setEditorVideoSrc('');}} 
+                initialVideoUrl={editorVideoSrc}
+            />
 
             {/* RIGHT MAIN CANVAS: Resultados y Feed (Estilo Kling) */}
             <div className="flex-1 bg-black relative flex flex-col items-center justify-center overflow-auto custom-scrollbar">
@@ -1406,7 +1416,18 @@ export default function CockersStudio({ adminProfile }) {
                                                 
                                                 {task.media_options && task.media_options[0] && (
                                                     task.media_options[0].url.includes('.mp4') || task.media_options[0].url.includes('.webm') ? (
-                                                        <video src={task.media_options[0].url} className="w-full h-32 object-cover rounded-lg border border-neutral-800" autoPlay loop muted playsInline />
+                                                        <div className="relative group/vid">
+                                                            <video src={task.media_options[0].url} className="w-full h-32 object-cover rounded-lg border border-neutral-800" autoPlay loop muted playsInline />
+                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-lg">
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(task.media_options[0].url); setShowEditorModal(true); }}
+                                                                    className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] text-[10px] font-black uppercase px-4 py-2 rounded-xl flex items-center gap-2 transform hover:scale-105 transition-all"
+                                                                >
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                                                    Editar en Timeline
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     ) : (
                                                         <img src={task.media_options[0].url} alt="asset" className="w-full h-32 object-cover rounded-lg border border-neutral-800" />
                                                     )
@@ -1516,12 +1537,21 @@ export default function CockersStudio({ adminProfile }) {
                                                     </div>
                                                 ) : slot.isVideo ? (
                                                     /* Video Done */
-                                                    <div className="flex-1 relative cursor-pointer" onClick={() => handleMediaClick(slot.url)}>
+                                                    <div className="flex-1 relative cursor-pointer group/vid" onClick={() => handleMediaClick(slot.url)}>
                                                         {getYouTubeId(slot.url) ? (
                                                             <iframe src={`https://www.youtube.com/embed/${getYouTubeId(slot.url)}?autoplay=1&mute=1&loop=1`} className="absolute inset-0 w-full h-full" allowFullScreen />
                                                         ) : (
                                                             <video src={slot.url} className="w-full h-full object-cover" autoPlay loop muted playsInline controls />
                                                         )}
+                                                        <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(slot.url); setShowEditorModal(true); }}
+                                                                className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5"
+                                                            >
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                                                Enviar a Timeline
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     /* Image Done — split Original / GotSora */

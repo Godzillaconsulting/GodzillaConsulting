@@ -47,6 +47,9 @@ Concept: ${prompt}`;
                 }
 
                 const directorParts = [];
+                // Para evitar caché de la IA y asegurar que cada "Toma" sea única:
+                const cacheBuster = `[Slot: ${engine} - ID: ${Date.now()}] Make sure this variation is completely dynamically re-interpreted.`;
+                
                 // Si es Veo y tenemos un Ingrediente Visual, inyectarlo en el LLM para contexto multimodal
                 if (isVeoEngine && config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')) {
                      instruction = `You are a professional video director for Google Veo 3. 
@@ -55,7 +58,8 @@ Analyze the attached image and write a highly visual English prompt for an Image
 Focus on describing exactly how the elements in the image should move, evolve, behave, and what camera motion should occur (e.g., pan, tracking, zoom).
 CRITICAL FOCUS: Ensure the prompt visually matches the provided image so the animation flows naturally. DO NOT censor the concept. Incorporate any specific visual filters or vibes mentioned. Respond ONLY with the final prompt text.
 
-Concept / Filters: ${prompt}`;
+Concept / Filters: ${prompt}
+${cacheBuster}`;
                      directorParts.push({ text: instruction });
                      directorParts.push({ 
                          inlineData: { 
@@ -64,7 +68,7 @@ Concept / Filters: ${prompt}`;
                          } 
                      });
                 } else {
-                     directorParts.push({ text: instruction });
+                     directorParts.push({ text: instruction + "\n" + cacheBuster });
                 }
 
                 const directorRes = await aiSDK.models.generateContent({

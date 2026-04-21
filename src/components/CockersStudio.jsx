@@ -726,7 +726,7 @@ export default function CockersStudio({ adminProfile }) {
         }
 
         const enginesToRun = genMode === 'video'
-            ? ['Veo 3', 'Veo 3 Fast']
+            ? ['Veo 3 (Toma 1)', 'Veo 3 (Toma 2)', 'Veo 3 (Toma 3)', 'Veo 3 Fast']
             : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
@@ -765,7 +765,7 @@ export default function CockersStudio({ adminProfile }) {
 
             for (let idx = 0; idx < enginesToRun.length; idx++) {
                 const engineName = enginesToRun[idx];
-                if (idx > 0) await new Promise(r => setTimeout(r, 800));
+                if (idx > 0) await new Promise(r => setTimeout(r, 1800));
                 try {
                     const resFetch = await fetch('/api/studio/generate', {
                         method: 'POST',

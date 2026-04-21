@@ -263,6 +263,10 @@ async function processAndReply(userId, text, replyFn) {
         }
         console.log(`[Instagram] 🤖 Respondí a ${userId.toString().substring(0,8)}***`);
 
+        // GC (Garbage Collection Manual - Limpieza Agresiva)
+        chatCompletion = null;
+        finalSystemPrompt = null;
+
     } catch(err) {
         console.error('[Instagram] Error Groq:', err.message);
         try { await replyFn('Lo siento, tuve un error. Por favor intenta de nuevo 🦖'); } catch(_) {}
@@ -330,16 +334,23 @@ async function startBot() {
             const threads = inboxData?.inbox?.threads || [];
 
             for (const thread of threads) {
-                const lastMsg = thread.items?.[0];
-                if (!lastMsg || lastMsg.item_type !== 'text') continue;
-
-                // Ignorar mensajes que el bot o el usuario mandaron (mis propios mensajes)
-                if (lastMsg.user_id?.toString() === myUserId) continue;
-
-                const msgKey = `${thread.thread_id}_${lastMsg.item_id}`;
-                if (seenItems.has(msgKey)) continue;
-                seenItems.add(msgKey); // Estructura HASH O(1) ultrasónica para evitar Memory Leaks
+                let unreadTexts = [];
+                let firstValidUserId = null;
                 
+                // Iterar todos los items del thread para aglomerar spam en un solo bloque (Queue Logic)
+                for (const item of thread.items || []) {
+                    if (item.item_type === 'text' && item.user_id?.toString() !== myUserId) {
+                        const msgKey = `${thread.thread_id}_${item.item_id}`;
+                        if (!seenItems.has(msgKey)) {
+                            seenItems.add(msgKey);
+                            firstValidUserId = item.user_id.toString();
+                            unreadTexts.unshift(item.text); // Mantener orden cronológico
+                        }
+                    }
+                }
+
+                if (unreadTexts.length === 0) continue;
+
                 // --- GARBAGE COLLECTION ---
                 if (seenItems.size > 2000) {
                     let iter = 0;
@@ -350,12 +361,16 @@ async function startBot() {
                     console.log('[Instagram] 🧹 Liberando memoria de historial (Garbage Collection).');
                 }
 
-                const userIdString = lastMsg.user_id.toString();
+                const userIdString = firstValidUserId;
                 // Usamos el username para dar más contexto a la IA
                 const userName = thread.users?.[0]?.username || userIdString;
-                const msgText = lastMsg.text;
+                const msgText = unreadTexts.join(" \\n "); // Bloque agrupado de todos los textos sueltos
                 
-                console.log(`[Instagram] 📩 DM de @${userName}: ${msgText.substring(0,50)}`);
+                // Jitter (Evitar Timeout si 200 DMs llegan exactamente al mismo tiempo)
+                const jitter = Math.floor(Math.random() * 800) + 200;
+                await new Promise(r => setTimeout(r, jitter));
+                
+                console.log(`🚀 [Instagram] DM agrupado de @${userName} (Jitter: ${jitter}ms): ${msgText.substring(0,50)}`);
 
                 // Procesar Lógica de Gemini y Citas (Se mantiene idéntico)
                 processAndReply(userName, msgText, async (reply) => {

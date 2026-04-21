@@ -6,6 +6,7 @@ import {
     sendNewsletter,
     getHistory,
     deleteNewsletter,
+    deleteSubscriber,
 } from '../controllers/newsletterController.js';
 
 import { generateAndSendAutoNewsletter } from '../services/newsletterGenerator.js';
@@ -19,6 +20,7 @@ router.get ('/unsubscribe',   unsubscribe);
 
 // Privadas (protegidas por JWT en Backend)
 router.get ('/subscribers',   requireAdmin, getSubscribers);
+router.delete('/subscribers/:id', requireAdmin, deleteSubscriber);
 router.post('/send',          requireAdmin, sendNewsletter);
 router.get ('/history',       requireAdmin, getHistory);
 router.delete('/delete/:id',  requireAdmin, deleteNewsletter);

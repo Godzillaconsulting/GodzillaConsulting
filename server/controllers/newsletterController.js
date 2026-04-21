@@ -145,3 +145,16 @@ export const deleteNewsletter = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// ── DELETE /api/newsletter/subscribers/:id ───────────────────────────────────
+export const deleteSubscriber = async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ success: false, message: 'ID requerido' });
+        
+        await pool.query(`DELETE FROM subscribers WHERE id = $1`, [id]);
+        return res.json({ success: true, message: 'Suscriptor borrado permanentemente.' });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};

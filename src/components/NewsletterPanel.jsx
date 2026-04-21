@@ -59,6 +59,19 @@ export default function NewsletterPanel() {
         setLoadingHist(false);
     };
 
+    const handleDeleteSubscriber = async (id, email) => {
+        if (!window.confirm(`¿Estás seguro de borrar permanentemente a ${email} de la base de datos de Godzilla?`)) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/newsletter/subscribers/${id}`, {
+                method: 'DELETE',
+                headers: authHeaders(),
+            });
+            const d = await r.json();
+            if (d.success) fetchSubscribers();
+            else alert(d.message || "Error al borrar");
+        } catch (err) { alert(err.message); }
+    };
+
     useEffect(() => {
         if (tab === 'subscribers') fetchSubscribers();
         if (tab === 'history') fetchHistory();
@@ -392,15 +405,24 @@ export default function NewsletterPanel() {
                             <div className="space-y-1">
                                 {subscribers.map(s => (
                                     <div key={s.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-800">
-                                        <div>
+                                        <div className="flex-1">
                                             <p className="text-xs font-semibold text-white">{s.email}</p>
                                             <p className="text-[9px] text-neutral-500">{s.source} · {new Date(s.subscribed_at).toLocaleDateString('es-MX')} · <span className="font-bold text-sky-400">ID: {s.language || 'es'}</span></p>
                                         </div>
-                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                                            s.status === 'active' ? 'bg-green-400/10 text-green-400' : 'bg-neutral-700 text-neutral-500'
-                                        }`}>
-                                            {s.status === 'active' ? 'Activo' : 'Desuscrito'}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                                                s.status === 'active' ? 'bg-green-400/10 text-green-400' : 'bg-neutral-700 text-neutral-500'
+                                            }`}>
+                                                {s.status === 'active' ? 'Activo' : 'Desuscrito'}
+                                            </span>
+                                            <button 
+                                                onClick={() => handleDeleteSubscriber(s.id, s.email)} 
+                                                className="text-neutral-500 hover:text-red-500 hover:bg-red-500/10 transition px-2 py-1 rounded-md bg-black border border-neutral-800" 
+                                                title="Borrar Permanente"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

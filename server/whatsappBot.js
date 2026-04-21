@@ -14,8 +14,29 @@ import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
+const activeSessionsCache = new Map();
+const userMessageQueues = new Map();
 
 async function appendMessageToSession(senderId, role, content, plataforma = 'whatsapp_web') {
+    let session = activeSessionsCache.get(senderId);
+    if (!session) {
+        try {
+            const res = await pool.query("SELECT historial_mensajes, resumen_contexto FROM sesiones_chat WHERE id_usuario_red = $1", [senderId]);
+            if (res.rows && res.rows.length > 0) {
+                session = { historial_mensajes: typeof res.rows[0].historial_mensajes === 'string' ? JSON.parse(res.rows[0].historial_mensajes) : (res.rows[0].historial_mensajes || []), resumen_contexto: res.rows[0].resumen_contexto || '' };
+            } else {
+                session = { historial_mensajes: [], resumen_contexto: '' };
+            }
+        } catch(e) {
+            console.error("❌ Fallo leyendo cache sesión DB:", e.message);
+            session = { historial_mensajes: [], resumen_contexto: '' };
+        }
+    }
+    
+    session.historial_mensajes.push({ role, contenido: content });
+    activeSessionsCache.set(senderId, session);
+
+    const newMsg = JSON.stringify([{ role, contenido: content }]);
     const query = `
         INSERT INTO sesiones_chat (id_usuario_red, historial_mensajes, resumen_contexto, ultima_actualizacion, plataforma)
         VALUES ($1, $2, '', CURRENT_TIMESTAMP, $3)
@@ -23,17 +44,11 @@ async function appendMessageToSession(senderId, role, content, plataforma = 'wha
         DO UPDATE SET
             historial_mensajes = sesiones_chat.historial_mensajes || $2,
             ultima_actualizacion = CURRENT_TIMESTAMP,
-            plataforma = EXCLUDED.plataforma
-        RETURNING historial_mensajes, resumen_contexto;
+            plataforma = EXCLUDED.plataforma;
     `;
-    const newMsg = JSON.stringify([{ role, contenido: content }]);
-    try {
-        const res = await pool.query(query, [senderId, newMsg, plataforma]);
-        return res.rows[0];
-    } catch (e) {
-        console.error("❌ Error en appendMessageToSession (WA):", e.message);
-        return null;
-    }
+    pool.query(query, [senderId, newMsg, plataforma]).catch(e => console.error("❌ DB Async Write Error (WA):", e.message));
+    
+    return session;
 }
 
 // Helper: Compresión con Gemini
@@ -64,6 +79,13 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             WHERE id_usuario_red = $2
         `;
         await pool.query(query, [newSummary, senderId]);
+        
+        // Reflejar compresión en el Caché Activo
+        activeSessionsCache.set(senderId, {
+            historial_mensajes: [],
+            resumen_contexto: newSummary
+        });
+        
         console.log(`[Compresión WA] ✅ Memoria comprimida y guardada para ${senderId}.`);
     } catch (e) {
         console.error("❌ Error comprimiendo contexto WA:", e);
@@ -183,39 +205,53 @@ export const initWhatsAppBot = () => {
         console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${QR_PORT}/qr`);
     });
 
+    let dynamicPromptWA = null;
+    let lastPromptCheckWA = 0;
+
+    async function getSystemPromptWA() {
+        if (Date.now() - lastPromptCheckWA > 60000 || !dynamicPromptWA) {
+            try {
+                const res = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma = 'whatsapp'");
+                if (res.rows && res.rows.length > 0 && res.rows[0].dm_system_prompt) {
+                    dynamicPromptWA = res.rows[0].dm_system_prompt;
+                } else if (!dynamicPromptWA) {
+                    dynamicPromptWA = SYSTEM_PROMPT;
+                }
+                lastPromptCheckWA = Date.now();
+            } catch(e) {
+                if (!dynamicPromptWA) dynamicPromptWA = SYSTEM_PROMPT;
+            }
+        }
+        return dynamicPromptWA;
+    }
+
     client.on('message', async (message) => {
         if (message.isGroupMsg) return;
         if (!message.body) return;
 
         const senderId = message.from;
-        const messageText = message.body;
+        const rawMessageText = message.body;
 
         const maskedSender = senderId.substring(0, 4) + "****" + senderId.substring(senderId.length - 4);
-        console.log(`📩 WA Msg recibido [${maskedSender}]: [MENSAJE OCULTO POR SEGURIDAD PII]`);
+        console.log(`📩 WA Msg recibido [${maskedSender}]: [ENTRANDO A COLA DE ESPERA]`);
 
-let dynamicPromptWA = null;
-let lastPromptCheckWA = 0;
-
-async function getSystemPromptWA() {
-    if (Date.now() - lastPromptCheckWA > 60000 || !dynamicPromptWA) {
-        try {
-            const res = await pool.query("SELECT dm_system_prompt FROM bot_configs WHERE plataforma = 'whatsapp'");
-            if (res.rows.length > 0 && res.rows[0].dm_system_prompt) {
-                dynamicPromptWA = res.rows[0].dm_system_prompt;
-                console.log('[WA] 🔄 SYSTEM PROMPT actualizado desde Cerebro Central');
-            } else if (!dynamicPromptWA) {
-                dynamicPromptWA = SYSTEM_PROMPT; // fallback init
-            }
-            lastPromptCheckWA = Date.now();
-        } catch(e) {
-            console.error("Error leyendo bot config WA:", e.message);
-            if (!dynamicPromptWA) dynamicPromptWA = SYSTEM_PROMPT;
+        if (!userMessageQueues.has(senderId)) {
+            userMessageQueues.set(senderId, { timer: null, msgBuffer: [] });
         }
-    }
-    return dynamicPromptWA;
-}
+        
+        const queueObj = userMessageQueues.get(senderId);
+        queueObj.msgBuffer.push(rawMessageText);
 
-// ... helper to get chat config
+        if (queueObj.timer) return; // Si ya hay un timer corriendo, solo aglomera el spam
+
+        const jitter = Math.floor(Math.random() * 800) + 200; // Inyectar 200 a 1000ms de retardo
+        
+        queueObj.timer = setTimeout(async () => {
+            const messageText = queueObj.msgBuffer.join(" \\n ");
+            userMessageQueues.delete(senderId); // Limpiar cola
+            console.log(`🚀 WA Procesando batch para [${maskedSender}] (Jitter: ${jitter}ms)`);
+
+
         try {
             const sessionData = await appendMessageToSession(senderId, "user", messageText);
             if (!sessionData) return;
@@ -468,9 +504,16 @@ async function getSystemPromptWA() {
                 compressContextIfNeeded(senderId, postBotSession.historial_mensajes, postBotSession.resumen_contexto);
             }
 
+            // GC (Garbage Collection Manual - Limpieza Agresiva)
+            geminiMessages = null;
+            rawHistory = null;
+            finalSystemPrompt = null;
+            chatCompletion = null;
+
         } catch (error) {
             console.error("❌ Error interno procesando WA message:", error);
         }
+        }, 2000 + jitter); // Ventana de 2 segundos de agrupación de mensajes + Jitter
     });
 
     client.initialize();

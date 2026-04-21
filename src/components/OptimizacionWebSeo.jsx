@@ -3,14 +3,15 @@ import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Search, Code, Link as LinkIcon, FileText, MapPin, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
-const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifVideo = '/assets/icons/Video.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifRedes = '/assets/icons/Redes%20Sociales.gif';
+const gifSeo = '/assets/icons/Red%20Social%20Optimizar.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 // const seoVideo = `${API_URL}/api/media/assets/GC_SEOWebpage_AM_161225.mp4`; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
@@ -27,15 +28,17 @@ const OptimizacionWebSeo = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Search size={20} className="shrink-0" />, title: content.accTitle1 || "Auditoría de Palabras Clave", desc: content.accDesc1 || "Identificamos los términos que generan transacciones, no solo volumen." },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Code size={20} className="shrink-0" />, title: content.accTitle2 || "SEO On-Page y Técnico", desc: content.accDesc2 || "Optimización de velocidad y estructura para que Google te ame." },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <LinkIcon size={20} className="shrink-0" />, title: content.accTitle3 || "Estrategia de Link Building", desc: content.accDesc3 || "Backlinks de calidad que elevan tu relevancia competitiva." },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <FileText size={20} className="shrink-0" />, title: content.accTitle4 || "Marketing de Contenidos", desc: content.accDesc4 || "Artículos temáticos que responden dudas y posicionan tu expertise." },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MapPin size={20} className="shrink-0" />, title: content.accTitle5 || "Google Business Profile", desc: content.accDesc5 || "Dominio del mapa local para captar clientes cercanos y listos para comprar." }
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Search size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle1") : (content.accTitle1 || "Auditoría de Palabras Clave"), desc: isEng ? t("services.items.seo.accDesc1") : (content.accDesc1 || "Identificamos los términos que generan transacciones, no solo volumen.") },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Code size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle2") : (content.accTitle2 || "SEO On-Page y Técnico"), desc: isEng ? t("services.items.seo.accDesc2") : (content.accDesc2 || "Optimización de velocidad y estructura para que Google te ame.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <LinkIcon size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle3") : (content.accTitle3 || "Estrategia de Link Building"), desc: isEng ? t("services.items.seo.accDesc3") : (content.accDesc3 || "Backlinks de calidad que elevan tu relevancia competitiva.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <FileText size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle4") : (content.accTitle4 || "Marketing de Contenidos"), desc: isEng ? t("services.items.seo.accDesc4") : (content.accDesc4 || "Artículos temáticos que responden dudas y posicionan tu expertise.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MapPin size={20} className="shrink-0" />, title: isEng ? t("services.items.seo.accTitle5") : (content.accTitle5 || "Google Business Profile"), desc: isEng ? t("services.items.seo.accDesc5") : (content.accDesc5 || "Dominio del mapa local para captar clientes cercanos y listos para comprar.") }
     ];
 
-    const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-seo');
 
     useEffect(() => {
@@ -118,7 +121,7 @@ const OptimizacionWebSeo = () => {
                         )}
 
                         {/* Video Controls Overlay */}
-                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                             <button
                                 onClick={togglePlay}
                                 className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"
@@ -164,11 +167,11 @@ const OptimizacionWebSeo = () => {
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.seo.title') : content.title).replace(/\n/g, '<br />') }}
                             />
                                                         {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {content.subtitle}
+                                {isEng ? t('services.items.seo.desc') : content.subtitle}
                             </p>
                             
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
@@ -201,7 +204,7 @@ const OptimizacionWebSeo = () => {
                                 onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
                             >
-                                {content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
+                                {isEng ? 'Schedule appointment' : content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
                             </button>
                         </div>
                     </div>

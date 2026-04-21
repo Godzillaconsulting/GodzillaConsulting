@@ -38,12 +38,18 @@ export const getYouTubeId = (url) => {
     return (match && match[2].length === 11) ? match[2] : null;
 };
 
-// ─── API BASE ─────────────────────────────────────────────────────────────
 export const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const getAPI = () => API_URL;
 
 export const resolveMedia = (url) => {
     if (!url) return '';
+    // Reemplaza localhost/127.0.0.1 por API_URL (común si se generó en ambiente dev)
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+        try {
+            const urlObj = new URL(url);
+            return `${API_URL}${urlObj.pathname}${urlObj.search}`;
+        } catch(e) { /* ignore */ }
+    }
     if (url.startsWith('http')) return url;
     return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };

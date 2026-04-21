@@ -3,6 +3,7 @@ import React, { useState, useEffect, memo, Suspense } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import CustomCursor from './components/CustomCursor';
 import PrivateRoute from './components/PrivateRoute';
+import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 import { SiteProvider, useSiteData } from './context/SiteContext';
 import { useTranslation } from 'react-i18next';
 
@@ -41,6 +42,7 @@ const SEOPageWrapper = React.lazy(() => import('./components/SEOPageWrapper'));
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
 const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
 const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
+const SociosGodzilla = React.lazy(() => import('./components/SociosGodzilla'));
 
 // Animación principal gobernada de forma particular por el Componente Hero.jsx. No requiere background global.
 
@@ -190,63 +192,71 @@ function AppLayout() {
         </div>
         
         <div className="flex-grow pointer-events-auto">
-          {/* El Suspense envuelve todas las rutas Lazy */}
-          <Suspense fallback={<GlobalSuspenseFallback />}>
-            <Routes>
-              {/* Mega-Embudo principal */}
-              <Route path="/" element={<Home />} />
+          {/* GlobalErrorBoundary atrapa errores en cualquier subpágina para que no se quede la pantalla en negro */}
+          <GlobalErrorBoundary>
+            {/* El Suspense envuelve todas las rutas Lazy */}
+            <Suspense fallback={<GlobalSuspenseFallback />}>
+              <Routes>
+                {/* Mega-Embudo principal */}
+                <Route path="/" element={<Home />} />
 
-              {/* Rutas SEO Satélite Independientes */}
-              <Route path="/servicios" element={
-                <SEOPageWrapper title="Servicios B2B y Motores IA" description="Descubre los servicios de automatización de inteligencia artificial e implementación B2B.">
-                  <Servicios />
-                </SEOPageWrapper>
-              } />
-              
-              <Route path="/paquetes" element={
-                <SEOPageWrapper title="Paquetes de Suscripción" description="Cotiza y contrata las suscripciones mensuales de automatización IA y gestión omnicanal.">
-                  <Paquetes />
-                </SEOPageWrapper>
-              } />
-              
-              <Route path="/portafolio" element={
-                <SEOPageWrapper title="Casos de Éxito y Portafolio" description="Casos reales de aumento de retorno de inversión mediante la integración de IA autónoma.">
-                  <CasosExito />
-                </SEOPageWrapper>
-              } />
-              
-              <Route path="/cultura" element={
-                <SEOPageWrapper title="Manifiesto y Cultura" description="Nuestra filosofía estricta de aceleración empresarial corporativa.">
-                  <Cultura />
-                </SEOPageWrapper>
-              } />
-              
-              <Route path="/recursos" element={
-                <SEOPageWrapper title="Recursos Gratuitos de IA" description="Informes ejecutivos y guías para directores y estrategas de marketing.">
-                  <Recursos />
-                </SEOPageWrapper>
-              } />
+                {/* Rutas SEO Satélite Independientes */}
+                <Route path="/servicios" element={
+                  <SEOPageWrapper title="Servicios B2B y Motores IA" description="Descubre los servicios de automatización de inteligencia artificial e implementación B2B.">
+                    <Servicios />
+                  </SEOPageWrapper>
+                } />
+                
+                <Route path="/paquetes" element={
+                  <SEOPageWrapper title="Paquetes de Suscripción" description="Cotiza y contrata las suscripciones mensuales de automatización IA y gestión omnicanal.">
+                    <Paquetes />
+                  </SEOPageWrapper>
+                } />
+                
+                <Route path="/portafolio" element={
+                  <SEOPageWrapper title="Casos de Éxito y Portafolio" description="Casos reales de aumento de retorno de inversión mediante la integración de IA autónoma.">
+                    <CasosExito />
+                  </SEOPageWrapper>
+                } />
+                
+                <Route path="/cultura" element={
+                  <SEOPageWrapper title="Manifiesto y Cultura" description="Nuestra filosofía estricta de aceleración empresarial corporativa.">
+                    <Cultura />
+                  </SEOPageWrapper>
+                } />
+                
+                <Route path="/recursos" element={
+                  <SEOPageWrapper title="Recursos Gratuitos de IA" description="Informes ejecutivos y guías para directores y estrategas de marketing.">
+                    <Recursos />
+                  </SEOPageWrapper>
+                } />
 
-              {/* Políticas y Legacy */}
-              <Route path="/terminos" element={<TerminosYCondiciones />} />
-              <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
-              <Route path="/politica-cookies" element={<PoliticaCookies />} />
-              <Route path="/bots" element={<Bots />} />
-              <Route path="/audiovisual" element={<ProduccionAudiovisual />} />
-              <Route path="/embudos" element={<EmbudosDeVenta />} />
-              <Route path="/redes" element={<GestionRedesSociales />} />
-              <Route path="/seo" element={<OptimizacionWebSeo />} />
-              <Route path="/crm" element={<CrmSaas />} />
-              <Route path="/admin/*" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
-              <Route path="/cm" element={<Navigate to="/admin/calendar" replace />} />
-              <Route path="/studio" element={<Navigate to="/admin/studio" replace />} />
-              <Route path="/godzilla-sora" element={<ErrorBoundary><PrivateRoute><GodzillaSora /></PrivateRoute></ErrorBoundary>} />
-              <Route path="/recursos/:recursoId" element={<RecursoPage />} />
-              <Route path="/:slug" element={<LandingPaqueteDynamic />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/faq" element={<PreguntasFrecuentes />} />
-            </Routes>
-          </Suspense>
+                {/* Políticas y Legacy */}
+                <Route path="/terminos" element={<TerminosYCondiciones />} />
+                <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
+                <Route path="/politica-cookies" element={<PoliticaCookies />} />
+                <Route path="/bots" element={<Bots />} />
+                <Route path="/audiovisual" element={<ProduccionAudiovisual />} />
+                <Route path="/embudos" element={<EmbudosDeVenta />} />
+                <Route path="/redes" element={<GestionRedesSociales />} />
+                <Route path="/seo" element={<OptimizacionWebSeo />} />
+                <Route path="/crm" element={<CrmSaas />} />
+                <Route path="/admin/*" element={<ErrorBoundary><PrivateRoute><AdminStudio /></PrivateRoute></ErrorBoundary>} />
+                <Route path="/cm" element={<Navigate to="/admin/calendar" replace />} />
+                <Route path="/studio" element={<Navigate to="/admin/studio" replace />} />
+                <Route path="/godzilla-sora" element={<ErrorBoundary><PrivateRoute><GodzillaSora /></PrivateRoute></ErrorBoundary>} />
+                <Route path="/recursos/:recursoId" element={<RecursoPage />} />
+                <Route path="/:slug" element={<LandingPaqueteDynamic />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/faq" element={<PreguntasFrecuentes />} />
+                <Route path="/socios" element={
+                  <SEOPageWrapper title="Socios Executive" description="Desbloquea el PDF Ejecutivo Inteligente">
+                    <SociosGodzilla />
+                  </SEOPageWrapper>
+                } />
+              </Routes>
+            </Suspense>
+          </GlobalErrorBoundary>
         </div>
 
         <div className="pointer-events-auto">
@@ -269,7 +279,9 @@ function App() {
           <ScrollToTop />
           <PixelTracker />
           <GodzillaTracker />
-          <AppLayout />
+          <Suspense fallback={<div className="bg-black min-h-screen flex items-center justify-center text-white"><div className="animate-pulse tracking-widest text-sm">LOADING ASSETS...</div></div>}>
+            <AppLayout />
+          </Suspense>
         </Router>
       </SiteProvider>
     </HelmetProvider>

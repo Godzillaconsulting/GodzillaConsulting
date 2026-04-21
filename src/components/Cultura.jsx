@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const Cultura = () => {
   const { t, i18n } = useTranslation();
-  const isEng = i18n.language.startsWith('en');
+  const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
   const { getNodeData } = useSiteData();
   const nodeData = getNodeData('cultura') || {};
 
@@ -183,8 +183,8 @@ const Cultura = () => {
  <div className="space-y-12">
  <div>
  <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-none">
- <span className="block text-gray-500">{isEng ? t('culture.title') : (nodeData.overline || 'NUESTRA')}</span>
- {isEng ? t('culture.titleRed') : (nodeData.title || 'CULTURA')}
+ <span className="block text-gray-500">{isSpanish ? (nodeData.overline || 'NUESTRA') : t('culture.title')}</span>
+ {isSpanish ? (nodeData.title || 'CULTURA') : t('culture.titleRed')}
  </h2>
  <div className="w-24 h-2 bg-[#CC0000] mb-8"></div>
 
@@ -206,9 +206,8 @@ const Cultura = () => {
  {/* Slide 1: Description */}
  <div style={{ width: '50%' }} className="flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
  <div className="space-y-6 text-xl md:text-3xl text-gray-300 font-light leading-relaxed whitespace-pre-line">
- {isEng ? (
- <p>{t('culture.description')}</p>
- ) : nodeData.description ? <p>{nodeData.description}</p> : (
+ {isSpanish ? (
+ nodeData.description ? <p>{nodeData.description}</p> : (
  <>
  <p>
  Somos una agencia de marketing digital ubicada en <strong className="text-white font-medium">Ciudad Juárez, Chihuahua</strong>.
@@ -220,6 +219,8 @@ const Cultura = () => {
  Diseñamos campañas y sistemas que priorizan <strong className="text-white font-medium border-b-2 border-[#CC0000]">ventas y rentabilidad</strong>.
  </p>
  </>
+ )) : (
+ <p>{t('culture.description')}</p>
  )}
  </div>
  </div>
@@ -228,16 +229,16 @@ const Cultura = () => {
  <div style={{ width: '50%' }} className="flex-shrink-0 pr-4 py-4 relative pointer-events-none select-none">
  <div className="space-y-12">
  <div className="group">
- <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">{isEng ? t('culture.mission') : 'MISIÓN'}</h3>
+ <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">{isSpanish ? 'MISIÓN' : t('culture.mission')}</h3>
  <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light whitespace-pre-line">
- {isEng ? t('culture.missionText') : (nodeData.missionText || 'Ayudar a empresas mexicanas a crecer usando tecnología y estrategias digitales. Creemos que todos los negocios merecen las herramientas para competir y prosperar en el mundo actual.')}
+ {isSpanish ? (nodeData.missionText || 'Ayudar a empresas mexicanas a crecer usando tecnología y estrategias digitales. Creemos que todos los negocios merecen las herramientas para competir y prosperar en el mundo actual.') : t('culture.missionText')}
  </p>
  </div>
 
  <div className="group">
- <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">{isEng ? t('culture.vision') : 'VISIÓN'}</h3>
+ <h3 className="text-3xl md:text-4xl font-black text-white tracking-wide mb-6">{isSpanish ? 'VISIÓN' : t('culture.vision')}</h3>
  <p className="text-gray-300 leading-relaxed text-xl md:text-2xl font-light whitespace-pre-line">
- {isEng ? t('culture.visionText') : (nodeData.visionText || 'Multiplicar el 15% de negocios digitalizados en México y elevar ese 4% de éxito, convirtiéndonos en el motor del crecimiento digital del país.')}
+ {isSpanish ? (nodeData.visionText || 'Multiplicar el 15% de negocios digitalizados en México y elevar ese 4% de éxito, convirtiéndonos en el motor del crecimiento digital del país.') : t('culture.visionText')}
  </p>
  </div>
  </div>

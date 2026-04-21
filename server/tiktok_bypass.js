@@ -6,12 +6,6 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
-import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
-import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
-import { sendCitaConfirmationEmail } from './services/emailService.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 puppeteer.use(StealthPlugin());
 
@@ -50,15 +44,15 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nConversación:\n${historyText}`;
         if (resumen_contexto) {
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nActualiza el resumen integrando la nueva parte:\n${historyText}`;
         }
-        const result = await model.generateContent(prompt);
-        const newSummary = result.response.text();
+        const chatCompletion = await model.generateContent(prompt);
+        const newSummary = chatCompletion.response.text();
 
         const query = `
             UPDATE sesiones_chat 
@@ -92,52 +86,71 @@ async function handleAILogic(senderId, messageText) {
         } catch(e) {}
 
         if (resumen_contexto && resumen_contexto.trim() !== '') {
-            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}`;
+            finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
         }
 
-        let safeHistory = [];
-        let rawHistoryForGemini = historial_mensajes.slice(0, -1); 
-        
-        for (const msg of rawHistoryForGemini) {
-            if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === msg.role) {
-                safeHistory[safeHistory.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.contenido}`;
-            } else {
-                safeHistory.push({
-                    role: msg.role === "assistant" ? "model" : msg.role,
-                    parts: [{ text: msg.contenido }]
-                });
-            }
-        }
-        
-        if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
-            safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
+        let geminiMessages = [];
+        let rawHistory = historial_mensajes.slice(0, -1);
+        for (const msg of rawHistory) {
+            geminiMessages.push({
+                role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
+                parts: [{ text: msg.contenido }]
+            });
         }
 
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
+        
+        // Format tools for Gemini 1.5
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
+                name: t.name,
+                description: t.description,
+                parameters: {
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
+                }
+            }))
+        }];
+
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
             systemInstruction: finalSystemPrompt,
-            tools: [{ functionDeclarations: chatTools }]
+            tools: geminiTools
         });
 
-        const chat = model.startChat({ history: safeHistory });
-        let result = await withTimeout(
-            chat.sendMessage(messageText), 
-            "Lo lamento, estoy saturado procesando respuestas. ¿Podemos seguir en unos minutos?"
-        );
-        
-        let botReply = "Lo siento, fallé al entender.";
-        try { botReply = result.response.text(); } catch(e) {}
+        const chat = model.startChat({ history: geminiMessages });
 
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-        
-        if (functionCalls && functionCalls.length > 0) {
+        let chatCompletion = await withTimeout(
+            chat.sendMessage(messageText),
+            "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
+        );
+
+        let botReply = "Lo siento, fallé al entender.";
+        let responseMessage = null;
+        let functionCalls = [];
+
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { botReply = response.text() || botReply; } catch(e){}
+            
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
+            }
+        }
+
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === "check_availability") {
-                    const { fecha, hora } = call.args;
+                const callName = call.name;
+                let callArgs = call.args || {};
+
+                if (callName === "check_availability") {
+                    const { fecha, hora } = callArgs;
                     const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                     const isSunday = dateObj.getDay() === 0;
                     const hourInt = parseInt(hora.split(':')[0], 10);
@@ -148,22 +161,22 @@ async function handleAILogic(senderId, messageText) {
                     } else if (isSunday) {
                         fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
                     } else if (hourInt < 9 || hourInt >= 19) {
-                        fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
+                        fRes = { disponible: false, razon: "Fuera de horario de oficina. Por favor solicita otra hora." };
                     } else {
                         const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                         const r = await pool.query(query, [fecha, hora]);
                         fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                     }
-                } else if (call.name === "save_appointment") {
+                } else if (callName === "save_appointment") {
                     try {
-                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                         const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                         const isSunday = dateObj.getDay() === 0;
                         const hourInt = parseInt(hora.split(':')[0], 10);
                         const now = new Date();
 
                         if (dateObj < now || isSunday || hourInt < 9 || hourInt >= 19) {
-                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario. Pide otra fecha/hora." };
+                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario." };
                         } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
@@ -204,11 +217,11 @@ async function handleAILogic(senderId, messageText) {
                     } catch (e) {
                         fRes = { success: false, error: "Error de servidor interno." };
                     }
-                } else if (call.name === "cancel_appointment") {
-                    const { telefono } = call.args;
+                } else if (callName === "cancel_appointment") {
+                    const { telefono } = callArgs;
                     try {
                         const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
-                        if (result.rows.length === 0) fRes = { success: false, error: "No encontré cita activa con ese número de teléfono." };
+                        if (result.rows.length === 0) fRes = { success: false, error: "No encontré cita activa." };
                         else {
                             const cita = result.rows[0];
                             if (cita.google_calendar_id) await cancelarEnGoogleCalendar(cita.google_calendar_id);
@@ -218,11 +231,16 @@ async function handleAILogic(senderId, messageText) {
                     } catch(e) { fRes = { success: false, error: "Error." }; }
                 }
 
-                result = await withTimeout(
-                    chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await withTimeout(
+                    chat.sendMessage([{
+                        functionResponse: { name: callName, response: fRes }
+                    }]),
                     "Hubo un fallo temporal de procesamiento."
                 );
-                try { botReply = result.response.text(); } catch(e) {}
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { botReply = chatCompletion2.response.text() || botReply; } catch(e){}
+                }
             }
         }
 
@@ -496,11 +514,8 @@ async function forceKillBrowser() {
     if (browserClient) {
         try {
             console.log('[TikTok] 🛑 Forzando cierre de Chrome/Puppeteer...');
-            // puppeteer-extra might use .process() 
-            const browserProc = browserClient.process ? browserClient.process() : null;
-            if (browserProc && browserProc.pid) {
-                process.kill(browserProc.pid, 'SIGKILL');
-            }
+            // On Windows, process.kill with SIGKILL leaves renderer and GPU child processes as zombies.
+            // Using browser.close() is the safest way to terminate all child processes gracefully.
             if (browserClient.close) await browserClient.close().catch(()=>null);
             else if (browserClient.destroy) await browserClient.destroy().catch(()=>null);
             console.log('[TikTok] ✅ Chrome cerrado limpiamente.');

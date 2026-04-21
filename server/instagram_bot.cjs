@@ -106,8 +106,8 @@ const chatTools = [{
 }];
 
 // ── Gemini Sessions ────────────────────────────────────────────────────────────
-const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiSessions = new Map();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const chatSessions = new Map();
 
 let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
 let lastPromptCheck = 0;
@@ -121,7 +121,7 @@ async function getSystemPrompt() {
                 const newPrompt = res.rows[0].dm_system_prompt;
                 if (newPrompt !== currentSystemPrompt) {
                     currentSystemPrompt = newPrompt;
-                    geminiSessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
+                    chatSessions.clear(); // Forzar reinicio de sesiones para que adopten la nueva instrucción
                     console.log('[Instagram] 🔄 SYSTEM PROMPT actualizado y sincronizado desde Cerebro Central');
                 }
             }
@@ -133,37 +133,73 @@ async function getSystemPrompt() {
     return currentSystemPrompt;
 }
 
-async function getChat(userId) {
+async function getChatHistory(userId) {
     const activePrompt = await getSystemPrompt();
-    if (!geminiSessions.has(userId)) {
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
-            systemInstruction: { parts: [{ text: activePrompt }] },
-            tools: [{ function_declarations: chatTools }],
-        });
-        geminiSessions.set(userId, model.startChat({ history: [] }));
+    if (!chatSessions.has(userId)) {
+        chatSessions.set(userId, []);
     }
-    return geminiSessions.get(userId);
+    return { history: chatSessions.get(userId), prompt: activePrompt };
 }
 
 // ── Procesar mensaje y responder ──────────────────────────────────────────────
 async function processAndReply(userId, text, replyFn) {
-    const chat = await getChat(userId);
+    const sessionData = await getChatHistory(userId);
+    const history = sessionData.history;
+    const finalSystemPrompt = sessionData.prompt;
     try {
-        let result = await chat.sendMessage(text);
-        
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
+        history.push({ role: 'user', parts: [{ text }] });
 
-        if (functionCalls?.length) {
-            const responses = [];
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
+                name: t.name,
+                description: t.description,
+                parameters: {
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
+                }
+            }))
+        }];
+
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: finalSystemPrompt,
+            tools: geminiTools,
+            generationConfig: {
+                temperature: 0.1,
+                topK: 40,
+                topP: 0.95
+            }
+        });
+
+        const chat = model.startChat({ history: history.slice(0, -1) });
+        let chatCompletion = await chat.sendMessage(text);
+        
+        let responseText = "Lo siento, fallé al entender.";
+        let functionCalls = [];
+
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { responseText = response.text() || responseText; } catch(e){}
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
+            }
+        }
+
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === 'check_availability') {
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [call.args.fecha, call.args.hora]);
+                const callName = call.name;
+                let callArgs = call.args || {};
+
+                if (callName === 'check_availability') {
+                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [callArgs.fecha, callArgs.hora]);
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
-                } else if (call.name === 'save_appointment') {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                } else if (callName === 'save_appointment') {
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                     try {
                         const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
                         if (dup.rows.length > 0) {
@@ -201,13 +237,19 @@ async function processAndReply(userId, text, replyFn) {
                         }
                     } catch(err) { fRes = { success: false, error: err.message }; }
                 }
-                responses.push({ functionResponse: { name: call.name, response: fRes } });
+
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await chat.sendMessage([{
+                    functionResponse: { name: callName, response: fRes }
+                }]);
+                
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { responseText = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
+                }
             }
-            result = await chat.sendMessage(responses);
         }
 
-        let responseText = "Lo siento, fallé al entender.";
-        try { responseText = result.response.text(); } catch(e) {}
+        history.push({ role: 'model', parts: [{ text: responseText }] });
         
         // Instagram DMs soportan ~1000 chars por mensaje
         if (responseText.length > 900) {
@@ -222,7 +264,7 @@ async function processAndReply(userId, text, replyFn) {
         console.log(`[Instagram] 🤖 Respondí a ${userId.toString().substring(0,8)}***`);
 
     } catch(err) {
-        console.error('[Instagram] Error Gemini:', err.message);
+        console.error('[Instagram] Error Groq:', err.message);
         try { await replyFn('Lo siento, tuve un error. Por favor intenta de nuevo 🦖'); } catch(_) {}
     }
 }
@@ -297,6 +339,16 @@ async function startBot() {
                 const msgKey = `${thread.thread_id}_${lastMsg.item_id}`;
                 if (seenItems.has(msgKey)) continue;
                 seenItems.add(msgKey); // Estructura HASH O(1) ultrasónica para evitar Memory Leaks
+                
+                // --- GARBAGE COLLECTION ---
+                if (seenItems.size > 2000) {
+                    let iter = 0;
+                    for (const key of seenItems) { 
+                        if (iter++ < 1000) seenItems.delete(key); 
+                        else break; 
+                    }
+                    console.log('[Instagram] 🧹 Liberando memoria de historial (Garbage Collection).');
+                }
 
                 const userIdString = lastMsg.user_id.toString();
                 // Usamos el username para dar más contexto a la IA
@@ -326,6 +378,16 @@ async function startBot() {
 
         } catch(err) {
             console.error('[Instagram] Error polling (Web Request):', err.message);
+            // --- SELF-HEALING ---
+            if (err.message && err.message.includes('detached')) {
+                console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Auto-Reparando pestaña...');
+                try {
+                    await page.goto('https://www.instagram.com/direct/inbox/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+                    // Recuperar info de sesión
+                    cookies = await page.cookies();
+                    csrfToken = cookies.find(c => c.name === 'csrftoken')?.value;
+                } catch(e){}
+            }
         }
 
         await new Promise(r => setTimeout(r, POLL_MS));
@@ -336,11 +398,8 @@ async function forceKillBrowser() {
     if (browserClient) {
         try {
             console.log('[Instagram] 🛑 Forzando cierre de Chrome/Puppeteer...');
-            const browserProc = browserClient.process();
-            if (browserProc && browserProc.pid) {
-                // Precaution for Windows
-                process.kill(browserProc.pid, 'SIGKILL');
-            }
+            // On Windows, process.kill with SIGKILL leaves renderer and GPU child processes as zombies.
+            // Using browser.close() is the safest way to terminate all child processes gracefully.
             await browserClient.close().catch(()=>null);
             console.log('[Instagram] ✅ Chrome cerrado limpiamente.');
         } catch (e) {

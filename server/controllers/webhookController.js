@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 import { agendarEnGoogleCalendar } from "../services/calendarService.js";
-import { getGeminiModel } from "../config/geminiGlobal.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 
@@ -96,38 +96,70 @@ const userSessions = new Map();
 
 async function processAndReply(from, text, phoneNumberId, platform) {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-    if (!apiKey) return console.error(`[${platform}] Error: No Gemini API KEY`);
+    if (!apiKey) return console.error(`[${platform}] Error: No GEMINI API KEY`);
 
-    const { model } = getGeminiModel(apiKey, SYSTEM_PROMPT, chatTools);
-
-    let chat;
+    let history;
     if (!userSessions.has(from)) {
-        chat = model.startChat({ history: [] });
-        userSessions.set(from, chat);
+        history = [];
+        userSessions.set(from, history);
     } else {
-        chat = userSessions.get(from);
+        history = userSessions.get(from);
     }
 
     try {
-        let result = await chat.sendMessage(text);
+        history.push({ role: "user", parts: [{ text }] });
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // Format tools for Gemini 1.5
+        const geminiTools = [{
+            functionDeclarations: chatTools.map(t => ({
+                name: t.name,
+                description: t.description,
+                parameters: {
+                    type: "OBJECT",
+                    properties: Object.fromEntries(
+                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                    ),
+                    ...(t.parameters.required ? { required: t.parameters.required } : {})
+                }
+            }))
+        }];
+
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: SYSTEM_PROMPT,
+            tools: geminiTools
+        });
+
+        const chat = model.startChat({ history: history.slice(0, -1) });
+        const chatCompletion = await chat.sendMessage(text);
 
         let responseText = "Lo siento, fallé al entender.";
-        try { responseText = result.response.text(); } catch(e) {}
+        let functionCalls = [];
 
-        let rawFc = result.response.functionCalls;
-        const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-        if (functionCalls && functionCalls.length > 0) {
-            const functionResponses = [];
+        if (chatCompletion && chatCompletion.response) {
+            const response = chatCompletion.response;
+            try { responseText = response.text() || responseText; } catch(e){}
+            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+            if (calls && calls.length > 0) {
+                functionCalls = calls;
+            }
+        }
+        
+        if (functionCalls.length > 0) {
             for (const call of functionCalls) {
                 let fRes = {};
-                if (call.name === "check_availability") {
-                    const { fecha, hora } = call.args;
+                const callName = call.name;
+                let callArgs = call.args || {};
+
+                if (callName === "check_availability") {
+                    const { fecha, hora } = callArgs;
                     const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
                     fRes = { disponible: parseInt(r.rows[0].count) === 0 };
-                } else if (call.name === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                } else if (callName === "save_appointment") {
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                     try {
-                        // Verificar duplicado primero
                         const dup = await pool.query(
                             "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
                             [correo, fecha, hora]
@@ -152,20 +184,28 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                         console.error(`[${platform}] Error en save_appointment:`, err.message);
                         fRes = { success: false, error: err.message };
                     }
-                } else if (call.name === "get_available_downloads") {
+                } else if (callName === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
-                } else if (call.name === "cancel_appointment") {
+                } else if (callName === "cancel_appointment") {
                     fRes = { error: 'Funcionalidad de cancelación directa no disponible. Pide al humano que nos asista.' };
-                } else if (call.name === "reschedule_appointment") {
+                } else if (callName === "reschedule_appointment") {
                     fRes = { error: 'El agendamiento directo de re-programación está en mantenimiento. Pide asistencia humana.' };
                 }
-                functionResponses.push({ functionResponse: { name: call.name, response: fRes } });
+
+                // Send tool results back to Gemini via existing chat object
+                const chatCompletion2 = await chat.sendMessage([{
+                    functionResponse: { name: callName, response: fRes }
+                }]);
+                
+                if (chatCompletion2 && chatCompletion2.response) {
+                    try { responseText = chatCompletion2.response.text() || responseText; } catch(e){}
+                }
             }
-            result = await chat.sendMessage(functionResponses);
-            try { responseText = result.response.text(); } catch(e) {}
             console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
         }
+
+        history.push({ role: "model", parts: [{ text: responseText }] });
 
         if (platform === 'whatsapp') {
             await sendWhatsAppMessage(phoneNumberId, from, responseText);

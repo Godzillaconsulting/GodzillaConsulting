@@ -15,22 +15,26 @@ const model = genAI.getGenerativeModel({
 });
 
 export async function generarGuionDelDia(tema) {
-    console.log(`🧠 [Fase 1] Invocando al GEM para crear contenido sobre: "${tema}"...`);
+    console.log(`🧠 [Fase 1] Invocando al Cerebro Gemini para crear contenido sobre: "${tema}"...`);
     
     // Personalidad del GEM: Aquí puedes tunear la voz oficial de la marca.
     const promptDelSistema = `
-    Eres el "GEM" maestro de copywriting de Godzilla Consulting. Especialista implacable en marketing corporativo moderno B2B y generación de leads.
+    Eres el maestro de copywriting de Godzilla Consulting. Especialista implacable en marketing corporativo moderno B2B y generación de leads.
     Tu tarea hoy es crear un post de alto impacto sobre: "${tema}".
 
     Devuélveme tu respuesta ESTRICTAMENTE en formato objeto JSON puro y válido con dos propiedades:
     1. "caption": El texto ultra persuasivo para publicar en Facebook/Instagram (incluye un "Hook" que detenga a la gente, 2-3 emojis máximo, sin rodeos corporativos aburridos, y un CTA cortante al final).
     2. "visual_prompt": Un prompt altamente técnico en INGLÉS para una IA de generación visual de video o imágenes (Midjourney, Kling o Fal.ai). Describe una escena cinemática, realista, con iluminación de neón sutil, ambiente oscuro y premium y lentes profesionales (ej: 35mm lens, f/1.8).
-
-    ¡IMPORTANTE! No incluyas backticks ( \` ) ni la palabra json, devuelve estrictamente el texto que comience con { y termine en } para poder parsearlo.
     `;
 
     try {
-        const result = await model.generateContent(promptDelSistema);
+        const guionModel = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-pro",
+            systemInstruction: promptDelSistema,
+            generationConfig: { responseMimeType: "application/json" }
+        });
+        
+        const result = await guionModel.generateContent(`Genera el contenido para el tema: ${tema}`);
         let text = result.response.text();
         
         // Anti-errores: Borrar código residual de markdown si la IA es testaruda
@@ -38,7 +42,7 @@ export async function generarGuionDelDia(tema) {
         
         const contenidoObj = JSON.parse(text);
         
-        console.log('\n✅ [ÉXITO] El GEM ha manufacturado la pieza de hoy:\n');
+        console.log('\n✅ [ÉXITO] El Cerebro ha manufacturado la pieza de hoy:\n');
         console.log('📝 COPY DE META (Facebook/Insta):');
         console.log(contenidoObj.caption);
         console.log('\n🎨 PROMPT PARA LA FÁBRICA VISUAL (Fase 2):');

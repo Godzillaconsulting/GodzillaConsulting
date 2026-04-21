@@ -5,6 +5,7 @@ import {
     getSubscribers,
     sendNewsletter,
     getHistory,
+    deleteNewsletter,
 } from '../controllers/newsletterController.js';
 
 import { generateAndSendAutoNewsletter } from '../services/newsletterGenerator.js';
@@ -20,9 +21,11 @@ router.get ('/unsubscribe',   unsubscribe);
 router.get ('/subscribers',   requireAdmin, getSubscribers);
 router.post('/send',          requireAdmin, sendNewsletter);
 router.get ('/history',       requireAdmin, getHistory);
+router.delete('/delete/:id',  requireAdmin, deleteNewsletter);
 router.post('/generate-draft', requireAdmin, async (req, res) => {
     try {
-        const result = await generateAndSendAutoNewsletter(true);
+        const feedback = req.body.feedback || null;
+        const result = await generateAndSendAutoNewsletter(feedback);
         res.json({ success: true, ...result });
     } catch (e) {
         console.error("Generator Error", e);

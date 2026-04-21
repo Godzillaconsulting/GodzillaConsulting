@@ -559,8 +559,13 @@ export default function AdminStudio() {
    <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">
    <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
   className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-[#CC0000] text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
-  📧 Newsletter
+  📧 Newsletter Generador
   </button>
+
+   <button onClick={() => { window.open('/socios', '_blank'); }}
+   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border text-yellow-500 border-transparent hover:border-yellow-500/40 hover:bg-yellow-500/5 hover:text-yellow-400`}>
+   <span className="text-xs mr-2 drop-shadow-sm">💎</span> Landing / Socios VIP
+   </button>
   
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/studio'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>

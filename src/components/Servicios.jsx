@@ -6,12 +6,12 @@ import DynamicMedia from './DynamicMedia';
 import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const bgVideo = `${API_URL}/api/media/assets/Particulas Rojas.mp4`;
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
-const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifVideo = '/assets/icons/Video.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifRedes = '/assets/icons/Redes%20Sociales.gif';
+const gifSeo = '/assets/icons/Red%20Social%20Optimizar.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 
 const defaultServices = [
     { _id: 'default-bots', orden: 1, id: { current: 'bots' }, iconSrc: gifBot, title: 'Automatización de Bots', enlace: '/bots', desc: 'Automatiza tu atención al cliente 24/7 con bots entrenados en tu negocio, que responden dudas, califican prospectos y los llevan directo a la cita o a la venta. Integrados con WhatsApp, redes sociales y tu CRM.' },
@@ -26,7 +26,7 @@ const Servicios = () => {
     const { getNodeData } = useSiteData();
     const [activeIdx, setActiveIdx] = useState(0);
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     
     const nodeData = getNodeData('servicios') || {};
     
@@ -39,8 +39,8 @@ const Servicios = () => {
 
         return {
             ...srv,
-            title: isEng ? t(`services.items.${locKey}.title`, srv.title) : (nodeData[`service${num}Title`] || srv.title),
-            desc: isEng ? t(`services.items.${locKey}.desc`, srv.desc) : (nodeData[`service${num}Desc`] || srv.desc),
+            title: isSpanish ? (nodeData[`service${num}Title`] || srv.title) : t(`services.items.${locKey}.title`, srv.title),
+            desc: isSpanish ? (nodeData[`service${num}Desc`] || srv.desc) : t(`services.items.${locKey}.desc`, srv.desc),
         };
     });
 
@@ -146,10 +146,10 @@ const Servicios = () => {
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
                 <div className="relative z-20 flex flex-col items-center justify-center mt-10">
                     <span className="text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
-                        {isEng ? t('services.overline') : (nodeData.overline || "Soluciones de Alto Impacto")}
+                        {isSpanish ? (nodeData.overline || "Soluciones de Alto Impacto") : t('services.overline')}
                     </span>
                     <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl">
-                        {isEng ? t('services.title') : (nodeData.title || 'SERVICIOS')}
+                        {isSpanish ? (nodeData.title || 'SERVICIOS') : t('services.title')}
                     </h2>
                     {nodeData.subtitle && (
                         <p className="text-gray-200 mt-4 max-w-2xl text-center text-base md:text-lg drop-shadow-lg px-4">

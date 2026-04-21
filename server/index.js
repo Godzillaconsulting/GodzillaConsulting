@@ -21,6 +21,7 @@ import resourcesRoutes from './routes/resources.js';
 import adminMigrationRoutes from './routes/adminMigration.js';
 import aiStudioRoutes from './routes/aiStudio.js';
 import bugsRoutes from './routes/bugs.js';
+import localesRoutes from './routes/locales.js';
 import { connectDB } from './config/db.js';
 
 import chatRoutes from './routes/chat.js';
@@ -31,6 +32,9 @@ import dbStudioRoutes from './routes/dbStudio.js';
 import calendarRoutes from './routes/calendar.js';
 import sheetsRoutes from './routes/sheets.js';
 import { verifyAdminToken, requireSuperAdmin } from './middleware/adminAuth.js';
+import { wafMiddleware } from './middleware/wafService.js';
+import adminWafRoutes from './routes/adminWaf.js';
+import internalToolsRoutes from './routes/internalTools.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
@@ -48,16 +52,34 @@ const port = process.env.PORT || 3000;
 // 1. MIDDLEWARES DE SEGURIDAD
 // ==========================================
 
+// ─── MIDDLEWARE: Cross-Origin-Resource-Policy para GIFs y medios estáticos ──
+// Debe ir ANTES de Helmet y del static middleware.
+// Elimina cross-origin-opener-policy (que Cloudflare puede cachear) y fuerza CORP+CORS correctos.
+app.use((req, res, next) => {
+    if (req.path.startsWith('/media') || req.path.startsWith('/api/media')) {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Timing-Allow-Origin', '*');
+        // Evitar que Cloudflare cachee versiones sin los headers correctos
+        res.setHeader('Vary', 'Origin');
+        // Eliminar header problemático que Helmet puede inyectar
+        res.removeHeader('Cross-Origin-Opener-Policy');
+    }
+    next();
+});
+
 // [Restaurado con prevención de Vercel] Helmet estaba causando crash de FUNCTION_INVOCATION_FAILED en Vercel Serverless
 if (!process.env.VERCEL) {
     app.use(helmet({
-        contentSecurityPolicy: false, // CSP custom en prod si se necesita
-        crossOriginEmbedderPolicy: false,
-        crossOriginResourcePolicy: false, // Permitir cargar imágenes desde el frontend cross-origin
+        contentSecurityPolicy: false,         // CSP custom en prod si se necesita
+        crossOriginEmbedderPolicy: false,     // No bloquear recursos externos embed
+        crossOriginResourcePolicy: false,     // No sobrescribir CORP manual de arriba
+        crossOriginOpenerPolicy: false,       // No bloquear ventanas cross-origin
         hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
         referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-        xContentTypeOptions: true,      // Previene MIME sniffing
-        xFrameOptions: { action: 'DENY' }, // Previene clickjacking
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'DENY' },
     }));
 }
 
@@ -157,6 +179,11 @@ app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // ==========================================
+// FIREWALL WAF: BLOQUEA ATAQUES ANTES DE LAS RUTAS
+// ==========================================
+app.use(wafMiddleware);
+
+// ==========================================
 // 2. RUTAS DE LA API
 // ==========================================
 
@@ -167,6 +194,7 @@ app.use('/api/bugs', bugsRoutes); // IT Bugs Router
 app.use('/api/chat', chatRoutes);
 app.use('/api/nodes', nodesRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api/locales', localesRoutes);
 
 // Auth limiter SOLO para login (evita brute-force).
 // /api/auth/verify NO lleva rate limit — es solo validación JWT, sin DB.
@@ -181,12 +209,17 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/social', socialRoutes);
+import { router as premiumRoutes } from './routes/premium.js';
+
 app.use('/api/admin', adminMigrationRoutes); // Migración y audit — protegido por token
+app.use('/api/admin/waf', adminWafRoutes); // Interfaz del Firewall en vivo
 app.use('/api/studio', aiStudioRoutes); // Integradora Oficial KLING AI + FLOWVEO
+app.use('/api/premium', premiumRoutes); // Endpoint JIT Multilenguaje
 app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
 app.use('/api/calendar', calendarRoutes);       // 📅 Calendario Colaborativo (SSE + CRUD)
 app.use('/api/sheets', sheetsRoutes);           // 📊 Google Sheets Importer
 app.use('/api/db-studio', verifyAdminToken, requireSuperAdmin, dbStudioRoutes); // DB Studio protegido
+app.use('/api/internal', internalToolsRoutes); // Herramientas internas — solo para Vercel serverless
 // ==========================================
 // PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)
 // Supera el bloqueo Mixed Content (HTTPS -> HTTP) en el navegador

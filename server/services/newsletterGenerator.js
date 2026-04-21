@@ -15,189 +15,127 @@ const getClient = () => {
     return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 };
 
-export async function generateAndSendAutoNewsletter(draftOnly = false) {
-    console.log("🤖 Iniciando Auto-Generador de Godzilla Newsletter...");
+const cleanHtmlStr = (str) => {
+    if (!str) return '';
+    return str.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' '); 
+};
+
+export async function generateAndSendAutoNewsletter(feedback = null) {
+    console.log("🤖 Iniciando Generador Godzilla (Versatilidad Referencial, Mini-Summary y Portada MagIA)...");
     
-    // 1. GENERACIÓN DE ESTRATEGIA (Agente de Noticias con Grounding)
+    // Import GoogleGenAI dynamically for Images to avoid top-level issues if unavailable in other environments
+    const { GoogleGenAI } = await import('@google/genai');
+
     const genAI = getClient();
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
-        systemInstruction: "Eres Godzilla AI, investigador corporativo y analista B2B. Tu información debe ser quirúrgica, basada en hechos recientes y citando empresas reales.",
+        systemInstruction: "Eres Godzilla AI, consultor B2B. Escribes reportes ejecutivos dirigidos de 'tú a tú' al líder empresarial. Prohibido usar relleno paja.\nREGLA JSON CRÍTICA: Tu salida será consumida por JSON.parse() estricto. LAS CLAVES Y VALORES DEL ESQUEMA PADRE DEBEN USAR COMILLAS DOBLES (\"). Pero DENTRO del texto de tus noticias o asuntos, si necesitas citar algo, usa SOLAMENTE comillas simples (''). Nunca metas comillas dobles internas sin escapar, ni saltos de línea crudos, o corromperás el JSON.\nREGLA ANTI-ALUCINACIÓN (ROJA): Es una ofensa inaceptable inventar rutas web y dar errores 404 al usuario. Jamás fabriques URLs largas adivinando artículos.",
         tools: [
             { googleSearch: {} }
         ]
     });
 
-    const prompt = `Crea la edición semanal de hoy del reporte de inteligencia corporativa para nuestra base de datos.
-TAREA CRÍTICA: Debes navegar a Internet AHORA MISMO y hacer una investigación profunda sobre los últimos 7 días de Inteligencia Artificial. No uses conocimiento obsoleto.
-Busca y cubre obligatoriamente:
-1. Gigantes y Modelos: ¿Qué lanzaron o anunciaron OpenAI, Anthropic, Google o DeepSeek esta semana?
-2. Entorno Open Source, MCPs o Frameworks de Agentes: ¿Qué herramienta de código o arquitectura está dominando en GitHub o noticias?
-3. Impactos, Regulación o Riesgos: Juicios, alucinaciones, fallos de seguridad o nuevas leyes de IA recientes.
+    let fdbkStr = feedback ? `\n[ATENCIÓN ORDEN DEL CEO: Corrige el borrador anterior aplicando esto: "${feedback}"]\n` : '';
 
-INSTRUCCIÓN CRÍTICA DE PDF: Crea contenido súper ejecutivo, digno de McKinsey o MIT.
+    const prompt = `Crea el boletín de inteligencia B2B del día de HOY.${fdbkStr}
+TAREA CRÍTICA: Busca las 2 o 3 noticias y herramientas de IA más valiosas empresariales HOY. ES PRIORIDAD INCLUIR noticias sobre ciberseguridad, ataques cibernéticos a plataformas (como el hackeo a Vercel), avances tecnológicos defensivos y el lanzamiento de NUEVOS MODELOS de IA. No hagas reportes aburridos. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
 
-DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA (todo en español):
+MISIÓN A (Email "Skimmable"): Puros Bullet Points en resúmenes ejecutivos en formato HTML (<h2>, <ul>, <li>, <b>).
+MISIÓN B (Resumen Teaser): Un "miniSummary" de 2 renglones diseñado magistralmente para obligar al usuario a querer abrir el PDF adjunto (con copywriting intrigante).
+MISIÓN C (Prompt de Portada): Redactar un "coverPrompt" detallado en inglés (max 300 chars) que instruya a un IA de imágenes crear una Portada hiper-realista, cruda y simbólica (estilo portada revista TIME) combinando las noticias de hoy. EJ: "A hyper-realistic TIME magazine cover showing a glowing cybersecurity padlock melting over a server architecture, dark neon lighting, cinematic, 8k..."
+MISIÓN D (PDF "Socios"): Escribe DIRECTAMENTE a nuestros Socios Godzilla. PROHIBIDO GENERAR MÁS DE 3 NOTICIAS/SECCIONES (Para no rellenar hojas).
+EXTRAORDINARIA ATENCIÓN CON LAS REFERENCIAS WEB Y URLs: Para cada sección, entrega la URL de la Institución/Empresa (ej: https://openai.com o https://www.bloomberg.com). PROHIBIDO INTENTAR ADIVINAR LA RUTA O SUBDIRECTORIO DEL ARTÍCULO. Coloca SIEMPRE el Link general limpio y oficial hacia la fuente principal matriz, sin saltos de directorio.
+
+DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA:
 {
-    "subject": "Asunto (con emoji serio y urgente)",
-    "emailHTML": "<h2 style=\\"color:#CC0000;\\">Titular</h2><p>Resumen persuasivo en HTML para que descarguen el reporte.</p>",
-    "pdfTitle": "TÍTULO DEL REPORTE",
-    "pdfSubtitle": "Subtítulo analítico + Fecha Actual",
-    "pdfIntro": "Párrafo introductorio de alto nivel.",
-    "pdfSections": [
-        { "heading": "Subtítulo de la noticia", "content": "Párrafo analizando el impacto empresarial de esa noticia." }
+    "subject_es": "Asunto en ES (con emoji)",
+    "subject_en": "Asunto en EN (con emoji)",
+    "miniSummary_es": "Misterio y valor agresivo B2B de 2 renglones para que abran el PDF.",
+    "miniSummary_en": "Intriguing B2B marketing hook to make them open the PDF.",
+    "coverPrompt": "English prompt for text2image merging the day's topics in 'TIME magazine cover' style...",
+    "emailHTML_es": "<h2>Lo que debes saber hoy en IA</h2><ul><li><strong>Empresa: </strong>1 oración.</li></ul>",
+    "emailHTML_en": "<h2>What you need to know today in AI</h2><ul><li><strong>Company: </strong>1 sentence.</li></ul>",
+    "pdfTitle": "DIARIO GODZILLA AI",
+    "pdfSubtitle": "Inteligencia Ejecutiva Diaria",
+    "pdfIntro": "Párrafo introductorio hablando de tú a tú. (Solo plain text, nada de HTML)",
+    "pdfMetrics": [
+        { "label": "Impacto a Productividad (%)", "value": 85 }
     ],
-    "pdfQuote": "\\"Insight de la semana sobre supervivencia tecnológica.\\"",
-    "pdfConclusion": "Conclusión orientada al ROI y agilidad empresarial."
+    "pdfChart": { 
+        "title": "Adopción de Mercado",
+        "data": [ {"label": "Líder", "value": 60}, {"label": "Rival", "value": 40} ] 
+    },
+    "pdfSections": [
+        { 
+          "heading": "Título Noticia", 
+          "content": "Detalle analítico B2B. (Solo plain text)",
+          "sourceName": "TechCrunch",
+          "url": "https://techcrunch.com"
+        }
+    ],
+    "pdfQuote": "Insight de supervivencia tecnológica.",
+    "pdfConclusion": "Conclusión orientada al ROI."
 }`;
 
     const result = await model.generateContent(prompt);
     let text = result.response.text();
     text = text.replace(/```json/i, '').replace(/```/i, '').trim();
+    // Safety check in case it still added quotes or newlines outside
+    if (text.startsWith('{') === false) text = '{' + text.substring(text.indexOf('{'));
+    if (text.endsWith('}') === false) text = text.substring(0, text.lastIndexOf('}') + 1);
+
     const data = JSON.parse(text);
 
-    console.log("✅ Contenido IA Generado. Construyendo PDF Corporativo...");
+    console.log("✅ Contenido IA con Referencias Oficiales Generado.", data.coverPrompt ? "Generando Portada Dinámica..." : "Avanzando...");
 
-    // 2. CREACIÓN DEL REPORTE PDF (En memoria) y MANEJO DE ERRORES
-    let pdfBuffer = null;
-    let attachmentUrl = null;
+    let visualCoverUrl = null;
 
-    try {
-        pdfBuffer = await new Promise((resolve, reject) => {
-            try {
-                // Buffer creation must allow manual page addition for footers
-                const doc = new PDFDocument({ margin: 50, bufferPages: true, autoFirstPage: true });
-                const buffers = [];
-                const logoPath = path.join(__dirname, '../../public/favicon.png');
-                
-                doc.on('data', buffers.push.bind(buffers));
-                doc.on('end', () => {
-                    resolve(Buffer.concat(buffers));
-                });
+    if (data.coverPrompt && process.env.GEMINI_API_KEY) {
+        try {
+            const aiImg = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const imgRes = await aiImg.models.generateImages({
+                model: 'imagen-3.0-generate-001',
+                prompt: data.coverPrompt,
+                config: { numberOfImages: 1, outputMimeType: 'image/png' }
+            });
 
-                // Function: Add background watermark on pages
-                const paintWatermark = () => {
-                   doc.save();
-                   doc.opacity(0.04);
-                   if (fs.existsSync(logoPath)) {
-                       doc.image(logoPath, (doc.page.width - 350)/2, (doc.page.height - 350)/2 + 20, { width: 350 });
-                   }
-                   doc.restore();
-                };
-
-                doc.on('pageAdded', paintWatermark);
-                paintWatermark(); // Paint heavily on 1st page
-
-                // ----- HEADER CORPORATIVO (Solo página 1) -----
-                doc.rect(0, 0, doc.page.width, 10).fill('#CC0000');
-                
-                if (fs.existsSync(logoPath)) {
-                    doc.image(logoPath, 50, 30, { width: 30 });
-                }
-                doc.fillColor('#CC0000').fontSize(16).font('Helvetica-Bold').text('GODZILLA CONSULTING', 90, 35);
-                doc.fillColor('#888888').fontSize(9).font('Helvetica').text('RESERVED CORPORATE INTELLIGENCE REPORT', 90, 52);
-                doc.moveTo(50, 75).lineTo(doc.page.width - 50, 75).lineWidth(0.5).stroke('#CCCCCC');
-
-                doc.moveDown(4);
-
-                // ----- CUERPO DEL DOCUMENTO -----
-                doc.fillColor('#111111').fontSize(24).font('Helvetica-Bold').text(data.pdfTitle, 50, null, { align: 'left', lineGap: 4 });
-                doc.moveDown(0.5);
-                if (data.pdfSubtitle) {
-                    doc.fillColor('#CC0000').fontSize(14).font('Helvetica').text(data.pdfSubtitle, { align: 'left' });
-                }
-                doc.moveDown(2);
-                
-                // INTRO
-                doc.fillColor('#333333').fontSize(11).font('Helvetica').lineGap(7).text(data.pdfIntro || data.pdfBody || '', { align: 'justify' });
-                doc.moveDown(2);
-
-                // SECTIONS
-                if (data.pdfSections && Array.isArray(data.pdfSections)) {
-                    for (const sec of data.pdfSections) {
-                        doc.fillColor('#111111').fontSize(13).font('Helvetica-Bold').text(sec.heading, { align: 'left' });
-                        doc.moveDown(0.5);
-                        doc.fillColor('#444444').fontSize(11).font('Helvetica').lineGap(6).text(sec.content, { align: 'justify' });
-                        doc.moveDown(1.5);
-                    }
-                }
-
-                // HIGH-IMPACT QUOTE
-                if (data.pdfQuote) {
-                    doc.moveDown(1);
-                    const currentY = doc.y;
-                    doc.rect(50, currentY, 3, 35).fill('#CC0000');
-                    doc.fillColor('#555555').fontSize(12).font('Helvetica-Oblique').text(data.pdfQuote, 65, currentY + 3, { align: 'left', lineGap: 4, width: doc.page.width - 120 });
-                    doc.moveDown(2);
-                }
-
-                // CONCLUSION
-                if (data.pdfConclusion) {
-                    doc.fillColor('#111111').fontSize(13).font('Helvetica-Bold').text('Conclusión Ejecutiva', { align: 'left' });
-                    doc.moveDown(0.5);
-                    doc.fillColor('#444444').fontSize(11).font('Helvetica').lineGap(6).text(data.pdfConclusion, { align: 'justify' });
-                }
-
-                doc.moveDown(3);
-                doc.fillColor('#CC0000').fontSize(12).font('Helvetica-Bold').text('Lidera con Inteligencia. Agenda evaluación B2B en godzillaconsulting.ai', { align: 'center' });
-
-                // ----- FOOTERS E INDEXACIÓN -----
-                let pages = doc.bufferedPageRange();
-                for (let i = 0; i < pages.count; i++) {
-                    doc.switchToPage(i);
-                    const isFirstPage = i === 0;
-                    if (!isFirstPage) { // Red bar on following pages
-                        doc.rect(0, 0, doc.page.width, 5).fill('#CC0000');
-                    }
-                    doc.moveTo(50, doc.page.height - 50).lineTo(doc.page.width - 50, doc.page.height - 50).lineWidth(0.5).stroke('#E5E5E5');
-                    doc.fillColor('#999999').fontSize(8).font('Helvetica').text(
-                        `Propiedad Privada Integral de Godzilla Consulting AI • Página ${i + 1} de ${pages.count} • Producido ${new Date().toLocaleDateString()}`,
-                        50, doc.page.height - 35, { align: 'center' }
-                    );
-                }
-
-                doc.end();
-            } catch (e) {
-                reject(e);
+            if (imgRes.generatedImages?.[0]?.image?.imageBytes) {
+                const b64 = imgRes.generatedImages[0].image.imageBytes;
+                const buffer = Buffer.from(b64, 'base64');
+                const fileName = `newsletter_cover_${Date.now()}.png`;
+                const savePath = path.join(ASSETS_DIR, fileName);
+                fs.writeFileSync(savePath, buffer);
+                const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+                visualCoverUrl = `${botBase}/api/media/${fileName}`;
+                console.log("📸 Portada TIME Generada:", visualCoverUrl);
             }
-        });
-
-        console.log("✅ PDF Compilado (" + (pdfBuffer.length / 1024).toFixed(1) + " KB). Inyectando a Base de Datos Local...");
-
-        // SUBIDA A DISCO LOCAL (BYPASS DB Local LIMITS) Y GENERACIÓN DE ENLACE
-        const filename = `Reporte-Ejecutivo-Godzilla-${Date.now()}.pdf`;
-        const targetPath = path.join(ASSETS_DIR, filename);
-        await fs.promises.writeFile(targetPath, pdfBuffer);
-
-        // La URL oficial pública que usa media.js para el directorio estático:
-        const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
-        attachmentUrl = `${botBase}/api/media/assets/${filename}`;
-
-        console.log("✅ PDF Guardado Físicamente. URL Estática:", attachmentUrl);
-    } catch (pdfErr) {
-        console.error("⚠️ [CRITICAL] Fallo en empaquetado PDF. Enviando notificación en lugar del archivo.", pdfErr.message);
-        data.emailHTML += `
-<br><hr><br>
-<div style="background-color: #fff3f3; border-left: 4px solid #CC0000; padding: 15px; margin-top: 20px;">
-    <p style="color:#CC0000; font-size:13px; font-weight:bold; margin-top:0;">⚠️ AVISO DEL SISTEMA AUTOMATIZADO</p>
-    <p style="color:#555; text-align:justify; font-size:12px; margin-bottom:0;">
-        Nuestro bot detectó un fallo al ensamblar en tiempo real el archivo PDF interactivo adjunto a este envío de hoy. 
-        El equipo de inteligencia de Godzilla Consulting ya fue notificado y está empaquetando manualmente la información del archivo dañado para subirlo pronto a la plataforma. Disculpa los inconvenientes.
-    </p>
-</div>`;
+        } catch(e) {
+            console.error("❌ Fallo generando portada Inteligente:", e.message);
+        }
     }
 
-    // 4. CREACIÓN DEL BORRADOR EN DB
-    // Solamente insertamos como borrador. El envío se hace manual desde UI 
-    // o forzado por otro cron automático.
+    try {
+        await pool.query(`ALTER TABLE newsletters ADD COLUMN IF NOT EXISTS base_json TEXT;`);
+        await pool.query(`ALTER TABLE newsletters ADD COLUMN IF NOT EXISTS cover_url TEXT;`);
+    } catch(err) {}
+
+    const stringifiedHtml = JSON.stringify({ es: data.emailHTML_es || '', en: data.emailHTML_en || '' });
+    const stringifiedSubject = JSON.stringify({ es: data.subject_es || 'Boletín IA', en: data.subject_en || 'AI Newsletter' });
+
     const nlRes = await pool.query(
-        `INSERT INTO newsletters (subject, body_html, attachment_url, status)
-         VALUES ($1, $2, $3, 'draft') RETURNING id`,
-        [data.subject, data.emailHTML, attachmentUrl]
+        `INSERT INTO newsletters (subject, body_html, attachment_url, status, base_json, cover_url)
+         VALUES ($1, $2, null, 'draft', $3, $4) RETURNING id`,
+        [stringifiedSubject, stringifiedHtml, JSON.stringify(data), visualCoverUrl]
     );
-    const newsletterId = nlRes.rows[0].id;
 
-    console.log(`🎉 Borrador de Boletín [ID: ${newsletterId}] ensamblado con Inteligencia de Internet.`);
+    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+    const attachmentUrl = `${botBase}/api/premium/download/${nlRes.rows[0].id}`;
 
-    return { newsletterId, total: 0, attachmentUrl, subject: data.subject, bodyHtml: data.emailHTML };
+    await pool.query(`UPDATE newsletters SET attachment_url = $1 WHERE id = $2`, [attachmentUrl, nlRes.rows[0].id]);
+
+    return { 
+        newsletterId: nlRes.rows[0].id, total: 0, attachmentUrl, 
+        subject: data.subject_es, 
+        bodyHtml: stringifiedHtml 
+    };
 }

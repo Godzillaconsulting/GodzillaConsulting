@@ -58,8 +58,8 @@ Respondes comentarios de TikTok de forma breve, directa y con buen humor. Máxim
 ## SERVICIOS: Automatización con IA | Bots | Producción Audiovisual | Embudos de Venta | SEO
 `.trim();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const sessions = new Map();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const sessions = new Map(); // Guarda el historial de mensajes por userId
 
 let currentSystemPrompt = SYSTEM_PROMPT; // Usado como fallback inicial
 let lastPromptCheck = 0;
@@ -85,11 +85,9 @@ async function getSystemPrompt() {
     return currentSystemPrompt;
 }
 
-async function getChat(userId) {
+async function getChatHistory(userId) {
     if (!sessions.has(userId)) {
-        const activePrompt = await getSystemPrompt();
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash', systemInstruction: activePrompt });
-        sessions.set(userId, model.startChat({ history: [] }));
+        sessions.set(userId, []);
     }
     return sessions.get(userId);
 }
@@ -142,12 +140,40 @@ async function refreshAccessToken() {
 
 // ── Procesar comentario y responder ─────────────────────────────────────────
 async function processComment(comment, videoId) {
-    const chat = await getChat(comment.id);
+    const history = await getChatHistory(comment.id);
     try {
         const context = `[Comentario en TikTok de @${comment.username || 'usuario'}]: "${comment.text}"`;
-        const result  = await chat.sendMessage(context);
-        let reply     = result.response.text().trim();
+        
+        // Obtener el prompt activo (sincronizado con BD)
+        const activePrompt = await getSystemPrompt();
+
+        // Formatear el historial para Gemini
+        const geminiHistory = history.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        }));
+
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: activePrompt,
+            generationConfig: {
+                temperature: 0.1,
+                topK: 40,
+                topP: 0.95
+            }
+        });
+
+        const chat = model.startChat({ history: geminiHistory });
+        const result = await chat.sendMessage(context);
+
+        let reply = result.response.text() || '';
+        
+        // Guardar la respuesta en el historial
+        history.push({ role: 'user', content: context });
+        history.push({ role: 'assistant', content: reply });
+
         // TikTok permite hasta 150 chars en comentarios
+
         if (reply.length > 148) reply = reply.substring(0, 145) + '...';
 
         const postRes = await ttPost('/v2/video/comment/create/', {

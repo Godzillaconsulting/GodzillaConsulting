@@ -3,6 +3,8 @@ import pool from '../config/db.js';
 
 import { requireAdmin } from '../middleware/adminAuth.js';
 import { logAction } from './users.js';
+import { translateNodePayload } from '../services/translateService.js';
+import { ensureNodesTranslation } from '../utils/nodeTranslator.js';
 
 const router = express.Router();
 
@@ -82,13 +84,17 @@ router.post('/presence', requireAdmin, (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM site_nodes');
+        const lng = (req.query.lng || 'es').split('-')[0].toLowerCase();
+        
+        // Procesador JIT multi-lenguaje (asegurar capa de traduccion)
+        const processedRows = await ensureNodesTranslation(result.rows, lng);
         
         // Anti-Caché para que Vercel y el navegador siempre sirvan el cambio fresco
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
 
-        res.json(result.rows);
+        res.json(processedRows);
     } catch (err) {
         console.error('Error fetching nodes:', err);
         res.status(500).json({ error: 'Failed to fetch site nodes' });
@@ -112,7 +118,21 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/draft', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { draft_data } = req.body;
+        let { draft_data } = req.body;
+        
+        // Auto-Translate marketing dynamic nodes
+        if (id === 'paquetes' || id.startsWith('paquete-')) {
+            const translatedPayload = await translateNodePayload(draft_data, id);
+            if (translatedPayload) {
+                draft_data = {
+                    ...draft_data,
+                    translations: {
+                        ...draft_data.translations,
+                        en: translatedPayload
+                    }
+                };
+            }
+        }
         
         const result = await pool.query(`
             INSERT INTO site_nodes (id, draft_data, updated_at)
@@ -124,7 +144,7 @@ router.put('/:id/draft', requireAdmin, async (req, res) => {
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
         
-        await logAction(req.admin.id, 'SAVE_DRAFT', { section: id });
+        // Se eliminó el log de SAVE_DRAFT para no inundar la auditoría
         
         res.json(result.rows[0]);
     } catch (err) {
@@ -148,7 +168,7 @@ router.post('/:id/publish', requireAdmin, async (req, res) => {
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'Node not found' });
         
-        await logAction(req.admin.id, 'PUBLISH_SECTION', { section: id });
+        // Se eliminó el log de PUBLISH_SECTION para no inundar la auditoría
         
         res.json({ success: true, node: result.rows[0] });
     } catch (err) {

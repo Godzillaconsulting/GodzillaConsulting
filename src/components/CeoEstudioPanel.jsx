@@ -10,9 +10,17 @@ const STATUS_MAP = {
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const resolveMedia = (url) => {
     if (!url) return '';
+    // Reemplaza localhost/127.0.0.1 por API_URL (común si se generó en ambiente dev)
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+        try {
+            const urlObj = new URL(url);
+            return `${API_URL}${urlObj.pathname}${urlObj.search}`;
+        } catch(e) { /* ignore */ }
+    }
     if (url.startsWith('http')) return url;
     return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
+
 
 export default function CeoEstudioPanel({ adminProfile }) {
     const [activeTab, setActiveTab] = useState('pendientes');
@@ -22,6 +30,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const [feedback, setFeedback]   = useState('');
     const [network, setNetwork]     = useState('instagram');
     const [caption, setCaption]     = useState('');
+    const [publishMode, setPublishMode] = useState('now');
+    const [scheduleDate, setScheduleDate] = useState('');
+    const [scheduleTime, setScheduleTime] = useState('');
     const [showPublish, setShowPublish] = useState(false);
     const [publishing, setPublishing]   = useState(false);
     const [publishReport, setPublishReport] = useState(null);
@@ -158,6 +169,18 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Action: publish ───────────────────────────────────────
     const handlePublish = async () => {
         if (!selected || !selected.media_options?.[0]?.url) return;
+        
+        let finalStatus = 'published';
+        let publishDate = null;
+        if (publishMode === 'schedule') {
+            finalStatus = 'approved';
+            if (!scheduleDate || !scheduleTime) {
+                alert('Debes seleccionar una fecha y hora para programar.');
+                return;
+            }
+            publishDate = `${scheduleDate}T${scheduleTime}:00`;
+        }
+
         setPublishing(true);
         try {
             // Convertir URLs relativas (/api/sora/media/...) a absolutas para que Meta pueda acceder
@@ -167,19 +190,26 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 url: m.url?.startsWith('http') ? m.url : `${BASE_URL}${m.url}`
             }));
 
+            const payload = {
+                status: finalStatus,
+                publish_targets: [network],
+                media_payload: absoluteMedia,
+                title: caption || selected.caption || ''
+            };
+            
+            if (publishDate) {
+                payload.ig_publish_date = publishDate;
+            }
+
             const res = await fetch(`/api/studio/tasks/${selected.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    status: 'published',
-                    publish_targets: [network],
-                    media_payload: absoluteMedia
-                })
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.message);
-            setPublishReport(data.report);
-            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'published' } : t));
+            setPublishReport(data.report || { message: publishMode === 'schedule' ? 'Programado correctamente en calendario.' : 'Iniciado proceso de publicación.' });
+            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: finalStatus, scheduled_for: publishDate || t.scheduled_for } : t));
         } catch (e) { alert('Error publicando: ' + e.message); }
         setPublishing(false);
     };
@@ -541,20 +571,45 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                             <label className="text-xs font-bold text-neutral-400 mb-2">Caption / Descripción</label>
                             <textarea value={caption} onChange={e => setCaption(e.target.value)}
-                                className="w-full h-28 bg-neutral-800 border border-neutral-700 rounded-xl p-3 text-white focus:border-white outline-none resize-none mb-4"
+                                className="w-full h-20 bg-neutral-800 border border-neutral-700 rounded-xl p-3 text-white focus:border-white outline-none resize-none mb-4"
                                 placeholder="Escribe el texto de la publicación..." />
 
+                            <label className="text-xs font-bold text-neutral-400 mb-2">¿Cuándo Publicar?</label>
+                            <div className="flex gap-2 mb-4">
+                                <button onClick={() => setPublishMode('now')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'now' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>🚀 Ahora Mismo</button>
+                                <button onClick={() => setPublishMode('schedule')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'schedule' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>📅 Programar</button>
+                            </div>
+
+                            {publishMode === 'schedule' && (
+                                <div className="flex gap-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="flex-1">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Día</label>
+                                        <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
+                                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
+                                    </div>
+                                    <div className="w-1/3">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Hora</label>
+                                        <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
+                                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
+                                    </div>
+                                </div>
+                            )}
+
                             {publishReport && (
-                                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-xs text-green-400 font-bold">
-                                    ✅ Publicado. Reporte: {JSON.stringify(publishReport, null, 2)}
+                                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-[10px] text-green-400 font-mono break-all overflow-y-auto max-h-24">
+                                    ✅ {publishReport.message || 'Exito.'} {JSON.stringify(publishReport, null, 2)}
                                 </div>
                             )}
 
                             <button onClick={handlePublish} disabled={publishing}
                                 className="mt-auto w-full bg-white text-black font-black py-4 rounded-xl text-lg hover:scale-[1.02] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
                                 {publishing ? (
-                                    <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Publicando...</>
-                                ) : '🚀 CONFIRMAR Y ENVIAR AL BOT'}
+                                    <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</>
+                                ) : publishMode === 'schedule' ? (
+                                    '📅 GUARDAR PROGRAMACIÓN'
+                                ) : (
+                                    '🚀 CONFIRMAR Y PUBLICAR YA'
+                                )}
                             </button>
                         </div>
 

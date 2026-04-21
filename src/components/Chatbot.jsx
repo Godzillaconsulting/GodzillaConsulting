@@ -9,20 +9,28 @@ import chatbotIcon from '../assets/icons/icons8-chatbot-64.png';
 const Chatbot = () => {
     const { pathname } = useLocation();
     const { t, i18n } = useTranslation();
-    const isEng = i18n.language.startsWith('en');
+    // Detectar idioma activo — default español si no resuelve
+    const currentLang = i18n.resolvedLanguage || 'es';
+    const isSpanish = currentLang.startsWith('es');
     
     const [isOpen, setIsOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipDismissed, setTooltipDismissed] = useState(false);
     
-    const initialMessage = isEng ? t('chat.greeting') : '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
+    // Mensaje inicial multilingüe sin depender de t() — evita undefined si i18n no cargó
+    const getInitialMessage = () => {
+        if (isSpanish) return '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
+        const tKey = t('chat.greeting');
+        // Fallback si la clave i18n aún no cargó o devuelve la clave misma
+        if (!tKey || tKey === 'chat.greeting') return 'Hi! I am Zilla 😊 Your AI Marketing Specialist at Godzilla Consulting. How can I help you grow your business today?';
+        return tKey;
+    };
     const [messages, setMessages] = useState([
-        { role: 'model', text: initialMessage }
+        { role: 'model', text: getInitialMessage() }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
-    const API_URL = 'https://bot.godzillaconsulting.ai';
 
     useEffect(() => {
         // Initial delay before showing the tooltip for the first time
@@ -49,17 +57,28 @@ const Chatbot = () => {
 
     // Retry automático: si el túnel falla intermitentemente, reintenta hasta 3 veces antes de mostrar error
     const fetchChatWithRetry = async (messages, maxRetries = 3) => {
-        const ERROR_MARKER = 'Lo siento, ha ocurrido un error';
-        // Filtrar mensajes de error previos del historial — no contaminar el contexto de Gemini
-        const cleanMessages = messages.filter(m => !(m.role === 'model' && m.text.startsWith(ERROR_MARKER)));
+        // Filtrar mensajes de error previos E inválidos — no contaminar el contexto de Gemini
+        const cleanMessages = messages.filter(m => {
+            // Descartar mensajes sin texto válido (undefined, null, vacío)
+            if (!m.text || typeof m.text !== 'string' || m.text.trim() === '') return false;
+            if (m.role !== 'model') return true;
+            // Descartar mensajes de error previos en cualquier idioma
+            return !(
+                m.text.startsWith('Lo siento, ha ocurrido un error') ||
+                m.text.startsWith('Sorry, an error occurred') ||
+                m.text.includes('Error en mis engranajes') ||
+                m.text.includes('Intenta recargar') ||
+                m.text.includes('try reloading')
+            );
+        });
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: cleanMessages }),
-                    signal: AbortSignal.timeout(28000), // 28s antes del timeout de Vercel (30s)
+                    body: JSON.stringify({ messages: cleanMessages, lang: currentLang }),
+                    signal: AbortSignal.timeout(55000), // 55s — alineado con maxDuration de Vercel
                 });
                 if (response.ok) {
                     const data = await response.json();
@@ -96,7 +115,7 @@ const Chatbot = () => {
             setMessages((prev) => [...prev, { role: 'model', text: reply }]);
         } catch (error) {
             console.error('Error in chat (agotados reintentos):', error);
-            setMessages((prev) => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' }]);
+            setMessages((prev) => [...prev, { role: 'model', text: isSpanish ? 'Lo siento, ha ocurrido un error al conectar con Zilla. Intenta recargar la página.' : 'Sorry, an error occurred while connecting to Zilla. Please try reloading the page.' }]);
         } finally {
             setIsLoading(false);
         }
@@ -116,7 +135,7 @@ const Chatbot = () => {
                 <div
                     className={`relative z-20 mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
                 >
-                    {isEng ? <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span> : <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</>}
+                    {isSpanish ? <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</> : <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span>}
                     <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black hover:bg-gray-100 w-4 h-4 rounded-full flex items-center justify-center transition-colors">✕</button>
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
                 </div>
@@ -158,7 +177,7 @@ const Chatbot = () => {
                                     alt="Zilla" 
                                     className="w-6 h-6 rounded-full object-cover" 
                                 />
-                                <span>Zilla - Asistente IA</span>
+                                <span>{isSpanish ? 'Zilla - Asistente IA' : 'Zilla - AI Assistant'}</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="hover:text-gray-200 transition-colors">
                                 <X size={20} />
@@ -201,7 +220,7 @@ const Chatbot = () => {
                                     type="text"
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
-                                    placeholder="Escribe un mensaje..."
+                                    placeholder={isSpanish ? 'Escribe un mensaje...' : 'Type a message...'}
                                     className="flex-1 bg-brand-black border border-gray-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-[#CC0000] transition-colors"
                                     disabled={isLoading}
                                 />

@@ -44,7 +44,7 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.log(`[Compresión WA] Iniciando compresión de memoria para ${senderId}...`);
         const apiKey = (process.env.GEMINI_API_KEY || "").trim();
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
 
@@ -53,8 +53,8 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
         }
 
-        const result = await model.generateContent(prompt);
-        const newSummary = result.response.text();
+        const chatCompletion = await model.generateContent(prompt);
+        const newSummary = chatCompletion.response.text();
 
         const query = `
             UPDATE sesiones_chat 
@@ -227,47 +227,73 @@ async function getSystemPromptWA() {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
-            let safeHistory = [];
-            let rawHistoryForGemini = historial_mensajes.slice(0, -1); 
-            
-            for (const msg of rawHistoryForGemini) {
-                if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === msg.role) {
-                    safeHistory[safeHistory.length - 1].parts[0].text += `\n[Mensaje adicional]: ${msg.contenido}`;
-                } else {
-                    safeHistory.push({
-                        role: msg.role === "assistant" ? "model" : msg.role,
-                        parts: [{ text: msg.contenido }]
-                    });
-                }
-            }
-            
-            if (safeHistory.length > 0 && safeHistory[safeHistory.length - 1].role === "user") {
-                safeHistory.push({ role: "model", parts: [{ text: "(El usuario envió otro mensaje enseguida)" }] });
+            let geminiMessages = [];
+            let rawHistory = historial_mensajes.slice(0, -1);
+            for (const msg of rawHistory) {
+                geminiMessages.push({
+                    role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
+                    parts: [{ text: msg.contenido }]
+                });
             }
 
             const apiKey = (process.env.GEMINI_API_KEY || "").trim();
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+            
+            // Format tools for Gemini 1.5
+            const geminiTools = [{
+                functionDeclarations: chatTools.map(t => ({
+                    name: t.name,
+                    description: t.description,
+                    parameters: {
+                        type: "OBJECT",
+                        properties: Object.fromEntries(
+                            Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
+                        ),
+                        ...(t.parameters.required ? { required: t.parameters.required } : {})
+                    }
+                }))
+            }];
+
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.5-flash",
                 systemInstruction: finalSystemPrompt,
-                tools: [{ functionDeclarations: chatTools }]
+                tools: geminiTools,
+                generationConfig: {
+                    temperature: 0.1,
+                    topK: 40,
+                    topP: 0.95
+                }
             });
 
-            const chat = model.startChat({ history: safeHistory });
-            let result = await withTimeout(
-                chat.sendMessage(messageText), 
+            const chat = model.startChat({ history: geminiMessages });
+
+            let chatCompletion = await withTimeout(
+                chat.sendMessage(messageText),
                 "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
             );
-            let botReply = "Lo siento, fallé al entender.";
-            try { botReply = result.response.text(); } catch(e) {}
 
-            let rawFc = result.response.functionCalls;
-            const functionCalls = typeof rawFc === 'function' ? rawFc.call(result.response) : rawFc;
-            if (functionCalls && functionCalls.length > 0) {
+            let botReply = "Lo siento, fallé al entender.";
+            let responseMessage = null;
+            let functionCalls = [];
+
+            if (chatCompletion && chatCompletion.response) {
+                const response = chatCompletion.response;
+                try { botReply = response.text() || botReply; } catch(e){}
+                
+                const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
+                if (calls && calls.length > 0) {
+                    functionCalls = calls;
+                }
+            }
+
+            if (functionCalls.length > 0) {
                 for (const call of functionCalls) {
                     let fRes = {};
-                    if (call.name === "check_availability") {
-                        const { fecha, hora } = call.args;
+                    const callName = call.name;
+                    let callArgs = call.args || {};
+
+                    if (callName === "check_availability") {
+                        const { fecha, hora } = callArgs;
                         const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                         const isSunday = dateObj.getDay() === 0;
                         const hourInt = parseInt(hora.split(':')[0], 10);
@@ -288,9 +314,9 @@ async function getSystemPromptWA() {
                             fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                             console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
                         }
-                    } else if (call.name === "save_appointment") {
+                    } else if (callName === "save_appointment") {
                         try {
-                            const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
+                            const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                             
                             const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
                             const isSunday = dateObj.getDay() === 0;
@@ -354,8 +380,8 @@ async function getSystemPromptWA() {
                             console.error("❌ Error WA Webhook Save_Appointment:", waErr);
                             fRes = { success: false, error: "Error de servidor interno." };
                         }
-                    } else if (call.name === "cancel_appointment") {
-                        const { telefono } = call.args;
+                    } else if (callName === "cancel_appointment") {
+                        const { telefono } = callArgs;
                         try {
                             const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
                             if (result.rows.length === 0) {
@@ -373,8 +399,8 @@ async function getSystemPromptWA() {
                             console.error("❌ Error cancelando:", err);
                             fRes = { success: false, error: "Error interno procesando cancelación." };
                         }
-                    } else if (call.name === "reschedule_appointment") {
-                        const { telefono, nueva_fecha, nueva_hora } = call.args;
+                    } else if (callName === "reschedule_appointment") {
+                        const { telefono, nueva_fecha, nueva_hora } = callArgs;
                         try {
                             const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
                             if (result.rows.length === 0) {
@@ -412,16 +438,25 @@ async function getSystemPromptWA() {
                             console.error("❌ Error reagendando:", err);
                             fRes = { success: false, error: "Error técnico reagendando, intenta de nuevo más tarde." };
                         }
-                    } else if (call.name === "get_available_downloads") {
+                    } else if (callName === "get_available_downloads") {
                         const r = await pool.query("SELECT title, slug FROM lead_magnets");
                         fRes = { resources: r.rows };
                     }
 
-                    result = await withTimeout(
-                        chat.sendMessage([{ functionResponse: { name: call.name, response: fRes } }]),
+                    // Send tool results back to Gemini via existing chat object
+                    const chatCompletion2 = await withTimeout(
+                        chat.sendMessage([{
+                            functionResponse: {
+                                name: callName,
+                                response: fRes
+                            }
+                        }]),
                         "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
                     );
-                    try { botReply = result.response.text(); } catch(e) {}
+                    
+                    if (chatCompletion2 && chatCompletion2.response) {
+                         try { botReply = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
+                    }
                 }
             }
 
@@ -445,6 +480,19 @@ async function getSystemPromptWA() {
     // ==========================================
     // Escucha las señales de PM2 para destruir limpiamente Puppeteer
     // y evitar que quede congelado en memoria RAM tomando rehén la sesión.
+    
+    const emergencyShutdown = async (err, origin) => {
+        console.error(`🛑 [CRASH] Fatal Error (${origin}):`, err);
+        try {
+            console.log('Cerrando Chrome de emergencia...');
+            await client.destroy();
+        } catch (e) {}
+        process.exit(1);
+    };
+
+    process.on('uncaughtException', (err) => emergencyShutdown(err, 'uncaughtException'));
+    process.on('unhandledRejection', (err) => emergencyShutdown(err, 'unhandledRejection'));
+
     process.on('SIGINT', async () => {
         console.log('🛑 [SIGINT] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
         try {

@@ -3,14 +3,15 @@ import ContactForm from './ContactForm';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, Filter, Calendar, MessageSquare, RefreshCw, Database, ChevronDown } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
+import { useTranslation } from 'react-i18next';
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 
-const gifBot = `${API_URL}/api/media/assets/Bot.gif`;
-const gifVideo = `${API_URL}/api/media/assets/Video.gif`;
-const gifEmbudo = `${API_URL}/api/media/assets/Embudo.gif`;
-const gifRedes = `${API_URL}/api/media/assets/Redes Sociales.gif`;
-const gifSeo = `${API_URL}/api/media/assets/Red Social Optimizar.gif`;
-const gifCrm = `${API_URL}/api/media/assets/Estadistica.gif`;
+const gifBot = '/assets/icons/Bot.gif';
+const gifVideo = '/assets/icons/Video.gif';
+const gifEmbudo = '/assets/icons/Embudo.gif';
+const gifRedes = '/assets/icons/Redes%20Sociales.gif';
+const gifSeo = '/assets/icons/Red%20Social%20Optimizar.gif';
+const gifCrm = '/assets/icons/Estadistica.gif';
 // const botsVideo = `${API_URL}/api/media/assets/GC_ChatBotsWebPage_AM_161225.mp4`; // TEMP: Comentado por falta de archivo
 
 const defaultContent = {
@@ -27,15 +28,17 @@ const Bots = () => {
     const [content, setContent] = useState(defaultContent);
     const [openAccordion, setOpenAccordion] = useState(0);
 
-    const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: content.accTitle1 || "Cualificación de leads en tiempo real", desc: content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente." },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: content.accTitle2 || "Agendamiento directo sin intervención", desc: content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas." },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: content.accTitle3 || "Soporte de IA multicanal", desc: content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea." },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="Icon 4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <RefreshCw size={20} className="shrink-0" />, title: content.accTitle4 || "Nurturing automatizado", desc: content.accDesc4 || "Seguimiento inteligente a prospectos que no compraron al primer contacto." },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: content.accTitle5 || "Integración nativa con tu CRM", desc: content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos." },
+    const { t, i18n } = useTranslation();
+      const isEng = !i18n.resolvedLanguage?.startsWith('es');
+          const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle1") : (content.accTitle1 || "Cualificación de leads en tiempo real"), desc: isEng ? t("services.items.bots.accDesc1") : (content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente.") },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle2") : (content.accTitle2 || "Agendamiento directo sin intervención"), desc: isEng ? t("services.items.bots.accDesc2") : (content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle3") : (content.accTitle3 || "Soporte de IA multicanal"), desc: isEng ? t("services.items.bots.accDesc3") : (content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="Icon 4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <RefreshCw size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle4") : (content.accTitle4 || "Nurturing automatizado"), desc: isEng ? t("services.items.bots.accDesc4") : (content.accDesc4 || "Seguimiento inteligente a prospectos que no compraron al primer contacto.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle5") : (content.accTitle5 || "Integración nativa con tu CRM"), desc: isEng ? t("services.items.bots.accDesc5") : (content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos.") },
     ];
 
-    const { getNodeData } = useSiteData();
+const { getNodeData } = useSiteData();
     const nodeData = getNodeData('servicio-bots');
 
     useEffect(() => {
@@ -118,7 +121,7 @@ const Bots = () => {
                         )}
 
                         {/* Video Controls Overlay */}
-                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-6 left-6 flex items-center gap-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                             <button
                                 onClick={togglePlay}
                                 className="w-12 h-12 rounded-full bg-black/60 hover:bg-[#CC0000] border border-white/30 backdrop-blur-sm flex items-center justify-center transition-all shadow-lg text-white"
@@ -164,11 +167,11 @@ const Bots = () => {
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: content.title.replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.bots.title') : content.title).replace(/\n/g, '<br />') }}
                             />
                             {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {content.subtitle}
+                                {isEng ? t('services.items.bots.desc') : content.subtitle}
                             </p>
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
                                 {accordionItems.map((item, index) => {
@@ -200,7 +203,7 @@ const Bots = () => {
                                 onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-white text-[#CC0000] px-8 py-3 rounded-full font-bold flex items-center gap-3 hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
                             >
-                                {content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
+                                {isEng ? 'Schedule appointment' : content.ctaText} <ArrowRight size={20} className="text-[#CC0000]" />
                             </button>
                         </div>
                     </div>

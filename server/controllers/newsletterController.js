@@ -12,16 +12,19 @@ export const subscribe = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email inválido.' });
         }
 
+        const language = req.body.language || 'es';
+
         // Upsert: si ya existe y estaba desuscrito, lo reactiva
         const result = await pool.query(`
-            INSERT INTO subscribers (email, name, source, status, subscribed_at)
-            VALUES ($1, $2, $3, 'active', NOW())
+            INSERT INTO subscribers (email, name, source, status, language, subscribed_at)
+            VALUES ($1, $2, $3, 'active', $4, NOW())
             ON CONFLICT (email) DO UPDATE
               SET status        = 'active',
                   subscribed_at = NOW(),
+                  language      = EXCLUDED.language,
                   name          = COALESCE(EXCLUDED.name, subscribers.name)
             RETURNING id, email, status
-        `, [email, name, source]);
+        `, [email, name, source, language]);
 
         const isNew = result.rows[0].status === 'active';
         return res.json({
@@ -123,6 +126,21 @@ export const getHistory = async (req, res) => {
              FROM   newsletters ORDER BY sent_at DESC NULLS FIRST, id DESC LIMIT 50`
         );
         return res.json({ success: true, newsletters: result.rows });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// ── DELETE /api/newsletter/delete/:id ────────────────────────────────────────
+export const deleteNewsletter = async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ success: false, message: 'ID requerido' });
+        
+        await pool.query(`DELETE FROM queue_log WHERE newsletter_id = $1`, [id]);
+        await pool.query(`DELETE FROM newsletters WHERE id = $1`, [id]);
+
+        return res.json({ success: true, message: 'Newsletter borrado exitosamente.' });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }

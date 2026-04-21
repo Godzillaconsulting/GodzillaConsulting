@@ -152,35 +152,24 @@ async function handleAILogic(senderId, messageText) {
                 const callName = call.name;
                 let callArgs = call.args || {};
 
-                if (callName === "check_availability") {
+                                if (callName === "check_availability") {
                     const { fecha, hora } = callArgs;
-                    const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                    const isSunday = dateObj.getDay() === 0;
-                    const hourInt = parseInt(hora.split(':')[0], 10);
-                    const now = new Date();
+                    const valErr = validateBusinessHours(fecha, hora);
 
-                    if (dateObj < now) {
-                        fRes = { disponible: false, razon: "La fecha solicitada es en el pasado. Solicita una fecha futura." };
-                    } else if (isSunday) {
-                        fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
-                    } else if (hourInt < 9 || hourInt >= 19) {
-                        fRes = { disponible: false, razon: "Fuera de horario de oficina. Por favor solicita otra hora." };
+                    if (valErr) {
+                        fRes = { disponible: false, razon: valErr };
                     } else {
                         const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                         const r = await pool.query(query, [fecha, hora]);
                         fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                     }
-                } else if (callName === "save_appointment") {
-                    try {
-                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                        const isSunday = dateObj.getDay() === 0;
-                        const hourInt = parseInt(hora.split(':')[0], 10);
-                        const now = new Date();
+                                } else if (callName === "save_appointment") {
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
+                    const valErr = validateBusinessHours(fecha, hora);
 
-                        if (dateObj < now || isSunday || hourInt < 9 || hourInt >= 19) {
-                             fRes = { success: false, error: "Fecha inválida, en el pasado, o fuera de horario." };
-                        } else {
+                    if (valErr) {
+                        fRes = { success: false, error: valErr };
+                    } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
                             

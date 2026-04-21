@@ -22,7 +22,7 @@ import adminMigrationRoutes from './routes/adminMigration.js';
 import aiStudioRoutes from './routes/aiStudio.js';
 import bugsRoutes from './routes/bugs.js';
 import localesRoutes from './routes/locales.js';
-import { connectDB } from './config/db.js';
+import pool, { connectDB } from './config/db.js';
 
 import chatRoutes from './routes/chat.js';
 import nodesRoutes from './routes/nodes.js';
@@ -363,6 +363,17 @@ app.use(express.static(distPath));
 // Endpoint de prueba para estado backend
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
 app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
+
+// Endpoint para traer las citas al CM Calendar
+app.get('/api/citas', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM citas ORDER BY fecha DESC, hora DESC");
+        res.json({ success: true, citas: result.rows });
+    } catch (error) {
+        console.error('[API Citas] Error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch citas', details: error.message });
+    }
+});
 
 // Diagnóstico de variables de entorno (sin exponer valores)
 app.get('/api/env-check', (req, res) => {

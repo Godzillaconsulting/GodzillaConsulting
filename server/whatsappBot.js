@@ -6,6 +6,7 @@ import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
+import { validateBusinessHours } from './utils/businessHours.js';
 import { sendCitaConfirmationEmail } from './services/emailService.js';
 import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
 import fs from 'fs';
@@ -361,43 +362,26 @@ export const initWhatsAppBot = async () => {
                     const callName = call.name;
                     let callArgs = call.args || {};
 
-                    if (callName === "check_availability") {
+                                        if (callName === "check_availability") {
                         const { fecha, hora } = callArgs;
-                        const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                        const isSunday = dateObj.getDay() === 0;
-                        const hourInt = parseInt(hora.split(':')[0], 10);
-                        const now = new Date();
+                        const valErr = validateBusinessHours(fecha, hora);
 
-                        if (dateObj < now) {
-                            fRes = { disponible: false, razon: "La fecha solicitada es en el pasado. Solicita una fecha futura." };
-                            console.log(`[WA Guardián] Rechazo: Fecha Pasada para ${fecha} a las ${hora}`);
-                        } else if (isSunday) {
-                            fRes = { disponible: false, razon: "Los domingos no laboramos. Por favor solicita otro día." };
-                            console.log(`[WA Guardián] Rechazo: Domingo para ${fecha} a las ${hora}`);
-                        } else if (hourInt < 9 || hourInt >= 19) {
-                            fRes = { disponible: false, razon: "Fuera de horario de oficina (9am a 7pm). Por favor solicita otra hora." };
-                            console.log(`[WA Guardián] Rechazo: Fuera de Horario para ${fecha} a las ${hora}`);
+                        if (valErr) {
+                            fRes = { disponible: false, razon: valErr };
                         } else {
                             const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const r = await pool.query(query, [fecha, hora]);
                             fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                             console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
                         }
-                    } else if (callName === "save_appointment") {
+                                        } else if (callName === "save_appointment") {
                         try {
                             const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                             
-                            const dateObj = new Date(`${fecha}T${hora}:00-07:00`);
-                            const isSunday = dateObj.getDay() === 0;
-                            const hourInt = parseInt(hora.split(':')[0], 10);
-                            const now = new Date();
+                            const valErr = validateBusinessHours(fecha, hora);
 
-                            if (dateObj < now) {
-                                 console.warn(`⚠️ [Cita Rechazada por Guardián Final]: Fecha pasada ${fecha} ${hora}`);
-                                 fRes = { success: false, error: "Intento de agendar en el pasado. Pide otra fecha/hora a futuro." };
-                            } else if (isSunday || hourInt < 9 || hourInt >= 19) {
-                                 console.warn(`⚠️ [Cita Rechazada por Guardián Final]: ${fecha} ${hora}`);
-                                 fRes = { success: false, error: "Intento de agendar fuera de horario o en domingo. Pide otra fecha/hora al cliente." };
+                            if (valErr) {
+                                 fRes = { success: false, error: valErr };
                             } else {
                                 const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                                 const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
@@ -456,24 +440,11 @@ export const initWhatsAppBot = async () => {
                             if (result.rows.length === 0) {
                                 fRes = { success: false, error: "No encontré ninguna cita activa con ese número de teléfono." };
                             } else {
-                                const cita = result.rows[0];
-                                if (cita.google_calendar_id) {
-                                    await cancelarEnGoogleCalendar(cita.google_calendar_id);
-                                }
-                                await pool.query("UPDATE citas SET status = 'cancelada' WHERE id = $1", [cita.id]);
-                                fRes = { success: true, message: "Cita cancelada correctamente." };
-                                console.log(`[WA Tool] Cita ${cita.id} cancelada exitosamente.`);
-                            }
-                        } catch (err) {
-                            console.error("❌ Error cancelando:", err);
-                            fRes = { success: false, error: "Error interno procesando cancelación." };
-                        }
-                    } else if (callName === "reschedule_appointment") {
-                        const { telefono, nueva_fecha, nueva_hora } = callArgs;
-                        try {
-                            const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
-                            if (result.rows.length === 0) {
-                                fRes = { success: false, error: "No encontré ninguna cita activa previa con ese número de teléfono." };
+                                                            const cita = result.rows[0];
+                            const valErr = validateBusinessHours(nueva_fecha, nueva_hora);
+                            
+                            if (valErr) {
+                                fRes = { success: false, error: valErr };
                             } else {
                                 const cita = result.rows[0];
                                 

@@ -4,6 +4,8 @@ import pool from '../config/db.js';
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar } from '../services/calendarService.js';
+import { validateBusinessHours } from '../utils/businessHours.js';
 
 export const processChatMessage = async (req, res) => {
     const { messages, isGoyi, lang } = req.body;
@@ -126,19 +128,61 @@ export const processChatMessage = async (req, res) => {
             let resultMessage = "Operación realizada correctamente.";
             try {
                 if (name === "check_availability") {
-                    const r = await pool.query("SELECT * FROM citas WHERE fecha_reserva = $1 AND hora_reserva = $2", [args.fecha, args.hora]);
-                    if (r.rows.length > 0) resultMessage = "El horario está ocupado. Ofrece otra hora.";
-                    else resultMessage = "Horario disponible.";
+                    const { fecha, hora } = args;
+                    const errorValidacion = validateBusinessHours(fecha, hora);
+
+                    if (errorValidacion) {
+                        resultMessage = errorValidacion;
+                    } else {
+                        const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                        const r = await pool.query(query, [fecha, hora]);
+                        if (parseInt(r.rows[0].total) > 0) resultMessage = "El horario está ocupado (hay otra cita a menos de 1 hora de diferencia). Ofrece otra hora.";
+                        else resultMessage = "Horario disponible.";
+                    }
                 } else if (name === "save_appointment") {
-                    await pool.query(
-                        "INSERT INTO citas (nombre_cliente, correo_contacto, telefono_contacto, servicio_interes, fecha_reserva, hora_reserva, notas_adicionales, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Pendiente')",
-                        [args.nombre, args.correo, args.telefono, args.servicio, args.fecha, args.hora, args.notas]
-                    );
-                    resultMessage = "Cita agendada con éxito en BD.";
+                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = args;
+                    const errorValidacion = validateBusinessHours(fecha, hora);
+
+                    if (errorValidacion) {
+                        resultMessage = errorValidacion;
+                    } else {
+                        const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                        const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                        
+                        if (parseInt(conflictCheck.rows[0].total) > 0) {
+                            resultMessage = "Error: Ese horario ya está ocupado.";
+                        } else {
+                            let calendarId = null;
+                            try {
+                                const gRes = await agendarEnGoogleCalendar({
+                                    nombre: nombre,
+                                    correo: correo || 'sin-correo@portal.com',
+                                    telefono: telefono,
+                                    servicio: servicio,
+                                    fecha: fecha,
+                                    hora: hora,
+                                    notas: notas || ''
+                                });
+                                calendarId = gRes.id;
+                                
+                                await pool.query(
+                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8, 'portal')",
+                                    [nombre, correo || 'sin-correo@portal.com', telefono, servicio, fecha, hora, notas || '', calendarId]
+                                );
+                                resultMessage = "Cita agendada con éxito en BD y Calendar.";
+                            } catch (err) {
+                                console.error('Error al agendar cita en portal: ', err);
+                                if (calendarId) {
+                                    await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error('Fallo en Rollback Calendar:', rollbackErr.message));
+                                }
+                                resultMessage = "Hubo un error agendando la cita: " + err.message;
+                            }
+                        }
+                    }
                 } else {
                     resultMessage = "Herramienta ejecutada o no soportada.";
                 }
-            } catch(e) { resultMessage = "Error interno ejecutando la herramienta."; }
+            } catch(e) { resultMessage = "Error interno ejecutando la herramienta: " + e.message; }
 
             const chatCompletion2 = await chat.sendMessage([{
                 functionResponse: { name: name, response: { status: resultMessage } }

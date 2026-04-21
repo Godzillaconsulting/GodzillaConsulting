@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
-import { agendarEnGoogleCalendar } from "../services/calendarService.js";
+import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from "../services/calendarService.js";
+import { validateBusinessHours } from '../utils/businessHours.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
@@ -155,42 +156,92 @@ async function processAndReply(from, text, phoneNumberId, platform) {
 
                 if (callName === "check_availability") {
                     const { fecha, hora } = callArgs;
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                    fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    const valErr = validateBusinessHours(fecha, hora);
+
+                    if (valErr) {
+                        fRes = { disponible: false, razon: valErr };
+                    } else {
+                        const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'", [fecha, hora]);
+                        fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    }
                 } else if (callName === "save_appointment") {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                    try {
-                        const dup = await pool.query(
-                            "SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'",
-                            [correo, fecha, hora]
-                        );
-                        if (dup.rows.length > 0) {
-                            fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada' };
-                        } else {
-                            const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
-                            if (googleRes && googleRes.id) {
-                                const r = await pool.query(
-                                    `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id)
-                                     VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8) RETURNING id`,
-                                    [nombre, correo, telefono, servicio, fecha, hora, notas, googleRes.id]
-                                );
-                                console.log(`[${platform}] ✅ Cita #${r.rows[0].id} en Local. Calendar: ${googleRes.id}`);
-                                fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink };
+                    const valErr = validateBusinessHours(fecha, hora);
+
+                    if (valErr) {
+                        fRes = { success: false, error: valErr };
+                    } else {
+                        try {
+                            const dup = await pool.query(
+                                "SELECT id FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'",
+                                [fecha, hora]
+                            );
+                            if (dup.rows.length > 0) {
+                                fRes = { success: false, error: "Horario ocupado." };
                             } else {
-                                fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
+                                let calendarId = null;
+                                const googleRes = await agendarEnGoogleCalendar({ nombre, correo: correo || 'sin-correo@meta.com', telefono, servicio, fecha, hora, notas: notas || '' });
+                                if (googleRes && googleRes.id) {
+                                    calendarId = googleRes.id;
+                                    try {
+                                        const r = await pool.query(
+                                            `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen)
+                                             VALUES ($1,$2,$3,$4,$5,$6,$7,'confirmada',$8,$9) RETURNING id`,
+                                            [nombre, correo || 'sin-correo@meta.com', telefono, servicio, fecha, hora, notas || '', calendarId, platform]
+                                        );
+                                        console.log(`[${platform}] ✅ Cita #${r.rows[0].id} en Local. Calendar: ${calendarId}`);
+                                        fRes = { success: true, id: r.rows[0].id, personal_calendar_link: googleRes.personalCalendarLink };
+                                    } catch (dbErr) {
+                                        if (calendarId) await cancelarEnGoogleCalendar(calendarId).catch(() => {});
+                                        fRes = { success: false, error: dbErr.message };
+                                    }
+                                } else {
+                                    fRes = { success: false, error: 'Google Calendar no confirmó el evento' };
+                                }
                             }
+                        } catch (err) {
+                            console.error(`[${platform}] Error en save_appointment:`, err.message);
+                            fRes = { success: false, error: err.message };
                         }
-                    } catch (err) {
-                        console.error(`[${platform}] Error en save_appointment:`, err.message);
-                        fRes = { success: false, error: err.message };
                     }
                 } else if (callName === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");
                     fRes = { resources: r.rows };
                 } else if (callName === "cancel_appointment") {
-                    fRes = { error: 'Funcionalidad de cancelación directa no disponible. Pide al humano que nos asista.' };
+                    const { telefono } = callArgs;
+                    try {
+                        const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                        if (result.rows.length === 0) {
+                            fRes = { success: false, error: "No encontré cita activa con ese número." };
+                        } else {
+                            const cita = result.rows[0];
+                            if (cita.google_calendar_id) await cancelarEnGoogleCalendar(cita.google_calendar_id);
+                            await pool.query("UPDATE citas SET status = 'cancelada' WHERE id = $1", [cita.id]);
+                            fRes = { success: true, message: "Cita cancelada correctamente." };
+                        }
+                    } catch (e) { fRes = { success: false, error: e.message }; }
                 } else if (callName === "reschedule_appointment") {
-                    fRes = { error: 'El agendamiento directo de re-programación está en mantenimiento. Pide asistencia humana.' };
+                    const { telefono, nueva_fecha, nueva_hora } = callArgs;
+                    try {
+                        const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                        if (result.rows.length === 0) {
+                            fRes = { success: false, error: "No encontré ninguna cita previa." };
+                        } else {
+                            const cita = result.rows[0];
+                            const valErr = validateBusinessHours(nueva_fecha, nueva_hora);
+                            if (valErr) {
+                                fRes = { success: false, error: valErr };
+                            } else {
+                                const dup = await pool.query("SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'", [nueva_fecha, nueva_hora]);
+                                if (parseInt(dup.rows[0].total) > 0) fRes = { success: false, error: "Ese horario está ocupado." };
+                                else {
+                                    if (cita.google_calendar_id) await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora);
+                                    await pool.query("UPDATE citas SET fecha = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
+                                    fRes = { success: true, message: "Reagendada." };
+                                }
+                            }
+                        }
+                    } catch (e) { fRes = { success: false, error: e.message }; }
                 }
 
                 // Send tool results back to Gemini via existing chat object

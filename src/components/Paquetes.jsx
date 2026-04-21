@@ -122,9 +122,9 @@ const Paquetes = () => {
  <div className="text-center mb-16">
  <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase">
  {isIntl ? (
-   <>{t('packages.title', 'OUR')} <span className="text-[#CC0000]">{t('packages.titleRed', 'SYSTEMS')}</span></>
+   <>{t('packages.title', 'PACKAGES')} {t('packages.titleRed', '') && <span className="text-[#CC0000]">{t('packages.titleRed')}</span>}</>
  ) : (
-   <>{nodeData.title && nodeData.title !== 'PAQUETES' ? nodeData.title : 'NUESTROS'} <span className="text-[#CC0000]">{nodeData.titleRed || 'SISTEMAS'}</span></>
+   <>{nodeData.title || t('packages.title', 'PAQUETES')} {nodeData.titleRed && <span className="text-[#CC0000]">{nodeData.titleRed}</span>}</>
  )}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">

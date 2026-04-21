@@ -1,0 +1,166 @@
+{
+  "navbar": {
+    "home": "Início",
+    "culture": "Cultura",
+    "services": "Serviços",
+    "portfolio": "Portfólio",
+    "resources": "Recursos",
+    "packages": "Pacotes",
+    "digital_marketing": "Marketing Digital",
+    "ecommerce": "Ecommerce e Software",
+    "ai_solutions": "Soluções com IA",
+    "about": "Sobre Nós",
+    "login": "Iniciar Sessão",
+    "start_now": "Começar Projeto"
+  },
+  "hero": {
+    "title": "PARE A FUGA DE LEADS E ESCALE SEU FATURAMENTO COM INTELIGÊNCIA ARTIFICIAL.",
+    "subtitle": "O único sistema de marketing que instala um \"Recepcionista Digital\" 24/7, reativa sua base de dados e garante resultados por contrato. Se não cumprirmos, você não paga.",
+    "ctaText": "Ver planos e garantias"
+  },
+  "services": {
+    "overline": "Soluções de Alto Impacto",
+    "title": "SERVIÇOS",
+    "learn_more": "Saber mais",
+    "items": {
+      "bots": {
+        "title": "Automação de Bots",
+        "desc": "Automatize seu atendimento ao cliente 24/7 com bots treinados em seu negócio, que respondem dúvidas, qualificam prospects e os levam diretamente para a consulta ou para a venda. Integrados com WhatsApp, redes sociais e seu CRM."
+      },
+      "video": {
+        "title": "Produção audiovisual",
+        "desc": "Criamos conteúdo audiovisual estratégico que gera confiança, autoridade, fortalece sua marca, comunica sua proposta de valor e potencializa a conversão em campanhas e redes sociais."
+      },
+      "funnels": {
+        "title": "Funis de vendas",
+        "desc": "Estruturamos funis digitais orientados a resultados que convertem tráfego em agendamentos e oportunidades comerciais mensuráveis."
+      },
+      "social": {
+        "title": "Gestão de redes sociais",
+        "desc": "Administramos a presença digital de sua marca com uma estratégia de conteúdo profissional, focada em posicionamento, reputação e geração de prospects."
+      },
+      "seo": {
+        "title": "Otimização web e SEO",
+        "desc": "Otimizamos seu site e sua estrutura SEO para melhorar a visibilidade em buscadores, a experiência do usuário e a geração de leads qualificados."
+      },
+      "crm": {
+        "title": "CRM com SAAS personalizado",
+        "desc": "Implementamos plataformas CRM e soluções SaaS sob medida para centralizar contatos, automatizar acompanhamentos e facilitar a gestão comercial de sua equipe."
+      }
+    }
+  },
+  "footer": {
+    "contact": "Informações de contato",
+    "nav": "Navegação",
+    "legal": "Legal",
+    "home": "Início",
+    "culture": "Cultura",
+    "services": "Serviços",
+    "packages": "Pacotes",
+    "portfolio": "Portfólio",
+    "resources": "Recursos",
+    "terms": "Termos e Condições",
+    "privacy": "Aviso de Privacidade",
+    "cookies": "Política de Cookies",
+    "copyright": "Godzilla Co. Todos os direitos reservados."
+  },
+  "contact": {
+    "title": "VAMOS COMEÇAR A GUERRA",
+    "subtitle": "Pare de perder dinheiro em campanhas que não funcionam. Preencha o formulário para agendar uma sessão estratégica de diagnóstico.",
+    "name": "Nome completo",
+    "company": "Empresa ou Projeto",
+    "email": "E-mail empresarial",
+    "phone": "Telefone (Opcional)",
+    "revenue": "Faturamento atual ou projetado",
+    "revenue_options": {
+      "new": "Apenas iniciando (US$0 - US$5.000)",
+      "growing": "Crescendo (US$5.000 - US$20.000)",
+      "scaling": "Escalando (US$20.000 - US$50.000)",
+      "enterprise": "Empresa estabelecida (US$50.000+)"
+    },
+    "message": "Qual é o seu principal desafio a resolver?",
+    "submit": "APLICAR AGORA",
+    "submitting": "ENVIANDO...",
+    "success": "Informação recebida corretamente.",
+    "error": "Erro ao conectar. Por favor, tente novamente."
+  },
+  "banner": {
+    "limited": "TEMPO LIMITADO",
+    "getBonus": "Baixe o Relatório Executivo",
+    "close": "Fechar"
+  },
+  "faq": {
+    "title": "PERGUNTAS FREQUENTES",
+    "subtitle": "Respostas claras sobre a nossa forma de operar."
+  },
+  "leadmagnet": {
+    "title": "7 Prompts de IA comprovados",
+    "subtitle": "Deixe seu e-mail e receba-os instantaneamente.",
+    "placeholder": "Seu melhor e-mail...",
+    "btnDownloading": "Enviando...",
+    "btnDownload": "Baixar",
+    "success": "O recurso está a caminho da sua caixa de entrada!",
+    "alreadySent": "Já havíamos enviado este documento para o seu e-mail antes! Verifique sua caixa de spam.",
+    "emptyEmail": "Escreva um e-mail válido."
+  },
+  "faqPage": {
+    "title1": "PERGUNTAS",
+    "title2": "FREQUENTES",
+    "subtitle": "Tudo o que você precisa saber sobre a Godzilla Consulting",
+    "notFound": "Não encontrou o que procurava?",
+    "contact": "Entre em contato conosco diretamente"
+  },
+  "portfolio": {
+    "overline": "CASOS DE SUCESSO",
+    "title": "CASOS DE SUCESSO",
+    "subtitle": "Não fazemos apenas campanhas, construímos sistemas"
+  },
+  "chat": {
+    "greeting": "Olá! Eu sou a Zilla. 😊 Como posso ajudar?"
+  },
+  "culture": {
+    "title": "NOSSA",
+    "titleRed": "CULTURA",
+    "mission": "Nossa Missão",
+    "missionText": "Impulsionar o crescimento escalável de negócios B2B por meio da implementação de funis inteligentes, automação avançada e estratégias omnicanal.",
+    "vision": "A Visão",
+    "visionText": "Tornar-nos a agência integral de referência, liderando a transformação digital com IA para que as empresas não só vendam, mas sistematizem seu sucesso.",
+    "values": "Nossos Valores",
+    "values1": "Inovação implacável",
+    "values2": "Transparência radical",
+    "values3": "Design centrado em resultados",
+    "values4": "Adaptabilidade extrema",
+    "values5": "Paixão por dados",
+    "values6": "Obsessão pelo cliente"
+  },
+  "packages": {
+    "title": "NOSSOS",
+    "titleRed": "SISTEMAS",
+    "subtitle": "Soluções integrais de crescimento",
+    "btn": "Contratar agora",
+    "includes": "Inclui:",
+    "consult": "Falar com vendas"
+  },
+  "resources": {
+    "title": "NOSSOS",
+    "titleRed": "RECURSOS",
+    "subtitle": "Ferramentas gratuitas para automatizar seu negócio",
+    "btn": "Baixar agora"
+  },
+  "responsibilities": {
+    "title": "Responsabilidades",
+    "subtitle": "dos nossos clientes",
+    "h3": "Trabalhamos juntos, entregamos juntos",
+    "p": "Os prazos de entrega que prometemos são reais, mas dependem de um ingrediente chave: o trabalho em equipe. Nós colocamos toda a nossa experiência e agilidade, mas precisamos que você esteja disponível para feedback, aprovações e entrega de materiais. Quando ambos cumprimos nossa parte, os resultados chegam a tempo.",
+    "points": [
+      "Assinatura do contrato de prestação de serviços antes de iniciar o projeto",
+      "Entrega de informações e materiais solicitados dentro dos prazos estabelecidos para evitar atrasos",
+      "Respostas e feedback em no máximo 48-72 horas úteis",
+      "Acessos necessários (redes sociais, domínio, hospedagem, plataformas publicitárias) fornecidos no início",
+      "Disponibilidade para reuniões de acompanhamento agendadas com antecedência",
+      "Aprovações claras e por escrito para avançar para as próximas etapas do projeto",
+      "Ponto de contato designado que tenha autoridade para tomar decisões"
+    ],
+    "warning": "O não cumprimento destes pontos pode resultar na extensão dos prazos de entrega originalmente acordados."
+  }
+}

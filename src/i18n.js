@@ -6,11 +6,23 @@ import HttpApi from 'i18next-http-backend';
 import esTranslation from './locales/es.json';
 // Importamos ingles nativo tambien para que no cueste tokens
 import enTranslation from './locales/en.json';
+import frTranslation from './locales/fr.json';
+import ptTranslation from './locales/pt.json';
+import deTranslation from './locales/de.json';
+import jaTranslation from './locales/ja.json';
+import itTranslation from './locales/it.json';
+import zhTranslation from './locales/zh.json';
 
-// Recursos nativos pre-cargados (no disparan petición a /api/translate)
+// Recursos nativos pre-cargados (Carga Instantánea a Nivel Global, 0 latencia)
 const resources = {
   es: { translation: { ...esTranslation } },
-  en: { translation: { ...enTranslation } }
+  en: { translation: { ...enTranslation } },
+  fr: { translation: { ...frTranslation } },
+  pt: { translation: { ...ptTranslation } },
+  de: { translation: { ...deTranslation } },
+  ja: { translation: { ...jaTranslation } },
+  it: { translation: { ...itTranslation } },
+  zh: { translation: { ...zhTranslation } }
 };
 
 i18n

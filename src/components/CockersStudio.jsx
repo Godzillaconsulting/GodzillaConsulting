@@ -22,13 +22,20 @@ const COMMUNITY_GALLERY_POOL = [
     { img: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract corporate 3d glassmorphism UI elements floating against dark space, frosted glass texture, modern web3 design', tag: 'Glassmorphism', model: 'Imagen 4 Ultra' }
 ];
 
-export default function CockersStudio({ adminProfile }) {
+export default function CockersStudio({ adminProfile, forceOpenEditor = false }) {
     const [queue, setQueue] = useState([]);
+    const [showEditorModal, setShowEditorModal] = useState(forceOpenEditor);
     const [selectedDraft, setSelectedDraft] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [renderingAI, setRenderingAI] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
     const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
+
+    useEffect(() => {
+        if (forceOpenEditor) {
+            setShowEditorModal(true);
+        }
+    }, [forceOpenEditor]);
 
     // Aplica Filtro Ultra (Gemini imagen) a un slot específico de liveSlots
     const triggerUltraVariant = useCallback(async (slot, slotIdx, prompt) => {
@@ -80,7 +87,6 @@ export default function CockersStudio({ adminProfile }) {
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
     const [genMode, setGenMode] = useState('imagen'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
-    const [showEditorModal, setShowEditorModal] = useState(false);
     const [editorVideoSrc, setEditorVideoSrc] = useState('');
     
     // Auth & Roles

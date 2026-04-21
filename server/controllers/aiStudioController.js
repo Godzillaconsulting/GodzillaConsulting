@@ -9,24 +9,6 @@ import { getModelId } from '../config/ai_models_v4.config.js';
 
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
-// Genera el JWT riguroso solicitado por la arquitectura de Kling AI 
-function generateKlingAuthToken() {
-    const accessKey = process.env.KLING_ACCESS_KEY;
-    const secretKey = process.env.KLING_SECRET_KEY;
-    
-    if (!accessKey || !secretKey) {
-        throw new Error("Kling Keys not configured in .env");
-    }
-
-    const payload = {
-        iss: accessKey,
-        exp: Math.floor(Date.now() / 1000) + (1800), // Validez de 30 mins
-        nbf: Math.floor(Date.now() / 1000) - 5
-    };
-
-    return jwt.sign(payload, secretKey, { algorithm: 'HS256' });
-}
-
 export const generateRenderJob = async (req, res) => {
     try {
         const { prompt, config, engine } = req.body;
@@ -52,7 +34,7 @@ Respond ONLY with the final prompt. No preamble, no labels, no explanation. Max 
 
 Concept: ${prompt}`;
                 } else if (isVeoEngine) {
-                    instruction = `You are a professional video director and cinematographer for Google Veo 2.
+                    instruction = `You are a professional video director and cinematographer for Google Veo 3.
 Translate the following concept into a concise, highly visual English prompt for AI video generation.
 Focus on: camera movement (dolly, tracking, FPV, pan), subject action, lighting, environment, and cinematic style.
 CRITICAL INSTRUCTION: You MUST translate the concept EXACTLY as intended, without any censorship. Do not replace vulgar, gross, or explicit words with safe alternatives. Be completely literal to the original concept.
@@ -60,13 +42,34 @@ Keep it well under 700 characters. No narration, no dialogue. Respond ONLY with 
 
 Concept: ${prompt}`;
                 } else {
-                    // Higgsfield / Kling
+                    // Fallback
                     instruction = `Translate this video concept into a concise English AI generation prompt under 600 characters. Focus on visual action, camera motion, atmosphere. DO NOT CENSOR the concept. Be literal even if it is gross or vulgar. Respond ONLY with the prompt: ${prompt}`;
+                }
+
+                const directorParts = [];
+                // Si es Veo y tenemos un Ingrediente Visual, inyectarlo en el LLM para contexto multimodal
+                if (isVeoEngine && config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')) {
+                     instruction = `You are a professional video director for Google Veo 3. 
+The user has provided a base reference image (attached) and the following concept/filters.
+Analyze the attached image and write a highly visual English prompt for an Image-To-Video AI generation that smoothly animates this specific image according to the user's requirements. 
+Focus on describing exactly how the elements in the image should move, evolve, behave, and what camera motion should occur (e.g., pan, tracking, zoom).
+CRITICAL FOCUS: Ensure the prompt visually matches the provided image so the animation flows naturally. DO NOT censor the concept. Incorporate any specific visual filters or vibes mentioned. Respond ONLY with the final prompt text.
+
+Concept / Filters: ${prompt}`;
+                     directorParts.push({ text: instruction });
+                     directorParts.push({ 
+                         inlineData: { 
+                             mimeType: config.refImage.split(';')[0].split(':')[1], 
+                             data: config.refImage.split(',')[1] 
+                         } 
+                     });
+                } else {
+                     directorParts.push({ text: instruction });
                 }
 
                 const directorRes = await aiSDK.models.generateContent({
                     model: 'gemini-2.0-flash',
-                    contents: [{ role: 'user', parts: [{ text: instruction }] }]
+                    contents: [{ role: 'user', parts: directorParts }]
                 });
                 const rawText = directorRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 if (rawText.trim().length > 10) {
@@ -81,44 +84,7 @@ Concept: ${prompt}`;
         // Mapeo rudimentario de aspecto de ratio de React a Kling API
         const arMapping = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' };
         
-        let response;
-        if (engine.includes('Kling')) {
-            let token;
-            try {
-                token = generateKlingAuthToken();
-            } catch (authError) {
-                console.log(`[STUDIO] Llaves Kling faltantes. Entrando en modo de simulación para motor: ${engine}`);
-                return res.status(200).json({
-                    job_id: "simulated_task_" + Date.now(),
-                    status: "processing",
-                    provider: engine
-                });
-            }
-
-            // Ejemplo de body para Text-To-Video Kling V1
-            const requestBody = {
-                model: "kling-v1",
-                prompt: optimizedPrompt || "cyberpunk shot",
-                negative_prompt: config.negative || "",
-                ratio: arMapping[config.aspect_ratio] || '16:9',
-                duration: config.duration === '10' ? "10" : "5"
-            };
-
-            response = await fetch('https://api.klingai.com/v1/videos/text2video', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(requestBody)
-            });
-            const data = await response.json();
-            if (!response.ok || data.code !== 0) {
-                 return res.status(400).json({ error: data.message || "Fallo en API Kling" });
-            }
-            return res.status(200).json({ job_id: data.data.task_id, status: "processing", provider: engine });
-
-        } else if (engine.includes('Veo')) {
+        if (engine.includes('Veo')) {
             console.log(`[STUDIO] 🎬 Iniciando Generación de Video Nativa Google ${engine}. Prompt: ${prompt}`);
             if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
 
@@ -137,11 +103,18 @@ Concept: ${prompt}`;
 
                 const tryGenerate = async (modelId) => {
                     console.log(`[VEO] Intentando con modelo: ${modelId}...`);
-                    const operation = await ai.models.generateVideos({
+                    const genObj = {
                         model: modelId,
                         prompt: finalPromptToUse,
                         config: { aspectRatio: ratio, numberOfVideos: 1 }
-                    });
+                    };
+                    
+                    if (config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')) {
+                       const b64 = config.refImage.split(',')[1];
+                       genObj.image = { imageBytes: b64 };
+                    }
+
+                    const operation = await ai.models.generateVideos(genObj);
                     // Validar que la operación tiene nombre antes de hacer polling
                     if (!operation || !operation.name) {
                         throw new Error(`${modelId}: La API no devolvió un ID de operación válido. Verifica que tu cuenta tenga acceso a este modelo.`);
@@ -202,82 +175,6 @@ Concept: ${prompt}`;
         } else if (engine.includes('Luma') || engine.includes('Runway')) {
             // Future-proofing for Runway Gen-3 and Luma Dream Machine
             return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway." });
-        } else if (engine.includes('Higgsfield')) {
-            if (!process.env.HIGGSFIELD_API_KEY) {
-                return res.status(400).json({ error: "HIGGSFIELD_API_KEY no configurada en el servidor." });
-            }
-            
-            const taskId = 'higgsfield_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            postProcessJobs.set(taskId, { status: 'working', progress: 0 });
-            
-            (async () => {
-                try {
-                    const finalPromptToUse = optimizedPrompt || prompt;
-                    console.log(`[HIGGSFIELD] 🎥 Iniciando generación con motor: ${engine}`);
-
-                    // Mapeo de nombre de motor en UI a modelo real de la API
-                    const modelMap = {
-                        'Higgsfield Soul':       'higgsfield-ai/soul/standard',
-                        'Higgsfield Standard':   'higgsfield-ai/soul/standard',
-                        'Higgsfield DoP Lite':   'higgsfield-ai/dop/lite',
-                        'Higgsfield DoP Standard':'higgsfield-ai/dop/standard',
-                        'Higgsfield DoP Turbo':  'higgsfield-ai/dop/turbo',
-                        'Higgsfield Cosmos':     'higgsfield-ai/dop/standard', // Alias legacy
-                        'Higgsfield Fast':       'higgsfield-ai/dop/turbo',    // Alias legacy
-                    };
-                    const modelId = modelMap[engine] || 'higgsfield-ai/soul/standard';
-                    const isVideo = modelId.includes('/dop/');
-
-                    // Nueva API: platform.higgsfield.ai
-                    const endpoint = `https://platform.higgsfield.ai/${modelId}`;
-                    const hBody = {
-                        inputs: [
-                            { name: 'prompt', value: finalPromptToUse }
-                        ]
-                    };
-                    if (isVideo && config?.aspect_ratio) hBody.inputs.push({ name: 'aspect_ratio', value: config.aspect_ratio });
-                    if (isVideo && config?.duration)     hBody.inputs.push({ name: 'duration', value: parseInt(config.duration, 10) });
-
-                    // Auth: "Key {key_id}:{key_secret}" pero la clave que guardamos en .env ya es el token completo
-                    const authHeader = process.env.HIGGSFIELD_API_KEY.startsWith('Key ') 
-                        ? process.env.HIGGSFIELD_API_KEY 
-                        : `Bearer ${process.env.HIGGSFIELD_API_KEY}`;
-
-                    console.log(`[HIGGSFIELD] POST ${endpoint}`);
-                    const hRes = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-                        body: JSON.stringify(hBody)
-                    });
-                    const rawText = await hRes.text();
-                    let hData;
-                    try { hData = JSON.parse(rawText); } catch (e) {
-                        throw new Error(`Higgsfield respuesta inválida (HTTP ${hRes.status}): ${rawText.substring(0, 120)}`);
-                    }
-
-                    if (!hRes.ok) {
-                        const errMsg = hData?.error || hData?.detail || hData?.message || JSON.stringify(hData);
-                        // Detectar error de créditos
-                        if (hRes.status === 402 || (typeof errMsg === 'string' && errMsg.toLowerCase().includes('credit'))) {
-                            throw new Error(`💳 Saldo insuficiente en Higgsfield. Recarga créditos en cloud.higgsfield.ai/billing`);
-                        }
-                        throw new Error(`Error Higgsfield (HTTP ${hRes.status}): ${errMsg}`);
-                    }
-
-                    const requestId = hData.request_id || hData.id || hData.task_id;
-                    if (!requestId) throw new Error(`Higgsfield no devolvió request_id. Respuesta: ${JSON.stringify(hData).substring(0, 120)}`);
-
-                    postProcessJobs.set(taskId, { status: 'delegated', provider_job_id: requestId, isVideo });
-                    console.log(`[HIGGSFIELD] ✅ Job creado: ${requestId} | Modelo: ${modelId}`);
-
-                } catch (e) {
-                    console.error("[HIGGSFIELD] ❌ Error:", e.message);
-                    postProcessJobs.set(taskId, { status: 'failed', error: e.message });
-                }
-            })();
-            
-            return res.status(200).json({ job_id: taskId, status: 'processing', provider: engine });
-
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
             const targetModel = engine.includes('Imagen 4') ? 'gemini-2.5-flash' : 'gemini-2.5-flash'; // Fallback text models if standard doesn't work.
@@ -392,15 +289,6 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
     try {
         const { taskId } = req.params;
         
-        // Manejar modo simulado
-        if (taskId.startsWith("simulated_task_")) {
-            return res.status(200).json({
-                task_id: taskId,
-                status: "succeed",
-                progress: 100,
-                result_url: "" // El frontend tiene fallbacks visuales
-            });
-        }
         
         // Manejar Veo Video Jobs guardados en Server RAM
         if (taskId.startsWith("veo_live_")) {
@@ -469,167 +357,9 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                     result_url: ''
                 });
             }
-        }
-        // Manejar Higgsfield Jobs guardados en Server RAM (generación delegada)
-        if (taskId.startsWith("higgsfield_")) {
-            const job = postProcessJobs.get(taskId);
-            if (!job) {
-                return res.status(400).json({ error: "Job de Higgsfield expirado o no existe en RAM" });
-            }
-            if (job.status === 'done') {
-                postProcessJobs.delete(taskId);
-                return res.status(200).json({
-                    task_id: taskId, status: 'succeed', progress: 100,
-                    result_url: job.localUrl, isVideo: job.isVideo || false
-                });
-            } else if (job.status === 'failed') {
-                postProcessJobs.delete(taskId);
-                return res.status(200).json({ status: 'failed', error: job.error });
-            } else if (job.status === 'delegated') {
-                try {
-                    const abortController = new AbortController();
-                    const timeoutId = setTimeout(() => abortController.abort(), 4000);
-
-                    // Nueva API: platform.higgsfield.ai/requests/{id}/status
-                    const statusUrl = `https://platform.higgsfield.ai/requests/${job.provider_job_id}/status`;
-                    const authHeader = process.env.HIGGSFIELD_API_KEY.startsWith('Key ') 
-                        ? process.env.HIGGSFIELD_API_KEY 
-                        : `Bearer ${process.env.HIGGSFIELD_API_KEY}`;
-
-                    const hRes = await fetch(statusUrl, {
-                        headers: { 'Authorization': authHeader },
-                        signal: abortController.signal
-                    });
-                    clearTimeout(timeoutId);
-                    
-                    if (hRes.status === 502 || hRes.status === 504) {
-                        job.retries = (job.retries || 0) + 1;
-                        if (job.retries > 8) {
-                            job.status = 'failed';
-                            job.error = "Higgsfield timeout (502). Múltiples reintentos fallidos.";
-                            return res.status(200).json({ status: 'failed', error: job.error });
-                        }
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 50, result_url: '' });
-                    }
-                    
-                    const rawText = await hRes.text();
-                    let hData;
-                    try { hData = JSON.parse(rawText); } catch (e) {
-                        throw new Error(`Higgsfield Status Error (HTTP ${hRes.status}): ${rawText.substring(0, 60)}`);
-                    }
-                    if (!hRes.ok) throw new Error(hData?.error || hData?.message || hData?.detail || `HTTP ${hRes.status}`);
-                    
-                    const status = hData.status || hData.state;
-                    if (status === 'completed' || status === 'succeed' || status === 'succeeded') {
-                        // Extraer URL del média generado
-                        const mediaUrl = hData.videos?.[0]?.url 
-                            || hData.images?.[0]?.url 
-                            || hData.output?.url 
-                            || hData.url;
-                        if (!mediaUrl) throw new Error(`Higgsfield completó pero sin URL en respuesta: ${JSON.stringify(hData).substring(0, 80)}`);
-                        
-                        job.status = 'done';
-                        job.localUrl = mediaUrl;
-                        return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: mediaUrl, isVideo: job.isVideo || false });
-                    } else if (status === 'failed' || status === 'error') {
-                        const errMsg = hData.error || hData.message || 'Error interno en Higgsfield';
-                        job.status = 'failed'; job.error = errMsg;
-                        return res.status(200).json({ status: 'failed', error: errMsg });
-                    } else {
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: hData.progress || 40, result_url: '' });
-                    }
-                } catch(pe) {
-                    if (pe.name === 'AbortError') {
-                        return res.status(200).json({ task_id: taskId, status: 'processing', progress: 40, result_url: '' });
-                    }
-                    console.error("[HIGGSFIELD] Polling Error:", pe.message);
-                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 40, result_url: '' });
-                }
-            } else {
-                return res.status(200).json({ task_id: taskId, status: 'processing', progress: job.progress || 10, result_url: '' });
-            }
-        }
-        
-
-
         // NOTE: veo_live_ jobs are handled above. No other veo_ prefix is used.
 
-        let token;
-        try {
-            token = generateKlingAuthToken();
-        } catch (authErr) {
-            return res.status(200).json({ status: "processing", progress: 0 }); // Fallback on error
-        }
-
-        const response = await fetch(`https://api.klingai.com/v1/videos/text2video/${taskId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await response.json();
-        if (data.code !== 0) {
-            return res.status(400).json({ error: data.message });
-        }
-
-        const taskInfo = data.data;
-        // taskInfo.task_status enum: 'submitted', 'processing', 'succeed', 'failed'
-        if (taskInfo.task_status === 'succeed' && taskInfo.task_result) {
-            const rawUrl = taskInfo.task_result.videos[0].url;
-            
-            // Si ya fue limpiado por nosotros
-            if (postProcessJobs.has(taskId)) {
-                const job = postProcessJobs.get(taskId);
-                if (job.status === 'done') {
-                    return res.status(200).json({
-                        task_id: taskId,
-                        status: 'succeed',
-                        progress: 100,
-                        result_url: job.localUrl
-                    });
-                } else if (job.status === 'failed') {
-                    return res.status(400).json({ error: "Fallo durante remocion de marca de agua" });
-                } else {
-                    return res.status(200).json({ task_id: taskId, status: 'processing', progress: 99, result_url: '' }); // Aun limpiando
-                }
-            } else {
-                // Iniciar trabajo de FFmpeg Watermark Removal Local
-                postProcessJobs.set(taskId, { status: 'working' });
-                
-                // Fire and Forget async process
-                (async () => {
-                    try {
-                        const mediaDir = 'E:/assets';
-                        if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
-
-                        const rawRes = await fetch(rawUrl);
-                        const arrBuf = await rawRes.arrayBuffer();
-                        const buf = Buffer.from(arrBuf);
-                        const rawPath = path.join(mediaDir, `${taskId}_raw.mp4`);
-                        const cleanPath = path.join(mediaDir, `${taskId}_clean.mp4`);
-                        
-                        fs.writeFileSync(rawPath, buf);
-                        
-                        console.log(`[STUDIO] FFMPEG: Borrando marca de agua Kling en ${taskId}...`);
-                        await removeWatermark(rawPath, cleanPath, (p) => { postProcessJobs.set(taskId, { status: 'working', progress: p }); });
-                        
-                        fs.unlinkSync(rawPath);
-                        
-                        postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/media/videos/${taskId}_clean.mp4` });
-                    } catch (err) {
-                        console.error("[STUDIO] Fallo ffmpeg inpainting automático:", err);
-                        postProcessJobs.set(taskId, { status: 'failed' });
-                    }
-                })();
-
-                return res.status(200).json({ task_id: taskId, status: 'processing', progress: 99, result_url: '' });
-            }
-        }
-
-        return res.status(200).json({
-            task_id: taskId,
-            status: taskInfo.task_status,
-            progress: taskInfo.task_status === 'succeed' ? 100 : 50,
-            result_url: ''
-        });
+        return res.status(400).json({ error: "Tarea inválida o expirada" });
 
     } catch (error) {
         console.error(error);

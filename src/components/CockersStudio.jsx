@@ -726,7 +726,7 @@ export default function CockersStudio({ adminProfile }) {
         }
 
         const enginesToRun = genMode === 'video'
-            ? ['Veo 3', 'Veo 3 Fast', 'Higgsfield Cosmos', 'Higgsfield Fast', 'Kling V1']
+            ? ['Veo 3', 'Veo 3 Fast']
             : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
 
         const promptAmentado = selectedFilters.length > 0
@@ -1020,7 +1020,7 @@ export default function CockersStudio({ adminProfile }) {
                     {genMode === 'video' && (
                         <div className="mt-2 flex items-center gap-1.5 px-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] animate-pulse"/>
-                            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Veo 3.1 · Higgsfield Cosmos — Plan Ultra</span>
+                            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Veo 3.1 — Plan Ultra</span>
                         </div>
                     )}
                 </div>

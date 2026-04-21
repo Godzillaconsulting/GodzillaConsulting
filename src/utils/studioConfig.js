@@ -71,12 +71,30 @@ export function injectSectionDefaults(nodeId, draftSource) {
   // Inject video and gifs for Servicios section so they can be modified
   if (nodeId === 'servicios') {
       if (combinedData.videoUrl === undefined) combinedData.videoUrl = bgVideoServicios;
+      
       if (combinedData.service1IconUrl === undefined) combinedData.service1IconUrl = gifBot;
+      if (combinedData.service1Title === undefined) combinedData.service1Title = 'Automatización de Bots';
+      if (combinedData.service1Desc === undefined) combinedData.service1Desc = 'Automatiza tu atención al cliente 24/7 con bots entrenados en tu negocio, que responden dudas, califican prospectos y los llevan directo a la cita o a la venta. Integrados con WhatsApp, redes sociales y tu CRM.';
+
       if (combinedData.service2IconUrl === undefined) combinedData.service2IconUrl = gifVideo;
+      if (combinedData.service2Title === undefined) combinedData.service2Title = 'Producción audiovisual';
+      if (combinedData.service2Desc === undefined) combinedData.service2Desc = 'Creamos contenido audiovisual estratégico que genera confianza, autoridad, fortalece tu marca, comunica tu propuesta de valor y potencia la conversión en campañas y redes sociales.';
+
       if (combinedData.service3IconUrl === undefined) combinedData.service3IconUrl = gifEmbudo;
+      if (combinedData.service3Title === undefined) combinedData.service3Title = 'Embudos de venta';
+      if (combinedData.service3Desc === undefined) combinedData.service3Desc = 'Estructuramos embudos digitales orientados a resultados que convierten tráfico en citas y oportunidades comerciales medibles.';
+
       if (combinedData.service4IconUrl === undefined) combinedData.service4IconUrl = gifRedes;
+      if (combinedData.service4Title === undefined) combinedData.service4Title = 'Gestión de redes sociales';
+      if (combinedData.service4Desc === undefined) combinedData.service4Desc = 'Administramos la presencia digital de tu marca con una estrategia de contenido profesional, enfocada en posicionamiento, reputación y generación de prospectos.';
+
       if (combinedData.service5IconUrl === undefined) combinedData.service5IconUrl = gifSeo;
+      if (combinedData.service5Title === undefined) combinedData.service5Title = 'Optimización web y SEO';
+      if (combinedData.service5Desc === undefined) combinedData.service5Desc = 'Optimizamos tu sitio web y su estructura SEO para mejorar visibilidad en buscadores, experiencia de usuario y generación de leads calificados.';
+
       if (combinedData.service6IconUrl === undefined) combinedData.service6IconUrl = gifCrm;
+      if (combinedData.service6Title === undefined) combinedData.service6Title = 'CRM con SAAS personalizado';
+      if (combinedData.service6Desc === undefined) combinedData.service6Desc = 'Implementamos plataformas CRM y soluciones SaaS a la medida para centralizar contactos, automatizar seguimientos y facilitar la gestión comercial de tu equipo.';
   }
 
   // Inject bgVideoUrl and TEXT FIELDS for Cultura so they appear in Admin Studio

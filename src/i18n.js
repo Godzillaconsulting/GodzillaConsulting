@@ -3,8 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpApi from 'i18next-http-backend';
 
+// ── Idiomas bundleados estáticamente (carga instantánea, sin petición de red) ──
+// Español: idioma ORIGINAL de la empresa (master source)
+// Inglés: pre-cargado porque es el 2º idioma más común y evita latencia
+// Resto de idiomas: traducidos en tiempo real por Gemini vía /api/translate
 import esTranslation from './locales/es.json';
-// Importamos ingles nativo tambien para que no cueste tokens
 import enTranslation from './locales/en.json';
 import frTranslation from './locales/fr.json';
 import ptTranslation from './locales/pt.json';
@@ -13,10 +16,9 @@ import jaTranslation from './locales/ja.json';
 import itTranslation from './locales/it.json';
 import zhTranslation from './locales/zh.json';
 
-// Recursos nativos pre-cargados (Carga Instantánea a Nivel Global, 0 latencia)
 const resources = {
-  // Solo inyectamos estáticamente idiomas adicionales que requieren traducción,
-  // permitiendo que 'es' y 'en' utilicen el texto más actualizado directo desde los componentes React (JSX)
+  es: { translation: { ...esTranslation } },
+  en: { translation: { ...enTranslation } },
   fr: { translation: { ...frTranslation } },
   pt: { translation: { ...ptTranslation } },
   de: { translation: { ...deTranslation } },
@@ -31,18 +33,17 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    // Permite que i18n sepa que algunos idiomas ya están en memoria (es, en)
-    // y los que NO están, los mandará a pedir por http-backend
+    // Si el idioma detectado NO está en resources, lo traerá vía HttpApi → /api/translate
     partialBundledLanguages: true,
-    
+
     backend: {
       loadPath: `/api/translate?lang={{lng}}`,
       requestOptions: {
-        cache: 'default' // Deja que el navegador use la caché de disco de la API de Groq
+        cache: 'default' // Reutiliza la caché del navegador para no re-pagar tokens de Gemini
       }
     },
-    
-    // Si la traducción del idioma detectado falla catastróficamente, regresamos al original de la empresa
+
+    // Fallback al español (idioma master de la empresa) si algo falla
     fallbackLng: 'es',
 
     interpolation: {
@@ -50,10 +51,11 @@ i18n
     },
 
     detection: {
+      // Detecta idioma por: 1) query ?lng=xx  2) idioma del navegador  3) atributo lang del HTML
       order: ['querystring', 'navigator', 'htmlTag'],
       nonExplicitSupportedLngs: true,
       lookupQuerystring: 'lng',
-      caches: [] // No guarda el idioma en localStorage para que siempre analice el navegador fresco
+      caches: [] // No cachear en localStorage: qué idioma usar siempre lo decide el navegador fresco
     }
   });
 

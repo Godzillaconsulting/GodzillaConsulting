@@ -23,60 +23,60 @@ const initialEditorData = [
   }
 ];
 
-export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl }) {
+export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, queue = [] }) {
     const [editorData, setEditorData] = useState(initialEditorData);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isBotThinking, setIsBotThinking] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
+    const [localVideoUrl, setLocalVideoUrl] = useState(initialVideoUrl);
     const videoRef = useRef(null);
 
     // Timeline Configuration
     const scale = 5; 
     const timelineState = useRef(null);
 
+    // Filtrar videos de la bandeja (queue) que puedan editarse (videos finalizados o pendientes de aprobación guardados)
+    const savedVideos = queue.filter(q => q.media_options && q.media_options.length > 0 && 
+                                          q.media_options[0].url && 
+                                          (q.media_options[0].url.includes('.mp4') || q.media_options[0].url.includes('.webm')));
+
     useEffect(() => {
         if (!isOpen) return;
-        // Cuando se abre con un video de Veo, simulamos que cargó en la línea base
         if (initialVideoUrl) {
-            console.log("Cargando video base al editor...", initialVideoUrl);
+            setLocalVideoUrl(initialVideoUrl);
+        }
+    }, [isOpen, initialVideoUrl]);
+
+    useEffect(() => {
+        if (localVideoUrl) {
             setEditorData([
-              { id: 'track-video', actions: [{ id: 'main-v', start: 0, end: 10, effectId: 'v-1', text: 'Veo Video', color: '#3b82f6' }] },
+              { id: 'track-video', actions: [{ id: 'main-v', start: 0, end: 10, effectId: 'v-1', text: 'Video Activo', color: '#3b82f6' }] },
               { id: 'track-audio', actions: [{ id: 'main-a', start: 0, end: 10, effectId: 'a-1', text: 'Voz/Sonido Original', color: '#10b981' }] },
               { id: 'track-text', actions: [] }
             ]);
         }
-    }, [isOpen, initialVideoUrl]);
+    }, [localVideoUrl]);
 
     const handleMagicBot = async () => {
         setIsBotThinking(true);
         try {
-            // Simulando extracción de audio y llamada al backend
-            // const token = localStorage.getItem('adminToken');
-            // const res = await fetch('/api/studio/magicedit', { ... }); 
-            // const data = await res.json();
-            
-            // Simulación visual del EDL devuelto por Gemini Flash Audio:
             await new Promise(r => setTimeout(r, 4500));
-            
             setEditorData(prev => {
                 const newData = [...prev];
-                // Simula que cortó del segundo 3 al 4.5
                 newData[0].actions = [
-                    { id: 'main-v-1', start: 0, end: 3, effectId: 'v-1', text: 'Veo Video (Corte 1)', color: '#2563eb' },
-                    { id: 'main-v-2', start: 4.5, end: 10, effectId: 'v-2', text: 'Veo Video (Corte 2)', color: '#2563eb' }
+                    { id: 'main-v-1', start: 0, end: 3, effectId: 'v-1', text: 'Veo Corte 1', color: '#2563eb' },
+                    { id: 'main-v-2', start: 4.5, end: 10, effectId: 'v-2', text: 'Veo Corte 2', color: '#2563eb' }
                 ];
                 newData[1].actions = [
                     { id: 'main-a-1', start: 0, end: 3, effectId: 'a-1', text: 'Audio', color: '#059669' },
                     { id: 'main-a-2', start: 4.5, end: 10, effectId: 'a-2', text: 'Audio', color: '#059669' }
                 ];
-                // Agrega los captions automáticos
                 newData[2].actions = [
                     { id: 'cap-1', start: 0.5, end: 2.5, effectId: 'c-1', text: '"¡El Bot Mágico"', color: '#eab308' },
                     { id: 'cap-2', start: 4.5, end: 7.0, effectId: 'c-2', text: '"cortó todo el silencio!"', color: '#eab308' }
                 ];
                 return newData;
             });
-
             alert('✨ Bot Mágico: 1 silencio eliminado, 2 captions generados.');
         } catch (e) {
             console.error(e);
@@ -125,18 +125,50 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl }) {
                     
                     {/* TOP: Visor de Video y Herramientas */}
                     <div className="flex-1 flex gap-4 p-4 min-h-0 bg-neutral-950">
-                        {/* Selector de Efectos / Media (Sidebar) */}
-                        <div className="w-64 bg-neutral-900 rounded-xl border border-neutral-800 p-4 flex flex-col gap-2">
-                            <h3 className="text-white font-bold mb-2">Pistas & Capas</h3>
-                            <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-sm text-neutral-200 transition-colors">
-                                <span className="flex items-center gap-2"><Video className="w-4 h-4 text-blue-400"/> Video Track</span>
-                            </button>
-                            <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-sm text-neutral-200 transition-colors">
-                                <span className="flex items-center gap-2"><Music className="w-4 h-4 text-green-400"/> Audio Track</span>
-                            </button>
-                            <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-sm text-neutral-200 transition-colors">
-                                <span className="flex items-center gap-2"><Type className="w-4 h-4 text-yellow-500"/> Captions IA</span>
-                            </button>
+                        {/* Selector de Media y Capas (Sidebar) */}
+                        <div className="w-[300px] bg-neutral-900 rounded-xl border border-neutral-800 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                            
+                            <div>
+                                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Video className="w-4 h-4 text-blue-400"/> Librería de Videos
+                                </h3>
+                                <div className="space-y-2">
+                                    {savedVideos.length === 0 ? (
+                                        <p className="text-neutral-500 text-xs italic">No hay videos guardados en tu bandeja conectada.</p>
+                                    ) : (
+                                        savedVideos.map(vid => (
+                                            <div 
+                                                key={vid.id} 
+                                                onClick={() => setLocalVideoUrl(vid.media_options[0].url)}
+                                                className={`flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-all ${localVideoUrl === vid.media_options[0].url ? 'bg-blue-900/20 border-blue-500/50' : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600'}`}
+                                            >
+                                                <video src={vid.media_options[0].url} className="w-16 h-12 object-cover rounded bg-black" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[10px] text-white font-bold truncate">{vid.caption || vid.visual_prompt || 'Clip Generado'}</p>
+                                                    <p className="text-[9px] text-neutral-500 uppercase">{vid.status}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="border-t border-neutral-800 my-2"></div>
+
+                            <div>
+                                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-2">Pistas & Efectos</h3>
+                                <div className="space-y-2">
+                                    <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-[11px] font-bold text-neutral-200 transition-colors">
+                                        <span className="flex items-center gap-2"><Video className="w-4 h-4 text-blue-400"/> Video Principal</span>
+                                    </button>
+                                    <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-[11px] font-bold text-neutral-200 transition-colors">
+                                        <span className="flex items-center gap-2"><Music className="w-4 h-4 text-green-400"/> Master Audio</span>
+                                    </button>
+                                    <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-[11px] font-bold text-neutral-200 transition-colors">
+                                        <span className="flex items-center gap-2"><Type className="w-4 h-4 text-yellow-500"/> Captions Dinámicos</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Reproductor Central */}

@@ -1343,6 +1343,7 @@ export default function CockersStudio({ adminProfile }) {
                 isOpen={showEditorModal} 
                 onClose={() => {setShowEditorModal(false); setEditorVideoSrc('');}} 
                 initialVideoUrl={editorVideoSrc}
+                queue={queue}
             />
 
             {/* RIGHT MAIN CANVAS: Resultados y Feed (Estilo Kling) */}

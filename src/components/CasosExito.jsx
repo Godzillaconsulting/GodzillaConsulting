@@ -48,8 +48,7 @@ const LOGO_BY_NAME = {
  *    no existir en el servidor de media.
  */
 function getLogoSrc(item) {
-    // 1. Prioridad máxima: URL subida manualmente por el admin (/api/media/file/)
-    //    Esto permite reemplazar el logo por defecto de Vite con uno personalizado.
+    // 1. Logo subido manualmente por el usuario (URL de la DB local o blob en vivo)
     if (item.logoSrc && typeof item.logoSrc === 'string') {
         const lc = item.logoSrc.toLowerCase().trim();
         if (
@@ -57,11 +56,11 @@ function getLogoSrc(item) {
             lc.startsWith('blob:') ||
             lc.startsWith('data:')
         ) {
-            return `https://bot.godzillaconsulting.ai${item.logoSrc}`;
+            return item.logoSrc;
         }
     }
 
-    // 2. Resolver por nombre del cliente → import estático de Vite
+    // 2. Fallback 1: Resolver por nombre del cliente (Logos pre-empaquetados)
     if (item.nombre && typeof item.nombre === 'string') {
         const nameLc = item.nombre.toLowerCase().trim();
         for (const [keyword, logo] of Object.entries(LOGO_BY_NAME)) {
@@ -69,7 +68,7 @@ function getLogoSrc(item) {
         }
     }
 
-    // 3. Fallback definitivo
+    // 3. Fallback 2: Definitivo
     return logoFacemaker;
 }
 
@@ -82,7 +81,8 @@ const defaultCases = [
     { _id: 'default-5', orden: 5, nombre: 'Artika',     category: 'Heladerías',              link: '' },
     { _id: 'default-6', orden: 6, nombre: 'Grupo MRG',  category: 'Banquetes y Eventos',     link: '' },
     { _id: 'default-7', orden: 7, nombre: 'Nutrisa',    category: 'Sector Alimenticio',      link: '' },
-    { _id: 'default-8', orden: 8, nombre: 'Don Elote',  category: 'Sector Alimenticio',      link: '' },
+    { _id: 'default-8', orden: 8, nombre: 'San Antonio',category: 'Sector Médico',           link: '' },
+    { _id: 'default-9', orden: 9, nombre: 'Don Elote',  category: 'Sector Alimenticio',      link: '' },
 ];
 
 const SPEED = 0.6; // px por frame
@@ -100,7 +100,6 @@ const CasosExito = () => {
     const [isDragging,      setIsDragging]      = useState(false);
     const [startX,          setStartX]          = useState(0);
     const [scrollLeftState, setScrollLeftState] = useState(0);
-    const [activeCategory,  setActiveCategory]  = useState('Todas');
 
     // ── Typewriter effect ──────────────────────────────────────────────────
     const rawTitle = isSpanish ? (nodeData.title || t('portfolio.title')) : t('portfolio.title');
@@ -170,32 +169,8 @@ const CasosExito = () => {
         return defaultCases;
     }, [nodeData]);
 
-    // ── Categorías únicas extraídas dinámicamente ─────────────────────────
-    const categories = useMemo(() => {
-        const cats = new Set(displayCases.map(c => c.category).filter(Boolean));
-        return ['Todas', ...Array.from(cats)];
-    }, [displayCases]);
-
-    // ── Casos filtrados por categoría activa ───────────────────────────────
-    const filteredCases = useMemo(() => {
-        if (activeCategory === 'Todas') return displayCases;
-        return displayCases.filter(c => c.category === activeCategory);
-    }, [displayCases, activeCategory]);
-
     // Duplicamos para el loop infinito del scroll
-    const allCases = useMemo(() => {
-        const base = filteredCases.length > 0 ? filteredCases : displayCases;
-        // Repetir suficientes veces para llenar la pantalla y hacer loop fluido
-        const times = Math.ceil(8 / base.length) + 1;
-        return Array.from({ length: times }, () => base).flat();
-    }, [filteredCases, displayCases]);
-
-    // Resetear scroll cuando cambia la categoría
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollLeft = 0;
-        }
-    }, [activeCategory]);
+    const allCases = useMemo(() => [...displayCases, ...displayCases], [displayCases]);
 
     // ── Auto-scroll (RAF) ──────────────────────────────────────────────────
     const animate = useCallback(() => {
@@ -267,23 +242,6 @@ const CasosExito = () => {
                     <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
                         {isSpanish ? (nodeData.subtitle || t('portfolio.subtitle')) : t('portfolio.subtitle')}
                     </p>
-                </div>
-
-                {/* ── Barra de filtros por categoría ───────────────────── */}
-                <div className="flex gap-2 flex-wrap justify-center mb-10">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border transition-all duration-300 ${
-                                activeCategory === cat
-                                    ? 'bg-[#CC0000] border-[#CC0000] text-white shadow-[0_0_16px_rgba(204,0,0,0.5)] scale-105'
-                                    : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-[#CC0000]/60 hover:text-white'
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
                 </div>
 
                 {/* Carrusel con fade lateral */}

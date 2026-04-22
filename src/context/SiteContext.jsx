@@ -55,8 +55,8 @@ export function SiteProvider({ children }) {
 
   useEffect(() => {
     fetchNodes();
-    // Refresh nodes when language changes to fetch JIT new translations
-    const handleLngChange = () => fetchNodes();
+    // Refresh nodes silently when language changes so we don't trigger the global Loading screen
+    const handleLngChange = () => fetchNodes(3, true);
     i18n.on('languageChanged', handleLngChange);
     return () => i18n.off('languageChanged', handleLngChange);
   }, [fetchNodes]);

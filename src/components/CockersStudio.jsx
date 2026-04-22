@@ -1993,4 +1993,4 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             )}
         </div>
     );
-}
+});

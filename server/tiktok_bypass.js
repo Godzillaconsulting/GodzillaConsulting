@@ -464,19 +464,20 @@ export const initTikTokBypass = async (isHeadless = true) => {
     let browser = null;
 
     // 🧹 Limpieza quirúrgica al arrancar: matar solo los Chrome de ESTE bot
-    // (por si PM2 hizo SIGKILL en el crash previo y el finally no corrió)
     try {
-        const profileEscaped = sessionDir.replace(/\\/g, '\\\\');
         const { execSync } = await import('child_process');
-        const out = execSync(
-            `wmic process where "name='chrome.exe' and CommandLine like '%${profileEscaped.replace(/'/g, "''")}%'" get ProcessId`,
-            { encoding: 'utf-8', windowsHide: true, stdio: ['ignore','pipe','ignore'] }
-        );
-        const pids = out.split('\n').map(s => s.trim()).filter(s => /^\d+$/.test(s));
-        for (const pid of pids) {
-            try { execSync(`taskkill /F /PID ${pid} /T`, { windowsHide: true, stdio: 'ignore' }); } catch(_){}
+        const out = execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
+        const lines = out.split('\n');
+        let count = 0;
+        for (const line of lines) {
+            if (line.includes('tiktok_session')) {
+                const match = line.match(/\s+(\d+)\s*$/);
+                if (match) {
+                    try { execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' }); count++; } catch(_){}
+                }
+            }
         }
-        if (pids.length) console.log(`[TikTok] 🧹 ${pids.length} Chrome huerfano(s) del perfil eliminado(s).`);
+        if (count > 0) console.log(`[TikTok] 🧹 ${count} Chrome zombie(s) del perfil eliminado(s).`);
     } catch(_) { /* wmic no disponible, omitir */ }
 
     browser = await puppeteer.launch({

@@ -120,19 +120,21 @@ export const initWhatsAppBot = async () => {
     }
     
     // 🧹 Limpieza quirúrgica al arrancar: matar solo los Chrome de ESTE bot
-    // Por si PM2 hizo SIGKILL en crash anterior y el handler de shutdown no corrió
     try {
         const { execSync: _execSync } = await import('child_process');
-        const profileEscaped = sessionPath.replace(/\\/g, '\\\\');
-        const out = _execSync(
-            `wmic process where "name='chrome.exe' and CommandLine like '%${profileEscaped.replace(/'/g, "''")}%'" get ProcessId`,
-            { encoding: 'utf-8', windowsHide: true, stdio: ['ignore','pipe','ignore'] }
-        );
-        const pids = out.split('\n').map(s => s.trim()).filter(s => /^\d+$/.test(s));
-        for (const pid of pids) {
-            try { _execSync(`taskkill /F /PID ${pid} /T`, { windowsHide: true, stdio: 'ignore' }); } catch(_){}
+        const out = _execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
+        const lines = out.split('\n');
+        let count = 0;
+        for (const line of lines) {
+            // Buscamos cualquier proceso Chrome que coincida con nuestro perfil de sesión
+            if (line.includes('godzilla-sessions') && line.includes('whatsapp')) {
+                const match = line.match(/\s+(\d+)\s*$/);
+                if (match) {
+                    try { _execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' }); count++; } catch(_){}
+                }
+            }
         }
-        if (pids.length) console.log(`[WhatsApp] 🧹 ${pids.length} Chrome huerfano(s) del perfil eliminado(s).`);
+        if (count > 0) console.log(`[WhatsApp] 🧹 ${count} Chrome zombie(s) del perfil eliminado(s) exitosamente.`);
     } catch(_) { /* wmic no disponible, omitir */ }
 
     const client = new Client({

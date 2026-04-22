@@ -7,6 +7,7 @@ import getDay from 'date-fns/getDay';
 import es from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
+import AIContentPlanner from './AIContentPlanner';
 
 const locales = { 'es': es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -91,6 +92,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
     const navigate = useNavigate();
     const canCreate = canAssign(adminProfile);
     const currentUser = adminProfile?.username || 'Usuario';
+    const canEditSheetsAndAI = canCreate || currentUser.toLowerCase() === 'alex';
 
     // ─── Tabs ─────────────────────────────────────────────────────────────
     const [calendarTab, setCalendarTab] = useState('contenido');
@@ -1223,7 +1225,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                     📋 Asignar Tarea
                                 </button>
                             )}
-                            {canCreate && calendarTab !== 'pendientes' && (
+                            {canEditSheetsAndAI && calendarTab !== 'pendientes' && (
                                 <button
                                     onClick={() => { setShowSheetsModal(true); setSheetsPreview(null); setSheetsError(''); setSheetsUrl(''); }}
                                     className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-green-500/50 text-green-400 rounded-xl font-black text-xs transition-all uppercase tracking-widest flex items-center gap-1.5">
@@ -1240,30 +1242,29 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     </div>
 
                     {/* Tabs */}
-                    {canCreate && (
-                        <div className="flex gap-2 mb-4">
-                            {[
-                                { id: 'contenido', label: '📣 Contenido', count: events.length },
-                                { id: 'citas', label: '📅 Citas', count: citas.length },
-                                { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
-                                { id: 'todos', label: '🗺️ Todo', count: null },
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setCalendarTab(tab.id)}
-                                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
-                                        calendarTab === tab.id
-                                            ? 'bg-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]'
-                                            : 'bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] text-neutral-500 hover:text-white hover:border-white/20'
-                                    }`}>
-                                    {tab.label}
-                                    {tab.count !== null && (
-                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${calendarTab === tab.id ? 'bg-white/20' : 'bg-white/10'}`}>
-                                            {tab.count}
-                                        </span>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <div className="flex gap-2 mb-4">
+                        {[
+                            { id: 'contenido', label: '📣 Contenido', count: events.length },
+                            { id: 'contenido_ia', label: '🤖 Contenido IA', count: null },
+                            { id: 'citas', label: '📅 Citas', count: citas.length },
+                            { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
+                            { id: 'todos', label: '🗺️ Todo', count: null },
+                        ].map(tab => (
+                            <button key={tab.id} onClick={() => setCalendarTab(tab.id)}
+                                className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+                                    calendarTab === tab.id
+                                        ? 'bg-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]'
+                                        : 'bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] text-neutral-500 hover:text-white hover:border-white/20'
+                                }`}>
+                                {tab.label}
+                                {tab.count !== null && (
+                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${calendarTab === tab.id ? 'bg-white/20' : 'bg-white/10'}`}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
 
                     {/* Filtros + controles */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -1499,6 +1500,10 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                     </div>
                                 </div>
 
+                            ) : calendarTab === 'contenido_ia' ? (
+                                <div className="flex-1 p-4 min-h-0 overflow-hidden relative">
+                                    <AIContentPlanner adminProfile={adminProfile} />
+                                </div>
                             ) : (calendarTab === 'citas' || calendarTab === 'todos') ? (
                                 // CITAS y TODOS → siguen usando React Big Calendar
                                 <div className="flex-1 p-4 min-h-0" style={{ minHeight: '600px' }}>

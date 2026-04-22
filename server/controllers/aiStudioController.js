@@ -716,3 +716,86 @@ IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales)
         res.status(500).json({ error: "Fallo durante el análisis IA del Bot Mágico.", details: error.message });
     }
 };
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GENERATE MONTHLY PLAN — Planificador de Contenido 30 días (Formato Escenas)
+// Columnas: Tema | NARRACION/VISUAL/VIDEO por cada una de las 5 escenas
+// ══════════════════════════════════════════════════════════════════════════════
+export const generateMonthlyPlan = async (req, res) => {
+    try {
+        const { niche, month, year, extraContext } = req.body;
+        if (!niche) return res.status(400).json({ error: 'Se requiere el nicho/producto.' });
+
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+        const systemPrompt = `
+Eres un estratega experto en marketing digital, tendencias virales y creación de contenido para redes sociales.
+Tu tarea es diseñar un calendario de contenido de 30 días para Instagram Reels, YouTube Shorts y TikTok.
+El formato es FACELESS (sin rostro). El contenido debe estar en ESPAÑOL.
+
+REGLAS ESTRICTAS:
+1. Analiza el nicho: identifica puntos de dolor, dudas frecuentes y ángulos virales.
+2. Cada video dura MÁXIMO 50 segundos, dividido en EXACTAMENTE 5 escenas.
+3. ESCENA 1: Hook visual y textual IMPACTANTE que atrape en los primeros 3 segundos.
+4. ESCENA 5 (CTA): Llamada a la acción clara y específica.
+5. Las NARRACIONES deben ser concisas, naturales, pensadas para TTS (Text-to-Speech).
+6. Los VISUAL PROMPTS deben ser ultra-detallados para generación con Midjourney/Kling (estilo, iluminación, composición, mood).
+7. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para Kling AI.
+
+NICHO/PRODUCTO: ${niche}
+MES DE REFERENCIA: ${month || 'Mayo'} ${year || new Date().getFullYear()}
+${extraContext ? `CONTEXTO ADICIONAL: ${extraContext}` : ''}
+
+Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta estructura EXACTA:
+{
+  "plan": [
+    {
+      "dia": 1,
+      "Tema": "Título del tema del video",
+      "NARRACION ESCENA 1": "Texto narrado en voz en off para la escena 1 (hook)",
+      "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Prompt detallado para generar la imagen/visual de escena 1",
+      "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "Prompt de movimiento de cámara y animación para escena 1",
+      "NARRACION ESCENA 2": "Texto narrado escena 2",
+      "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "Prompt imagen escena 2",
+      "VIDEO ESCENA 2 (Prompt Movimiento Detallado)": "Prompt movimiento escena 2",
+      "NARRACION ESCENA 3": "Texto narrado escena 3",
+      "VISUAL ESCENA 3 (Prompt Imagen Detallado)": "Prompt imagen escena 3",
+      "VIDEO ESCENA 3 (Prompt Movimiento Detallado)": "Prompt movimiento escena 3",
+      "NARRACION ESCENA 4": "Texto narrado escena 4",
+      "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "Prompt imagen escena 4",
+      "VIDEO ESCENA 4 (Prompt Movimiento Detallado)": "Prompt movimiento escena 4",
+      "NARRACION ESCENA 5 (CTA)": "Texto narrado escena 5 con llamada a la acción",
+      "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "Prompt imagen escena 5 CTA",
+      "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "Prompt movimiento escena 5 CTA"
+    }
+  ]
+}
+
+Genera los 30 días completos. La calidad es CRÍTICA — cada narración debe ser magnética, cada prompt visual debe ser cinematográfico.
+`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+            config: {
+                temperature: 0.85,
+                maxOutputTokens: 65536,
+            }
+        });
+
+        let rawText = response.candidates[0].content.parts[0].text;
+        rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+        const planData = JSON.parse(rawText);
+
+        if (!planData.plan || !Array.isArray(planData.plan)) {
+            throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
+        }
+
+        res.json({ success: true, plan: planData.plan, niche, month, year });
+
+    } catch (error) {
+        console.error('[MONTHLY-PLAN] Error generando plan:', error);
+        res.status(500).json({ error: 'Error generando el plan mensual.', details: error.message });
+    }
+};

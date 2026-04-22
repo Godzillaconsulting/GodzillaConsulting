@@ -113,6 +113,8 @@ export default function AdminStudio() {
     if (location.pathname.includes('/ceo')) return 'ceo_estudio';
     if (location.pathname.includes('/master')) return 'panel_maestro';
     if (location.pathname.includes('/sql')) return 'sql_ataques';
+    if (location.pathname.includes('/ai-planner')) return 'ai-planner';
+    if (location.pathname.includes('/automation-flow')) return 'automation-flow';
     return 'editor';
   }, [location.pathname]);
 

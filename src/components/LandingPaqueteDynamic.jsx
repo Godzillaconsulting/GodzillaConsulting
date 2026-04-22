@@ -194,8 +194,12 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  <table className="w-full text-left border-collapse">
  <thead>
  <tr className="border-b border-gray-600">
- <th className="py-3 pr-4 text-sm font-bold text-gray-300">{isIntl ? 'The Deliverable (What you receive)' : (content.tableHeaderLeft || 'El Entregable (Lo que recibes)')}</th>
- <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">{isIntl ? 'Real Monthly Value' : (content.tableHeaderRight || 'Valor Real Mensual')}</th>
+ <th className="py-3 pr-4 text-sm font-bold text-gray-300">
+ {isIntl ? (localizedLanding.tableHeaderLeft ?? content.tableHeaderLeft ?? 'The Deliverable (What you receive)') : (content.tableHeaderLeft ?? 'El Entregable (Lo que recibes)')}
+ </th>
+ <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">
+ {isIntl ? (localizedLanding.tableHeaderRight ?? content.tableHeaderRight ?? 'Real Monthly Value') : (content.tableHeaderRight ?? 'Valor Real Mensual')}
+ </th>
  </tr>
  </thead>
  <tbody>
@@ -234,23 +238,25 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {content.offerLabel && (
  <p className="text-sm font-bold text-white uppercase tracking-widest mb-2">{isIntl ? t('landing.takeOffer') : content.offerLabel.replace(/:$/, '')}</p>
  )}
+ {content.planPrice ? (
  <div className="flex justify-center items-baseline gap-2 mb-8">
  <span translate="no" className="text-[2.75rem] md:text-5xl font-bold text-white">
    {(() => {
      const raw = typeof content.planPrice === 'string' ? content.planPrice.replace(/[^\d.,]/g, '').replace(/,/g, '') : '';
      const mxn = parseFloat(raw) || 0;
-     if (mxn === 0) return content.planPrice || (isIntl ? 'Contact us' : 'Consúltalo');
+     if (mxn === 0) return content.planPrice;
      return isIntl
        ? `$${Math.round(mxn / exchangeRate).toLocaleString('en-US')}`
        : `$${mxn.toLocaleString('es-MX')}`;
    })()}
  </span>
- {content.planPrice && (
  <span className="text-xl text-gray-300 font-medium ml-1">
    {isIntl ? 'USD / mo' : (content.planPeriod || 'MXN / mes')}
  </span>
- )}
  </div>
+ ) : (
+ <div className="mb-8"></div>
+ )}
  <a href="#contacto" className="block text-center w-full max-w-sm mx-auto bg-[#CC0000] text-white py-4 rounded-full font-bold text-xl hover:bg-white hover:text-[#CC0000] transition-all shadow-lg hover:shadow-xl hover:scale-105 border-2 border-transparent hover:border-[#CC0000]">
  {isIntl ? 'Contact us' : 'Contáctanos'}
  </a>

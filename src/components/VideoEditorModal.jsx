@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type } from 'lucide-react';
+import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type, Send } from 'lucide-react';
 import { Timeline } from '@xzdarcy/react-timeline-editor';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
@@ -38,6 +38,9 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
     const [ttsVoice, setTtsVoice] = useState('es-MX');
     const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
     const [localUploads, setLocalUploads] = useState([]);
+    
+    // Filtros estilo CapCut (Video Color Grading)
+    const [filters, setFilters] = useState({ brightness: 0, contrast: 1, saturation: 1, gamma: 1 });
     const videoRef = useRef(null);
     const ffmpegRef = useRef(new FFmpeg());
     const globalTimeRef = useRef(0);
@@ -199,7 +202,9 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                 const duration = clip.end - clip.start;
                 const startOffset = clip.sourceStart || 0;
                 
-                filterComplex += `[${fileIndex}:v]trim=start=${startOffset}:duration=${duration},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v${index}]; `;
+                // Aplicar filtros de color CapCut-style (Brillo, Contraste, Saturación, Gamma)
+                const eqFilter = `eq=brightness=${filters.brightness}:contrast=${filters.contrast}:saturation=${filters.saturation}:gamma=${filters.gamma}`;
+                filterComplex += `[${fileIndex}:v]trim=start=${startOffset}:duration=${duration},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,${eqFilter}[v${index}]; `;
                 filterComplex += `[${fileIndex}:a]atrim=start=${startOffset}:duration=${duration},asetpts=PTS-STARTPTS[a${index}]; `;
                 
                 concatString += `[v${index}][a${index}]`;
@@ -363,6 +368,12 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                             {isRendering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                             {isRendering ? `Renderizando... ${renderProgress}%` : 'Renderizar'}
                         </button>
+                        <button 
+                            onClick={() => alert("El video ha sido enrutado a CMCalendar para publicación. (Enlace API pendiente de configuración manual)")}
+                            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                        >
+                            <Send className="w-4 h-4" /> Exportar a Redes
+                        </button>
                         <button onClick={onClose || (() => window.history.back())} className="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors">
                             <X className="w-6 h-6" />
                         </button>
@@ -442,6 +453,48 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                                     </button>
                                     <button className="flex items-center justify-between w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-[11px] font-bold text-neutral-200 transition-colors">
                                         <span className="flex items-center gap-2"><Type className="w-4 h-4 text-yellow-500"/> Captions Dinámicos</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-neutral-800 my-2"></div>
+
+                            {/* Filtros CapCut Style */}
+                            <div>
+                                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2 text-fuchsia-400">
+                                    <Wand2 className="w-4 h-4"/> Color Grading (Pro)
+                                </h3>
+                                <div className="space-y-4 px-1">
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-[9px] text-neutral-400 font-bold uppercase">
+                                            <span>Brillo</span>
+                                            <span>{Math.round(filters.brightness * 100)}%</span>
+                                        </div>
+                                        <input type="range" min="-1" max="1" step="0.05" value={filters.brightness} onChange={(e) => setFilters({...filters, brightness: parseFloat(e.target.value)})} className="w-full accent-fuchsia-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-[9px] text-neutral-400 font-bold uppercase">
+                                            <span>Contraste</span>
+                                            <span>{Math.round(filters.contrast * 100)}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="2" step="0.05" value={filters.contrast} onChange={(e) => setFilters({...filters, contrast: parseFloat(e.target.value)})} className="w-full accent-fuchsia-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-[9px] text-neutral-400 font-bold uppercase">
+                                            <span>Saturación</span>
+                                            <span>{Math.round(filters.saturation * 100)}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="3" step="0.1" value={filters.saturation} onChange={(e) => setFilters({...filters, saturation: parseFloat(e.target.value)})} className="w-full accent-fuchsia-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-[9px] text-neutral-400 font-bold uppercase">
+                                            <span>Gamma</span>
+                                            <span>{Math.round(filters.gamma * 100)}%</span>
+                                        </div>
+                                        <input type="range" min="0.1" max="3" step="0.1" value={filters.gamma} onChange={(e) => setFilters({...filters, gamma: parseFloat(e.target.value)})} className="w-full accent-fuchsia-500" />
+                                    </div>
+                                    <button onClick={() => setFilters({ brightness: 0, contrast: 1, saturation: 1, gamma: 1 })} className="w-full text-[9px] text-neutral-500 hover:text-white uppercase font-bold py-1 border border-neutral-700 hover:border-neutral-500 rounded transition-colors">
+                                        Resetear Filtros
                                     </button>
                                 </div>
                             </div>

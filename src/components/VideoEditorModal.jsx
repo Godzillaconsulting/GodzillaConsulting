@@ -25,7 +25,7 @@ const initialEditorData = [
   }
 ];
 
-export default function IntegratedVideoEditor({ initialVideoUrl, queue = [] }) {
+export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onClose }) {
     const [editorData, setEditorData] = useState(initialEditorData);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isBotThinking, setIsBotThinking] = useState(false);
@@ -363,7 +363,7 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [] }) {
                             {isRendering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                             {isRendering ? `Renderizando... ${renderProgress}%` : 'Renderizar'}
                         </button>
-                        <button onClick={onClose} className="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors">
+                        <button onClick={onClose || (() => window.history.back())} className="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors">
                             <X className="w-6 h-6" />
                         </button>
                     </div>

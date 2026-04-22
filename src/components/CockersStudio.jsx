@@ -22,7 +22,7 @@ const COMMUNITY_GALLERY_POOL = [
     { img: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract corporate 3d glassmorphism UI elements floating against dark space, frosted glass texture, modern web3 design', tag: 'Glassmorphism', model: 'Imagen 4 Ultra' }
 ];
 
-export default function CockersStudio({ adminProfile, forceOpenEditor = false }) {
+export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor = false }) {
     const [queue, setQueue] = useState([]);
     const [showEditorModal, setShowEditorModal] = useState(forceOpenEditor);
     const [selectedDraft, setSelectedDraft] = useState(null);
@@ -994,7 +994,6 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
 
     return (
         <div className="flex w-full h-full bg-[#0a0a09] text-white overflow-hidden relative">
-            
             {/* LEFT SIDEBAR: Panel de Parámetros (Estilo Kling / Flow) */}
             <div className="w-[380px] bg-[#0f0f0e] border-r border-[#222] flex flex-col shrink-0 h-full overflow-y-auto custom-scrollbar z-20">
                 
@@ -1345,15 +1344,13 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
                     </div>
                 )}
 
-            <VideoEditorModal 
-                isOpen={showEditorModal} 
-                onClose={() => {setShowEditorModal(false); setEditorVideoSrc('');}} 
-                initialVideoUrl={editorVideoSrc}
-                queue={queue}
-            />
+            {/* Renderización del VideoEditorModal manejada dentro del canvas derecho */}
 
             {/* RIGHT MAIN CANVAS: Resultados y Feed (Estilo Kling) */}
-            <div className="flex-1 bg-black relative flex flex-col items-center justify-center overflow-auto custom-scrollbar">
+            <div className="flex-1 bg-black relative flex flex-col overflow-hidden">
+                
+                {/* STUDIO CONTENT (Galería y Live Slots) */}
+                <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all ${showEditorModal ? 'h-[40%] min-h-[300px]' : 'flex-1'}`}>
                 
                 {/* Cabecera del Lienzo */}
                 <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-[#000000cc] to-transparent">
@@ -1437,7 +1434,7 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
                                                                     className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] text-[10px] font-black uppercase px-4 py-2 rounded-xl flex items-center gap-2 transform hover:scale-105 transition-all"
                                                                 >
                                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                                                    Editar en Timeline
+                                                                    Editar y Guardar en Carrete
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1562,7 +1559,7 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
                                                                 className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5"
                                                             >
                                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                                                Enviar a Timeline
+                                                                Mandar a Editar y Guardar en Carrete
                                                             </button>
                                                         </div>
                                                     </div>
@@ -1668,9 +1665,9 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
 
                         {/* Ambient background orbs */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-                            <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#CC0000]/8 rounded-full blur-[120px] animate-pulse" />
-                            <div className="absolute top-1/2 -right-48 w-[400px] h-[400px] bg-indigo-900/12 rounded-full blur-[100px]" style={{animation:'floatBob 8s ease-in-out infinite'}} />
-                            <div className="absolute bottom-0 left-1/3 w-[300px] h-[300px] bg-violet-900/10 rounded-full blur-[80px]" style={{animation:'floatBob 12s ease-in-out infinite reverse'}} />
+                            <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#CC0000]/8 rounded-full blur-[120px]" />
+                            <div className="absolute top-1/2 -right-48 w-[400px] h-[400px] bg-indigo-900/12 rounded-full blur-[100px]" />
+                            <div className="absolute bottom-0 left-1/3 w-[300px] h-[300px] bg-violet-900/10 rounded-full blur-[80px]" />
                         </div>
 
                         {/* Sticky Header */}
@@ -1930,7 +1927,20 @@ export default function CockersStudio({ adminProfile, forceOpenEditor = false })
                     </motion.div>
                 )}
 
-            </div>
+                </div> {/* FIN STUDIO CONTENT */}
+
+                {/* VIDEO EDITOR (Split bottom) */}
+                {showEditorModal && (
+                    <div className="h-[60%] border-t border-neutral-800 bg-[#0a0a09] flex flex-col z-40 relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                        <VideoEditorModal 
+                            isOpen={showEditorModal} 
+                            onClose={() => {setShowEditorModal(false); setEditorVideoSrc('');}} 
+                            initialVideoUrl={editorVideoSrc}
+                            queue={queue}
+                        />
+                    </div>
+                )}
+            </div> {/* FIN RIGHT MAIN CANVAS */}
 
             {/* Modal: Crear Filtro Personalizado */}
             {showCustomFilterModal && (

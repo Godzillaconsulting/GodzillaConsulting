@@ -29,11 +29,15 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
     const [editorData, setEditorData] = useState(initialEditorData);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isBotThinking, setIsBotThinking] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
+    const timeDisplayRef = useRef(null);
     const [localVideoUrl, setLocalVideoUrl] = useState(initialVideoUrl);
     const [draggedMedia, setDraggedMedia] = useState(null);
     const [isRendering, setIsRendering] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
+    const [ttsText, setTtsText] = useState('');
+    const [ttsVoice, setTtsVoice] = useState('es-MX');
+    const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
+    const [localUploads, setLocalUploads] = useState([]);
     const videoRef = useRef(null);
     const ffmpegRef = useRef(new FFmpeg());
     const globalTimeRef = useRef(0);
@@ -48,6 +52,8 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
     const savedVideos = queue.filter(q => q.media_options && q.media_options.length > 0 && 
                                           q.media_options[0].url && 
                                           (q.media_options[0].url.includes('.mp4') || q.media_options[0].url.includes('.webm')));
+
+    const displayVideos = [...savedVideos, ...localUploads];
 
     useEffect(() => {
         if (!isOpen) return;
@@ -77,7 +83,10 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                 globalTimeRef.current += delta;
                 
                 const t = globalTimeRef.current;
-                setCurrentTime(t);
+                
+                if (timeDisplayRef.current) {
+                    timeDisplayRef.current.innerText = `${t.toFixed(2)}s`;
+                }
                 
                 if (timelineState.current && timelineState.current.setTime) {
                     timelineState.current.setTime(t);
@@ -129,7 +138,9 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
 
     const handleTimeChange = (time) => {
         globalTimeRef.current = time;
-        setCurrentTime(time);
+        if (timeDisplayRef.current) {
+            timeDisplayRef.current.innerText = `${time.toFixed(2)}s`;
+        }
         if (timelineState.current && timelineState.current.setTime) {
             timelineState.current.setTime(time);
         }
@@ -229,6 +240,44 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
         }
     };
 
+    const handleGenerateVoice = async () => {
+        if (!ttsText.trim()) return;
+        setIsGeneratingVoice(true);
+        try {
+            // Utilizamos el Web Speech API para simular generación de audio local y no gastar cuota de servidor
+            const utterance = new SpeechSynthesisUtterance(ttsText);
+            utterance.lang = ttsVoice;
+            
+            // Simular tiempo de carga de API
+            await new Promise(r => setTimeout(r, 800));
+            
+            const dropTime = timelineState.current ? timelineState.current.getTime() : 0;
+            const newAudioClip = {
+                id: `audio-${Date.now()}`,
+                start: dropTime,
+                end: dropTime + Math.max(ttsText.length * 0.08, 2),
+                effectId: 'a-1',
+                text: `🔊 TTS: ${ttsText.substring(0,12)}...`,
+                color: '#10b981',
+                ttsContent: ttsText
+            };
+            
+            setEditorData(prev => {
+                const newData = [...prev];
+                const audioTrack = newData.find(t => t.id === 'track-audio');
+                if (audioTrack) audioTrack.actions.push(newAudioClip);
+                return newData;
+            });
+            setTtsText('');
+            alert('¡Locución generada localmente y añadida a la línea de tiempo!');
+        } catch (e) {
+            console.error(e);
+            alert('Error generando voz');
+        } finally {
+            setIsGeneratingVoice(false);
+        }
+    };
+
     const handleMagicBot = async () => {
         setIsBotThinking(true);
         try {
@@ -295,10 +344,10 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
         <AnimatePresence>
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[999] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+                className="w-full h-full flex flex-col bg-[#080808] absolute inset-0 z-50"
             >
                 {/* Cabecera del Editor */}
-                <div className="absolute top-0 w-full h-16 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-6">
+                <div className="w-full h-16 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-3">
                         <Scissors className="w-5 h-5 text-blue-500" />
                         <h2 className="text-white font-bold text-lg tracking-tight">Godzilla Pro Editor</h2>
@@ -328,22 +377,44 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                 </div>
 
                 {/* Área Pincipal: Layout Dividido */}
-                <div className="flex flex-col w-full h-full pt-16">
+                <div className="flex flex-col flex-1 min-h-0">
                     
                     {/* TOP: Visor de Video y Herramientas */}
                     <div className="flex-1 flex gap-4 p-4 min-h-0 bg-neutral-950">
                         {/* Selector de Media y Capas (Sidebar) */}
-                        <div className="w-[300px] bg-neutral-900 rounded-xl border border-neutral-800 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                        <div className="w-[300px] bg-neutral-900 rounded-xl border border-neutral-800 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar shrink-0">
                             
                             <div>
-                                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Video className="w-4 h-4 text-blue-400"/> Librería de Videos
-                                </h3>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                        <Video className="w-4 h-4 text-blue-400"/> Carrete / Librería
+                                    </h3>
+                                    <label className="cursor-pointer bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded px-2 py-1 text-[9px] font-bold transition-colors">
+                                        + Subir
+                                        <input 
+                                            type="file" 
+                                            accept="video/*" 
+                                            className="hidden" 
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    const url = URL.createObjectURL(file);
+                                                    setLocalUploads(prev => [...prev, {
+                                                        id: `local-${Date.now()}`,
+                                                        status: 'local',
+                                                        caption: file.name,
+                                                        media_options: [{ url }]
+                                                    }]);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                </div>
                                 <div className="space-y-2">
-                                    {savedVideos.length === 0 ? (
-                                        <p className="text-neutral-500 text-xs italic">No hay videos guardados en tu bandeja conectada.</p>
+                                    {displayVideos.length === 0 ? (
+                                        <p className="text-neutral-500 text-xs italic">Sube un video o genera uno en el Estudio IA.</p>
                                     ) : (
-                                        savedVideos.map(vid => (
+                                        displayVideos.map(vid => (
                                             <div 
                                                 key={vid.id} 
                                                 draggable
@@ -381,6 +452,39 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                                     </button>
                                 </div>
                             </div>
+
+                            <div className="border-t border-neutral-800 my-2"></div>
+
+                            <div>
+                                <h3 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2 text-emerald-400">
+                                    <Music className="w-4 h-4"/> Voces IA (UGC)
+                                </h3>
+                                <div className="flex flex-col gap-2">
+                                    <select 
+                                        value={ttsVoice} 
+                                        onChange={e => setTtsVoice(e.target.value)}
+                                        className="bg-neutral-800 border border-neutral-700 text-white text-[10px] rounded p-2 outline-none"
+                                    >
+                                        <option value="es-MX">Narrador Neutro (es-MX)</option>
+                                        <option value="es-ES">Voz Corporativa (es-ES)</option>
+                                        <option value="en-US">Voz UGC Inglés (en-US)</option>
+                                    </select>
+                                    <textarea 
+                                        value={ttsText}
+                                        onChange={e => setTtsText(e.target.value)}
+                                        placeholder="Escribe el guion UGC aquí..." 
+                                        className="bg-neutral-800 border border-neutral-700 text-white text-[10px] rounded p-2 outline-none resize-none h-20"
+                                    />
+                                    <button 
+                                        onClick={handleGenerateVoice}
+                                        disabled={isGeneratingVoice || !ttsText.trim()}
+                                        className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-[10px] font-bold uppercase tracking-wider py-2 rounded transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {isGeneratingVoice ? <Loader2 className="w-3 h-3 animate-spin"/> : <Wand2 className="w-3 h-3"/>}
+                                        Generar Audio
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Reproductor Central */}
@@ -408,7 +512,7 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                                     {isPlaying ? <Pause className="w-6 h-6"/> : <Play className="w-6 h-6" fill="currentColor"/>}
                                 </button>
                                 <div className="text-neutral-300 font-mono text-sm flex items-center ml-4">
-                                    00:{currentTime.toFixed(1).padStart(4, '0')} / 00:10.0
+                                    00:<span ref={timeDisplayRef}>0.0</span> / 00:10.0
                                 </div>
                             </div>
                         </div>

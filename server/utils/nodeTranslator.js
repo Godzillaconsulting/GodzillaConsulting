@@ -50,18 +50,31 @@ Rules:
                     });
 
                     let translatedObj = null;
-                    if (response.text) translatedObj = JSON.parse(response.text);
+                    if (response.text) {
+                        try {
+                            const cleanJson = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            translatedObj = JSON.parse(cleanJson);
+                        } catch (parseError) {
+                            console.error(`[NODES JIT] Error parseando JSON de Gemini para ${row.id}:`, parseError.message);
+                        }
+                    }
 
                     if (translatedObj) {
                         pubData.translations = { ...pubData.translations, [targetLng]: translatedObj };
                         modified = true;
-                        
-                        // Guardar permanentemente en la base de datos!
                         await pool.query(`UPDATE site_nodes SET published_data = $1 WHERE id = $2`, [pubData, row.id]);
                         console.log(`[NODES JIT] Nodo ${row.id} traducido al ${targetLng} guardado correctamente.`);
+                    } else {
+                        // FALLBACK SAFETY LOCK: Prevent infinite loops if Gemini fails to return valid JSON
+                        pubData.translations = { ...pubData.translations, [targetLng]: { ...payloadToTranslate, _jitFailed: true } };
+                        await pool.query(`UPDATE site_nodes SET published_data = $1 WHERE id = $2`, [pubData, row.id]);
+                        console.warn(`[NODES JIT] Salvavidas activado para ${row.id}: Se guardó el idioma original para evitar loops de facturación.`);
                     }
                 } catch (e) {
                     console.error(`[NODES JIT] Fallo al traducir ${row.id} a ${targetLng}:`, e);
+                    // FALLBACK SAFETY LOCK on Network Error
+                    pubData.translations = { ...pubData.translations, [targetLng]: { ...payloadToTranslate, _jitFailed: true } };
+                    await pool.query(`UPDATE site_nodes SET published_data = $1 WHERE id = $2`, [pubData, row.id]).catch(()=>{});
                 }
             }
         }

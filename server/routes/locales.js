@@ -56,6 +56,8 @@ router.get('/:lng', async (req, res) => {
             throw new Error('No AI Configured for JIT locales');
         }
 
+        const esData = getLocalData('es');
+
         const instruction = `You are an expert bilingual marketing copywriter. 
 Translate the provided Spanish JSON into High-Converting ${lng.toUpperCase()} language. 
 Rules:
@@ -79,9 +81,22 @@ Rules:
             }
         });
 
-        const translatedObj = JSON.parse(response.text);
+        let translatedObj = null;
+        if (response.text) {
+            try {
+                const cleanJson = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                translatedObj = JSON.parse(cleanJson);
+            } catch (e) {
+                console.error('[JIT LOCALE] Failed to parse JSON from Gemini:', e.message);
+            }
+        }
 
-        // 4. Save to Database
+        if (!translatedObj) {
+            console.warn(`[JIT LOCALE] Salvavidas: Guardando fallback en BD para evitar loop infinito en ${lng}.`);
+            translatedObj = { ...esData, _jitFailed: true };
+        }
+
+        // 4. Save to Database (Even if it's the fallback, to stop the loop)
         await pool.query(`
             INSERT INTO global_locales (lng, data) VALUES ($1, $2)
             ON CONFLICT (lng) DO UPDATE SET data = EXCLUDED.data
@@ -91,8 +106,16 @@ Rules:
         res.json(translatedObj);
         
     } catch (error) {
-        console.error('[JIT LOCALE] Error:', error);
-        // Fallback to English if translation mechanism crashes
+        console.error('[JIT LOCALE] Error Network:', error);
+        
+        // Salvavidas de emergencia: Guardar en BD para evitar loops por red
+        if (typeof esData !== 'undefined') {
+            await pool.query(`
+                INSERT INTO global_locales (lng, data) VALUES ($1, $2)
+                ON CONFLICT (lng) DO UPDATE SET data = EXCLUDED.data
+            `, [lng, { ...esData, _jitNetworkFailed: true }]).catch(()=>{});
+        }
+        
         return res.json(getLocalData('en'));
     }
 });

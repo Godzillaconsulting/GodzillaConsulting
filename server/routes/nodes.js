@@ -123,15 +123,22 @@ router.put('/:id/draft', requireAdmin, async (req, res) => {
         // Auto-Translate marketing dynamic nodes
         if (id === 'paquetes' || id.startsWith('paquete-')) {
             const translatedPayload = await translateNodePayload(draft_data, id);
-            if (translatedPayload) {
-                draft_data = {
-                    ...draft_data,
-                    translations: {
-                        ...draft_data.translations,
-                        en: translatedPayload
-                    }
-                };
-            }
+            
+            // Obtener el nodo actual para no perder traducciones si falla Gemini
+            const current = await pool.query('SELECT draft_data, published_data FROM site_nodes WHERE id = $1', [id]);
+            const prevDraftTranslations = current.rows[0]?.draft_data?.translations || {};
+            const prevPublishedTranslations = current.rows[0]?.published_data?.translations || {};
+            
+            // Consolidamos para que JIT (que guarda en published_data) no sea sobrescrito
+            const consolidatedTranslations = { ...prevPublishedTranslations, ...prevDraftTranslations };
+
+            draft_data = {
+                ...draft_data,
+                translations: {
+                    ...consolidatedTranslations,
+                    ...(translatedPayload ? { en: translatedPayload } : {})
+                }
+            };
         }
         
         const result = await pool.query(`

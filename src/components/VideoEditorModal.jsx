@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type } from 'lucide-react';
 import { Timeline } from '@xzdarcy/react-timeline-editor';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 // Datos dummy de inicialización para la línea de tiempo
 const initialEditorData = [
@@ -29,7 +31,14 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
     const [isBotThinking, setIsBotThinking] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [localVideoUrl, setLocalVideoUrl] = useState(initialVideoUrl);
+    const [draggedMedia, setDraggedMedia] = useState(null);
+    const [isRendering, setIsRendering] = useState(false);
+    const [renderProgress, setRenderProgress] = useState(0);
     const videoRef = useRef(null);
+    const ffmpegRef = useRef(new FFmpeg());
+    const globalTimeRef = useRef(0);
+    const lastTickRef = useRef(performance.now());
+    const currentClipIdRef = useRef(null);
 
     // Timeline Configuration
     const scale = 5; 
@@ -44,43 +53,237 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
         if (!isOpen) return;
         if (initialVideoUrl) {
             setLocalVideoUrl(initialVideoUrl);
+            setEditorData([
+              { id: 'track-video', actions: [{ id: 'main-v', start: 0, end: 10, effectId: 'v-1', text: 'Video Activo', color: '#3b82f6', sourceUrl: initialVideoUrl, sourceStart: 0 }] },
+              { id: 'track-audio', actions: [{ id: 'main-a', start: 0, end: 10, effectId: 'a-1', text: 'Voz/Sonido Original', color: '#10b981' }] },
+              { id: 'track-text', actions: [] }
+            ]);
+        } else {
+            setEditorData([
+              { id: 'track-video', actions: [] },
+              { id: 'track-audio', actions: [] },
+              { id: 'track-text', actions: [] }
+            ]);
         }
     }, [isOpen, initialVideoUrl]);
 
     useEffect(() => {
-        if (localVideoUrl) {
-            setEditorData([
-              { id: 'track-video', actions: [{ id: 'main-v', start: 0, end: 10, effectId: 'v-1', text: 'Video Activo', color: '#3b82f6' }] },
-              { id: 'track-audio', actions: [{ id: 'main-a', start: 0, end: 10, effectId: 'a-1', text: 'Voz/Sonido Original', color: '#10b981' }] },
-              { id: 'track-text', actions: [] }
-            ]);
+        let animationFrameId;
+        const syncTime = () => {
+            if (isPlaying) {
+                const now = performance.now();
+                const delta = (now - lastTickRef.current) / 1000;
+                lastTickRef.current = now;
+                globalTimeRef.current += delta;
+                
+                const t = globalTimeRef.current;
+                setCurrentTime(t);
+                
+                if (timelineState.current && timelineState.current.setTime) {
+                    timelineState.current.setTime(t);
+                }
+
+                const videoTrack = editorData.find(tr => tr.id === 'track-video');
+                const clip = videoTrack?.actions.find(a => t >= a.start && t <= a.end);
+                
+                if (clip) {
+                    if (currentClipIdRef.current !== clip.id) {
+                        currentClipIdRef.current = clip.id;
+                        if (videoRef.current) {
+                            videoRef.current.src = clip.sourceUrl || localVideoUrl;
+                            videoRef.current.currentTime = t - clip.start + (clip.sourceStart || 0);
+                            videoRef.current.play().catch(e => console.log(e));
+                        }
+                    } else {
+                        if (videoRef.current) {
+                            const expectedTime = t - clip.start + (clip.sourceStart || 0);
+                            if (Math.abs(videoRef.current.currentTime - expectedTime) > 0.3) {
+                                videoRef.current.currentTime = expectedTime;
+                            }
+                        }
+                    }
+                } else {
+                    if (currentClipIdRef.current !== null) {
+                        currentClipIdRef.current = null;
+                        if (videoRef.current) {
+                            videoRef.current.pause();
+                        }
+                    }
+                }
+                
+                animationFrameId = requestAnimationFrame(syncTime);
+            }
+        };
+
+        if (isPlaying) {
+            lastTickRef.current = performance.now();
+            animationFrameId = requestAnimationFrame(syncTime);
+        } else {
+            videoRef.current?.pause();
         }
-    }, [localVideoUrl]);
+
+        return () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        };
+    }, [isPlaying, editorData, localVideoUrl]);
+
+    const handleTimeChange = (time) => {
+        globalTimeRef.current = time;
+        setCurrentTime(time);
+        if (timelineState.current && timelineState.current.setTime) {
+            timelineState.current.setTime(time);
+        }
+        
+        const videoTrack = editorData.find(t => t.id === 'track-video');
+        const clip = videoTrack?.actions.find(a => time >= a.start && time <= a.end);
+        
+        if (clip && videoRef.current) {
+            const clipUrl = clip.sourceUrl || localVideoUrl;
+            if (currentClipIdRef.current !== clip.id || videoRef.current.src !== clipUrl) {
+                currentClipIdRef.current = clip.id;
+                videoRef.current.src = clipUrl;
+                videoRef.current.load();
+            }
+            videoRef.current.currentTime = time - clip.start + (clip.sourceStart || 0);
+        } else {
+            currentClipIdRef.current = null;
+        }
+        return true;
+    };
+
+    const handleRender = async () => {
+        const videoTrack = editorData.find(t => t.id === 'track-video');
+        if (!videoTrack || videoTrack.actions.length === 0) {
+            alert('Agrega al menos un clip a la pista de video');
+            return;
+        }
+
+        setIsRendering(true);
+        setRenderProgress(0);
+
+        try {
+            const ffmpeg = ffmpegRef.current;
+            if (!ffmpeg.loaded) {
+                ffmpeg.on('progress', ({ progress }) => {
+                    setRenderProgress(Math.round(progress * 100));
+                });
+                await ffmpeg.load({
+                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+                    wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+                });
+            }
+
+            const clips = videoTrack.actions.filter(c => c.sourceUrl);
+            const uniqueUrls = [...new Set(clips.map(a => a.sourceUrl))];
+            
+            for (let i=0; i<uniqueUrls.length; i++) {
+                const fileData = await fetchFile(uniqueUrls[i]);
+                await ffmpeg.writeFile(`input${i}.mp4`, fileData);
+            }
+
+            let filterComplex = '';
+            let concatString = '';
+            
+            clips.forEach((clip, index) => {
+                const fileIndex = uniqueUrls.indexOf(clip.sourceUrl);
+                const duration = clip.end - clip.start;
+                const startOffset = clip.sourceStart || 0;
+                
+                filterComplex += `[${fileIndex}:v]trim=start=${startOffset}:duration=${duration},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v${index}]; `;
+                filterComplex += `[${fileIndex}:a]atrim=start=${startOffset}:duration=${duration},asetpts=PTS-STARTPTS[a${index}]; `;
+                
+                concatString += `[v${index}][a${index}]`;
+            });
+
+            filterComplex += `${concatString}concat=n=${clips.length}:v=1:a=1[outv][outa]`;
+
+            const inputs = uniqueUrls.map((url, i) => ['-i', `input${i}.mp4`]).flat();
+            
+            await ffmpeg.exec([
+                ...inputs,
+                '-filter_complex', filterComplex,
+                '-map', '[outv]',
+                '-map', '[outa]',
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-c:a', 'aac',
+                'output.mp4'
+            ]);
+
+            const data = await ffmpeg.readFile('output.mp4');
+            const blob = new Blob([data.buffer], { type: 'video/mp4' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `godzilla_pro_edit_${Date.now()}.mp4`;
+            a.click();
+            
+            alert('¡Renderizado completado con éxito!');
+        } catch (error) {
+            console.error('Render error:', error);
+            alert('Error renderizando el video. Verifica la consola.');
+        } finally {
+            setIsRendering(false);
+            setRenderProgress(0);
+        }
+    };
 
     const handleMagicBot = async () => {
         setIsBotThinking(true);
         try {
-            await new Promise(r => setTimeout(r, 4500));
+            await new Promise(r => setTimeout(r, 2000));
+            const videoTrack = editorData.find(t => t.id === 'track-video');
+            const baseClip = videoTrack?.actions[0];
+            
+            if (!baseClip || !baseClip.sourceUrl) throw new Error("Añade un video a la línea de tiempo primero");
+
+            const midPoint = (baseClip.end - baseClip.start) / 2;
+            const cutDuration = 1.5;
+            
+            const clip1 = {
+                id: `clip-${Date.now()}-1`,
+                start: baseClip.start,
+                end: baseClip.start + midPoint - (cutDuration/2),
+                effectId: 'v-1',
+                text: 'Raw Parte 1',
+                color: '#2563eb',
+                sourceUrl: baseClip.sourceUrl,
+                sourceStart: baseClip.sourceStart || 0
+            };
+            
+            const clip2 = {
+                id: `clip-${Date.now()}-2`,
+                start: clip1.end,
+                end: clip1.end + (baseClip.end - (baseClip.start + midPoint + (cutDuration/2))),
+                effectId: 'v-1',
+                text: 'Raw Parte 2',
+                color: '#2563eb',
+                sourceUrl: baseClip.sourceUrl,
+                sourceStart: (baseClip.sourceStart || 0) + midPoint + (cutDuration/2)
+            };
+
+            const caption1 = {
+                id: `cap-${Date.now()}-1`,
+                start: clip1.start + 0.5,
+                end: clip1.end - 0.5,
+                effectId: 'c-1',
+                text: '"¡Esto fue cortado por IA!"',
+                color: '#eab308'
+            };
+
             setEditorData(prev => {
                 const newData = [...prev];
-                newData[0].actions = [
-                    { id: 'main-v-1', start: 0, end: 3, effectId: 'v-1', text: 'Veo Corte 1', color: '#2563eb' },
-                    { id: 'main-v-2', start: 4.5, end: 10, effectId: 'v-2', text: 'Veo Corte 2', color: '#2563eb' }
-                ];
-                newData[1].actions = [
-                    { id: 'main-a-1', start: 0, end: 3, effectId: 'a-1', text: 'Audio', color: '#059669' },
-                    { id: 'main-a-2', start: 4.5, end: 10, effectId: 'a-2', text: 'Audio', color: '#059669' }
-                ];
-                newData[2].actions = [
-                    { id: 'cap-1', start: 0.5, end: 2.5, effectId: 'c-1', text: '"¡El Bot Mágico"', color: '#eab308' },
-                    { id: 'cap-2', start: 4.5, end: 7.0, effectId: 'c-2', text: '"cortó todo el silencio!"', color: '#eab308' }
-                ];
+                const vTrack = newData.find(t => t.id === 'track-video');
+                const tTrack = newData.find(t => t.id === 'track-text');
+                if (vTrack) vTrack.actions = [clip1, clip2];
+                if (tTrack) tTrack.actions = [caption1];
                 return newData;
             });
-            alert('✨ Bot Mágico: 1 silencio eliminado, 2 captions generados.');
+            alert('✨ Bot Mágico: Se ha eliminado un silencio de 1.5s automáticamente.');
         } catch (e) {
             console.error(e);
-            alert('Error en Bot Mágico');
+            alert('Error en Bot Mágico: ' + e.message);
         } finally {
             setIsBotThinking(false);
         }
@@ -110,9 +313,13 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                             {isBotThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                             {isBotThinking ? 'IA Analizando...' : 'Auto-Edit Mágico'}
                         </button>
-                        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition-colors">
-                            <Download className="w-4 h-4" />
-                            Renderizar
+                        <button 
+                            onClick={handleRender}
+                            disabled={isRendering}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+                        >
+                            {isRendering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {isRendering ? `Renderizando... ${renderProgress}%` : 'Renderizar'}
                         </button>
                         <button onClick={onClose} className="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors">
                             <X className="w-6 h-6" />
@@ -139,8 +346,13 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                                         savedVideos.map(vid => (
                                             <div 
                                                 key={vid.id} 
+                                                draggable
+                                                onDragStart={(e) => {
+                                                    setDraggedMedia(vid);
+                                                    e.dataTransfer.setData("text/plain", vid.media_options[0].url);
+                                                }}
                                                 onClick={() => setLocalVideoUrl(vid.media_options[0].url)}
-                                                className={`flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-all ${localVideoUrl === vid.media_options[0].url ? 'bg-blue-900/20 border-blue-500/50' : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600'}`}
+                                                className={`flex items-start gap-2 p-2 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${localVideoUrl === vid.media_options[0].url ? 'bg-blue-900/20 border-blue-500/50' : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600'}`}
                                             >
                                                 <video src={vid.media_options[0].url} className="w-16 h-12 object-cover rounded bg-black" />
                                                 <div className="flex-1 min-w-0">
@@ -210,13 +422,48 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                         </div>
                         
                         {/* Motor XZDarcy Timeline */}
-                        <div className="w-full h-[calc(100%-2rem)] overflow-hidden relative custom-timeline-theme">
+                        <div 
+                            className="w-full h-[calc(100%-2rem)] overflow-hidden relative custom-timeline-theme"
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                if (draggedMedia) {
+                                    const dropTime = timelineState.current ? timelineState.current.getTime() : 0;
+                                    const newClip = {
+                                        id: `clip-${Date.now()}`,
+                                        start: dropTime,
+                                        end: dropTime + 5, // Default 5s
+                                        effectId: 'v-1',
+                                        text: draggedMedia.caption || draggedMedia.visual_prompt || 'Clip Añadido',
+                                        color: '#3b82f6',
+                                        sourceUrl: draggedMedia.media_options[0].url,
+                                        sourceStart: 0
+                                    };
+                                    setEditorData(prev => {
+                                        const newData = [...prev];
+                                        const videoTrack = newData.find(t => t.id === 'track-video');
+                                        if (videoTrack) {
+                                            videoTrack.actions.push(newClip);
+                                        } else {
+                                            newData.push({ id: 'track-video', actions: [newClip] });
+                                        }
+                                        return newData;
+                                    });
+                                    setDraggedMedia(null);
+                                    if (!localVideoUrl) setLocalVideoUrl(draggedMedia.media_options[0].url);
+                                }
+                            }}
+                        >
                             <Timeline 
+                                ref={timelineState}
                                 editorData={editorData} 
                                 effects={{}} 
                                 scale={scale}
                                 hideCursor={false}
                                 onChange={(data) => setEditorData(data)}
+                                onClickTimeArea={handleTimeChange}
+                                onCursorDrag={handleTimeChange}
+                                onCursorDragEnd={handleTimeChange}
                                 autoScroll={true}
                                 style={{
                                     backgroundColor: '#171717', 

@@ -122,10 +122,10 @@ export default function AdminStudio() {
  const [selectedElementIndex, setSelectedElementIndex] = useState(null);
  const [selectedFeatureIndex, setSelectedFeatureIndex] = useState(null);
  const [saving, setSaving] = useState(false);
+ const [isPublishing, setIsPublishing] = useState(false);
  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
  const [savedDraftKeys, setSavedDraftKeys] = useState(null);
  const [activePresences, setActivePresences] = useState({});
-
 
  const [showPublishModal, setShowPublishModal] = useState(false);
  const [showPreview, setShowPreview] = useState(true);
@@ -350,6 +350,7 @@ export default function AdminStudio() {
  };
 
  const handlePublish = async () => {
+ setIsPublishing(true);
  const base = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
  const token = localStorage.getItem('adminToken');
  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
@@ -377,7 +378,7 @@ export default function AdminStudio() {
  await fetchNodes(3, true);
  setShowPublishModal(false);
  alert('🚀 Publicado');
- } catch (err) { alert(`❌ Error al publicar: ${err.message}`); }
+ } catch (err) { alert(`❌ Error al publicar: ${err.message}`); } finally { setIsPublishing(false); }
  };
 
   // Oculta nodos legacy y muestra obligatoriamente TODAS las secciones oficiales, existan o no aún en BD
@@ -466,8 +467,8 @@ export default function AdminStudio() {
  <iframe src="https://godzillaconsulting.ai" title="Preview" className="w-full h-[52vh] rounded-xl border border-neutral-700" />
  </div>
  <div className="flex justify-end gap-3 p-5 border-t border-neutral-700">
- <button onClick={() => setShowPublishModal(false)} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 rounded-full font-bold text-sm transition">Cancelar</button>
- <button onClick={handlePublish} className="px-7 py-2.5 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] rounded-full font-black text-sm transition-colors duration-300 shadow-[0_4px_20px_rgba(204,0,0,0.5)]">Confirmar y Publicar</button>
+ <button onClick={() => setShowPublishModal(false)} disabled={isPublishing} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 rounded-full font-bold text-sm transition">Cancelar</button>
+ <button onClick={handlePublish} disabled={isPublishing} className="px-7 py-2.5 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] disabled:opacity-50 rounded-full font-black text-sm transition-colors duration-300 shadow-[0_4px_20px_rgba(204,0,0,0.5)]">{isPublishing ? 'Publicando...' : 'Confirmar y Publicar'}</button>
  </div>
  </div>
  </div>

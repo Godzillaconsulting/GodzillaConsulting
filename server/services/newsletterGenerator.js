@@ -36,9 +36,12 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
     });
 
     let fdbkStr = feedback ? `\n[ATENCIÓN ORDEN DEL CEO: Corrige el borrador anterior aplicando esto: "${feedback}"]\n` : '';
+    
+    // Obtenemos la fecha y hora actual para dársela al Cerebro IA
+    const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'full', timeStyle: 'short' });
 
-    const prompt = `Crea el boletín de inteligencia B2B del día de HOY.${fdbkStr}
-TAREA CRÍTICA: Busca las 2 o 3 noticias y herramientas de IA más valiosas empresariales HOY. ES PRIORIDAD INCLUIR noticias sobre ciberseguridad, ataques cibernéticos a plataformas (como el hackeo a Vercel), avances tecnológicos defensivos y el lanzamiento de NUEVOS MODELOS de IA. No hagas reportes aburridos. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
+    const prompt = `Crea el boletín de inteligencia B2B del día de HOY (${currentDate}).${fdbkStr}
+TAREA CRÍTICA: Busca las 2 o 3 noticias y herramientas de IA más valiosas empresariales HOY (${currentDate}). ES PRIORIDAD INCLUIR noticias sobre ciberseguridad, ataques cibernéticos a plataformas (como el hackeo a Vercel), avances tecnológicos defensivos y el lanzamiento de NUEVOS MODELOS de IA. No hagas reportes aburridos. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
 
 MISIÓN A (Email "Skimmable"): Puros Bullet Points en resúmenes ejecutivos en formato HTML (<h2>, <ul>, <li>, <b>).
 MISIÓN B (Resumen Teaser): Un "miniSummary" de 2 renglones diseñado magistralmente para obligar al usuario a querer abrir el PDF adjunto (con copywriting intrigante).

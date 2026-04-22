@@ -451,7 +451,7 @@ export const getInspirationGallery = async (req, res) => {
             // Recortar strings enormes para no romper la URL de Pollinations API
             const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
             return {
-                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
+                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&model=turbo&seed=${Math.floor(Math.random() * 99999)}`,
                 prompt: item.prompt,
                 tag: item.tag,
                 model: item.model
@@ -503,6 +503,56 @@ export const getDynamicFilters = async (req, res) => {
         // Fallback a unos muy creativos por si falla
         res.status(500).json({ success: false, error: error.message });
     }
+};
+
+export const generateScriptChat = async (req, res) => {
+    try {
+        const { message, chatHistory } = req.body;
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+        }
+
+        console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        
+        // 1. Recuperar memoria de aprendizaje de la Base de Datos (Últimas 5 correcciones)
+        let learningContext = "";
+        try {
+            const { rows } = await pool.query(`SELECT original_prompt, improved_prompt FROM goyi_learning WHERE context_type = 'script_chat' ORDER BY created_at DESC LIMIT 5`);
+            if (rows.length > 0) {
+                learningContext = "\n\nREGLAS APRENDIDAS DE CORRECCIONES PASADAS DEL USUARIO:\n" + rows.map(r => `Cuando pidan algo como: "${r.original_prompt}" -> Tú debes aplicar este estilo/mejora: "${r.improved_prompt}"`).join('\n');
+            }
+        } catch (dbErr) {
+            console.log("[STUDIO] Fallo al recuperar memoria:", dbErr.message);
+        }
+
+        let systemInstruction = `Eres un Asistente de Edición IA y Copywriter de nivel Dios.
+Reglas Estrictas:
+1. NUNCA expongas tus pensamientos ni uses etiquetas XML de razonamiento.
+2. NUNCA saludes ni seas conversacional (No digas "Claro", "Aquí tienes").
+3. APRENDIZAJE: Adapta tu estilo basándote en las REGLAS APRENDIDAS (abajo).
+4. PRECISIÓN EXTREMA: Si el usuario pide un prompt o guion pero el requerimiento es demasiado vago (ej. carece de detalles de iluminación, tono, formato o duración), NO GENERES NADA. En su lugar, pregúntale directamente qué detalles faltan.
+5. Si el requerimiento es completo, devuelve ÚNICAMENTE el guion o prompt perfecto.${learningContext}`;
+
+        const ai = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: systemInstruction 
+        });
+        
+        let history = [];
+        if (chatHistory && chatHistory.length > 0) {
+            history = chatHistory.map(m => ({
+                role: m.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: m.text }]
+            }));
+        }
+
+        const chat = ai.startChat({ history });
+        const responseGenAI = await chat.sendMessage(message);
+        let aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
+        
+        // Strip out any thinking / thought blocks produced by new reasoning models
         aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
         aiResponse = aiResponse.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
 
@@ -750,7 +800,6 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
 {
   "plan": [
     {
-      "dia": 1,
       "Tema": "Título del tema del video",
       "NARRACION ESCENA 1": "Texto narrado en voz en off para la escena 1 (hook)",
       "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Prompt detallado para generar la imagen/visual de escena 1",

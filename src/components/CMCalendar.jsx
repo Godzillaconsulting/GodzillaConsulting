@@ -19,7 +19,7 @@ const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 const canAssign = (profile) => {
     if (!profile) return false;
     const usr = (profile.username || '').toLowerCase();
-    return usr === 'godzilla_admin' || usr === 'judith' || usr === 'jareg' || usr === 'oscar' || profile.is_superadmin;
+    return usr === 'godzilla_admin' || usr === 'judith' || usr === 'jareg' || usr === 'oscar' || usr === 'alex' || profile.is_superadmin;
 };
 
 // ─── PARSEAR MENCIONES para resaltado ─────────────────────────────────────

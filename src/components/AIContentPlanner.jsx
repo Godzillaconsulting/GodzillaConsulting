@@ -12,12 +12,11 @@ const COL = (n) => ({
 // ─── Exportar CSV con las columnas exactas del Sheets ─────────────────────────
 const exportToCSV = (plan, niche) => {
     const headers = [
-        'Día', 'Tema',
+        'Tema',
         ...SCENE_COLUMNS.flatMap(n => [COL(n).narracion, COL(n).visual, COL(n).video])
     ];
 
     const rows = plan.map(day => [
-        day.dia || '',
         day['Tema'] || '',
         ...SCENE_COLUMNS.flatMap(n => [
             day[COL(n).narracion] || '',

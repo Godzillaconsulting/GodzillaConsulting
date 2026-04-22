@@ -30,15 +30,16 @@ const CurvedConnector = ({ startX, startY, endX, endY, color }) => {
 
 export default function AutomationFlow() {
     const [nodes, setNodes] = useState([
-        { id: '1', type: 'trigger', title: 'WhatsApp', subtitle: 'Trigger Inicial', icon: 'MessageCircle', x: 100, y: 220, color: '#10b981' },
-        { id: '2', type: 'agent', title: 'AI Agent', subtitle: 'En Ejecución', icon: 'Bot', x: 400, y: 235, color: '#10b981', pulse: true },
-        { id: '3', type: 'action', title: 'Planificador IA', subtitle: 'Agendar Tarea', icon: 'Calendar', x: 750, y: 80, color: '#a855f7' },
-        { id: '4', type: 'action', title: 'PostgreSQL', subtitle: 'Guardar Lead', icon: 'Server', x: 750, y: 340, color: '#3b82f6' }
+        { id: '1', type: 'trigger', title: 'Estudio IA', subtitle: 'Generador UGC/Video', icon: 'Bot', x: 50, y: 220, color: '#f59e0b' },
+        { id: '2', type: 'action', title: 'Editor Pro', subtitle: 'Post-Producción (CapCut)', icon: 'Activity', x: 300, y: 220, color: '#3b82f6' },
+        { id: '3', type: 'action', title: 'Planificador IA', subtitle: 'Agendar Tarea', icon: 'Calendar', x: 550, y: 100, color: '#a855f7' },
+        { id: '4', type: 'agent', title: 'Publicador Social', subtitle: 'TikTok, IG, FB', icon: 'Webhook', x: 850, y: 200, color: '#10b981', pulse: true }
     ]);
     const [edges, setEdges] = useState([
-        { id: 'e1-2', source: '1', target: '2', color: '#10b981' },
-        { id: 'e2-3', source: '2', target: '3', color: '#a855f7' },
-        { id: 'e2-4', source: '2', target: '4', color: '#3b82f6' }
+        { id: 'e1-2', source: '1', target: '2', color: '#f59e0b' },
+        { id: 'e2-3', source: '2', target: '3', color: '#3b82f6' },
+        { id: 'e2-4', source: '2', target: '4', color: '#10b981' },
+        { id: 'e3-4', source: '3', target: '4', color: '#a855f7' }
     ]);
     
     const [selectedNodeId, setSelectedNodeId] = useState(null);

@@ -329,6 +329,9 @@ export const initWhatsAppBot = async () => {
                 }))
             }];
 
+            const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+            const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
+
             const model = genAI.getGenerativeModel({ 
                 model: "gemini-2.5-flash",
                 systemInstruction: finalSystemPrompt + systemPromptContexto,
@@ -445,37 +448,49 @@ export const initWhatsAppBot = async () => {
                             if (result.rows.length === 0) {
                                 fRes = { success: false, error: "No encontré ninguna cita activa con ese número de teléfono." };
                             } else {
-                                                            const cita = result.rows[0];
-                            const valErr = validateBusinessHours(nueva_fecha, nueva_hora);
-                            
-                            if (valErr) {
-                                fRes = { success: false, error: valErr };
+                                const cita = result.rows[0];
+                                if (cita.google_calendar_id) {
+                                    await cancelarEnGoogleCalendar(cita.google_calendar_id).catch(e => console.error("Error cancelando en GC:", e.message));
+                                }
+                                await pool.query("UPDATE citas SET status = 'cancelada' WHERE id = $1", [cita.id]);
+                                fRes = { success: true, message: "Cita cancelada exitosamente." };
+                            }
+                        } catch (err) {
+                            console.error("❌ Error cancelando cita:", err);
+                            fRes = { success: false, error: "Error técnico al cancelar." };
+                        }
+                    } else if (callName === "reschedule_appointment") {
+                        const { telefono, nueva_fecha, nueva_hora } = callArgs;
+                        try {
+                            const result = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                            if (result.rows.length === 0) {
+                                fRes = { success: false, error: "No encontré ninguna cita activa con ese número de teléfono." };
                             } else {
                                 const cita = result.rows[0];
+                                const valErr = validateBusinessHours(nueva_fecha, nueva_hora);
                                 
-                                // Verificar empalme para la nueva hora
-                                const dateObj = new Date(`${nueva_fecha}T${nueva_hora}:00-07:00`);
-                                const isSunday = dateObj.getDay() === 0;
-                                const hourInt = parseInt(nueva_hora.split(':')[0], 10);
-                                const now = new Date();
-
-                                if (dateObj < now) {
-                                    fRes = { success: false, error: "La nueva fecha/hora ya pasó. Intenta con una fecha futura." };
-                                } else if (isSunday || hourInt < 9 || hourInt >= 19) {
-                                    fRes = { success: false, error: "El nuevo horario está fuera de horario de oficina o es domingo." };
+                                if (valErr) {
+                                    fRes = { success: false, error: valErr };
                                 } else {
-                                    const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                                    const conflictCheck = await pool.query(queryConflict, [nueva_fecha, nueva_hora]);
-                                
-                                    if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                        fRes = { success: false, error: "Ese nuevo horario está ocupado. Intenta con otra fecha/hora." };
+                                    const dateObj = new Date(`${nueva_fecha}T${nueva_hora}:00-07:00`);
+                                    const now = new Date();
+
+                                    if (dateObj < now) {
+                                        fRes = { success: false, error: "La nueva fecha/hora ya pasó. Intenta con una fecha futura." };
                                     } else {
-                                        if (cita.google_calendar_id) {
-                                            await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora);
+                                        const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                        const conflictCheck = await pool.query(queryConflict, [nueva_fecha, nueva_hora]);
+                                    
+                                        if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                            fRes = { success: false, error: "Ese nuevo horario está ocupado. Intenta con otra fecha/hora." };
+                                        } else {
+                                            if (cita.google_calendar_id) {
+                                                await actualizarEnGoogleCalendar(cita.google_calendar_id, nueva_fecha, nueva_hora).catch(e => console.error("Error reagendando en GC:", e.message));
+                                            }
+                                            await pool.query("UPDATE citas SET fecha = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
+                                            fRes = { success: true, message: "Cita reagendada exitosamente." };
+                                            console.log(`[WA Tool] Cita ${cita.id} reagendada exitosamente.`);
                                         }
-                                        await pool.query("UPDATE citas SET fecha = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
-                                        fRes = { success: true, message: "Cita reagendada exitosamente." };
-                                        console.log(`[WA Tool] Cita ${cita.id} reagendada exitosamente.`);
                                     }
                                 }
                             }

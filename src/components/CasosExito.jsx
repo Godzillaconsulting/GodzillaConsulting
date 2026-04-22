@@ -100,6 +100,7 @@ const CasosExito = () => {
     const [isDragging,      setIsDragging]      = useState(false);
     const [startX,          setStartX]          = useState(0);
     const [scrollLeftState, setScrollLeftState] = useState(0);
+    const [activeCategory,  setActiveCategory]  = useState('Todas');
 
     // ── Typewriter effect ──────────────────────────────────────────────────
     const rawTitle = isSpanish ? (nodeData.title || t('portfolio.title')) : t('portfolio.title');
@@ -169,8 +170,32 @@ const CasosExito = () => {
         return defaultCases;
     }, [nodeData]);
 
+    // ── Categorías únicas extraídas dinámicamente ─────────────────────────
+    const categories = useMemo(() => {
+        const cats = new Set(displayCases.map(c => c.category).filter(Boolean));
+        return ['Todas', ...Array.from(cats)];
+    }, [displayCases]);
+
+    // ── Casos filtrados por categoría activa ───────────────────────────────
+    const filteredCases = useMemo(() => {
+        if (activeCategory === 'Todas') return displayCases;
+        return displayCases.filter(c => c.category === activeCategory);
+    }, [displayCases, activeCategory]);
+
     // Duplicamos para el loop infinito del scroll
-    const allCases = useMemo(() => [...displayCases, ...displayCases], [displayCases]);
+    const allCases = useMemo(() => {
+        const base = filteredCases.length > 0 ? filteredCases : displayCases;
+        // Repetir suficientes veces para llenar la pantalla y hacer loop fluido
+        const times = Math.ceil(8 / base.length) + 1;
+        return Array.from({ length: times }, () => base).flat();
+    }, [filteredCases, displayCases]);
+
+    // Resetear scroll cuando cambia la categoría
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollLeft = 0;
+        }
+    }, [activeCategory]);
 
     // ── Auto-scroll (RAF) ──────────────────────────────────────────────────
     const animate = useCallback(() => {
@@ -242,6 +267,23 @@ const CasosExito = () => {
                     <p className="text-xl text-gray-400 font-medium max-w-2xl mx-auto">
                         {isSpanish ? (nodeData.subtitle || t('portfolio.subtitle')) : t('portfolio.subtitle')}
                     </p>
+                </div>
+
+                {/* ── Barra de filtros por categoría ───────────────────── */}
+                <div className="flex gap-2 flex-wrap justify-center mb-10">
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border transition-all duration-300 ${
+                                activeCategory === cat
+                                    ? 'bg-[#CC0000] border-[#CC0000] text-white shadow-[0_0_16px_rgba(204,0,0,0.5)] scale-105'
+                                    : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-[#CC0000]/60 hover:text-white'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Carrusel con fade lateral */}

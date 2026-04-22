@@ -1,6 +1,6 @@
 // ── Detección automática de campos de texto en draftData ───────────────────
 const NON_TEXT_KEYS = new Set(['ctaLink','enlace','link','href','url','src','elements','planFeaturesExtended']);
-const MEDIA_PATTERNS = /url|src|image|video|logo|icon|thumbnail|cover|photo|gif|bg|media|banner|foto/i;
+export const MEDIA_PATTERNS = /url|src|image|video|logo|icon|thumbnail|cover|photo|gif|bg|media|banner|foto/i;
 const SKIP_MEDIA = new Set(['ctaLink','enlace','link','href']);
 
 export function detectTextFields(data) {

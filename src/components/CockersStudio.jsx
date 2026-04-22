@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
-import VideoEditorModal from './VideoEditorModal';
+import IntegratedVideoEditor from './VideoEditorModal';
 const COMMUNITY_GALLERY_POOL = [
     { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
     { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
@@ -1350,7 +1350,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             <div className="flex-1 bg-black relative flex flex-col overflow-hidden">
                 
                 {/* STUDIO CONTENT (Galería y Live Slots) */}
-                <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all ${showEditorModal ? 'h-[40%] min-h-[300px]' : 'flex-1'}`}>
+                <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all h-[45%] min-h-[350px]`}>
                 
                 {/* Cabecera del Lienzo */}
                 <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-[#000000cc] to-transparent">
@@ -1361,13 +1361,6 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     </h2>
                     
                     <div className="flex gap-3">
-                        <button 
-                            onClick={() => setShowEditorModal(true)} 
-                            className="text-xs font-black uppercase text-purple-400 hover:text-white border border-purple-500/50 hover:bg-purple-600 px-4 py-2 rounded-full transition-all flex items-center gap-2 bg-purple-900/20 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                            Abrir Editor Mágico
-                        </button>
                         <button onClick={() => {
                             const pendings = queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved');
                             if(pendings.length > 0) setSelectedDraft(pendings[0]);
@@ -1930,16 +1923,12 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 </div> {/* FIN STUDIO CONTENT */}
 
                 {/* VIDEO EDITOR (Split bottom) */}
-                {showEditorModal && (
-                    <div className="h-[60%] border-t border-neutral-800 bg-[#0a0a09] flex flex-col z-40 relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-                        <VideoEditorModal 
-                            isOpen={showEditorModal} 
-                            onClose={() => {setShowEditorModal(false); setEditorVideoSrc('');}} 
-                            initialVideoUrl={editorVideoSrc}
-                            queue={queue}
-                        />
-                    </div>
-                )}
+                <div className="flex-1 min-h-[400px] border-t-2 border-[#CC0000]/50 bg-[#0a0a09] flex flex-col z-40 relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                    <IntegratedVideoEditor 
+                        initialVideoUrl={editorVideoSrc}
+                        queue={queue}
+                    />
+                </div>
             </div> {/* FIN RIGHT MAIN CANVAS */}
 
             {/* Modal: Crear Filtro Personalizado */}

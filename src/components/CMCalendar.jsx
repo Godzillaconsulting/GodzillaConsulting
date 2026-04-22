@@ -87,7 +87,7 @@ const STATUS_META = {
 };
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────
-export default function CMCalendar({ adminProfile }) {
+export default React.memo(function CMCalendar({ adminProfile }) {
     const navigate = useNavigate();
     const canCreate = canAssign(adminProfile);
     const currentUser = adminProfile?.username || 'Usuario';
@@ -2014,4 +2014,4 @@ export default function CMCalendar({ adminProfile }) {
         </div>
 
     );
-}
+});

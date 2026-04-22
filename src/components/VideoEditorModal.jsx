@@ -25,7 +25,7 @@ const initialEditorData = [
   }
 ];
 
-export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, queue = [] }) {
+export default function IntegratedVideoEditor({ initialVideoUrl, queue = [] }) {
     const [editorData, setEditorData] = useState(initialEditorData);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isBotThinking, setIsBotThinking] = useState(false);
@@ -56,7 +56,6 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
     const displayVideos = [...savedVideos, ...localUploads];
 
     useEffect(() => {
-        if (!isOpen) return;
         if (initialVideoUrl) {
             setLocalVideoUrl(initialVideoUrl);
             setEditorData([
@@ -71,7 +70,7 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
               { id: 'track-text', actions: [] }
             ]);
         }
-    }, [isOpen, initialVideoUrl]);
+    }, [initialVideoUrl]);
 
     useEffect(() => {
         let animationFrameId;
@@ -338,14 +337,8 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <AnimatePresence>
-            <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="w-full h-full flex flex-col bg-[#080808] absolute inset-0 z-50"
-            >
+        <div className="flex-1 w-full flex flex-col bg-[#080808] border-t border-red-900/30 overflow-hidden relative">
                 {/* Cabecera del Editor */}
                 <div className="w-full h-16 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-3">
@@ -579,7 +572,6 @@ export default function VideoEditorModal({ isOpen, onClose, initialVideoUrl, que
                     </div>
 
                 </div>
-            </motion.div>
-        </AnimatePresence>
+            </div>
     );
 }

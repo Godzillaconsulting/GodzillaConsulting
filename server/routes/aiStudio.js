@@ -3,7 +3,7 @@ import multer from 'multer';
 import os from 'os';
 
 const upload = multer({ dest: os.tmpdir() });
-import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters, magicEditAnalysis } from '../controllers/aiStudioController.js';
+import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters, magicEditAnalysis, generateMonthlyPlan } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM, requireCMOrCockers } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
 
@@ -23,6 +23,7 @@ router.post('/magicedit', authenticateToken, upload.single('audioBlob'), magicEd
 router.get('/inspiration', authenticateToken, getInspirationGallery);
 
 router.get('/dynamic-filters', authenticateToken, getDynamicFilters);
+router.post('/generate-monthly-plan', authenticateToken, generateMonthlyPlan);
 
 // ==========================================
 // In-House Cluster (Sora / Python Local Bridge)

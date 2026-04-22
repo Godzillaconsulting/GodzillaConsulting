@@ -3,7 +3,7 @@ import { MessageSquare, X, Send } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
-export default function GoyiAdmin() {
+export default React.memo(function GoyiAdmin() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         { role: 'model', text: '¡Hola Jefes! Soy Goyi, su Asistente Administrativo Experto. ¿En qué puedo optimizar el flujo de trabajo o afilar copys el día de hoy?' }
@@ -168,4 +168,4 @@ export default function GoyiAdmin() {
             )}
         </>
     );
-}
+});

@@ -9,6 +9,8 @@ import AdminProfile from './AdminProfile';
 import CockersStudio from './CockersStudio';
 import CMCalendar from './CMCalendar';
 import GoyiAdmin from './GoyiAdmin';
+import AutomationFlow from './AutomationFlow';
+import AIContentPlanner from './AIContentPlanner';
 import BugReporterModal from './BugReporterModal';
 import DBStudioPanel from './DBStudioPanel';
 import BugTrackerUI from './BugTrackerUI';
@@ -581,9 +583,13 @@ export default function AdminStudio() {
    className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
    <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
    </button>
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/video-editor'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='video_editor' ?'bg-gradient-to-r from-purple-800 to-indigo-900 text-white border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-900/40 hover:text-white' }`}>
-   <span className="text-xs mr-2 drop-shadow-sm">✂️</span> Editor de Video
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/automation-flow'); setSelectedNodeId(null); }}
+   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='automation-flow' ?'bg-gradient-to-r from-emerald-800 to-teal-900 text-white border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.4)]' :'text-neutral-300 border-transparent hover:border-emerald-500/40 hover:bg-emerald-900/40 hover:text-white' }`}>
+   <span className="text-xs mr-2 drop-shadow-sm">⚡</span> Flujo Automático
+   </button>
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/ai-planner'); setSelectedNodeId(null); }}
+   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ai-planner' ?'bg-gradient-to-r from-purple-800 to-fuchsia-900 text-white border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-900/40 hover:text-white' }`}>
+   <span className="text-xs mr-2 drop-shadow-sm">🤖</span> Planificador IA
    </button>
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
@@ -660,8 +666,8 @@ export default function AdminStudio() {
   <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
   </button>
-  <div style={{ display: (!isAnalyticsMode && (activeSection === 'social_studio' || activeSection === 'video_editor')) ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
-      <CockersStudio adminProfile={adminProfile} forceOpenEditor={activeSection === 'video_editor'} />
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'social_studio') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <CockersStudio adminProfile={adminProfile} forceOpenEditor={false} />
   </div>
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
@@ -671,8 +677,12 @@ export default function AdminStudio() {
   <NewsletterPanel />
   ) : activeSection ==='social' ? (
       <CMCalendar adminProfile={adminProfile} />
-) : (activeSection === 'social_studio' || activeSection === 'video_editor') ? (
+) : activeSection === 'social_studio' ? (
       null /* Renderizado persistentemente arriba para evitar pérdida de estado de renders IA */
+  ) : activeSection === 'automation-flow' ? (
+      <AutomationFlow />
+  ) : activeSection === 'ai-planner' ? (
+      <AIContentPlanner adminProfile={adminProfile} />
   ) : activeSection === 'db_studio' ? (
       <DBStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'ceo_estudio' ? (

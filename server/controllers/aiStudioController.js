@@ -503,38 +503,6 @@ export const getDynamicFilters = async (req, res) => {
         // Fallback a unos muy creativos por si falla
         res.status(500).json({ success: false, error: error.message });
     }
-};
-
-export const generateScriptChat = async (req, res) => {
-    try {
-        const { message, chatHistory } = req.body;
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
-        }
-
-        console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        
-        let systemInstruction = "Eres Asistente de IA. Reglas estrictas: 1. NUNCA expongas tus pensamientos, no uses etiquetas para pensar ni detalles de razonamiento. 2. NO saludes, no digas 'Claro', no hagas preguntas. 3. TU ÚNICA RESPUESTA será dar el Prompt Fotográfico o Guion solicitado. Sé creativo y detallado.";
-
-        const ai = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: systemInstruction 
-        });
-        
-        let history = [];
-        if (chatHistory && chatHistory.length > 0) {
-            history = chatHistory.map(m => ({
-                role: m.role === 'ai' ? 'model' : 'user',
-                parts: [{ text: m.text }]
-            }));
-        }
-
-        const chat = ai.startChat({ history });
-        const responseGenAI = await chat.sendMessage(message);
-        let aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
-        
-        // Strip out any thinking / thought blocks produced by new reasoning models
         aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
         aiResponse = aiResponse.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
 

@@ -284,10 +284,16 @@ export default function AdminStudio() {
 
  // Sync draftData → preview
  useEffect(() => {
- if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
- else setPreviewOverride(null, null);
- return () => setPreviewOverride(null, null);
+   const timeoutId = setTimeout(() => {
+     if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
+     else setPreviewOverride(null, null);
+   }, 150); // Debounce ligero para evitar lag masivo al escribir
+   return () => clearTimeout(timeoutId);
  }, [draftData, selectedNodeId]);
+
+ useEffect(() => {
+   return () => setPreviewOverride(null, null);
+ }, []);
 
  const selectedNode = nodes.find(n => n.id === selectedNodeId);
 

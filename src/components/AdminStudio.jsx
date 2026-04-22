@@ -893,7 +893,7 @@ export default function AdminStudio() {
           const next = { ...prev };
           Object.keys(next).forEach(k => {
             const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-            if (m && m[1] === prefix && m[2] === num) delete next[k];
+            if (m && m[1] === prefix && m[2] === num) next[k] = '';
           });
           return next;
         });
@@ -952,7 +952,7 @@ export default function AdminStudio() {
                 const next = { ...prev };
                 Object.keys(next).forEach(k => {
                   const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-                  if (m && m[1] === grpPfx && m[2] === grpNum) delete next[k];
+                  if (m && m[1] === grpPfx && m[2] === grpNum) next[k] = '';
                 });
                 return next;
               });

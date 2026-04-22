@@ -48,15 +48,8 @@ const LOGO_BY_NAME = {
  *    no existir en el servidor de media.
  */
 function getLogoSrc(item) {
-    // 1. Prioridad máxima: resolver por nombre del cliente
-    if (item.nombre && typeof item.nombre === 'string') {
-        const nameLc = item.nombre.toLowerCase().trim();
-        for (const [keyword, logo] of Object.entries(LOGO_BY_NAME)) {
-            if (nameLc.includes(keyword)) return logo;
-        }
-    }
-
-    // 2. Logo subido manualmente por el usuario vía el admin (URL de /api/media/file/)
+    // 1. Prioridad máxima: URL subida manualmente por el admin (/api/media/file/)
+    //    Esto permite reemplazar el logo por defecto de Vite con uno personalizado.
     if (item.logoSrc && typeof item.logoSrc === 'string') {
         const lc = item.logoSrc.toLowerCase().trim();
         if (
@@ -64,7 +57,15 @@ function getLogoSrc(item) {
             lc.startsWith('blob:') ||
             lc.startsWith('data:')
         ) {
-            return item.logoSrc;
+            return `https://bot.godzillaconsulting.ai${item.logoSrc}`;
+        }
+    }
+
+    // 2. Resolver por nombre del cliente → import estático de Vite
+    if (item.nombre && typeof item.nombre === 'string') {
+        const nameLc = item.nombre.toLowerCase().trim();
+        for (const [keyword, logo] of Object.entries(LOGO_BY_NAME)) {
+            if (nameLc.includes(keyword)) return logo;
         }
     }
 
@@ -81,8 +82,7 @@ const defaultCases = [
     { _id: 'default-5', orden: 5, nombre: 'Artika',     category: 'Heladerías',              link: '' },
     { _id: 'default-6', orden: 6, nombre: 'Grupo MRG',  category: 'Banquetes y Eventos',     link: '' },
     { _id: 'default-7', orden: 7, nombre: 'Nutrisa',    category: 'Sector Alimenticio',      link: '' },
-    { _id: 'default-8', orden: 8, nombre: 'San Antonio',category: 'Sector Médico',           link: '' },
-    { _id: 'default-9', orden: 9, nombre: 'Don Elote',  category: 'Sector Alimenticio',      link: '' },
+    { _id: 'default-8', orden: 8, nombre: 'Don Elote',  category: 'Sector Alimenticio',      link: '' },
 ];
 
 const SPEED = 0.6; // px por frame

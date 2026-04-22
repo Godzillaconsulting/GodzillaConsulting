@@ -16,7 +16,7 @@ export default function PanelMaestroPanel({ adminProfile }) {
 
     const usernameStr = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
-    const canManageUsers = isSuperAdmin || adminProfile?.role === 'admin' || ['jareg', 'oscar', 'godzilla_admin'].includes(usernameStr);
+    const canManageUsers = isSuperAdmin || adminProfile?.role === 'admin' || ['jareg', 'oscar', 'godzilla_admin', 'dani'].includes(usernameStr);
 
     const fetchTeamData = async () => {
         setLoadingTeam(true);
@@ -304,7 +304,7 @@ export default function PanelMaestroPanel({ adminProfile }) {
                                                 </td>
                                                 <td className="px-6 py-4 text-right space-x-2">
                                                     <button onClick={() => handleResetPassword(u.id, u.username)} className="px-3 py-1.5 bg-black hover:bg-neutral-800 border border-neutral-800 hover:border-blue-500 text-blue-400 rounded-lg font-bold text-[10px] uppercase tracking-widest transition shadow-sm">Reset Pass</button>
-                                                    {u.id !== adminProfile?.id && (u.username !== 'JareG' || adminProfile?.id === 2) && (
+                                                    {u.id !== adminProfile?.id && (u.username !== 'JareG' || adminProfile?.id === 2) && usernameStr !== 'dani' && (
                                                         <button onClick={() => handleDeleteUser(u.id)} className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500 border border-rose-500/30 hover:border-rose-500 text-rose-500 hover:text-white rounded-lg font-bold text-[10px] uppercase tracking-widest transition shadow-sm">Eliminar</button>
                                                     )}
                                                 </td>

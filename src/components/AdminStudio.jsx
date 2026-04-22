@@ -269,18 +269,20 @@ export default function AdminStudio() {
  // ── Permisos por Rol Avanzados ──────────────────────────────────────────
  const username = adminProfile?.username?.toLowerCase() || '';
  const isSuperAdmin = adminProfile?.is_superadmin === true;
- // JareG y Alex son God-level: acceso total igual que el CEO/superadmin
- const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || username === 'alex'; 
+ // JareG, Godzilla_admin, Dani y Oscar ven absolutamente todo (incluyendo DB, Master, SQL)
+ const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || ['dani', 'oscar'].includes(username); 
  
  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
- const isEditor = adminProfile?.role === 'admin' || isSuperAdmin || username === 'jareg' || username === 'alex';
+ 
+ // Editores pueden modificar el sitio principal y ver Estudio IA, etc. (Alex y Judith caen aquí)
+ const isEditor = adminProfile?.role === 'admin' || isCEO || ['alex', 'judith'].includes(username);
  const canEditSite = isEditor;
 
  // Lógica explícita de vistas
- const canSeeDBEstudio    = isCEO || ['dani'].includes(username);
- const canSeePanelMaestro = isCEO || ['oscar', 'dani'].includes(username);
- const canSeeCeoEstudio   = isCEO || ['judith', 'alex'].includes(username);
- const canSeeSqlAtaques   = isCEO || ['dani'].includes(username);
+ const canSeeDBEstudio    = isCEO;
+ const canSeePanelMaestro = isCEO;
+ const canSeeSqlAtaques   = isCEO;
+ const canSeeCeoEstudio   = isEditor;
 
  // Sync draftData → preview
  useEffect(() => {

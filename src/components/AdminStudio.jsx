@@ -17,7 +17,7 @@ import PanelMaestroPanel from './PanelMaestroPanel';
 import SqlAtaquesPanel from './SqlAtaquesPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
-import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields } from '../utils/editorParser';
+import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields, MEDIA_PATTERNS } from '../utils/editorParser';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 function EditorField({ fieldKey, onHover, children }) {
@@ -872,7 +872,25 @@ export default function AdminStudio() {
  </p>
  {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => (
  <div key={num} className="bg-neutral-900 rounded-xl p-3 space-y-2 border border-neutral-800">
- <p className="text-[10px] text-neutral-500 font-bold">#{num}</p>
+  <div className="flex items-center justify-between">
+    <p className="text-[10px] text-neutral-500 font-bold">#{num}</p>
+    <button
+      title="Eliminar este elemento por completo"
+      onClick={() => {
+        setDraftData(prev => {
+          const next = { ...prev };
+          Object.keys(next).forEach(k => {
+            const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+            if (m && m[1] === prefix && m[2] === num) delete next[k];
+          });
+          return next;
+        });
+      }}
+      className="px-2 py-1 text-[10px] font-black text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-all flex items-center gap-1"
+    >
+      Eliminar
+    </button>
+  </div>
  {Object.entries(fields).filter(([k]) => k !=='_keys').map(([field, val]) => {
  const originalKey = fields._keys[field];
  return (
@@ -904,34 +922,45 @@ export default function AdminStudio() {
  Media detectada ({mediaFields.length} slots)
  </p>
 
- {mediaFields.map(([key, val]) => (
- <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
- <MediaPicker
- label={`${key.toLowerCase().includes('video') ?'🎬' : key.toLowerCase().includes('logo') ?'🏷️' :'🖼️'} ${toLabel(key)}`}
- value={val ||''}
- onChange={url => change(key, url)}
- accept={key.toLowerCase().includes('video') ?'video' :'all'}
- />
- </EditorField>
- ))}
-
- {selectedNodeId === 'hero' && (
-      <button 
-          onClick={() => {
-              let max = 0;
-              Object.keys(draftData).forEach(k => {
-                  if(k.startsWith('logoUrl')) {
-                      const num = parseInt(k.replace('logoUrl', '')) || 0;
-                      if (num > max) max = num;
-                  }
+  {mediaFields.map(([key, val]) => {
+  const grpMatch = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+  return (
+  <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+    <div className="space-y-1">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-bold text-yellow-500">
+          {toLabel(key)}
+        </span>
+        {grpMatch && (
+          <button
+            title="Eliminar este elemento completo"
+            onClick={() => {
+              const [, grpPfx, grpNum] = grpMatch;
+              setDraftData(prev => {
+                const next = { ...prev };
+                Object.keys(next).forEach(k => {
+                  const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+                  if (m && m[1] === grpPfx && m[2] === grpNum) delete next[k];
+                });
+                return next;
               });
-              change(`logoUrl${max + 1}`, '');
-          }}
-          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
-      >
-          ➕ Añadir nuevo logo
-      </button>
-  )}
+            }}
+            className="px-2 py-1 text-[10px] font-black text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-all flex items-center gap-1"
+          >
+            Eliminar
+          </button>
+        )}
+      </div>
+      <MediaPicker
+        label={``}
+        value={val ||''}
+        onChange={url => change(key, url)}
+        accept={key.toLowerCase().includes('video') ?'video' :'all'}
+      />
+    </div>
+  </EditorField>
+  );
+  })}
 
   {selectedNodeId === 'portafolio' && (
       <button 

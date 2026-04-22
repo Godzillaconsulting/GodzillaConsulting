@@ -3,24 +3,53 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
 import IntegratedVideoEditor from './VideoEditorModal';
-const COMMUNITY_GALLERY_POOL = [
-    { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=700&auto=format&fit=crop', prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=700&auto=format&fit=crop', prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
-    { img: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=700&auto=format&fit=crop', prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=700&auto=format&fit=crop', prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=700&auto=format&fit=crop', prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
-    { img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=700&auto=format&fit=crop', prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?q=80&w=700&auto=format&fit=crop', prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
-    { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=700&auto=format&fit=crop', prompt: 'Dark moody minimalist interior architecture, brutalist concrete walls, warm hidden led strips, 8k render, octane render', tag: 'Brutalist Arch', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?q=80&w=700&auto=format&fit=crop', prompt: 'Macro shot of a glowing neon jellyfish in deep dark ocean, bioluminescence, highly detailed, national geographic 8k', tag: 'Bioluminescence', model: 'Gemini 3 Pro' },
-    { img: 'https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=700&auto=format&fit=crop', prompt: 'Synthwave outrun grid sunset, glowing magenta sun, vectorized retro horizon, 80s arcade style aesthetics', tag: 'Synthwave 80s', model: 'Gemini 3.1 Flash' },
-    { img: 'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?q=80&w=700&auto=format&fit=crop', prompt: 'Mystical dark forest with glowing mystical mushrooms, ethereal blue fog, cinematic fantasy concept art, highly detailed', tag: 'Dark Fantasy', model: 'Sora LCM' },
-    { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=700&auto=format&fit=crop', prompt: 'High key beauty portrait, dripping gold paint on skin, macro lens, incredibly detailed skin texture, ultra realistic', tag: 'Gold Beauty', model: 'Imagen 4 Ultra' },
-    { img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=700&auto=format&fit=crop', prompt: 'Hardware motherboard glowing with neon blue and pink laser data streams, cyberpunk tech core, macro electronics', tag: 'Tech Core', model: 'Gemini 3 Pro' },
-    { img: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=700&auto=format&fit=crop', prompt: 'Abstract corporate 3d glassmorphism UI elements floating against dark space, frosted glass texture, modern web3 design', tag: 'Glassmorphism', model: 'Imagen 4 Ultra' }
+const RAW_PROMPTS = [
+    { prompt: 'Liquid metallic fluid art, dark neon chromatic aberration, hyperrealistic 8k uhd, dslr', tag: 'Liquid Metal', model: 'Imagen 4 Ultra' },
+    { prompt: 'Epic aerial planet view from space, milky way background, Unreal Engine 5, volumetric clouds, 8k', tag: 'Space Epic', model: 'Sora LCM' },
+    { prompt: 'Neon cyberpunk street at night, rainy puddles, blade runner cinematic reflection, 35mm lens', tag: 'Cyberpunk Calles', model: 'Imagen 3 Ultra' },
+    { prompt: 'Commercial macro product shot, f/2.8 aperture, soft studio lighting, blurred bokeh background, ultra detailed label', tag: 'Macro Producto', model: 'Imagen 4 Ultra' },
+    { prompt: 'Aerial drone shot over icy mountains at golden hour, volumetric rays, unreal engine, national geographic style', tag: 'Drone Épico', model: 'Sora LCM' },
+    { prompt: 'Abstract colorful geometric minimal art, sharp lines, vibrant complementary palette, dark background', tag: 'Geométrico', model: 'Imagen 4 Ultra' },
+    { prompt: 'Studio portrait editorial fashion, contrasty rim lighting, film grain, Hasselblad camera, fashion magazine cover', tag: 'Editorial Fashion', model: 'Imagen 3 Ultra' },
+    { prompt: 'Majestic mountain landscape, 35mm analog film photography, natural golden hour, highly textured raw photo', tag: '35mm Film', model: 'Sora LCM' },
+    { prompt: 'Futuristic cyberspace holographic interface, neon data streams, blue tones, dark environment, matrix style', tag: 'Cyber Interface', model: 'Imagen 4 Ultra' },
+    { prompt: 'Dark moody minimalist interior architecture, brutalist concrete walls, warm hidden led strips, 8k render, octane render', tag: 'Brutalist Arch', model: 'Imagen 4 Ultra' },
+    { prompt: 'Macro shot of a glowing neon jellyfish in deep dark ocean, bioluminescence, highly detailed, national geographic 8k', tag: 'Bioluminescence', model: 'Gemini 3 Pro' },
+    { prompt: 'Synthwave outrun grid sunset, glowing magenta sun, vectorized retro horizon, 80s arcade style aesthetics', tag: 'Synthwave 80s', model: 'Gemini 3.1 Flash' },
+    { prompt: 'Mystical dark forest with glowing mystical mushrooms, ethereal blue fog, cinematic fantasy concept art, highly detailed', tag: 'Dark Fantasy', model: 'Sora LCM' },
+    { prompt: 'High key beauty portrait, dripping gold paint on skin, macro lens, incredibly detailed skin texture, ultra realistic', tag: 'Gold Beauty', model: 'Imagen 4 Ultra' },
+    { prompt: 'Hardware motherboard glowing with neon blue and pink laser data streams, cyberpunk tech core, macro electronics', tag: 'Tech Core', model: 'Gemini 3 Pro' },
+    { prompt: 'Abstract corporate 3d glassmorphism UI elements floating against dark space, frosted glass texture, modern web3 design', tag: 'Glassmorphism', model: 'Imagen 4 Ultra' },
+    { prompt: 'Cinematic shot of a neon glowing samurai standing in a rainy tokyo street, cyberpunk aesthetic, 8k resolution', tag: 'Neon Samurai', model: 'Sora LCM' },
+    { prompt: 'Ultra realistic macro shot of an eye with a galaxy reflecting in the pupil, cosmic lighting, 8k', tag: 'Cosmic Eye', model: 'Gemini 3 Pro' },
+    { prompt: 'A glowing magical book floating in a dark library, dust motes in light rays, fantasy concept art', tag: 'Magic Book', model: 'Imagen 4 Ultra' },
+    { prompt: 'Close up of a futuristic sports car wheel glowing with neon blue LED lines, carbon fiber texture', tag: 'Cyber Car', model: 'Imagen 3 Ultra' },
+    { prompt: 'Holographic translucent skull glowing with RGB colors, dark background, 3d render octane', tag: 'RGB Skull', model: 'Imagen 4 Ultra' },
+    { prompt: 'A massive floating sci-fi city above the clouds, god rays, epic scale, concept art', tag: 'Cloud City', model: 'Sora LCM' },
+    { prompt: 'Gothic cathedral interior lit by bioluminescent plants, eerie green glow, highly detailed', tag: 'Bio Gothic', model: 'Gemini 3.1 Flash' },
+    { prompt: 'Retro 90s anime style vhs glitch aesthetic portrait of a hacker girl, CRT scanlines', tag: 'VHS Anime', model: 'Imagen 3 Ultra' },
+    { prompt: 'Hyper detailed clockwork steampunk insect, brass and copper gears, macro photography', tag: 'Steampunk Bug', model: 'Imagen 4 Ultra' },
+    { prompt: 'Neon signs reflected in a puddle, dark rainy night, cinematic lighting, 35mm lens', tag: 'Neon Puddle', model: 'Sora LCM' },
+    { prompt: 'A black hole eating a star, interstellar gargantua style, realistic physics render, 8k', tag: 'Black Hole', model: 'Gemini 3 Pro' },
+    { prompt: 'Minimalist zen garden with glowing floating rocks, serene atmosphere, unreal engine 5', tag: 'Zen Rocks', model: 'Imagen 4 Ultra' },
+    { prompt: 'A futuristic android repairing itself, Sparks flying, cinematic blue and orange lighting', tag: 'Android Fix', model: 'Sora LCM' },
+    { prompt: 'Macro shot of morning dew on a spider web, rainbow refraction, hyper realistic', tag: 'Dew Web', model: 'Imagen 3 Ultra' },
+    { prompt: 'A giant mecha robot resting in a lush overgrown forest, ancient ruins, studio ghibli vibe', tag: 'Forest Mecha', model: 'Imagen 4 Ultra' },
+    { prompt: 'Vaporwave marble statue with pink and cyan grid, palm trees, 80s aesthetic', tag: 'Vaporwave', model: 'Gemini 3.1 Flash' },
+    { prompt: 'A glowing crystal cave with underground river, bioluminescent blue water, fantasy art', tag: 'Crystal Cave', model: 'Sora LCM' },
+    { prompt: 'Close up of a DJ turntable with neon soundwaves bursting out, energetic club vibe', tag: 'Neon DJ', model: 'Imagen 4 Ultra' },
+    { prompt: 'A cute robot dog playing with a glowing ball, futuristic living room, pixar style 3d render', tag: 'Robo Dog', model: 'Gemini 3 Pro' },
+    { prompt: 'Dark fantasy knight in black armor with a glowing red sword, ash falling, cinematic', tag: 'Dark Knight', model: 'Imagen 3 Ultra' },
+    { prompt: 'A floating island made of glowing geometric crystals, low poly art style, vibrant colors', tag: 'Low Poly Island', model: 'Imagen 4 Ultra' },
+    { prompt: 'Macro of a frozen soap bubble with ice crystals forming, winter magic, 8k resolution', tag: 'Frozen Bubble', model: 'Sora LCM' },
+    { prompt: 'A futuristic bullet train speeding through a neon megacity, motion blur, cyberpunk', tag: 'Bullet Train', model: 'Gemini 3.1 Flash' },
+    { prompt: 'An astronaut floating in deep space holding a glowing glowing galaxy orb, cinematic lighting', tag: 'Astro Orb', model: 'Imagen 4 Ultra' }
 ];
+
+const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
+    img: `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=700&height=450&nologo=true&model=turbo&seed=${i * 9999}`,
+    ...p
+}));
 
 export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor = false }) {
     const [queue, setQueue] = useState([]);

@@ -269,11 +269,11 @@ export default function AdminStudio() {
  // ── Permisos por Rol Avanzados ──────────────────────────────────────────
  const username = adminProfile?.username?.toLowerCase() || '';
  const isSuperAdmin = adminProfile?.is_superadmin === true;
- // JareG es God-level: acceso total igual que el CEO/superadmin
- const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg'; 
+ // JareG y Alex son God-level: acceso total igual que el CEO/superadmin
+ const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || username === 'alex'; 
  
  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
- const isEditor = adminProfile?.role === 'admin' || isSuperAdmin || username === 'jareg';
+ const isEditor = adminProfile?.role === 'admin' || isSuperAdmin || username === 'jareg' || username === 'alex';
  const canEditSite = isEditor;
 
  // Lógica explícita de vistas

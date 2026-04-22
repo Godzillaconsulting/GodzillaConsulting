@@ -91,7 +91,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
-    const isSuperAdmin = adminProfile?.is_superadmin;
+    const isSuperAdmin = adminProfile?.is_superadmin || adminProfile?.username?.toLowerCase() === 'alex';
 
     // Galería Comunitaria Dinámica
     const [communityGallery, setCommunityGallery] = useState(() => {

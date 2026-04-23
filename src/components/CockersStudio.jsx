@@ -1794,6 +1794,13 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 </div>
                                 <div className="flex items-center gap-3 flex-wrap justify-end">
                                     <button 
+                                        onClick={() => { setEditorVideoSrc(''); setShowEditorModal(true); }}
+                                        className="group bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-600 hover:to-pink-600 text-white border border-purple-500/50 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                                    >
+                                        <svg className="group-hover:rotate-12 transition-transform" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                                        Abrir Editor Pro
+                                    </button>
+                                    <button 
                                         onClick={fetchDynamicInspiration}
                                         disabled={isFetchingInspiration}
                                         className="group bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"

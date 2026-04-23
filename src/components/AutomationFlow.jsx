@@ -208,6 +208,27 @@ export default function AutomationFlow() {
         setSelectedNodeId(id);
     };
 
+    const handleAddPresetNode = (preset) => {
+        const id = Date.now().toString();
+        const viewX = canvasRef.current ? canvasRef.current.scrollLeft + 300 : 300;
+        const viewY = canvasRef.current ? canvasRef.current.scrollTop + 200 : 200;
+
+        setNodes([...nodes, {
+            id, 
+            type: preset.title === 'Planificador IA' ? 'trigger' : 'action', 
+            title: preset.title, 
+            subtitle: preset.subtitle, 
+            icon: preset.icon, 
+            x: viewX + (Math.random() * 50), 
+            y: viewY + (Math.random() * 50), 
+            color: preset.color, 
+            pm2_process: preset.pm2_process 
+        }]);
+        setSelectedNodeId(id);
+        setShowNodeMenu(false);
+    };
+
+
     const handleRestartProcess = async (processName) => {
         if(!processName) return;
         try {
@@ -388,12 +409,13 @@ export default function AutomationFlow() {
                                 <div className="max-h-64 overflow-y-auto p-1">
                                     {[
                                         { title: 'Planificador IA', subtitle: 'Generador (Origen)', icon: 'Wand2', color: '#a855f7', pm2_process: '' },
-                                        { title: 'Generador Visual', subtitle: 'Imagen 3 API', icon: 'Image', color: '#3b82f6', pm2_process: 'image-generation' },
-                                        { title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', color: '#f59e0b', pm2_process: 'video-generation' },
-                                        { title: 'Tarea de Studio', subtitle: 'CEO Estudio Sync', icon: 'CheckSquare', color: '#10b981', pm2_process: 'studio-task' },
+                                        { title: 'Generador Visual', subtitle: 'Imagen 3 API', icon: 'Image', color: '#3b82f6', pm2_process: '' },
+                                        { title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', color: '#f59e0b', pm2_process: '' },
+                                        { title: 'Tarea de Studio', subtitle: 'CEO Estudio Sync', icon: 'CheckSquare', color: '#10b981', pm2_process: '' },
                                         { title: 'Email Worker', subtitle: 'Notificación Equipo', icon: 'Mail', color: '#f97316', pm2_process: 'email-worker' },
                                         { title: 'WhatsApp Bot', subtitle: 'Alerta WA', icon: 'Smartphone', color: '#10b981', pm2_process: 'whatsapp-bot' },
-                                        { title: 'Base de Datos', subtitle: 'Persistencia DB', icon: 'Database', color: '#64748b', pm2_process: 'postgres' }
+                                        { title: 'Base de Datos', subtitle: 'Persistencia DB', icon: 'Database', color: '#64748b', pm2_process: '' }
+
                                     ].map((preset, idx) => (
                                         <button 
                                             key={idx}
@@ -544,7 +566,10 @@ export default function AutomationFlow() {
                                         }
                                     })()
                                 ) : (
-                                    <p className="text-[10px] text-neutral-500">No vinculado a PM2.</p>
+                                    <>
+                                        <p className="text-[10px] text-emerald-400 font-bold mb-1">🟢 ONLINE - Integración Nativa</p>
+                                        <p className="text-[9px] text-emerald-500/60 leading-tight">Este nodo se ejecuta directamente dentro del núcleo de Godzilla Server sin requerir un microservicio externo.</p>
+                                    </>
                                 )}
                             </div>
                         </div>

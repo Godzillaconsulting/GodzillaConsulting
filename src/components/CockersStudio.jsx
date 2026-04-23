@@ -205,6 +205,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     // Configuración AI
     const [finalPrompt, setFinalPrompt] = useState('');
     const [selectedFilters, setSelectedFilters] = useState([]);
+    const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
     const [showCustomFilterModal, setShowCustomFilterModal] = useState(false);
     const [customFilterForm, setCustomFilterForm] = useState({ label: '', lens: '', lighting: '', grain: '', mood: '', extra: '' });
 
@@ -1164,16 +1165,23 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 {/* Estilos Fotográficos / Filtros */}
                                 {/* Estilos Fotográficos / Filtros — Banco Profesional */}
                                 <div className="mt-2 pt-2 border-t border-white/5">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-2 flex items-center justify-between">
-                                        Filtros de Estilo
+                                    <div 
+                                        className="flex items-center justify-between mb-2 cursor-pointer group"
+                                        onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                                    >
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-2 group-hover:text-white transition-colors">
+                                            {isFiltersExpanded ? '▼' : '▶'} Filtros de Estilo e IA
+                                        </p>
                                         <span className="flex items-center gap-1.5">
                                             <span className="text-[8px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{selectedFilters.length} activos</span>
-                                            <button onClick={() => setSelectedFilters([])} className="text-[7px] text-neutral-600 hover:text-red-400 transition-colors">Limpiar</button>
+                                            <button onClick={(e) => { e.stopPropagation(); setSelectedFilters([]); }} className="text-[7px] text-neutral-600 hover:text-red-400 transition-colors">Limpiar</button>
                                         </span>
-                                    </p>
+                                    </div>
 
-                                    {/* ─ Base Fija ─ */}
-                                    <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 mt-1">📐 Lentes / Realismo / Arte</p>
+                                    {isFiltersExpanded && (
+                                        <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                                            {/* ─ Base Fija ─ */}
+                                            <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 mt-1">📐 Lentes / Realismo / Arte</p>
                                     <div className="flex flex-wrap gap-1.5 mb-3">
                                         {BASE_PHOTO_FILTERS.map(filter => {
                                             const isActive = selectedFilters.includes(filter.prompt);
@@ -1273,6 +1281,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                     </button>
                                                 );
                                             })}
+                                        </div>
+                                    )}
                                         </div>
                                     )}
                                 </div>

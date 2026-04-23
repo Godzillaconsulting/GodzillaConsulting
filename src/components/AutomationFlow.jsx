@@ -885,7 +885,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             <div className="pt-3 mt-3 border-t border-neutral-800">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-[10px] font-bold text-yellow-400 uppercase flex items-center gap-1.5"><Settings2 className="w-3 h-3"/> Ajustes Obligatorios</label>
-                <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">Admite {{ $json.var }}</span>
+                <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">Admite {"{{ $json.var }}"}</span>
               </div>
               
               {selectedNode.title === 'Webhook Entrada' && (

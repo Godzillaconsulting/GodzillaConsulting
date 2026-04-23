@@ -105,7 +105,7 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* KPI GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
                 <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full blur-2xl transition-all group-hover:bg-blue-500/20"></div>
                     <Users className="text-blue-500 mb-4" size={28} />
@@ -130,8 +130,15 @@ export default function AnalyticsDashboard() {
                 <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/10 rounded-bl-full blur-2xl transition-all group-hover:bg-yellow-500/20"></div>
                     <DollarSign className="text-yellow-500 mb-4" size={28} />
-                    <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Costo de Adquisición</p>
+                    <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Costo Adquisición</p>
                     <h2 className="text-4xl font-black text-white">{data.kpis.avgCac || '$0.00'}</h2>
+                </div>
+
+                <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 rounded-3xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#9D00FF]/10 rounded-bl-full blur-2xl transition-all group-hover:bg-[#9D00FF]/20"></div>
+                    <Cpu className="text-[#9D00FF] mb-4" size={28} />
+                    <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-1">Inversión API IA</p>
+                    <h2 className="text-4xl font-black text-white">${(data.totalApiCostUsd || 0).toFixed(4)}</h2>
                 </div>
             </div>
 
@@ -257,6 +264,45 @@ export default function AnalyticsDashboard() {
                              <p className="text-center text-neutral-600 mt-10">No hay señales capturadas hoy.</p>
                         )}
                     </div>
+                </div>
+            </div>
+
+            {/* API Cost Telemetry Panel */}
+            <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] mb-10 overflow-hidden animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
+                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                    <Cpu size={20} className="text-[#9D00FF]" />
+                    Radiografía de Costos API (Telemetría)
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {data.apiTelemetry && data.apiTelemetry.length > 0 ? (
+                        data.apiTelemetry.map((apiItem, idx) => (
+                            <div key={idx} className="bg-[#161615]/50 border border-white/5 p-5 rounded-2xl flex flex-col justify-between">
+                                <div>
+                                    <h4 className="text-white font-bold mb-1">{apiItem.service}</h4>
+                                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Consumo de Tokens</p>
+                                </div>
+                                <div className="mt-4 flex flex-col gap-2">
+                                    <div className="flex justify-between items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/5">
+                                        <span className="text-xs text-neutral-400">Input (Lectura)</span>
+                                        <span className="text-xs font-bold text-[#00F0FF]">{(apiItem.inputTokens || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-black/40 px-3 py-1.5 rounded-lg border border-white/5">
+                                        <span className="text-xs text-neutral-400">Output (Escritura)</span>
+                                        <span className="text-xs font-bold text-[#FF0055]">{(apiItem.outputTokens || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-neutral-800">
+                                        <span className="text-xs font-bold text-neutral-500 uppercase">Costo USD</span>
+                                        <span className="text-sm font-black text-[#9D00FF]">${(apiItem.costUsd || 0).toFixed(4)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="col-span-3 p-6 text-center text-neutral-600 font-bold border border-dashed border-neutral-800 rounded-2xl">
+                            Aún no hay consumo registrado de API IA.
+                        </div>
+                    )}
                 </div>
             </div>
 

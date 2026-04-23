@@ -34,23 +34,38 @@ const buildTextOverlay = (textClips, h) =>
       const fcolor = (c.style?.fontColor ?? '#ffffff').replace('#', '0x');
       const fsize  = c.style?.fontSize ?? 48;
       const safe   = (c.text ?? '').replace(/'/g, "\\'").replace(/:/g, '\\:');
-      return `drawtext=text='${safe}':fontcolor=${fcolor}:fontsize=${fsize}:x=(w-tw)/2:y=${posY}:box=1:boxcolor=black@0.5:boxborderw=10:enable='between(t\\,${c.start}\\,${c.end})'`;
+      
+      let xExp = '(w-tw)/2';
+      let yExp = `${posY}`;
+      let alphaExp = '1';
+      
+      if (c.style?.animation === 'fade') {
+         alphaExp = `if(lt(t\\,${c.start}+1)\\,(t-${c.start})/1\\,1)`;
+      } else if (c.style?.animation === 'slideup') {
+         yExp = `if(lt(t\\,${c.start}+1)\\,(1-(t-${c.start}))*h+${posY}\\,(t-${c.start})*0+${posY})`;
+      } else if (c.style?.animation === 'typewriter') {
+         // Fallback to fast fade since text length animation is complex in basic drawtext
+         alphaExp = `if(lt(t\\,${c.start}+0.5)\\,(t-${c.start})/0.5\\,1)`;
+      }
+
+      return `drawtext=text='${safe}':fontcolor=${fcolor}:fontsize=${fsize}:x=${xExp}:y=${yExp}:alpha=${alphaExp}:box=1:boxcolor=black@0.5:boxborderw=10:enable='between(t\\,${c.start}\\,${c.end})'`;
     })
     .join(',');
 
 // ─── Build render command ─────────────────────────────────────────────────────
 
-async function buildCommand(ffmpeg, project) {
+async function buildCommand(ffmpeg, project, exportSettings = {}) {
   const { w, h } = ASPECT_RATIOS[project.aspectRatio] || ASPECT_RATIOS['9:16'];
-  const videoLayer = project.layers.find(l => l.type === 'video');
-  const audioLayer = project.layers.find(l => l.type === 'audio');
-  const textLayer  = project.layers.find(l => l.type === 'text');
+  const videoLayers = project.layers.filter(l => l.type === 'video');
+  const audioLayers = project.layers.filter(l => l.type === 'audio');
+  const textLayers  = project.layers.filter(l => l.type === 'text');
 
-  const vClips = videoLayer?.clips ?? [];
-  const aClips = audioLayer?.clips ?? [];
-  const tClips = textLayer?.clips  ?? [];
+  const baseVClips = videoLayers[0]?.clips ?? [];
+  const overlayVClips = videoLayers.slice(1).flatMap(l => l.clips) ?? [];
+  const aClips = audioLayers.flatMap(l => l.clips) ?? [];
+  const tClips = textLayers.flatMap(l => l.clips) ?? [];
 
-  if (vClips.length === 0) throw new Error('Agrega al menos un clip de video');
+  if (baseVClips.length === 0 && overlayVClips.length === 0) throw new Error('Agrega al menos un clip de video');
 
   // Write unique sources
   const written  = new Map();
@@ -61,7 +76,8 @@ async function buildCommand(ffmpeg, project) {
     await ffmpeg.writeFile(name, await fetchFile(url));
     written.set(url, name);
   };
-  for (const c of vClips) if (c.sourceUrl) await write(c.sourceUrl);
+  for (const c of baseVClips) if (c.sourceUrl) await write(c.sourceUrl);
+  for (const c of overlayVClips) if (c.sourceUrl) await write(c.sourceUrl);
   for (const c of aClips) if (c.sourceUrl) await write(c.sourceUrl);
 
   const inputs  = [...written.values()].flatMap(f => ['-i', f]);
@@ -69,103 +85,189 @@ async function buildCommand(ffmpeg, project) {
   const scaleF  = buildScaleF(w, h);
 
   let fc = '';
+  
+  // ─── Base Video Layer ──────────────────────────────────────────────────────────
   const vParts = [];
   const aParts = [];
+  
+  if (baseVClips.length > 0) {
+    baseVClips.forEach((clip, i) => {
+      const idx  = sidx(clip.sourceUrl);
+      const dur  = clip.end - clip.start;
+      const ss   = clip.sourceStart ?? 0;
+      const spd  = clip.speed ?? 1;
 
-  // Process each video clip
-  vClips.forEach((clip, i) => {
+      // Aplicar filtros adicionales de efectos de video si existen
+      const fxFilters = [];
+      if (clip.effects?.includes('blur')) fxFilters.push('boxblur=5:1');
+      if (clip.effects?.includes('vhs')) fxFilters.push('noise=alls=20:allf=t+u,eq=saturation=1.5:gamma=1.2');
+      if (clip.effects?.includes('bw')) fxFilters.push('colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3');
+      if (clip.effects?.includes('vignette')) fxFilters.push('vignette=PI/4');
+
+      if (clip.fadeIn > 0) fxFilters.push(`fade=t=in:st=0:d=${clip.fadeIn}`);
+      if (clip.fadeOut > 0) fxFilters.push(`fade=t=out:st=${dur/spd - clip.fadeOut}:d=${clip.fadeOut}`);
+
+      const vFilters = [
+        `trim=start=${ss}:duration=${dur / spd}`,
+        'setpts=PTS-STARTPTS',
+        spd !== 1 ? `setpts=PTS/${spd}` : '',
+        scaleF,
+        buildColorF(clip.color ?? { brightness: 0, contrast: 1, saturation: 1, gamma: 1 }),
+        ...fxFilters
+      ].filter(Boolean).join(',');
+
+      const aFilters = [
+        `atrim=start=${ss}:duration=${dur / spd}`,
+        'asetpts=PTS-STARTPTS',
+        spd !== 1 ? `atempo=${Math.min(Math.max(spd, 0.5), 100)}` : '',
+      ].filter(Boolean).join(',');
+
+      fc += `[${idx}:v]${vFilters}[vc${i}]; `;
+      fc += `[${idx}:a]${aFilters}[ac${i}]; `;
+      vParts.push(`[vc${i}]`);
+      aParts.push(`[ac${i}]`);
+    });
+
+    if (baseVClips.length === 1) {
+      fc += `${vParts[0]}copy[vconcat]; ${aParts[0]}acopy[aconcat]; `;
+    } else {
+      let lastV = vParts[0];
+      let lastA = aParts[0];
+      let accDur = baseVClips[0].end - baseVClips[0].start;
+
+      for (let i = 1; i < baseVClips.length; i++) {
+        const clip     = baseVClips[i];
+        const tIn      = clip.transitionIn;
+        const xfadeTag = `xf${i}`;
+        const afadeTag = `af${i}`;
+
+        if (tIn && tIn.type !== 'cut' && tIn.duration > 0) {
+          const tDur   = Math.min(tIn.duration, (baseVClips[i-1].end - baseVClips[i-1].start) * 0.8);
+          const offset = Math.max(0, accDur - tDur);
+          const xtype  = tIn.type === 'fade'     ? 'fade'
+                       : tIn.type === 'wipeleft'  ? 'wipeleft'
+                       : tIn.type === 'slideleft' ? 'slideleft'
+                       : tIn.type === 'zoom'      ? 'zoom'
+                       : 'fade';
+          fc += `${lastV}${vParts[i]}xfade=transition=${xtype}:duration=${tDur}:offset=${offset}[${xfadeTag}]; `;
+          fc += `${lastA}${aParts[i]}acrossfade=d=${tDur}[${afadeTag}]; `;
+          accDur = offset + (clip.end - clip.start);
+          lastV  = `[${xfadeTag}]`;
+          lastA  = `[${afadeTag}]`;
+        } else {
+          const cutTag = `concat${i}`;
+          const acutTag = `aconcat${i}`;
+          fc += `${lastV}${vParts[i]}concat=n=2:v=1:a=0[${cutTag}]; `;
+          fc += `${lastA}${aParts[i]}concat=n=2:v=0:a=1[${acutTag}]; `;
+          accDur += clip.end - clip.start;
+          lastV = `[${cutTag}]`;
+          lastA = `[${acutTag}]`;
+        }
+      }
+      fc += `${lastV}copy[vconcat]; ${lastA}acopy[aconcat]; `;
+    }
+  } else {
+    // Si no hay video base, generar fondo negro
+    fc += `color=c=black:s=${w}x${h}:d=10[vconcat]; aevalsrc=0:d=10[aconcat]; `;
+  }
+
+  // ─── Overlay Video Layers (PiP) ────────────────────────────────────────────────
+  let currentBg = '[vconcat]';
+  overlayVClips.forEach((clip, i) => {
     const idx  = sidx(clip.sourceUrl);
     const dur  = clip.end - clip.start;
     const ss   = clip.sourceStart ?? 0;
     const spd  = clip.speed ?? 1;
+    const tf   = clip.transform ?? { x: 0, y: 0, scale: 1 };
+    
+    const scaleW = Math.round(w * tf.scale);
+    const scaleH = Math.round(h * tf.scale);
+    // Calcular X e Y para centrar 0,0 y aplicar offset
+    const posX = `(W-w)/2+${tf.x || 0}`;
+    const posY = `(H-h)/2+${tf.y || 0}`;
+
+    const fxFilters = [];
+    if (clip.effects?.includes('blur')) fxFilters.push('boxblur=5:1');
+    if (clip.effects?.includes('vhs')) fxFilters.push('noise=alls=20:allf=t+u,eq=saturation=1.5:gamma=1.2');
+    if (clip.effects?.includes('bw')) fxFilters.push('colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3');
+    if (clip.effects?.includes('vignette')) fxFilters.push('vignette=PI/4');
+    
+    if (clip.chromaKey) {
+      const hex = clip.chromaKey.color.replace('#', '0x');
+      fxFilters.push(`colorkey=color=${hex}:similarity=${clip.chromaKey.similarity}:blend=0.1`);
+    }
+    
+    if (clip.fadeIn > 0) fxFilters.push(`fade=t=in:st=0:d=${clip.fadeIn}`);
+    if (clip.fadeOut > 0) fxFilters.push(`fade=t=out:st=${dur/spd - clip.fadeOut}:d=${clip.fadeOut}`);
 
     const vFilters = [
       `trim=start=${ss}:duration=${dur / spd}`,
       'setpts=PTS-STARTPTS',
       spd !== 1 ? `setpts=PTS/${spd}` : '',
-      scaleF,
+      `scale=${scaleW}:${scaleH}:force_original_aspect_ratio=decrease`,
+      `pad=${scaleW}:${scaleH}:(ow-iw)/2:(oh-ih)/2:color=black@0`,
       buildColorF(clip.color ?? { brightness: 0, contrast: 1, saturation: 1, gamma: 1 }),
+      ...fxFilters
     ].filter(Boolean).join(',');
 
-    const aFilters = [
-      `atrim=start=${ss}:duration=${dur / spd}`,
-      'asetpts=PTS-STARTPTS',
-      spd !== 1 ? `atempo=${Math.min(Math.max(spd, 0.5), 100)}` : '',
-    ].filter(Boolean).join(',');
-
-    fc += `[${idx}:v]${vFilters}[vc${i}]; `;
-    fc += `[${idx}:a]${aFilters}[ac${i}]; `;
-    vParts.push(`[vc${i}]`);
-    aParts.push(`[ac${i}]`);
+    fc += `[${idx}:v]${vFilters}[ov${i}]; `;
+    const nextBg = `[bgov${i}]`;
+    fc += `${currentBg}[ov${i}]overlay=x='${posX}':y='${posY}':enable='between(t,${clip.start},${clip.end})'${nextBg}; `;
+    currentBg = nextBg;
+    
+    // Si el overlay tiene audio, lo mezclaremos después
+    if (clip.volume > 0) {
+      aClips.push(clip);
+    }
   });
 
-  // ─ Transitions (xfade) between consecutive clips ──────────────────────────
-  if (vClips.length === 1) {
-    // Single clip — no concat needed
-    fc += `${vParts[0]}copy[vconcat]; ${aParts[0]}acopy[aconcat]; `;
-  } else {
-    // Build xfade chain
-    let lastV = vParts[0];
-    let lastA = aParts[0];
-    let accDur = vClips[0].end - vClips[0].start; // accumulated video duration so far
+  let finalV = currentBg;
 
-    for (let i = 1; i < vClips.length; i++) {
-      const clip     = vClips[i];
-      const tIn      = clip.transitionIn;
-      const xfadeTag = `xf${i}`;
-      const afadeTag = `af${i}`;
-
-      if (tIn && tIn.type !== 'cut' && tIn.duration > 0) {
-        const tDur   = Math.min(tIn.duration, (vClips[i-1].end - vClips[i-1].start) * 0.8);
-        const offset = Math.max(0, accDur - tDur);
-        const xtype  = tIn.type === 'fade'     ? 'fade'
-                     : tIn.type === 'wipeleft'  ? 'wipeleft'
-                     : tIn.type === 'slideleft' ? 'slideleft'
-                     : tIn.type === 'zoom'      ? 'zoom'
-                     : 'fade';
-        fc += `${lastV}${vParts[i]}xfade=transition=${xtype}:duration=${tDur}:offset=${offset}[${xfadeTag}]; `;
-        fc += `${lastA}${aParts[i]}acrossfade=d=${tDur}[${afadeTag}]; `;
-        accDur = offset + (clip.end - clip.start);
-        lastV  = `[${xfadeTag}]`;
-        lastA  = `[${afadeTag}]`;
-      } else {
-        // Hard cut via concat
-        const cutTag = `concat${i}`;
-        const acutTag = `aconcat${i}`;
-        fc += `${lastV}${vParts[i]}concat=n=2:v=1:a=0[${cutTag}]; `;
-        fc += `${lastA}${aParts[i]}concat=n=2:v=0:a=1[${acutTag}]; `;
-        accDur += clip.end - clip.start;
-        lastV = `[${cutTag}]`;
-        lastA = `[${acutTag}]`;
-      }
-    }
-    fc += `${lastV}copy[vconcat]; ${lastA}acopy[aconcat]; `;
-  }
-
-  // ─ Mix extra audio layer ──────────────────────────────────────────────────
+  // ─── Mix Audio Layers ──────────────────────────────────────────────────
   let finalA = '[aconcat]';
   if (aClips.length > 0) {
     let mix = '[aconcat]';
     aClips.forEach((clip, i) => {
+      // clip podría ser de un overlay video o de una capa de audio
+      const isVideoWithAudio = clip.type === 'video';
       const idx   = sidx(clip.sourceUrl);
       const dur   = clip.end - clip.start;
+      const ss    = clip.sourceStart ?? 0;
       const delay = Math.round(clip.start * 1000);
-      fc += `[${idx}:a]atrim=start=${clip.sourceStart ?? 0}:duration=${dur},asetpts=PTS-STARTPTS,adelay=${delay}|${delay},volume=${clip.volume ?? 1}[amix${i}]; `;
+      const vol   = clip.volume ?? 1;
+      
+      const fxFilters = [];
+      if (clip.voiceFx === 'robot') fxFilters.push(`afftfilt="real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75"`);
+      if (clip.voiceFx === 'echo') fxFilters.push('aecho=0.8:0.9:1000:0.3');
+      if (clip.voiceFx === 'highpitch') fxFilters.push('asetrate=44100*1.2,aresample=44100');
+      if (clip.noiseReduction) fxFilters.push('afftdn');
+      
+      if (clip.fadeIn > 0) fxFilters.push(`afade=t=in:st=0:d=${clip.fadeIn}`);
+      if (clip.fadeOut > 0) fxFilters.push(`afade=t=out:st=${dur - clip.fadeOut}:d=${clip.fadeOut}`);
+
+      const aFilt = [
+        `atrim=start=${ss}:duration=${dur}`,
+        'asetpts=PTS-STARTPTS',
+        ...fxFilters,
+        `adelay=${delay}|${delay}`,
+        `volume=${vol}`
+      ].filter(Boolean).join(',');
+
+      fc += `[${idx}:a]${aFilt}[amix${i}]; `;
       mix += `[amix${i}]`;
     });
     fc += `${mix}amix=inputs=${aClips.length + 1}:normalize=0[afinal]; `;
     finalA = '[afinal]';
   }
 
-  // ─ Text overlay ───────────────────────────────────────────────────────────
-  let finalV = '[vconcat]';
+  // ─── Text overlay ───────────────────────────────────────────────────────────
   const textF = buildTextOverlay(tClips, h);
   if (textF) {
-    fc += `[vconcat]${textF}[vfinal]; `;
-    finalV = '[vfinal]';
+    fc += `${finalV}${textF}[vfinaltext]; `;
+    finalV = '[vfinaltext]';
   }
 
-  return { inputs, filterComplex: fc.trim(), finalV, finalA };
+  return { inputs, filterComplex: fc.trim(), finalV, finalA, exportSettings };
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -173,9 +275,15 @@ export function useFFmpegRenderer() {
   const [isRendering, setIsRendering] = useState(false);
   const [progress, setProgress]       = useState(0);
 
-  const render = useCallback(async (project) => {
+  const render = useCallback(async (project, exportSettings = {}) => {
     setIsRendering(true);
     setProgress(0);
+    
+    // Default settings
+    const fps = exportSettings.fps || 30;
+    const crf = exportSettings.quality === 'high' ? '18' : exportSettings.quality === 'low' ? '28' : '23';
+    const preset = 'ultrafast'; // Mantener ultrafast para web, o cambiar a fast si se desea mejor compresión pero más lento
+
     
     // Request notification permission if not granted
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -186,13 +294,13 @@ export function useFFmpegRenderer() {
 
     try {
       const ffmpeg = await getFFmpeg(setProgress);
-      const { inputs, filterComplex, finalV, finalA } = await buildCommand(ffmpeg, project);
+      const { inputs, filterComplex, finalV, finalA } = await buildCommand(ffmpeg, project, exportSettings);
 
       await ffmpeg.exec([
         ...inputs,
         '-filter_complex', filterComplex,
         '-map', finalV, '-map', finalA,
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-r', `${fps}`,
         '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
         'output.mp4',
       ]);

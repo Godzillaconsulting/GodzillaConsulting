@@ -5,6 +5,8 @@ import { Calendar as CalendarIcon, Wand2, Loader2, Send, Download, ChevronDown, 
 const SCENE_COLUMNS = [1, 2, 3, 4, 5];
 const COL = (n) => ({
     narracion: n === 5 ? `NARRACION ESCENA 5 (CTA)` : `NARRACION ESCENA ${n}`,
+    texto:     `TEXTO EN PANTALLA ESCENA ${n}`,
+    audio:     `AUDIO Y SFX ESCENA ${n}`,
     visual:    `VISUAL ESCENA ${n} (Prompt Imagen Detallado)`,
     video:     `VIDEO ESCENA ${n} (Prompt Movimiento Detallado)`,
 });
@@ -12,13 +14,15 @@ const COL = (n) => ({
 const exportToCSV = (plan, niche) => {
     const headers = [
         'Tema',
-        ...SCENE_COLUMNS.flatMap(n => [COL(n).narracion, COL(n).visual, COL(n).video])
+        ...SCENE_COLUMNS.flatMap(n => [COL(n).narracion, COL(n).texto, COL(n).audio, COL(n).visual, COL(n).video])
     ];
 
     const rows = plan.map(day => [
         day['Tema'] || '',
         ...SCENE_COLUMNS.flatMap(n => [
             day[COL(n).narracion] || '',
+            day[COL(n).texto]     || '',
+            day[COL(n).audio]     || '',
             day[COL(n).visual]    || '',
             day[COL(n).video]     || '',
         ])
@@ -81,9 +85,11 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
                     {SCENE_COLUMNS.map(n => {
                         const isCTA = n === 5;
                         const narr  = day[COL(n).narracion] || '';
+                        const txt   = day[COL(n).texto]     || '';
+                        const aud   = day[COL(n).audio]     || '';
                         const vis   = day[COL(n).visual]    || '';
                         const vid   = day[COL(n).video]     || '';
-                        if (!narr && !vis && !vid) return null;
+                        if (!narr && !vis && !vid && !txt && !aud) return null;
                         return (
                             <div key={n} className={`rounded-xl p-4 border mt-3 ${isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/40 border-neutral-800/50'}`}>
                                 <div className="flex items-center gap-2 mb-3">
@@ -91,21 +97,35 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
                                         {isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {/* Narración */}
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">🎙 Narración (TTS)</span>
-                                        <p className="text-sm text-neutral-200 leading-relaxed">{narr}</p>
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {/* Narración */}
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">🎙 Narración (TTS)</span>
+                                            <p className="text-sm text-neutral-200 leading-relaxed">{narr}</p>
+                                        </div>
+                                        {/* Texto en Pantalla */}
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-yellow-400 font-bold uppercase tracking-widest block">💬 Texto Pantalla</span>
+                                            <p className="text-sm text-neutral-200 font-bold leading-relaxed">{txt}</p>
+                                        </div>
+                                        {/* Audio y SFX */}
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest block">🎵 Audio & SFX</span>
+                                            <p className="text-xs text-neutral-300 italic leading-relaxed">{aud}</p>
+                                        </div>
                                     </div>
-                                    {/* Visual Prompt */}
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest block">🖼 Visual Prompt</span>
-                                        <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
-                                    </div>
-                                    {/* Video Motion Prompt */}
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] text-fuchsia-400 font-bold uppercase tracking-widest block">🎬 Video Motion Prompt</span>
-                                        <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vid}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-neutral-800/50">
+                                        {/* Visual Prompt */}
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest block">🖼 Visual Prompt</span>
+                                            <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
+                                        </div>
+                                        {/* Video Motion Prompt */}
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-fuchsia-400 font-bold uppercase tracking-widest block">🎬 Video Motion Prompt</span>
+                                            <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vid}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -182,8 +202,15 @@ export default function AIContentPlanner({ adminProfile }) {
         try {
             const token = localStorage.getItem('adminToken');
             const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
-            // Construye un evento con el tema + narracion como caption
-            const captions = SCENE_COLUMNS.map(n => day[COL(n).narracion] || '').filter(Boolean).join('\n\n');
+            // Construye un evento con el tema + narracion + texto en pantalla como caption
+            const captions = SCENE_COLUMNS.map(n => {
+                const narr = day[COL(n).narracion] || '';
+                const txt = day[COL(n).texto] || '';
+                if (!narr && !txt) return null;
+                let block = `Escena ${n}:\n🗣️ ${narr}`;
+                if (txt) block += `\n💬 [TEXTO EN PANTALLA: ${txt}]`;
+                return block;
+            }).filter(Boolean).join('\n\n');
             const res = await fetch(`${API}/api/calendar/events`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -318,12 +345,12 @@ export default function AIContentPlanner({ adminProfile }) {
 
                 {/* Columnas del Sheets como referencia */}
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                    {['Tema', 'Narración ×5', 'Visual Prompt ×5', 'Video Motion Prompt ×5'].map(col => (
+                    {['Tema', 'Narración ×5', 'Texto Pantalla ×5', 'Audio/SFX ×5', 'Visual Prompt ×5', 'Video Motion Prompt ×5'].map(col => (
                         <span key={col} className="text-[9px] bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded font-mono">
                             {col}
                         </span>
                     ))}
-                    <span className="text-[9px] text-neutral-700 font-bold">= {16} columnas totales por día</span>
+                    <span className="text-[9px] text-neutral-700 font-bold">= {26} columnas totales por día</span>
                 </div>
             </div>
 

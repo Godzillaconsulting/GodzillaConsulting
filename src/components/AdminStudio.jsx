@@ -693,6 +693,8 @@ export default function AdminStudio() {
       <CMCalendar adminProfile={adminProfile} />
 ) : activeSection === 'social_studio' ? (
       null /* Renderizado persistentemente arriba para evitar pérdida de estado de renders IA */
+) : activeSection === 'video_editor' ? (
+      null /* Renderizado persistentemente arriba para evitar pérdida de estado del editor */
   ) : activeSection === 'automation-flow' ? (
       <AutomationFlow />
   ) : activeSection === 'ai-planner' ? (

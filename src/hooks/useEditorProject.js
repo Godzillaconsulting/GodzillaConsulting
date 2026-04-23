@@ -22,6 +22,7 @@ export const makeVideoClip = (sourceUrl, sourceName, start, end, sourceStart = 0
   end,
   sourceStart,
   speed: 1,
+  volume: 1,
   transform: defaultTransform(),
   color: defaultColor(),
   transitionIn:  null,
@@ -60,6 +61,15 @@ export const makeTextClip = (text, start, end, style = {}) => ({
     posY: 0.85,   // fracción de la altura del canvas (0=top, 1=bottom)
     ...style,
   },
+});
+
+export const makeLayer = (type) => ({
+  id: `layer-${type.charAt(0)}-${uuidv4().slice(0, 8)}`,
+  type,
+  locked: false,
+  muted: false,
+  volume: 1,
+  clips: []
 });
 
 // ─── Initial project factory ──────────────────────────────────────────────────
@@ -170,6 +180,10 @@ function reducer(state, action) {
       const newLayers = [...state.project.layers, action.layer];
       return pushHistory(state, newLayers);
     }
+    case 'REMOVE_LAYER': {
+      const newLayers = state.project.layers.filter(l => l.id !== action.layerId);
+      return pushHistory(state, newLayers);
+    }
     case 'SET_ASPECT_RATIO':
       return { ...state, project: { ...state.project, aspectRatio: action.ratio } };
     case 'UNDO': {
@@ -201,6 +215,7 @@ export function useEditorProject(initialVideoUrl) {
   const updateClip = useCallback((clipId, patch, noHistory = false) =>
     dispatch({ type: 'UPDATE_CLIP', clipId, patch, noHistory }), []);
   const addLayer      = useCallback((layer) => dispatch({ type: 'ADD_LAYER', layer }), []);
+  const removeLayer   = useCallback((layerId) => dispatch({ type: 'REMOVE_LAYER', layerId }), []);
   const setAspectRatio = useCallback((ratio) => dispatch({ type: 'SET_ASPECT_RATIO', ratio }), []);
   const undo = useCallback(() => dispatch({ type: 'UNDO' }), []);
   const redo = useCallback(() => dispatch({ type: 'REDO' }), []);
@@ -228,6 +243,7 @@ export function useEditorProject(initialVideoUrl) {
     splitClip,
     updateClip,
     addLayer,
+    removeLayer,
     setAspectRatio,
     undo,
     redo,

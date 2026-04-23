@@ -279,6 +279,34 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             console.warn("Could not fetch bot origins", e.message);
         }
 
+        // --- API Cost Telemetry ---
+        let apiTelemetry = [];
+        let totalApiCostUsd = 0;
+        try {
+            const telemetryRes = await pool.query(`
+                SELECT service_name, 
+                       SUM(input_tokens) as total_input, 
+                       SUM(output_tokens) as total_output, 
+                       SUM(estimated_cost_usd) as total_cost 
+                FROM api_telemetry 
+                GROUP BY service_name
+                ORDER BY total_cost DESC
+            `);
+            
+            apiTelemetry = telemetryRes.rows.map(r => {
+                const cost = parseFloat(r.total_cost) || 0;
+                totalApiCostUsd += cost;
+                return {
+                    service: r.service_name,
+                    inputTokens: parseInt(r.total_input, 10) || 0,
+                    outputTokens: parseInt(r.total_output, 10) || 0,
+                    costUsd: cost
+                };
+            });
+        } catch (e) {
+            console.warn("Could not fetch API telemetry", e.message);
+        }
+
         res.json({
             success: true,
             trafficSources,
@@ -288,6 +316,8 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it
             botHealth,
             botProductivity,
+            apiTelemetry,
+            totalApiCostUsd,
             kpis: {
                 totalSpend: '$0.00',
                 totalRevenue: 'Pendiente Pauta',

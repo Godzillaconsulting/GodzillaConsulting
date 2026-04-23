@@ -29,32 +29,81 @@ const CurvedConnector = ({ startX, startY, endX, endY, color }) => {
 };
 
 export default function AutomationFlow() {
-    const [nodes, setNodes] = useState([
-        { id: '1', type: 'trigger', title: 'Estudio IA', subtitle: 'Generador UGC/Video', icon: 'Bot', x: 50, y: 220, color: '#f59e0b' },
-        { id: '2', type: 'action', title: 'Editor Pro', subtitle: 'Post-Producción (CapCut)', icon: 'Activity', x: 300, y: 220, color: '#3b82f6' },
-        { id: '3', type: 'action', title: 'Planificador IA', subtitle: 'Agendar Tarea', icon: 'Calendar', x: 550, y: 100, color: '#a855f7' },
-        { id: '4', type: 'agent', title: 'Publicador Social', subtitle: 'TikTok, IG, FB', icon: 'Webhook', x: 850, y: 200, color: '#10b981', pulse: true }
-    ]);
-    const [edges, setEdges] = useState([
-        { id: 'e1-2', source: '1', target: '2', color: '#f59e0b' },
-        { id: 'e2-3', source: '2', target: '3', color: '#3b82f6' },
-        { id: 'e2-4', source: '2', target: '4', color: '#10b981' },
-        { id: 'e3-4', source: '3', target: '4', color: '#a855f7' }
-    ]);
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
+    const [pm2Status, setPm2Status] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [isDraggingNode, setIsDraggingNode] = useState(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    
+    // Conexiones interactivas (Punteros)
+    const [connectingFrom, setConnectingFrom] = useState(null);
+    const [connectingToPos, setConnectingToPos] = useState(null);
+    
     const canvasRef = useRef(null);
+
+    // ─── Estructuras de Datos Eficientes (Punteros / Referencias en Memoria) ───
+    const nodeMap = useMemo(() => {
+        const map = new Map();
+        nodes.forEach(n => map.set(n.id, n));
+        return map;
+    }, [nodes]);
+
+    // ─── Carga Inicial y Sincronización en Vivo ─────────────────────────────────
+    useEffect(() => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) return;
+
+        const loadFlow = async () => {
+            try {
+                const res = await fetch('/api/automation/flow', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setNodes(data.nodes || []);
+                    setEdges(data.edges || []);
+                }
+            } catch (err) {
+                console.error('Error cargando flow:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch('/api/automation/status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setPm2Status(data.pm2 || []);
+                }
+            } catch (err) {}
+        };
+
+        loadFlow();
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // ─── Drag & Drop Handlers ───────────────────────────────────────────────────
     const handlePointerDown = (e, id) => {
         e.stopPropagation();
+        if (e.target.dataset.port === 'out') {
+            setConnectingFrom(id);
+            setConnectingToPos({ x: e.clientX, y: e.clientY });
+            return;
+        }
+
         setSelectedNodeId(id);
         const el = document.getElementById(`node-${id}`);
         if(el && canvasRef.current) {
             const rect = el.getBoundingClientRect();
-            // Calcular el offset interno de donde se hizo click dentro del nodo
             setDragOffset({
                 x: e.clientX - rect.left,
                 y: e.clientY - rect.top
@@ -64,29 +113,48 @@ export default function AutomationFlow() {
     };
 
     const handlePointerMove = (e) => {
-        if (!isDraggingNode || !canvasRef.current) return;
+        if (!canvasRef.current) return;
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        
-        // Calcular nueva posición relativa al contenedor con scroll
-        const newX = e.clientX - canvasRect.left - dragOffset.x + canvasRef.current.scrollLeft;
-        const newY = e.clientY - canvasRect.top - dragOffset.y + canvasRef.current.scrollTop;
-        
-        setNodes(prev => prev.map(n => n.id === isDraggingNode ? { ...n, x: newX, y: newY } : n));
+        const newX = e.clientX - canvasRect.left + canvasRef.current.scrollLeft;
+        const newY = e.clientY - canvasRect.top + canvasRef.current.scrollTop;
+
+        if (connectingFrom) {
+            setConnectingToPos({ x: newX, y: newY });
+        } else if (isDraggingNode) {
+            setNodes(prev => prev.map(n => n.id === isDraggingNode ? { ...n, x: newX - dragOffset.x, y: newY - dragOffset.y } : n));
+        }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e) => {
+        if (connectingFrom) {
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const targetNode = target?.closest('.node-container');
+            if (targetNode) {
+                const targetId = targetNode.getAttribute('data-id');
+                if (targetId && targetId !== connectingFrom) {
+                    const sourceNode = nodeMap.get(connectingFrom);
+                    setEdges(prev => [...prev, {
+                        id: `e${connectingFrom}-${targetId}-${Date.now()}`,
+                        source: connectingFrom,
+                        target: targetId,
+                        color: sourceNode?.color || '#fff'
+                    }]);
+                }
+            }
+        }
         setIsDraggingNode(null);
+        setConnectingFrom(null);
+        setConnectingToPos(null);
     };
 
     // ─── Lógica de Nodos ─────────────────────────────────────────────────────────
-    const handleAddNode = () => {
+    const handleAddNode = (type = 'action', title = 'Nuevo Nodo') => {
         const id = Date.now().toString();
-        // Colocarlo en un punto visible
         const viewX = canvasRef.current ? canvasRef.current.scrollLeft + 300 : 300;
         const viewY = canvasRef.current ? canvasRef.current.scrollTop + 200 : 200;
 
         setNodes([...nodes, {
-            id, type: 'action', title: 'Nuevo Nodo', subtitle: 'Configurar', icon: 'Webhook', x: viewX, y: viewY, color: '#f59e0b'
+            id, type, title, subtitle: 'Configurar', icon: 'Webhook', x: viewX, y: viewY, color: '#f59e0b', pm2_process: ''
         }]);
         setSelectedNodeId(id);
     };
@@ -101,55 +169,97 @@ export default function AutomationFlow() {
         setNodes(prev => prev.map(n => n.id === selectedNodeId ? { ...n, ...updates } : n));
     };
 
-    const selectedNode = useMemo(() => nodes.find(n => n.id === selectedNodeId), [nodes, selectedNodeId]);
+    const saveFlow = async () => {
+        const payload = { nodes, edges };
+        try {
+            const res = await fetch('/api/automation/flow', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Grafo guardado exitosamente en PostgreSQL. Conectado en vivo.');
+            } else {
+                alert('Error al guardar el grafo.');
+            }
+        } catch(err) {
+            alert('Error de conexión con el backend.');
+        }
+    };
+
+    const selectedNode = nodeMap.get(selectedNodeId);
 
     // ─── Renderizado de Nodos ────────────────────────────────────────────────────
     const renderNode = (node) => {
         const isSelected = selectedNodeId === node.id;
         const Icon = ICONS[node.icon] || Webhook;
 
-        if (node.type === 'agent') {
-            return (
-                <div 
-                    id={`node-${node.id}`}
-                    key={node.id}
-                    onPointerDown={(e) => handlePointerDown(e, node.id)}
-                    className={`absolute w-[220px] bg-neutral-900 border-2 shadow-[0_0_30px_rgba(16,185,129,0.2)] rounded-2xl p-5 flex items-center gap-4 cursor-grab active:cursor-grabbing hover:bg-neutral-800 transition-colors z-10`}
-                    style={{ left: node.x, top: node.y, borderColor: isSelected ? '#fff' : node.color }}
-                >
-                    <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 flex items-center justify-center shrink-0">
-                        <Icon className="w-7 h-7" />
-                    </div>
-                    <div>
-                        <span className="text-white font-black text-lg block leading-none mb-1">{node.title}</span>
-                        <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{node.subtitle}</span>
-                    </div>
-                    {node.pulse && (
-                        <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-neutral-900 border-2 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.5)]`} style={{borderColor: node.color}}>
-                            <div className="w-2 h-2 rounded-full animate-ping" style={{backgroundColor: node.color}}></div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
+        const pm2Data = pm2Status.find(p => p.name === node.pm2_process);
+        const isOnline = pm2Data && pm2Data.status === 'online';
 
-        // Trigger y Action styles (cuadrados con icono arriba)
+        // Estilos base compartidos
+        const baseClass = `node-container absolute bg-neutral-900 shadow-lg rounded-2xl cursor-grab active:cursor-grabbing hover:bg-neutral-800 transition-colors z-10 ${isSelected ? 'border-2 border-white' : 'border border-neutral-800'}`;
+
         return (
             <div 
                 id={`node-${node.id}`}
+                data-id={node.id}
                 key={node.id}
                 onPointerDown={(e) => handlePointerDown(e, node.id)}
-                className={`absolute w-[160px] bg-neutral-900 border shadow-lg rounded-2xl p-4 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:bg-neutral-800 transition-colors z-10`}
-                style={{ left: node.x, top: node.y, borderColor: isSelected ? '#fff' : node.color, boxShadow: isSelected ? `0 0 20px ${node.color}55` : 'none' }}
+                className={`${baseClass} ${node.type === 'agent' ? 'w-[220px] p-5 flex items-center gap-4' : 'w-[160px] p-4 flex flex-col items-center justify-center'}`}
+                style={{ left: node.x, top: node.y, borderColor: isSelected ? '#fff' : node.color, boxShadow: isSelected ? `0 0 20px ${node.color}55` : (node.type==='agent' ? `0 0 30px ${node.color}33` : 'none') }}
             >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: `${node.color}22`, color: node.color, boxShadow: `0 0 15px ${node.color}44` }}>
-                    <Icon className="w-6 h-6" />
+                {/* Input Port (Left) */}
+                <div 
+                    data-port="in"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-neutral-950 border-2 rounded-full cursor-crosshair flex items-center justify-center hover:scale-125 transition-transform"
+                    style={{ borderColor: node.color }}
+                >
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: node.color }} />
                 </div>
-                <span className="text-white font-bold text-sm text-center">{node.title}</span>
-                <span className="text-[9px] text-neutral-400 uppercase tracking-widest mt-1 text-center">{node.subtitle}</span>
+
+                {/* Output Port (Right) */}
+                <div 
+                    data-port="out"
+                    className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-neutral-950 border-2 rounded-full cursor-crosshair flex items-center justify-center hover:scale-125 transition-transform"
+                    style={{ borderColor: node.color }}
+                >
+                    <div data-port="out" className="w-2 h-2 rounded-full" style={{ backgroundColor: node.color }} />
+                </div>
+
+                {node.type === 'agent' ? (
+                    <>
+                        <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 flex items-center justify-center shrink-0 pointer-events-none">
+                            <Icon className="w-7 h-7" />
+                        </div>
+                        <div className="pointer-events-none">
+                            <span className="text-white font-black text-lg block leading-none mb-1">{node.title}</span>
+                            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{node.subtitle}</span>
+                        </div>
+                        {isOnline && (
+                            <div className="absolute top-1 right-1 w-2 h-2 rounded-full animate-ping" style={{backgroundColor: node.color}} />
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2 pointer-events-none" style={{ backgroundColor: `${node.color}22`, color: node.color, boxShadow: `0 0 15px ${node.color}44` }}>
+                            <Icon className="w-6 h-6" />
+                        </div>
+                        <span className="text-white font-bold text-sm text-center pointer-events-none">{node.title}</span>
+                        <span className="text-[9px] text-neutral-400 uppercase tracking-widest mt-1 text-center pointer-events-none">{node.subtitle}</span>
+                    </>
+                )}
             </div>
         );
     };
+
+    if (isLoading) {
+        return <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center text-white font-black animate-pulse">Cargando Grafo...</div>;
+    }
 
     return (
         <div 
@@ -170,7 +280,10 @@ export default function AutomationFlow() {
                     <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest mt-1">Supervisión en tiempo real (Nodos Estilo n8n)</p>
                 </div>
                 <div className="flex items-center gap-4 pointer-events-auto">
-                    <button onClick={handleAddNode} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
+                    <button onClick={() => saveFlow()} className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg uppercase tracking-widest">
+                        Guardar Flujo
+                    </button>
+                    <button onClick={() => handleAddNode('action', 'Nuevo Action')} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
                         <Plus className="w-4 h-4" /> Añadir Nodo
                     </button>
                     <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-900/30 px-4 py-2 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
@@ -187,10 +300,20 @@ export default function AutomationFlow() {
             >
                 <div className="min-w-[2000px] min-h-[1500px] relative">
                     
+                    {/* Render Active Dragging Edge */}
+                    {connectingFrom && connectingToPos && (() => {
+                        const sourceNode = nodeMap.get(connectingFrom);
+                        if (!sourceNode) return null;
+                        const sDim = NODE_CONFIG[sourceNode.type] || { w: 160, h: 120 };
+                        const startX = sourceNode.x + sDim.w;
+                        const startY = sourceNode.y + (sDim.h / 2);
+                        return <CurvedConnector startX={startX} startY={startY} endX={connectingToPos.x} endY={connectingToPos.y} color={sourceNode.color || '#fff'} />;
+                    })()}
+
                     {/* Render Edges */}
                     {edges.map(edge => {
-                        const source = nodes.find(n => n.id === edge.source);
-                        const target = nodes.find(n => n.id === edge.target);
+                        const source = nodeMap.get(edge.source);
+                        const target = nodeMap.get(edge.target);
                         if (!source || !target) return null;
 
                         const sDim = NODE_CONFIG[source.type] || { w: 160, h: 120 };
@@ -262,14 +385,40 @@ export default function AutomationFlow() {
                                         ))}
                                     </div>
                                 </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">PM2 Process Name (Opcional)</label>
+                                    <input 
+                                        type="text" 
+                                        value={selectedNode.pm2_process || ''} 
+                                        onChange={e => updateSelectedNode({pm2_process: e.target.value})}
+                                        placeholder="ej. zilla-whatsapp"
+                                        className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition-colors"
+                                    />
+                                    <p className="text-[9px] text-neutral-500">Si coincide con PM2, mostrará estatus en vivo.</p>
+                                </div>
                             </div>
                             
                             <hr className="border-neutral-800"/>
                             
                             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                                <h4 className="text-xs font-bold text-blue-400 mb-2 flex items-center gap-2"><Power className="w-3 h-3"/> Estado del Motor</h4>
-                                <p className="text-[10px] text-neutral-400 leading-relaxed mb-3">Este nodo está actualmente activo en el gestor PM2. Se está monitoreando en tiempo real.</p>
-                                <button className="w-full py-2 bg-black border border-neutral-700 hover:border-neutral-500 text-xs font-bold text-white rounded-lg transition-colors">Reiniciar Proceso</button>
+                                <h4 className="text-xs font-bold text-blue-400 mb-2 flex items-center gap-2"><Power className="w-3 h-3"/> Estado del Motor (PM2)</h4>
+                                {selectedNode.pm2_process ? (
+                                    (() => {
+                                        const pData = pm2Status.find(p => p.name === selectedNode.pm2_process);
+                                        if (pData) {
+                                            return (
+                                                <>
+                                                    <p className="text-[10px] text-emerald-400 font-bold mb-1">🟢 ONLINE - Mem: {Math.round(pData.memory / 1024 / 1024)}MB | CPU: {pData.cpu}%</p>
+                                                    <button className="w-full mt-2 py-2 bg-black border border-neutral-700 hover:border-neutral-500 text-xs font-bold text-white rounded-lg transition-colors">Reiniciar Proceso</button>
+                                                </>
+                                            );
+                                        } else {
+                                            return <p className="text-[10px] text-rose-500 font-bold">🔴 OFFLINE o No Encontrado</p>;
+                                        }
+                                    })()
+                                ) : (
+                                    <p className="text-[10px] text-neutral-500">No vinculado a PM2.</p>
+                                )}
                             </div>
                         </div>
 

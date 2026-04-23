@@ -273,8 +273,8 @@ export default function AdminStudio() {
  // ── Permisos por Rol Avanzados ──────────────────────────────────────────
  const username = adminProfile?.username?.toLowerCase() || '';
  const isSuperAdmin = adminProfile?.is_superadmin === true;
- // JareG, Godzilla_admin, Dani y Oscar ven absolutamente todo (incluyendo DB, Master, SQL)
- const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || ['dani', 'oscar'].includes(username); 
+ // JareG, Godzilla_admin, Dani, Oscar y Alex ven absolutamente todo (incluyendo DB, Master, SQL)
+ const isCEO = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || ['dani', 'oscar', 'alex'].includes(username); 
  
  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
  

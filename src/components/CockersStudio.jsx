@@ -47,9 +47,32 @@ const RAW_PROMPTS = [
 ];
 
 const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
-    img: `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=700&height=450&nologo=true&model=turbo&seed=${i * 9999}`,
+    img: `https://pollinations.ai/p/${encodeURIComponent(p.prompt)}?width=700&height=450&seed=${i * 9999}`,
     ...p
 }));
+
+const forceDownloadMedia = async (url, defaultFilename) => {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        let ext = blob.type.split('/')[1] || 'png';
+        if (ext === 'jpeg') ext = 'jpg';
+        if (blob.type.includes('video') || ext === 'x-m4v') ext = 'mp4';
+        
+        const filename = `${defaultFilename}_HQ.${ext}`;
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        console.error("Error forced downloading:", error);
+        window.open(url, '_blank');
+    }
+};
 
 export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor = false }) {
     const [queue, setQueue] = useState([]);
@@ -59,6 +82,23 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [renderingAI, setRenderingAI] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
     const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
+    const cancelRef = useRef(false);
+
+    const stopGeneration = useCallback(() => {
+        cancelRef.current = true;
+        setRenderingAI(false);
+        setLiveSlots(prev => prev.map(s => s.status === 'loading' ? { ...s, status: 'failed', errorMsg: 'Cancelado por usuario' } : s));
+    }, []);
+
+    const clearGenerated = useCallback(() => {
+        cancelRef.current = true;
+        setRenderingAI(false);
+        setLiveSlots([]);
+        setFinalPrompt('');
+        setSelectedFilters([]);
+        setYtLink('');
+        setSelectedDraft(null);
+    }, []);
 
     useEffect(() => {
         if (forceOpenEditor) {
@@ -746,6 +786,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     };
 
     const simulateAIGeneration = async () => {
+        cancelRef.current = false;
         if (!finalPrompt.trim()) return alert('Escribe un prompt antes de generar.');
         setRenderingAI(true);
         setRenderProgress(0);
@@ -802,6 +843,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             const toPoll = [];
 
             for (let idx = 0; idx < enginesToRun.length; idx++) {
+                if (cancelRef.current) break;
                 const engineName = enginesToRun[idx];
                 if (idx > 0) await new Promise(r => setTimeout(r, 1800));
                 try {
@@ -832,6 +874,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             // ── 3. Polling independiente por slot ──
             let attempts = 0;
             const pollInterval = setInterval(async () => {
+                if (cancelRef.current) {
+                    clearInterval(pollInterval);
+                    return;
+                }
                 attempts++;
                 for (const task of toPoll) {
                     if (task.done) continue;
@@ -901,19 +947,9 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             0%   { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
-        @keyframes glowPulse {
-            0%, 100% { box-shadow: 0 0 0px rgba(204,0,0,0); }
-            50%       { box-shadow: 0 0 24px rgba(204,0,0,0.5), 0 0 48px rgba(204,0,0,0.2); }
-        }
         .gallery-img { animation: kenBurns 14s ease-in-out infinite; }
         .gallery-card:hover .gallery-img { animation-play-state: paused; }
-        .gallery-card.featured { animation: glowPulse 3s ease-in-out infinite; }
-        .scan-overlay {
-            position: absolute; inset: 0; z-index: 15; pointer-events: none;
-            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%);
-            background-size: 200% 100%;
-            animation: scanSweep 3s linear infinite;
-        }
+        
         @keyframes floatBob {
             0%, 100% { transform: translateY(0px); }
             50%       { transform: translateY(-8px); }
@@ -960,8 +996,6 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 onMouseLeave={resetTilt}
                 className={`gallery-card relative group rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60 aspect-video bg-[#0f0f0f] min-h-[220px] flex flex-col justify-center${isFeatured ? ' featured' : ''}`}
             >
-                {/* Scan sweep shimmer */}
-                <div className="scan-overlay pointer-events-none" />
                 {/* Shimmer skeleton */}
                 <div className="absolute inset-0 bg-neutral-900 animate-pulse pointer-events-none" />
                 <img
@@ -1318,7 +1352,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     <button 
                         onClick={() => simulateAIGeneration()}
                         disabled={renderingAI || (!finalPrompt.trim() && !ytLink.trim())}
-                        className="w-full bg-white hover:bg-neutral-200 text-black font-black uppercase tracking-widest text-sm py-4 rounded-full flex justify-center items-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative group"
+                        className="w-full bg-white hover:bg-neutral-200 text-black font-black uppercase tracking-widest text-sm py-4 rounded-full flex justify-center items-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative group mb-3"
                     >
                         {renderingAI ? 'PROCESANDO...' : (selectedDraft?.media_options?.length > 0 ? 'RE-GENERAR VARIANTES' : 'GENERAR →')}
                         {selectedDraft?.media_options?.length > 0 && !renderingAI && (
@@ -1327,6 +1361,28 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                             </span>
                         )}
                     </button>
+                    
+                    {/* Botones de Control Adicionales */}
+                    <div className="flex gap-2">
+                        {renderingAI && (
+                            <button 
+                                onClick={stopGeneration}
+                                className="flex-1 bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/50 font-black uppercase tracking-widest text-[10px] py-2.5 rounded-full flex justify-center items-center gap-1.5 transition-colors"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                                Parar
+                            </button>
+                        )}
+                        {(liveSlots.length > 0 || selectedDraft || finalPrompt) ? (
+                            <button 
+                                onClick={clearGenerated}
+                                className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] py-2.5 rounded-full flex justify-center items-center gap-1.5 transition-colors"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Limpiar Todo
+                            </button>
+                        ) : null}
+                    </div>
                     {refImage && (
                         <div className="mt-4 flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl p-2 px-3">
                             <span className="text-[10px] text-neutral-400 font-bold uppercase truncate max-w-[200px]">Ref Image attached</span>
@@ -1650,13 +1706,24 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                 Revisión
                                                             </button>
                                                         )}
-                                                        {/* Botón de Descargar */}
-                                                        <a href={slot.url} download={`${slot.provider}_output`} target="_blank" rel="noreferrer"
-                                                            className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-700 shrink-0"
-                                                            title="Descargar"
+                                                        {/* Botón de Descargar Original */}
+                                                        <button onClick={(e) => { e.stopPropagation(); forceDownloadMedia(slot.url, `${slot.provider}_Original`); }}
+                                                            className="px-2 py-1 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-[9px] font-bold text-white transition-colors border border-neutral-700 shrink-0 gap-1"
+                                                            title="Descargar Original"
                                                         >
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                        </a>
+                                                            Orig
+                                                        </button>
+                                                        {/* Botón de Descargar Ultra si existe */}
+                                                        {slot.refinedUrl && slot.refinedUrl !== 'loading' && slot.refinedUrl !== 'error' && (
+                                                            <button onClick={(e) => { e.stopPropagation(); forceDownloadMedia(slot.refinedUrl, `${slot.provider}_Ultra`); }}
+                                                                className="px-2 py-1 h-7 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-[9px] font-bold text-white transition-colors border border-indigo-500 shrink-0 gap-1 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                                                                title="Descargar Ultra HQ"
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                                Ultra
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {slot.status === 'done' && slot.isVideo && (
@@ -1671,6 +1738,14 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                 Revisión
                                                             </button>
                                                         )}
+                                                        {/* Botón de Descargar Video */}
+                                                        <button onClick={(e) => { e.stopPropagation(); forceDownloadMedia(slot.url, `${slot.provider}_Video`); }}
+                                                            className="px-2 py-1 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-[9px] font-bold text-white transition-colors border border-neutral-700 shrink-0 gap-1"
+                                                            title="Descargar Video HQ"
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                            Descargar
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
@@ -1886,16 +1961,24 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                 <p className="text-xs text-white truncate max-w-[140px] md:max-w-[180px]">{finalPrompt || selectedDraft.visual_prompt || 'Generación AI'}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <a 
-                                                    href={opt.url} 
-                                                    download={`Media_Export_${i+1}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white transition-colors border border-neutral-600"
-                                                    title="Descargar Asset a tu PC"
+                                                {/* Botón de Descargar Original */}
+                                                <button onClick={(e) => { e.stopPropagation(); forceDownloadMedia(opt.url, `Media_Export_${i+1}_Original`); }}
+                                                    className="px-3 py-1 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-[10px] font-bold text-white transition-colors border border-neutral-600 gap-1.5"
+                                                    title="Descargar Original a tu PC"
                                                 >
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                </a>
+                                                    Orig
+                                                </button>
+                                                {/* Botón de Descargar Ultra si existe */}
+                                                {opt.refinedUrl && opt.refinedUrl !== 'loading' && opt.refinedUrl !== 'error' && (
+                                                    <button onClick={(e) => { e.stopPropagation(); forceDownloadMedia(opt.refinedUrl, `Media_Export_${i+1}_Ultra`); }}
+                                                        className="px-3 py-1 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white transition-colors border border-indigo-500 gap-1.5 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                                                        title="Descargar Ultra HQ a tu PC"
+                                                    >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                        Ultra
+                                                    </button>
+                                                )}
                                                 
 
                                                 {canSeeAll && (

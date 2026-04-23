@@ -704,7 +704,21 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         return days;
     }, []);
 
+    const generateWeekDays = useCallback((date) => {
+        const startDay = startOfWeek(date, { weekStartsOn: 1 }); // Lunes
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDay);
+            d.setDate(d.getDate() + i);
+            days.push(d);
+        }
+        return days;
+    }, []);
+
     const monthDays = generateMonthDays(currentDate);
+    const weekDays = generateWeekDays(currentDate);
+    const activeDays = calendarView === 'week' ? weekDays : monthDays;
+    
     const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
     // Agrupar eventos por día para el grid
@@ -887,8 +901,8 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 </div>
 
                 {/* Weeks */}
-                <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${monthDays.length / 7}, minmax(120px, 1fr))` }}>
-                    {monthDays.map((day, idx) => {
+                <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${activeDays.length / 7}, minmax(${calendarView === 'week' ? '400px' : '120px'}, 1fr))` }}>
+                    {activeDays.map((day, idx) => {
                         const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
                         const dayEvents = dayEventsMap[dayKey] || [];
                         const todayDay = isToday(day);
@@ -905,7 +919,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 }}
                                 className={`
                                     relative border-b border-r border-white/[0.04] p-1.5 flex flex-col gap-1 transition-all duration-150 group/day
-                                    ${currentMonth ? 'bg-transparent' : 'bg-black/20'}
+                                    ${currentMonth || calendarView === 'week' ? 'bg-transparent' : 'bg-black/20'}
                                     ${todayDay ? 'ring-1 ring-inset ring-[#00ff88]/30' : ''}
                                     ${isDragOver ? 'bg-[#00ff88]/5 ring-1 ring-inset ring-[#00ff88]/50' : ''}
                                 `}
@@ -940,13 +954,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
                                 {/* Events */}
                                 <div className="flex flex-col gap-1 overflow-hidden flex-1">
-                                    {dayEvents.slice(0, 3).map(ev => renderNeuronCard(ev))}
-                                    {dayEvents.length > 3 && (
+                                    {dayEvents.slice(0, calendarView === 'week' ? 12 : 3).map(ev => renderNeuronCard(ev))}
+                                    {dayEvents.length > (calendarView === 'week' ? 12 : 3) && (
                                         <button
                                             className="text-[8px] text-neutral-600 hover:text-white font-bold text-left px-1 transition-colors"
                                             onClick={() => {/* TODO: expandir día */}}
                                         >
-                                            +{dayEvents.length - 3} más
+                                            +{dayEvents.length - (calendarView === 'week' ? 12 : 3)} más
                                         </button>
                                     )}
                                 </div>

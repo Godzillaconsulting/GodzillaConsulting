@@ -103,7 +103,8 @@ ${cacheBuster}`;
 
             (async () => {
                 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                const ratio = (config?.aspect_ratio === '9:16') ? '9:16' : '16:9';
+                const validRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
+                const ratio = validRatios.includes(config?.aspect_ratio) ? config.aspect_ratio : '16:9';
 
                 const tryGenerate = async (modelId) => {
                     console.log(`[VEO] Intentando con modelo: ${modelId}...`);
@@ -207,10 +208,15 @@ ${cacheBuster}`;
 
                     if (modelName.startsWith('imagen')) {
                         // Imagen 3: usa generateImages del SDK @google/genai
+                        const validImgRatios = ['1:1', '3:4', '4:3', '9:16', '16:9'];
                         const response = await ai.models.generateImages({
                             model: modelName,
                             prompt: finalPromptToUse,
-                            config: { numberOfImages: 1, outputMimeType: 'image/png' }
+                            config: { 
+                                numberOfImages: 1, 
+                                outputMimeType: 'image/png',
+                                aspectRatio: validImgRatios.includes(config?.aspect_ratio) ? config.aspect_ratio : '1:1'
+                            }
                         });
                         if (response.generatedImages?.[0]?.image?.imageBytes) {
                             const b64 = response.generatedImages[0].image.imageBytes;
@@ -222,12 +228,13 @@ ${cacheBuster}`;
                         }
                     } else {
                         // Gemini Flash Preview Image Generation — multimodal, acepta imagen de referencia
+                        const promptWithAr = finalPromptToUse + `\n\n[CRITICAL: Frame the image strictly in ${config?.aspect_ratio || '16:9'} aspect ratio orientation.]`;
                         const contentPayload = config?.refImage && typeof config.refImage === 'string' && config.refImage.startsWith('data:')
                             ? [
                                 { inlineData: { mimeType: config.refImage.split(';')[0].split(':')[1], data: config.refImage.split(',')[1] } },
-                                { text: finalPromptToUse }
+                                { text: promptWithAr }
                               ]
-                            : [{ text: finalPromptToUse }];
+                            : [{ text: promptWithAr }];
 
                         const response = await ai.models.generateContent({
                             model: modelName,
@@ -451,7 +458,7 @@ export const getInspirationGallery = async (req, res) => {
             // Recortar strings enormes para no romper la URL de Pollinations API
             const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
             return {
-                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&model=turbo&seed=${Math.floor(Math.random() * 99999)}`,
+                img: `https://pollinations.ai/p/${encodeURIComponent(safePrompt)}?width=500&height=500&seed=${Math.floor(Math.random() * 99999)}`,
                 prompt: item.prompt,
                 tag: item.tag,
                 model: item.model
@@ -823,22 +830,36 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
 Genera los 30 días completos. La calidad es CRÍTICA — cada narración debe ser magnética, cada prompt visual debe ser cinematográfico.
 `;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-            config: {
-                temperature: 0.85,
-                maxOutputTokens: 65536,
+        let planData = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts && !planData) {
+            attempts++;
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+                    config: {
+                        temperature: 0.85,
+                        maxOutputTokens: 65536,
+                    }
+                });
+
+                let rawText = response.candidates[0].content.parts[0].text;
+                rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                
+                planData = JSON.parse(rawText);
+
+                if (!planData.plan || !Array.isArray(planData.plan)) {
+                    throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
+                }
+            } catch (err) {
+                console.log(`[MONTHLY-PLAN] Fallo en parseo JSON (Intento ${attempts}/${maxAttempts}):`, err.message);
+                if (attempts >= maxAttempts) {
+                    throw new Error(`Fallo tras ${maxAttempts} intentos: ${err.message}`);
+                }
             }
-        });
-
-        let rawText = response.candidates[0].content.parts[0].text;
-        rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-        const planData = JSON.parse(rawText);
-
-        if (!planData.plan || !Array.isArray(planData.plan)) {
-            throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
         }
 
         res.json({ success: true, plan: planData.plan, niche, month, year });

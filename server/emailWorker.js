@@ -32,8 +32,8 @@ setInterval(() => {
 }, 30_000);
 
 // ── PROGRAMACIÓN DEL NEWSLETTER ─────────────────────────────────────────────
-// Ejecutar de Lunes a Viernes (o todos los días) a las 7:00 AM hora de Ciudad Juárez
-cron.schedule('0 7 * * 1-5', async () => {
+// Ejecutar TODOS LOS DÍAS a las 7:00 AM hora de Ciudad Juárez
+cron.schedule('0 7 * * *', async () => {
     console.log('⏳ [CRON] Activando Despliegue Automático del Newsletter (7:00 AM)...');
     try {
         const result = await generateAndSendAutoNewsletter();
@@ -45,7 +45,7 @@ cron.schedule('0 7 * * 1-5', async () => {
     scheduled: true,
     timezone: "America/Ciudad_Juarez"
 });
-console.log('⏰ [CRON] Programador activado: Lunes-Viernes a las 7:00 AM (Cd. Juárez).');
+console.log('⏰ [CRON] Programador activado: TODOS LOS DÍAS a las 7:00 AM (Cd. Juárez).');
 
 // Retargeting: revisar reglas cada hora
 // Primera ejecución a los 5 minutos de arrancar (dar tiempo a la DB)

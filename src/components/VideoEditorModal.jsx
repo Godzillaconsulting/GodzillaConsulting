@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type, Send } from 'lucide-react';
+import { X, Wand2, Play, Pause, Scissors, AlignCenter, Loader2, Download, Video, Music, Type, Send, Trash2, PlusCircle } from 'lucide-react';
 import { Timeline } from '@xzdarcy/react-timeline-editor';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
@@ -25,6 +25,14 @@ const initialEditorData = [
   }
 ];
 
+// Utility para obtener duración real de un video
+const getVideoDuration = (url) => new Promise((resolve) => {
+    const v = document.createElement('video');
+    v.src = url;
+    v.onloadedmetadata = () => resolve(v.duration || 5);
+    v.onerror = () => resolve(5); // fallback
+});
+
 export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onClose }) {
     const [editorData, setEditorData] = useState(initialEditorData);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -46,6 +54,7 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
     const globalTimeRef = useRef(0);
     const lastTickRef = useRef(performance.now());
     const currentClipIdRef = useRef(null);
+    const [selectedActionId, setSelectedActionId] = useState(null);
 
     // Timeline Configuration
     const scale = 5; 
@@ -162,6 +171,82 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
             currentClipIdRef.current = null;
         }
         return true;
+    };
+
+    const handleAddToTimeline = async (mediaObj) => {
+        const url = mediaObj.media_options[0].url;
+        const duration = await getVideoDuration(url);
+        
+        setEditorData(prev => {
+            const newData = [...prev];
+            const videoTrack = newData.find(t => t.id === 'track-video');
+            if (videoTrack) {
+                // Encontrar donde termina el último clip
+                const lastEnd = videoTrack.actions.length > 0 
+                    ? Math.max(...videoTrack.actions.map(a => a.end))
+                    : 0;
+                    
+                const newClip = {
+                    id: `clip-${Date.now()}`,
+                    start: lastEnd,
+                    end: lastEnd + duration,
+                    effectId: 'v-1',
+                    text: mediaObj.caption || mediaObj.visual_prompt || 'Clip Añadido',
+                    color: '#3b82f6',
+                    sourceUrl: url,
+                    sourceStart: 0
+                };
+                videoTrack.actions.push(newClip);
+            }
+            return newData;
+        });
+        if (!localVideoUrl) setLocalVideoUrl(url);
+    };
+
+    const handleSplitClip = () => {
+        if (!selectedActionId) return alert('Selecciona un clip en el timeline (haz click sobre él) para poder cortarlo.');
+        const t = timelineState.current ? timelineState.current.getTime() : globalTimeRef.current;
+        
+        setEditorData(prev => {
+            let splitOccurred = false;
+            const newData = prev.map(track => {
+                const clipIdx = track.actions.findIndex(a => a.id === selectedActionId);
+                if (clipIdx > -1) {
+                    const clip = track.actions[clipIdx];
+                    // Si el cursor no está en medio del clip, no se puede cortar
+                    if (t <= clip.start || t >= clip.end) {
+                        alert('El cursor (línea de tiempo) debe estar posicionado en medio del clip seleccionado para cortarlo.');
+                        return track;
+                    }
+                    
+                    const durationA = t - clip.start;
+                    const clipA = { ...clip, id: `${clip.id}-a`, end: t };
+                    const clipB = { 
+                        ...clip, 
+                        id: `${clip.id}-b`, 
+                        start: t, 
+                        sourceStart: (clip.sourceStart || 0) + durationA 
+                    };
+                    
+                    const newActions = [...track.actions];
+                    newActions.splice(clipIdx, 1, clipA, clipB);
+                    splitOccurred = true;
+                    return { ...track, actions: newActions };
+                }
+                return track;
+            });
+            if(splitOccurred) setSelectedActionId(null);
+            return newData;
+        });
+    };
+
+    const handleDeleteClip = () => {
+        if (!selectedActionId) return alert('Selecciona un clip en el timeline primero.');
+        setEditorData(prev => prev.map(track => ({
+            ...track, 
+            actions: track.actions.filter(a => a.id !== selectedActionId)
+        })));
+        setSelectedActionId(null);
     };
 
     const handleRender = async () => {
@@ -426,14 +511,20 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                                                     setDraggedMedia(vid);
                                                     e.dataTransfer.setData("text/plain", vid.media_options[0].url);
                                                 }}
-                                                onClick={() => setLocalVideoUrl(vid.media_options[0].url)}
-                                                className={`flex items-start gap-2 p-2 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${localVideoUrl === vid.media_options[0].url ? 'bg-blue-900/20 border-blue-500/50' : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600'}`}
+                                                className={`flex items-center gap-2 p-2 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${localVideoUrl === vid.media_options[0].url ? 'bg-blue-900/20 border-blue-500/50' : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600'}`}
                                             >
-                                                <video src={vid.media_options[0].url} className="w-16 h-12 object-cover rounded bg-black" />
+                                                <video src={vid.media_options[0].url} className="w-16 h-12 object-cover rounded bg-black shrink-0" />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[10px] text-white font-bold truncate">{vid.caption || vid.visual_prompt || 'Clip Generado'}</p>
                                                     <p className="text-[9px] text-neutral-500 uppercase">{vid.status}</p>
                                                 </div>
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleAddToTimeline(vid); }}
+                                                    className="p-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded transition-colors shrink-0"
+                                                    title="Añadir a la pista"
+                                                >
+                                                    <PlusCircle className="w-4 h-4"/>
+                                                </button>
                                             </div>
                                         ))
                                     )}
@@ -565,24 +656,43 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                     </div>
 
                     {/* BOTTOM: Timeline */}
-                    <div className="h-64 bg-neutral-900 border-t border-neutral-800 shrink-0 select-none">
-                        {/* Cabecera del Timeline (Tiempo) */}
-                        <div className="h-8 bg-neutral-950 flex items-center px-4 border-b border-neutral-800">
-                            <span className="text-xs text-neutral-500 font-mono">00:00:00</span>
+                    <div className="h-64 bg-neutral-900 border-t border-neutral-800 shrink-0 select-none flex flex-col">
+                        {/* Cabecera del Timeline (Herramientas y Tiempo) */}
+                        <div className="h-10 bg-neutral-950 flex items-center justify-between px-4 border-b border-neutral-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleSplitClip} className="flex items-center gap-1.5 px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] font-bold uppercase rounded border border-neutral-700 transition-colors">
+                                    <Scissors className="w-3.5 h-3.5"/> Cortar (Split)
+                                </button>
+                                <button onClick={handleDeleteClip} className="flex items-center gap-1.5 px-3 py-1 bg-neutral-800 hover:bg-red-900/40 text-neutral-300 hover:text-red-400 text-[10px] font-bold uppercase rounded border border-neutral-700 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5"/> Borrar
+                                </button>
+                                {selectedActionId && (
+                                    <span className="text-[9px] text-blue-400 ml-2 animate-pulse font-mono">Clip Seleccionado</span>
+                                )}
+                            </div>
+                            <span className="text-xs text-neutral-500 font-mono">Línea de Tiempo</span>
                         </div>
                         
                         {/* Motor XZDarcy Timeline */}
                         <div 
-                            className="w-full h-[calc(100%-2rem)] overflow-hidden relative custom-timeline-theme"
+                            className="w-full flex-1 overflow-hidden relative custom-timeline-theme"
+                            onClick={(e) => {
+                                // Deseleccionar si se hace click en un área vacía (fuera de las filas)
+                                if (e.target.classList.contains('custom-timeline-theme')) {
+                                    setSelectedActionId(null);
+                                }
+                            }}
                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
-                            onDrop={(e) => {
+                            onDrop={async (e) => {
                                 e.preventDefault();
                                 if (draggedMedia) {
                                     const dropTime = timelineState.current ? timelineState.current.getTime() : 0;
+                                    const duration = await getVideoDuration(draggedMedia.media_options[0].url);
+                                    
                                     const newClip = {
                                         id: `clip-${Date.now()}`,
                                         start: dropTime,
-                                        end: dropTime + 5, // Default 5s
+                                        end: dropTime + duration,
                                         effectId: 'v-1',
                                         text: draggedMedia.caption || draggedMedia.visual_prompt || 'Clip Añadido',
                                         color: '#3b82f6',
@@ -611,6 +721,7 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
                                 scale={scale}
                                 hideCursor={false}
                                 onChange={(data) => setEditorData(data)}
+                                onClickAction={(e, param) => setSelectedActionId(param.action.id)}
                                 onClickTimeArea={handleTimeChange}
                                 onCursorDrag={handleTimeChange}
                                 onCursorDragEnd={handleTimeChange}

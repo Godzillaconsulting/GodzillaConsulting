@@ -31,6 +31,7 @@ import botConfigsRoutes from './routes/botConfigs.js';
 import dbStudioRoutes from './routes/dbStudio.js';
 import calendarRoutes from './routes/calendar.js';
 import sheetsRoutes from './routes/sheets.js';
+import automationRoutes from './routes/automation.js';
 import { verifyAdminToken, requireSuperAdmin } from './middleware/adminAuth.js';
 import { wafMiddleware } from './middleware/wafService.js';
 import adminWafRoutes from './routes/adminWaf.js';
@@ -219,6 +220,7 @@ app.use('/api/bots/config', botConfigsRoutes); // Configuración de bots
 app.use('/api/calendar', calendarRoutes);       // 📅 Calendario Colaborativo (SSE + CRUD)
 app.use('/api/sheets', sheetsRoutes);           // 📊 Google Sheets Importer
 app.use('/api/db-studio', verifyAdminToken, requireSuperAdmin, dbStudioRoutes); // DB Studio protegido
+app.use('/api/automation', automationRoutes);   // Automation Flow
 app.use('/api/internal', internalToolsRoutes); // Herramientas internas — solo para Vercel serverless
 // ==========================================
 // PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)

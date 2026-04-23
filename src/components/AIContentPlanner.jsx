@@ -9,7 +9,6 @@ const COL = (n) => ({
     video:     `VIDEO ESCENA ${n} (Prompt Movimiento Detallado)`,
 });
 
-// ─── Exportar CSV con las columnas exactas del Sheets ─────────────────────────
 const exportToCSV = (plan, niche) => {
     const headers = [
         'Tema',
@@ -25,7 +24,12 @@ const exportToCSV = (plan, niche) => {
         ])
     ]);
 
-    const escape = (val) => `"${String(val).replace(/"/g, '""')}"`;
+    const escape = (val) => {
+        // Envolver en comillas dobles y escapar comillas internas para no romper columnas con saltos de linea
+        const strVal = String(val || '').replace(/"/g, '""');
+        return `"${strVal}"`;
+    };
+    
     const csvContent = [headers, ...rows].map(row => row.map(escape).join(',')).join('\n');
 
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -124,10 +128,29 @@ export default function AIContentPlanner({ adminProfile }) {
     const [isGenerating, setGenerating] = useState(false);
     const [plan, setPlan]             = useState(null);
     const [generatedNiche, setGNiche] = useState('');
+    const [webhookUrl, setWebhookUrl] = useState('');
+    const [isSendingWebhook, setIsSendingWebhook] = useState(false);
 
     const username    = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
     const canEdit     = isSuperAdmin || username === 'alex' || username === 'oscar';
+
+    const handleSendWebhook = async () => {
+        if (!webhookUrl.trim() || !plan) return alert('No hay URL o plan generado.');
+        setIsSendingWebhook(true);
+        try {
+            const res = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ niche: generatedNiche, plan }),
+            });
+            if (res.ok) alert('Plan enviado exitosamente al webhook (n8n/Make).');
+            else alert('Error en la respuesta del webhook.');
+        } catch (err) {
+            alert('Fallo al conectar con el webhook.');
+        }
+        setIsSendingWebhook(false);
+    };
 
     const handleGenerate = async () => {
         if (!niche.trim()) return alert('Por favor ingresa un nicho o producto.');
@@ -207,12 +230,32 @@ export default function AIContentPlanner({ adminProfile }) {
                         </span>
                     )}
                     {plan && (
-                        <button
-                            onClick={() => exportToCSV(plan, generatedNiche)}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
-                        >
-                            <Download className="w-4 h-4" /> Exportar CSV (Sheets)
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {canEdit && (
+                                <div className="flex items-center bg-black/50 border border-neutral-800 rounded-xl overflow-hidden shadow-inner">
+                                    <input 
+                                        type="url" 
+                                        placeholder="Webhook URL (n8n/Make)..."
+                                        value={webhookUrl}
+                                        onChange={(e) => setWebhookUrl(e.target.value)}
+                                        className="bg-transparent text-xs text-white px-3 py-2 outline-none w-48 placeholder-neutral-600"
+                                    />
+                                    <button 
+                                        onClick={handleSendWebhook}
+                                        disabled={isSendingWebhook || !webhookUrl}
+                                        className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border-l border-neutral-800 text-xs font-black uppercase tracking-widest disabled:opacity-50 transition-colors"
+                                    >
+                                        {isSendingWebhook ? 'Enviando...' : 'POST'}
+                                    </button>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => exportToCSV(plan, generatedNiche)}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                            >
+                                <Download className="w-4 h-4" /> Exportar CSV (Sheets)
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

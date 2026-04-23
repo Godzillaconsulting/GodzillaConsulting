@@ -602,8 +602,16 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             setNodes(FLOW_TEMPLATES[0].nodes);
             setEdges(FLOW_TEMPLATES[0].edges);
           } else {
-            setNodes(d.nodes||[]); 
-            setEdges(d.edges||[]); 
+            let safeNodes = d.nodes || [];
+            let safeEdges = d.edges || [];
+            if (typeof safeNodes === 'string') {
+              try { safeNodes = JSON.parse(safeNodes); } catch(e) { safeNodes = []; }
+            }
+            if (typeof safeEdges === 'string') {
+              try { safeEdges = JSON.parse(safeEdges); } catch(e) { safeEdges = []; }
+            }
+            setNodes(Array.isArray(safeNodes) ? safeNodes : []); 
+            setEdges(Array.isArray(safeEdges) ? safeEdges : []); 
           }
           if(d.name) setEditName(d.name); 
         } 

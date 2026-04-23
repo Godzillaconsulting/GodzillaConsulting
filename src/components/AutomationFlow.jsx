@@ -10,6 +10,49 @@ const NODE_CONFIG = {
     action:  { w: 160, h: 120 },
 };
 
+const FLOW_TEMPLATES = [
+    {
+        name: "🌱 Flujo Básico",
+        description: "Planificador IA ➔ Tarea de Studio",
+        nodes: [
+            { id: "t1", type: "trigger", title: "Planificador IA", subtitle: "Generador (Origen)", icon: "Wand2", x: 200, y: 200, color: "#a855f7", pm2_process: "" },
+            { id: "t2", type: "action", title: "Tarea de Studio", subtitle: "CEO Estudio Sync", icon: "CheckSquare", x: 550, y: 200, color: "#10b981", pm2_process: "" }
+        ],
+        edges: [ { id: "e1", source: "t1", target: "t2", color: "#a855f7" } ]
+    },
+    {
+        name: "🚀 Máquina de Producción UGC",
+        description: "Planificador ➔ Imagen ➔ Video ➔ Tarea",
+        nodes: [
+            { id: "t1", type: "trigger", title: "Planificador IA", subtitle: "Generador (Origen)", icon: "Wand2", x: 100, y: 200, color: "#a855f7", pm2_process: "" },
+            { id: "t2", type: "action", title: "Generador Visual", subtitle: "Imagen 3 API", icon: "Image", x: 400, y: 100, color: "#3b82f6", pm2_process: "" },
+            { id: "t3", type: "action", title: "Generador Video", subtitle: "Veo / Kling", icon: "Video", x: 400, y: 300, color: "#f59e0b", pm2_process: "" },
+            { id: "t4", type: "action", title: "Tarea de Studio", subtitle: "CEO Estudio Sync", icon: "CheckSquare", x: 750, y: 200, color: "#10b981", pm2_process: "" }
+        ],
+        edges: [
+            { id: "e1", source: "t1", target: "t2", color: "#a855f7" },
+            { id: "e2", source: "t1", target: "t3", color: "#a855f7" },
+            { id: "e3", source: "t2", target: "t4", color: "#3b82f6" },
+            { id: "e4", source: "t3", target: "t4", color: "#f59e0b" }
+        ]
+    },
+    {
+        name: "📱 Bot de Alertas Omnicanal",
+        description: "Notifica por Email y WhatsApp tras asignar la tarea",
+        nodes: [
+            { id: "t1", type: "trigger", title: "Planificador IA", subtitle: "Generador (Origen)", icon: "Wand2", x: 100, y: 200, color: "#a855f7", pm2_process: "" },
+            { id: "t2", type: "action", title: "Tarea de Studio", subtitle: "CEO Estudio Sync", icon: "CheckSquare", x: 400, y: 200, color: "#10b981", pm2_process: "" },
+            { id: "t3", type: "action", title: "Email Worker", subtitle: "Notificación Equipo", icon: "Mail", x: 700, y: 100, color: "#f97316", pm2_process: "email-worker" },
+            { id: "t4", type: "action", title: "WhatsApp Bot", subtitle: "Alerta WA", icon: "Smartphone", x: 700, y: 300, color: "#10b981", pm2_process: "whatsapp-bot" }
+        ],
+        edges: [
+            { id: "e1", source: "t1", target: "t2", color: "#a855f7" },
+            { id: "e2", source: "t2", target: "t3", color: "#10b981" },
+            { id: "e3", source: "t2", target: "t4", color: "#10b981" }
+        ]
+    }
+];
+
 const CurvedConnector = ({ startX, startY, endX, endY, color }) => {
     // Control points for a smooth bezier curve (horizontal flow)
     const midX = (startX + endX) / 2;
@@ -43,6 +86,7 @@ export default function AutomationFlow() {
     const [connectingToPos, setConnectingToPos] = useState(null);
     
     const [showNodeMenu, setShowNodeMenu] = useState(false);
+    const [showTemplateMenu, setShowTemplateMenu] = useState(false);
 
     // ─── Estado del Motor de Ejecución ─────────────────────────────────────────
     const [isExecuting, setIsExecuting] = useState(false);
@@ -228,7 +272,30 @@ export default function AutomationFlow() {
         setShowNodeMenu(false);
     };
 
-
+    const handleLoadTemplate = (template) => {
+        if(nodes.length > 0) {
+            const ok = window.confirm("Cargar una plantilla reemplazará todos los nodos actuales. ¿Continuar?");
+            if(!ok) return;
+        }
+        // Asignar IDs nuevos a los nodos de la plantilla para evitar colisiones si se cargan dos veces (aunque se reemplaza, es buena práctica)
+        const idMap = {};
+        const newNodes = template.nodes.map(n => {
+            const newId = `node_${Math.random().toString(36).substr(2, 9)}`;
+            idMap[n.id] = newId;
+            return { ...n, id: newId };
+        });
+        const newEdges = template.edges.map(e => ({
+            ...e,
+            id: `edge_${Math.random().toString(36).substr(2, 9)}`,
+            source: idMap[e.source],
+            target: idMap[e.target]
+        }));
+        
+        setNodes(newNodes);
+        setEdges(newEdges);
+        setSelectedNodeId(null);
+        setShowTemplateMenu(false);
+    };
     const handleRestartProcess = async (processName) => {
         if(!processName) return;
         try {
@@ -397,7 +464,35 @@ export default function AutomationFlow() {
                         )}
                     </button>
                     <div className="relative">
-                        <button onClick={() => setShowNodeMenu(!showNodeMenu)} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
+                        <button onClick={() => {setShowTemplateMenu(!showTemplateMenu); setShowNodeMenu(false);}} className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 hover:border-purple-400 hover:bg-purple-900/50 text-purple-300 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                            <Wand2 className="w-4 h-4" /> Plantillas
+                        </button>
+                        
+                        {showTemplateMenu && (
+                            <div className="absolute top-full mt-2 right-0 w-72 bg-neutral-950 border border-neutral-800 shadow-2xl rounded-xl overflow-hidden z-50">
+                                <div className="p-2 border-b border-neutral-800 bg-neutral-900">
+                                    <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold px-2">Plantillas Rápidas</span>
+                                </div>
+                                <div className="max-h-64 overflow-y-auto p-1">
+                                    {FLOW_TEMPLATES.map((template, idx) => (
+                                        <button 
+                                            key={idx}
+                                            onClick={() => handleLoadTemplate(template)}
+                                            className="w-full text-left p-3 hover:bg-neutral-800 rounded flex flex-col gap-1 transition-colors group border-b border-neutral-800/50 last:border-0"
+                                        >
+                                            <p className="text-xs text-purple-300 font-bold group-hover:text-purple-200 transition-colors flex items-center gap-2">
+                                                {template.name}
+                                            </p>
+                                            <p className="text-[10px] text-neutral-500 leading-tight">{template.description}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="relative">
+                        <button onClick={() => {setShowNodeMenu(!showNodeMenu); setShowTemplateMenu(false);}} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
                             <Plus className="w-4 h-4" /> Añadir Nodo
                         </button>
                         

@@ -13,7 +13,11 @@ const getVideoDuration = (url) => new Promise(r => {
 
 const TRACK_COLORS = { video: '#3b82f6', audio: '#10b981', text: '#eab308' };
 
-export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onClose }) {
+export default function IntegratedVideoEditor({ queue = [] }) {
+  const [initialVideoUrl, setInitialVideoUrl] = useState(() => {
+     try { return localStorage.getItem('godzilla_editor_draft_src') || ''; } catch { return ''; }
+  });
+  
   const editor = useEditorProject(initialVideoUrl);
   const { render, isRendering, progress } = useFFmpegRenderer();
   const videoRef = useRef(null);
@@ -240,10 +244,6 @@ export default function IntegratedVideoEditor({ initialVideoUrl, queue = [], onC
           <button onClick={handleRender} disabled={isRendering}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-colors disabled:opacity-50">
             {isRendering ? <><Loader2 className="w-4 h-4 animate-spin" />{progress}%</> : <><Download className="w-4 h-4" />Renderizar</>}
-          </button>
-          <button onClick={onClose || (() => window.history.back())}
-            className="p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors">
-            <X className="w-5 h-5" />
           </button>
         </div>
       </div>

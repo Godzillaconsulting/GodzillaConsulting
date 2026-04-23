@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
 import MediaPicker from './MediaPicker';
@@ -76,7 +77,7 @@ const forceDownloadMedia = async (url, defaultFilename) => {
 
 export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor = false }) {
     const [queue, setQueue] = useState([]);
-    const [showEditorModal, setShowEditorModal] = useState(forceOpenEditor);
+    // Eliminado showEditorModal
     const [selectedDraft, setSelectedDraft] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [renderingAI, setRenderingAI] = useState(false);
@@ -102,7 +103,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
     useEffect(() => {
         if (forceOpenEditor) {
-            setShowEditorModal(true);
+            localStorage.setItem('godzilla_editor_draft_src', forceOpenEditor.mediaUrl);
+            navigate('/admin/video-editor');
         }
     }, [forceOpenEditor]);
 
@@ -156,7 +158,6 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [credits, setCredits] = useState(250); // Saldo Ficticio Inicial Cuentas Plus
     const [genMode, setGenMode] = useState('imagen'); // 'imagen' | 'video'
     const [activeTab, setActiveTab] = useState('Fotogramas'); // 'Fotogramas' | 'Ingredientes'
-    const [editorVideoSrc, setEditorVideoSrc] = useState('');
     
     // Auth & Roles
     const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers' || adminProfile?.username?.toLowerCase() === 'jareg';
@@ -1516,7 +1517,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             <video src={task.media_options[0].url} className="w-full h-32 object-cover rounded-lg border border-neutral-800" autoPlay loop muted playsInline />
                                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-lg">
                                                                 <button 
-                                                                    onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(task.media_options[0].url); setShowEditorModal(true); }}
+                                                                    onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', task.media_options[0].url); navigate('/admin/video-editor'); }}
                                                                     className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] text-[10px] font-black uppercase px-4 py-2 rounded-xl flex items-center gap-2 transform hover:scale-105 transition-all"
                                                                 >
                                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -1641,7 +1642,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         )}
                                                         <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
                                                             <button 
-                                                                onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(slot.url); setShowEditorModal(true); }}
+                                                                onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', slot.url); navigate('/admin/video-editor'); }}
                                                                 className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5"
                                                             >
                                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -1656,7 +1657,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                             <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
                                                             <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
-                                                                <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(slot.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                                <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', slot.url); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
                                                             </div>
                                                         </div>
                                                         {/* Gemini Ultra Pane */}
@@ -1794,7 +1795,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 </div>
                                 <div className="flex items-center gap-3 flex-wrap justify-end">
                                     <button 
-                                        onClick={() => { setEditorVideoSrc(''); setShowEditorModal(true); }}
+                                        onClick={() => { localStorage.setItem('godzilla_editor_draft_src', ''); navigate('/admin/video-editor'); }}
                                         className="group bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-600 hover:to-pink-600 text-white border border-purple-500/50 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
                                     >
                                         <svg className="group-hover:rotate-12 transition-transform" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
@@ -1930,7 +1931,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         </>
                                                     )}
                                                     <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
-                                                        <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(opt.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                        <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', opt.url); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1940,7 +1941,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                         {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
                                                         <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
-                                                            <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(opt.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                            <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', opt.url); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
                                                         </div>
                                                     </div>
 
@@ -2059,24 +2060,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 </div> {/* FIN STUDIO CONTENT */}
             </div> {/* FIN RIGHT MAIN CANVAS */}
 
-            {/* VIDEO EDITOR MODAL (FullScreen Overlay) */}
-            <AnimatePresence>
-                {showEditorModal && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-[100] bg-black flex flex-col"
-                    >
-                        <IntegratedVideoEditor 
-                            initialVideoUrl={editorVideoSrc}
-                            queue={queue}
-                            onClose={() => setShowEditorModal(false)}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
 
             {/* Modal: Crear Filtro Personalizado */}
             {showCustomFilterModal && (

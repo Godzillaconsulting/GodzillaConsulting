@@ -176,6 +176,14 @@ export function useFFmpegRenderer() {
   const render = useCallback(async (project) => {
     setIsRendering(true);
     setProgress(0);
+    
+    // Request notification permission if not granted
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+
     try {
       const ffmpeg = await getFFmpeg(setProgress);
       const { inputs, filterComplex, finalV, finalA } = await buildCommand(ffmpeg, project);
@@ -198,6 +206,15 @@ export function useFFmpegRenderer() {
       });
       a.click();
       await ffmpeg.deleteFile('output.mp4');
+      
+      // Notify user
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+         new Notification('Godzilla Editor Pro', {
+           body: '¡Tu render de video ha terminado con éxito! Revisa tus descargas.',
+           icon: '/favicon.png'
+         });
+      }
+
       return true;
     } catch (err) {
       console.error('[FFmpegRenderer]', err);

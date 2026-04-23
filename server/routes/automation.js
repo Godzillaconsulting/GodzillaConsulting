@@ -48,7 +48,8 @@ router.post('/flow', verifyAdminToken, async (req, res) => {
 router.get('/status', verifyAdminToken, async (req, res) => {
     try {
         // Ejecutamos pm2 jlist para obtener un JSON purificado de los procesos
-        const { stdout } = await execPromise('npx pm2 jlist');
+        // windowsHide: true evita que salten ventanas de CMD negras cada 5 segundos en Windows
+        const { stdout } = await execPromise('npx pm2 jlist', { windowsHide: true });
         const processes = JSON.parse(stdout);
         
         // Mapear los nombres de procesos activos
@@ -63,6 +64,35 @@ router.get('/status', verifyAdminToken, async (req, res) => {
     } catch (err) {
         console.error('[Automation] GET /status Error:', err.message);
         res.status(500).json({ success: false, error: 'Fallo al contactar PM2', details: err.message });
+    }
+});
+
+// POST /api/automation/restart - Reiniciar un proceso de PM2
+router.post('/restart', verifyAdminToken, async (req, res) => {
+    try {
+        const { processName } = req.body;
+        if (!processName) {
+            return res.status(400).json({ success: false, error: 'processName requerido' });
+        }
+
+        // Validación básica de seguridad para evitar inyección de comandos
+        if (!/^[a-zA-Z0-9_-]+$/.test(processName)) {
+            return res.status(400).json({ success: false, error: 'Nombre de proceso inválido' });
+        }
+
+        console.log(`[Automation] Solicitando reinicio del proceso PM2: ${processName}`);
+        
+        // Ejecutamos pm2 restart
+        const { stdout, stderr } = await execPromise(`npx pm2 restart ${processName}`, { windowsHide: true });
+        
+        if (stderr && stderr.toLowerCase().includes('error')) {
+            console.error('[Automation] PM2 stderr:', stderr);
+        }
+
+        res.json({ success: true, message: `Proceso ${processName} reiniciado con éxito.` });
+    } catch (err) {
+        console.error('[Automation] POST /restart Error:', err.message);
+        res.status(500).json({ success: false, error: 'Fallo al reiniciar el proceso PM2', details: err.message });
     }
 });
 

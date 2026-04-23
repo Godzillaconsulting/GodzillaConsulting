@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power } from 'lucide-react';
+import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail } from 'lucide-react';
 
 // Diccionario de iconos
-const ICONS = { Bot, MessageCircle, Webhook, Calendar, Server, Shield, Activity };
+const ICONS = { Bot, MessageCircle, Webhook, Calendar, Server, Shield, Activity, Smartphone, Video, Camera, Database, Mail };
 
 const NODE_CONFIG = {
     trigger: { w: 160, h: 120 },
@@ -41,6 +41,8 @@ export default function AutomationFlow() {
     // Conexiones interactivas (Punteros)
     const [connectingFrom, setConnectingFrom] = useState(null);
     const [connectingToPos, setConnectingToPos] = useState(null);
+    
+    const [showNodeMenu, setShowNodeMenu] = useState(false);
     
     const canvasRef = useRef(null);
 
@@ -148,15 +150,37 @@ export default function AutomationFlow() {
     };
 
     // ─── Lógica de Nodos ─────────────────────────────────────────────────────────
-    const handleAddNode = (type = 'action', title = 'Nuevo Nodo') => {
+    const handleAddNode = (type = 'action', title = 'Nuevo Nodo', icon = 'Webhook', pm2 = '', url = '') => {
         const id = Date.now().toString();
         const viewX = canvasRef.current ? canvasRef.current.scrollLeft + 300 : 300;
         const viewY = canvasRef.current ? canvasRef.current.scrollTop + 200 : 200;
 
         setNodes([...nodes, {
-            id, type, title, subtitle: 'Configurar', icon: 'Webhook', x: viewX, y: viewY, color: '#f59e0b', pm2_process: ''
+            id, type, title, subtitle: 'Configurar', icon, x: viewX + (Math.random() * 50), y: viewY + (Math.random() * 50), color: '#f59e0b', pm2_process: pm2, webhook_url: url
         }]);
         setSelectedNodeId(id);
+    };
+
+    const handleRestartProcess = async (processName) => {
+        if(!processName) return;
+        try {
+            const res = await fetch('/api/automation/restart', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify({ processName })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert(`Proceso ${processName} reiniciado con éxito.`);
+            } else {
+                alert(`Error al reiniciar: ${data.error}`);
+            }
+        } catch(e) {
+            alert('Error de red al intentar reiniciar proceso.');
+        }
     };
 
     const handleDeleteNode = (id) => {
@@ -283,9 +307,46 @@ export default function AutomationFlow() {
                     <button onClick={() => saveFlow()} className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg uppercase tracking-widest">
                         Guardar Flujo
                     </button>
-                    <button onClick={() => handleAddNode('action', 'Nuevo Action')} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
-                        <Plus className="w-4 h-4" /> Añadir Nodo
-                    </button>
+                    <div className="relative">
+                        <button onClick={() => setShowNodeMenu(!showNodeMenu)} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
+                            <Plus className="w-4 h-4" /> Añadir Nodo
+                        </button>
+                        
+                        {showNodeMenu && (
+                            <div className="absolute top-full mt-2 right-0 w-64 bg-neutral-950 border border-neutral-800 shadow-2xl rounded-xl overflow-hidden z-50">
+                                <div className="p-2 border-b border-neutral-800 bg-neutral-900">
+                                    <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold px-2">Catálogo de Pilares</span>
+                                </div>
+                                <div className="max-h-64 overflow-y-auto p-1">
+                                    {[
+                                        { title: 'WhatsApp Bot', subtitle: 'Receptor WA Web', icon: 'Smartphone', color: '#10b981', pm2_process: 'whatsapp-bot' },
+                                        { title: 'Instagram Bot', subtitle: 'Publicador API', icon: 'Camera', color: '#d946ef', pm2_process: 'instagram-bot' },
+                                        { title: 'TikTok Bot', subtitle: 'Publicador API', icon: 'Video', color: '#06b6d4', pm2_process: 'tiktok-bot' },
+                                        { title: 'FB/Messenger', subtitle: 'Receptor Pages', icon: 'MessageCircle', color: '#3b82f6', pm2_process: 'messenger-bot' },
+                                        { title: 'Base de Datos', subtitle: 'PostgreSQL Sync', icon: 'Database', color: '#64748b', pm2_process: 'postgres' },
+                                        { title: 'Email Worker', subtitle: 'Newsletter Cron', icon: 'Mail', color: '#f97316', pm2_process: 'email-worker' },
+                                        { title: 'Planificador IA', subtitle: 'Generador', icon: 'Wand2', color: '#a855f7', pm2_process: '' },
+                                        { title: 'Webhook Externo', subtitle: 'n8n / Make', icon: 'Webhook', color: '#ef4444', pm2_process: '' },
+                                        { title: 'Nodo Genérico', subtitle: 'Webhook / API', icon: 'Webhook', color: '#f59e0b', pm2_process: '' }
+                                    ].map((preset, idx) => (
+                                        <button 
+                                            key={idx}
+                                            onClick={() => handleAddPresetNode(preset)}
+                                            className="w-full text-left p-2 hover:bg-neutral-800 rounded flex items-center gap-3 transition-colors group"
+                                        >
+                                            <div className="w-8 h-8 rounded flex items-center justify-center shrink-0" style={{backgroundColor: `${preset.color}22`, color: preset.color}}>
+                                                {React.createElement(ICONS[preset.icon] || Webhook, { className: 'w-4 h-4' })}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-white font-bold group-hover:text-white transition-colors">{preset.title}</p>
+                                                <p className="text-[10px] text-neutral-500">{preset.pm2_process ? `PM2: ${preset.pm2_process}` : 'Sin proceso'}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-900/30 px-4 py-2 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> SISTEMA ACTIVO
                     </span>
@@ -396,6 +457,17 @@ export default function AutomationFlow() {
                                     />
                                     <p className="text-[9px] text-neutral-500">Si coincide con PM2, mostrará estatus en vivo.</p>
                                 </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Webhook URL (Opcional)</label>
+                                    <input 
+                                        type="text" 
+                                        value={selectedNode.webhook_url || ''} 
+                                        onChange={e => updateSelectedNode({webhook_url: e.target.value})}
+                                        placeholder="https://n8n.tu-servidor.com/webhook/..."
+                                        className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition-colors"
+                                    />
+                                    <p className="text-[9px] text-neutral-500">Para Nodos Webhook: El motor enviará un POST aquí.</p>
+                                </div>
                             </div>
                             
                             <hr className="border-neutral-800"/>
@@ -409,7 +481,7 @@ export default function AutomationFlow() {
                                             return (
                                                 <>
                                                     <p className="text-[10px] text-emerald-400 font-bold mb-1">🟢 ONLINE - Mem: {Math.round(pData.memory / 1024 / 1024)}MB | CPU: {pData.cpu}%</p>
-                                                    <button className="w-full mt-2 py-2 bg-black border border-neutral-700 hover:border-neutral-500 text-xs font-bold text-white rounded-lg transition-colors">Reiniciar Proceso</button>
+                                                    <button onClick={() => handleRestartProcess(selectedNode.pm2_process)} className="w-full mt-2 py-2 bg-black border border-neutral-700 hover:border-neutral-500 text-xs font-bold text-white rounded-lg transition-colors">Reiniciar Proceso</button>
                                                 </>
                                             );
                                         } else {

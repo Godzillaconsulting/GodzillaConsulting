@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { removeWatermark } from '../utils/videoProcessor.js';
 import { getModelId } from '../config/ai_models_v4.config.js';
+import AutomationEngine from '../services/automationEngine.js';
 
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
@@ -861,6 +862,9 @@ Genera los 30 días completos. La calidad es CRÍTICA — cada narración debe s
                 }
             }
         }
+
+        // Disparar motor de automatización asincrónicamente
+        AutomationEngine.triggerFlow('Planificador IA', { plan: planData.plan, niche, month, year });
 
         res.json({ success: true, plan: planData.plan, niche, month, year });
 

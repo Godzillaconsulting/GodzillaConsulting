@@ -1,0 +1,227 @@
+import pool from '../config/db.js';
+import { GoogleGenAI } from '@google/genai';
+import { EdgeTTS } from 'node-edge-tts';
+import fetch from 'node-fetch';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+import ffprobePath from '@ffprobe-installer/ffprobe';
+import fs from 'fs';
+import path from 'path';
+
+ffmpeg.setFfmpegPath(ffmpegPath.path);
+ffmpeg.setFfprobePath(ffprobePath.path);
+
+const OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || path.join(process.cwd(), 'outputs');
+if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
+let isProcessing = false;
+
+// Configuración TTS (ElevenLabs y EdgeTTS)
+const tts = new EdgeTTS({ voice: 'es-MX-JorgeNeural' }); // Voz excelente en español latino neutro
+
+async function generateVoice(text, outputPath) {
+    console.log(`[MediaWorker] Generando TTS para: "${text.substring(0, 30)}..."`);
+    
+    // Opción 1: ElevenLabs
+    if (process.env.ELEVENLABS_API_KEY) {
+        try {
+            console.log(`[MediaWorker] Intentando ElevenLabs...`);
+            const voiceId = 'pNInz6obbfIdGwnf8p5A'; // Adam (Ejemplo), idealmente uno configurado
+            const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+                method: 'POST',
+                headers: {
+                    'xi-api-key': process.env.ELEVENLABS_API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    model_id: "eleven_multilingual_v2"
+                })
+            });
+
+            if (response.ok) {
+                const buffer = await response.buffer();
+                fs.writeFileSync(outputPath, buffer);
+                console.log(`[MediaWorker] ✅ ElevenLabs TTS generado.`);
+                return outputPath;
+            } else {
+                console.warn(`[MediaWorker] ⚠️ ElevenLabs falló (Quizás por cuota o invoice). Cayendo a Edge TTS... Status: ${response.status}`);
+            }
+        } catch (e) {
+            console.error(`[MediaWorker] Error en ElevenLabs: ${e.message}`);
+        }
+    }
+
+    // Opción 2: Fallback a Microsoft Edge TTS (Open Source - 100% Gratis y Excelente calidad)
+    console.log(`[MediaWorker] Usando Edge TTS (Fallback)...`);
+    await tts.ttsPromise(text, outputPath);
+    console.log(`[MediaWorker] ✅ Edge TTS generado.`);
+    return outputPath;
+}
+
+// Generación de imagen con Imagen 3
+async function generateImage(prompt, outputPath) {
+    console.log(`[MediaWorker] Generando Imagen: "${prompt.substring(0, 30)}..."`);
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await ai.models.generateImages({
+        model: 'imagen-3.0-generate-001',
+        prompt: prompt,
+        config: { numberOfImages: 1, outputMimeType: 'image/png', aspectRatio: '9:16' }
+    });
+    
+    if (response.generatedImages?.[0]?.image?.imageBytes) {
+        const b64 = response.generatedImages[0].image.imageBytes;
+        const buffer = Buffer.from(b64, 'base64');
+        fs.writeFileSync(outputPath, buffer);
+        console.log(`[MediaWorker] ✅ Imagen generada.`);
+        return outputPath;
+    }
+    throw new Error('Fallo en generación de imagen');
+}
+
+async function processTask() {
+    if (isProcessing) return;
+    
+    try {
+        isProcessing = true;
+        
+        // 1. Tomar la siguiente tarea de la cola y bloquearla inmediatamente
+        const res = await pool.query(`
+            UPDATE studio_tasks 
+            SET status = 'rendering'
+            WHERE id = (
+                SELECT id FROM studio_tasks 
+                WHERE status = 'pending_cm_approval' AND assigned_to = 'auto' 
+                ORDER BY created_at ASC LIMIT 1
+            )
+            RETURNING *;
+        `);
+
+        if (res.rowCount === 0) {
+            isProcessing = false;
+            return; // Nada en cola
+        }
+
+        const task = res.rows[0];
+        console.log(`\n[MediaWorker] 🚀 Iniciando ensamblaje para Tarea #${task.id}: ${task.title}`);
+
+        const payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
+        
+        if (!payload || !payload.scenes) {
+            throw new Error('El payload no contiene escenas estructuradas.');
+        }
+
+        const dayData = payload.scenes;
+        const clipsPaths = [];
+
+        // Por ahora, simularemos un ensamblaje básico de SlideShow + Voz si no es video puro
+        // Generaremos las imágenes por cada escena
+        for (let i = 1; i <= 5; i++) {
+            const visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`];
+            const narration = i === 5 ? dayData['NARRACION ESCENA 5 (CTA)'] : dayData[`NARRACION ESCENA ${i}`];
+            
+            if (!visualPrompt && !narration) continue;
+
+            console.log(`[MediaWorker] Procesando Escena ${i}...`);
+            const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.png`);
+            const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
+            
+            // Generar Medios en Paralelo para agilizar
+            const promises = [];
+            if (visualPrompt) promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
+            if (narration) promises.push(generateVoice(narration, sceneAudioPath).catch(e => null));
+            
+            await Promise.all(promises);
+
+            if (fs.existsSync(sceneImgPath) && fs.existsSync(sceneAudioPath)) {
+                clipsPaths.push({ img: sceneImgPath, audio: sceneAudioPath, id: i });
+            }
+        }
+
+        if (clipsPaths.length === 0) {
+            throw new Error('No se pudo generar ningún clip o audio para las escenas.');
+        }
+
+        // Ensamblar con FFmpeg
+        const finalOutput = path.join(OUTPUT_DIR, `task_${task.id}_final.mp4`);
+        console.log(`[MediaWorker] 🎬 Ensamblando ${clipsPaths.length} escenas en: ${finalOutput}`);
+
+        // Crear archivo de texto para concat de ffmpeg
+        // Usamos un complejo de filtros si es necesario, pero para slideshow simple con audio:
+        // Por la limitación de fluidez, lo haremos clip por clip, luego concatenamos.
+
+        const renderedClips = [];
+        for (const clip of clipsPaths) {
+            const clipOutput = path.join(OUTPUT_DIR, `task_${task.id}_clip_${clip.id}.mp4`);
+            await new Promise((resolve, reject) => {
+                ffmpeg()
+                    .input(clip.img)
+                    .loop()
+                    .input(clip.audio)
+                    .outputOptions([
+                        '-c:v libx264',
+                        '-tune stillimage',
+                        '-c:a aac',
+                        '-b:a 192k',
+                        '-pix_fmt yuv420p',
+                        '-shortest', // El video dura lo que dura el audio
+                        '-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2'
+                    ])
+                    .save(clipOutput)
+                    .on('end', () => {
+                        renderedClips.push(clipOutput);
+                        resolve();
+                    })
+                    .on('error', reject);
+            });
+        }
+
+        // Concatenar todos los clips
+        const concatTxtPath = path.join(OUTPUT_DIR, `task_${task.id}_files.txt`);
+        const fileContent = renderedClips.map(file => `file '${path.resolve(file).replace(/\\/g, '/')}'`).join('\n');
+        fs.writeFileSync(concatTxtPath, fileContent);
+
+        await new Promise((resolve, reject) => {
+            ffmpeg()
+                .input(concatTxtPath)
+                .inputOptions(['-f concat', '-safe 0'])
+                .outputOptions(['-c copy'])
+                .save(finalOutput)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        // Limpiar temporales
+        [concatTxtPath, ...renderedClips, ...clipsPaths.flatMap(c => [c.img, c.audio])].forEach(f => {
+            if (fs.existsSync(f)) fs.unlinkSync(f);
+        });
+
+        console.log(`[MediaWorker] ✅ Video Final Completado: ${finalOutput}`);
+
+        // Actualizar tarea a 'published' para que el AutoPublisher la tome en su fecha
+        payload.url = `/outputs/task_${task.id}_final.mp4`;
+        
+        await pool.query(`
+            UPDATE studio_tasks 
+            SET status = 'published', media_payload = $1, title = $2
+            WHERE id = $3
+        `, [JSON.stringify(payload), task.title, task.id]);
+        
+        console.log(`[MediaWorker] Tarea #${task.id} marcada como lista para publicación.`);
+
+    } catch (error) {
+        console.error(`[MediaWorker] ❌ Error crítico:`, error.message);
+        // Si hay un error, revertir o marcar como fallido para que intervenga el CM
+        // Solo como ejemplo de robustez:
+        // await pool.query(`UPDATE studio_tasks SET status = 'failed', feedback_notes = $1 WHERE status = 'rendering' AND assigned_to = 'auto'`, [error.message]);
+    } finally {
+        isProcessing = false;
+    }
+}
+
+console.log('[MediaWorker] 🟢 Obrero de Medios iniciado. Escuchando base de datos cada 20 segundos...');
+setInterval(processTask, 20000);
+// Disparar uno inmediatamente
+processTask();

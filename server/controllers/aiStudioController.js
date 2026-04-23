@@ -10,6 +10,18 @@ import AutomationEngine from '../services/automationEngine.js';
 
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
+
+// Configuracion de Carpetas Seguras (Cloud/Vercel Compatible)
+const OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || path.join(process.cwd(), 'outputs');
+if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
+// Utilidad robusta para extraer JSON de respuestas de Gemini
+const extractJSON = (text) => {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    return match ? match[1].trim() : text.replace(/```(?:json)?|```/gi, '').trim();
+};
 export const generateRenderJob = async (req, res) => {
     try {
         const { prompt, config, engine } = req.body;
@@ -223,7 +235,7 @@ ${cacheBuster}`;
                             const b64 = response.generatedImages[0].image.imageBytes;
                             const buffer = Buffer.from(b64, 'base64');
                             const fileName = `${taskId}.png`;
-                            const savePath = path.join('E:/GodzillaSora_Outputs', fileName);
+                            const savePath = path.join(OUTPUT_DIR, fileName);
                             fs.writeFileSync(savePath, buffer);
                             resultUrl = `/api/sora/media/${fileName}`;
                         }
@@ -249,7 +261,7 @@ ${cacheBuster}`;
                                 const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1] || 'png';
                                 const buffer = Buffer.from(part.inlineData.data, 'base64');
                                 const fileName = `${taskId}.${ext}`;
-                                const savePath = path.join('E:/GodzillaSora_Outputs', fileName);
+                                const savePath = path.join(OUTPUT_DIR, fileName);
                                 fs.writeFileSync(savePath, buffer);
                                 resultUrl = `/api/sora/media/${fileName}`;
                                 break;
@@ -441,10 +453,7 @@ export const getInspirationGallery = async (req, res) => {
         });
         
         // Limpiamos la respuesta en caso que Gemini devuelva markdown
-        let jsonStr = resp.response.text().trim();
-        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
-        if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+        let jsonStr = extractJSON(resp.response.text());
         
         let generationList;
         try {
@@ -492,10 +501,7 @@ export const getDynamicFilters = async (req, res) => {
              generationConfig: { responseMimeType: "application/json", temperature: 1.5 }
         });
         
-        let jsonStr = resp.response.text().trim();
-        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
-        if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+        let jsonStr = extractJSON(resp.response.text());
         
         let filtersList;
         try {
@@ -521,7 +527,6 @@ export const generateScriptChat = async (req, res) => {
         }
 
         console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
         // 1. Recuperar memoria de aprendizaje de la Base de Datos (Últimas 5 correcciones)
@@ -610,7 +615,7 @@ export const refineRenderJob = async (req, res) => {
         } else if (imageUrl.startsWith('/api/sora/media/')) {
             // Resolver archivo local generado previamente
             const fileName = imageUrl.replace('/api/sora/media/', '');
-            const localPath = path.join('E:/GodzillaSora_Outputs', fileName);
+            const localPath = path.join(OUTPUT_DIR, fileName);
             if (!fs.existsSync(localPath)) throw new Error('Imagen original no encontrada en el disco.');
             const buffer = fs.readFileSync(localPath);
             base64Image = buffer.toString('base64');
@@ -673,18 +678,13 @@ export const purifyVideo = async (req, res) => {
         const taskId = "purify_" + Date.now();
         const rawPath = req.file.path; // Multer saves it somewhere temporarily
         const cleanFilename = `${taskId}_clean.mp4`;
-        const cleanPath = path.join('E:/assets', cleanFilename);
+        const cleanPath = path.join(OUTPUT_DIR, cleanFilename);
         
         // Ejecutamos FFMPEG de forma asíncrona pero devolvemos rápido el Task ID
         postProcessJobs.set(taskId, { status: 'working' });
         
         (async () => {
             try {
-                // Si la carpeta de assets no existe, se crea
-                if (!fs.existsSync('E:/assets')) {
-                    fs.mkdirSync('E:/assets', { recursive: true });
-                }
-                
                 await removeWatermark(rawPath, cleanPath, (p) => { postProcessJobs.set(taskId, { status: 'working', progress: p }); });
                 
                 // Limpiar el crudo suciote
@@ -729,7 +729,6 @@ export const magicEditAnalysis = async (req, res) => {
              audioB64 = req.body.audioBase64.split(',')[1] || req.body.audioBase64;
         }
 
-        const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         const prompt = `Actúa como un Bot de Edición de Video Profesional.
@@ -763,8 +762,7 @@ IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales)
             }]
         });
 
-        let textRes = response.candidates[0].content.parts[0].text;
-        textRes = textRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+        let textRes = extractJSON(response.candidates[0].content.parts[0].text);
 
         const edlData = JSON.parse(textRes);
         res.json({ success: true, edl: edlData });
@@ -913,8 +911,7 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                         batchOutputTokens = response.usageMetadata.candidatesTokenCount || 0;
                     }
 
-                    let rawText = response.candidates[0].content.parts[0].text;
-                    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    let rawText = extractJSON(response.candidates[0].content.parts[0].text);
                     
                     batchData = JSON.parse(rawText);
 

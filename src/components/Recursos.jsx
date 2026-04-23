@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Download, X, Check } from 'lucide-react';
 import { useLeadCapture } from '../hooks/useLeadCapture';
 import { useSiteData } from '../context/SiteContext';
@@ -49,6 +49,44 @@ const Recursos = () => {
     // Importamos nuestra conexión hook al backend (Esto sustituye temporalmente o acompaña a la simulación visual)
     const { captureLead, status, errorMessage } = useLeadCapture();
 
+    // ── Typewriter effect ──────────────────────────────────────────────────
+    const rawTitle = isSpanish ? (nodeData.title || 'RECURSOS') : t('resources.titleRed');
+    const [typedTitle, setTypedTitle] = useState('');
+    const [startTyping, setStartTyping] = useState(false);
+    const titleContainerRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setStartTyping(true);
+                } else {
+                    setStartTyping(false);
+                    setTypedTitle('');
+                }
+            },
+            { threshold: 0.3 }
+        );
+        if (titleContainerRef.current) observer.observe(titleContainerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!startTyping) return;
+        let i = 0;
+        let current = '';
+        const interval = setInterval(() => {
+            if (i < rawTitle.length) {
+                current += rawTitle.charAt(i);
+                setTypedTitle(current);
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 120);
+        return () => clearInterval(interval);
+    }, [rawTitle, startTyping]);
+
     useEffect(() => {
         // Fallback or future resource logic
     }, []);
@@ -95,14 +133,14 @@ const Recursos = () => {
     return (
         <section id="recursos" className="py-24 bg-[#111111] overflow-hidden">
             <div className="container mx-auto px-6 max-w-6xl">
-                <div className="text-center mb-20">
+                <div ref={titleContainerRef} className="text-center mb-20">
                     {nodeData.overline && (
                         <span className="block text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
                             {nodeData.overline}
                         </span>
                     )}
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">
-                        {isSpanish ? (nodeData.title || 'RECURSOS') : t('resources.titleRed')}
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter inline-block animate-blink-cursor">
+                        {typedTitle}
                     </h2>
                     <p className="text-xl text-gray-300 font-medium max-w-2xl mx-auto">
                         {isSpanish ? (nodeData.subtitle || 'Accede a recursos de IA y marketing listos para usar en tu día a día.') : t('resources.subtitle')}

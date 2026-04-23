@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from'react';
+import React, { useState, useEffect, useRef } from'react';
 import { Target, Eye, ChevronLeft, ChevronRight } from'lucide-react';
 import { useSiteData } from '../context/SiteContext';
 import { getYouTubeId } from './MediaPicker';
@@ -43,6 +43,44 @@ const Cultura = () => {
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // ── Typewriter effect ──────────────────────────────────────────────────
+  const rawTitle = isSpanish ? (nodeData.title || 'CULTURA') : t('culture.titleRed');
+  const [typedTitle, setTypedTitle] = useState('');
+  const [startTyping, setStartTyping] = useState(false);
+  const titleContainerRef = useRef(null);
+
+  useEffect(() => {
+      const observer = new IntersectionObserver(
+          ([entry]) => {
+              if (entry.isIntersecting) {
+                  setStartTyping(true);
+              } else {
+                  setStartTyping(false);
+                  setTypedTitle('');
+              }
+          },
+          { threshold: 0.3 }
+      );
+      if (titleContainerRef.current) observer.observe(titleContainerRef.current);
+      return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+      if (!startTyping) return;
+      let i = 0;
+      let current = '';
+      const interval = setInterval(() => {
+          if (i < rawTitle.length) {
+              current += rawTitle.charAt(i);
+              setTypedTitle(current);
+              i++;
+          } else {
+              clearInterval(interval);
+          }
+      }, 120);
+      return () => clearInterval(interval);
+  }, [rawTitle, startTyping]);
 
   const [rightSlide, setRightSlide] = useState(0);
   const [rightIsPaused, setRightIsPaused] = useState(false);
@@ -181,10 +219,10 @@ const Cultura = () => {
 
  {/* Text Content */}
  <div className="space-y-12">
- <div>
+ <div ref={titleContainerRef}>
  <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-none">
  <span className="block text-gray-500">{isSpanish ? (nodeData.overline || 'NUESTRA') : t('culture.title')}</span>
- {isSpanish ? (nodeData.title || 'CULTURA') : t('culture.titleRed')}
+ <span className="inline-block animate-blink-cursor">{typedTitle}</span>
  </h2>
  <div className="w-24 h-2 bg-[#CC0000] mb-8"></div>
 

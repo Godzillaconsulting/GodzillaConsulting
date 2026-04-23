@@ -64,7 +64,74 @@ const Paquetes = () => {
  const nodeData = getNodeData('paquetes') || {};
  const packages = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultPackages;
  const activeLng = i18n.resolvedLanguage ? i18n.resolvedLanguage.split('-')[0].toLowerCase() : 'en';
- const localizedItems = nodeData.translations?.[activeLng]?.elements || nodeData.translations?.en?.elements || t('packages.items', { returnObjects: true }) || [];
+ const fallbackTranslations = t('packages.items', { returnObjects: true }) || [];
+ const localizedItems = nodeData.translations?.[activeLng]?.elements || nodeData.translations?.en?.elements || fallbackTranslations;
+
+ const translateTitle = (title) => {
+   if (!isIntl) return title;
+   switch (title) {
+     case 'Posicionamiento Social': return 'Social Positioning';
+     case 'Control IA': return 'AI Control';
+     case 'Expansión': return 'Expansion';
+     case 'Élite': return 'Elite';
+     default: return title;
+   }
+ };
+
+ const translateTarget = (title, index, pkgTarget) => {
+   if (!isIntl) {
+     if (pkgTarget && pkgTarget.trim() !== "") return pkgTarget;
+     switch (title) {
+       case 'Posicionamiento Social': return 'Impulsar el crecimiento y la presencia digital.';
+       case 'Control IA': return 'Automatizar ventas y atención al cliente 24/7.';
+       case 'Expansión': return 'Conseguir volumen de prospectos nuevos cada semana.';
+       case 'Élite': return 'Negocios establecidos listos para escalar agresivamente.';
+       default: return 'Impulsar el crecimiento y la presencia digital.';
+     }
+   }
+   return fallbackTranslations[index]?.target || '';
+ };
+
+ // ── Typewriter effect ──────────────────────────────────────────────────
+ const rawTitlePart1 = isIntl ? t('packages.title', 'PACKAGES') : (nodeData.title || t('packages.title', 'PAQUETES'));
+ const rawTitlePart2 = isIntl ? t('packages.titleRed', '') : (nodeData.titleRed || '');
+ const fullRawTitle = rawTitlePart1 + (rawTitlePart2 ? ' ' + rawTitlePart2 : '');
+
+ const [typedTitle, setTypedTitle] = useState('');
+ const [startTyping, setStartTyping] = useState(false);
+ const titleContainerRef2 = useRef(null);
+
+ useEffect(() => {
+     const observer = new IntersectionObserver(
+         ([entry]) => {
+             if (entry.isIntersecting) {
+                 setStartTyping(true);
+             } else {
+                 setStartTyping(false);
+                 setTypedTitle('');
+             }
+         },
+         { threshold: 0.3 }
+     );
+     if (titleContainerRef2.current) observer.observe(titleContainerRef2.current);
+     return () => observer.disconnect();
+ }, []);
+
+ useEffect(() => {
+     if (!startTyping) return;
+     let i = 0;
+     let current = '';
+     const interval = setInterval(() => {
+         if (i < fullRawTitle.length) {
+             current += fullRawTitle.charAt(i);
+             setTypedTitle(current);
+             i++;
+         } else {
+             clearInterval(interval);
+         }
+     }, 120);
+     return () => clearInterval(interval);
+ }, [fullRawTitle, startTyping]);
 
  const scrollContainerRef = useRef(null);
  const [isDragging, setIsDragging] = useState(false);
@@ -119,13 +186,13 @@ const Paquetes = () => {
  return (
  <section id="paquetes" className="py-24 bg-[#111111] overflow-hidden">
  <div className="container mx-auto px-4 max-w-7xl">
- <div className="text-center mb-16">
- <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase">
- {isIntl ? (
-   <>{t('packages.title', 'PACKAGES')} {t('packages.titleRed', '') && <span className="text-[#CC0000]">{t('packages.titleRed')}</span>}</>
- ) : (
-   <>{nodeData.title || t('packages.title', 'PAQUETES')} {nodeData.titleRed && <span className="text-[#CC0000]">{nodeData.titleRed}</span>}</>
- )}
+ <div ref={titleContainerRef2} className="text-center mb-16">
+ <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase inline-block animate-blink-cursor">
+    {typedTitle.substring(0, rawTitlePart1.length)}
+    {typedTitle.length > rawTitlePart1.length && ' '}
+    {typedTitle.length > rawTitlePart1.length && (
+       <span className="text-[#CC0000]">{typedTitle.substring(rawTitlePart1.length + 1)}</span>
+    )}
  </h2>
  <p className="text-xl text-gray-300 font-medium max-w-4xl mx-auto leading-relaxed">
  {isIntl ? t('packages.subtitle', 'Learn more about the most suitable strategy to boost your business. Everything is protected by contract.') : (nodeData.subtitle || 'Aprende más sobre la estrategia más adecuada para potenciar tu negocio. Todo esta protegido por contrato.')}
@@ -164,9 +231,10 @@ const Paquetes = () => {
  className="relative w-full h-full rounded-[2rem] p-8 md:p-10 flex flex-col justify-between transition-all duration-500 bg-[#0A0A0A] text-white z-10 border border-gray-800 hover:border-[#CC0000] hover:-translate-y-4 min-h-[520px] shadow-2xl"
  >
  <div className="relative z-10">
- <h3 className="text-xl font-bold mb-4 text-center text-white">
- {isIntl ? (localizedItems[index]?.title || pkg.title) : pkg.title}
+ <h3 className="text-3xl md:text-4xl font-black mb-6 text-center text-white tracking-tight leading-tight drop-shadow-md uppercase">
+ {translateTitle(pkg.title)}
  </h3>
+ {pkg.price ? (
  <div className="flex items-baseline justify-center gap-1 mb-8">
  <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
   {(() => {
@@ -184,13 +252,14 @@ const Paquetes = () => {
   {isIntl ? 'USD / mo' : 'MXN / mes'}
  </span>
  </div>
+ ) : (
+ <div className="mb-8"></div>
+ )}
 
  {/*"Ideal para" section */}
   <div className="text-center mb-6">
     <div className="bg-[#FACC15] text-black font-bold text-[11px] md:text-sm px-4 py-2 rounded-lg inline-block w-fit text-balance leading-tight">
-      {isIntl ? t('packages.idealFor') : 'Ideal para:'} {isIntl
-        ? (localizedItems[index]?.target || pkg.planTarget || '')
-        : (pkg.planTarget || (pkg.title === 'Expansión' ? 'Conseguir volumen de prospectos nuevos cada semana.' : 'Impulsar el crecimiento y la presencia digital.'))}
+      {isIntl ? t('packages.idealFor') : 'Ideal para:'} {translateTarget(pkg.title, index, pkg.planTarget)}
     </div>
   </div>
 

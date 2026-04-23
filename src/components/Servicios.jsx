@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
@@ -29,6 +29,44 @@ const Servicios = () => {
     const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     
     const nodeData = getNodeData('servicios') || {};
+    
+    // ── Typewriter effect ──────────────────────────────────────────────────
+    const rawTitle = isSpanish ? (nodeData.title || 'SERVICIOS') : t('services.title');
+    const [typedTitle, setTypedTitle] = useState('');
+    const [startTyping, setStartTyping] = useState(false);
+    const titleContainerRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setStartTyping(true);
+                } else {
+                    setStartTyping(false);
+                    setTypedTitle('');
+                }
+            },
+            { threshold: 0.3 }
+        );
+        if (titleContainerRef.current) observer.observe(titleContainerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!startTyping) return;
+        let i = 0;
+        let current = '';
+        const interval = setInterval(() => {
+            if (i < rawTitle.length) {
+                current += rawTitle.charAt(i);
+                setTypedTitle(current);
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 120);
+        return () => clearInterval(interval);
+    }, [rawTitle, startTyping]);
     
     // Mezcla los datos por defecto o de elements con las variables planas (service1Title, service1Desc...)
     const baseServices = (nodeData.elements && nodeData.elements.length > 0) ? nodeData.elements : defaultServices;
@@ -144,12 +182,12 @@ const Servicios = () => {
                 })()}
                 <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-transparent to-transparent z-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
-                <div className="relative z-20 flex flex-col items-center justify-center mt-10">
+                <div ref={titleContainerRef} className="relative z-20 flex flex-col items-center justify-center mt-10">
                     <span className="text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
                         {isSpanish ? (nodeData.overline || "Soluciones de Alto Impacto") : t('services.overline')}
                     </span>
-                    <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl">
-                        {isSpanish ? (nodeData.title || 'SERVICIOS') : t('services.title')}
+                    <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl inline-block animate-blink-cursor">
+                        {typedTitle}
                     </h2>
                     {nodeData.subtitle && (
                         <p className="text-gray-200 mt-4 max-w-2xl text-center text-base md:text-lg drop-shadow-lg px-4">

@@ -15,11 +15,11 @@ const Navbar = () => {
     // Nombres extraidos del archivo de traducción
     const navLinks = [
         { name: t('navbar.home'), href:'/' },
-        { name: t('navbar.culture', 'CULTURA'), href:'/cultura' }, 
-        { name: t('navbar.services'), href:'/servicios' },
-        { name: t('navbar.portfolio'), href:'/portafolio' },
-        { name: t('navbar.resources', 'RECURSOS'), href:'/recursos' }, 
-        { name: t('navbar.packages', 'PAQUETES'), href:'/paquetes' }, 
+        { name: t('navbar.culture', 'CULTURA'), href:'/#cultura' }, 
+        { name: t('navbar.services'), href:'/#servicios' },
+        { name: t('navbar.portfolio'), href:'/#portafolio' },
+        { name: t('navbar.resources', 'RECURSOS'), href:'/#recursos' }, 
+        { name: t('navbar.packages', 'PAQUETES'), href:'/#paquetes' }, 
     ];
 
     useEffect(() => {

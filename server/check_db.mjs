@@ -1,15 +1,28 @@
-import dotenv from 'dotenv';
-dotenv.config();
 import pg from 'pg';
-const { Pool } = pg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const r = await pool.query(`
-  SELECT id, nombre_completo, email, fecha, hora, tipo_sesion, status, created_at
-  FROM citas
-  ORDER BY created_at DESC
-  LIMIT 10
-`);
-console.log('Últimas 10 citas en Local:');
-console.table(r.rows);
-await pool.end();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+const { Pool } = pg;
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: true // usually true for neon/vercel postgres
+});
+
+async function check() {
+    const client = await pool.connect();
+    try {
+        const res = await client.query(`SELECT * FROM site_nodes WHERE id = 'paquetes'`);
+        console.log(JSON.stringify(res.rows[0].published_data, null, 2));
+    } catch (e) {
+        console.error(e);
+    } finally {
+        client.release();
+        process.exit();
+    }
+}
+check();

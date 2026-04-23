@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search } from 'lucide-react';
 
-const ICONS = { Bot, MessageCircle, Webhook, Calendar, Server, Shield, Activity, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Cpu, Globe, Layers, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search };
+const getIcons = () => ({ Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search });
 
 // ─── Plantillas ────────────────────────────────────────────────────────────────
 const FLOW_TEMPLATES = [
@@ -697,7 +697,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 {NODE_PRESETS.map((p,i)=>(
                   <button key={i} onClick={()=>addPreset(p)} className="w-full text-left p-2 hover:bg-neutral-800 rounded flex items-center gap-2.5 transition group">
                     <div className="w-7 h-7 rounded flex items-center justify-center shrink-0" style={{backgroundColor:`${p.color}22`,color:p.color}}>
-                      {React.createElement(ICONS[p.icon]||Webhook,{className:'w-3.5 h-3.5'})}
+                      {React.createElement(getIcons()[p.icon]||Webhook,{className:'w-3.5 h-3.5'})}
                     </div>
                     <div>
                       <p className="text-xs text-white font-bold">{p.title}</p>
@@ -750,7 +750,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
           {/* Draw nodes */}
           {nodes.map(n=>{
-            const Icon=ICONS[n.icon]||Webhook;
+            const Icon=getIcons()[n.icon]||Webhook;
             const isSelected=selectedNodeId===n.id;
             const isRunning=executingNodes.has(n.id);
             const isTrigger=n.type==='trigger';

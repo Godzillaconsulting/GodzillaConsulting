@@ -15,6 +15,9 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    minify: 'terser'
   }
 })
 

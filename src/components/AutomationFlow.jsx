@@ -271,31 +271,7 @@ const FLOW_TEMPLATES = [
 const CurvedConnector = ({ startX, startY, endX, endY, color, animated = true }) => {
   const midX = (startX + endX) / 2;
   const path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
-
-  const flowHealth = useMemo(() => {
-    if (nodes.length === 0) return { status: 'empty', msg: 'Arrastra un nodo desde Añadir para comenzar a construir tu neurona.' };
-    const hasTrigger = nodes.some(n => n.type === 'trigger' || ['Webhook Entrada', 'Reloj / Cron', 'Zilla Bot', 'Goyi Bot', 'WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'GoDaddy', 'Vercel'].includes(n.title));
-    const hasAction = nodes.some(n => n.type === 'action' || ['Cerebro Central AI', 'Memoria a Largo Plazo', 'Godzilla CM', 'Calendario Global', 'Bot Newsletter', 'Trends Bot', 'Brevo', 'Stripe', 'Neon DB'].includes(n.title));
-    
-    // Check missing configs
-    const missing = nodes.find(n => {
-      if (n.title === 'Webhook Entrada' && (!n.config?.method || !n.config?.url)) return true;
-      if (n.title === 'Reloj / Cron' && !n.config?.cron) return true;
-      if (n.title === 'Cerebro Central AI' && !n.config?.prompt) return true;
-      if (n.title === 'Calendario Global' && !n.config?.action) return true;
-      if (['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(n.title) && !n.config?.fallback) return true;
-      return false;
-    });
-
-    if (missing) return { status: 'warning', msg: `⚠️ El nodo "${missing.title}" requiere configuración. Seleccionalo y completa los campos obligatorios.` };
-    if (!hasTrigger) return { status: 'error', msg: '🛑 Falta un Nodo Origen (Trigger). El flujo necesita saber cómo iniciarse (ej. Webhook, Cron, Bot).' };
-    if (!hasAction) return { status: 'error', msg: '🛑 Falta un Nodo Acción (Salida). El flujo se activa pero no hace nada (ej. Guardar en DB, Enviar Email).' };
-    if (edges.length === 0 && nodes.length > 1) return { status: 'warning', msg: '⚠️ Conecta los nodos arrastrando desde el punto de salida al punto de entrada.' };
-    return { status: 'success', msg: '✅ Flujo válido y listo para ejecutarse en el servidor.' };
-  }, [nodes, edges]);
-
   return (
-
     <svg className="absolute inset-0 pointer-events-none w-full h-full overflow-visible" style={{ zIndex: 0 }}>
       <path d={path} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" opacity="0.25" />
       <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
@@ -880,92 +856,118 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             <div><label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 block">PM2 Process (Opcional)</label>
               <input value={selectedNode.pm2_process||''} onChange={e=>updateNode({pm2_process:e.target.value})} placeholder="ej. whatsapp-bot" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/></div>
             
-            
             {/* Dynamic Config Block */}
             <div className="pt-3 mt-3 border-t border-neutral-800">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-bold text-yellow-400 uppercase flex items-center gap-1.5"><Settings2 className="w-3 h-3"/> Ajustes Obligatorios</label>
-                <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">Admite {"{{ $json.var }}"}</span>
-              </div>
+              <label className="text-[10px] font-bold text-yellow-400 uppercase mb-2 flex items-center gap-1.5"><Settings2 className="w-3 h-3"/> Ajustes Específicos</label>
               
-              {selectedNode.title === 'Webhook Entrada' && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Método HTTP</label>
-                    <select value={selectedNode.config?.method||''} onChange={e=>updateNode({config:{...selectedNode.config, method:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition">
-                      <option value="">Selecciona...</option>
-                      <option value="POST">POST</option>
-                      <option value="GET">GET</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Endpoint URL</label>
-                    <input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="/api/hooks/mi-evento" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
-                  </div>
-                </div>
-              )}
-
-              {selectedNode.title === 'Cerebro Central AI' && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Modelo LLM</label>
-                    <select value={selectedNode.config?.model||''} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition">
-                      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Razonamiento)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">System Prompt</label>
-                    <textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Eres un asistente experto. Evalúa este JSON: {{ $json.mensaje }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"/>
-                  </div>
+              {selectedNode.title === 'Planificador IA' && (
+                <div>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Tipo de Plan</label>
+                  <select 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"
+                  >
+                    <option value="">Selecciona...</option>
+                    <option value="Mes Completo">Mes Completo</option>
+                    <option value="Semanal">Semanal</option>
+                    <option value="Lote UGC">Lote UGC</option>
+                    <option value="Videos Cortos">Videos Cortos</option>
+                  </select>
                 </div>
               )}
 
               {selectedNode.title === 'Reloj / Cron' && (
                 <div>
-                  <label className="text-[10px] text-neutral-400 mb-1 block">Expresión Cron</label>
-                  <input value={selectedNode.config?.cron||''} onChange={e=>updateNode({config:{...selectedNode.config, cron:e.target.value}})} placeholder="0 9 * * 1 (Ej. Lunes 9 AM)" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Frecuencia de Ejecución</label>
+                  <select 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"
+                  >
+                    <option value="">Selecciona...</option>
+                    <option value="Cada Hora">Cada Hora</option>
+                    <option value="Diario (9 AM)">Diario (9 AM)</option>
+                    <option value="Semanal (Lunes)">Semanal (Lunes)</option>
+                    <option value="Mensual">Mensual</option>
+                  </select>
                 </div>
               )}
 
-              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(selectedNode.title) && (
+              {selectedNode.title === 'Router / Switch' && (
                 <div>
-                  <label className="text-[10px] text-neutral-400 mb-1 block">Mensaje / Fallback Reply</label>
-                  <textarea value={selectedNode.config?.fallback||''} onChange={e=>updateNode({config:{...selectedNode.config, fallback:e.target.value}})} placeholder="Hola {{ $json.nombre }}, recibimos tu solicitud." rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"/>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Condición Lógica</label>
+                  <input 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    placeholder="Ej: lead_score > 50"
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"
+                  />
                 </div>
               )}
 
-              {selectedNode.title === 'Calendario Global' && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Acción de Calendario</label>
-                    <select value={selectedNode.config?.action||''} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition">
-                      <option value="">Selecciona...</option>
-                      <option value="Agendar">Agendar Cita</option>
-                      <option value="Leer">Leer Disponibilidad</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Datos de Cita (JSON)</label>
-                    <input value={selectedNode.config?.payload||''} onChange={e=>updateNode({config:{...selectedNode.config, payload:e.target.value}})} placeholder="{ fecha: '{{ $json.date }}' }" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
-                  </div>
+              {selectedNode.title === 'Transformador JSON' && (
+                <div>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Estructura de Salida</label>
+                  <textarea 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    placeholder="{ nombre: $name }"
+                    rows={2}
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"
+                  />
+                </div>
+              )}
+
+              {selectedNode.title === 'Cerebro Central AI' && (
+                <div>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Contexto / Prompt Base</label>
+                  <textarea 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    placeholder="Ej. Eres un experto en..."
+                    rows={2}
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"
+                  />
+                </div>
+              )}
+
+              {selectedNode.title === 'HTTP Request' && (
+                <div>
+                  <label className="text-[10px] text-neutral-400 mb-1 block">Endpoint URL</label>
+                  <input 
+                    value={selectedNode.config?.displayValue || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, displayValue: e.target.value } })}
+                    placeholder="https://api.ejemplo.com/v1"
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"
+                  />
                 </div>
               )}
 
               {['Brevo', 'GoDaddy'].includes(selectedNode.title) && (
                 <div>
                   <label className="text-[10px] text-neutral-400 mb-1 block">API Key / Token (Oculto)</label>
-                  <input type="password" value={selectedNode.config?.apiKey||''} onChange={e=>updateNode({config:{...selectedNode.config, apiKey:e.target.value}})} placeholder="••••••••••••••••" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-rose-500 transition"/>
+                  <input 
+                    type="password"
+                    value={selectedNode.config?.apiKey || ''} 
+                    onChange={e=>updateNode({ config: { ...selectedNode.config, apiKey: e.target.value } })}
+                    placeholder="••••••••••••••••"
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-rose-500 transition"
+                  />
+                  <p className="text-[8px] text-rose-400/80 mt-1 leading-tight">Por seguridad, la clave no se mostrará después de guardada. Si te equivocas, elimina el nodo y créalo de nuevo.</p>
                 </div>
               )}
 
               {['Gemini API', 'Stripe', 'Neon DB', 'Cloudflare Workers', 'Vercel'].includes(selectedNode.title) && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 mt-2">
                   <p className="text-[10px] font-bold text-emerald-400 mb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/> Credenciales Nativas Seguras</p>
-                  <p className="text-[8.5px] text-emerald-500/70 leading-tight">API administrada desde las variables de entorno locales (<code>.env</code>). Todo el tráfico entrante/saliente está monitoreado activamente por el WAF.</p>
+                  <p className="text-[8.5px] text-emerald-500/70 leading-tight">API administrada desde las variables de entorno locales (<code>.env</code>). Todo el tráfico entrante/saliente está monitoreado activamente por el WAF para prevenir ataques.</p>
                 </div>
               )}
 
+              {!['Planificador IA', 'Reloj / Cron', 'Router / Switch', 'Transformador JSON', 'Cerebro Central AI', 'HTTP Request', 'Gemini API', 'Stripe', 'Brevo', 'Cloudflare Workers', 'Vercel', 'GoDaddy', 'Neon DB'].includes(selectedNode.title) && (
+                <p className="text-[10px] text-neutral-600 italic">Configuración automática administrada por el sistema central.</p>
+              )}
             </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
               <p className="text-[10px] font-bold text-blue-400 mb-1 flex items-center gap-1"><Power className="w-3 h-3"/>Motor</p>

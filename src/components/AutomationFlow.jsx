@@ -573,7 +573,18 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     const token = localStorage.getItem('adminToken');
     if (!token) return;
     fetch(`/api/automation/flow?id=${flowId}`, { headers:{ Authorization:`Bearer ${token}` } })
-      .then(r => r.json()).then(d => { if(d.success){ setNodes(d.nodes||[]); setEdges(d.edges||[]); if(d.name) setEditName(d.name); } })
+      .then(r => r.json()).then(d => { 
+        if(d.success){ 
+          if (d.name === 'Sistema Central' || flowId === 'central') {
+            setNodes(FLOW_TEMPLATES[0].nodes);
+            setEdges(FLOW_TEMPLATES[0].edges);
+          } else {
+            setNodes(d.nodes||[]); 
+            setEdges(d.edges||[]); 
+          }
+          if(d.name) setEditName(d.name); 
+        } 
+      })
       .catch(()=>{}).finally(()=>setIsLoading(false));
     fetch('/api/automation/runs',{ headers:{ Authorization:`Bearer ${token}` } })
       .then(r=>r.json()).then(d=>{ if(d.success) setRunHistory(d.runs||[]); }).catch(()=>{});
@@ -972,7 +983,15 @@ export default function AutomationFlow() {
       ]);
       const fd = await flowsRes.json();
       const sd = await statusRes.json();
-      if (fd.success) setFlows(fd.flows || []);
+      if (fd.success) {
+        const mappedFlows = (fd.flows || []).map(flow => {
+          if (flow.name === 'Sistema Central' || flow.id === 'central') {
+            return { ...flow, nodes: FLOW_TEMPLATES[0].nodes, edges: FLOW_TEMPLATES[0].edges };
+          }
+          return flow;
+        });
+        setFlows(mappedFlows);
+      }
       if (sd.success) setPm2Status(sd.pm2 || []);
 
       if (isJareg) {

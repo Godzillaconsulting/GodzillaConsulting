@@ -230,36 +230,53 @@ export default function AIContentPlanner({ adminProfile }) {
         }
     };
 
-    const handleSendToCalendar = async (day) => {
+    const handleSendToCalendar = async (day, idx) => {
         try {
             const token = localStorage.getItem('adminToken');
             const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
-            // Construye un evento con el tema + narracion + texto en pantalla como caption
-            const captions = SCENE_COLUMNS.map(n => {
-                const narr = day[COL(n).narracion] || '';
-                const txt = day[COL(n).texto] || '';
-                if (!narr && !txt) return null;
-                let block = `Escena ${n}:\n🗣️ ${narr}`;
-                if (txt) block += `\n💬 [TEXTO EN PANTALLA: ${txt}]`;
-                return block;
-            }).filter(Boolean).join('\n\n');
-            const res = await fetch(`${API}/api/calendar/events`, {
+            
+            // Calculate correct date
+            const now = new Date();
+            const currentYear = parseInt(year) || now.getFullYear();
+            const monthMap = { 'enero':0, 'febrero':1, 'marzo':2, 'abril':3, 'mayo':4, 'junio':5, 'julio':6, 'agosto':7, 'septiembre':8, 'octubre':9, 'noviembre':10, 'diciembre':11 };
+            const monthStr = month ? month.toLowerCase().trim() : '';
+            const currentMonth = monthMap[monthStr] !== undefined ? monthMap[monthStr] : now.getMonth();
+            const publishDate = new Date(currentYear, currentMonth, (idx || 0) + 1);
+            const isoDate = publishDate.toISOString().split('T')[0];
+
+            // Build narrations
+            const narrations = [1, 2, 3, 4, 5].map(n => {
+                const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+                return day[key] ? `Escena ${n}: ${day[key]}` : null;
+            }).filter(Boolean).join('\n');
+
+            const mediaPayload = {
+                source: 'manual_planner',
+                niche: generatedNiche || niche,
+                month: month,
+                year: year,
+                scenes: day,
+                visualJobs: day._visualJobs || [],
+                videoJobs: day._videoJobs || []
+            };
+
+            const res = await fetch(`${API}/api/studio/tasks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
-                    title: `🤖 ${day['Tema']}`,
-                    platform: 'ALL',
-                    status: 'warning',
-                    caption: captions,
-                    empresa: 'godzilla',
-                    calendario: 'contenido',
-                    start_date: new Date().toISOString().split('T')[0] + `T${String(day.dia || 1).padStart(2,'0')}:00:00`,
-                    end_date:   new Date().toISOString().split('T')[0] + `T${String(day.dia || 1).padStart(2,'0')}:00:00`,
+                    title: day['Tema'] || 'Día sin título',
+                    prompt: narrations,
+                    assigned_to: 'auto',
+                    tags: JSON.stringify([generatedNiche || niche || 'auto', 'manual-generated']),
+                    priority: 'Media',
+                    content_type: 'Video Corto',
+                    ig_publish_date: isoDate,
+                    media_payload: JSON.stringify(mediaPayload)
                 }),
             });
             const data = await res.json();
-            if (data.success) alert(`✅ Día ${day.dia} "${day['Tema']}" enviado al Calendario de Contenido.`);
-            else alert(data.error || 'Error enviando al calendario.');
+            if (data.success) alert(`✅ Día ${day.dia || (idx+1)} "${day['Tema']}" enviado al Contenido IA para generación automática.`);
+            else alert(data.error || 'Error enviando al Contenido IA.');
         } catch (err) {
             console.error(err);
             alert('Fallo de conexión.');

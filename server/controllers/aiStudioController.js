@@ -989,7 +989,8 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                 }
 
                 // Disparar motor de automatización asincrónicamente
-                AutomationEngine.triggerFlow('Planificador IA', { plan: fullPlan, niche, month, year });
+                const userEmail = req.user?.email || req.admin?.email || req.user?.username || req.admin?.username || 'admin';
+                AutomationEngine.triggerFlow('Planificador IA', { plan: fullPlan, niche, month, year, userEmail });
 
                 // Marcar trabajo como exitoso
                 plannerJobs.set(taskId, { status: 'completed', plan: fullPlan, niche, month, year, progress: 100 });

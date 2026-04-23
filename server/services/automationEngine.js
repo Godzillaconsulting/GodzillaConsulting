@@ -1,4 +1,5 @@
 import pool from '../config/db.js';
+import nodemailer from 'nodemailer';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // GODZILLA WORKFLOW ENGINE v2
@@ -102,9 +103,56 @@ class AutomationEngine {
             return { ...context, _studioTasksCreated: created };
         },
 
-        // NOTIFY: Registra en log que el Email Worker debe notificar
+        // NOTIFY: Envía correo con formato HTML colapsable al usuario
         'Email Worker': async (node, context) => {
             console.log(`[AutomationEngine] 📧 Email Worker notificado: ${context._studioTasksCreated || 0} tareas creadas.`);
+            
+            if (context.userEmail && context.plan) {
+                try {
+                    const transporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        auth: {
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_APP_PASSWORD,
+                        },
+                    });
+
+                    let htmlDays = '';
+                    context.plan.forEach((day, i) => {
+                        htmlDays += `
+                        <div style="margin-bottom:15px; background:#18181b; padding:15px; border-radius:8px; border:1px solid #333;">
+                            <h3 style="margin:0 0 10px 0; color:#fff;">Día ${i+1}: ${day['Tema']}</h3>
+                            <details style="color:#aaa;">
+                                <summary style="cursor:pointer; color:#CC0000; font-weight:bold;">Ver Prompts Detallados</summary>
+                                <div style="margin-top:10px; font-size:13px; line-height:1.5;">
+                                    <strong>NARRACIÓN 1:</strong> ${day['NARRACION ESCENA 1'] || ''}<br/>
+                                    <strong>VISUAL 1:</strong> ${day['VISUAL ESCENA 1 (Prompt Imagen Detallado)'] || ''}<br/>
+                                    <hr style="border-color:#333; margin:8px 0;"/>
+                                    <strong>NARRACIÓN CTA:</strong> ${day['NARRACION ESCENA 5 (CTA)'] || ''}<br/>
+                                    <strong>VISUAL CTA:</strong> ${day['VISUAL ESCENA 5 (Prompt Imagen Detallado)'] || ''}
+                                </div>
+                            </details>
+                        </div>`;
+                    });
+
+                    const html = `
+                    <div style="font-family:Arial,sans-serif; max-width:600px; margin:0 auto; background:#09090b; padding:20px; color:#fff;">
+                        <h2 style="color:#CC0000; text-align:center;">🤖 Plan Generado: ${context.niche}</h2>
+                        <p style="text-align:center; color:#888;">Mes: ${context.month || ''} ${context.year || ''} | ${context._studioTasksCreated || 0} videos en cola</p>
+                        ${htmlDays}
+                    </div>`;
+
+                    await transporter.sendMail({
+                        from: `"Godzilla AI Studio" <${process.env.EMAIL_USER}>`,
+                        to: context.userEmail,
+                        subject: `✅ Plan de 30 Días Listo: ${context.niche}`,
+                        html
+                    });
+                    console.log(`[AutomationEngine] 📧 Correo HTML enviado a ${context.userEmail}`);
+                } catch (e) {
+                    console.error('[AutomationEngine] Error enviando correo:', e.message);
+                }
+            }
             return context;
         },
 

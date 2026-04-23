@@ -69,6 +69,14 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     })),
   })), [editor.project.layers]);
 
+  const selectedClip = useMemo(() => {
+    for (const layer of editor.project.layers) {
+      const c = layer.clips.find(cl => cl.id === selectedClipId);
+      if (c) return { clip: c, layer };
+    }
+    return null;
+  }, [selectedClipId, editor.project.layers]);
+
   const handleClipSelect = useCallback((clipId) => {
     setSelectedClipId(clipId);
   }, []);
@@ -256,14 +264,6 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   ), [queue]);
 
   const allMedia = useMemo(() => [...savedVideos, ...localUploads], [savedVideos, localUploads]);
-
-  const selectedClip = useMemo(() => {
-    for (const layer of editor.project.layers) {
-      const c = layer.clips.find(cl => cl.id === selectedClipId);
-      if (c) return { clip: c, layer };
-    }
-    return null;
-  }, [selectedClipId, editor.project.layers]);
 
   const { w: canvasW, h: canvasH } = ASPECT_RATIOS[editor.project.aspectRatio];
   const isPortrait = canvasH > canvasW;

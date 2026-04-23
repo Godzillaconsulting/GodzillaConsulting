@@ -355,6 +355,7 @@ const staticMediaOptions = {
 };
 app.use('/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
 app.use('/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
+app.use('/outputs', express.static(path.join(__dirname, '..', 'outputs'), staticMediaOptions));
 
 
 // Configuración para servir el Front-End compilado (React/Vite)

@@ -51,7 +51,14 @@ class AutomationEngine {
             if (!context.plan || !Array.isArray(context.plan)) return context;
 
             let created = 0;
-            for (const day of context.plan) {
+            const now = new Date();
+            const currentYear = parseInt(context.year) || now.getFullYear();
+            const monthMap = { 'enero':0, 'febrero':1, 'marzo':2, 'abril':3, 'mayo':4, 'junio':5, 'julio':6, 'agosto':7, 'septiembre':8, 'octubre':9, 'noviembre':10, 'diciembre':11 };
+            const monthStr = context.month ? context.month.toLowerCase().trim() : '';
+            const currentMonth = monthMap[monthStr] !== undefined ? monthMap[monthStr] : now.getMonth();
+
+            for (let i = 0; i < context.plan.length; i++) {
+                const day = context.plan[i];
                 const title = day['Tema'] || 'Día sin título';
 
                 // Concatenar narraciones para el prompt principal
@@ -71,10 +78,13 @@ class AutomationEngine {
                     videoJobs: day._videoJobs || []
                 };
 
+                const publishDate = new Date(currentYear, currentMonth, i + 1);
+                const isoDate = publishDate.toISOString().split('T')[0];
+
                 await pool.query(`
                     INSERT INTO studio_tasks
-                        (title, prompt, assigned_to, tags, priority, content_type, status, media_payload)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        (title, prompt, assigned_to, tags, priority, content_type, status, media_payload, ig_publish_date, publish_targets)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 `, [
                     title,
                     narrations,
@@ -83,7 +93,9 @@ class AutomationEngine {
                     'Media',
                     'Video Corto',
                     'pending_cm_approval',
-                    JSON.stringify(mediaPayload)
+                    JSON.stringify(mediaPayload),
+                    isoDate,
+                    JSON.stringify(['instagram', 'tiktok'])
                 ]);
                 created++;
             }

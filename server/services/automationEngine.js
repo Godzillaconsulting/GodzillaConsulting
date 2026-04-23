@@ -14,6 +14,23 @@ import nodemailer from 'nodemailer';
 
 class AutomationEngine {
 
+    // ─── Evaluador de Variables Dinámicas ──────────────────────────────────────
+    static evaluateConfig(config, context) {
+        if (!config) return {};
+        const evaluated = {};
+        for (const [key, value] of Object.entries(config)) {
+            if (typeof value === 'string') {
+                // Reemplaza {{ $json.varName }} por context[varName]
+                evaluated[key] = value.replace(/\{\{\s*\$json\.([a-zA-Z0-9_]+)\s*\}\}/g, (match, varName) => {
+                    return context[varName] !== undefined ? context[varName] : '';
+                });
+            } else {
+                evaluated[key] = value;
+            }
+        }
+        return evaluated;
+    }
+
     // ─── Registro de Acciones por Tipo de Nodo ─────────────────────────────────
     static NODE_ACTIONS = {
         // ORIGEN: El planificador ya trajo los datos, solo los pasa.

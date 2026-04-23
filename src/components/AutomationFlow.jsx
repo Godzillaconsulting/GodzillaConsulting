@@ -686,7 +686,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const NODE_W=160, NODE_H=120;
   const nodePositions=new Map(nodes.map(n=>[n.id,{cx:n.x+NODE_W/2,cy:n.y+NODE_H/2,rx:n.x+NODE_W,ry:n.y+NODE_H/2,lx:n.x,ly:n.y+NODE_H/2}]));
 
-  const flowHealth = useMemo(() => {
+  const flowHealth = (() => {
     if (nodes.length === 0) return { status: 'empty', msg: 'Arrastra un nodo desde Añadir para comenzar a construir tu neurona.' };
     const hasTrigger = nodes.some(n => n.type === 'trigger' || ['Webhook Entrada', 'Reloj / Cron', 'Zilla Bot', 'Goyi Bot', 'WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'GoDaddy', 'Vercel'].includes(n.title));
     const hasAction = nodes.some(n => n.type === 'action' || ['Cerebro Central AI', 'Memoria a Largo Plazo', 'Godzilla CM', 'Calendario Global', 'Bot Newsletter', 'Trends Bot', 'Brevo', 'Stripe', 'Neon DB'].includes(n.title));
@@ -706,7 +706,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     if (!hasAction) return { status: 'error', msg: '🛑 Falta un Nodo Acción (Salida). El flujo se activa pero no hace nada (ej. Guardar en DB, Enviar Email).' };
     if (edges.length === 0 && nodes.length > 1) return { status: 'warning', msg: '⚠️ Conecta los nodos arrastrando desde el punto de salida al punto de entrada.' };
     return { status: 'success', msg: '✅ Flujo válido y listo para ejecutarse en el servidor.' };
-  }, [nodes, edges]);
+  })();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden"

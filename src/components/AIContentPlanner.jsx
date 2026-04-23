@@ -150,6 +150,8 @@ export default function AIContentPlanner({ adminProfile }) {
     const [generatedNiche, setGNiche] = useState('');
     const [webhookUrl, setWebhookUrl] = useState('');
     const [isSendingWebhook, setIsSendingWebhook] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [progressText, setProgressText] = useState('');
 
     const username    = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
@@ -176,6 +178,8 @@ export default function AIContentPlanner({ adminProfile }) {
         if (!niche.trim()) return alert('Por favor ingresa un nicho o producto.');
         setGenerating(true);
         setPlan(null);
+        setProgress(0);
+        setProgressText('Iniciando clúster de IA...');
         try {
             const token = localStorage.getItem('adminToken');
             const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
@@ -185,17 +189,45 @@ export default function AIContentPlanner({ adminProfile }) {
                 body: JSON.stringify({ niche, month, year, extraContext }),
             });
             const data = await res.json();
-            if (data.success) {
-                setPlan(data.plan);
-                setGNiche(niche);
+            
+            if (data.success && data.taskId) {
+                // Iniciar Polling de estado
+                const intervalId = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`${API}/api/studio/plan-status/${data.taskId}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const statusData = await statusRes.json();
+                        
+                        if (statusData.success) {
+                            if (statusData.status === 'completed') {
+                                clearInterval(intervalId);
+                                setPlan(statusData.plan);
+                                setGNiche(statusData.niche);
+                                setGenerating(false);
+                            } else if (statusData.status === 'error') {
+                                clearInterval(intervalId);
+                                alert(statusData.error || 'Error durante la generación.');
+                                setGenerating(false);
+                            } else {
+                                setProgress(statusData.progress || 0);
+                                setProgressText(`Generando plan (Lote ${Math.ceil((statusData.progress || 1) / 16.66)} de 6)...`);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error polling status:", e);
+                        // No rompemos el loop por un fallo de red intermitente
+                    }
+                }, 3000);
             } else {
-                alert(data.error || 'Error generando plan');
+                alert(data.error || 'Error iniciando plan');
+                setGenerating(false);
             }
         } catch (err) {
             console.error(err);
             alert('Fallo de conexión con el servidor.');
+            setGenerating(false);
         }
-        setGenerating(false);
     };
 
     const handleSendToCalendar = async (day) => {
@@ -362,8 +394,13 @@ export default function AIContentPlanner({ adminProfile }) {
                             <div className="w-16 h-16 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
                             <CalendarIcon className="w-6 h-6 absolute inset-0 m-auto text-purple-400" />
                         </div>
-                        <p className="text-sm font-bold">Gemini está diseñando tu estrategia de 30 días...</p>
-                        <p className="text-xs text-neutral-700">Generando 150 escenas completas · puede tomar ~30 segundos</p>
+                        <p className="text-sm font-bold text-white">{progressText || 'Gemini está diseñando tu estrategia de 30 días...'}</p>
+                        
+                        <div className="w-64 bg-black/50 h-2 rounded-full overflow-hidden mt-2 border border-white/5">
+                            <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                        </div>
+
+                        <p className="text-xs text-neutral-700">Generando 150 escenas completas en 6 lotes</p>
                     </div>
                 ) : !plan ? (
                     <div className="h-full flex flex-col items-center justify-center text-neutral-600">

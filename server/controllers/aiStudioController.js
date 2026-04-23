@@ -11,6 +11,18 @@ import AutomationEngine from '../services/automationEngine.js';
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
 
+// Cache para manejar los trabajos asincronos del Planificador IA
+const plannerJobs = new Map();
+
+export const getMonthlyPlanStatus = (req, res) => {
+    const { taskId } = req.params;
+    if (!taskId || !plannerJobs.has(taskId)) {
+        return res.json({ success: false, status: 'error', error: 'Job not found' });
+    }
+    const job = plannerJobs.get(taskId);
+    res.json({ success: true, ...job });
+};
+
 // Configuracion de Carpetas Seguras (Cloud/Vercel Compatible)
 const OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || path.join(process.cwd(), 'outputs');
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -928,39 +940,70 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
             return { plan: batchData.plan, input: batchInputTokens, output: batchOutputTokens };
         };
 
-        // Para evitar el límite de 8192 tokens de output (que corta el JSON y crashea),
-        // y debido a que el prompt ahora es mucho más detallado (Textos y SFX),
-        // dividimos los 30 días en 3 batches paralelos de 10 días cada uno.
-        const [b1, b2, b3] = await Promise.all([
-            generateBatch(1, 10),
-            generateBatch(11, 20),
-            generateBatch(21, 30)
-        ]);
+        const taskId = `plan_${Date.now()}`;
+        plannerJobs.set(taskId, { status: 'working', progress: 0 });
 
-        const fullPlan = [...b1.plan, ...b2.plan, ...b3.plan];
-        
-        const totalInput = b1.input + b2.input + b3.input;
-        const totalOutput = b1.output + b2.output + b3.output;
-        
-        // Calcular costo (Flash: $0.075 por 1M input, $0.30 por 1M output)
-        const costUsd = ((totalInput / 1000000) * 0.075) + ((totalOutput / 1000000) * 0.30);
+        // Evitar Timeout respondiendo inmediatamente al cliente
+        res.json({ success: true, taskId, status: 'working' });
 
-        try {
-            await pool.query(
-                `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
-                ['Planificador IA', 'gemini-2.5-flash', totalInput, totalOutput, costUsd]
-            );
-        } catch (e) {
-            console.error('[TELEMETRY] Error guardando costo API:', e.message);
-        }
+        // ================= BACKGROUND WORKER ================= //
+        (async () => {
+            try {
+                // Dividimos en 6 pequeños lotes de 5 días para NUNCA truncar el JSON
+                const batches = [
+                    { start: 1, end: 5 },
+                    { start: 6, end: 10 },
+                    { start: 11, end: 15 },
+                    { start: 16, end: 20 },
+                    { start: 21, end: 25 },
+                    { start: 26, end: 30 }
+                ];
+                
+                let fullPlan = [];
+                let totalInput = 0;
+                let totalOutput = 0;
 
-        // Disparar motor de automatización asincrónicamente
-        AutomationEngine.triggerFlow('Planificador IA', { plan: fullPlan, niche, month, year });
+                for (let i = 0; i < batches.length; i++) {
+                    const b = batches[i];
+                    // Ejecución secuencial para no ahogar la API con 'fetch failed' (Rate Limits)
+                    const batchResult = await generateBatch(b.start, b.end);
+                    fullPlan = [...fullPlan, ...batchResult.plan];
+                    totalInput += batchResult.input;
+                    totalOutput += batchResult.output;
+                    
+                    // Actualizar el progreso para que el cliente lo lea en su polling
+                    const progress = Math.round(((i + 1) / batches.length) * 100);
+                    plannerJobs.set(taskId, { status: 'working', progress });
+                }
 
-        res.json({ success: true, plan: fullPlan, niche, month, year });
+                // Calcular costo (Flash: $0.075 por 1M input, $0.30 por 1M output)
+                const costUsd = ((totalInput / 1000000) * 0.075) + ((totalOutput / 1000000) * 0.30);
 
+                try {
+                    await pool.query(
+                        `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
+                        ['Planificador IA', 'gemini-2.5-flash', totalInput, totalOutput, costUsd]
+                    );
+                } catch (e) {
+                    console.error('[TELEMETRY] Error guardando costo API:', e.message);
+                }
+
+                // Disparar motor de automatización asincrónicamente
+                AutomationEngine.triggerFlow('Planificador IA', { plan: fullPlan, niche, month, year });
+
+                // Marcar trabajo como exitoso
+                plannerJobs.set(taskId, { status: 'completed', plan: fullPlan, niche, month, year, progress: 100 });
+                
+                // Limpiar memoria caché en 1 hora
+                setTimeout(() => plannerJobs.delete(taskId), 1000 * 60 * 60);
+
+            } catch (error) {
+                console.error('[MONTHLY-PLAN] Error en background worker:', error);
+                plannerJobs.set(taskId, { status: 'error', error: error.message });
+            }
+        })();
     } catch (error) {
-        console.error('[MONTHLY-PLAN] Error generando plan:', error);
-        res.status(500).json({ error: 'Error generando el plan mensual.', details: error.message });
+        console.error('[MONTHLY-PLAN] Error inicializando el plan:', error);
+        res.status(500).json({ error: 'Error inicializando el plan mensual.', details: error.message });
     }
 };

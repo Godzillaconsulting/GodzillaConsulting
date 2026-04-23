@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail } from 'lucide-react';
+import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 // Diccionario de iconos
-const ICONS = { Bot, MessageCircle, Webhook, Calendar, Server, Shield, Activity, Smartphone, Video, Camera, Database, Mail };
+const ICONS = { Bot, MessageCircle, Webhook, Calendar, Server, Shield, Activity, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play };
 
 const NODE_CONFIG = {
     trigger: { w: 160, h: 120 },
@@ -43,6 +43,12 @@ export default function AutomationFlow() {
     const [connectingToPos, setConnectingToPos] = useState(null);
     
     const [showNodeMenu, setShowNodeMenu] = useState(false);
+
+    // ─── Estado del Motor de Ejecución ─────────────────────────────────────────
+    const [isExecuting, setIsExecuting] = useState(false);
+    const [runHistory, setRunHistory] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
+    const [executingNodes, setExecutingNodes] = useState(new Set());
     
     const canvasRef = useRef(null);
 
@@ -87,11 +93,52 @@ export default function AutomationFlow() {
             } catch (err) {}
         };
 
+        const fetchRunHistory = async () => {
+            try {
+                const res = await fetch('/api/automation/runs', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data.success) setRunHistory(data.runs || []);
+            } catch (err) {}
+        };
+
         loadFlow();
         fetchStatus();
+        fetchRunHistory();
         const interval = setInterval(fetchStatus, 5000);
-        return () => clearInterval(interval);
+        const histInterval = setInterval(fetchRunHistory, 10000);
+        return () => { clearInterval(interval); clearInterval(histInterval); };
     }, []);
+
+    // ─── Ejecutar Flujo (Botón ▶) ──────────────────────────────────────────────
+    const executeFlow = async () => {
+        const sourceNode = nodes.find(n => n.title === 'Planificador IA');
+        if (!sourceNode) {
+            alert('Añade un nodo "Planificador IA" y conéctalo a otros nodos antes de ejecutar.');
+            return;
+        }
+        const token = localStorage.getItem('adminToken');
+        setIsExecuting(true);
+        setExecutingNodes(new Set(nodes.map(n => n.id)));
+        try {
+            await fetch('/api/automation/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ sourceTitle: 'Planificador IA', payload: {} })
+            });
+            // Refrescar historial después de 4 segundos para capturar el resultado
+            setTimeout(async () => {
+                const runsRes = await fetch('/api/automation/runs', { headers: { 'Authorization': `Bearer ${token}` } });
+                const runsData = await runsRes.json();
+                if (runsData.success) { setRunHistory(runsData.runs || []); setShowHistory(true); }
+            }, 4000);
+        } catch (err) {
+            console.error('Error ejecutando flujo:', err);
+        } finally {
+            setTimeout(() => { setIsExecuting(false); setExecutingNodes(new Set()); }, 4000);
+        }
+    };
+
+
 
     // ─── Drag & Drop Handlers ───────────────────────────────────────────────────
     const handlePointerDown = (e, id) => {
@@ -307,6 +354,27 @@ export default function AutomationFlow() {
                     <button onClick={() => saveFlow()} className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg uppercase tracking-widest">
                         Guardar Flujo
                     </button>
+                    <button 
+                        onClick={executeFlow}
+                        disabled={isExecuting}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg uppercase tracking-widest ${
+                            isExecuting 
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 cursor-wait animate-pulse' 
+                            : 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30'
+                        }`}
+                    >
+                        <Play className="w-4 h-4" />
+                        {isExecuting ? 'Ejecutando...' : 'Ejecutar Flujo'}
+                    </button>
+                    <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-neutral-500 text-neutral-400 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                    >
+                        <Clock className="w-4 h-4" />
+                        {runHistory.length > 0 && (
+                            <span className={`w-2 h-2 rounded-full ${runHistory[0]?.status === 'success' ? 'bg-emerald-400' : runHistory[0]?.status === 'error' ? 'bg-rose-400' : 'bg-yellow-400'}`} />
+                        )}
+                    </button>
                     <div className="relative">
                         <button onClick={() => setShowNodeMenu(!showNodeMenu)} className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 hover:border-white hover:bg-neutral-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg">
                             <Plus className="w-4 h-4" /> Añadir Nodo
@@ -319,15 +387,13 @@ export default function AutomationFlow() {
                                 </div>
                                 <div className="max-h-64 overflow-y-auto p-1">
                                     {[
-                                        { title: 'WhatsApp Bot', subtitle: 'Receptor WA Web', icon: 'Smartphone', color: '#10b981', pm2_process: 'whatsapp-bot' },
-                                        { title: 'Instagram Bot', subtitle: 'Publicador API', icon: 'Camera', color: '#d946ef', pm2_process: 'instagram-bot' },
-                                        { title: 'TikTok Bot', subtitle: 'Publicador API', icon: 'Video', color: '#06b6d4', pm2_process: 'tiktok-bot' },
-                                        { title: 'FB/Messenger', subtitle: 'Receptor Pages', icon: 'MessageCircle', color: '#3b82f6', pm2_process: 'messenger-bot' },
-                                        { title: 'Base de Datos', subtitle: 'PostgreSQL Sync', icon: 'Database', color: '#64748b', pm2_process: 'postgres' },
-                                        { title: 'Email Worker', subtitle: 'Newsletter Cron', icon: 'Mail', color: '#f97316', pm2_process: 'email-worker' },
-                                        { title: 'Planificador IA', subtitle: 'Generador', icon: 'Wand2', color: '#a855f7', pm2_process: '' },
-                                        { title: 'Webhook Externo', subtitle: 'n8n / Make', icon: 'Webhook', color: '#ef4444', pm2_process: '' },
-                                        { title: 'Nodo Genérico', subtitle: 'Webhook / API', icon: 'Webhook', color: '#f59e0b', pm2_process: '' }
+                                        { title: 'Planificador IA', subtitle: 'Generador (Origen)', icon: 'Wand2', color: '#a855f7', pm2_process: '' },
+                                        { title: 'Generador Visual', subtitle: 'Imagen 3 API', icon: 'Image', color: '#3b82f6', pm2_process: 'image-generation' },
+                                        { title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', color: '#f59e0b', pm2_process: 'video-generation' },
+                                        { title: 'Tarea de Studio', subtitle: 'CEO Estudio Sync', icon: 'CheckSquare', color: '#10b981', pm2_process: 'studio-task' },
+                                        { title: 'Email Worker', subtitle: 'Notificación Equipo', icon: 'Mail', color: '#f97316', pm2_process: 'email-worker' },
+                                        { title: 'WhatsApp Bot', subtitle: 'Alerta WA', icon: 'Smartphone', color: '#10b981', pm2_process: 'whatsapp-bot' },
+                                        { title: 'Base de Datos', subtitle: 'Persistencia DB', icon: 'Database', color: '#64748b', pm2_process: 'postgres' }
                                     ].map((preset, idx) => (
                                         <button 
                                             key={idx}
@@ -455,18 +521,7 @@ export default function AutomationFlow() {
                                         placeholder="ej. zilla-whatsapp"
                                         className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition-colors"
                                     />
-                                    <p className="text-[9px] text-neutral-500">Si coincide con PM2, mostrará estatus en vivo.</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Webhook URL (Opcional)</label>
-                                    <input 
-                                        type="text" 
-                                        value={selectedNode.webhook_url || ''} 
-                                        onChange={e => updateSelectedNode({webhook_url: e.target.value})}
-                                        placeholder="https://n8n.tu-servidor.com/webhook/..."
-                                        className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition-colors"
-                                    />
-                                    <p className="text-[9px] text-neutral-500">Para Nodos Webhook: El motor enviará un POST aquí.</p>
+                                    <p className="text-[9px] text-neutral-500">Vincula el nodo a tu bot interno en PM2.</p>
                                 </div>
                             </div>
                             
@@ -505,6 +560,45 @@ export default function AutomationFlow() {
                     </>
                 )}
             </div>
+
+            {/* Panel de Historial de Ejecuciones */}
+            {showHistory && (
+                <div className="absolute bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800 z-30 shadow-2xl">
+                    <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800">
+                        <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-neutral-400"/> Historial de Ejecuciones
+                        </h3>
+                        <button onClick={() => setShowHistory(false)} className="text-neutral-500 hover:text-white">
+                            <X className="w-4 h-4"/>
+                        </button>
+                    </div>
+                    <div className="flex gap-3 p-4 overflow-x-auto">
+                        {runHistory.length === 0 ? (
+                            <p className="text-xs text-neutral-500 py-2">Sin ejecuciones previas. Presiona "Ejecutar Flujo" para comenzar.</p>
+                        ) : runHistory.map(run => (
+                            <div key={run.id} className={`shrink-0 bg-black border rounded-xl p-3 w-52 ${run.status === 'success' ? 'border-emerald-500/30' : run.status === 'error' ? 'border-rose-500/30' : 'border-yellow-500/30'}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    {run.status === 'success' ? <CheckCircle className="w-4 h-4 text-emerald-400"/> : run.status === 'error' ? <XCircle className="w-4 h-4 text-rose-400"/> : <Clock className="w-4 h-4 text-yellow-400 animate-spin"/>}
+                                    <span className={`text-[10px] font-black uppercase ${run.status === 'success' ? 'text-emerald-400' : run.status === 'error' ? 'text-rose-400' : 'text-yellow-400'}`}>{run.status}</span>
+                                    <span className="text-[9px] text-neutral-600 ml-auto">{run.duration_ms ? `${(run.duration_ms/1000).toFixed(1)}s` : '—'}</span>
+                                </div>
+                                <p className="text-[10px] text-white font-bold mb-1 truncate">{run.source}</p>
+                                <p className="text-[9px] text-neutral-500">{new Date(run.started_at).toLocaleString('es-MX', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</p>
+                                {run.log && Array.isArray(run.log) && (
+                                    <div className="mt-2 space-y-0.5">
+                                        {run.log.map((step, i) => (
+                                            <div key={i} className="flex items-center gap-1">
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${step.status === 'success' ? 'bg-emerald-400' : 'bg-rose-400'}`}/>
+                                                <span className="text-[9px] text-neutral-400 truncate">{step.node}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
         </div>
     );

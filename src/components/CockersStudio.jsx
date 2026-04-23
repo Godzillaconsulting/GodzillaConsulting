@@ -47,7 +47,7 @@ const RAW_PROMPTS = [
 ];
 
 const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
-    img: `https://pollinations.ai/p/${encodeURIComponent(p.prompt)}?width=700&height=450&seed=${i * 9999}`,
+    img: `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=700&height=450&nologo=true&seed=${i * 9999}`,
     ...p
 }));
 
@@ -159,8 +159,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [editorVideoSrc, setEditorVideoSrc] = useState('');
     
     // Auth & Roles
-    const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers';
-    const isSuperAdmin = adminProfile?.is_superadmin || adminProfile?.username?.toLowerCase() === 'alex';
+    const isCockers = adminProfile?.role === 'cockers' || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'cockers' || adminProfile?.username?.toLowerCase() === 'jareg';
+    const isSuperAdmin = adminProfile?.is_superadmin || adminProfile?.username?.toLowerCase() === 'alex' || adminProfile?.username?.toLowerCase() === 'jareg';
 
     // Galería Comunitaria Dinámica
     const [communityGallery, setCommunityGallery] = useState(() => {
@@ -188,7 +188,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         setIsFetchingInspiration(false);
     };
 
-    const canSeeAll = isCockers || isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar';
+    const canSeeAll = isCockers || isSuperAdmin || adminProfile?.username?.toLowerCase() === 'oscar' || adminProfile?.username?.toLowerCase() === 'jareg';
     
     // Outbox State
     const [showOutbox, setShowOutbox] = useState(false);
@@ -1655,6 +1655,9 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         <div className="flex-1 relative cursor-pointer group/orig" onClick={() => handleMediaClick(slot.url)}>
                                                             <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                             <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
+                                                                <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(slot.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                            </div>
                                                         </div>
                                                         {/* Gemini Ultra Pane */}
                                                         <div className="flex-1 relative border-l border-white/5 bg-[#0f0f0f] group/ref hover:border-indigo-500/40 transition-colors">
@@ -1919,6 +1922,9 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             </div>
                                                         </>
                                                     )}
+                                                    <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
+                                                        <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(opt.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <>
@@ -1926,6 +1932,9 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                     <div className="flex-1 rounded-xl overflow-hidden relative cursor-pointer group/orig" onClick={() => handleMediaClick(opt.url)}>
                                                         <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                         {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
+                                                        <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
+                                                            <button onClick={(e) => { e.stopPropagation(); setEditorVideoSrc(opt.url); setShowEditorModal(true); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar</button>
+                                                        </div>
                                                     </div>
 
                                                     {/* Auto-Refined Gemini Pane */}
@@ -2041,15 +2050,26 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 )}
 
                 </div> {/* FIN STUDIO CONTENT */}
-
-                {/* VIDEO EDITOR (Split bottom) */}
-                <div className="flex-1 min-h-[400px] border-t-2 border-[#CC0000]/50 bg-[#0a0a09] flex flex-col z-40 relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-                    <IntegratedVideoEditor 
-                        initialVideoUrl={editorVideoSrc}
-                        queue={queue}
-                    />
-                </div>
             </div> {/* FIN RIGHT MAIN CANVAS */}
+
+            {/* VIDEO EDITOR MODAL (FullScreen Overlay) */}
+            <AnimatePresence>
+                {showEditorModal && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-[100] bg-black flex flex-col"
+                    >
+                        <IntegratedVideoEditor 
+                            initialVideoUrl={editorVideoSrc}
+                            queue={queue}
+                            onClose={() => setShowEditorModal(false)}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Modal: Crear Filtro Personalizado */}
             {showCustomFilterModal && (

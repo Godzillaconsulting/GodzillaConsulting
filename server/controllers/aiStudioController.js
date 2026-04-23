@@ -459,7 +459,7 @@ export const getInspirationGallery = async (req, res) => {
             // Recortar strings enormes para no romper la URL de Pollinations API
             const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
             return {
-                img: `https://pollinations.ai/p/${encodeURIComponent(safePrompt)}?width=500&height=500&seed=${Math.floor(Math.random() * 99999)}`,
+                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
                 prompt: item.prompt,
                 tag: item.tag,
                 model: item.model
@@ -831,42 +831,57 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
 Genera los 30 días completos. La calidad es CRÍTICA — cada narración debe ser magnética, cada prompt visual debe ser cinematográfico.
 `;
 
-        let planData = null;
-        let attempts = 0;
-        const maxAttempts = 3;
+        const generateBatch = async (startDay, endDay) => {
+            const batchPrompt = systemPrompt + `\n\nATENCIÓN: Genera ÚNICAMENTE los días del ${startDay} al ${endDay}. Asegúrate de devolver un JSON válido con la propiedad "plan" conteniendo exactamente ${endDay - startDay + 1} días. Sé conciso para no exceder los límites de tokens.`;
+            
+            let batchData = null;
+            let attempts = 0;
+            const maxAttempts = 3;
 
-        while (attempts < maxAttempts && !planData) {
-            attempts++;
-            try {
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-                    config: {
-                        temperature: 0.85,
-                        maxOutputTokens: 65536,
+            while (attempts < maxAttempts && !batchData) {
+                attempts++;
+                try {
+                    const response = await ai.models.generateContent({
+                        model: 'gemini-2.5-flash',
+                        contents: [{ role: 'user', parts: [{ text: batchPrompt }] }],
+                        config: {
+                            temperature: 0.85,
+                            maxOutputTokens: 8192,
+                            responseMimeType: "application/json"
+                        }
+                    });
+
+                    let rawText = response.candidates[0].content.parts[0].text;
+                    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    
+                    batchData = JSON.parse(rawText);
+
+                    if (!batchData.plan || !Array.isArray(batchData.plan)) {
+                        throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
                     }
-                });
-
-                let rawText = response.candidates[0].content.parts[0].text;
-                rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                
-                planData = JSON.parse(rawText);
-
-                if (!planData.plan || !Array.isArray(planData.plan)) {
-                    throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
-                }
-            } catch (err) {
-                console.log(`[MONTHLY-PLAN] Fallo en parseo JSON (Intento ${attempts}/${maxAttempts}):`, err.message);
-                if (attempts >= maxAttempts) {
-                    throw new Error(`Fallo tras ${maxAttempts} intentos: ${err.message}`);
+                } catch (err) {
+                    console.log(`[MONTHLY-PLAN] Fallo en batch ${startDay}-${endDay} (Intento ${attempts}/${maxAttempts}):`, err.message);
+                    if (attempts >= maxAttempts) {
+                        throw new Error(`Fallo en batch ${startDay}-${endDay} tras ${maxAttempts} intentos: ${err.message}`);
+                    }
                 }
             }
-        }
+            return batchData.plan;
+        };
+
+        // Para evitar el límite de 8192 tokens de output (que corta el JSON y crashea),
+        // dividimos los 30 días en dos batches paralelos de 15 días cada uno.
+        const [batch1, batch2] = await Promise.all([
+            generateBatch(1, 15),
+            generateBatch(16, 30)
+        ]);
+
+        const fullPlan = [...batch1, ...batch2];
 
         // Disparar motor de automatización asincrónicamente
-        AutomationEngine.triggerFlow('Planificador IA', { plan: planData.plan, niche, month, year });
+        AutomationEngine.triggerFlow('Planificador IA', { plan: fullPlan, niche, month, year });
 
-        res.json({ success: true, plan: planData.plan, niche, month, year });
+        res.json({ success: true, plan: fullPlan, niche, month, year });
 
     } catch (error) {
         console.error('[MONTHLY-PLAN] Error generando plan:', error);

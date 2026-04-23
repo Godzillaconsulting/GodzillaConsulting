@@ -3,6 +3,7 @@ import pool from '../config/db.js';
 import { verifyAdminToken } from '../middleware/adminAuth.js';
 import { exec } from 'child_process';
 import util from 'util';
+import AutomationEngine from '../services/automationEngine.js';
 
 const execPromise = util.promisify(exec);
 const router = express.Router();
@@ -64,6 +65,36 @@ router.get('/status', verifyAdminToken, async (req, res) => {
     } catch (err) {
         console.error('[Automation] GET /status Error:', err.message);
         res.status(500).json({ success: false, error: 'Fallo al contactar PM2', details: err.message });
+    }
+});
+
+// POST /api/automation/trigger - Disparar manualmente el flujo desde el canvas
+router.post('/trigger', verifyAdminToken, async (req, res) => {
+    try {
+        const { sourceTitle, payload } = req.body;
+        if (!sourceTitle) {
+            return res.status(400).json({ success: false, error: 'sourceTitle requerido' });
+        }
+        // Ejecución asíncrona — respondemos inmediatamente, el motor corre en background
+        AutomationEngine.triggerFlow(sourceTitle, payload || {});
+        res.json({ success: true, message: `Flujo disparado desde "${sourceTitle}". Revisa el historial para ver el resultado.` });
+    } catch (err) {
+        console.error('[Automation] POST /trigger Error:', err.message);
+        res.status(500).json({ success: false, error: 'Fallo al disparar flujo', details: err.message });
+    }
+});
+
+// GET /api/automation/runs - Historial de ejecuciones del flujo
+router.get('/runs', verifyAdminToken, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id, status, source, started_at, finished_at, duration_ms, log
+             FROM flow_runs ORDER BY started_at DESC LIMIT 10`
+        );
+        res.json({ success: true, runs: result.rows });
+    } catch (err) {
+        console.error('[Automation] GET /runs Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

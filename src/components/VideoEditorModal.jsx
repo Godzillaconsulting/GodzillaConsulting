@@ -427,7 +427,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const result = await transcriber(audioData16k, {
         chunk_length_s: 30,
         stride_length_s: 5,
-        return_timestamps: true,
+        return_timestamps: 'word',
         language: 'spanish',
         task: 'transcribe'
       });
@@ -466,13 +466,15 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               const clipStart = currentTimelineStart + relativeStart;
               const clipEnd = currentTimelineStart + relativeEnd;
 
-              editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
-                fontSize: 52,
+              // Upper case for impact
+              const wordText = chunk.text.trim().toUpperCase();
+              editor.addClip(textLayer.id, makeTextClip(wordText, clipStart, clipEnd, {
+                fontSize: 64, // Bigger for short form
                 fontColor: '#facc15',
-                posY: 0.80,
+                posY: 0.85,
                 bold: true,
                 align: 'center',
-                animation: 'typewriter'
+                animation: 'pop' // Snap in instantly with a tiny bounce effect
               }));
             }
           });

@@ -35,17 +35,18 @@ const buildColorF = c => {
 const buildScaleF = (w, h) =>
   `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
 
-const buildTextOverlay = (textClips, h) =>
+const buildTextOverlay = (textClips, w, h) =>
   textClips
     .filter(c => c.text)
     .map(c => {
-      const posY   = Math.round((c.style?.posY ?? 0.85) * h);
+      const posX   = c.style?.posX ?? 0.5;
+      const posY   = c.style?.posY ?? 0.85;
       const fcolor = (c.style?.fontColor ?? '#ffffff').replace('#', '0x');
       const fsize  = c.style?.fontSize ?? 48;
       const safe   = (c.text ?? '').replace(/'/g, "\\'").replace(/:/g, '\\:');
       
-      let xExp = '(w-tw)/2';
-      let yExp = `${posY}`;
+      let xExp = `(${posX}*w)-(tw/2)`;
+      let yExp = `(${posY}*h)-(th/2)`;
       let alphaExp = '1';
       
       if (c.style?.animation === 'fade') {
@@ -271,7 +272,7 @@ async function buildCommand(ffmpeg, project, exportSettings = {}) {
   }
 
   // ─── Text overlay ───────────────────────────────────────────────────────────
-  const textF = buildTextOverlay(tClips, h);
+  const textF = buildTextOverlay(tClips, w, h);
   if (textF) {
     fc += `${finalV}${textF}[vfinaltext]; `;
     finalV = '[vfinaltext]';

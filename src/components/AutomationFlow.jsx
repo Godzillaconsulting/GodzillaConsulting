@@ -317,7 +317,7 @@ const CurvedConnector = ({ startX, startY, endX, endY, color, animated = true })
 };
 
 // ─── Galaxy View ─────────────────────────────────────────────────────────────
-function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, username }) {
+function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, username, onCloneTemplate }) {
   const containerRef = useRef(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(0.85);
@@ -359,7 +359,10 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
   });
 
   const totalW = COLS * (CARD_W + GAP);
-  const totalH = Math.ceil((flows.length + 1) / COLS) * (CARD_H + GAP);
+  
+  const userFlowCount = flows.length + 1;
+  const templatesRowOffset = Math.ceil(userFlowCount / COLS) + 1; // Leave 1 row gap
+  const totalH = (Math.ceil(userFlowCount / COLS) + Math.ceil(FLOW_TEMPLATES.length / COLS) + 2) * (CARD_H + GAP);
 
   return (
     <div
@@ -413,9 +416,9 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-                  {username === 'jareg' && !isCore && (
+                  {!isCore && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); if(window.confirm('¿Eliminar esta neurona?')) onDeleteFlow(flow.id); }}
+                      onClick={(e) => { e.stopPropagation(); if(window.confirm('¿Eliminar esta neurona de forma permanente?')) onDeleteFlow(flow.id); }}
                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-rose-400 transition rounded"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -484,11 +487,71 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
               </div>
               <div className="text-center">
                 <p className="text-sm font-bold text-neutral-500 group-hover:text-white transition">Nueva Neurona</p>
-                <p className="text-[10px] text-neutral-700 mt-0.5">Crear automatización personalizada</p>
+                <p className="text-[10px] text-neutral-700 mt-0.5">Crear automatización desde cero</p>
               </div>
             </div>
           );
         })()}
+
+        {/* Templates Section Label */}
+        {(() => {
+          const { x, y } = { x: 0, y: templatesRowOffset * (CARD_H + GAP) - GAP/2 };
+          return (
+            <div key="templates-label" style={{ position: 'absolute', left: x, top: y, width: totalW }} className="flex items-center gap-4">
+              <div className="h-px bg-neutral-800 flex-1"></div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-black text-purple-400 uppercase tracking-widest">Catálogo de Plantillas</span>
+              </div>
+              <div className="h-px bg-neutral-800 flex-1"></div>
+            </div>
+          );
+        })()}
+
+        {/* Templates Catalog */}
+        {FLOW_TEMPLATES.map((tpl, idx) => {
+          // Skip first element if it's the core to avoid confusion in templates, but we can render all
+          const posIdx = (templatesRowOffset * COLS) + idx;
+          const { x, y } = getCardPos(posIdx);
+          const nodeCount = tpl.nodes.length;
+          const edgeCount = tpl.edges.length;
+
+          return (
+            <div
+              key={`tpl-${idx}`}
+              style={{ position: 'absolute', left: x, top: y, width: CARD_W, height: CARD_H }}
+              className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-950/20 via-neutral-950 to-black hover:border-purple-500/50 shadow-[0_8px_32px_rgba(168,85,247,0.05)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.15)] hover:scale-[1.03] cursor-pointer transition-all duration-300 select-none group"
+              onClick={() => onCloneTemplate(tpl)}
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                    <Wand2 className="w-3 h-3 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-purple-200 leading-none">{tpl.name}</p>
+                    <p className="text-[10px] text-purple-400/60 mt-0.5">Plantilla preconfigurada</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 py-1">
+                <p className="text-xs text-neutral-400 line-clamp-1">{tpl.description}</p>
+              </div>
+
+              <div className="flex items-center gap-3 px-4 py-1">
+                <span className="text-[10px] text-neutral-500 flex items-center gap-1"><Layers className="w-3 h-3" /> {nodeCount} nodos</span>
+                <span className="text-[10px] text-neutral-500 flex items-center gap-1"><Zap className="w-3 h-3" /> {edgeCount} conexiones</span>
+              </div>
+
+              <div className="absolute bottom-4 left-4 right-4">
+                <button className="w-full py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold rounded-xl border border-purple-500/30 transition">
+                  Usar esta plantilla →
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -754,16 +817,33 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   };
 
   const executeFlow = async () => {
-    const src=nodes.find(n=>n.title==='Planificador IA');
-    if(!src){ alert('Agrega un nodo "Planificador IA" para ejecutar.'); return; }
-    const token=localStorage.getItem('adminToken');
+    const src = nodes.find(n => n.type === 'trigger') || nodes[0];
+    if(!src){ alert('Agrega al menos un nodo Origen (Trigger) para ejecutar la neurona.'); return; }
+    
+    if(!window.confirm(`¿Ejecutar esta neurona manualmente comenzando por "${src.title}"?`)) return;
+
+    // Guardar para que el engine lo reconozca por base de datos
+    await handleSave();
+
+    const token = localStorage.getItem('adminToken');
     setIsExecuting(true); setExecutingNodes(new Set(nodes.map(n=>n.id)));
-    try { await fetch('/api/automation/trigger',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({sourceTitle:'Planificador IA',payload:{}})}); }
-    catch(e){}
-    setTimeout(async()=>{
-      try{ const r=await fetch('/api/automation/runs',{headers:{Authorization:`Bearer ${token}`}}); const d=await r.json(); if(d.success){setRunHistory(d.runs||[]);setShowHistory(true);} }catch(e){}
+    
+    try { 
+      await fetch(`/api/automation/webhook/${src.id}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body:JSON.stringify({ manualTrigger: true })
+      }); 
+    } catch(e){}
+
+    setTimeout(async () => {
+      try { 
+        const r = await fetch('/api/automation/runs',{headers:{Authorization:`Bearer ${token}`}}); 
+        const d = await r.json(); 
+        if(d.success) { setRunHistory(d.runs||[]); setShowHistory(true); } 
+      } catch(e){}
       setIsExecuting(false); setExecutingNodes(new Set());
-    },4000);
+    }, 4000);
   };
 
   if(isLoading) return <div className="flex-1 flex items-center justify-center text-neutral-600 text-sm">Cargando flujo...</div>;
@@ -920,6 +1000,55 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       <div ref={canvasRef} className="flex-1 overflow-auto relative" style={{background:'#060608'}}
         onClick={e=>{if(e.target===canvasRef.current){setSelectedNodeId(null);setShowNodeMenu(false);setShowTemplateMenu(false);}}}>
         <div style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px)',backgroundSize:'28px 28px'}} className="min-w-[2400px] min-h-[1600px] relative">
+
+          {/* Asistente de Lógica para Canvas Vacío */}
+          {nodes.length === 0 && (
+            <div className="absolute top-[300px] left-1/2 -translate-x-1/2 flex flex-col items-center select-none max-w-xl text-center pointer-events-none">
+              <div className="w-16 h-16 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6 shadow-2xl">
+                <Brain className="w-8 h-8 text-yellow-500/80" />
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">Asistente de Lógica</h2>
+              <p className="text-sm text-neutral-400 mb-8 max-w-md">Para que una neurona funcione necesita una secuencia lógica. Sigue estos 3 pasos básicos:</p>
+              
+              <div className="flex items-start gap-4 text-left w-full">
+                <div className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 text-[10px] font-black">1</div>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Origen (Trigger)</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500">¿Qué inicia el flujo? Arrastra un nodo de entrada como <strong>Webhook</strong>, <strong>WhatsApp Bot</strong> o <strong>Reloj (Cron)</strong>.</p>
+                </div>
+
+                <div className="flex items-center justify-center h-20 text-neutral-700">
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+
+                <div className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4 relative top-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-lg bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/30 text-[10px] font-black">2</div>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Proceso (IA)</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500">Opcional: Añade un cerebro. Conecta un <strong>LLM (Claude/Gemini)</strong> o <strong>Transformador</strong> para procesar la data entrante.</p>
+                </div>
+
+                <div className="flex items-center justify-center h-20 text-neutral-700">
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+
+                <div className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 text-[10px] font-black">3</div>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Salida (Action)</span>
+                  </div>
+                  <p className="text-[10px] text-neutral-500">¿Cuál es el resultado? Termina conectando a un nodo de acción como <strong>Email Worker</strong>, <strong>CRM</strong> o <strong>Base de Datos</strong>.</p>
+                </div>
+              </div>
+
+              <div className="mt-12 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold animate-pulse pointer-events-auto cursor-pointer" onClick={() => {setShowNodeMenu(true);}}>
+                <Plus className="w-4 h-4" /> Clic en "Añadir" arriba para comenzar
+              </div>
+            </div>
+          )}
 
           {/* Draw edges */}
           {edges.map(e=>{
@@ -1550,6 +1679,21 @@ export default function AutomationFlow() {
     } catch (e) { alert('Error creando neurona.'); }
   };
 
+  const handleCloneTemplate = async (template) => {
+    const name = window.prompt('Nombre para tu nueva neurona basada en plantilla:', template.name);
+    if (!name) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+      const r = await fetch('/api/automation/flow/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, nodes: template.nodes, edges: template.edges }),
+      });
+      const d = await r.json();
+      if (d.success) { setActiveFlowId(d.flowId); setActiveFlowName(name); setView('editor'); }
+    } catch (e) { alert('Error clonando plantilla.'); }
+  };
+
   const handleDeleteFlow = async (id) => {
     const token = localStorage.getItem('adminToken');
     try {
@@ -1621,7 +1765,7 @@ export default function AutomationFlow() {
       {view === 'galaxy' ? (
         isLoadingGalaxy
           ? <div className="flex-1 flex items-center justify-center text-neutral-600 text-sm">Cargando neuronas...</div>
-          : <GalaxyView flows={flows} pm2Status={pm2Status} onEditFlow={handleEditFlow} onNewFlow={handleNewFlow} onDeleteFlow={handleDeleteFlow} username={username} />
+          : <GalaxyView flows={flows} pm2Status={pm2Status} onEditFlow={handleEditFlow} onNewFlow={handleNewFlow} onDeleteFlow={handleDeleteFlow} username={username} onCloneTemplate={handleCloneTemplate} />
       ) : (
         <EditorView flowId={activeFlowId} flowName={activeFlowName} username={username} pm2Status={pm2Status} onBack={()=>{ setView('galaxy'); loadGalaxy(); }} onSaved={handleSaved} />
       )}

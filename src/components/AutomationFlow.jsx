@@ -140,6 +140,38 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
+    name: '🧠 RAG B2B LinkedIn',
+    description: 'LinkedIn → Vector DB → Claude → CRM',
+    nodes: [
+      { id: 'l1', type: 'trigger', title: 'LinkedIn Bot', subtitle: 'Nuevo Lead', icon: 'Network', x: 100, y: 220, color: '#0a66c2', pm2_process: 'linkedin-bot' },
+      { id: 'l2', type: 'action', title: 'Memoria a Largo Plazo', subtitle: 'Consultar RAG', icon: 'Network', x: 380, y: 100, color: '#0d9488', pm2_process: 'vector-db' },
+      { id: 'l3', type: 'action', title: 'Anthropic Claude', subtitle: 'Generar Propuesta', icon: 'Brain', x: 380, y: 340, color: '#d97757', pm2_process: '' },
+      { id: 'l4', type: 'action', title: 'Godzilla CM', subtitle: 'Guardar Lead', icon: 'LayoutDashboard', x: 660, y: 220, color: '#2563eb', pm2_process: '' },
+    ],
+    edges: [
+      { id: 'e1', source: 'l1', target: 'l2', color: '#0a66c2' },
+      { id: 'e2', source: 'l2', target: 'l3', color: '#0d9488' },
+      { id: 'e3', source: 'l3', target: 'l4', color: '#d97757' },
+    ],
+  },
+  {
+    name: '🎙️ Podcast a Social Media',
+    description: 'YouTube → IA → Twitter + LinkedIn + Newsletter',
+    nodes: [
+      { id: 'p1', type: 'trigger', title: 'YouTube Data API', subtitle: 'Nuevo Video', icon: 'Video', x: 100, y: 220, color: '#ff0000', pm2_process: '' },
+      { id: 'p2', type: 'action', title: 'Gemini API', subtitle: 'Extraer Resumen', icon: 'Sparkles', x: 380, y: 220, color: '#4285f4', pm2_process: '' },
+      { id: 'p3', type: 'action', title: 'Twitter / X Bot', subtitle: 'Hilo de Twitter', icon: 'MessageCircle', x: 660, y: 100, color: '#000000', pm2_process: 'twitter-bot' },
+      { id: 'p4', type: 'action', title: 'LinkedIn Bot', subtitle: 'Post B2B', icon: 'Network', x: 660, y: 220, color: '#0a66c2', pm2_process: 'linkedin-bot' },
+      { id: 'p5', type: 'action', title: 'Bot Newsletter', subtitle: 'Boletín Semanal', icon: 'Mail', x: 660, y: 340, color: '#f97316', pm2_process: 'newsletter-bot' },
+    ],
+    edges: [
+      { id: 'e1', source: 'p1', target: 'p2', color: '#ff0000' },
+      { id: 'e2', source: 'p2', target: 'p3', color: '#4285f4' },
+      { id: 'e3', source: 'p2', target: 'p4', color: '#4285f4' },
+      { id: 'e4', source: 'p2', target: 'p5', color: '#4285f4' },
+    ],
+  },
+  {
     name: '🌱 Flujo Básico',
     description: 'Planificador IA → Tarea de Studio',
     nodes: [
@@ -575,6 +607,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'🤖 Bots' },
     { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'🤖 Bots' },
     { title:'IG / Messenger Bot',   subtitle:'Meta DMs',              icon:'MessageCircle',  color:'#d946ef', pm2_process:'meta-bot',      group:'🤖 Bots' },
+    { title:'Twitter / X Bot',      subtitle:'Posts / DMs',           icon:'MessageCircle',  color:'#0f1419', pm2_process:'twitter-bot',   group:'🤖 Bots' },
+    { title:'LinkedIn Bot',         subtitle:'B2B Leads',             icon:'Network',        color:'#0a66c2', pm2_process:'linkedin-bot',  group:'🤖 Bots' },
     { title:'Zilla Bot',            subtitle:'Asistente / Atención',  icon:'Bot',            color:'#10b981', pm2_process:'zilla-bot',     group:'🤖 Bots' },
     { title:'Goyi Bot',             subtitle:'Asistente / Cierre',    icon:'Bot',            color:'#ec4899', pm2_process:'goyi-bot',      group:'🤖 Bots' },
     { title:'Bot Newsletter',       subtitle:'Redacción / Email',     icon:'Mail',           color:'#f97316', pm2_process:'newsletter-bot',group:'🤖 Bots' },
@@ -589,6 +623,9 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     // ── IA / LLMs ────────────────────────────────────────────────────────────
     { title:'Gemini API',           subtitle:'Google LLM',            icon:'Sparkles',       color:'#4285f4', pm2_process:'',              group:'🤖 IA / LLMs' },
     { title:'OpenAI / ChatGPT',     subtitle:'GPT-4o / GPT-4 mini',   icon:'Brain',          color:'#10a37f', pm2_process:'',              group:'🤖 IA / LLMs' },
+    { title:'Anthropic Claude',     subtitle:'Claude 3 Opus/Sonnet',  icon:'Brain',          color:'#d97757', pm2_process:'',              group:'🤖 IA / LLMs' },
+    { title:'DeepSeek API',         subtitle:'DeepSeek Coder/Chat',   icon:'Brain',          color:'#4d6bfe', pm2_process:'',              group:'🤖 IA / LLMs' },
+    { title:'ElevenLabs',           subtitle:'Generador de Voz/TTS',  icon:'Play',           color:'#000000', pm2_process:'',              group:'🤖 IA / LLMs' },
     // ── BASES DE DATOS ───────────────────────────────────────────────────────
     { title:'Base de Datos',        subtitle:'PostgreSQL nativo',     icon:'Database',       color:'#64748b', pm2_process:'',              group:'🗄 Datos' },
     { title:'Neon DB',              subtitle:'PostgreSQL Serverless',  icon:'Database',       color:'#00e599', pm2_process:'',              group:'🗄 Datos' },
@@ -617,6 +654,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     { title:'Cloudflare Workers',   subtitle:'Edge Gateway',          icon:'Cloud',          color:'#f38020', pm2_process:'',              group:'⚙️ Sistema' },
     { title:'Vercel',               subtitle:'Hosting / Deploy',      icon:'Server',         color:'#ffffff', pm2_process:'',              group:'⚙️ Sistema' },
     { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Make (Integromat)',    subtitle:'Webhook a Make',        icon:'Webhook',        color:'#9c27b0', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Zapier Webhook',       subtitle:'Webhook a Zapier',      icon:'Zap',            color:'#ff4a00', pm2_process:'',              group:'⚙️ Sistema' },
     // ── CONTROL DE FLUJO ─────────────────────────────────────────────────────
     { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'🔀 Flujo' },
     { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'🔀 Flujo' },
@@ -1224,6 +1263,55 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                   </div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Analiza este contenido: {{ $json.titulo }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                   <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: OPENAI_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Anthropic Claude' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
+                    <select value={selectedNode.config?.model||'claude-3-haiku-20240307'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="claude-3-haiku-20240307">Claude 3 Haiku (rápido)</option>
+                      <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (balanceado)</option>
+                      <option value="claude-3-opus-20240229">Claude 3 Opus (avanzado)</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Redacta un ensayo sobre {{ $json.tema }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: ANTHROPIC_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'DeepSeek API' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
+                    <select value={selectedNode.config?.model||'deepseek-chat'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="deepseek-chat">DeepSeek Chat (general)</option>
+                      <option value="deepseek-coder">DeepSeek Coder (código)</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Escribe código en Python para {{ $json.tarea }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: DEEPSEEK_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'ElevenLabs' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Voice ID</label><input value={selectedNode.config?.voiceId||''} onChange={e=>updateNode({config:{...selectedNode.config, voiceId:e.target.value}})} placeholder="ID de la voz clonada o predefinida" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Texto a Voz</label><textarea value={selectedNode.config?.text||''} onChange={e=>updateNode({config:{...selectedNode.config, text:e.target.value}})} placeholder="Hola, esto es una prueba de audio generada por {{ $json.autor }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: ELEVENLABS_API_KEY</p></div>
+                </div>
+              )}
+
+              {['Make (Integromat)', 'Zapier Webhook'].includes(selectedNode.title) && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Webhook URL</label><input value={selectedNode.config?.webhookUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, webhookUrl:e.target.value}})} placeholder="https://hook.make.com/... o hooks.zapier.com/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Payload (JSON)</label><textarea value={selectedNode.config?.payload||''} onChange={e=>updateNode({config:{...selectedNode.config, payload:e.target.value}})} placeholder='{ "dato": "{{ $json.variable }}" }' rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition font-mono text-xs"/></div>
+                </div>
+              )}
+
+              {['Twitter / X Bot', 'LinkedIn Bot'].includes(selectedNode.title) && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Contenido del Post</label><textarea value={selectedNode.config?.text||''} onChange={e=>updateNode({config:{...selectedNode.config, text:e.target.value}})} placeholder="Publicando sobre {{ $json.tema }} #Tendencias" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">Requiere configuración de API Keys en el backend (OAuth 2.0)</p></div>
                 </div>
               )}
 

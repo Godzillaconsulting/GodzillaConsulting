@@ -493,6 +493,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const { seek } = engine;
 
+  const [timelineZoom, setTimelineZoom] = useState(5);
+
   const timelineEffects = useMemo(() => ({
     video: { id: 'video', name: 'Video' },
     audio: { id: 'audio', name: 'Audio' },
@@ -504,7 +506,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       ref={timelineRef}
       editorData={editorData}
       effects={timelineEffects}
-      scale={5}
+      scale={timelineZoom}
       hideCursor={false}
       onChange={handleTimelineChange}
       onClickAction={(e, { action }) => handleClipSelect(action.id)}
@@ -839,12 +841,26 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             <button onClick={() => editor.addLayer(makeLayer('audio'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Music className="w-3 h-3" /> + Audio</button>
             <button onClick={() => editor.addLayer(makeLayer('text'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Type className="w-3 h-3" /> + Texto</button>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
-            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider hidden sm:inline-block">Línea de Tiempo</span>
-            <input type="range" min="0" max={editor.totalDuration || 10} step="0.1"
-              value={engine.displayTime}
-              onChange={e => engine.seek(parseFloat(e.target.value))}
-              className="w-32 sm:w-48 accent-blue-500" />
+          <div className="flex items-center gap-6 ml-auto">
+            {/* Timeline Zoom */}
+            <div className="flex items-center gap-2 hidden sm:flex">
+              <span className="text-[10px] text-neutral-500 font-bold tracking-wider">ZOOM</span>
+              <input type="range" min="1" max="20" step="1"
+                value={timelineZoom}
+                onChange={e => setTimelineZoom(parseInt(e.target.value))}
+                className="w-24 accent-neutral-500" />
+            </div>
+
+            <div className="w-px h-6 bg-neutral-800 hidden sm:block"></div>
+
+            {/* Playhead Time */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider hidden sm:inline-block">Línea de Tiempo</span>
+              <input type="range" min="0" max={editor.totalDuration || 10} step="0.1"
+                value={engine.displayTime}
+                onChange={e => engine.seek(parseFloat(e.target.value))}
+                className="w-32 sm:w-48 accent-blue-500" />
+            </div>
           </div>
         </div>
 

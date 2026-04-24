@@ -16,7 +16,7 @@ export default function FloatingToolbar({ selectedClip, editor }) {
   const Popover = ({ isOpen, title, children }) => {
     if (!isOpen) return null;
     return (
-      <div className="absolute top-[130%] left-1/2 -translate-x-1/2 w-72 bg-[#18181b] border border-[#27272a] rounded-xl p-4 shadow-2xl cursor-default text-left z-[100]" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-[130%] left-1/2 -translate-x-1/2 w-96 bg-[#18181b] border border-[#27272a] rounded-xl p-4 shadow-2xl cursor-default text-left z-[100]" onClick={e => e.stopPropagation()}>
         <h4 className="text-[11px] font-semibold text-neutral-200 mb-3 uppercase tracking-wider">{title}</h4>
         <div className="space-y-4">
           {children}
@@ -109,39 +109,146 @@ export default function FloatingToolbar({ selectedClip, editor }) {
           <Type className="w-4 h-4" />
         </button>
         {clip && type === 'text' && (
-          <Popover isOpen={activeTab === 'text'} title="Formato de Texto">
+          <Popover isOpen={activeTab === 'text'} title="Tipografía & Texto">
+            {/* Text content */}
             <textarea value={clip.text || ''}
               onChange={e => editor.updateClip(clip.id, { text: e.target.value }, true)}
-              className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-lg p-2.5 outline-none focus:border-yellow-500 transition-colors resize-none min-h-[60px]" />
-            <div className="grid grid-cols-2 gap-4 mt-2">
+              className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-lg p-2.5 outline-none focus:border-yellow-500 transition-colors resize-none min-h-[50px]" />
+            
+            {/* Font Family */}
+            <div className="mt-3">
+              <label className="text-[10px] text-neutral-400 mb-1 block uppercase tracking-wider">Fuente</label>
+              <select value={clip.style?.fontFamily || 'Inter'}
+                onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, fontFamily: e.target.value } })}
+                className="w-full bg-[#27272a] text-xs p-1.5 rounded-lg outline-none border border-[#3f3f46] text-white focus:border-yellow-500">
+                <option value="Inter">Inter (Default)</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Oswald">Oswald (Titulares)</option>
+                <option value="Bebas Neue">Bebas Neue (Impacto)</option>
+                <option value="Pacifico">Pacifico (Script)</option>
+                <option value="Courier New">Courier New (Mono)</option>
+                <option value="Georgia">Georgia (Serif)</option>
+                <option value="Impact">Impact (Viral)</option>
+              </select>
+            </div>
+
+            {/* Size + Style Toggles */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
               <div>
-                <label className="text-[10px] text-neutral-400 mb-1 block">Tamaño</label>
+                <label className="text-[10px] text-neutral-400 mb-1 block uppercase tracking-wider">Tamaño</label>
                 <div className="flex items-center gap-2">
-                  <input type="range" min="20" max="120" step="2"
+                  <input type="range" min="12" max="144" step="2"
                     value={clip.style?.fontSize || 48}
                     onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, fontSize: parseInt(e.target.value) } }, true)}
                     className="flex-1 h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-yellow-500" />
+                  <span className="text-[10px] font-mono text-white w-8 text-right">{clip.style?.fontSize || 48}</span>
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-neutral-400 mb-1 block">Color</label>
+                <label className="text-[10px] text-neutral-400 mb-1 block uppercase tracking-wider">Estilo</label>
                 <div className="flex gap-1">
-                  {['#ffffff','#facc15','#ef4444','#3b82f6','#22c55e'].map(c => (
-                    <button key={c} onClick={() => editor.updateClip(clip.id, { style: { ...clip.style, fontColor: c } })}
-                      className={`w-4 h-4 rounded-full border border-[#27272a] ${clip.style?.fontColor === c ? 'ring-1 ring-white' : ''}`}
-                      style={{ backgroundColor: c }} />
+                  {[{key:'bold',label:'B',cls:'font-black'},{key:'italic',label:'I',cls:'italic'},{key:'underline',label:'U',cls:'underline'}].map(s => (
+                    <button key={s.key} onClick={() => editor.updateClip(clip.id, { style: { ...clip.style, [s.key]: !clip.style?.[s.key] } })}
+                      className={`flex-1 py-1 text-[11px] ${s.cls} rounded border transition-all ${clip.style?.[s.key] ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' : 'bg-[#27272a] border-[#3f3f46] text-neutral-400 hover:text-white'}`}>
+                      {s.label}
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="mt-2">
-              <label className="text-[10px] text-neutral-400 mb-1 block">Animación</label>
+
+            {/* Color + BG */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="text-[10px] text-neutral-400 mb-1.5 block uppercase tracking-wider">Color Texto</label>
+                <div className="flex gap-1 flex-wrap">
+                  {['#ffffff','#facc15','#ef4444','#3b82f6','#22c55e','#f97316','#000000'].map(c => (
+                    <button key={c} onClick={() => editor.updateClip(clip.id, { style: { ...clip.style, fontColor: c } })}
+                      className={`w-5 h-5 rounded-full border-2 transition-transform ${clip.style?.fontColor === c ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
+                      style={{ backgroundColor: c }} />
+                  ))}
+                  <input type="color" value={clip.style?.fontColor || '#ffffff'}
+                    onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, fontColor: e.target.value } })}
+                    className="w-5 h-5 p-0 border-0 rounded-full cursor-pointer bg-transparent" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-neutral-400 mb-1.5 block uppercase tracking-wider">Fondo Texto</label>
+                <div className="flex gap-1 flex-wrap">
+                  {['transparent','#000000','#ffffff','#ef4444','#3b82f6','#facc15'].map(c => (
+                    <button key={c} onClick={() => editor.updateClip(clip.id, { style: { ...clip.style, bgColor: c === 'transparent' ? null : c } })}
+                      className={`w-5 h-5 rounded border-2 transition-transform ${ (clip.style?.bgColor || null) === (c === 'transparent' ? null : c) ? 'border-white scale-110' : 'border-neutral-600 hover:scale-105'}`}
+                      style={{ backgroundColor: c === 'transparent' ? 'transparent' : c, backgroundImage: c === 'transparent' ? 'linear-gradient(45deg,#666 25%,transparent 25%,transparent 75%,#666 75%),linear-gradient(45deg,#666 25%,transparent 25%,transparent 75%,#666 75%)' : undefined, backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
+                  ))}
+                  <input type="color" value={clip.style?.bgColor || '#000000'}
+                    onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, bgColor: e.target.value } })}
+                    className="w-5 h-5 p-0 border-0 rounded cursor-pointer bg-transparent" />
+                </div>
+              </div>
+            </div>
+
+            {/* Outline + Shadow */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider">Contorno</label>
+                  <span className="text-[9px] font-mono text-neutral-500">{clip.style?.outlineWidth || 0}px</span>
+                </div>
+                <input type="range" min="0" max="8" step="1"
+                  value={clip.style?.outlineWidth || 0}
+                  onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, outlineWidth: parseInt(e.target.value) } }, true)}
+                  className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider">Sombra</label>
+                  <span className="text-[9px] font-mono text-neutral-500">{clip.style?.shadowBlur || 0}px</span>
+                </div>
+                <input type="range" min="0" max="20" step="1"
+                  value={clip.style?.shadowBlur || 0}
+                  onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, shadowBlur: parseInt(e.target.value) } }, true)}
+                  className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+              </div>
+            </div>
+
+            {/* Alignment + Position */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="text-[10px] text-neutral-400 mb-1 block uppercase tracking-wider">Alineación</label>
+                <div className="flex gap-1">
+                  {[{v:'left',l:'⬛'},{v:'center',l:'⬛'},{v:'right',l:'⬛'}].map((a,i) => (
+                    <button key={a.v} onClick={() => editor.updateClip(clip.id, { style: { ...clip.style, align: a.v } })}
+                      className={`flex-1 py-1 text-[11px] rounded border transition-all ${clip.style?.align === a.v || (!clip.style?.align && a.v === 'center') ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' : 'bg-[#27272a] border-[#3f3f46] text-neutral-400'}`}>
+                      {i === 0 ? '⬛▪▪' : i === 1 ? '▪⬛▪' : '▪▪⬛'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider">Posición Y</label>
+                  <span className="text-[9px] font-mono text-neutral-500">{Math.round((clip.style?.posY ?? 0.5) * 100)}%</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.01"
+                  value={clip.style?.posY ?? 0.5}
+                  onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, posY: parseFloat(e.target.value) } }, true)}
+                  className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-yellow-500" />
+              </div>
+            </div>
+
+            {/* Animation */}
+            <div className="mt-3">
+              <label className="text-[10px] text-neutral-400 mb-1 block uppercase tracking-wider">Animación Entrada</label>
               <select value={clip.style?.animation || ''} onChange={e => editor.updateClip(clip.id, { style: { ...clip.style, animation: e.target.value } })}
-                className="w-full bg-[#27272a] text-xs p-1.5 rounded outline-none border border-[#3f3f46] text-white">
+                className="w-full bg-[#27272a] text-xs p-1.5 rounded-lg outline-none border border-[#3f3f46] text-white focus:border-yellow-500">
                 <option value="">Estático</option>
                 <option value="fade">Aparición suave (Fade In)</option>
                 <option value="typewriter">Máquina de escribir</option>
                 <option value="slideup">Deslizar hacia arriba</option>
+                <option value="bounce">Rebote</option>
+                <option value="pop">Pop (Escala)</option>
               </select>
             </div>
           </Popover>

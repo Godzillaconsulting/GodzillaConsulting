@@ -366,6 +366,37 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const { w: canvasW, h: canvasH } = ASPECT_RATIOS[editor.project.aspectRatio];
   const isPortrait = canvasH > canvasW;
 
+  const { seek } = engine;
+
+  const timelineEffects = useMemo(() => ({
+    video: { id: 'video', name: 'Video' },
+    audio: { id: 'audio', name: 'Audio' },
+    text: { id: 'text', name: 'Texto' }
+  }), []);
+
+  const timelineNode = useMemo(() => (
+    <Timeline
+      ref={timelineRef}
+      editorData={editorData}
+      effects={timelineEffects}
+      scale={5}
+      hideCursor={false}
+      onChange={handleTimelineChange}
+      onClickAction={(e, { action }) => handleClipSelect(action.id)}
+      onClickTimeArea={(time) => seek(time)}
+      onCursorDrag={(time) => seek(time)}
+      onCursorDragEnd={(time) => seek(time)}
+      autoScroll={true}
+      style={{ backgroundColor: '#18181b', color: '#fff', height: '100%' }}
+    />
+  ), [editorData, timelineEffects, handleTimelineChange, handleClipSelect, seek]);
+
+  useEffect(() => {
+    if (timelineRef.current) {
+      timelineRef.current.setTime(engine.displayTime);
+    }
+  }, [engine.displayTime]);
+
   return (
     <div className="flex flex-col h-screen w-full bg-[#121212] text-neutral-300 font-sans overflow-hidden">
       {/* Warning Banner */}
@@ -1019,24 +1050,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             }
             setDraggedMedia(null);
           }}>
-          <Timeline
-            ref={timelineRef}
-            editorData={editorData}
-            effects={{
-              video: { id: 'video', name: 'Video' },
-              audio: { id: 'audio', name: 'Audio' },
-              text: { id: 'text', name: 'Texto' }
-            }}
-            scale={5}
-            hideCursor={false}
-            onChange={handleTimelineChange}
-            onClickAction={(e, { action }) => handleClipSelect(action.id)}
-            onClickTimeArea={(time) => engine.seek(time)}
-            onCursorDrag={(time) => engine.seek(time)}
-            onCursorDragEnd={(time) => engine.seek(time)}
-            autoScroll={true}
-            style={{ backgroundColor: '#18181b', color: '#fff', height: '100%' }}
-          />
+          {timelineNode}
         </div>
       </div>
 

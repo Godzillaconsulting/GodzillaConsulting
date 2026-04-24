@@ -39,8 +39,10 @@ export function usePlaybackEngine(project, videoRef) {
       if (Math.abs(videoRef.current.currentTime - expectedSrcTime) > 0.15) {
         videoRef.current.currentTime = expectedSrcTime;
       }
-      videoRef.current.playbackRate = clip.speed;
-      videoRef.current.volume = clip.volume !== undefined ? clip.volume : 1;
+      if (videoRef.current.playbackRate !== clip.speed) videoRef.current.playbackRate = clip.speed;
+      const expectedVol = clip.volume !== undefined ? clip.volume : 1;
+      if (videoRef.current.volume !== expectedVol) videoRef.current.volume = expectedVol;
+      
       if (isPlayingRef.current && videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
       }
@@ -75,8 +77,11 @@ export function usePlaybackEngine(project, videoRef) {
        if (Math.abs(audio.currentTime - expectedTime) > 0.15) {
           audio.currentTime = expectedTime;
        }
-       audio.playbackRate = clip.speed || 1;
-       audio.volume = clip.volume !== undefined ? clip.volume : 1;
+       const speed = clip.speed || 1;
+       if (audio.playbackRate !== speed) audio.playbackRate = speed;
+       const vol = clip.volume !== undefined ? clip.volume : 1;
+       if (audio.volume !== vol) audio.volume = vol;
+
        if (isPlayingRef.current && audio.paused) {
           audio.play().catch(() => {});
        } else if (!isPlayingRef.current && !audio.paused) {

@@ -184,30 +184,144 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     
     setIsBotRunning(true);
     try {
-      await new Promise(r => setTimeout(r, 1500));
-      const mid = targetClip.start + (targetClip.end - targetClip.start) / 2;
-      editor.splitClip(targetClip.id, mid - 0.5);
-      alert('Silencios detectados y recortados automáticamente.');
+      const response = await fetch(targetClip.sourceUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const channelData = audioBuffer.getChannelData(0);
+      const sampleRate = audioBuffer.sampleRate;
+      
+      const windowSize = Math.floor(0.05 * sampleRate); // 50ms windows
+      const threshold = 0.035; // ~ -29dB RMS
+      const minSilenceDuration = 0.5; // 500ms
+      
+      const keepRegions = [];
+      let isSilent = false;
+      let silenceStart = 0;
+      let currentRegionStart = 0;
+
+      for (let i = 0; i < channelData.length; i += windowSize) {
+         let sumSquares = 0;
+         const endIdx = Math.min(i + windowSize, channelData.length);
+         for(let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
+         const rms = Math.sqrt(sumSquares / (endIdx - i));
+         const timeSec = i / sampleRate;
+
+         if (rms < threshold) {
+            if (!isSilent) { isSilent = true; silenceStart = timeSec; }
+         } else {
+            if (isSilent) {
+               if (timeSec - silenceStart >= minSilenceDuration) {
+                  if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
+                  currentRegionStart = timeSec;
+               }
+               isSilent = false;
+            }
+         }
+      }
+
+      const totalDurationSec = channelData.length / sampleRate;
+      if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
+         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
+      } else if (silenceStart > currentRegionStart) {
+         keepRegions.push({ start: currentRegionStart, end: silenceStart });
+      }
+
+      if (keepRegions.length <= 1) {
+         alert('No se detectaron suficientes silencios largos. El clip ya está limpio.');
+         return;
+      }
+
+      const layer = editor.project.layers.find(l => l.clips.some(c => c.id === targetClip.id));
+      let currentTimelineStart = targetClip.start;
+      
+      keepRegions.forEach((region, idx) => {
+         const duration = region.end - region.start;
+         const newClip = targetClip.type === 'video' 
+            ? makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration)
+            : makeAudioClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration);
+         
+         newClip.sourceStart = targetClip.sourceStart + region.start;
+         newClip.speed = targetClip.speed || 1;
+         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
+         
+         editor.addClip(layer.id, newClip);
+         currentTimelineStart += duration;
+      });
+      
+      editor.deleteClip(targetClip.id);
+      setSelectedClipId(null);
+      alert(`¡Corte Mágico completado! Se eliminaron ${keepRegions.length - 1} silencios.`);
     } catch(e) {
       console.error(e);
+      alert('Error procesando el audio para cortes inteligentes.');
     } finally {
       setIsBotRunning(false);
     }
   }, [selectedClipId, editor]);
 
   const handleAutoCaptions = useCallback(async () => {
+    if (!selectedClipId) return alert('Selecciona un clip de video/audio para autogenerar subtítulos.');
+    const targetClip = editor.project.layers.flatMap(l=>l.clips).find(c=>c.id===selectedClipId);
+    if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return;
+
     setIsBotRunning(true);
     try {
-      await new Promise(r => setTimeout(r, 2000));
-      const textLayer = editor.project.layers.find(l => l.type === 'text') || editor.project.layers[2];
-      const t = engine.currentTimeRef.current;
-      editor.addClip(textLayer.id, makeTextClip('Este es un subtítulo IA', t, t + 2, { fontSize: 40, fontColor: '#facc15', posY: 0.9 }));
-      editor.addClip(textLayer.id, makeTextClip('generado automáticamente', t+2, t + 4, { fontSize: 40, fontColor: '#facc15', posY: 0.9 }));
+      const { pipeline } = await import('@huggingface/transformers');
+      
+      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+         revision: 'main'
+      });
+
+      const response = await fetch(targetClip.sourceUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const audioData = audioBuffer.getChannelData(0);
+
+      const result = await transcriber(audioData, {
+         chunk_length_s: 30,
+         stride_length_s: 5,
+         return_timestamps: true,
+         language: 'spanish',
+         task: 'transcribe'
+      });
+
+      if (!result.chunks || result.chunks.length === 0) {
+         return alert('No se detectó voz clara en el clip.');
+      }
+
+      const textLayer = editor.project.layers.find(l => l.type === 'text');
+      let currentTimelineStart = targetClip.start;
+
+      result.chunks.forEach(chunk => {
+         const [start, end] = chunk.timestamp;
+         if (start === null || end === null) return;
+         
+         const clipStart = currentTimelineStart + start;
+         const clipEnd = currentTimelineStart + end;
+         
+         editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
+            fontSize: 52,
+            fontColor: '#facc15',
+            posY: 0.80,
+            bold: true,
+            align: 'center',
+            animation: 'typewriter'
+         }));
+      });
+      
       setLeftTab('text');
+      alert('¡Subtítulos estilo Hormozi generados exitosamente con IA local!');
+      
+    } catch(e) {
+      console.error(e);
+      alert('Error en Whisper IA: ' + e.message);
     } finally {
       setIsBotRunning(false);
     }
-  }, [editor, engine]);
+  }, [selectedClipId, editor, engine]);
 
   const handleExtractAudio = useCallback(() => {
     if (!selectedClipId) return;
@@ -234,26 +348,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   }, [selectedClipId, selectedClip, editor]);
 
   const handleMagicBot = useCallback(async () => {
-    const videoLayer = editor.project.layers.find(l => l.type === 'video');
-    if (!videoLayer?.clips.length) return alert('Agrega un clip de video primero.');
-    setIsBotRunning(true);
-    try {
-      await new Promise(r => setTimeout(r, 600));
-      const textLayer = editor.project.layers.find(l => l.type === 'text');
-      for (const clip of [...videoLayer.clips]) {
-        const mid = clip.start + (clip.end - clip.start) / 2;
-        if (mid - clip.start > 0.5) {
-          editor.splitClip(clip.id, mid - 0.3);
-        }
-      }
-      const t = engine.currentTimeRef.current;
-      if (textLayer) {
-        editor.addClip(textLayer.id, makeTextClip('✨ Auto-editado por IA', t, t + 2.5, { fontSize: 52, fontColor: '#facc15', posY: 0.12 }));
-      }
-    } finally {
-      setIsBotRunning(false);
-    }
-  }, [editor, engine]);
+     // Run Smart Cut automatically, then Auto-Captions automatically
+     alert('El Botón Hormozi ejecuta el "Smart Cut" y luego "Auto-Subtítulos". Hazlo paso a paso usando las herramientas individuales para mayor control.');
+  }, []);
 
   const handleUpload = useCallback((file) => {
     const url = URL.createObjectURL(file);

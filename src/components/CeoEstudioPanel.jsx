@@ -257,6 +257,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {
         pendientes: ['pending_cm_approval'],
+        ia_backlog: ['backlog'],
         devueltas:  ['rejected'],
         aprobadas:  ['approved', 'published'],
     };
@@ -265,6 +266,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Counts ────────────────────────────────────────────────
     const counts = {
         pendientes: tasks.filter(t => t.status === 'pending_cm_approval').length,
+        ia_backlog: tasks.filter(t => t.status === 'backlog').length,
         devueltas:  tasks.filter(t => t.status === 'rejected').length,
         aprobadas:  tasks.filter(t => ['approved','published'].includes(t.status)).length,
     };
@@ -298,6 +300,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
             <div className="flex gap-3 mb-6 shrink-0 z-10 relative">
                 {[
                     { id: 'pendientes', label: 'Pendientes por Revisar', icon: '⏳' },
+                    { id: 'ia_backlog', label: 'Bandeja IA (Autogenerados)', icon: '🤖' },
                     { id: 'devueltas',  label: 'Devueltas',               icon: '🔙' },
                     { id: 'aprobadas',  label: 'Aprobadas / Publicadas',  icon: '✅' },
                 ].map(tab => (
@@ -305,7 +308,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         className={`relative px-5 py-2.5 rounded-xl font-black text-sm transition-all border ${activeTab === tab.id ? 'bg-[#d946ef] border-[#d946ef] text-white shadow-md' : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white hover:border-[#d946ef]/50'}`}>
                         {tab.icon} {tab.label}
                         {counts[tab.id] > 0 && (
-                            <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black text-white ${tab.id === 'pendientes' ? 'bg-[#CC0000]' : 'bg-[#d946ef]'}`}>
+                            <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black text-white ${['pendientes', 'ia_backlog'].includes(tab.id) ? 'bg-[#CC0000]' : 'bg-[#d946ef]'}`}>
                                 {counts[tab.id]}
                             </span>
                         )}
@@ -455,14 +458,14 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             <hr className="border-neutral-800 my-3" />
 
                             {/* PENDIENTE → Judith puede aprobar/rechazar */}
-                            {selected.status === 'pending_cm_approval' && canReview && (
+                            {['pending_cm_approval', 'backlog'].includes(selected.status) && canReview && (
                                 <div className="flex-1 flex flex-col">
                                     <label className="text-xs font-bold text-neutral-400 mb-2 block uppercase tracking-widest">
                                         Notas (obligatorio si se devuelve):
                                     </label>
                                     <textarea value={feedback} onChange={e => setFeedback(e.target.value)}
                                         className="w-full h-28 bg-neutral-900 border border-neutral-700 rounded-xl p-3 text-white text-sm focus:border-[#d946ef] outline-none resize-none mb-4"
-                                        placeholder="Escribe qué debe corregir Alex..." />
+                                        placeholder="Escribe qué debe corregir Alex o el editor..." />
                                     <div className="mt-auto space-y-3">
                                         <button onClick={() => handleAction('approve')}
                                             className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105">
@@ -477,13 +480,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {/* PENDIENTE → Alex solo ve estado */}
-                            {selected.status === 'pending_cm_approval' && !canReview && (
+                            {['pending_cm_approval', 'backlog'].includes(selected.status) && !canReview && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                                     <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                                         <span className="text-2xl">⏳</span>
                                     </div>
                                     <p className="font-black text-white uppercase tracking-widest">En Revisión</p>
-                                    <p className="text-xs text-neutral-500">Judith está revisando este activo. Recibirás notificación cuando sea aprobado o devuelto.</p>
+                                    <p className="text-xs text-neutral-500">Este activo está siendo revisado. Recibirás notificación cuando sea aprobado o devuelto.</p>
                                 </div>
                             )}
 

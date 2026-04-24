@@ -253,8 +253,13 @@ router.post('/change-requests/:id/reject', verifyAdminToken, async (req, res) =>
 // ─── GET /api/automation/status ─ Estado PM2 ─────────────────────────────────
 router.get('/status', verifyAdminToken, async (req, res) => {
     try {
-        const { stdout } = await execPromise('npx pm2 jlist', { windowsHide: true });
-        const processes = JSON.parse(stdout);
+        const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
+        
+        // Extract JSON portion safely to avoid PM2 warnings breaking the parser
+        const match = stdout.match(/\[.*\]/s);
+        const jsonStr = match ? match[0] : '[]';
+        
+        const processes = JSON.parse(jsonStr);
         const activeProcesses = processes.map(p => ({
             name: p.name,
             status: p.pm2_env.status,
@@ -264,6 +269,19 @@ router.get('/status', verifyAdminToken, async (req, res) => {
         res.json({ success: true, pm2: activeProcesses });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Fallo al contactar PM2', details: err.message });
+    }
+});
+
+// ─── POST /api/automation/restart-process ─ Reiniciar PM2 ───────────────────
+router.post('/restart-process', verifyAdminToken, async (req, res) => {
+    try {
+        const { processName } = req.body;
+        if (!processName) return res.status(400).json({ success: false, error: 'processName requerido' });
+        
+        await execPromise(`pm2 restart ${processName}`, { windowsHide: true });
+        res.json({ success: true, message: `Proceso ${processName} reiniciado exitosamente.` });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Fallo al reiniciar proceso', details: err.message });
     }
 });
 

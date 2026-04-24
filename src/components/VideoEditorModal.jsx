@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Wand2, Play, Pause, Scissors, Loader2, Download, Video, Music, Type, Trash2, PlusCircle, Undo2, Redo2, Gauge, Zap, Volume2, ArrowLeftRight, Settings2, Image as ImageIcon } from 'lucide-react';
+import { X, Wand2, Play, Pause, Scissors, Loader2, Download, Video, Music, Type, Trash2, PlusCircle, Undo2, Redo2, Gauge, Zap, Volume2, ArrowLeftRight, Settings2, Image as ImageIcon, Search } from 'lucide-react';
 import FloatingToolbar from './FloatingToolbar';
 import WaveformCanvas from './WaveformCanvas';
 import { Timeline } from '@xzdarcy/react-timeline-editor';
@@ -14,6 +14,22 @@ const getVideoDuration = (url) => new Promise(r => {
 });
 
 const TRACK_COLORS = { video: '#3b82f6', audio: '#10b981', text: '#eab308' };
+
+const STOCK_VIDEOS = [
+  { id: 'v1', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-a-person-typing-on-a-laptop-5291/1080p.mp4', caption: 'Tecnología / Hacker', tags: ['tech', 'laptop', 'trabajo', 'oficina'] },
+  { id: 'v2', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-person-counting-dollar-bills-1080p.mp4', caption: 'Dinero / Billetes', tags: ['dinero', 'cash', 'finanzas', 'negocios'] },
+  { id: 'v3', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-walking-in-a-crowded-city-1080p.mp4', caption: 'Ciudad / Gente', tags: ['ciudad', 'urbano', 'caminar', 'gente'] },
+  { id: 'v4', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-man-working-out-at-the-gym-1080p.mp4', caption: 'Gym / Fitness', tags: ['gym', 'fitness', 'ejercicio', 'deporte'] },
+  { id: 'v5', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-crypto-trading-1080p.mp4', caption: 'Trading / Crypto', tags: ['trading', 'crypto', 'bitcoin', 'graficas'] }
+];
+
+const SFX_LIBRARY = [
+  { id: 's1', type: 'audio', url: 'https://actions.google.com/sounds/v1/foley/whoosh.ogg', caption: '💨 Whoosh Rápido', icon: '💨' },
+  { id: 's2', type: 'audio', url: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg', caption: '🫧 Pop Text', icon: '🫧' },
+  { id: 's3', type: 'audio', url: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg', caption: '🛎️ Ding Idea', icon: '🛎️' },
+  { id: 's4', type: 'audio', url: 'https://actions.google.com/sounds/v1/office/cash_register.ogg', caption: '💵 Caja Registradora', icon: '💵' },
+  { id: 's5', type: 'audio', url: 'https://actions.google.com/sounds/v1/science_fiction/alien_spaceship_takeoff.ogg', caption: '📈 Tensión Riser', icon: '📈' },
+];
 
 export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [initialVideoUrl, setInitialVideoUrl] = useState(() => {
@@ -40,6 +56,13 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [stockQuery, setStockQuery] = useState('');
+  
+  const filteredStock = useMemo(() => {
+    if (!stockQuery) return STOCK_VIDEOS;
+    const q = stockQuery.toLowerCase();
+    return STOCK_VIDEOS.filter(v => v.caption.toLowerCase().includes(q) || v.tags.some(t => t.toLowerCase().includes(q)));
+  }, [stockQuery]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -697,14 +720,16 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         {/* LEFT PANEL: Library (Media, Text, Audio) */}
         <div className="w-72 sm:w-80 flex flex-col border-r border-[#27272a] bg-[#18181b] shrink-0">
           {/* Tabs */}
-          <div className="flex p-2 gap-1 border-b border-[#27272a]">
+          <div className="flex p-2 gap-1 border-b border-[#27272a] overflow-x-auto custom-scrollbar">
             {[
               { id: 'media', icon: <ImageIcon className="w-4 h-4" />, label: 'Medios' },
               { id: 'text', icon: <Type className="w-4 h-4" />, label: 'Texto' },
               { id: 'tts', icon: <Music className="w-4 h-4" />, label: 'Voz IA' },
+              { id: 'stock', icon: <Search className="w-4 h-4" />, label: 'Stock' },
+              { id: 'sfx', icon: <Zap className="w-4 h-4" />, label: 'SFX' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setLeftTab(tab.id)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-md gap-1 text-[11px] font-medium transition-all ${leftTab === tab.id ? 'bg-[#27272a] text-white shadow-sm' : 'text-neutral-400 hover:bg-[#27272a]/50 hover:text-neutral-200'
+                className={`flex-1 min-w-[56px] flex flex-col items-center py-2.5 rounded-md gap-1 text-[11px] font-medium transition-all ${leftTab === tab.id ? 'bg-[#27272a] text-white shadow-sm' : 'text-neutral-400 hover:bg-[#27272a]/50 hover:text-neutral-200'
                   }`}>
                 {tab.icon}
                 {tab.label}
@@ -820,6 +845,65 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     {isGenTTS ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                     Generar y Añadir
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* STOCK */}
+            {leftTab === 'stock' && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-white">Buscador de B-Roll</h3>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-neutral-500" />
+                  <input value={stockQuery} onChange={e => setStockQuery(e.target.value)}
+                    placeholder="Buscar (ej. dinero, gym)..."
+                    className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-md pl-8 pr-2.5 py-2 outline-none focus:border-blue-500 transition-colors placeholder:text-neutral-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {filteredStock.length === 0 && <div className="col-span-2 text-center py-4 text-neutral-500 text-[10px]">No hay resultados</div>}
+                  {filteredStock.map(m => (
+                    <div key={m.id} draggable onDragStart={e => { setDraggedMedia(m); e.dataTransfer.setData('text/plain', m.url); }}
+                      className="group relative flex flex-col bg-[#27272a] rounded-lg border border-[#3f3f46] overflow-hidden cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors">
+                      <div className="aspect-video bg-black flex items-center justify-center relative">
+                        <video src={m.url} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm pointer-events-none">
+                          <button onClick={() => handleAddToTimeline({ media_options: [{ url: m.url }], caption: m.caption })} className="bg-blue-600 pointer-events-auto text-white p-1.5 rounded-full hover:scale-110 transition-transform">
+                            <PlusCircle className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-1.5 flex flex-col items-center">
+                        <p className="text-[9px] text-neutral-300 font-medium truncate w-full text-center" title={m.caption}>{m.caption}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] text-neutral-500 text-center mt-2">Videos proporcionados por Coverr.</p>
+              </div>
+            )}
+
+            {/* SFX */}
+            {leftTab === 'sfx' && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-white">Efectos de Sonido</h3>
+                <div className="space-y-1.5">
+                  {SFX_LIBRARY.map(s => (
+                    <div key={s.id} draggable onDragStart={e => { setDraggedMedia(s); e.dataTransfer.setData('text/plain', s.url); }}
+                      className="group flex items-center justify-between bg-[#27272a]/50 hover:bg-[#27272a] border border-transparent hover:border-[#3f3f46] p-2 rounded-md transition-all cursor-grab active:cursor-grabbing">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{s.icon}</span>
+                        <span className="text-xs text-neutral-300">{s.caption}</span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { const a = new Audio(s.url); a.play(); }} className="text-neutral-400 hover:text-white p-1">
+                          <Play className="w-3.5 h-3.5" fill="currentColor" />
+                        </button>
+                        <button onClick={() => handleAddToTimeline({ media_options: [{ url: s.url }], caption: s.caption })} className="text-blue-400 hover:text-blue-300 p-1">
+                          <PlusCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

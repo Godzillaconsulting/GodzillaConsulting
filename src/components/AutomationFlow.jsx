@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Minus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search } from 'lucide-react';
+import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Minus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, ArrowLeftRight, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search } from 'lucide-react';
 
 const getIcons = () => ({ Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search });
 
@@ -35,9 +35,9 @@ const FLOW_TEMPLATES = [
       { id: 'cita2', type: 'action', title: 'Calendario Global', subtitle: 'Registrar Cita', icon: 'Calendar', x: 1200, y: 300, color: '#8b5cf6', pm2_process: '' },
 
       /* --- MÁQUINA UGC --- */
-      { id: 'ugc1', type: 'action', title: 'Planificador IA', subtitle: 'Origen Mensual', icon: 'Wand2', x: 1200, y: 500, color: '#a855f7', pm2_process: '' },
-      { id: 'ugc2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 1500, y: 400, color: '#3b82f6', pm2_process: '' },
-      { id: 'ugc3', type: 'action', title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', x: 1500, y: 600, color: '#f59e0b', pm2_process: '' },
+      { id: 'ugc1', type: 'action', title: 'Planificador IA', subtitle: 'Origen Mensual', icon: 'Wand2', x: 1200, y: 500, color: '#a855f7', pm2_process: 'ai-core' },
+      { id: 'ugc2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 1500, y: 400, color: '#3b82f6', pm2_process: 'ai-core' },
+      { id: 'ugc3', type: 'action', title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', x: 1500, y: 600, color: '#f59e0b', pm2_process: 'ai-core' },
       { id: 'ugc4', type: 'action', title: 'Editor Pro', subtitle: 'Capcut', icon: 'Video', x: 1800, y: 500, color: '#2563eb', pm2_process: '' },
       { id: 'ugc5', type: 'action', title: 'Publicador Social', subtitle: 'Tiktok/IG', icon: 'Send', x: 2100, y: 500, color: '#10b981', pm2_process: 'publisher-bot' },
 
@@ -176,7 +176,7 @@ const FLOW_TEMPLATES = [
     name: '🌱 Flujo Básico',
     description: 'Planificador IA → Tarea de Studio',
     nodes: [
-      { id: 't1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 200, y: 220, color: '#a855f7', pm2_process: '' },
+      { id: 't1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 200, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
       { id: 't2', type: 'action', title: 'Tarea de Studio', subtitle: 'CEO Estudio', icon: 'CheckSquare', x: 560, y: 220, color: '#10b981', pm2_process: '' },
     ],
     edges: [{ id: 'e1', source: 't1', target: 't2', color: '#a855f7' }],
@@ -185,9 +185,9 @@ const FLOW_TEMPLATES = [
     name: '🚀 Máquina UGC Completa',
     description: 'Planificador → Imagen → Video → Tarea → WA + Email',
     nodes: [
-      { id: 'n1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 250, color: '#a855f7', pm2_process: '' },
-      { id: 'n2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 340, y: 120, color: '#3b82f6', pm2_process: '' },
-      { id: 'n3', type: 'action', title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', x: 340, y: 380, color: '#f59e0b', pm2_process: '' },
+      { id: 'n1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 250, color: '#a855f7', pm2_process: 'ai-core' },
+      { id: 'n2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 340, y: 120, color: '#3b82f6', pm2_process: 'ai-core' },
+      { id: 'n3', type: 'action', title: 'Generador Video', subtitle: 'Veo / Kling', icon: 'Video', x: 340, y: 380, color: '#f59e0b', pm2_process: 'ai-core' },
       { id: 'n4', type: 'action', title: 'Tarea de Studio', subtitle: 'CEO Estudio', icon: 'CheckSquare', x: 620, y: 250, color: '#10b981', pm2_process: '' },
       { id: 'n5', type: 'action', title: 'WhatsApp Bot', subtitle: 'Alerta WA', icon: 'Smartphone', x: 880, y: 140, color: '#25d366', pm2_process: 'whatsapp-bot' },
       { id: 'n6', type: 'action', title: 'Email Worker', subtitle: 'Notificación', icon: 'Mail', x: 880, y: 360, color: '#f97316', pm2_process: 'email-worker' },
@@ -233,7 +233,7 @@ const FLOW_TEMPLATES = [
     name: '📱 Bot de Alertas Omnicanal',
     description: 'Tarea → WhatsApp + Email simultáneo',
     nodes: [
-      { id: 'a1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 100, y: 220, color: '#a855f7', pm2_process: '' },
+      { id: 'a1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 100, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
       { id: 'a2', type: 'action', title: 'Tarea de Studio', subtitle: 'CEO Estudio', icon: 'CheckSquare', x: 380, y: 220, color: '#10b981', pm2_process: '' },
       { id: 'a3', type: 'action', title: 'Email Worker', subtitle: 'Notificación', icon: 'Mail', x: 660, y: 120, color: '#f97316', pm2_process: 'email-worker' },
       { id: 'a4', type: 'action', title: 'WhatsApp Bot', subtitle: 'Alerta WA', icon: 'Smartphone', x: 660, y: 320, color: '#25d366', pm2_process: 'whatsapp-bot' },
@@ -261,8 +261,8 @@ const FLOW_TEMPLATES = [
     name: '📣 Pipeline de Contenido Social',
     description: 'Planificador → Visual → Base de Datos → Tarea',
     nodes: [
-      { id: 's1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 220, color: '#a855f7', pm2_process: '' },
-      { id: 's2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 340, y: 220, color: '#3b82f6', pm2_process: '' },
+      { id: 's1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
+      { id: 's2', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3', icon: 'Image', x: 340, y: 220, color: '#3b82f6', pm2_process: 'ai-core' },
       { id: 's3', type: 'action', title: 'Base de Datos', subtitle: 'Guardar asset', icon: 'Database', x: 600, y: 220, color: '#64748b', pm2_process: '' },
       { id: 's4', type: 'action', title: 'Tarea de Studio', subtitle: 'CEO Estudio', icon: 'CheckSquare', x: 860, y: 220, color: '#10b981', pm2_process: '' },
     ],
@@ -277,7 +277,7 @@ const FLOW_TEMPLATES = [
     description: 'TikTok → Planificador IA → Tarea',
     nodes: [
       { id: 'tk1', type: 'trigger', title: 'TikTok Bot', subtitle: 'Interacción TikTok', icon: 'Video', x: 100, y: 220, color: '#ff0050', pm2_process: 'tiktok-bot' },
-      { id: 'tk2', type: 'action', title: 'Planificador IA', subtitle: 'Generar respuesta', icon: 'Wand2', x: 380, y: 220, color: '#a855f7', pm2_process: '' },
+      { id: 'tk2', type: 'action', title: 'Planificador IA', subtitle: 'Generar respuesta', icon: 'Wand2', x: 380, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
       { id: 'tk3', type: 'action', title: 'Tarea de Studio', subtitle: 'CEO Estudio', icon: 'CheckSquare', x: 660, y: 220, color: '#10b981', pm2_process: '' },
     ],
     edges: [
@@ -665,14 +665,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const selectedNode = nodeMap.get(selectedNodeId);
   const NODE_PRESETS = [
     // ── NÚCLEO GODZILLA ──────────────────────────────────────────────────────
-    { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process:'ai-core',       group:'🧠 Núcleo' },
-    { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process:'vector-db',     group:'🧠 Núcleo' },
+    { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process: 'ai-core',       group:'🧠 Núcleo' },
+    { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
+    { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process: 'vector-db',     group:'🧠 Núcleo' },
     { title:'Godzilla CM',          subtitle:'CRM & Leads',           icon:'LayoutDashboard',color:'#2563eb', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
+    { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
     { title:'Tarea de Studio',      subtitle:'CEO Estudio',           icon:'CheckSquare',    color:'#10b981', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'#8b5cf6', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'8b5cf6', pm2_process:'',              group:'🧠 Núcleo' },
     // ── BOTS PROPIOS ─────────────────────────────────────────────────────────
     { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'🤖 Bots' },
     { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'🤖 Bots' },
@@ -842,6 +842,26 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const handleWheel = (e) => {
     if (e.ctrlKey || e.metaKey) {
       setZoom(z => Math.min(Math.max(0.2, z - e.deltaY * 0.001), 2));
+    }
+  };
+
+  const handleRestartProcess = async (processName) => {
+    if (!processName) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+      const res = await fetch('/api/automation/restart-process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ processName })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Proceso ${processName} reiniciado.`);
+      } else {
+        alert(`❌ Error al reiniciar: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`❌ Error al reiniciar: ${err.message}`);
     }
   };
 
@@ -1698,7 +1718,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
             </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-blue-400 mb-1 flex items-center gap-1"><Power className="w-3 h-3"/>Motor</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-bold text-blue-400 flex items-center gap-1"><Power className="w-3 h-3"/>Motor</p>
+                {selectedNode.pm2_process && pm2Status.find(x=>x.name===selectedNode.pm2_process) && (
+                  <button onClick={(e) => { e.preventDefault(); handleRestartProcess(selectedNode.pm2_process); }} className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 text-[9px] font-bold transition flex items-center gap-1">
+                    <Zap className="w-2 h-2"/> Reiniciar
+                  </button>
+                )}
+              </div>
               {selectedNode.pm2_process
                 ? (() => { const p=pm2Status.find(x=>x.name===selectedNode.pm2_process); return p?<p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE · {Math.round(p.memory/1024/1024)}MB · {p.cpu}%</p>:<p className="text-[10px] text-rose-400 font-bold">🔴 OFFLINE</p>; })()
                 : <><p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE - Integración Nativa</p><p className="text-[9px] text-emerald-500/60">Corre dentro del núcleo de Godzilla Server.</p></>

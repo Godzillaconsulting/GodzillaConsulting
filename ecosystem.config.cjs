@@ -1,72 +1,22 @@
 module.exports = {
   apps: [
-    {
-      name: "godzilla-server",
-      script: "./server/index.js",
-      instances: 1,
-      exec_mode: "fork",
-      max_memory_restart: "1G",
-      watch: false,
-      env: {
-        NODE_ENV: "production",
-        PORT: 3000
-      }
-    },
-    {
-      name: "whatsapp-bot",
-      script: "./server/whatsappBot.js",
-      instances: 1,
-      exec_mode: "fork",
-      max_memory_restart: "512M",
-      max_restarts: 5,
-      restart_delay: 15000,
-      min_uptime: "20s",
-      watch: false,
-      env: {
-        NODE_ENV: "production"
-      }
-    },
-    {
-      name: "instagram-bot",
-      script: "./server/instagram_bot.cjs",
-      instances: 1,
-      exec_mode: "fork",
-      max_memory_restart: "512M",
-      max_restarts: 3,
-      restart_delay: 15000,
-      min_uptime: "20s",
-      watch: false,
-      env: {
-        NODE_ENV: "production"
-      }
-    },
-    {
-      name: "tiktok-bot",
-      script: "./server/tiktok_bypass.js",
-      instances: 1,
-      exec_mode: "fork",
-      max_memory_restart: "1G",
-      max_restarts: 5,
-      restart_delay: 30000,
-      min_uptime: "15s",
-      watch: false,
-      env: {
-        NODE_ENV: "production"
-      }
-    },
-    {
-      name: "email-worker",
-      script: "./server/emailWorker.js",
-      instances: 1,
-      exec_mode: "fork",
-      watch: false,
-      restart_delay: 5000,
-      max_restarts: 10,
-      min_uptime: "10s",
-      env: {
-        NODE_ENV: "production",
-        QUEUE_DELAY_MS: "2000"
-      }
-    }
+    { name: "godzilla-server", script: "./server/index.js", exec_mode: "fork", max_memory_restart: "512M", watch: false, env: { NODE_ENV: "production", PORT: 3000 } },
+    { name: "whatsapp-bot", script: "./server/whatsappBot.js", exec_mode: "fork", max_memory_restart: "256M", max_restarts: 5, restart_delay: 15000, watch: false, env: { NODE_ENV: "production" } },
+    { name: "tiktok-bot", script: "./server/tiktok_bypass.js", exec_mode: "fork", max_memory_restart: "512M", max_restarts: 5, restart_delay: 30000, watch: false, env: { NODE_ENV: "production" } },
+    { name: "email-worker", script: "./server/emailWorker.js", exec_mode: "fork", max_memory_restart: "128M", watch: false, restart_delay: 5000, max_restarts: 10, env: { NODE_ENV: "production", QUEUE_DELAY_MS: "2000" } },
+    
+    // --- BOTS EN DESARROLLO (PLACEHOLDERS) ---
+    { name: "ai-core", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "vector-db", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "zilla-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "goyi-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "meta-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "newsletter-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "trends-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "publisher-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "linkedin-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "twitter-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" }
+    
+    // NOTA: instagram-bot está intencionalmente omitido ("dormido") según instrucciones.
   ]
 };

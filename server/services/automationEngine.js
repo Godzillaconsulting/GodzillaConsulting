@@ -99,15 +99,16 @@ class AutomationEngine {
             }
 
             // ─── Configuración de bloques por periodo ─────────────────────────
-            // day  → 1 bloque de 1 día
-            // week → 1 bloque de 7 días
-            // month → 3 bloques de 10 días (30 total)
+            // 1 día  ≈  500 tokens de output → 1,024 es seguro
+            // 7 días ≈ 3,500 tokens → split en 2 bloques de 3-4 días a 2,048
+            // 30 días ≈ 15,000 tokens → split en 6 bloques de 5 días a 3,072
+            // Gemini Flash tope real de output: 8,192 tokens
             const blockConfig = {
-                day:   { totalDays: 1,  blockSize: 1,  blocks: 1 },
-                week:  { totalDays: 7,  blockSize: 7,  blocks: 1 },
-                month: { totalDays: 30, blockSize: 10, blocks: 3 },
+                day:   { totalDays: 1,  blockSize: 1, blocks: 1,  maxTokens: 1024 },
+                week:  { totalDays: 7,  blockSize: 4, blocks: 2,  maxTokens: 2048 },
+                month: { totalDays: 30, blockSize: 5, blocks: 6,  maxTokens: 3072 },
             };
-            const { totalDays, blockSize, blocks } = blockConfig[period] || blockConfig.month;
+            const { totalDays, blockSize, blocks, maxTokens } = blockConfig[period] || blockConfig.month;
 
             // ─── Helper: genera un bloque de N días ───────────────────────────
             const generateBlock = async (startDay, count, blockNum) => {
@@ -144,7 +145,7 @@ Solo el JSON array, nada más.`;
                             contents: [{ parts: [{ text: blockPrompt }] }],
                             generationConfig: {
                                 temperature: 0.75,
-                                maxOutputTokens: 2048  // Siempre 2048 — bloque pequeño = JSON limpio
+                                maxOutputTokens: maxTokens
                             }
                         })
                     }

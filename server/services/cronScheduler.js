@@ -102,6 +102,14 @@ class CronScheduler {
             if (!err.message?.includes('ECONNREFUSED')) {
                 console.error('[CronScheduler] Error en tick:', err.message);
             }
+        } finally {
+            // Limpiar entradas de lastFired con más de 2 minutos (evita memory leak)
+            const cutoff = new Date();
+            cutoff.setMinutes(cutoff.getMinutes() - 2);
+            const cutoffKey = `${cutoff.getHours()}:${String(cutoff.getMinutes()).padStart(2,'0')}`;
+            for (const [k, v] of this.lastFired.entries()) {
+                if (v.split('_')[1] <= cutoffKey) this.lastFired.delete(k);
+            }
         }
     }
 

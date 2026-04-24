@@ -292,39 +292,22 @@ router.get('/runs', verifyAdminToken, async (req, res) => {
     }
 });
 
-// ─── POST /api/automation/restart ─────────────────────────────────────────────
-router.post('/restart', verifyAdminToken, async (req, res) => {
-    try {
-        const { processName } = req.body;
-        if (!processName) return res.status(400).json({ success: false, error: 'processName requerido' });
-        if (!/^[a-zA-Z0-9_-]+$/.test(processName)) return res.status(400).json({ success: false, error: 'Nombre inválido' });
-        await execPromise(`npx pm2 restart ${processName}`, { windowsHide: true });
-        res.json({ success: true, message: `Proceso ${processName} reiniciado.` });
-    } catch (err) {
-        res.status(500).json({ success: false, error: 'Fallo al reiniciar', details: err.message });
-    }
-});
-
-// ─── POST /api/automation/webhook/:nodeId ─ Webhook Universal Dinámico ────────
+// ─── POST /api/automation/restart ─────────────// ─── POST /api/automation/webhook/:nodeId ─ Webhook Universal Dinámico ─────────
 router.post('/webhook/:nodeId', async (req, res) => {
     try {
         const { nodeId } = req.params;
+        if (!/^[a-zA-Z0-9_-]+$/.test(nodeId)) return res.status(400).json({ success: false, error: 'nodeId inválido' });
         const payload = req.body || {};
-        
-        // El Webhook puede estar en cualquier flujo. Lo ideal sería buscar en qué flujo está.
-        // Por simplicidad, ejecutaremos el triggerNode (buscando en todos los flujos o en el id=1, 
-        // pero modifiqué triggerNode para que reciba flowId. Por ahora asumiremos flowId=1 (Sistema Central) 
-        // o buscaremos en qué flujo está el nodo).
-        
-        const result = await pool.query(`
-            SELECT id FROM automation_flow 
-            WHERE nodes @> '[{"id": "' || $1 || '"}]'
-        `, [nodeId]);
+
+        // Fix SQL injection: usar jsonb_path_exists con parámetro tipado
+        const result = await pool.query(
+            `SELECT id FROM automation_flow WHERE nodes @> $1::jsonb`,
+            [JSON.stringify([{ id: nodeId }])]
+        );
 
         if (result.rows.length > 0) {
             const flowId = result.rows[0].id;
             console.log(`[Webhook] Recibido para nodo ${nodeId} en flujo ${flowId}. Disparando Engine...`);
-            // TriggerEngine en background para no bloquear la respuesta HTTP
             AutomationEngine.triggerNode(nodeId, payload, flowId).catch(err => console.error(err));
             res.json({ success: true, message: 'Webhook recibido y flujo en ejecución.' });
         } else {
@@ -340,12 +323,13 @@ router.post('/webhook/:nodeId', async (req, res) => {
 router.get('/webhook/:nodeId', async (req, res) => {
     try {
         const { nodeId } = req.params;
+        if (!/^[a-zA-Z0-9_-]+$/.test(nodeId)) return res.status(400).json({ success: false, error: 'nodeId inválido' });
         const payload = req.query || {};
-        
-        const result = await pool.query(`
-            SELECT id FROM automation_flow 
-            WHERE nodes @> '[{"id": "' || $1 || '"}]'
-        `, [nodeId]);
+
+        const result = await pool.query(
+            `SELECT id FROM automation_flow WHERE nodes @> $1::jsonb`,
+            [JSON.stringify([{ id: nodeId }])]
+        );
 
         if (result.rows.length > 0) {
             const flowId = result.rows[0].id;
@@ -360,4 +344,18 @@ router.get('/webhook/:nodeId', async (req, res) => {
     }
 });
 
+// ─── POST /api/automation/restart ─────────────────────────────────────────────
+router.post('/restart', verifyAdminToken, async (req, res) => {
+    try {
+        const { processName } = req.body;
+        if (!processName) return res.status(400).json({ success: false, error: 'processName requerido' });
+        if (!/^[a-zA-Z0-9_-]+$/.test(processName)) return res.status(400).json({ success: false, error: 'Nombre inválido' });
+        await execPromise(`npx pm2 restart ${processName}`, { windowsHide: true });
+        res.json({ success: true, message: `Proceso ${processName} reiniciado.` });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Fallo al reiniciar', details: err.message });
+    }
+});
+
 export default router;
+

@@ -1,6 +1,30 @@
 import pool from '../config/db.js';
 import nodemailer from 'nodemailer';
 
+// ── Singleton de transporter SMTP (no crear uno nuevo por cada email) ────────
+let _mailerTransport = null;
+function getMailer() {
+    if (_mailerTransport) return _mailerTransport;
+    _mailerTransport = nodemailer.createTransport({
+        service: process.env.EMAIL_SERVICE || 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+    return _mailerTransport;
+}
+
+// ── Cache de flujos en memoria (TTL 30s) ─────────────────────────────────────
+const _flowCache = new Map(); // flowId → { data, ts }
+const FLOW_CACHE_TTL = 30_000;
+async function getFlow(flowId) {
+    const cached = _flowCache.get(flowId);
+    if (cached && Date.now() - cached.ts < FLOW_CACHE_TTL) return cached.data;
+    const r = await pool.query('SELECT id, nodes, edges FROM automation_flow WHERE id=$1', [flowId]);
+    const data = r.rows[0] || null;
+    if (data) _flowCache.set(flowId, { data, ts: Date.now() });
+    return data;
+}
+function invalidateFlowCache(flowId) { _flowCache.delete(flowId); }
+
 // ══════════════════════════════════════════════════════════════════════════════
 //  GODZILLA WORKFLOW ENGINE v3 — El n8n que nos pertenece 😈
 //
@@ -120,7 +144,8 @@ class AutomationEngine {
         // Crea tareas en studio_tasks (una por día del plan)
         'Tarea de Studio': async (node, ctx) => {
             if (!ctx.plan || !Array.isArray(ctx.plan)) {
-                console.log(`[Engine] ⚠️  Tarea de Studio — sin plan en contexto`);
+                console.log(`[Engine] ⚠️  Tarea de Studio — sin plan en contexto (skipped)`);
+                ctx._skippedNodes = [...(ctx._skippedNodes || []), 'Tarea de Studio'];
                 return ctx;
             }
             const now = new Date();
@@ -862,48 +887,51 @@ class AutomationEngine {
     }
 
     // ─── Entry Point: disparar por título de nodo ─────────────────────────────
+    // Busca en TODOS los flujos el nodo origen (no solo el primero)
     static async triggerFlow(sourceTitle, inputPayload = {}, flowId = null) {
         const t0 = Date.now();
-        const runLog = [];
         let runId = null;
 
         try {
             console.log(`\n[Engine] ════ FLUJO INICIADO desde: "${sourceTitle}" ════`);
 
-            // Cargar el flujo correcto (o buscar en todos si no se especifica)
-            let query = 'SELECT id, nodes, edges FROM automation_flow';
-            let params = [];
-            if (flowId) { query += ' WHERE id = $1'; params = [flowId]; }
-            else { query += ' ORDER BY id ASC LIMIT 1'; }
+            let rows;
+            if (flowId) {
+                const r = await pool.query('SELECT id, nodes, edges FROM automation_flow WHERE id=$1', [flowId]);
+                rows = r.rows;
+            } else {
+                // Busca en TODOS los flujos el que contenga el nodo origen
+                const r = await pool.query('SELECT id, nodes, edges FROM automation_flow WHERE jsonb_array_length(nodes) > 0');
+                rows = r.rows.filter(row => (row.nodes || []).some(n => n.title === sourceTitle));
+            }
 
-            const result = await pool.query(query, params);
-            if (!result.rows.length || !result.rows[0].nodes?.length) {
-                console.log('[Engine] Sin flujo configurado.');
+            if (!rows.length) {
+                console.log(`[Engine] Nodo "${sourceTitle}" no encontrado en ningún flujo.`);
                 return;
             }
 
-            const { id: fId, nodes, edges } = result.rows[0];
+            for (const { id: fId, nodes, edges } of rows) {
+                // runLog aislado por cada flujo/fuente
+                const runLog = [];
+                const sourceNodes = nodes.filter(n => n.title === sourceTitle);
+                if (!sourceNodes.length) continue;
 
-            const sourceNodes = nodes.filter(n => n.title === sourceTitle);
-            if (!sourceNodes.length) {
-                console.log(`[Engine] Nodo origen "${sourceTitle}" no encontrado en el flujo.`);
-                return;
+                const { rows: [{ id }] } = await pool.query(
+                    `INSERT INTO flow_runs (flow_id, status, source) VALUES ($1, 'running', $2) RETURNING id`,
+                    [fId, sourceTitle]
+                );
+                runId = id;
+
+                for (const src of sourceNodes) {
+                    await this._executeNodePath(nodes, edges, src.id, inputPayload, runId, runLog);
+                }
+
+                await pool.query(
+                    `UPDATE flow_runs SET status='success', finished_at=NOW(), duration_ms=$1, log=$2 WHERE id=$3`,
+                    [Date.now() - t0, JSON.stringify(runLog), runId]
+                );
+                invalidateFlowCache(fId);
             }
-
-            const { rows: [{ id }] } = await pool.query(
-                `INSERT INTO flow_runs (flow_id, status, source) VALUES ($1, 'running', $2) RETURNING id`,
-                [fId, sourceTitle]
-            );
-            runId = id;
-
-            for (const src of sourceNodes) {
-                await this._executeNodePath(nodes, edges, src.id, inputPayload, runId, runLog);
-            }
-
-            await pool.query(
-                `UPDATE flow_runs SET status='success', finished_at=NOW(), duration_ms=$1, log=$2 WHERE id=$3`,
-                [Date.now() - t0, JSON.stringify(runLog), runId]
-            );
             console.log(`[Engine] ════ FLUJO COMPLETADO en ${Date.now() - t0}ms ════\n`);
 
         } catch (err) {
@@ -911,7 +939,7 @@ class AutomationEngine {
             if (runId) {
                 await pool.query(
                     `UPDATE flow_runs SET status='error', finished_at=NOW(), log=$1 WHERE id=$2`,
-                    [JSON.stringify([...runLog, { node:'engine', status:'error', error: err.message }]), runId]
+                    [JSON.stringify([{ node:'engine', status:'error', error: err.message }]), runId]
                 );
             }
         }

@@ -140,11 +140,13 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     try {
       // Map frontend voice to StreamElements (Amazon Polly)
       const voiceMap = {
-         'es-ES-AlvaroNeural': 'Enrique',
-         'es-ES-ElviraNeural': 'Conchita',
-         'es-MX-JorgeNeural': 'Miguel',
-         'es-MX-DaliaNeural': 'Mia',
-         'en-US-JennyNeural': 'Brian'
+         'es-MX-Standard-A': 'Mia',
+         'es-MX-Standard-B': 'Miguel',
+         'alloy': 'Brian',
+         'nova': 'Salli',
+         'onyx': 'Matthew',
+         'shimmer': 'Joanna',
+         'hormozi': 'Justin'
       };
       const pollyVoice = voiceMap[ttsVoice] || 'Conchita';
       

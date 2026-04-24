@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search } from 'lucide-react';
+import { Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Minus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search } from 'lucide-react';
 
 const getIcons = () => ({ Bot, MessageCircle, Webhook, Zap, Calendar, Server, Plus, Settings2, X, Trash2, Shield, Activity, Power, Smartphone, Video, Camera, Database, Mail, Wand2, CheckSquare, Image, Play, Clock, CheckCircle, XCircle, ArrowLeft, Layers, Cpu, Globe, Brain, Network, LayoutDashboard, GitBranch, Timer, Braces, Send, Sparkles, Cloud, CreditCard, TrendingUp, Search });
 
@@ -385,7 +385,7 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
 
       {/* Canvas */}
       <div
-        style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '50% 50%', width: totalW, height: totalH, position: 'absolute', top: '50%', left: '50%', marginTop: -(totalH / 2), marginLeft: -(totalW / 2) }}
+        style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '50% 0%', width: totalW, height: totalH, position: 'absolute', top: '80px', left: '50%', marginLeft: -(totalW / 2) }}
       >
         {flows.map((flow, idx) => {
           const { x, y } = getCardPos(idx);
@@ -636,6 +636,11 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 🚀 Nuevos estados de Navegación (Pan & Zoom)
+  const [zoom, setZoom] = useState(1);
+  const [isPanning, setIsPanning] = useState(false);
+
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isDraggingNode, setIsDraggingNode] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x:0, y:0 });
@@ -772,24 +777,71 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const handlePointerDown = (e, id) => {
     e.stopPropagation();
-    if (e.target.dataset.port === 'out') { setConnectingFrom(id); setConnectingToPos({x:e.clientX,y:e.clientY}); return; }
+    if (e.target.dataset.port === 'out') { 
+      setConnectingFrom(id); 
+      const cr = canvasRef.current.getBoundingClientRect();
+      setConnectingToPos({ x: (e.clientX - cr.left + canvasRef.current.scrollLeft) / zoom, y: (e.clientY - cr.top + canvasRef.current.scrollTop) / zoom }); 
+      return; 
+    }
     setSelectedNodeId(id);
     const el = document.getElementById(`node-${id}`);
-    if(el && canvasRef.current){ const r = el.getBoundingClientRect(); setDragOffset({x:e.clientX-r.left,y:e.clientY-r.top}); setIsDraggingNode(id); }
+    if(el && canvasRef.current){ 
+      const r = el.getBoundingClientRect(); 
+      setDragOffset({ x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom }); 
+      setIsDraggingNode(id); 
+    }
   };
+
+  const handleCanvasPointerDown = (e) => {
+    if (e.button === 1 || e.target === canvasRef.current || e.target.closest('.canvas-bg')) {
+      setIsPanning(true);
+      setSelectedNodeId(null);
+      setShowNodeMenu(false);
+      setShowTemplateMenu(false);
+      e.target.setPointerCapture(e.pointerId);
+    }
+  };
+
   const handlePointerMove = (e) => {
     if(!canvasRef.current) return;
+    
+    if (isPanning) {
+      canvasRef.current.scrollLeft -= e.movementX;
+      canvasRef.current.scrollTop -= e.movementY;
+      return;
+    }
+
     const cr = canvasRef.current.getBoundingClientRect();
-    const nx = e.clientX-cr.left+canvasRef.current.scrollLeft, ny = e.clientY-cr.top+canvasRef.current.scrollTop;
-    if(connectingFrom) setConnectingToPos({x:nx,y:ny});
-    else if(isDraggingNode) setNodes(p=>p.map(n=>n.id===isDraggingNode?{...n,x:nx-dragOffset.x,y:ny-dragOffset.y}:n));
+    const nx = (e.clientX - cr.left + canvasRef.current.scrollLeft) / zoom;
+    const ny = (e.clientY - cr.top + canvasRef.current.scrollTop) / zoom;
+    
+    if(connectingFrom) setConnectingToPos({x:nx, y:ny});
+    else if(draggingNodeId) setNodes(p=>p.map(n=>n.id===draggingNodeId ? {...n, x: nx - dragOffset.x, y: ny - dragOffset.y} : n));
   };
+
   const handlePointerUp = (e) => {
+    if (isPanning) {
+      setIsPanning(false);
+      return;
+    }
     if(connectingFrom){
-      const tgt = document.elementFromPoint(e.clientX,e.clientY)?.closest('.node-container');
-      if(tgt){ const tid=tgt.getAttribute('data-id'); if(tid&&tid!==connectingFrom){ const src=nodeMap.get(connectingFrom); setEdges(p=>[...p,{id:`e${connectingFrom}-${tid}-${Date.now()}`,source:connectingFrom,target:tid,color:src?.color||'#fff'}]); } }
+      // Para encontrar el drop target ignorando el zoom visual, usamos clientX/Y que son absolutos de la pantalla
+      const tgt = document.elementFromPoint(e.clientX, e.clientY)?.closest('.node-container');
+      if(tgt){ 
+        const tid=tgt.getAttribute('data-id'); 
+        if(tid && tid!==connectingFrom){ 
+          const src = nodeMap.get(connectingFrom); 
+          setEdges(p=>[...p,{id:`e${connectingFrom}-${tid}-${Date.now()}`,source:connectingFrom,target:tid,color:src?.color||'#fff'}]); 
+        } 
+      }
     }
     setIsDraggingNode(null); setConnectingFrom(null); setConnectingToPos(null);
+  };
+
+  const handleWheel = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      setZoom(z => Math.min(Math.max(0.2, z - e.deltaY * 0.001), 2));
+    }
   };
 
   const addPreset = (p) => {
@@ -1012,9 +1064,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       </div>
 
       {/* Canvas */}
-      <div ref={canvasRef} className="flex-1 overflow-auto relative" style={{background:'#060608'}}
-        onClick={e=>{if(e.target===canvasRef.current){setSelectedNodeId(null);setShowNodeMenu(false);setShowTemplateMenu(false);}}}>
-        <div style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px)',backgroundSize:'28px 28px'}} className="min-w-[2400px] min-h-[1600px] relative">
+      <div ref={canvasRef} className={`flex-1 overflow-auto relative ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`} style={{background:'#060608'}}
+        onPointerDown={handleCanvasPointerDown} onWheel={handleWheel}>
+        <div className="canvas-bg min-w-[3000px] min-h-[2000px] relative origin-top-left transition-transform duration-75"
+             style={{ 
+               transform: `scale(${zoom})`,
+               backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px)',
+               backgroundSize: `${28}px ${28}px` 
+             }}>
 
           {/* Asistente de Lógica para Canvas Vacío */}
           {nodes.length === 0 && (
@@ -1089,7 +1146,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 className={`node-container absolute select-none ${isSelected?'z-30':'z-20'}`}
                 style={{left:n.x,top:n.y,width:NODE_W,height:NODE_H}}
                 onPointerDown={e=>handlePointerDown(e,n.id)}>
-                <div className={`w-full h-full rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                <div className={`w-full h-full rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-200 ${
                   isRunning?'animate-pulse shadow-[0_0_30px_rgba(52,211,153,0.5)] border-emerald-400':
                   isSelected?'shadow-[0_0_24px_rgba(255,255,255,0.15)] border-white/50':
                   isCoreNode?'border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.25)] animate-[pulse_3s_ease-in-out_infinite]':
@@ -1118,6 +1175,20 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             );
           })}
         </div>
+      </div>
+
+      {/* Floating Zoom Controls */}
+      <div className="absolute bottom-6 left-6 flex flex-col gap-2 z-40">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col shadow-2xl overflow-hidden">
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"><Plus className="w-4 h-4"/></button>
+          <div className="h-px bg-neutral-800 w-full" />
+          <div className="p-2 text-[10px] font-black text-center text-white cursor-default select-none">{Math.round(zoom * 100)}%</div>
+          <div className="h-px bg-neutral-800 w-full" />
+          <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"><Minus className="w-4 h-4"/></button>
+        </div>
+        <button onClick={() => setZoom(1)} className="bg-neutral-900 border border-neutral-800 p-2 text-[9px] font-black rounded-xl text-neutral-400 hover:text-white transition shadow-2xl">
+          100%
+        </button>
       </div>
 
       {/* Right config panel */}

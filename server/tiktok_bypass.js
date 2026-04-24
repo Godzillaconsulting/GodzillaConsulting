@@ -454,6 +454,77 @@ const checkComments = async (page) => {
     }
 };
 
+const publishQueuedVideos = async (page) => {
+    try {
+        const result = await pool.query(`SELECT * FROM studio_tasks WHERE status = 'published' OR status = 'ready_to_publish'`);
+        const tasks = result.rows.filter(t => t.publish_targets && t.publish_targets.includes('tiktok') && t.media_payload && t.media_payload.url && !t.media_payload.published_on_tiktok);
+        if (tasks.length === 0) return;
+
+        console.log(`[TikTok] 🎬 Encontré ${tasks.length} videos en cola para publicar.`);
+        for (const task of tasks) {
+            console.log(`[TikTok] Subiendo video de tarea #${task.id}...`);
+            const urlPath = task.media_payload.url; 
+            const localPath = path.join(__dirname, '..', 'public', urlPath.replace(/^\//, ''));
+            
+            if (!fs.existsSync(localPath)) {
+                console.error(`[TikTok] ❌ Archivo de video no encontrado localmente: ${localPath}`);
+                continue;
+            }
+
+            await page.goto('https://www.tiktok.com/creator-center/upload?from=upload', { waitUntil: 'networkidle2' });
+            await delay(4000, 6000);
+
+            let uploadFrame = page;
+            for (const frame of page.frames()) {
+                if (frame.url().includes('creator-center')) uploadFrame = frame;
+            }
+
+            const fileInput = await uploadFrame.$('input[type="file"][accept*="video"]');
+            if (!fileInput) {
+                console.error('[TikTok] ❌ No se encontró el input de archivo (anti-bot dom).');
+                continue;
+            }
+
+            console.log(`[TikTok] 🔄 Cargando archivo: ${localPath}`);
+            await fileInput.uploadFile(localPath);
+            
+            console.log(`[TikTok] ⏳ Esperando carga de video en TikTok (20s)...`);
+            await delay(20000, 25000); 
+
+            // Escribir descripción
+            const descInput = await uploadFrame.$('.public-DraftEditor-content, .DraftEditor-editorContainer div[contenteditable="true"]');
+            if (descInput && task.prompt) {
+                console.log(`[TikTok] ✍️ Escribiendo caption...`);
+                await simulateHumanTyping(uploadFrame, '.public-DraftEditor-content, .DraftEditor-editorContainer div[contenteditable="true"]', task.prompt);
+            }
+
+            // Click Post
+            const posted = await uploadFrame.evaluate(() => {
+                const btns = Array.from(document.querySelectorAll('button'));
+                const postBtn = btns.find(b => b.innerText.toLowerCase().includes('post') || b.innerText.toLowerCase().includes('publicar'));
+                if (postBtn && !postBtn.disabled) {
+                    postBtn.click();
+                    return true;
+                }
+                return false;
+            });
+
+            if (posted) {
+                console.log(`[TikTok] ✅ Botón de publicar clickeado exitosamente.`);
+                await delay(8000, 10000);
+                
+                task.media_payload.published_on_tiktok = true;
+                await pool.query(`UPDATE studio_tasks SET media_payload = $1 WHERE id = $2`, [JSON.stringify(task.media_payload), task.id]);
+                console.log(`[TikTok] ✅ Tarea #${task.id} marcada como publicada en DB.`);
+            } else {
+                console.error(`[TikTok] ❌ Botón de publicar bloqueado o no encontrado.`);
+            }
+        }
+    } catch (e) {
+        console.error('⚠️ Error en publishQueuedVideos:', e.message);
+    }
+};
+
 let browserClient;
 
 export const initTikTokBypass = async (isHeadless = true) => {
@@ -514,6 +585,9 @@ export const initTikTokBypass = async (isHeadless = true) => {
                     }
                     console.log('[TikTok] 🧹 GC: Liberando memoria de processedMessages.');
                 }
+
+                // NUEVO: Cola de Publicación de Videos Autónomos
+                await publishQueuedVideos(page);
 
                 // Solo checar comentarios 1 de cada 4 veces (cada 60s)
                 if (iterations % 4 === 0) {

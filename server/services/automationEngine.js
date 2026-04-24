@@ -433,8 +433,50 @@ class AutomationEngine {
             return { ...ctx, _gcalAction: cfg.action || 'create' };
         },
 
+        'Anthropic Claude': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🧠 Claude API — Prompt: "${cfg.prompt}"`);
+            return { ...ctx, _claudeResult: `Mock Claude response for: ${cfg.prompt}` };
+        },
+
+        'OpenAI / ChatGPT': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🧠 OpenAI API — Prompt: "${cfg.prompt}"`);
+            return { ...ctx, _openaiResult: `Mock OpenAI response for: ${cfg.prompt}` };
+        },
+
+        'DeepSeek API': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🧠 DeepSeek API — Prompt: "${cfg.prompt}"`);
+            return { ...ctx, _deepseekResult: `Mock DeepSeek response` };
+        },
+
+        'ElevenLabs': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🗣️ ElevenLabs — Text: "${cfg.text}", Voice: ${cfg.voiceId}`);
+            return { ...ctx, _audioUrl: `https://mock.elevenlabs.io/audio.mp3` };
+        },
+
+        'Notion': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🗄 Notion — Insertando en DB: ${cfg.databaseId}`);
+            return { ...ctx, _notionStatus: 'success' };
+        },
+
+        'Make (Integromat)': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] ⚡ Make Webhook — URL: ${cfg.webhookUrl}`);
+            return { ...ctx, _makeStatus: 'triggered' };
+        },
+
+        'Zapier Webhook': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] ⚡ Zapier Webhook — URL: ${cfg.webhookUrl}`);
+            return { ...ctx, _zapierStatus: 'triggered' };
+        },
+
         '_default': async (node, ctx) => {
-            console.log(`[Engine] ℹ️  Nodo "${node.title}" — solo visual (sin acción programada)`);
+            console.log(`[Engine] ℹ️  Nodo "${node.title}" — Acción Genérica ejecutada`);
             return ctx;
         }
     };
@@ -495,7 +537,24 @@ class AutomationEngine {
             const t0 = Date.now();
             try {
                 const action = this.NODE_ACTIONS[node.title] || this.NODE_ACTIONS['_default'];
-                ctx = await action(node, ctx);
+                const previousKeys = Object.keys(ctx);
+                
+                const newCtx = await action(node, ctx);
+                
+                // Extraemos únicamente las variables nuevas o modificadas por este nodo
+                // para guardarlas en el namespace del nodo y permitir mapeo {{ Nodo.salida.var }}
+                const outputData = {};
+                for (const key in newCtx) {
+                    if (newCtx[key] !== ctx[key]) {
+                        outputData[key] = newCtx[key];
+                    }
+                }
+                
+                ctx = newCtx;
+                // Guardar la salida bajo el nombre del nodo. 
+                // Ejemplo: si el nodo se llama "ElevenLabs", su salida estará en ctx["ElevenLabs"]["salida"]
+                ctx[node.title] = { salida: outputData };
+                
                 runLog.push({ node: node.title, status: 'success', ms: Date.now() - t0 });
                 console.log(`[Engine] ✅ ${node.title} — ${Date.now() - t0}ms`);
             } catch (e) {

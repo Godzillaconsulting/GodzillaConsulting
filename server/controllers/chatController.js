@@ -4,6 +4,7 @@ import pool from '../config/db.js';
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar } from '../services/calendarService.js';
 import { validateBusinessHours } from '../utils/businessHours.js';
 
@@ -68,54 +69,62 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
-        let geminiTools = undefined;
+        let groqMessages = [{ role: "system", content: systemPrompt }];
+        for (const msg of history) {
+            groqMessages.push({
+                role: msg.role === 'model' ? 'assistant' : 'user',
+                content: msg.parts[0].text
+            });
+        }
+        groqMessages.push({ role: "user", content: lastMsg });
+
+        let groqTools = undefined;
         if (tools && tools.length > 0) {
-            geminiTools = [{
-                functionDeclarations: tools.map(t => ({
+            groqTools = tools.map(t => ({
+                type: "function",
+                function: {
                     name: t.name,
                     description: t.description,
-                    parameters: {
-                        type: "OBJECT",
-                        properties: Object.fromEntries(
-                            Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
-                        ),
-                        ...(t.parameters.required ? { required: t.parameters.required } : {})
-                    }
-                }))
-            }];
+                    parameters: t.parameters
+                }
+            }));
         }
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: systemPrompt,
-            ...(geminiTools ? { tools: geminiTools } : {})
-        });
-
-        const firstUserIdx = history.findIndex(m => m.role === 'user');
-        if (firstUserIdx > 0) history = history.slice(firstUserIdx);
-
-        const chat = model.startChat({ history });
-
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         let chatCompletion = null;
         let responseText = '';
         let functionCalls = [];
 
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
-                chatCompletion = await chat.sendMessage(lastMsg);
-                if (chatCompletion && chatCompletion.response) {
-                    const response = chatCompletion.response;
-                    try { responseText = response.text() || ''; } catch(e){}
-                    const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
-                    if (calls && calls.length > 0) {
-                        functionCalls = calls;
+                chatCompletion = await groq.chat.completions.create({
+                    messages: groqMessages,
+                    model: "llama-3.3-70b-versatile",
+                    temperature: 0.1,
+                    max_tokens: 1024,
+                    ...(groqTools ? { tools: groqTools, tool_choice: "auto" } : {})
+                });
+
+                if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+                    const responseMessage = chatCompletion.choices[0].message;
+                    responseText = responseMessage.content || '';
+                    
+                    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+                        groqMessages.push(responseMessage);
+                        functionCalls = responseMessage.tool_calls.map(tc => {
+                            let parsedArgs = {};
+                            try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                            return {
+                                name: tc.function.name,
+                                args: parsedArgs,
+                                id: tc.id
+                            };
+                        });
                     }
                 }
                 break;
             } catch (error) {
-                if (error.message && error.message.includes('429') && attempt < 3) {
+                if (error.status === 429 && attempt < 3) {
                     await new Promise(r => setTimeout(r, 4000 * attempt));
                     continue;
                 }
@@ -124,75 +133,90 @@ export const processChatMessage = async (req, res) => {
         }
 
         if (functionCalls.length > 0) {
-            const toolCall = functionCalls[0];
-            const name = toolCall.name;
-            const args = toolCall.args || {};
-            
-            let resultMessage = "Operación realizada correctamente.";
-            try {
-                if (name === "check_availability") {
-                    const { fecha, hora } = args;
-                    const errorValidacion = validateBusinessHours(fecha, hora);
+            for (const toolCall of functionCalls) {
+                const name = toolCall.name;
+                const args = toolCall.args || {};
+                
+                let resultMessage = "Operación realizada correctamente.";
+                try {
+                    if (name === "check_availability") {
+                        const { fecha, hora } = args;
+                        const errorValidacion = validateBusinessHours(fecha, hora);
 
-                    if (errorValidacion) {
-                        resultMessage = errorValidacion;
-                    } else {
-                        const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                        const r = await pool.query(query, [fecha, hora]);
-                        if (parseInt(r.rows[0].total) > 0) resultMessage = "El horario está ocupado (hay otra cita a menos de 1 hora de diferencia). Ofrece otra hora.";
-                        else resultMessage = "Horario disponible.";
-                    }
-                } else if (name === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = args;
-                    const errorValidacion = validateBusinessHours(fecha, hora);
-
-                    if (errorValidacion) {
-                        resultMessage = errorValidacion;
-                    } else {
-                        const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                        const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
-                        
-                        if (parseInt(conflictCheck.rows[0].total) > 0) {
-                            resultMessage = "Error: Ese horario ya está ocupado.";
+                        if (errorValidacion) {
+                            resultMessage = errorValidacion;
                         } else {
-                            let calendarId = null;
-                            try {
-                                const gRes = await agendarEnGoogleCalendar({
-                                    nombre: nombre,
-                                    correo: correo || 'sin-correo@portal.com',
-                                    telefono: telefono,
-                                    servicio: servicio,
-                                    fecha: fecha,
-                                    hora: hora,
-                                    notas: notas || ''
-                                });
-                                calendarId = gRes.id;
-                                
-                                await pool.query(
-                                    "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8, 'portal')",
-                                    [nombre, correo || 'sin-correo@portal.com', telefono, servicio, fecha, hora, notas || '', calendarId]
-                                );
-                                resultMessage = "Cita agendada con éxito en BD y Calendar.";
-                            } catch (err) {
-                                console.error('Error al agendar cita en portal: ', err);
-                                if (calendarId) {
-                                    await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error('Fallo en Rollback Calendar:', rollbackErr.message));
+                            const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                            const r = await pool.query(query, [fecha, hora]);
+                            if (parseInt(r.rows[0].total) > 0) resultMessage = "El horario está ocupado (hay otra cita a menos de 1 hora de diferencia). Ofrece otra hora.";
+                            else resultMessage = "Horario disponible.";
+                        }
+                    } else if (name === "save_appointment") {
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = args;
+                        const errorValidacion = validateBusinessHours(fecha, hora);
+
+                        if (errorValidacion) {
+                            resultMessage = errorValidacion;
+                        } else {
+                            const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                            
+                            if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                resultMessage = "Error: Ese horario ya está ocupado.";
+                            } else {
+                                let calendarId = null;
+                                try {
+                                    const gRes = await agendarEnGoogleCalendar({
+                                        nombre: nombre,
+                                        correo: correo || 'sin-correo@portal.com',
+                                        telefono: telefono,
+                                        servicio: servicio,
+                                        fecha: fecha,
+                                        hora: hora,
+                                        notas: notas || ''
+                                    });
+                                    calendarId = gRes.id;
+                                    
+                                    await pool.query(
+                                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8, 'portal')",
+                                        [nombre, correo || 'sin-correo@portal.com', telefono, servicio, fecha, hora, notas || '', calendarId]
+                                    );
+                                    resultMessage = "Cita agendada con éxito en BD y Calendar.";
+                                } catch (err) {
+                                    console.error('Error al agendar cita en portal: ', err);
+                                    if (calendarId) {
+                                        await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error('Fallo en Rollback Calendar:', rollbackErr.message));
+                                    }
+                                    resultMessage = "Hubo un error agendando la cita: " + err.message;
                                 }
-                                resultMessage = "Hubo un error agendando la cita: " + err.message;
                             }
                         }
+                    } else {
+                        resultMessage = "Herramienta ejecutada o no soportada.";
                     }
-                } else {
-                    resultMessage = "Herramienta ejecutada o no soportada.";
-                }
-            } catch(e) { resultMessage = "Error interno ejecutando la herramienta: " + e.message; }
+                } catch(e) { resultMessage = "Error interno ejecutando la herramienta: " + e.message; }
 
-            const chatCompletion2 = await chat.sendMessage([{
-                functionResponse: { name: name, response: { status: resultMessage } }
-            }]);
-            
-            if (chatCompletion2 && chatCompletion2.response) {
-                try { responseText = chatCompletion2.response.text() || responseText; } catch(e){}
+                groqMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    name: name,
+                    content: JSON.stringify({ status: resultMessage })
+                });
+            }
+
+            try {
+                const chatCompletion2 = await groq.chat.completions.create({
+                    messages: groqMessages,
+                    model: "llama-3.3-70b-versatile",
+                    temperature: 0.1,
+                    max_tokens: 1024
+                });
+                
+                if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
+                    responseText = chatCompletion2.choices[0].message.content || responseText;
+                }
+            } catch(e) {
+                console.error("Error en segunda llamada Groq (chatController):", e.message);
             }
         }
 

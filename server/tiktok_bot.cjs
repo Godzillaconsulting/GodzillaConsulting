@@ -172,6 +172,11 @@ async function processComment(comment, videoId) {
         history.push({ role: 'user', content: context });
         history.push({ role: 'assistant', content: reply });
 
+        // --- PREVENT MEMORY LEAK: Keep only last 10 messages ---
+        if (history.length > 10) {
+            history.splice(0, history.length - 10);
+        }
+
         // TikTok permite hasta 150 chars en comentarios
         if (reply.length > 148) reply = reply.substring(0, 145) + '...';
 

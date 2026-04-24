@@ -447,9 +447,7 @@ export const getElitePrompts = async (req, res) => {
 export const getInspirationGallery = async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
-        if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for inspiration");
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const ai = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        if (!process.env.SAMBANOVA_API_KEY) throw new Error("No SambaNova API key available");
         
         const promptInstruction = `Return a JSON array of 12 extremely creative, breathtaking, and unique cinematic visual prompts. 
         Each object must have:
@@ -459,19 +457,31 @@ export const getInspirationGallery = async (req, res) => {
         Random Seed to ensure total uniqueness this time: ${Date.now()}.
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
-        const resp = await ai.generateContent({
-             contents: [{role: 'user', parts: [{text: promptInstruction}]}],
-             generationConfig: { responseMimeType: "application/json", temperature: 2.0 }
+        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: promptInstruction }],
+                model: 'Meta-Llama-3.1-405B-Instruct',
+                temperature: 0.9
+            })
         });
-        
-        // Limpiamos la respuesta en caso que Gemini devuelva markdown
-        let jsonStr = extractJSON(resp.response.text());
+
+        if (!response.ok) {
+            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        let jsonStr = extractJSON(data.choices[0].message.content);
         
         let generationList;
         try {
             generationList = JSON.parse(jsonStr.trim());
         } catch(err) {
-            console.error("Gemini failed standard JSON", err);
+            console.error("SambaNova failed standard JSON", err);
             throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
         }
         
@@ -496,9 +506,7 @@ export const getInspirationGallery = async (req, res) => {
 
 export const getDynamicFilters = async (req, res) => {
     try {
-        if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini API key available for dynamic filters");
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const ai = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        if (!process.env.SAMBANOVA_API_KEY) throw new Error("No SambaNova API key available");
         
         const promptInstruction = `Return a JSON array of 15 extremely creative, diverse, and unique photography/cinematography aesthetic filters.
         I want them to be COMPLETELY DIFFERENT every single time this is triggered. 
@@ -508,18 +516,31 @@ export const getDynamicFilters = async (req, res) => {
         3. "prompt": hyper-detailed english prompt instructions for the AI engine to apply this visual style. (Focus on lighting, camera lens, color grading, mood, medium format, rendering engine etc). Max 200 characters.
         Return ONLY valid JSON array with 15 objects. Do not include markdown \`\`\` blocks.`;
         
-        const resp = await ai.generateContent({
-             contents: [{role: 'user', parts: [{text: promptInstruction}]}],
-             generationConfig: { responseMimeType: "application/json", temperature: 1.5 }
+        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: promptInstruction }],
+                model: 'Meta-Llama-3.1-405B-Instruct',
+                temperature: 1.0
+            })
         });
-        
-        let jsonStr = extractJSON(resp.response.text());
+
+        if (!response.ok) {
+            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        let jsonStr = extractJSON(data.choices[0].message.content);
         
         let filtersList;
         try {
             filtersList = JSON.parse(jsonStr.trim());
         } catch(err) {
-            console.error("Gemini failed filters JSON", err);
+            console.error("SambaNova failed filters JSON", err);
             throw new Error("Fallo al generar filtros dinámicos.");
         }
         
@@ -534,12 +555,11 @@ export const getDynamicFilters = async (req, res) => {
 export const generateScriptChat = async (req, res) => {
     try {
         const { message, chatHistory } = req.body;
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
+        if (!process.env.SAMBANOVA_API_KEY) {
+            return res.status(400).json({ error: "Llave SAMBANOVA_API_KEY no configurada." });
         }
 
-        console.log(`[STUDIO] Iniciando Chat Script con Gemini. Mensaje: ${message}`);
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        console.log(`[STUDIO] Iniciando Chat Script con SambaNova. Mensaje: ${message}`);
         
         // 1. Recuperar memoria de aprendizaje de la Base de Datos (Últimas 5 correcciones)
         let learningContext = "";
@@ -560,22 +580,34 @@ Reglas Estrictas:
 4. PRECISIÓN EXTREMA: Si el usuario pide un prompt o guion pero el requerimiento es demasiado vago (ej. carece de detalles de iluminación, tono, formato o duración), NO GENERES NADA. En su lugar, pregúntale directamente qué detalles faltan.
 5. Si el requerimiento es completo, devuelve ÚNICAMENTE el guion o prompt perfecto.${learningContext}`;
 
-        const ai = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: systemInstruction 
-        });
-        
-        let history = [];
+        let history = [{ role: 'system', content: systemInstruction }];
         if (chatHistory && chatHistory.length > 0) {
-            history = chatHistory.map(m => ({
-                role: m.role === 'ai' ? 'model' : 'user',
-                parts: [{ text: m.text }]
-            }));
+            history = history.concat(chatHistory.map(m => ({
+                role: m.role === 'ai' ? 'assistant' : 'user',
+                content: m.text
+            })));
         }
+        history.push({ role: 'user', content: message });
 
-        const chat = ai.startChat({ history });
-        const responseGenAI = await chat.sendMessage(message);
-        let aiResponse = responseGenAI.response?.text() || "No obtuve respuesta de mis servidores neuronales.";
+        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: history,
+                model: 'Meta-Llama-3.1-405B-Instruct',
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        let aiResponse = data.choices[0].message.content || "No obtuve respuesta de mis servidores neuronales.";
         
         // Strip out any thinking / thought blocks produced by new reasoning models
         aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
@@ -794,8 +826,9 @@ export const generateMonthlyPlan = async (req, res) => {
         const { niche, month, year, extraContext } = req.body;
         if (!niche) return res.status(400).json({ error: 'Se requiere el nicho/producto.' });
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
+        if (!process.env.SAMBANOVA_API_KEY) {
+            return res.status(400).json({ error: "Llave SAMBANOVA_API_KEY no configurada." });
+        }
         // 1. Recuperar memoria a largo plazo (Días/Formatos Ganadores)
         let learningContext = "";
         try {
@@ -901,34 +934,41 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
             let batchData = null;
             let attempts = 0;
             const maxAttempts = 3;
-            let batchInputTokens = 0;
-            let batchOutputTokens = 0;
 
             while (attempts < maxAttempts && !batchData) {
                 attempts++;
                 try {
-                    const response = await ai.models.generateContent({
-                        model: 'gemini-2.5-flash',
-                        contents: [{ role: 'user', parts: [{ text: batchPrompt }] }],
-                        config: {
-                            temperature: 0.85,
-                            maxOutputTokens: 8192,
-                            responseMimeType: "application/json"
-                        }
+                    // Jitter for API Rate Limits (evitar timeouts/rate limits)
+                    const jitter = Math.floor(Math.random() * 2000) + 500;
+                    await new Promise(r => setTimeout(r, jitter));
+
+                    const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: [{ role: 'user', content: batchPrompt }],
+                            model: 'Meta-Llama-3.1-405B-Instruct',
+                            temperature: 0.85
+                        })
                     });
 
-                    // Extraer metadata para analíticas de costos
-                    if (response.usageMetadata) {
-                        batchInputTokens = response.usageMetadata.promptTokenCount || 0;
-                        batchOutputTokens = response.usageMetadata.candidatesTokenCount || 0;
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            await new Promise(r => setTimeout(r, 4000 * attempts));
+                        }
+                        throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
                     }
 
-                    let rawText = extractJSON(response.candidates[0].content.parts[0].text);
+                    const data = await response.json();
+                    let rawText = extractJSON(data.choices[0].message.content);
                     
                     batchData = JSON.parse(rawText);
 
                     if (!batchData.plan || !Array.isArray(batchData.plan)) {
-                        throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
+                        throw new Error('La respuesta de SambaNova no tiene el formato esperado (plan[]).');
                     }
                 } catch (err) {
                     console.log(`[MONTHLY-PLAN] Fallo en batch ${startDay}-${endDay} (Intento ${attempts}/${maxAttempts}):`, err.message);
@@ -937,7 +977,7 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                     }
                 }
             }
-            return { plan: batchData.plan, input: batchInputTokens, output: batchOutputTokens };
+            return { plan: batchData.plan, input: 0, output: 0 };
         };
 
         const taskId = `plan_${Date.now()}`;

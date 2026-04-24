@@ -6,9 +6,9 @@
  */
 
 const path         = require('path');
-const { existsSync, readFileSync, writeFileSync } = require('fs');
+const fs           = require('fs');
+const { existsSync, readFileSync, writeFileSync } = fs;
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-// child_process ya no se usa — limpieza garantizada por try-catch-finally
 
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -267,8 +267,9 @@ async function processAndReply(userId, text, replyFn) {
         // GC: el historial ya está en la variable `history` del Map, sin referencias extras que limpiar.
 
     } catch(err) {
-        console.error('[Instagram] Error Groq:', err.message);
-        try { await replyFn('Lo siento, tuve un error. Por favor intenta de nuevo 🦖'); } catch(_) {}
+        console.error('[Instagram] Error Gemini:', err.message);
+        // NO intentamos hacer replyFn aquí porque si la cuenta de Google está baneada o hay error grave, 
+        // hacer un replyFn causará un page.goto infinito generando procesos zombie en Chrome.
     }
 }
 
@@ -293,6 +294,12 @@ async function startBot() {
         console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena para evitar bucles de PM2...');
         setInterval(() => {}, 60000);
         await new Promise(() => {});
+    }
+
+    // --- FIX ZOMBIE LOOP: Borrar Lock de Perfil ---
+    const lockFile = path.join(userDataDir, 'SingletonLock');
+    if (fs.existsSync(lockFile)) {
+        try { fs.unlinkSync(lockFile); console.log('[Instagram] 🔓 SingletonLock removido (Prevención de Pantalla Negra/Zombie).'); } catch(e){}
     }
 
     console.log('[Instagram] 🚀 Arrancando ZillaBot con motor Puppeteer Stealth (Anti-Baneos)...');
@@ -453,13 +460,8 @@ async function startBot() {
             console.error('[Instagram] Error polling (Web Request):', err.message);
             // --- SELF-HEALING ---
             if (err.message && err.message.includes('detached')) {
-                console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Auto-Reparando pestaña...');
-                try {
-                    await page.goto('https://www.instagram.com/direct/inbox/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-                    // Recuperar info de sesión
-                    cookies = await page.cookies();
-                    csrfToken = cookies.find(c => c.name === 'csrftoken')?.value;
-                } catch(e){}
+                console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Forzando reinicio limpio...');
+                throw new Error("Detached frame detectado. Reiniciando proceso para evitar Chrome Zombies.");
             }
         }
 
@@ -472,7 +474,13 @@ async function startBot() {
         // ✅ SIEMPRE se ejecuta: limpieza garantizada sin taskkill
         if (browser) {
             console.log('[Instagram] 🧹 Cerrando Chrome limpiamente (finally)...');
-            await browser.close().catch(() => {});
+            try {
+                const pid = browser.process() ? browser.process().pid : null;
+                await browser.close().catch(() => {});
+                if (pid) {
+                    try { process.kill(pid, 'SIGKILL'); } catch(e){} // Force kill the Chrome PID directly
+                }
+            } catch(e) {}
             browserClient = null;
         }
     }
@@ -482,9 +490,11 @@ async function forceKillBrowser() {
     if (browserClient) {
         try {
             console.log('[Instagram] 🛑 Forzando cierre de Chrome/Puppeteer...');
-            // On Windows, process.kill with SIGKILL leaves renderer and GPU child processes as zombies.
-            // Using browser.close() is the safest way to terminate all child processes gracefully.
+            const pid = browserClient.process() ? browserClient.process().pid : null;
             await browserClient.close().catch(()=>null);
+            if (pid) {
+                try { process.kill(pid, 'SIGKILL'); } catch(e){} // Ensure child process dies in Windows
+            }
             console.log('[Instagram] ✅ Chrome cerrado limpiamente.');
         } catch (e) {
             console.error('[Instagram] ⚠️ Error cerrando Chrome:', e.message);

@@ -4,6 +4,7 @@ import qrcode from 'qrcode-terminal';
 import qrcodeLib from 'qrcode';
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
 import { validateBusinessHours } from './utils/businessHours.js';
@@ -198,6 +199,49 @@ export const initWhatsAppBot = async () => {
         } catch (e) {
             console.error('⚠️ Error al recuperar mensajes perdidos:', e.message);
         }
+
+        // ===============================================
+        // POLLING: COLA DE AUTOMATIZACIÓN (bot_outbound_queue)
+        // ===============================================
+        setInterval(async () => {
+            try {
+                const res = await pool.query(`
+                    SELECT id, payload 
+                    FROM bot_outbound_queue 
+                    WHERE bot_name = 'whatsapp' AND status = 'pending' 
+                    ORDER BY id ASC LIMIT 5
+                `);
+
+                for (const row of res.rows) {
+                    const { id, payload } = row;
+                    try {
+                        let toPhone = payload.to;
+                        const message = payload.message;
+                        
+                        // Formatear a ID de WhatsApp (ej. 521656... @c.us)
+                        if (!toPhone.includes('@c.us')) {
+                            // Limpiar no numéricos
+                            toPhone = toPhone.replace(/[^0-9]/g, '');
+                            toPhone = `${toPhone}@c.us`;
+                        }
+
+                        console.log(`[WA Outbound Queue] 📤 Enviando mensaje a ${toPhone}...`);
+                        await client.sendMessage(toPhone, message);
+                        
+                        await pool.query(`UPDATE bot_outbound_queue SET status = 'sent', processed_at = NOW() WHERE id = $1`, [id]);
+                        console.log(`[WA Outbound Queue] ✅ Mensaje ${id} enviado y marcado como 'sent'.`);
+                    } catch (sendErr) {
+                        console.error(`[WA Outbound Queue] ❌ Error enviando msj ${id}:`, sendErr.message);
+                        await pool.query(`UPDATE bot_outbound_queue SET status = 'error', error_log = $1, processed_at = NOW() WHERE id = $2`, [sendErr.message, id]);
+                    }
+                    
+                    // Pequeña pausa entre mensajes para evitar baneos
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            } catch (err) {
+                console.error('[WA Outbound Queue] Error en el polling:', err.message);
+            }
+        }, 10000); // Polling cada 10 segundos
     });
 
     // ===============================================
@@ -302,65 +346,70 @@ export const initWhatsAppBot = async () => {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
-            let geminiMessages = [];
-            let rawHistory = historial_mensajes.slice(0, -1);
-            for (const msg of rawHistory) {
-                geminiMessages.push({
-                    role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
-                    parts: [{ text: msg.contenido }]
-                });
-            }
-
-            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-            const genAI = new GoogleGenerativeAI(apiKey);
-            
-            // Format tools for Gemini 1.5
-            const geminiTools = [{
-                functionDeclarations: chatTools.map(t => ({
-                    name: t.name,
-                    description: t.description,
-                    parameters: {
-                        type: "OBJECT",
-                        properties: Object.fromEntries(
-                            Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
-                        ),
-                        ...(t.parameters.required ? { required: t.parameters.required } : {})
-                    }
-                }))
-            }];
-
             const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
             const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
 
-            const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.5-flash",
-                systemInstruction: finalSystemPrompt + systemPromptContexto,
-                tools: geminiTools,
-                generationConfig: {
-                    temperature: 0.1,
-                    topK: 40,
-                    topP: 0.95
+            let groqMessages = [
+                { role: "system", content: finalSystemPrompt + systemPromptContexto }
+            ];
+
+            let rawHistory = historial_mensajes.slice(0, -1);
+            for (const msg of rawHistory) {
+                groqMessages.push({
+                    role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
+                    content: msg.contenido
+                });
+            }
+            groqMessages.push({ role: "user", content: messageText });
+
+            const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+            
+            const groqTools = chatTools.map(t => ({
+                type: "function",
+                function: {
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.parameters
                 }
-            });
-
-            const chat = model.startChat({ history: geminiMessages });
-
-            let chatCompletion = await withTimeout(
-                chat.sendMessage(messageText),
-                "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
-            );
+            }));
 
             let botReply = "Lo siento, fallé al entender.";
-            let responseMessage = null;
             let functionCalls = [];
 
-            if (chatCompletion && chatCompletion.response) {
-                const response = chatCompletion.response;
-                try { botReply = response.text() || botReply; } catch(e){}
-                
-                const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
-                if (calls && calls.length > 0) {
-                    functionCalls = calls;
+            try {
+                const chatCompletion = await withTimeout(
+                    groq.chat.completions.create({
+                        messages: groqMessages,
+                        model: "llama-3.3-70b-versatile",
+                        tools: groqTools,
+                        tool_choice: "auto",
+                        temperature: 0.1,
+                        max_tokens: 1024
+                    }),
+                    "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
+                );
+
+                if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
+                    const responseMessage = chatCompletion.choices[0].message;
+                    botReply = responseMessage.content || "";
+                    
+                    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+                        groqMessages.push(responseMessage);
+                        functionCalls = responseMessage.tool_calls.map(tc => {
+                            let parsedArgs = {};
+                            try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                            return {
+                                name: tc.function.name,
+                                args: parsedArgs,
+                                id: tc.id
+                            };
+                        });
+                    }
+                }
+            } catch(error) {
+                console.error("Groq Error:", error.message);
+                if (error.status === 429) {
+                    botReply = "Dame un momento por favor, estoy procesando mucha información... ⏳";
                 }
             }
 
@@ -502,21 +551,33 @@ export const initWhatsAppBot = async () => {
                         const r = await pool.query("SELECT title, slug FROM lead_magnets");
                         fRes = { resources: r.rows };
                     }
-
-                    // Send tool results back to Gemini via existing chat object
+                    // Pushing tool response to Groq messages
+                    groqMessages.push({
+                        role: "tool",
+                        tool_call_id: call.id,
+                        name: callName,
+                        content: JSON.stringify(fRes)
+                    });
+                }
+                
+                // Second call to Groq with tool results
+                try {
                     const chatCompletion2 = await withTimeout(
-                        chat.sendMessage([{
-                            functionResponse: {
-                                name: callName,
-                                response: fRes
-                            }
-                        }]),
+                        groq.chat.completions.create({
+                            messages: groqMessages,
+                            model: "llama-3.3-70b-versatile",
+                            temperature: 0.1,
+                            max_tokens: 1024
+                        }),
                         "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
                     );
                     
-                    if (chatCompletion2 && chatCompletion2.response) {
-                         try { botReply = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
+                    if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
+                        const finalResponse = chatCompletion2.choices[0].message;
+                        botReply = finalResponse.content || 'Reserva procesada.';
                     }
+                } catch(e) {
+                    console.error("Error en segunda llamada Groq (tools):", e.message);
                 }
             }
 
@@ -529,7 +590,7 @@ export const initWhatsAppBot = async () => {
             }
 
             // GC (Garbage Collection Manual - Limpieza Agresiva)
-            geminiMessages = null;
+            groqMessages = null;
             rawHistory = null;
             finalSystemPrompt = null;
             chatCompletion = null;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Wand2, Play, Pause, Scissors, Loader2, Download, Video, Music, Type, Trash2, PlusCircle, Undo2, Redo2, Gauge, Zap, Volume2, ArrowLeftRight, Settings2, Image as ImageIcon } from 'lucide-react';
 import WaveformCanvas from './WaveformCanvas';
 import { Timeline } from '@xzdarcy/react-timeline-editor';
+import '@xzdarcy/react-timeline-editor/dist/react-timeline-editor.css';
 import { useEditorProject, makeVideoClip, makeAudioClip, makeTextClip, makeLayer, ASPECT_RATIOS } from '../hooks/useEditorProject';
 import { useFFmpegRenderer } from '../hooks/useFFmpegRenderer';
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine';
@@ -890,8 +891,25 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
           onDrop={async (e) => {
             e.preventDefault();
-            if (!draggedMedia) return;
             const t = engine.currentTimeRef.current;
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+               const file = e.dataTransfer.files[0];
+               if (!file.type.match(/^(video|audio|image)\//)) return;
+               const url = URL.createObjectURL(file);
+               const dur = await getVideoDuration(url);
+               const isAudio = file.type.startsWith('audio/');
+               const layerType = isAudio ? 'audio' : 'video';
+               const layer = editor.project.layers.find(l => l.type === layerType);
+               
+               if (isAudio) editor.addClip(layer.id, makeAudioClip(url, file.name, t, t + dur));
+               else editor.addClip(layer.id, makeVideoClip(url, file.name, t, t + dur));
+               
+               setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, caption: file.name, media_options: [{ url }] }]);
+               return;
+            }
+
+            if (!draggedMedia) return;
             const url = draggedMedia.media_options[0].url;
             const dur = await getVideoDuration(url);
             const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
@@ -907,7 +925,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           <Timeline
             ref={timelineRef}
             editorData={editorData}
-            effects={{}}
+            effects={{
+              video: { id: 'video', name: 'Video' },
+              audio: { id: 'audio', name: 'Audio' },
+              text: { id: 'text', name: 'Texto' }
+            }}
             scale={5}
             hideCursor={false}
             onChange={handleTimelineChange}

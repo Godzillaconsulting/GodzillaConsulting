@@ -54,7 +54,8 @@ Utiliza esta información para resolver dudas frecuentes:
 
 ## PROTOCOLO DE AGENDAMIENTO
 Obligatorio obtener: Nombre, Correo, Teléfono, Servicio, Fecha (YYYY-MM-DD), Hora (HH:MM) y Notas.
-**NUNCA** uses 'check_availability' a menos que el usuario te haya mencionado EXPLÍCITAMENTE que desea agendar una cita y te haya proporcionado un día u hora tentativo.
+REGLA CRÍTICA DE HERRAMIENTAS: ESTÁ TOTALMENTE PROHIBIDO utilizar las herramientas 'check_availability', 'save_appointment', 'cancel_appointment' o 'reschedule_appointment' de manera autónoma o para "revisar por si acaso". 
+SÓLO puedes invocarlas si el usuario de manera EXPLÍCITA y DIRECTA te dice "Quiero agendar una cita", "Revisa disponibilidad para el martes", o pide explícitamente cancelar/reagendar. Si el usuario te dice "Hola" o te hace una pregunta general de marketing, RESPONDE CON TEXTO NORMAL y NO uses ninguna herramienta.
 `;
 
 export const chatTools = [

@@ -20,6 +20,8 @@ export function usePlaybackEngine(project, videoRef) {
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
 
+  const audioPlayersRef = useRef(new Map());
+
   const syncVideoToTime = useCallback((t) => {
     const proj = projectRef.current;
     const videoLayer = proj.layers.find(l => l.type === 'video');
@@ -28,7 +30,6 @@ export function usePlaybackEngine(project, videoRef) {
     const clip = videoLayer.clips.find(c => t >= c.start && t < c.end);
     if (clip) {
       const expectedSrc = clip.sourceUrl;
-      // Only change src if needed — setting src resets buffer
       if (videoRef.current.getAttribute('data-clip-id') !== clip.id) {
         videoRef.current.setAttribute('data-clip-id', clip.id);
         videoRef.current.src = expectedSrc;
@@ -39,6 +40,7 @@ export function usePlaybackEngine(project, videoRef) {
         videoRef.current.currentTime = expectedSrcTime;
       }
       videoRef.current.playbackRate = clip.speed;
+      videoRef.current.volume = clip.volume !== undefined ? clip.volume : 1;
       if (isPlayingRef.current && videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
       }
@@ -46,6 +48,42 @@ export function usePlaybackEngine(project, videoRef) {
       if (!videoRef.current.paused) videoRef.current.pause();
     }
   }, [videoRef]);
+
+  const syncAudioToTime = useCallback((t) => {
+    const proj = projectRef.current;
+    const audioLayer = proj.layers.find(l => l.type === 'audio');
+    if (!audioLayer) return;
+
+    const activeClips = audioLayer.clips.filter(c => t >= c.start && t < c.end);
+    
+    // Cleanup inactive
+    for (const [clipId, audio] of audioPlayersRef.current.entries()) {
+       if (!activeClips.find(c => c.id === clipId)) {
+          audio.pause();
+          audioPlayersRef.current.delete(clipId);
+       }
+    }
+
+    // Play active
+    for (const clip of activeClips) {
+       let audio = audioPlayersRef.current.get(clip.id);
+       if (!audio) {
+          audio = new Audio(clip.sourceUrl);
+          audioPlayersRef.current.set(clip.id, audio);
+       }
+       const expectedTime = clip.sourceStart + (t - clip.start) / (clip.speed || 1);
+       if (Math.abs(audio.currentTime - expectedTime) > 0.15) {
+          audio.currentTime = expectedTime;
+       }
+       audio.playbackRate = clip.speed || 1;
+       audio.volume = clip.volume !== undefined ? clip.volume : 1;
+       if (isPlayingRef.current && audio.paused) {
+          audio.play().catch(() => {});
+       } else if (!isPlayingRef.current && !audio.paused) {
+          audio.pause();
+       }
+    }
+  }, []);
 
   const rafLoop = useCallback(() => {
     if (!isPlayingRef.current) return;
@@ -55,7 +93,6 @@ export function usePlaybackEngine(project, videoRef) {
     lastTickRef.current = now;
     globalTimeRef.current += delta;
 
-    // Compute total duration
     let maxEnd = 0;
     for (const layer of projectRef.current.layers) {
       for (const clip of layer.clips) {
@@ -68,12 +105,13 @@ export function usePlaybackEngine(project, videoRef) {
       setIsPlaying(false);
       setDisplayTime(0);
       if (videoRef.current) videoRef.current.pause();
+      for (const audio of audioPlayersRef.current.values()) audio.pause();
       return;
     }
 
     syncVideoToTime(globalTimeRef.current);
+    syncAudioToTime(globalTimeRef.current);
 
-    // Throttle React state update to ~15fps to avoid layout thrash
     displayTickRef.current += delta;
     if (displayTickRef.current >= 0.066) {
       displayTickRef.current = 0;
@@ -81,7 +119,7 @@ export function usePlaybackEngine(project, videoRef) {
     }
 
     rafIdRef.current = requestAnimationFrame(rafLoop);
-  }, [syncVideoToTime, videoRef]);
+  }, [syncVideoToTime, syncAudioToTime, videoRef]);
 
   const play = useCallback(() => {
     if (isPlayingRef.current) return;
@@ -96,13 +134,15 @@ export function usePlaybackEngine(project, videoRef) {
     setIsPlaying(false);
     if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     if (videoRef.current) videoRef.current.pause();
+    for (const audio of audioPlayersRef.current.values()) audio.pause();
   }, [videoRef]);
 
   const seek = useCallback((t) => {
     globalTimeRef.current = t;
     setDisplayTime(t);
     syncVideoToTime(t);
-  }, [syncVideoToTime]);
+    syncAudioToTime(t);
+  }, [syncVideoToTime, syncAudioToTime]);
 
   const toggle = useCallback(() => {
     if (isPlayingRef.current) pause();

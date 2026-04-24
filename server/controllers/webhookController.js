@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from "../services/calendarService.js";
 import { validateBusinessHours } from '../utils/businessHours.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from 'groq-sdk';
 
 import { SYSTEM_PROMPT, chatTools } from "../config/zilla-prompt.js";
 
@@ -113,42 +114,75 @@ async function processAndReply(from, text, phoneNumberId, platform) {
     try {
         history.push({ role: "user", parts: [{ text }] });
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
-        // Format tools for Gemini 1.5
-        const geminiTools = [{
-            functionDeclarations: chatTools.map(t => ({
+        let groqMessages = [
+            { role: "system", content: SYSTEM_PROMPT + systemPromptContexto }
+        ];
+
+        let rawHistory = history.slice(0, -1);
+        for (const msg of rawHistory) {
+            groqMessages.push({
+                role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
+                content: msg.parts[0].text
+            });
+        }
+        groqMessages.push({ role: "user", content: text });
+
+        const groqTools = chatTools.map(t => ({
+            type: "function",
+            function: {
                 name: t.name,
                 description: t.description,
-                parameters: {
-                    type: "OBJECT",
-                    properties: Object.fromEntries(
-                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
-                    ),
-                    ...(t.parameters.required ? { required: t.parameters.required } : {})
-                }
-            }))
-        }];
+                parameters: t.parameters
+            }
+        }));
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: SYSTEM_PROMPT,
-            tools: geminiTools
-        });
-
-        const chat = model.startChat({ history: history.slice(0, -1) });
-        const chatCompletion = await chat.sendMessage(text);
+        if (!process.env.CEREBRAS_API_KEY) {
+            console.error("CEREBRAS_API_KEY no configurada.");
+        }
 
         let responseText = "Lo siento, fallé al entender.";
         let functionCalls = [];
 
-        if (chatCompletion && chatCompletion.response) {
-            const response = chatCompletion.response;
-            try { responseText = response.text() || responseText; } catch(e){}
-            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
-            if (calls && calls.length > 0) {
-                functionCalls = calls;
+        try {
+            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messages: groqMessages,
+                    model: "llama3.1-70b",
+                    tools: groqTools,
+                    temperature: 0.1,
+                    max_tokens: 1024
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Cerebras Error: ${response.status} ${response.statusText}`);
             }
+
+            const data = await response.json();
+            if (data.choices && data.choices.length > 0) {
+                const responseMessage = data.choices[0].message;
+                responseText = responseMessage.content || "";
+                
+                if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+                    groqMessages.push(responseMessage);
+                    functionCalls = responseMessage.tool_calls.map(tc => {
+                        let parsedArgs = {};
+                        try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                        return {
+                            name: tc.function.name,
+                            args: parsedArgs,
+                            id: tc.id
+                        };
+                    });
+                }
+            }
+        } catch(error) {
+            console.error(`[${platform}] Cerebras Error:`, error.message);
         }
         
         if (functionCalls.length > 0) {
@@ -247,14 +281,39 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                     } catch (e) { fRes = { success: false, error: e.message }; }
                 }
 
-                // Send tool results back to Gemini via existing chat object
-                const chatCompletion2 = await chat.sendMessage([{
-                    functionResponse: { name: callName, response: fRes }
-                }]);
-                
-                if (chatCompletion2 && chatCompletion2.response) {
-                    try { responseText = chatCompletion2.response.text() || responseText; } catch(e){}
+                groqMessages.push({
+                    role: "tool",
+                    tool_call_id: call.id,
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
+            }
+            
+            try {
+                const response2 = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: groqMessages,
+                        model: "llama3.1-70b",
+                        temperature: 0.1,
+                        max_tokens: 1024
+                    })
+                });
+
+                if (response2.ok) {
+                    const data2 = await response2.json();
+                    if (data2.choices && data2.choices.length > 0) {
+                        responseText = data2.choices[0].message.content || responseText;
+                    }
+                } else {
+                    console.error(`[${platform}] Error Cerebras HTTP:`, response2.status);
                 }
+            } catch(e) {
+                console.error(`[${platform}] Error en segunda llamada Cerebras:`, e.message);
             }
             console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
         }

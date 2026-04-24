@@ -139,7 +139,51 @@ router.get('/events', authenticateToken, async (req, res) => {
         query += ' ORDER BY start_date ASC';
 
         const result = await pool.query(query, values);
-        res.json({ success: true, events: result.rows.map(mapRow) });
+        let events = result.rows.map(mapRow);
+
+        // Fetch CITAS to mix them into the calendar
+        let citasQuery = "SELECT * FROM citas WHERE status != 'cancelada'";
+        const citasValues = [];
+        if (from) { citasValues.push(from); citasQuery += ` AND fecha >= $${citasValues.length}`; }
+        if (to) { citasValues.push(to); citasQuery += ` AND fecha <= $${citasValues.length}`; }
+        
+        try {
+            const citasResult = await pool.query(citasQuery, citasValues);
+            const citasEvents = citasResult.rows.map(cita => {
+                const startDateTime = new Date(`${cita.fecha}T${cita.hora}:00`);
+                const endDateTime = new Date(startDateTime.getTime() + 60*60*1000); // +1 hour
+
+                return {
+                    id: `cita_${cita.id}`, 
+                    title: `📞 VENTA: ${cita.nombre_completo} (${cita.tipo_sesion})`,
+                    platform: cita.origen || 'Web',
+                    status: 'published', 
+                    caption: `📞 Tel: ${cita.telefono}\n📧 Email: ${cita.email}\n📝 Notas: ${cita.notas_adicionales || 'Sin notas'}`,
+                    media_url: null,
+                    provider: null,
+                    start: startDateTime,
+                    end: endDateTime,
+                    start_date: cita.fecha,
+                    end_date: cita.fecha,
+                    empresa: 'godzilla',
+                    assigned_to: 'oscar',
+                    created_by: 'bot',
+                    comments: [],
+                    is_rescheduled: false,
+                    created_at: cita.created_at || startDateTime,
+                    updated_at: startDateTime,
+                    is_cita: true
+                };
+            });
+            events = events.concat(citasEvents);
+        } catch (cErr) {
+            console.error('[Calendar] Error fetching citas:', cErr.message);
+        }
+
+        // Ordenar todos juntos cronológicamente
+        events.sort((a, b) => a.start - b.start);
+
+        res.json({ success: true, events });
     } catch (err) {
         console.error('[Calendar] GET /events error:', err.message);
         res.status(500).json({ success: false, error: err.message });

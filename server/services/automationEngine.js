@@ -432,6 +432,201 @@ Solo el JSON array, nada más.`;
                 console.log(`[Engine] 🟣 IG Bot — tarea encolada`);
             } catch (e) {
                 console.error(`[Engine] ❌ IG Bot error: ${e.message}`);
+            return { ...ctx, _routerMatch: match };
+        },
+
+        // ── SINKS / ACCIONES REALES ───────────────────────────────────────────
+
+        // Crea tareas en studio_tasks (una por día del plan)
+        'Tarea de Studio': async (node, ctx) => {
+            if (!ctx.plan || !Array.isArray(ctx.plan)) {
+                console.log(`[Engine] ⚠️  Tarea de Studio — sin plan en contexto (skipped)`);
+                ctx._skippedNodes = [...(ctx._skippedNodes || []), 'Tarea de Studio'];
+                return ctx;
+            }
+            const now = new Date();
+            const monthMap = { 'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,
+                               'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11 };
+            const yr  = parseInt(ctx.year)  || now.getFullYear();
+            const mon = monthMap[(ctx.month||'').toLowerCase().trim()] ?? now.getMonth();
+
+            let created = 0;
+            for (let i = 0; i < ctx.plan.length; i++) {
+                const day = ctx.plan[i];
+                const narrations = [1,2,3,4,5].map(n => {
+                    const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+                    return day[key] ? `Escena ${n}: ${day[key]}` : null;
+                }).filter(Boolean).join('\n');
+
+                const mediaPayload = {
+                    source: 'automation_flow',
+                    niche: ctx.niche, month: ctx.month, year: ctx.year,
+                    scenes: day,
+                    visualJobs: day._visualJobs || [],
+                    videoJobs:  day._videoJobs  || []
+                };
+
+                const isoDate = new Date(yr, mon, i + 1).toISOString().split('T')[0];
+
+                await pool.query(`
+                    INSERT INTO studio_tasks
+                        (title, prompt, assigned_to, tags, priority, content_type,
+                         status, media_payload, ig_publish_date, publish_targets)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                `, [
+                    day['Tema'] || `Día ${i+1}`,
+                    narrations,
+                    'auto',
+                    JSON.stringify([ctx.niche || 'auto', 'ai-planner']),
+                    'Media', 'Video Corto', 'pending_cm_approval',
+                    JSON.stringify(mediaPayload),
+                    isoDate,
+                    JSON.stringify(['instagram', 'tiktok'])
+                ]);
+                created++;
+            }
+            console.log(`[Engine] ✅ Tarea de Studio — ${created} tareas creadas en DB`);
+            return { ...ctx, _studioTasksCreated: created };
+        },
+
+        // Calendario Global — crea evento en calendar_events
+        'Calendario Global': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            if (cfg.action === 'create' && cfg.title) {
+                try {
+                    await pool.query(`
+                        INSERT INTO calendar_events (title, platform, status, start_date, end_date, empresa, assigned_to)
+                        VALUES ($1,$2,$3,$4,$5,$6,$7)
+                    `, [
+                        cfg.title,
+                        cfg.platform || 'ALL',
+                        'warning',
+                        cfg.date || new Date().toISOString().split('T')[0],
+                        cfg.date || new Date().toISOString().split('T')[0],
+                        cfg.empresa || 'godzilla',
+                        cfg.assignTo || 'auto'
+                    ]);
+                    console.log(`[Engine] 📅 Calendario Global — evento "${cfg.title}" creado`);
+                } catch (e) {
+                    console.error(`[Engine] ❌ Calendario Global error: ${e.message}`);
+                }
+            }
+            return ctx;
+        },
+
+        // Base de Datos — query personalizada (SELECT guarda en ctx, INSERT/UPDATE ejecuta)
+        'Base de Datos': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            if (cfg.query) {
+                try {
+                    const result = await pool.query(cfg.query, cfg.params || []);
+                    console.log(`[Engine] 🗄  Base de Datos — ${result.rowCount} filas afectadas`);
+                    return { ...ctx, _dbResult: result.rows };
+                } catch (e) {
+                    console.error(`[Engine] ❌ Base de Datos error: ${e.message}`);
+                }
+            }
+            return ctx;
+        },
+
+        // Email Worker — nodemailer con template dinámico
+        'Email Worker': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const to = cfg.to || ctx.userEmail;
+            if (!to) {
+                console.log(`[Engine] ⚠️  Email Worker — sin destinatario`);
+                return ctx;
+            }
+
+            let html = cfg.body || '';
+            if (!html && ctx.plan) {
+                const rows = ctx.plan.map((day, i) => `
+                    <tr style="border-bottom:1px solid #333">
+                        <td style="padding:12px;color:#a78bfa;font-weight:900">${i+1}</td>
+                        <td style="padding:12px;color:#fff">${day['Tema'] || '—'}</td>
+                        <td style="padding:12px;color:#6ee7b7;font-size:11px">${(day['NARRACION ESCENA 1'] || '').substring(0,60)}...</td>
+                    </tr>`).join('');
+                html = `
+                    <div style="font-family:'Inter',sans-serif;background:#09090b;padding:32px;color:#fff;max-width:640px;margin:0 auto;border-radius:16px">
+                        <h1 style="color:#CC0000;margin-bottom:4px">🤖 Godzilla AI Studio</h1>
+                        <p style="color:#71717a;margin-bottom:24px">Plan de Contenido Generado Automáticamente</p>
+                        <table style="width:100%;border-collapse:collapse;background:#18181b;border-radius:12px;overflow:hidden">
+                            <thead><tr style="background:#27272a">
+                                <th style="padding:12px;text-align:left;color:#71717a;font-size:11px">DÍA</th>
+                                <th style="padding:12px;text-align:left;color:#71717a;font-size:11px">TEMA</th>
+                                <th style="padding:12px;text-align:left;color:#71717a;font-size:11px">PREVIEW</th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                        <p style="color:#52525b;font-size:12px;margin-top:24px">Godzilla Consulting · Sistema Autónomo</p>
+                    </div>`;
+            }
+
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_APP_PASSWORD }
+                });
+                await transporter.sendMail({
+                    from: `"Godzilla AI Studio" <${process.env.EMAIL_USER}>`,
+                    to,
+                    subject: cfg.subject || '🤖 Godzilla — Notificación Automática',
+                    html
+                });
+                console.log(`[Engine] 📧 Email Worker — enviado a ${to}`);
+            } catch (e) {
+                console.error(`[Engine] ❌ Email Worker error: ${e.message}`);
+            }
+            return ctx;
+        },
+
+        // WhatsApp Bot — encola en bot_outbound_queue
+        'WhatsApp Bot': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const to      = cfg.to;
+            const message = cfg.fallback || cfg.message;
+            if (to && message) {
+                try {
+                    await pool.query(
+                        `INSERT INTO bot_outbound_queue (bot_name, payload) VALUES ($1, $2)`,
+                        ['whatsapp', JSON.stringify({ to, message })]
+                    );
+                    console.log(`[Engine] 📱 WhatsApp Bot — mensaje encolado para ${to}`);
+                } catch (e) {
+                    console.error(`[Engine] ❌ WhatsApp Bot error: ${e.message}`);
+                }
+            } else {
+                console.log(`[Engine] ⚠️  WhatsApp Bot — falta 'to' o 'message' en config del nodo`);
+            }
+            return ctx;
+        },
+
+        // TikTok Bot — encola tarea de publicación
+        'TikTok Bot': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            try {
+                await pool.query(
+                    `INSERT INTO bot_outbound_queue (bot_name, payload) VALUES ($1, $2)`,
+                    ['tiktok', JSON.stringify({ action: cfg.action || 'post', payload: ctx })]
+                );
+                console.log(`[Engine] 🎵 TikTok Bot — tarea encolada`);
+            } catch (e) {
+                console.error(`[Engine] ❌ TikTok Bot error: ${e.message}`);
+            }
+            return ctx;
+        },
+
+        // IG / Messenger Bot
+        'IG / Messenger Bot': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            try {
+                await pool.query(
+                    `INSERT INTO bot_outbound_queue (bot_name, payload) VALUES ($1, $2)`,
+                    ['instagram', JSON.stringify({ action: cfg.action || 'post', payload: ctx })]
+                );
+                console.log(`[Engine] 🟣 IG Bot — tarea encolada`);
+            } catch (e) {
+                console.error(`[Engine] ❌ IG Bot error: ${e.message}`);
             }
             return ctx;
         },
@@ -462,18 +657,17 @@ Solo el JSON array, nada más.`;
             }
         },
 
-        // Cerebro Central AI — llama a Gemini para procesar con prompt dinámico
-        'Cerebro Central AI': async (node, ctx) => {
+        // Gemini API (SambaNova Llama 3.1 405B) — reemplazo del Cerebro Central AI
+        'Gemini API': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
             const prompt = cfg.prompt;
-            if (!prompt) { console.log(`[Engine] ⚠️  Cerebro Central — sin prompt configurado`); return ctx; }
+            if (!prompt) { console.log(`[Engine] ⚠️  Gemini API — sin prompt configurado`); return ctx; }
 
             try {
                 const apiKey = process.env.SAMBANOVA_API_KEY;
-                if (!apiKey) throw new Error('GEMINI_API_KEY no configurada');
-
+                if (!apiKey) throw new Error('SAMBANOVA_API_KEY no configurada');
                 
-                // SambaNova (Llama 3.1 405B) — mismo modelo que el planificador real + retry 3x
+                // SambaNova (Llama 3.1 405B) + retry 3x
                 let result = null;
                 for (let attempt = 1; attempt <= 3 && !result; attempt++) {
                     await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1500) + 500));
@@ -482,7 +676,7 @@ Solo el JSON array, nada más.`;
                             method: 'POST',
                             headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                messages: [{ role: 'user', content: blockPrompt }],
+                                messages: [{ role: 'user', content: prompt }],
                                 model: 'Meta-Llama-3.1-405B-Instruct',
                                 temperature: 0.85
                             })

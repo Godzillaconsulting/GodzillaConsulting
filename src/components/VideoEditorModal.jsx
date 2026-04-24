@@ -671,188 +671,179 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             ) : (
               <div className="space-y-6">
                 
-                {/* Header */}
-                <div className="bg-[#27272a] p-3 rounded-lg border border-[#3f3f46]">
-                  <p className="text-[10px] text-neutral-400 uppercase font-semibold mb-1 tracking-wider">Clip Seleccionado</p>
-                  <p className="text-sm font-medium text-white truncate" title={selectedClip.clip.sourceName || selectedClip.clip.text}>
-                    {selectedClip.clip.sourceName || selectedClip.clip.text || 'Clip'}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-full bg-black/50 text-[9px] font-mono text-neutral-300 border border-neutral-700">
-                      {selectedClip.clip.start.toFixed(1)}s - {selectedClip.clip.end.toFixed(1)}s
-                    </span>
+                {/* Header Profile */}
+                <div className="flex items-center gap-3 bg-[#18181b] p-3 rounded-xl border border-[#27272a] shadow-inner mb-4">
+                  <div className="w-10 h-10 rounded bg-[#27272a] border border-[#3f3f46] flex items-center justify-center shrink-0">
+                    {selectedClip.layer.type === 'video' ? <Video className="w-5 h-5 text-blue-400" /> :
+                     selectedClip.layer.type === 'audio' ? <Music className="w-5 h-5 text-emerald-400" /> :
+                     <Type className="w-5 h-5 text-yellow-400" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate" title={selectedClip.clip.sourceName || selectedClip.clip.text}>
+                      {selectedClip.clip.sourceName || selectedClip.clip.text || 'Clip Seleccionado'}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                      {selectedClip.clip.start.toFixed(1)}s ➝ {selectedClip.clip.end.toFixed(1)}s
+                    </p>
                   </div>
                 </div>
 
-                {/* SPEED */}
-                {selectedClip.layer.type !== 'text' && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-semibold text-neutral-300">Velocidad</label>
-                      <span className="text-xs font-mono bg-[#27272a] px-2 py-0.5 rounded">{selectedClip.clip.speed ?? 1}x</span>
-                    </div>
-                    <input type="range" min="0.25" max="4" step="0.25"
-                      value={selectedClip.clip.speed ?? 1}
-                      onChange={e => editor.updateClip(selectedClip.clip.id, { speed: parseFloat(e.target.value) }, true)}
-                      onMouseUp={e => editor.updateClip(selectedClip.clip.id, { speed: parseFloat(e.target.value) })}
-                      className="w-full accent-blue-500" />
-                  </div>
-                )}
-
-                {/* VOLUME */}
-                {(selectedClip.layer.type === 'audio' || selectedClip.layer.type === 'video') && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1">
-                        <Volume2 className="w-3.5 h-3.5" /> Volumen
-                      </label>
-                      <span className="text-xs font-mono bg-[#27272a] px-2 py-0.5 rounded">{Math.round((selectedClip.clip.volume ?? 1) * 100)}%</span>
-                    </div>
-                    <input type="range" min="0" max="2" step="0.05"
-                      value={selectedClip.clip.volume ?? 1}
-                      onChange={e => editor.updateClip(selectedClip.clip.id, { volume: parseFloat(e.target.value) }, true)}
-                      onMouseUp={e => editor.updateClip(selectedClip.clip.id, { volume: parseFloat(e.target.value) })}
-                      className="w-full accent-emerald-500" />
-                  </div>
-                )}
-
-                {/* TRANSITION (Video only) */}
-                {selectedClip.layer.type === 'video' && (
-                  <div>
-                    <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1 mb-2">
-                      <ArrowLeftRight className="w-3.5 h-3.5" /> Transición de entrada
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[['cut','Ninguna'],['fade','Fundido'],['wipeleft','Barrido'],['slideleft','Deslizar'],['zoom','Zoom In']].map(([type, label]) => {
-                        const active = (selectedClip.clip.transitionIn?.type ?? 'cut') === type;
-                        return (
-                          <button key={type} onClick={() => editor.updateClip(selectedClip.clip.id, {
-                            transitionIn: type === 'cut' ? null : { type, duration: 0.5 }
-                          })}
-                            className={`py-1.5 text-[11px] font-medium rounded border transition-all ${
-                              active ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-[#27272a] border-[#3f3f46] text-neutral-300 hover:border-neutral-500'
-                            }`}>{label}</button>
-                        );
-                      })}
-                    </div>
-                    {selectedClip.clip.transitionIn && (
-                      <div className="mt-3 bg-[#27272a]/50 p-2.5 rounded-lg border border-[#3f3f46]">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[10px] text-neutral-400">Duración de transición</span>
-                          <span className="text-[10px] font-mono">{selectedClip.clip.transitionIn.duration}s</span>
-                        </div>
-                        <input type="range" min="0.2" max="2" step="0.1"
-                          value={selectedClip.clip.transitionIn.duration}
-                          onChange={e => editor.updateClip(selectedClip.clip.id, {
-                            transitionIn: { ...selectedClip.clip.transitionIn, duration: parseFloat(e.target.value) }
-                          }, true)}
-                          onMouseUp={e => editor.updateClip(selectedClip.clip.id, {
-                            transitionIn: { ...selectedClip.clip.transitionIn, duration: parseFloat(e.target.value) }
-                          })}
-                          className="w-full accent-blue-500" />
+                {/* --- SECCIÓN VIDEO/AUDIO BÁSICA --- */}
+                {(selectedClip.layer.type === 'video' || selectedClip.layer.type === 'audio') && (
+                  <div className="space-y-5">
+                    {/* Volumen */}
+                    <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Volume2 className="w-4 h-4 text-neutral-400" />
+                        <span className="text-[11px] font-semibold text-neutral-200">Volumen</span>
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="flex items-center gap-3">
+                        <input type="range" min="0" max="2" step="0.05"
+                          value={selectedClip.clip.volume ?? 1}
+                          onChange={e => editor.updateClip(selectedClip.clip.id, { volume: parseFloat(e.target.value) }, true)}
+                          onMouseUp={e => editor.updateClip(selectedClip.clip.id, { volume: parseFloat(e.target.value) })}
+                          className="flex-1 h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-white" />
+                        <span className="w-12 text-right text-xs font-mono text-neutral-400">{Math.round((selectedClip.clip.volume ?? 1) * 100)}%</span>
+                      </div>
+                    </div>
 
-                {/* COLOR GRADING */}
-                {selectedClip.layer.type === 'video' && selectedClip.clip.color && (
-                  <div>
-                    <label className="text-xs font-semibold text-neutral-300 mb-3 block">Color & Ajustes</label>
-                    <div className="space-y-4">
-                      {[['brightness','Brillo',-1,1,0.05],['contrast','Contraste',0,2,0.05],['saturation','Saturación',0,3,0.1]].map(([k, label, min, max, step]) => (
-                        <div key={k}>
-                          <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
-                            <span>{label}</span>
-                            <span className="font-mono">{Math.round(selectedClip.clip.color[k] * 100)}%</span>
-                          </div>
-                          <input type="range" min={min} max={max} step={step}
-                            value={selectedClip.clip.color[k]}
-                            onChange={e => editor.updateClip(selectedClip.clip.id, { color: { ...selectedClip.clip.color, [k]: parseFloat(e.target.value) } }, true)}
-                            onMouseUp={e => editor.updateClip(selectedClip.clip.id, { color: { ...selectedClip.clip.color, [k]: parseFloat(e.target.value) } })}
-                            className="w-full accent-purple-500" />
+                    {/* Velocidad */}
+                    <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Gauge className="w-4 h-4 text-neutral-400" />
+                        <span className="text-[11px] font-semibold text-neutral-200">Velocidad</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <input type="range" min="0.25" max="4" step="0.25"
+                          value={selectedClip.clip.speed ?? 1}
+                          onChange={e => editor.updateClip(selectedClip.clip.id, { speed: parseFloat(e.target.value) }, true)}
+                          onMouseUp={e => editor.updateClip(selectedClip.clip.id, { speed: parseFloat(e.target.value) })}
+                          className="flex-1 h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                        <div className="w-12 bg-[#27272a] border border-[#3f3f46] rounded flex items-center justify-center py-1">
+                          <span className="text-[10px] font-mono text-white">{selectedClip.clip.speed ?? 1}x</span>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* TEXT STYLES */}
+                {/* --- SECCIÓN TEXTO --- */}
                 {selectedClip.layer.type === 'text' && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 bg-[#18181b] p-4 rounded-xl border border-[#27272a]">
                     <div>
-                      <label className="text-xs font-semibold text-neutral-300 mb-1.5 block">Texto</label>
+                      <label className="text-[11px] font-semibold text-neutral-200 mb-2 block">Contenido</label>
                       <textarea value={selectedClip.clip.text || ''}
                         onChange={e => editor.updateClip(selectedClip.clip.id, { text: e.target.value }, true)}
-                        className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-md p-2 outline-none focus:border-blue-500 resize-y min-h-[60px]" />
+                        className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-lg p-2.5 outline-none focus:border-yellow-500 transition-colors resize-none min-h-[60px]" />
                     </div>
                     
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-semibold text-neutral-300">Tamaño</label>
-                        <span className="text-[10px] font-mono">{selectedClip.clip.style?.fontSize}px</span>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-semibold text-neutral-400 mb-2 block uppercase">Tamaño</label>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="20" max="120" step="2"
+                            value={selectedClip.clip.style?.fontSize || 48}
+                            onChange={e => editor.updateClip(selectedClip.clip.id, { style: { ...selectedClip.clip.style, fontSize: parseInt(e.target.value) } }, true)}
+                            className="flex-1 h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-yellow-500" />
+                          <span className="text-[10px] font-mono text-neutral-400 w-6">{selectedClip.clip.style?.fontSize || 48}</span>
+                        </div>
                       </div>
-                      <input type="range" min="20" max="120" step="2"
-                        value={selectedClip.clip.style?.fontSize || 48}
-                        onChange={e => editor.updateClip(selectedClip.clip.id, { style: { ...selectedClip.clip.style, fontSize: parseInt(e.target.value) } }, true)}
-                        className="w-full accent-yellow-500" />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-neutral-300 mb-1.5 block">Color</label>
-                      <div className="flex gap-2">
-                        {['#ffffff','#facc15','#ef4444','#3b82f6','#22c55e','#000000'].map(c => (
-                          <button key={c} onClick={() => editor.updateClip(selectedClip.clip.id, { style: { ...selectedClip.clip.style, fontColor: c } })}
-                            className={`w-6 h-6 rounded-full border-2 ${selectedClip.clip.style?.fontColor === c ? 'border-white scale-110' : 'border-transparent'}`}
-                            style={{ backgroundColor: c }} />
-                        ))}
-                        <input type="color" value={selectedClip.clip.style?.fontColor || '#ffffff'}
-                          onChange={e => editor.updateClip(selectedClip.clip.id, { style: { ...selectedClip.clip.style, fontColor: e.target.value } })}
-                          className="bg-transparent border-0 w-6 h-6 p-0 cursor-pointer rounded overflow-hidden ml-auto" />
+                      <div>
+                        <label className="text-[10px] font-semibold text-neutral-400 mb-2 block uppercase">Color</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['#ffffff','#facc15','#ef4444','#3b82f6','#22c55e','#000000'].map(c => (
+                            <button key={c} onClick={() => editor.updateClip(selectedClip.clip.id, { style: { ...selectedClip.clip.style, fontColor: c } })}
+                              className={`w-5 h-5 rounded-full border-2 transition-transform ${selectedClip.clip.style?.fontColor === c ? 'border-white scale-110 shadow-sm' : 'border-transparent'}`}
+                              style={{ backgroundColor: c }} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* EFFECTS AND PIP (Video only) */}
+                {/* --- SECCIÓN VIDEO (Ajustes y Efectos) --- */}
                 {selectedClip.layer.type === 'video' && (
-                  <div className="space-y-4 pt-4 border-t border-[#27272a]">
-                    <div>
-                      <label className="text-xs font-semibold text-neutral-300 mb-2 block flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5" /> PiP / Transformación</label>
-                      <div className="space-y-3 bg-[#27272a]/50 p-2.5 rounded-lg border border-[#3f3f46]">
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1"><label>Escala</label><span>{selectedClip.clip.transform?.scale ?? 1}x</span></div>
-                          <input type="range" min="0.1" max="3" step="0.1" value={selectedClip.clip.transform?.scale ?? 1}
-                            onChange={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), scale: parseFloat(e.target.value) } }, true)}
-                            onMouseUp={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), scale: parseFloat(e.target.value) } })}
-                            className="w-full accent-blue-500" />
+                  <div className="space-y-4">
+                    {/* Transformación (PiP) */}
+                    <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4 text-neutral-400" />
+                          <span className="text-[11px] font-semibold text-neutral-200">Transformación</span>
                         </div>
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1"><label>Posición X</label><span>{selectedClip.clip.transform?.x ?? 0}</span></div>
-                          <input type="range" min="-1000" max="1000" step="10" value={selectedClip.clip.transform?.x ?? 0}
-                            onChange={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), x: parseInt(e.target.value) } }, true)}
-                            className="w-full accent-blue-500" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1"><label>Posición Y</label><span>{selectedClip.clip.transform?.y ?? 0}</span></div>
-                          <input type="range" min="-1000" max="1000" step="10" value={selectedClip.clip.transform?.y ?? 0}
-                            onChange={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), y: parseInt(e.target.value) } }, true)}
-                            className="w-full accent-blue-500" />
-                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {[
+                          { key: 'scale', label: 'Escala', min: 0.1, max: 3, step: 0.1, def: 1, unit: 'x' },
+                          { key: 'x', label: 'Posición X', min: -1000, max: 1000, step: 10, def: 0, unit: 'px' },
+                          { key: 'y', label: 'Posición Y', min: -1000, max: 1000, step: 10, def: 0, unit: 'px' }
+                        ].map(t => {
+                          const val = selectedClip.clip.transform?.[t.key] ?? t.def;
+                          return (
+                            <div key={t.key}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[10px] text-neutral-400">{t.label}</span>
+                                <span className="text-[9px] font-mono text-neutral-500">{val}{t.unit}</span>
+                              </div>
+                              <input type="range" min={t.min} max={t.max} step={t.step} value={val}
+                                onChange={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), [t.key]: parseFloat(e.target.value) } }, true)}
+                                onMouseUp={e => editor.updateClip(selectedClip.clip.id, { transform: { ...(selectedClip.clip.transform || {}), [t.key]: parseFloat(e.target.value) } })}
+                                className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-neutral-300 mb-2 block flex items-center gap-1"><Wand2 className="w-3.5 h-3.5" /> Efectos Visuales</label>
-                      <div className="flex flex-wrap gap-2 mb-3">
+                    {/* Color Grading */}
+                    {selectedClip.clip.color && (
+                      <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Palette className="w-4 h-4 text-neutral-400" />
+                          <span className="text-[11px] font-semibold text-neutral-200">Ajuste de Color</span>
+                        </div>
+                        <div className="space-y-4">
+                          {[
+                            {k:'brightness', label:'Brillo', min:-1, max:1, step:0.05, color:'accent-yellow-500'},
+                            {k:'contrast', label:'Contraste', min:0, max:2, step:0.05, color:'accent-white'},
+                            {k:'saturation', label:'Saturación', min:0, max:3, step:0.1, color:'accent-pink-500'}
+                          ].map(c => (
+                            <div key={c.k}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[10px] text-neutral-400">{c.label}</span>
+                                <span className="text-[9px] font-mono text-neutral-500">{Math.round(selectedClip.clip.color[c.k] * 100)}%</span>
+                              </div>
+                              <input type="range" min={c.min} max={c.max} step={c.step}
+                                value={selectedClip.clip.color[c.k]}
+                                onChange={e => editor.updateClip(selectedClip.clip.id, { color: { ...selectedClip.clip.color, [c.k]: parseFloat(e.target.value) } }, true)}
+                                onMouseUp={e => editor.updateClip(selectedClip.clip.id, { color: { ...selectedClip.clip.color, [c.k]: parseFloat(e.target.value) } })}
+                                className={`w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer ${c.color}`} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Filtros Visuales */}
+                    <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Wand2 className="w-4 h-4 text-neutral-400" />
+                        <span className="text-[11px] font-semibold text-neutral-200">Filtros & Efectos</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
                         {[ {id:'blur', label:'Desenfocar'}, {id:'vhs', label:'Retro VHS'}, {id:'bw', label:'Blanco y Negro'}, {id:'vignette', label:'Viñeta'} ].map(fx => {
                           const active = selectedClip.clip.effects?.includes(fx.id);
                           return (
                             <button key={fx.id} onClick={() => {
-                              const current = selectedClip.clip.effects || [];
-                              const next = active ? current.filter(e => e !== fx.id) : [...current, fx.id];
+                              const curr = selectedClip.clip.effects || [];
+                              const next = active ? curr.filter(id => id !== fx.id) : [...curr, fx.id];
                               editor.updateClip(selectedClip.clip.id, { effects: next });
-                            }} className={`px-2.5 py-1 text-[11px] font-medium rounded border transition-colors ${active ? 'bg-purple-600/30 border-purple-500 text-purple-300' : 'bg-[#27272a] hover:bg-[#3f3f46] border-[#3f3f46] text-neutral-400'}`}>
+                            }}
+                            className={`py-2 px-1 text-[10px] font-medium rounded-lg border transition-all flex flex-col items-center gap-1 ${
+                              active ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'bg-[#27272a] border-[#3f3f46] text-neutral-300 hover:border-neutral-500'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${active ? 'bg-purple-500' : 'bg-neutral-600'}`}></div>
                               {fx.label}
                             </button>
                           )
@@ -860,26 +851,29 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                       </div>
                       
                       {/* Chroma Key */}
-                      <div className="bg-[#27272a]/50 p-2.5 rounded-lg border border-[#3f3f46]">
-                        <label className="flex items-center gap-2 text-[11px] text-neutral-300 font-medium cursor-pointer mb-2">
+                      <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a] mt-4">
+                        <label className="flex items-center gap-2 text-[11px] text-neutral-200 font-semibold cursor-pointer mb-3">
                           <input type="checkbox" checked={!!selectedClip.clip.chromaKey}
                             onChange={e => editor.updateClip(selectedClip.clip.id, { chromaKey: e.target.checked ? { color: '#00ff00', similarity: 0.2 } : null })} 
-                            className="accent-emerald-500" />
+                            className="accent-emerald-500 w-3.5 h-3.5" />
                           Chroma Key (Pantalla Verde)
                         </label>
                         {selectedClip.clip.chromaKey && (
-                          <div className="space-y-2 mt-2">
+                          <div className="space-y-4 pl-5">
                             <div className="flex items-center justify-between text-[10px]">
-                              <span>Color a borrar</span>
+                              <span className="text-neutral-400">Color a eliminar</span>
                               <input type="color" value={selectedClip.clip.chromaKey.color}
                                 onChange={e => editor.updateClip(selectedClip.clip.id, { chromaKey: { ...selectedClip.clip.chromaKey, color: e.target.value } })}
-                                className="w-5 h-5 p-0 border-0 rounded cursor-pointer" />
+                                className="w-6 h-6 p-0 border-0 rounded cursor-pointer" />
                             </div>
                             <div>
-                              <div className="flex justify-between text-[10px] mb-1"><span>Intensidad</span><span>{Math.round(selectedClip.clip.chromaKey.similarity * 100)}%</span></div>
+                              <div className="flex justify-between items-center text-[10px] mb-1.5">
+                                <span className="text-neutral-400">Intensidad</span>
+                                <span className="font-mono text-neutral-500">{Math.round(selectedClip.clip.chromaKey.similarity * 100)}%</span>
+                              </div>
                               <input type="range" min="0" max="0.5" step="0.01" value={selectedClip.clip.chromaKey.similarity}
                                 onChange={e => editor.updateClip(selectedClip.clip.id, { chromaKey: { ...selectedClip.clip.chromaKey, similarity: parseFloat(e.target.value) } }, true)}
-                                className="w-full accent-emerald-500" />
+                                className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
                             </div>
                           </div>
                         )}
@@ -888,18 +882,23 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                   </div>
                 )}
 
-                {/* VOICE FX */}
+                {/* --- SECCIÓN VOICE FX --- */}
                 {(selectedClip.layer.type === 'audio' || selectedClip.layer.type === 'video') && (
-                  <div className="pt-4 border-t border-[#27272a]">
-                    <label className="text-xs font-semibold text-neutral-300 mb-2 block flex items-center gap-1"><Music className="w-3.5 h-3.5" /> Efectos de Audio</label>
+                  <div className="bg-[#18181b] p-3.5 rounded-xl border border-[#27272a]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Music className="w-4 h-4 text-neutral-400" />
+                      <span className="text-[11px] font-semibold text-neutral-200">Efectos de Audio</span>
+                    </div>
                     <select value={selectedClip.clip.voiceFx || ''} onChange={e => editor.updateClip(selectedClip.clip.id, { voiceFx: e.target.value })}
-                      className="w-full bg-[#27272a] text-xs p-2 rounded outline-none border border-[#3f3f46] text-white focus:border-blue-500 transition-colors">
-                      <option value="">Sin efecto</option>
-                      <option value="robot">Voz de Robot</option>
-                      <option value="echo">Eco en Caverna</option>
-                      <option value="highpitch">Ardilla (Pitch Alto)</option>
+                      className="w-full bg-[#27272a] text-[11px] p-2 rounded-lg outline-none border border-[#3f3f46] text-white focus:border-blue-500 transition-colors">
+                      <option value="">Ninguno</option>
+                      <option value="deep">Voz Profunda</option>
+                      <option value="chipmunk">Ardilla</option>
+                      <option value="echo">Eco</option>
+                      <option value="radio">Radio Antigua</option>
                     </select>
-                    <label className="flex items-center gap-2 mt-3 text-[11px] text-neutral-400 cursor-pointer hover:text-neutral-300">
+                    
+                    <label className="flex items-center gap-2 mt-4 text-[11px] text-neutral-400 cursor-pointer hover:text-neutral-300">
                       <input type="checkbox" checked={selectedClip.clip.noiseReduction || false}
                         onChange={e => editor.updateClip(selectedClip.clip.id, { noiseReduction: e.target.checked })} 
                         className="accent-emerald-500" />

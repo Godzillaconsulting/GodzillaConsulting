@@ -52,6 +52,7 @@ export default function FloatingToolbar({ selectedClip, editor }) {
               <div>
                 <div className="flex justify-between text-[10px] text-neutral-400 mb-1"><span>Fade Out</span><span>{clip.fadeOut ?? 0}s</span></div>
                 <input type="range" min="0" max="5" step="0.1" value={clip.fadeOut ?? 0} onChange={e => editor.updateClip(clip.id, { fadeOut: parseFloat(e.target.value) }, true)} className="w-full accent-blue-500 h-1 bg-neutral-700 rounded-lg appearance-none" />
+              </div>
             </div>
           </Popover>
         )}
@@ -72,6 +73,7 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 className="flex-1 h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
               <div className="w-12 bg-[#27272a] border border-[#3f3f46] rounded flex items-center justify-center py-1">
                 <span className="text-[10px] font-mono text-white">{clip.speed ?? 1}x</span>
+              </div>
             </div>
           </Popover>
         )}

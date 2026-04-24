@@ -78,59 +78,106 @@ class AutomationEngine {
     static NODE_ACTIONS = {
 
         // ── ORIGEN: Planificador IA ────────────────────────────────────────────
-        // Genera planes de contenido por día, semana o mes usando Gemini
+        // Genera planes de contenido por día, semana o mes — en BLOQUES
+        // para no gastar tokens de golpe y evitar JSON truncado.
         'Planificador IA': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            const period      = cfg.period      || ctx.period      || 'month';
-            const niche       = cfg.niche       || ctx.niche       || 'negocio digital';
-            const extraCtx    = cfg.extraContext || ctx.extraContext || '';
+            const period   = cfg.period      || ctx.period      || 'month';
+            const niche    = cfg.niche       || ctx.niche       || 'negocio digital';
+            const extraCtx = cfg.extraContext || ctx.extraContext || '';
 
-            // Si ya viene un plan en el contexto (ej: disparado desde UI), pasarlo
+            // Si ya viene un plan en el contexto (disparado desde UI), lo pasamos sin re-generar
             if (ctx.plan && Array.isArray(ctx.plan) && ctx.plan.length > 0) {
                 console.log(`[Engine] 🧠 Planificador IA — plan ya en contexto (${ctx.plan.length} entradas), pasando...`);
                 return { ...ctx, period, niche };
             }
 
-            // Calcular cuántos días generar
-            const daysMap = { day: 1, week: 7, month: 30 };
-            const days    = daysMap[period] || 30;
-
             const apiKey = process.env.GEMINI_API_KEY;
             if (!apiKey) {
-                console.log(`[Engine] ⚠️  Planificador IA — sin GEMINI_API_KEY, saltando generación`);
+                console.log(`[Engine] ⚠️  Planificador IA — sin GEMINI_API_KEY`);
                 return { ...ctx, plan: [], period, niche };
             }
 
-            console.log(`[Engine] 🧠 Planificador IA — generando ${days} día(s) para nicho: "${niche}" [${period}]`);
+            // ─── Configuración de bloques por periodo ─────────────────────────
+            // day  → 1 bloque de 1 día
+            // week → 1 bloque de 7 días
+            // month → 3 bloques de 10 días (30 total)
+            const blockConfig = {
+                day:   { totalDays: 1,  blockSize: 1,  blocks: 1 },
+                week:  { totalDays: 7,  blockSize: 7,  blocks: 1 },
+                month: { totalDays: 30, blockSize: 10, blocks: 3 },
+            };
+            const { totalDays, blockSize, blocks } = blockConfig[period] || blockConfig.month;
 
-            const prompt = `Eres un estratega de contenido. Crea un plan de ${days} día(s) para: "${niche}".
-${extraCtx ? `Contexto adicional: ${extraCtx}` : ''}
-Devuelve un JSON array con EXACTAMENTE ${days} objetos, uno por día.
-Cada objeto debe tener: { "Tema": "...", "NARRACION ESCENA 1": "...", "NARRACION ESCENA 2": "...", "NARRACION ESCENA 3": "...", "NARRACION ESCENA 4": "...", "NARRACION ESCENA 5 (CTA)": "...", "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "...", "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "..." }
-Solo responde el JSON puro, sin markdown, sin explicaciones.`;
+            // ─── Helper: genera un bloque de N días ───────────────────────────
+            const generateBlock = async (startDay, count, blockNum) => {
+                const dayLabel = count === 1
+                    ? `el día ${startDay}`
+                    : `los días del ${startDay} al ${startDay + count - 1}`;
 
-            try {
+                const blockPrompt = `Eres un estratega de contenido experto en redes sociales.
+Nicho/producto: "${niche}"${extraCtx ? `\nContexto: ${extraCtx}` : ''}
+
+Genera el plan de contenido SOLO para ${dayLabel} de ${totalDays} (bloque ${blockNum}/${blocks}).
+Devuelve EXACTAMENTE un JSON array con ${count} objeto(s). Sin markdown, sin texto extra.
+
+Cada objeto DEBE tener estas claves exactas:
+{
+  "Tema": "título del video",
+  "NARRACION ESCENA 1": "texto narrado escena 1",
+  "NARRACION ESCENA 2": "texto narrado escena 2",
+  "NARRACION ESCENA 3": "texto narrado escena 3",
+  "NARRACION ESCENA 4": "texto narrado escena 4",
+  "NARRACION ESCENA 5 (CTA)": "llamada a la acción",
+  "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "prompt detallado para generar imagen",
+  "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "prompt de movimiento para video"
+}
+
+Solo el JSON array, nada más.`;
+
                 const res = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { temperature: 0.8, maxOutputTokens: days > 7 ? 8192 : 2048 }
+                            contents: [{ parts: [{ text: blockPrompt }] }],
+                            generationConfig: {
+                                temperature: 0.75,
+                                maxOutputTokens: 2048  // Siempre 2048 — bloque pequeño = JSON limpio
+                            }
                         })
                     }
                 );
                 const data = await res.json();
                 const raw  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-                const clean = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                const plan  = JSON.parse(clean);
-                console.log(`[Engine] ✅ Planificador IA — ${plan.length} entradas generadas`);
-                return { ...ctx, plan, period, niche, days };
-            } catch (e) {
-                console.error(`[Engine] ❌ Planificador IA error: ${e.message}`);
-                return { ...ctx, plan: [], period, niche };
+                const clean = raw
+                    .replace(/```json\n?/gi, '')
+                    .replace(/```\n?/gi, '')
+                    .trim();
+                return JSON.parse(clean);
+            };
+
+            // ─── Generar todos los bloques secuencialmente ────────────────────
+            const fullPlan = [];
+            console.log(`[Engine] 🧠 Planificador IA — ${period} → ${blocks} bloque(s) de ~${blockSize} días`);
+
+            for (let b = 0; b < blocks; b++) {
+                const startDay = b * blockSize + 1;
+                const count    = Math.min(blockSize, totalDays - b * blockSize);
+                try {
+                    console.log(`[Engine] 📦 Bloque ${b + 1}/${blocks} — días ${startDay} al ${startDay + count - 1}`);
+                    const block = await generateBlock(startDay, count, b + 1);
+                    fullPlan.push(...block);
+                    console.log(`[Engine] ✅ Bloque ${b + 1} — ${block.length} entradas OK`);
+                } catch (e) {
+                    console.error(`[Engine] ❌ Bloque ${b + 1} falló: ${e.message}`);
+                    // Continuamos con los demás bloques aunque uno falle
+                }
             }
+
+            console.log(`[Engine] 🎉 Planificador IA — ${fullPlan.length}/${totalDays} días generados`);
+            return { ...ctx, plan: fullPlan, period, niche, days: totalDays };
         },
 
         'Webhook Entrada': async (node, ctx) => {

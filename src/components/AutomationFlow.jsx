@@ -117,6 +117,7 @@ const FLOW_TEMPLATES = [
       { id: 'e7', source: 'ec4', target: 'ec7', color: '#eab308' },
     ],
   },
+
   {
     name: '🌌 Ecosistema Central Godzilla',
     description: 'Cerebro AI Central ↔ Memoria + Bots + Citas',
@@ -858,11 +859,25 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     
     // Check missing configs
     const missing = nodes.find(n => {
+      // ⚙️ Sistema / Webhooks
       if (n.title === 'Webhook Entrada' && (!n.config?.method || !n.config?.url)) return true;
+      if (['Make (Integromat)', 'Zapier Webhook'].includes(n.title) && !n.config?.webhookUrl) return true;
       if (n.title === 'Reloj / Cron' && !n.config?.cron) return true;
-      if (n.title === 'Cerebro Central AI' && !n.config?.prompt) return true;
+      
+      // 🤖 IA
+      if (['Cerebro Central AI', 'Anthropic Claude', 'OpenAI / ChatGPT', 'DeepSeek API', 'Gemini API'].includes(n.title) && !n.config?.prompt) return true;
+      if (n.title === 'ElevenLabs' && (!n.config?.voiceId || !n.config?.text)) return true;
+      
+      // 📱 Social / Bots
+      if (['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(n.title) && !n.config?.fallback && !n.config?.message) return true;
+      if (['Twitter / X Bot', 'LinkedIn Bot'].includes(n.title) && !n.config?.text) return true;
+      if (n.title === 'Bot Newsletter' && !n.config?.body) return true;
+
+      // 🗄 Bases de Datos / Productividad
       if (n.title === 'Calendario Global' && !n.config?.action) return true;
-      if (['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(n.title) && !n.config?.fallback) return true;
+      if (n.title === 'Notion' && !n.config?.databaseId) return true;
+      if (['Airtable', 'Supabase'].includes(n.title) && !n.config?.table) return true;
+
       return false;
     });
 
@@ -1054,7 +1069,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
           {edges.map(e=>{
             const s=nodePositions.get(e.source), t=nodePositions.get(e.target);
             if(!s||!t) return null;
-            return <CurvedConnector key={e.id} startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} color={e.color} animated={!isExecuting}/>;
+            return <CurvedConnector key={e.id} startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} color={e.color} animated={isRunning || isExecuting}/>;
           })}
           {connectingFrom&&connectingToPos&&(()=>{
             const s=nodePositions.get(connectingFrom);
@@ -1131,11 +1146,31 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             
             {/* Dynamic Config Block */}
             <div className="pt-3 mt-3 border-t border-neutral-800">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
                 <label className="text-[10px] font-bold text-yellow-400 uppercase flex items-center gap-1.5"><Settings2 className="w-3 h-3"/> Ajustes Obligatorios</label>
                 <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">Admite {"{{ $json.var }}"}</span>
               </div>
-              
+
+              {/* EXPERIMENTAL: Variable Mapping */}
+              {selectedNode.type !== 'trigger' && (
+                <div className="mb-4 p-3 bg-[#111] rounded-xl border border-neutral-800/80">
+                  <h4 className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-1"><ArrowLeftRight className="w-3 h-3"/> Mapeo de Datos</h4>
+                  <p className="text-[9px] text-neutral-500 leading-snug mb-3">Conecta variables de neuronas anteriores a esta.</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input placeholder="Campo destino (ej: email)" className="w-1/2 bg-black border border-neutral-800 rounded px-2 py-1.5 text-[10px] text-white outline-none" />
+                      <span className="text-neutral-600 text-xs">=</span>
+                      <select className="w-1/2 bg-black border border-neutral-800 rounded px-2 py-1.5 text-[10px] text-purple-400 outline-none appearance-none">
+                        <option value="">Seleccionar Origen...</option>
+                        {nodes.filter(n => n.id !== selectedNode.id).map(n => (
+                          <option key={n.id} value={n.id}>{"{{ "}{n.title}{".salida }}"}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button className="text-[9px] font-bold text-blue-400 hover:text-blue-300 w-full text-left mt-1">+ Añadir variable</button>
+                  </div>
+                </div>
+              )}
               {selectedNode.title === 'Planificador IA' && (
                 <div className="space-y-3">
                   {/* Periodo */}
@@ -1633,25 +1668,53 @@ export default function AutomationFlow() {
         fetch('/api/automation/flows', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/automation/status', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      const fd = await flowsRes.json();
-      const sd = await statusRes.json();
+      const fd = await flowsRes.json().catch(() => ({ success: false, flows: [] }));
+      const sd = await statusRes.json().catch(() => ({ success: false, pm2: [] }));
+      
+      let mappedFlows = [];
       if (fd.success) {
-        const mappedFlows = (fd.flows || []).map(flow => {
-          if (flow.name === 'Sistema Central' || flow.id === 'central') {
+        mappedFlows = (fd.flows || []).map(flow => {
+          if (flow.name === 'Sistema Central' || flow.id === 'central' || flow.id === 1) {
             return { ...flow, nodes: FLOW_TEMPLATES[0].nodes, edges: FLOW_TEMPLATES[0].edges };
           }
           return flow;
         });
-        setFlows(mappedFlows);
       }
+      
+      if (!mappedFlows.some(f => f.id === 1 || f.name === 'Sistema Central')) {
+          mappedFlows.unshift({
+              id: 1,
+              name: 'Sistema Central',
+              created_by: 'sistema',
+              nodes: FLOW_TEMPLATES[0].nodes,
+              edges: FLOW_TEMPLATES[0].edges,
+              node_count: FLOW_TEMPLATES[0].nodes.length,
+              edge_count: FLOW_TEMPLATES[0].edges.length,
+          });
+      }
+      setFlows(mappedFlows);
+      
       if (sd.success) setPm2Status(sd.pm2 || []);
 
       if (isJareg) {
-        const pr = await fetch('/api/automation/change-requests', { headers: { Authorization: `Bearer ${token}` } });
-        const pd = await pr.json();
-        if (pd.success) setPendingRequests(pd.requests || []);
+        const pr = await fetch('/api/automation/change-requests', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+        if (pr) {
+            const pd = await pr.json().catch(() => ({ success: false }));
+            if (pd.success) setPendingRequests(pd.requests || []);
+        }
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        setFlows([{
+            id: 1,
+            name: 'Sistema Central',
+            created_by: 'sistema',
+            nodes: FLOW_TEMPLATES[0].nodes,
+            edges: FLOW_TEMPLATES[0].edges,
+            node_count: FLOW_TEMPLATES[0].nodes.length,
+            edge_count: FLOW_TEMPLATES[0].edges.length,
+        }]);
+    }
     finally { setIsLoadingGalaxy(false); }
   }, [isJareg]);
 

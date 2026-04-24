@@ -181,7 +181,7 @@ export function usePlaybackEngine(project, videoRef) {
     syncAudioToTime(globalTimeRef.current);
 
     displayTickRef.current += delta;
-    if (displayTickRef.current >= 0.016) {
+    if (displayTickRef.current >= 0.1) { // Reduces React re-renders from 60fps to 10fps
       displayTickRef.current = 0;
       setDisplayTime(globalTimeRef.current);
     }

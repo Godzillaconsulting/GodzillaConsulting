@@ -130,11 +130,12 @@ ${cacheBuster}`;
             console.log(`[VEO] Motor primario: ${primaryModel} | Fallback: ${fallbackModel}`);
 
             (async () => {
-                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                const aiPrimary = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                const aiFree = new GoogleGenAI({ apiKey: 'AIzaSyDrjLO0q0Wqo0B7NEacxih5fH247erp0CA' });
                 const validRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
                 const ratio = validRatios.includes(config?.aspect_ratio) ? config.aspect_ratio : '16:9';
 
-                const tryGenerate = async (modelId) => {
+                const tryGenerate = async (aiInstance, modelId, isFreeKey = false) => {
                     console.log(`[VEO] Intentando con modelo: ${modelId}...`);
                     const genObj = {
                         model: modelId,
@@ -147,74 +148,128 @@ ${cacheBuster}`;
                        genObj.image = { imageBytes: b64 };
                     }
 
-                    const operation = await ai.models.generateVideos(genObj);
-                    // Validar que la operación tiene nombre antes de hacer polling
-                    if (!operation || !operation.name) {
-                        throw new Error(`${modelId}: La API no devolvió un ID de operación válido. Verifica que tu cuenta tenga acceso a este modelo.`);
+                    // Si es la llave gratuita, espaciamos las peticiones para no asfixiar el Rate Limiter de Google
+                    if (isFreeKey) {
+                        const jitter = Math.floor(Math.random() * 6000) + 3000; // Delay aleatorio de 3 a 9 segundos
+                        console.log(`[VEO] 🛡️ Anti-RateLimit activado. Enfriando llave por ${jitter}ms...`);
+                        await new Promise(r => setTimeout(r, jitter));
                     }
-                    console.log(`[VEO] ✅ Operación iniciada: ${operation.name}`);
-                    return operation;
+
+                    let attempt = 0;
+                    while (attempt < 2) {
+                        try {
+                            const operation = await aiInstance.models.generateVideos(genObj);
+                            if (!operation || !operation.name) {
+                                throw new Error(`${modelId}: La API no devolvió un ID de operación válido.`);
+                            }
+                            console.log(`[VEO] ✅ Operación iniciada: ${operation.name}`);
+                            return operation;
+                        } catch (err) {
+                            const errMsg = err.message.toLowerCase();
+                            // Si detectamos Rate Limit (429), pausamos el hilo 15 segundos y reintentamos.
+                            if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('rate limit') || errMsg.includes('exhausted')) {
+                                console.warn(`[VEO] ⚠️ Alerta de Rate Limit (${modelId}). Pausando 15s antes del reintento...`);
+                                await new Promise(r => setTimeout(r, 15000));
+                                attempt++;
+                            } else {
+                                throw err; // Si es otro tipo de error, rompemos el ciclo
+                            }
+                        }
+                    }
+                    throw new Error(`${modelId}: Rate Limit superado después de múltiples reintentos.`);
                 };
 
                 try {
                     let operation;
+                    let activeAi = aiPrimary;
 
-                    // Intentar modelo primario, con fallback automático
+                    // 1. Intentar con Llave Principal (Modelo Primario)
                     try {
-                        operation = await tryGenerate(primaryModel);
-                    } catch (primaryErr) {
-                        console.warn(`[VEO] ⚠️ Modelo ${primaryModel} falló: ${primaryErr.message}`);
-                        console.log(`[VEO] 🔄 Usando fallback: ${fallbackModel}`);
-                        postProcessJobs.set(taskId, { status: 'working', progress: 8, info: `Fallback a ${fallbackModel}` });
-                        operation = await tryGenerate(fallbackModel);
+                        operation = await tryGenerate(aiPrimary, primaryModel, false);
+                    } catch (err1) {
+                        console.warn(`[VEO] ⚠️ Llave Principal falló: ${err1.message}`);
+                        console.log(`[VEO] 🔄 Nivel 2: Usando Llave Personal Gratuita...`);
+                        activeAi = aiFree;
+                        
+                        // 2. Intentar con Llave Gratuita (Modelo Primario)
+                        try {
+                            operation = await tryGenerate(aiFree, primaryModel, true);
+                        } catch (err2) {
+                            console.warn(`[VEO] ⚠️ Llave Gratuita falló en Primario: ${err2.message}`);
+                            console.log(`[VEO] 🔄 Nivel 3: Usando Fallback Model con Llave Gratuita...`);
+                            // 3. Intentar con Llave Gratuita (Modelo Secundario)
+                            operation = await tryGenerate(aiFree, fallbackModel, true);
+                        }
                     }
 
-                    // Poll hasta que la operación long-running termine (máx 20 min)
+                    // Poll hasta que la operación termine
                     let attempts = 0;
                     while (!operation.done && attempts < 120) {
-                        await new Promise(r => setTimeout(r, 10000)); // espera 10s
-                        operation = await ai.operations.getVideosOperation({ operation });
+                        await new Promise(r => setTimeout(r, 10000));
+                        operation = await activeAi.operations.getVideosOperation({ operation });
                         attempts++;
                         const progress = Math.min(5 + attempts * 1.5, 90);
                         postProcessJobs.set(taskId, { status: 'working', progress });
-                        console.log(`[VEO] Polling - intento ${attempts}/120 - done: ${operation.done} - error: ${operation.error?.message || 'ninguno'}`);
+                        console.log(`[VEO] Polling - intento ${attempts}/120 - done: ${operation.done}`);
                     }
 
-                    // Verificar error en la operación final
-                    if (operation.error) {
-                        throw new Error(`Error de Google Veo: ${operation.error.message || JSON.stringify(operation.error)}`);
-                    }
-
+                    if (operation.error) throw new Error(operation.error.message || JSON.stringify(operation.error));
                     if (!operation.done || !operation.response?.generatedVideos?.[0]?.video?.uri) {
-                        throw new Error(`Generación excedió el tiempo máximo (20 min) o no devolvió URI. Intentos: ${attempts}`);
+                        throw new Error(`Generación excedió el tiempo máximo o falló.`);
                     }
 
                     const videoUri = operation.response.generatedVideos[0].video.uri;
-                    console.log(`[VEO] ✅ Video URI recibida: ${videoUri.substring(0, 60)}...`);
-
                     const proxyUrl = "/api/sora/proxy-veo?uri=" + encodeURIComponent(videoUri);
                     postProcessJobs.set(taskId, { status: 'done', localUrl: proxyUrl });
-                    console.log(`[VEO] 🎉 Video listo: ${taskId}`);
+                    console.log(`[VEO] 🎉 Video de Google Veo listo: ${taskId}`);
 
                 } catch (e) {
-                    console.error(`[VEO] ❌ Error final (${engine}):`, e.message);
-                    console.log(`[VEO] 🔄 Fallback a Video de Stock (B-Roll Libre)...`);
+                    console.error(`[VEO] ❌ Google AI falló en todas sus instancias:`, e.message);
+                    console.log(`[VEO] 🔄 Nivel 4: Fallback a Video Animado (Pollinations + FFmpeg)...`);
+                    
                     try {
-                        // Catálogo de videos Stock en HD libres de derechos
-                        const stockVideos = [
-                            'https://cdn.coverr.co/videos/coverr-a-person-typing-on-a-laptop-5291/1080p.mp4',
-                            'https://cdn.coverr.co/videos/coverr-person-counting-dollar-bills-1080p.mp4',
-                            'https://cdn.coverr.co/videos/coverr-walking-in-a-crowded-city-1080p.mp4',
-                            'https://cdn.coverr.co/videos/coverr-crypto-trading-1080p.mp4',
-                            'https://cdn.coverr.co/videos/coverr-man-working-out-at-the-gym-1080p.mp4'
-                        ];
-                        const randomStock = stockVideos[Math.floor(Math.random() * stockVideos.length)];
+                        const safePrompt = finalPromptToUse.length > 300 ? finalPromptToUse.substring(0, 300) : finalPromptToUse;
+                        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
                         
-                        postProcessJobs.set(taskId, { status: 'done', localUrl: randomStock });
-                        console.log(`[VEO] ✅ Video asignado desde Fallback de Stock: ${randomStock}`);
-                    } catch (fallbackErr) {
-                        console.error("[VEO] Fallback Stock falló:", fallbackErr);
-                        postProcessJobs.set(taskId, { status: 'failed', error: e.message + " (Fallback también falló)" });
+                        const res = await fetch(fallbackUrl);
+                        if (!res.ok) throw new Error("Pollinations falló");
+                        
+                        const buffer = await res.buffer();
+                        const imgName = `${taskId}_fallback.jpg`;
+                        const imgPath = path.join(OUTPUT_DIR, imgName);
+                        fs.writeFileSync(imgPath, buffer);
+                        
+                        const videoName = `${taskId}_fallback.mp4`;
+                        const videoPath = path.join(OUTPUT_DIR, videoName);
+                        
+                        postProcessJobs.set(taskId, { status: 'working', progress: 50, info: 'Animando fotograma' });
+                        
+                        await new Promise((resolve, reject) => {
+                            ffmpeg().input(imgPath).loop(5).outputOptions([
+                                '-vf zoompan=z=\'min(zoom+0.0015,1.5)\':d=150:x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':s=1080x1920',
+                                '-c:v libx264', '-t 5', '-s 1080x1920', '-pix_fmt yuv420p'
+                            ]).save(videoPath).on('end', resolve).on('error', reject);
+                        });
+                        
+                        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+                        postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/media/outputs/${videoName}` });
+                        console.log(`[VEO] ✅ Video generado con éxito vía Pollinations + FFmpeg.`);
+
+                    } catch (pollinationsErr) {
+                        console.error("[VEO] ❌ Nivel 4 falló:", pollinationsErr.message);
+                        console.log(`[VEO] 🔄 Nivel 5: Fallback Final a Video de Stock Pexels...`);
+                        try {
+                            const stockVideos = [
+                                'https://videos.pexels.com/video-files/853889/853889-hd_1920_1080_25fps.mp4',
+                                'https://videos.pexels.com/video-files/3121459/3121459-uhd_2560_1440_24fps.mp4',
+                                'https://videos.pexels.com/video-files/2759477/2759477-uhd_3840_2160_30fps.mp4'
+                            ];
+                            const randomStock = stockVideos[Math.floor(Math.random() * stockVideos.length)];
+                            postProcessJobs.set(taskId, { status: 'done', localUrl: randomStock });
+                            console.log(`[VEO] ✅ Video asignado desde Fallback de Stock: ${randomStock}`);
+                        } catch (stockErr) {
+                            postProcessJobs.set(taskId, { status: 'failed', error: "Todos los fallbacks fallaron." });
+                        }
                     }
                 }
             })();

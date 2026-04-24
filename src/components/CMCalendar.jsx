@@ -613,6 +613,45 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         setSavingCampaign(false);
     };
 
+    const handleDeleteEvent = async (eventId, e) => {
+        if (e) e.stopPropagation();
+        if (!window.confirm('¿Estás seguro de que quieres eliminar este elemento de forma permanente?')) return;
+        
+        const API = getAPI();
+        const token = localStorage.getItem('adminToken');
+        const isIA = typeof eventId === 'string' && eventId.startsWith('ia-');
+        const isTask = typeof eventId === 'string' && eventId.startsWith('task-');
+        
+        try {
+            if (isIA || isTask) {
+                const realId = eventId.replace('ia-', '').replace('task-', '');
+                const res = await fetch(`${API}/api/studio/tasks/${realId}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setTasks(prev => prev.filter(t => t.id != realId));
+                } else {
+                    const data = await res.json();
+                    alert('Error eliminando tarea: ' + (data.error || 'No tienes permisos'));
+                }
+            } else {
+                const res = await fetch(`${API}/api/calendar/events/${eventId}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setEvents(prev => prev.filter(ev => ev.id !== eventId));
+                } else {
+                    const data = await res.json();
+                    alert('Error eliminando evento: ' + (data.error || 'No tienes permisos'));
+                }
+            }
+        } catch (err) {
+            alert('Error de conexión al eliminar.');
+        }
+    };
+
     // ═══════════════════════════════════════════════════════════════════════
     // UPLOAD DE MEDIA EN TAREAS
     // ═══════════════════════════════════════════════════════════════════════
@@ -829,6 +868,15 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 ⟳ Moved
                             </div>
                         )}
+                        {/* Delete badge/button (absolute) */}
+                        {canCreate && (
+                            <button
+                                onClick={(e) => handleDeleteEvent(event.id, e)}
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-600/90 hover:bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow z-10 transition-opacity"
+                            >
+                                🗑️
+                            </button>
+                        )}
                         {/* Sheets badge */}
                         {event.provider === 'sheets_import' && (
                             <div className="absolute bottom-1 right-1 bg-green-500/80 text-black text-[8px] font-black px-1 rounded">
@@ -850,9 +898,16 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                     {pm.label}
                                 </span>
                             </div>
-                            {event.provider === 'sheets_import' && (
-                                <span className="text-[8px] bg-green-500/20 text-green-400 font-black px-1 rounded">📊</span>
-                            )}
+                            <div className="flex gap-1 items-center">
+                                {event.provider === 'sheets_import' && (
+                                    <span className="text-[8px] bg-green-500/20 text-green-400 font-black px-1 rounded">📊</span>
+                                )}
+                                {canCreate && (
+                                    <button onClick={(e) => handleDeleteEvent(event.id, e)} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity ml-1 z-10 p-0.5 rounded bg-red-900/20">
+                                        🗑️
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 

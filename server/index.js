@@ -36,6 +36,7 @@ import { verifyAdminToken, requireSuperAdmin } from './middleware/adminAuth.js';
 import { wafMiddleware } from './middleware/wafService.js';
 import adminWafRoutes from './routes/adminWaf.js';
 import internalToolsRoutes from './routes/internalTools.js';
+import cronScheduler from './services/cronScheduler.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
@@ -460,6 +461,9 @@ if (!process.env.VERCEL) {
     // 🤖 WhatsApp Bot — Corre como proceso PM2 separado: `zilla-whatsapp`
     // Para iniciarlo: npx pm2 start server/whatsappBot.js --name zilla-whatsapp
     // Para verlo: npx pm2 logs zilla-whatsapp
+
+    // ⏰ GODZILLA CRON SCHEDULER — activa nodos "Reloj / Cron" de todos los flujos
+    cronScheduler.start(60_000); // revisa cada 60 segundos
 }
 
 // Exportar para Vercel

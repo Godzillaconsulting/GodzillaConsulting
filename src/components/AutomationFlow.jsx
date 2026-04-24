@@ -553,6 +553,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const [showHistory, setShowHistory] = useState(false);
   const [executingNodes, setExecutingNodes] = useState(new Set());
   const [editName, setEditName] = useState(flowName || 'Sin nombre');
+  const [nodeSearch, setNodeSearch] = useState('');
+
   const canvasRef = useRef(null);
   const isCore = flowId === 1;
   const canSave = !isCore || username === 'jareg';
@@ -560,37 +562,81 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const nodeMap = useMemo(() => { const m = new Map(); nodes.forEach(n => m.set(n.id, n)); return m; }, [nodes]);
   const selectedNode = nodeMap.get(selectedNodeId);
   const NODE_PRESETS = [
-    { title:'Cerebro Central AI', subtitle:'Motor RAG/Lógica', icon:'Brain', color:'#eab308', pm2_process:'ai-core' },
-    { title:'Memoria a Largo Plazo', subtitle:'Base Vectorial', icon:'Network', color:'#0d9488', pm2_process:'vector-db' },
-    { title:'Godzilla CM', subtitle:'Gestor de Leads/Tareas', icon:'LayoutDashboard', color:'#2563eb', pm2_process:'' },
-    { title:'Planificador IA', subtitle:'Origen', icon:'Wand2', color:'#a855f7', pm2_process:'' },
-    { title:'Generador Visual', subtitle:'Imagen 3 API', icon:'Image', color:'#3b82f6', pm2_process:'' },
-    { title:'Generador Video', subtitle:'Veo / Kling', icon:'Video', color:'#f59e0b', pm2_process:'' },
-    { title:'Tarea de Studio', subtitle:'CEO Estudio', icon:'CheckSquare', color:'#10b981', pm2_process:'' },
-    { title:'Email Worker', subtitle:'Notificación', icon:'Mail', color:'#f97316', pm2_process:'email-worker' },
-    { title:'WhatsApp Bot', subtitle:'Alerta WA', icon:'Smartphone', color:'#25d366', pm2_process:'whatsapp-bot' },
-    { title:'TikTok Bot', subtitle:'Interacción TikTok', icon:'Video', color:'#ff0050', pm2_process:'tiktok-bot' },
-    { title:'IG / Messenger Bot', subtitle:'Interacción Meta', icon:'MessageCircle', color:'#d946ef', pm2_process:'meta-bot' },
-    { title:'Calendario Global', subtitle:'Registrar cita', icon:'Calendar', color:'#8b5cf6', pm2_process:'' },
-    { title:'Base de Datos', subtitle:'Persistencia', icon:'Database', color:'#64748b', pm2_process:'' },
-    { title:'Monitor Servidor', subtitle:'Health Check', icon:'Server', color:'#ef4444', pm2_process:'godzilla-server' },
-    { title:'Webhook Entrada', subtitle:'API Externa', icon:'Globe', color:'#06b6d4', pm2_process:'' },
-    { title:'Router / Switch', subtitle:'Condición Lógica', icon:'GitBranch', color:'#f43f5e', pm2_process:'' },
-    { title:'Reloj / Cron', subtitle:'Programador', icon:'Timer', color:'#14b8a6', pm2_process:'' },
-    { title:'Transformador JSON', subtitle:'Data Mapper', icon:'Braces', color:'#f59e0b', pm2_process:'' },
-    { title:'HTTP Request', subtitle:'API Call', icon:'Send', color:'#6366f1', pm2_process:'' },
-    { title:'Zilla Bot', subtitle:'Asistente / Atención', icon:'Bot', color:'#10b981', pm2_process:'zilla-bot' },
-    { title:'Goyi Bot', subtitle:'Asistente / Cierre', icon:'Bot', color:'#ec4899', pm2_process:'goyi-bot' },
-    { title:'Bot Newsletter', subtitle:'Redacción / Difusión', icon:'Mail', color:'#f97316', pm2_process:'newsletter-bot' },
-    { title:'Trends Bot', subtitle:'Analizador Redes', icon:'TrendingUp', color:'#8b5cf6', pm2_process:'trends-bot' },
-    { title:'Cloudflare Workers', subtitle:'Gateway Edge', icon:'Cloud', color:'#f38020', pm2_process:'' },
-    { title:'Vercel', subtitle:'Hosting / Deployment', icon:'Server', color:'#ffffff', pm2_process:'' },
-    { title:'Brevo', subtitle:'Email Marketing', icon:'Mail', color:'#0092ff', pm2_process:'' },
-    { title:'GoDaddy', subtitle:'DNS / Dominios', icon:'Globe', color:'#1bbb11', pm2_process:'' },
-    { title:'Gemini API', subtitle:'LLM Core', icon:'Sparkles', color:'#4285f4', pm2_process:'' },
-    { title:'Stripe', subtitle:'Pasarela Pagos', icon:'CreditCard', color:'#6366f1', pm2_process:'' },
-    { title:'Neon DB', subtitle:'PostgreSQL Serverless', icon:'Database', color:'#00e599', pm2_process:'' },
+    // ── NÚCLEO GODZILLA ──────────────────────────────────────────────────────
+    { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process:'ai-core',       group:'🧠 Núcleo' },
+    { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process:'vector-db',     group:'🧠 Núcleo' },
+    { title:'Godzilla CM',          subtitle:'CRM & Leads',           icon:'LayoutDashboard',color:'#2563eb', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Tarea de Studio',      subtitle:'CEO Estudio',           icon:'CheckSquare',    color:'#10b981', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'#8b5cf6', pm2_process:'',              group:'🧠 Núcleo' },
+    // ── BOTS PROPIOS ─────────────────────────────────────────────────────────
+    { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'🤖 Bots' },
+    { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'🤖 Bots' },
+    { title:'IG / Messenger Bot',   subtitle:'Meta DMs',              icon:'MessageCircle',  color:'#d946ef', pm2_process:'meta-bot',      group:'🤖 Bots' },
+    { title:'Zilla Bot',            subtitle:'Asistente / Atención',  icon:'Bot',            color:'#10b981', pm2_process:'zilla-bot',     group:'🤖 Bots' },
+    { title:'Goyi Bot',             subtitle:'Asistente / Cierre',    icon:'Bot',            color:'#ec4899', pm2_process:'goyi-bot',      group:'🤖 Bots' },
+    { title:'Bot Newsletter',       subtitle:'Redacción / Email',     icon:'Mail',           color:'#f97316', pm2_process:'newsletter-bot',group:'🤖 Bots' },
+    { title:'Trends Bot',           subtitle:'Analizador de Redes',   icon:'TrendingUp',     color:'#8b5cf6', pm2_process:'trends-bot',    group:'🤖 Bots' },
+    // ── MENSAJERÍA EXTERNA ───────────────────────────────────────────────────
+    { title:'Telegram Bot',         subtitle:'Alertas / Gratis',      icon:'Send',           color:'#26a5e4', pm2_process:'',              group:'💬 Mensajería' },
+    { title:'Discord Webhook',      subtitle:'Notif. al equipo',      icon:'MessageCircle',  color:'#5865f2', pm2_process:'',              group:'💬 Mensajería' },
+    { title:'Slack Webhook',        subtitle:'Notif. al equipo',      icon:'Zap',            color:'#4a154b', pm2_process:'',              group:'💬 Mensajería' },
+    { title:'Twilio SMS',           subtitle:'SMS Universal',         icon:'Smartphone',     color:'#f22f46', pm2_process:'',              group:'💬 Mensajería' },
+    { title:'Email Worker',         subtitle:'SMTP Propio',           icon:'Mail',           color:'#f97316', pm2_process:'email-worker',  group:'💬 Mensajería' },
+    { title:'Resend',               subtitle:'Email API (3K/mes free)',icon:'Mail',           color:'#000000', pm2_process:'',              group:'💬 Mensajería' },
+    // ── IA / LLMs ────────────────────────────────────────────────────────────
+    { title:'Gemini API',           subtitle:'Google LLM',            icon:'Sparkles',       color:'#4285f4', pm2_process:'',              group:'🤖 IA / LLMs' },
+    { title:'OpenAI / ChatGPT',     subtitle:'GPT-4o / GPT-4 mini',   icon:'Brain',          color:'#10a37f', pm2_process:'',              group:'🤖 IA / LLMs' },
+    // ── BASES DE DATOS ───────────────────────────────────────────────────────
+    { title:'Base de Datos',        subtitle:'PostgreSQL nativo',     icon:'Database',       color:'#64748b', pm2_process:'',              group:'🗄 Datos' },
+    { title:'Neon DB',              subtitle:'PostgreSQL Serverless',  icon:'Database',       color:'#00e599', pm2_process:'',              group:'🗄 Datos' },
+    { title:'Airtable',             subtitle:'Base de datos visual',  icon:'Database',       color:'#fcb400', pm2_process:'',              group:'🗄 Datos' },
+    { title:'Supabase',             subtitle:'DB + Auth gratis',      icon:'Database',       color:'#3ecf8e', pm2_process:'',              group:'🗄 Datos' },
+    { title:'Google Sheets',        subtitle:'Leer / Escribir',       icon:'Database',       color:'#34a853', pm2_process:'',              group:'🗄 Datos' },
+    // ── PRODUCTIVIDAD ────────────────────────────────────────────────────────
+    { title:'Notion',               subtitle:'Docs / CRM Notion',     icon:'Braces',         color:'#ffffff', pm2_process:'',              group:'📋 Productividad' },
+    { title:'Google Calendar API',  subtitle:'Eventos externos',      icon:'Calendar',       color:'#4285f4', pm2_process:'',              group:'📋 Productividad' },
+    { title:'Cal.com',              subtitle:'Citas sin Calendly',    icon:'Calendar',       color:'#292929', pm2_process:'',              group:'📋 Productividad' },
+    // ── REDES SOCIALES ───────────────────────────────────────────────────────
+    { title:'YouTube Data API',     subtitle:'Upload / Gestión',      icon:'Video',          color:'#ff0000', pm2_process:'',              group:'📱 Social' },
+    { title:'Pinterest API',        subtitle:'Pins / Tableros',       icon:'Image',          color:'#e60023', pm2_process:'',              group:'📱 Social' },
+    { title:'Facebook Ads API',     subtitle:'Campañas / Anuncios',   icon:'TrendingUp',     color:'#1877f2', pm2_process:'',              group:'📱 Social' },
+    // ── PAGOS / FINANZAS ─────────────────────────────────────────────────────
+    { title:'Stripe',               subtitle:'Pasarela de Pagos',     icon:'CreditCard',     color:'#6366f1', pm2_process:'',              group:'💰 Pagos' },
+    { title:'Stripe Webhook',       subtitle:'Eventos de pago',       icon:'CreditCard',     color:'#635bff', pm2_process:'',              group:'💰 Pagos' },
+    // ── ANALÍTICA ────────────────────────────────────────────────────────────
+    { title:'Google Analytics',     subtitle:'Tracking de eventos',   icon:'TrendingUp',     color:'#e37400', pm2_process:'',              group:'📊 Analytics' },
+    { title:'RSS Feed',             subtitle:'Agregador de noticias', icon:'Globe',          color:'#ff6600', pm2_process:'',              group:'📊 Analytics' },
+    { title:'Monitor Servidor',     subtitle:'Health Check',          icon:'Server',         color:'#ef4444', pm2_process:'godzilla-server',group:'📊 Analytics' },
+    // ── INFRAESTRUCTURA ──────────────────────────────────────────────────────
+    { title:'Webhook Entrada',      subtitle:'Recibir datos externos',icon:'Globe',          color:'#06b6d4', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'HTTP Request',         subtitle:'Llamar a cualquier API',icon:'Send',           color:'#6366f1', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Reloj / Cron',         subtitle:'Programar en el tiempo',icon:'Timer',          color:'#14b8a6', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Cloudflare Workers',   subtitle:'Edge Gateway',          icon:'Cloud',          color:'#f38020', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Vercel',               subtitle:'Hosting / Deploy',      icon:'Server',         color:'#ffffff', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'⚙️ Sistema' },
+    // ── CONTROL DE FLUJO ─────────────────────────────────────────────────────
+    { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Delay / Espera',       subtitle:'Pausa entre pasos',     icon:'Clock',          color:'#94a3b8', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Loop / Iterador',      subtitle:'Procesar listas',       icon:'GitBranch',      color:'#0ea5e9', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Merge / Combinar',     subtitle:'Unir resultados',       icon:'Network',        color:'#a78bfa', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Set Variables',        subtitle:'Guardar datos temporales',icon:'Braces',       color:'#cbd5e1', pm2_process:'',              group:'🔀 Flujo' },
+    // ── GENERACIÓN DE ARCHIVOS ────────────────────────────────────────────────
+    { title:'PDF Generator',        subtitle:'Contratos / Reportes',  icon:'Image',          color:'#dc2626', pm2_process:'',              group:'📄 Archivos' },
+    { title:'Brevo',                subtitle:'Email Marketing',       icon:'Mail',           color:'#0092ff', pm2_process:'',              group:'📄 Archivos' },
   ];
+
+  // Agrupar por categoria para el menu
+  const PRESET_GROUPS = NODE_PRESETS.reduce((acc, p) => {
+    const g = p.group || '⚙️ Sistema';
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(p);
+    return acc;
+  }, {});
+
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -715,7 +761,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       {showChangeModal && <ChangeRequestModal flowId={flowId} nodes={nodes} edges={edges} username={username} onClose={()=>setShowChangeModal(false)} onSubmitted={()=>setShowChangeModal(false)} />}
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-neutral-800 bg-black/60 backdrop-blur-xl shrink-0 flex-wrap">
+      <div className="relative z-50 flex items-center gap-3 px-5 py-3 border-b border-neutral-800 bg-black/60 backdrop-blur-xl shrink-0 flex-wrap">
         <button onClick={onBack} className="flex items-center gap-1.5 text-neutral-400 hover:text-white text-xs font-bold transition">
           <ArrowLeft className="w-4 h-4"/>Galaxia
         </button>
@@ -755,24 +801,50 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             <Plus className="w-3.5 h-3.5"/>Añadir
           </button>
           {showNodeMenu&&(
-            <div className="absolute top-full mt-2 right-0 w-60 bg-neutral-950 border border-neutral-800 shadow-2xl rounded-xl overflow-hidden z-50">
-              <div className="p-2 border-b border-neutral-800"><span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold px-2">Catálogo</span></div>
-              <div className="max-h-64 overflow-y-auto p-1">
-                {NODE_PRESETS.map((p,i)=>(
-                  <button key={i} onClick={()=>addPreset(p)} className="w-full text-left p-2 hover:bg-neutral-800 rounded flex items-center gap-2.5 transition group">
-                    <div className="w-7 h-7 rounded flex items-center justify-center shrink-0" style={{backgroundColor:`${p.color}22`,color:p.color}}>
-                      {React.createElement(getIcons()[p.icon]||Webhook,{className:'w-3.5 h-3.5'})}
+            <div className="absolute top-full mt-2 right-0 w-72 bg-neutral-950 border border-neutral-800 shadow-2xl rounded-xl overflow-hidden z-50">
+              <div className="p-2 border-b border-neutral-800 flex items-center gap-2">
+                <Search className="w-3 h-3 text-neutral-500 shrink-0"/>
+                <input
+                  autoFocus
+                  placeholder="Buscar nodo..."
+                  value={nodeSearch||''}
+                  onChange={e=>setNodeSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-xs text-white outline-none placeholder-neutral-600"
+                />
+                <span className="text-[9px] text-neutral-600 font-bold">{NODE_PRESETS.length} nodos</span>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {(() => {
+                  const q = (nodeSearch||'').toLowerCase();
+                  const filtered = q
+                    ? NODE_PRESETS.filter(p => p.title.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q))
+                    : null;
+                  const source = filtered
+                    ? { 'Resultados': filtered }
+                    : PRESET_GROUPS;
+                  return Object.entries(source).map(([group, items]) => (
+                    <div key={group}>
+                      {!filtered && <div className="px-3 pt-2 pb-0.5"><span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest">{group}</span></div>}
+                      {items.map((p,i) => (
+                        <button key={i} onClick={()=>{addPreset(p);setNodeSearch('');}} className="w-full text-left px-3 py-2 hover:bg-neutral-800 flex items-center gap-2.5 transition group">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{backgroundColor:`${p.color}22`,color:p.color}}>
+                            {React.createElement(getIcons()[p.icon]||Webhook,{className:'w-3.5 h-3.5'})}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-white font-bold truncate">{p.title}</p>
+                            <p className="text-[10px] text-neutral-500 truncate">{p.subtitle}</p>
+                          </div>
+                          {p.pm2_process && <span className="text-[8px] text-emerald-400/60 font-bold bg-emerald-900/20 px-1 rounded shrink-0">PM2</span>}
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <p className="text-xs text-white font-bold">{p.title}</p>
-                      <p className="text-[10px] text-neutral-500">{p.pm2_process?`PM2: ${p.pm2_process}`:'Nativo'}</p>
-                    </div>
-                  </button>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           )}
         </div>
+
         <button onClick={handleSave} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition border ${canSave?'bg-white text-black border-white/20 hover:bg-neutral-200':'bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20'}`}>
           {canSave?'💾 Guardar':'🔒 Proponer'}
         </button>
@@ -898,17 +970,39 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
               
               {selectedNode.title === 'Webhook Entrada' && (
                 <div className="space-y-2">
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">
+                    <p className="text-[10px] font-bold text-cyan-400 mb-1">Tu Webhook URL</p>
+                    <code className="text-[9px] text-cyan-500/80 break-all select-all">https://godzillaconsulting.ai/api/automation/webhook/{selectedNode.id}</code>
+                  </div>
                   <div>
-                    <label className="text-[10px] text-neutral-400 mb-1 block">Método HTTP</label>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Acción a realizar</label>
                     <select value={selectedNode.config?.method||''} onChange={e=>updateNode({config:{...selectedNode.config, method:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition">
                       <option value="">Selecciona...</option>
+                      <option value="POST">Recibir POST (Recomendado)</option>
+                      <option value="GET">Recibir GET</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {selectedNode.title === 'HTTP Request' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Método HTTP</label>
+                    <select value={selectedNode.config?.method||'POST'} onChange={e=>updateNode({config:{...selectedNode.config, method:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition">
                       <option value="POST">POST</option>
                       <option value="GET">GET</option>
+                      <option value="PUT">PUT</option>
+                      <option value="DELETE">DELETE</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Endpoint URL</label>
-                    <input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="/api/hooks/mi-evento" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                    <input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://api.externa.com/v1/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Body (JSON)</label>
+                    <textarea value={selectedNode.config?.body||''} onChange={e=>updateNode({config:{...selectedNode.config, body:e.target.value}})} placeholder='{ "id": "{{ $json.user_id }}" }' rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none font-mono text-xs"/>
                   </div>
                 </div>
               )}
@@ -930,16 +1024,70 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
               )}
 
               {selectedNode.title === 'Reloj / Cron' && (
-                <div>
-                  <label className="text-[10px] text-neutral-400 mb-1 block">Expresión Cron</label>
-                  <input value={selectedNode.config?.cron||''} onChange={e=>updateNode({config:{...selectedNode.config, cron:e.target.value}})} placeholder="0 9 * * 1 (Ej. Lunes 9 AM)" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                <div className="space-y-2">
+                  <label className="text-[10px] text-neutral-400 mb-1 block">¿Cuándo se activa?</label>
+                  <select
+                    value={selectedNode.config?.cron || ''}
+                    onChange={e => updateNode({ config: { ...selectedNode.config, cron: e.target.value } })}
+                    className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-teal-500 transition"
+                  >
+                    <option value="">— Selecciona frecuencia —</option>
+                    <option value="every_minute">⚡ Cada minuto (pruebas)</option>
+                    <option value="every_hour">🕐 Cada hora en punto</option>
+                    <option value="every_day_9">🌅 Cada día a las 9:00 AM</option>
+                    <option value="every_day_12">☀️ Cada día al mediodía</option>
+                    <option value="every_day_18">🌆 Cada día a las 6:00 PM</option>
+                    <option value="every_monday">📅 Cada lunes a las 9 AM</option>
+                    <option value="every_friday">🎉 Cada viernes a las 9 AM</option>
+                    <option value="custom">🕰 Hora específica...</option>
+                  </select>
+                  {selectedNode.config?.cron === 'custom' && (
+                    <div>
+                      <label className="text-[10px] text-neutral-400 mb-1 block">Hora exacta (HH:MM)</label>
+                      <input
+                        type="time"
+                        value={selectedNode.config?.customTime || '09:00'}
+                        onChange={e => updateNode({ config: { ...selectedNode.config, cron: e.target.value, customTime: e.target.value } })}
+                        className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-teal-500 transition"
+                      />
+                    </div>
+                  )}
+                  {selectedNode.config?.cron && selectedNode.config.cron !== 'custom' && (
+                    <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-2">
+                      <p className="text-[9px] text-teal-400 font-bold">✅ El CronScheduler del servidor lo activará automáticamente</p>
+                    </div>
+                  )}
                 </div>
               )}
 
+
               {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(selectedNode.title) && (
-                <div>
-                  <label className="text-[10px] text-neutral-400 mb-1 block">Mensaje / Fallback Reply</label>
-                  <textarea value={selectedNode.config?.fallback||''} onChange={e=>updateNode({config:{...selectedNode.config, fallback:e.target.value}})} placeholder="Hola {{ $json.nombre }}, recibimos tu solicitud." rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"/>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Destinatario / Teléfono</label>
+                    <input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="Ej: {{ $json.telefono }} o 521656..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Mensaje / Fallback Reply</label>
+                    <textarea value={selectedNode.config?.fallback||''} onChange={e=>updateNode({config:{...selectedNode.config, fallback:e.target.value}})} placeholder="Hola {{ $json.nombre }}, recibimos tu solicitud." rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none"/>
+                  </div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Email Worker' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Para (Destinatario)</label>
+                    <input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="Ej: {{ $json.email }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Asunto</label>
+                    <input value={selectedNode.config?.subject||''} onChange={e=>updateNode({config:{...selectedNode.config, subject:e.target.value}})} placeholder="Confirmación de cita" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Cuerpo (HTML/Texto)</label>
+                    <textarea value={selectedNode.config?.body||''} onChange={e=>updateNode({config:{...selectedNode.config, body:e.target.value}})} placeholder="<p>Hola {{ $json.nombre }}...</p>" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition resize-none font-mono text-[10px]"/>
+                  </div>
                 </div>
               )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, Wand2, Loader2, Send, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar as CalendarIcon, Wand2, Loader2, Send, Download, ChevronDown, ChevronUp, CheckSquare, Square, Rocket } from 'lucide-react';
 
 // ─── Columnas exactas del Sheets ──────────────────────────────────────────────
 const SCENE_COLUMNS = [1, 2, 3, 4, 5];
@@ -44,6 +44,100 @@ const exportToCSV = (plan, niche) => {
     a.click();
     URL.revokeObjectURL(url);
 };
+
+// ─── Tarjeta de revisión: Template vs IA ────────────────────────────────────
+function ReviewCard({ day, idx, selection, onToggle }) {
+    const [open, setOpen] = useState(idx === 0);
+    const sel = selection || 'ia'; // 'ia' | 'template' | 'skip'
+
+    const OPTIONS = [
+        { key: 'ia',       label: '🤖 Opción IA',       desc: 'Generado automáticamente por Gemini', color: 'purple' },
+        { key: 'template', label: '📋 Template Manual',  desc: 'Usar estructura base propia',          color: 'blue'   },
+        { key: 'skip',     label: '⏭ Omitir día',       desc: 'No enviar este día al calendario',    color: 'neutral' },
+    ];
+
+    const colorMap = {
+        purple:  { ring: 'ring-purple-500', bg: 'bg-purple-600/20', border: 'border-purple-500/60', text: 'text-purple-400' },
+        blue:    { ring: 'ring-blue-500',   bg: 'bg-blue-600/20',   border: 'border-blue-500/60',   text: 'text-blue-400'   },
+        neutral: { ring: 'ring-neutral-600',bg: 'bg-neutral-800/40',border: 'border-neutral-600/60',text: 'text-neutral-500'},
+    };
+
+    return (
+        <div className={`rounded-2xl overflow-hidden border transition-all ${
+            sel === 'skip' ? 'border-neutral-800 opacity-50' : 'border-neutral-700'
+        }`}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                className="w-full flex justify-between items-center px-5 py-3 bg-neutral-900/80 hover:bg-neutral-800/60 transition-colors group"
+            >
+                <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-black text-xs">
+                        {day.dia || idx + 1}
+                    </span>
+                    <div className="text-left">
+                        <p className="text-white font-black text-sm">{day['Tema'] || `Día ${idx + 1}`}</p>
+                        <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">5 escenas · revisión requerida</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {/* Selector inline */}
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                        {OPTIONS.map(opt => {
+                            const c = colorMap[opt.color];
+                            const active = sel === opt.key;
+                            return (
+                                <button
+                                    key={opt.key}
+                                    onClick={() => onToggle(idx, opt.key)}
+                                    title={opt.desc}
+                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
+                                        active ? `${c.bg} ${c.border} ${c.text}` : 'bg-black/30 border-neutral-800 text-neutral-600 hover:text-neutral-400'
+                                    }`}
+                                >
+                                    {active ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {open ? <ChevronUp className="w-4 h-4 text-neutral-600" /> : <ChevronDown className="w-4 h-4 text-neutral-600" />}
+                </div>
+            </button>
+
+            {open && (
+                <div className="px-5 pb-5 space-y-2 border-t border-neutral-800 bg-black/20">
+                    {SCENE_COLUMNS.map(n => {
+                        const narr = day[COL(n).narracion] || '';
+                        const txt  = day[COL(n).texto]     || '';
+                        const vis  = day[COL(n).visual]    || '';
+                        if (!narr && !vis) return null;
+                        const isCTA = n === 5;
+                        return (
+                            <div key={n} className={`rounded-xl p-3 border mt-2 ${
+                                isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/30 border-neutral-800/50'
+                            }`}>
+                                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
+                                    isCTA ? 'text-emerald-400' : 'text-neutral-500'
+                                }`}>{isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1">🎙 Narración</p>
+                                        <p className="text-xs text-neutral-300 leading-relaxed">{narr}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-blue-400 font-bold uppercase mb-1">🖼 Visual Prompt</p>
+                                        <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
+                                    </div>
+                                </div>
+                                {txt && <p className="text-[9px] text-yellow-400 font-bold mt-2">💬 Pantalla: <span className="text-neutral-300 font-normal">{txt}</span></p>}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 
 // ─── Tarjeta de día colapsable ─────────────────────────────────────────────────
 function DayCard({ day, idx, canEdit, onSendToCalendar }) {
@@ -152,6 +246,11 @@ export default function AIContentPlanner({ adminProfile }) {
     const [isSendingWebhook, setIsSendingWebhook] = useState(false);
     const [progress, setProgress] = useState(0);
     const [progressText, setProgressText] = useState('');
+    // ── Revisión Template vs IA ──
+    const [reviewMode, setReviewMode]       = useState(false); // true = pantalla de revisión
+    const [selections, setSelections]       = useState({});    // { idx: 'ia'|'template'|'skip' }
+    const [isSendingBulk, setIsSendingBulk] = useState(false);
+    const [bulkResult, setBulkResult]       = useState(null);  // { sent, skipped }
 
     const username    = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
@@ -202,8 +301,15 @@ export default function AIContentPlanner({ adminProfile }) {
                         if (statusData.success) {
                             if (statusData.status === 'completed') {
                                 clearInterval(intervalId);
-                                setPlan(statusData.plan);
+                                const newPlan = statusData.plan;
+                                setPlan(newPlan);
                                 setGNiche(statusData.niche);
+                                // Init all days to 'ia' and open review mode
+                                const initSel = {};
+                                newPlan.forEach((_, i) => { initSel[i] = 'ia'; });
+                                setSelections(initSel);
+                                setBulkResult(null);
+                                setReviewMode(true);
                                 setGenerating(false);
                             } else if (statusData.status === 'error') {
                                 clearInterval(intervalId);
@@ -281,6 +387,66 @@ export default function AIContentPlanner({ adminProfile }) {
             console.error(err);
             alert('Fallo de conexión.');
         }
+    };
+
+    const handleToggleSelection = (idx, val) => {
+        setSelections(prev => ({ ...prev, [idx]: val }));
+    };
+
+    const handleSelectAll = (val) => {
+        if (!plan) return;
+        const all = {};
+        plan.forEach((_, i) => { all[i] = val; });
+        setSelections(all);
+    };
+
+    const handleBulkSend = async () => {
+        if (!plan) return;
+        setIsSendingBulk(true);
+        let sent = 0, skipped = 0;
+        for (let idx = 0; idx < plan.length; idx++) {
+            const sel = selections[idx] || 'ia';
+            if (sel === 'skip') { skipped++; continue; }
+            try {
+                await handleSendToCalendarSilent(plan[idx], idx);
+                sent++;
+            } catch (_) { skipped++; }
+        }
+        setIsSendingBulk(false);
+        setBulkResult({ sent, skipped });
+        setReviewMode(false);
+    };
+
+    // Silent version (no alert) used by bulk send
+    const handleSendToCalendarSilent = async (day, idx) => {
+        const token = localStorage.getItem('adminToken');
+        const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
+        const now = new Date();
+        const monthMap = { 'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11 };
+        const currentYear  = parseInt(year) || now.getFullYear();
+        const currentMonth = monthMap[(month||'').toLowerCase().trim()] ?? now.getMonth();
+        const isoDate = new Date(currentYear, currentMonth, idx + 1).toISOString().split('T')[0];
+        const narrations = [1,2,3,4,5].map(n => {
+            const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+            return day[key] ? `Escena ${n}: ${day[key]}` : null;
+        }).filter(Boolean).join('\n');
+        const mediaPayload = { source: 'ai_planner', niche: generatedNiche || niche, month, year, scenes: day };
+        const res = await fetch(`${API}/api/studio/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+                title: day['Tema'] || `Día ${idx+1}`,
+                prompt: narrations,
+                assigned_to: 'auto',
+                tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
+                priority: 'Media',
+                content_type: 'Video Corto',
+                ig_publish_date: isoDate,
+                media_payload: JSON.stringify(mediaPayload)
+            }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
     };
 
     const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -427,27 +593,72 @@ export default function AIContentPlanner({ adminProfile }) {
                             <p className="text-xs mt-2 text-red-500/60 font-bold">Solo Alex u Oscar pueden generar planes.</p>
                         )}
                     </div>
+                ) : reviewMode ? (
+                    /* ── PANTALLA DE REVISIÓN: Template vs IA ── */
+                    <div className="space-y-4">
+                        <div className="sticky top-0 z-10 bg-[#0a0a0a]/95 backdrop-blur-sm pb-3 border-b border-neutral-800">
+                            <div className="flex flex-wrap justify-between items-center gap-3">
+                                <div>
+                                    <p className="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+                                        🧠 Revisión — <span className="text-purple-400">{generatedNiche}</span>
+                                        <span className="text-[10px] bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">
+                                            {plan.length} días
+                                        </span>
+                                    </p>
+                                    <p className="text-[10px] text-neutral-600 font-bold mt-1">
+                                        🤖 {Object.values(selections).filter(v => v==='ia').length} IA &nbsp;·&nbsp;
+                                        📋 {Object.values(selections).filter(v => v==='template').length} Template &nbsp;·&nbsp;
+                                        ⏭ {Object.values(selections).filter(v => v==='skip').length} omitidos
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <button onClick={() => handleSelectAll('ia')} className="text-[10px] px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg font-black hover:bg-purple-600/40 transition-colors">🤖 Todo IA</button>
+                                    <button onClick={() => handleSelectAll('template')} className="text-[10px] px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg font-black hover:bg-blue-600/40 transition-colors">📋 Todo Template</button>
+                                    <button onClick={() => exportToCSV(plan, generatedNiche)} className="text-[10px] px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg font-black flex items-center gap-1 hover:bg-emerald-600/40 transition-colors">
+                                        <Download className="w-3 h-3" /> CSV
+                                    </button>
+                                    <button
+                                        onClick={handleBulkSend}
+                                        disabled={isSendingBulk || !canEdit}
+                                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all"
+                                    >
+                                        {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                                        {isSendingBulk ? 'Enviando...' : 'Enviar al Calendario IA'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {plan.map((day, idx) => (
+                                <ReviewCard key={idx} day={day} idx={idx} selection={selections[idx]} onToggle={handleToggleSelection} />
+                            ))}
+                        </div>
+                    </div>
                 ) : (
+                    /* ── VISTA NORMAL post-envío ── */
                     <div className="space-y-3">
-                        <div className="flex justify-between items-center mb-4">
-                            <p className="text-sm font-black text-white">
-                                📅 Plan Generado: <span className="text-purple-400">{generatedNiche}</span> · {plan.length} días
-                            </p>
-                            <button
-                                onClick={() => exportToCSV(plan, generatedNiche)}
-                                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
-                            >
-                                <Download className="w-3.5 h-3.5" /> Descargar CSV
-                            </button>
+                        <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+                            <div>
+                                <p className="text-sm font-black text-white">
+                                    📅 Plan: <span className="text-purple-400">{generatedNiche}</span> · {plan.length} días
+                                </p>
+                                {bulkResult && (
+                                    <p className="text-xs text-emerald-400 font-bold mt-1">
+                                        ✅ {bulkResult.sent} días enviados · {bulkResult.skipped} omitidos
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setReviewMode(true)} className="text-xs text-purple-400 hover:text-purple-300 font-bold border border-purple-500/30 px-3 py-1.5 rounded-lg bg-purple-600/10 transition-colors">
+                                    🔍 Revisar Plan
+                                </button>
+                                <button onClick={() => exportToCSV(plan, generatedNiche)} className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
+                                    <Download className="w-3.5 h-3.5" /> CSV
+                                </button>
+                            </div>
                         </div>
                         {plan.map((day, idx) => (
-                            <DayCard
-                                key={idx}
-                                day={day}
-                                idx={idx}
-                                canEdit={canEdit}
-                                onSendToCalendar={handleSendToCalendar}
-                            />
+                            <DayCard key={idx} day={day} idx={idx} canEdit={canEdit} onSendToCalendar={handleSendToCalendar} />
                         ))}
                     </div>
                 )}

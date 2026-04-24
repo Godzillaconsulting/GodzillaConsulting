@@ -288,4 +288,59 @@ router.post('/restart', verifyAdminToken, async (req, res) => {
     }
 });
 
+// ─── POST /api/automation/webhook/:nodeId ─ Webhook Universal Dinámico ────────
+router.post('/webhook/:nodeId', async (req, res) => {
+    try {
+        const { nodeId } = req.params;
+        const payload = req.body || {};
+        
+        // El Webhook puede estar en cualquier flujo. Lo ideal sería buscar en qué flujo está.
+        // Por simplicidad, ejecutaremos el triggerNode (buscando en todos los flujos o en el id=1, 
+        // pero modifiqué triggerNode para que reciba flowId. Por ahora asumiremos flowId=1 (Sistema Central) 
+        // o buscaremos en qué flujo está el nodo).
+        
+        const result = await pool.query(`
+            SELECT id FROM automation_flow 
+            WHERE nodes @> '[{"id": "' || $1 || '"}]'
+        `, [nodeId]);
+
+        if (result.rows.length > 0) {
+            const flowId = result.rows[0].id;
+            console.log(`[Webhook] Recibido para nodo ${nodeId} en flujo ${flowId}. Disparando Engine...`);
+            // TriggerEngine en background para no bloquear la respuesta HTTP
+            AutomationEngine.triggerNode(nodeId, payload, flowId).catch(err => console.error(err));
+            res.json({ success: true, message: 'Webhook recibido y flujo en ejecución.' });
+        } else {
+            res.status(404).json({ success: false, error: 'Nodo Webhook no encontrado en ningún flujo.' });
+        }
+    } catch (err) {
+        console.error('[Automation] Error en Webhook:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ─── GET /api/automation/webhook/:nodeId ─ Soporte para GET webhooks ──────────
+router.get('/webhook/:nodeId', async (req, res) => {
+    try {
+        const { nodeId } = req.params;
+        const payload = req.query || {};
+        
+        const result = await pool.query(`
+            SELECT id FROM automation_flow 
+            WHERE nodes @> '[{"id": "' || $1 || '"}]'
+        `, [nodeId]);
+
+        if (result.rows.length > 0) {
+            const flowId = result.rows[0].id;
+            console.log(`[Webhook GET] Recibido para nodo ${nodeId}.`);
+            AutomationEngine.triggerNode(nodeId, payload, flowId).catch(err => console.error(err));
+            res.json({ success: true, message: 'Webhook GET procesado.' });
+        } else {
+            res.status(404).json({ success: false, error: 'Nodo Webhook no encontrado.' });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 export default router;

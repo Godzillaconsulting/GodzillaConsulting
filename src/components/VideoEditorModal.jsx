@@ -135,45 +135,32 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     if (!ttsText.trim()) return;
     setIsGenTTS(true);
     try {
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: ttsText, lang: ttsVoice }),
-      });
-      if (!res.ok) throw new Error('api');
+      // Map frontend voice to StreamElements (Amazon Polly)
+      const voiceMap = {
+         'es-ES-AlvaroNeural': 'Enrique',
+         'es-ES-ElviraNeural': 'Conchita',
+         'es-MX-JorgeNeural': 'Miguel',
+         'es-MX-DaliaNeural': 'Mia',
+         'en-US-JennyNeural': 'Brian'
+      };
+      const pollyVoice = voiceMap[ttsVoice] || 'Conchita';
+      
+      const url = `https://api.streamelements.com/kappa/v2/speech?voice=${pollyVoice}&text=${encodeURIComponent(ttsText)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error generando TTS');
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const localUrl = URL.createObjectURL(blob);
+      
       const audioLayer = editor.project.layers.find(l => l.type === 'audio');
       const t = engine.currentTimeRef.current;
-      const dur = ttsText.length * 0.07 + 1;
-      const newClip = makeAudioClip(url, `TTS: ${ttsText.slice(0, 14)}`, t, t + dur);
+      const dur = ttsText.length * 0.07 + 1; // Approx duration, audio will pause when it ends naturally
+      
+      const newClip = makeAudioClip(localUrl, `Voz IA: ${ttsText.slice(0, 14)}`, t, t + dur);
       editor.addClip(audioLayer.id, newClip);
       setSelectedClipId(newClip.id);
       setTtsText('');
-    } catch {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        const chunks = [];
-        recorder.ondataavailable = e => chunks.push(e.data);
-        const stopPromise = new Promise(r => { recorder.onstop = r; });
-        recorder.start();
-        const utt = new SpeechSynthesisUtterance(ttsText);
-        utt.lang = ttsVoice;
-        speechSynthesis.speak(utt);
-        utt.onend = () => recorder.stop();
-        await stopPromise;
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        const dur = ttsText.length * 0.07 + 1;
-        const audioLayer = editor.project.layers.find(l => l.type === 'audio');
-        const t = engine.currentTimeRef.current;
-        editor.addClip(audioLayer.id, makeAudioClip(url, `TTS: ${ttsText.slice(0, 14)}`, t, t + dur));
-        setTtsText('');
-      } catch {
-        alert('No se pudo generar audio. Verifica el servidor TTS o los permisos del micrófono.');
-      }
+    } catch (e) {
+      alert('Error en el servicio de Voz IA: ' + e.message);
     } finally {
       setIsGenTTS(false);
     }
@@ -275,10 +262,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
     setIsBotRunning(true);
     try {
-      const { pipeline } = await import('@huggingface/transformers');
-
+      const { pipeline, env } = await import('@huggingface/transformers');
+      env.backends.onnx.wasm.numThreads = 1;
       const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        revision: 'main'
+        device: 'wasm',
+        dtype: 'fp32'
       });
 
       const response = await fetch(targetClip.sourceUrl);
@@ -383,8 +371,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       }
 
       // 2. WHISPER INITIALIZATION
-      const { pipeline } = await import('@huggingface/transformers');
-      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { revision: 'main' });
+      const { pipeline, env } = await import('@huggingface/transformers');
+      env.backends.onnx.wasm.numThreads = 1;
+      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { 
+         device: 'wasm',
+         dtype: 'fp32'
+      });
 
       // 3. PROCESS AUDIO FOR WHISPER (16kHz requirement)
       const audioCtx16k = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -759,18 +751,48 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               {editor.project.layers.find(l => l.type === 'text')?.clips
                 .filter(c => engine.displayTime >= c.start && engine.displayTime <= c.end)
                 .map(c => (
-                  <div key={c.id} className="absolute left-0 right-0 text-center pointer-events-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]"
+                  <div key={c.id} className="absolute text-center drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] cursor-move hover:ring-2 hover:ring-yellow-500 rounded p-2"
+                    onMouseDown={(e) => {
+                       e.preventDefault(); // prevent text selection
+                       const target = e.currentTarget;
+                       const container = target.parentElement;
+                       const startY = e.clientY;
+                       const startX = e.clientX;
+                       const startPosY = c.style?.posY ?? 0.85;
+                       const startPosX = c.style?.posX ?? 0.5;
+                       
+                       const handleMove = (ev) => {
+                          const deltaY = ev.clientY - startY;
+                          const deltaX = ev.clientX - startX;
+                          const h = container.clientHeight;
+                          const w = container.clientWidth;
+                          
+                          let newY = startPosY + (deltaY / h);
+                          let newX = startPosX + (deltaX / w);
+                          newY = Math.max(0, Math.min(1, newY));
+                          newX = Math.max(0, Math.min(1, newX));
+                          
+                          editor.updateClip(c.id, { style: { ...c.style, posY: newY, posX: newX } }, true);
+                       };
+                       const handleUp = () => {
+                          window.removeEventListener('mousemove', handleMove);
+                          window.removeEventListener('mouseup', handleUp);
+                       };
+                       window.addEventListener('mousemove', handleMove);
+                       window.addEventListener('mouseup', handleUp);
+                    }}
                     style={{
-                      bottom: `${(1 - (c.style?.posY || 0.85)) * 100}%`,
+                      top: `${(c.style?.posY ?? 0.85) * 100}%`,
+                      left: `${(c.style?.posX ?? 0.5) * 100}%`,
+                      transform: 'translate(-50%, -50%)',
                       fontSize: `${(c.style?.fontSize || 48) * (isPortrait ? 0.4 : 0.6)}px`,
                       color: c.style?.fontColor || '#fff',
                       fontWeight: 'bold',
                       textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000',
-                      padding: '10px 20px',
-                      background: 'rgba(0,0,0,0.4)',
+                      background: c.style?.bgColor ? c.style.bgColor : 'rgba(0,0,0,0.4)',
                       display: 'inline-block',
-                      margin: '0 auto',
-                      width: 'fit-content'
+                      width: 'fit-content',
+                      userSelect: 'none'
                     }}>
                     {c.text}
                   </div>

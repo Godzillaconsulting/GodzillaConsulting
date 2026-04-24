@@ -49,6 +49,15 @@ export function usePlaybackEngine(project, videoRef) {
         if (clip.color.brightness !== undefined) filterStr += `brightness(${Math.max(0, 1 + clip.color.brightness)}) `;
         if (clip.color.contrast !== undefined) filterStr += `contrast(${clip.color.contrast}) `;
         if (clip.color.saturation !== undefined) filterStr += `saturate(${clip.color.saturation}) `;
+        if (clip.color.temperature) {
+           if (clip.color.temperature > 0) {
+              // Warm (Orange/Red tint)
+              filterStr += `sepia(${clip.color.temperature * 50}%) hue-rotate(-15deg) saturate(1.2) `;
+           } else {
+              // Cool (Blue tint)
+              filterStr += `sepia(${Math.abs(clip.color.temperature) * 50}%) hue-rotate(180deg) saturate(1.2) `;
+           }
+        }
       }
       if (clip.effects) {
         if (clip.effects.includes('blur')) filterStr += `blur(4px) `;
@@ -63,7 +72,34 @@ export function usePlaybackEngine(project, videoRef) {
 
       // PiP / Transform
       let transformStr = '';
-      if (clip.transform) {
+      if (clip.keyframes && clip.keyframes.length > 0) {
+        const relT = t - clip.start;
+        const kfs = clip.keyframes;
+        let activeK = kfs[0];
+        let nextK = null;
+        for (let i = 0; i < kfs.length; i++) {
+           if (relT >= kfs[i].time) activeK = kfs[i];
+           if (relT < kfs[i].time && !nextK) nextK = kfs[i];
+        }
+        
+        let interpScale = activeK.scale || 1;
+        let interpX = activeK.x || 0;
+        let interpY = activeK.y || 0;
+        
+        if (nextK && activeK !== nextK) {
+           const progress = (relT - activeK.time) / (nextK.time - activeK.time);
+           interpScale = activeK.scale + (nextK.scale - activeK.scale) * progress;
+           interpX = activeK.x + (nextK.x - activeK.x) * progress;
+           interpY = activeK.y + (nextK.y - activeK.y) * progress;
+        } else if (!nextK && kfs.length > 0 && relT < kfs[0].time) {
+           // Before first keyframe, just use base transform
+           interpScale = clip.transform?.scale || 1;
+           interpX = clip.transform?.x || 0;
+           interpY = clip.transform?.y || 0;
+        }
+
+        transformStr = `translate(${interpX}px, ${interpY}px) scale(${interpScale})`;
+      } else if (clip.transform) {
         transformStr = `translate(${clip.transform.x || 0}px, ${clip.transform.y || 0}px) scale(${clip.transform.scale ?? 1})`;
       }
       if (videoRef.current.style.transform !== transformStr) {

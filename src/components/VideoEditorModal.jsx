@@ -785,7 +785,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         </div>
 
         {/* RIGHT PANEL: Properties (was FloatingToolbar) */}
-        <FloatingToolbar selectedClip={selectedClip} editor={editor} />
+        <FloatingToolbar selectedClip={selectedClip} editor={editor} engine={engine} />
       </div>
 
       {/* BOTTOM WORKSPACE: Timeline */}

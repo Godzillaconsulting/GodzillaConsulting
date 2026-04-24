@@ -1258,6 +1258,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     <div className="flex gap-2 mb-4">
                         {[
                             { id: 'contenido', label: '📣 Contenido', count: events.length },
+                            { id: 'contenido_ia', label: '🤖 Contenido IA', count: tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).length },
                             { id: 'citas', label: '📅 Citas', count: citas.length },
                             { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
                             { id: 'todos', label: '🗺️ Todo', count: null },
@@ -1509,6 +1510,60 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                                 <p className="text-sm">Click on a task to view details</p>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            ) : calendarTab === 'contenido_ia' ? (
+                                <div className="flex-1 p-4 min-h-0 overflow-y-auto custom-scrollbar">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
+                                        {tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).length === 0 ? (
+                                            <div className="col-span-full h-64 flex flex-col items-center justify-center text-neutral-500 border-2 border-dashed border-neutral-800 rounded-2xl">
+                                                <span className="text-4xl mb-3">👻</span>
+                                                <p className="font-bold uppercase tracking-widest text-sm">Sin Contenido IA</p>
+                                                <p className="text-xs text-neutral-700 mt-1">Aún no se ha generado contenido o está cargando...</p>
+                                            </div>
+                                        ) : tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).map(t => {
+                                            const media = t.mediaPayload[0];
+                                            const isVideo = media.isVideo || media.url?.match(/\.(mp4|webm|mov)$/i);
+                                            const statusMap = {
+                                                published: { label: '🚀 Ya Publicado', bg: 'bg-blue-500/20 text-blue-400 border-blue-500/40' },
+                                                approved: { label: '✅ Listo (Aprobado)', bg: 'bg-green-500/20 text-green-400 border-green-500/40' },
+                                                rejected: { label: '🔙 Devuelto', bg: 'bg-red-500/20 text-red-400 border-red-500/40' },
+                                                pending_cm_approval: { label: '⏳ En Revisión', bg: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40' },
+                                                backlog: { label: '🤖 Autogenerado', bg: 'bg-purple-500/20 text-purple-400 border-purple-500/40' },
+                                            };
+                                            const sInfo = statusMap[t.status] || { label: t.status, bg: 'bg-neutral-800 text-neutral-400 border-neutral-700' };
+                                            
+                                            return (
+                                                <div key={t.id} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-[#CC0000]/60 transition-all shadow-sm flex flex-col group relative">
+                                                    <div className="h-40 bg-black flex items-center justify-center overflow-hidden relative">
+                                                        {isVideo ? (
+                                                            <video src={resolveMedia(media.url)} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+                                                        ) : (
+                                                            <img src={resolveMedia(media.url)} alt="Media" className="w-full h-full object-cover" />
+                                                        )}
+                                                        <div className={`absolute top-2 right-2 text-[9px] font-black px-2 py-0.5 rounded-full border ${sInfo.bg}`}>
+                                                            {sInfo.label}
+                                                        </div>
+                                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-white/10">
+                                                            📍 {t.audience || 'Multired'}
+                                                        </div>
+                                                        {t.status === 'published' && (
+                                                            <a href={resolveMedia(media.url)} target="_blank" rel="noreferrer"
+                                                               className="absolute bottom-2 right-2 bg-white/20 hover:bg-white text-white hover:text-black text-[10px] font-bold px-3 py-1 rounded-full transition-colors backdrop-blur-md">
+                                                                🌐 Ver en línea
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-3 flex-1 flex flex-col justify-between">
+                                                        <h4 className="text-sm font-black text-white line-clamp-2 mb-1">{t.que || '(Sin título)'}</h4>
+                                                        <p className="text-[10px] text-neutral-400 line-clamp-3 leading-relaxed flex-1">{t.referencias || 'Sin descripción.'}</p>
+                                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-800">
+                                                            <p className="text-[9px] text-neutral-600 uppercase tracking-wider">Publicación: <span className="text-neutral-400 font-bold">{t.deadline}</span></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ) : (calendarTab === 'citas' || calendarTab === 'todos') ? (

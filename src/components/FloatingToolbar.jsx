@@ -329,13 +329,46 @@ export default function FloatingToolbar({ selectedClip, editor }) {
             </Section>
 
             <Section title="Keyframes & Animación" icon={Activity}>
-               <div className="bg-[#27272a] border border-[#3f3f46] rounded-lg p-4 text-center">
-                 <Activity className="w-8 h-8 text-blue-500 mx-auto mb-3 opacity-80" />
-                 <h5 className="text-white text-xs font-semibold mb-1">Animación Dinámica</h5>
-                 <p className="text-[10px] text-neutral-400 mb-4">Añade puntos de control para interpolar posición, escala y filtros.</p>
-                 <button className="w-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] px-4 py-2.5 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
-                    <PlusCircle className="w-3.5 h-3.5" /> Añadir Keyframe
+               <div className="bg-[#27272a] border border-[#3f3f46] rounded-lg p-4">
+                 <div className="text-center mb-3">
+                   <Activity className="w-6 h-6 text-blue-500 mx-auto mb-2 opacity-80" />
+                   <h5 className="text-white text-xs font-semibold">Animación Dinámica</h5>
+                   <p className="text-[9px] text-neutral-400 mt-1">Añade puntos de control (Keyframes) en el tiempo actual ({engine?.displayTime?.toFixed(1) || '0.0'}s) para interpolar posición y escala.</p>
+                 </div>
+                 
+                 <button onClick={() => {
+                   const kfs = clip.keyframes ? [...clip.keyframes] : [];
+                   // We store the keyframe relative to clip start, or absolute? Relative to clip start is better:
+                   const relativeTime = (engine?.displayTime || 0) - clip.start;
+                   if (relativeTime < 0 || relativeTime > (clip.end - clip.start)) return alert('El cabezal debe estar sobre el clip para añadir un keyframe.');
+                   
+                   // Find if keyframe exists near this time
+                   const existingIdx = kfs.findIndex(k => Math.abs(k.time - relativeTime) < 0.1);
+                   const transformProps = clip.transform || { scale: 1, x: 0, y: 0 };
+                   
+                   if (existingIdx >= 0) kfs[existingIdx] = { time: relativeTime, ...transformProps };
+                   else kfs.push({ time: relativeTime, ...transformProps });
+                   
+                   kfs.sort((a,b) => a.time - b.time);
+                   editor.updateClip(clip.id, { keyframes: kfs });
+                 }} className="w-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 mb-3">
+                    <PlusCircle className="w-3.5 h-3.5" /> Añadir / Actualizar Keyframe aquí
                  </button>
+
+                 {clip.keyframes && clip.keyframes.length > 0 && (
+                   <div className="space-y-1.5 mt-2 border-t border-[#3f3f46] pt-3">
+                     {clip.keyframes.map((k, i) => (
+                       <div key={i} className="flex items-center justify-between bg-[#121212] px-2 py-1.5 rounded text-[10px]">
+                         <span className="font-mono text-blue-400">{k.time.toFixed(1)}s</span>
+                         <span className="text-neutral-500 truncate w-24 text-right">s:{k.scale?.toFixed(1)} x:{k.x} y:{k.y}</span>
+                         <button onClick={() => {
+                           const newKfs = clip.keyframes.filter((_, idx) => idx !== i);
+                           editor.updateClip(clip.id, { keyframes: newKfs.length ? newKfs : null });
+                         }} className="text-red-400 hover:text-red-300 px-1">X</button>
+                       </div>
+                     ))}
+                   </div>
+                 )}
                </div>
             </Section>
 

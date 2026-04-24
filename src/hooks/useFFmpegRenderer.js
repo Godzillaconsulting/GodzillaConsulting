@@ -20,8 +20,17 @@ async function getFFmpeg(onProgress) {
 
 // ─── Filter builders ──────────────────────────────────────────────────────────
 
-const buildColorF = c =>
-  `eq=brightness=${c.brightness}:contrast=${c.contrast}:saturation=${c.saturation}:gamma=${c.gamma}`;
+const buildColorF = c => {
+  let f = `eq=brightness=${c.brightness}:contrast=${c.contrast}:saturation=${c.saturation}:gamma=${c.gamma}`;
+  if (c.temperature) {
+     if (c.temperature > 0) {
+        f += `,colorbalance=rs=${c.temperature * 0.3}:rm=${c.temperature * 0.3}:bs=${-c.temperature * 0.2}`;
+     } else {
+        f += `,colorbalance=bs=${-c.temperature * 0.3}:bm=${-c.temperature * 0.3}:rs=${c.temperature * 0.2}`;
+     }
+  }
+  return f;
+};
 
 const buildScaleF = (w, h) =>
   `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;

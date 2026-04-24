@@ -77,10 +77,60 @@ class AutomationEngine {
     // El context es el "paquete de datos" que viaja de nodo en nodo.
     static NODE_ACTIONS = {
 
-        // ── ORIGEN / PASS-THROUGH ─────────────────────────────────────────────
+        // ── ORIGEN: Planificador IA ────────────────────────────────────────────
+        // Genera planes de contenido por día, semana o mes usando Gemini
         'Planificador IA': async (node, ctx) => {
-            console.log(`[Engine] 🧠 Planificador IA — ${ctx.plan?.length || 0} días en contexto`);
-            return ctx;
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const period      = cfg.period      || ctx.period      || 'month';
+            const niche       = cfg.niche       || ctx.niche       || 'negocio digital';
+            const extraCtx    = cfg.extraContext || ctx.extraContext || '';
+
+            // Si ya viene un plan en el contexto (ej: disparado desde UI), pasarlo
+            if (ctx.plan && Array.isArray(ctx.plan) && ctx.plan.length > 0) {
+                console.log(`[Engine] 🧠 Planificador IA — plan ya en contexto (${ctx.plan.length} entradas), pasando...`);
+                return { ...ctx, period, niche };
+            }
+
+            // Calcular cuántos días generar
+            const daysMap = { day: 1, week: 7, month: 30 };
+            const days    = daysMap[period] || 30;
+
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                console.log(`[Engine] ⚠️  Planificador IA — sin GEMINI_API_KEY, saltando generación`);
+                return { ...ctx, plan: [], period, niche };
+            }
+
+            console.log(`[Engine] 🧠 Planificador IA — generando ${days} día(s) para nicho: "${niche}" [${period}]`);
+
+            const prompt = `Eres un estratega de contenido. Crea un plan de ${days} día(s) para: "${niche}".
+${extraCtx ? `Contexto adicional: ${extraCtx}` : ''}
+Devuelve un JSON array con EXACTAMENTE ${days} objetos, uno por día.
+Cada objeto debe tener: { "Tema": "...", "NARRACION ESCENA 1": "...", "NARRACION ESCENA 2": "...", "NARRACION ESCENA 3": "...", "NARRACION ESCENA 4": "...", "NARRACION ESCENA 5 (CTA)": "...", "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "...", "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "..." }
+Solo responde el JSON puro, sin markdown, sin explicaciones.`;
+
+            try {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.8, maxOutputTokens: days > 7 ? 8192 : 2048 }
+                        })
+                    }
+                );
+                const data = await res.json();
+                const raw  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+                const clean = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                const plan  = JSON.parse(clean);
+                console.log(`[Engine] ✅ Planificador IA — ${plan.length} entradas generadas`);
+                return { ...ctx, plan, period, niche, days };
+            } catch (e) {
+                console.error(`[Engine] ❌ Planificador IA error: ${e.message}`);
+                return { ...ctx, plan: [], period, niche };
+            }
         },
 
         'Webhook Entrada': async (node, ctx) => {

@@ -968,6 +968,78 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">Admite {"{{ $json.var }}"}</span>
               </div>
               
+              {selectedNode.title === 'Planificador IA' && (
+                <div className="space-y-3">
+                  {/* Periodo */}
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1.5 block">📆 Periodo del plan</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { value: 'day',   label: '1 Día',   icon: '☀️', desc: '1 post' },
+                        { value: 'week',  label: '1 Semana', icon: '📅', desc: '7 posts' },
+                        { value: 'month', label: '1 Mes',   icon: '🗓', desc: '30 posts' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => updateNode({ config: { ...selectedNode.config, period: opt.value } })}
+                          className={`flex flex-col items-center py-2 px-1 rounded-xl border text-center transition ${
+                            (selectedNode.config?.period || 'month') === opt.value
+                              ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                              : 'border-neutral-800 bg-black text-neutral-500 hover:border-neutral-600'
+                          }`}
+                        >
+                          <span className="text-base">{opt.icon}</span>
+                          <span className="text-[10px] font-black mt-0.5">{opt.label}</span>
+                          <span className="text-[8px] opacity-60">{opt.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Nicho / Producto */}
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho / Producto</label>
+                    <input
+                      value={selectedNode.config?.niche || ''}
+                      onChange={e => updateNode({ config: { ...selectedNode.config, niche: e.target.value } })}
+                      placeholder='Ej: "Consultoría de negocios" o {{ $json.niche }}'
+                      className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition"
+                    />
+                  </div>
+
+                  {/* Contexto adicional */}
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">📝 Contexto extra (opcional)</label>
+                    <textarea
+                      value={selectedNode.config?.extraContext || ''}
+                      onChange={e => updateNode({ config: { ...selectedNode.config, extraContext: e.target.value } })}
+                      placeholder="Enfócate en tendencias de Q2, usa humor, evita política..."
+                      rows={2}
+                      className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition resize-none"
+                    />
+                  </div>
+
+                  {/* Hint dinámico por periodo */}
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2.5">
+                    {(selectedNode.config?.period || 'month') === 'day' && (
+                      <p className="text-[9px] text-purple-400 leading-relaxed">
+                        ⚡ <strong>Modo Día:</strong> Genera 1 post completo con narración, visual y video para hoy. Ideal para disparar con Reloj/Cron cada mañana.
+                      </p>
+                    )}
+                    {selectedNode.config?.period === 'week' && (
+                      <p className="text-[9px] text-purple-400 leading-relaxed">
+                        📅 <strong>Modo Semana:</strong> Genera 7 días de contenido. Perfecto para planear el sprint de la semana los lunes.
+                      </p>
+                    )}
+                    {(!selectedNode.config?.period || selectedNode.config?.period === 'month') && (
+                      <p className="text-[9px] text-purple-400 leading-relaxed">
+                        🗓 <strong>Modo Mes:</strong> Genera el calendario completo de 30 días. Se conecta directo con Tarea de Studio para producción automática.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {selectedNode.title === 'Webhook Entrada' && (
                 <div className="space-y-2">
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">

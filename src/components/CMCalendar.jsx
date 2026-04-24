@@ -7,7 +7,6 @@ import getDay from 'date-fns/getDay';
 import es from 'date-fns/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
-import AIContentPlanner from './AIContentPlanner';
 
 const locales = { 'es': es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -1259,7 +1258,6 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     <div className="flex gap-2 mb-4">
                         {[
                             { id: 'contenido', label: '📣 Contenido', count: events.length },
-                            { id: 'contenido_ia', label: '🤖 Contenido IA', count: null },
                             { id: 'citas', label: '📅 Citas', count: citas.length },
                             { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
                             { id: 'todos', label: '🗺️ Todo', count: null },
@@ -1512,11 +1510,6 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-
-                            ) : calendarTab === 'contenido_ia' ? (
-                                <div className="flex-1 p-4 min-h-0 overflow-hidden relative">
-                                    <AIContentPlanner adminProfile={adminProfile} />
                                 </div>
                             ) : (calendarTab === 'citas' || calendarTab === 'todos') ? (
                                 // CITAS y TODOS → siguen usando React Big Calendar

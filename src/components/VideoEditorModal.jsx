@@ -739,8 +739,6 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         {/* CENTER PANEL: Player Preview */}
         <div className="flex-1 flex flex-col bg-[#080808] relative min-w-0">
           
-          <FloatingToolbar selectedClip={selectedClip} editor={editor} />
-
           <div className="flex-1 flex items-center justify-center p-4 min-h-0 relative">
             {/* Player Container */}
             <div className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ring-1 ring-white/10 ${isPortrait ? 'h-full' : 'w-full'}`}
@@ -785,6 +783,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
              </div>
           </div>
         </div>
+
+        {/* RIGHT PANEL: Properties (was FloatingToolbar) */}
+        <FloatingToolbar selectedClip={selectedClip} editor={editor} />
       </div>
 
       {/* BOTTOM WORKSPACE: Timeline */}

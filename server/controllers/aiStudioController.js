@@ -939,36 +939,20 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                 attempts++;
                 try {
                     // Jitter for API Rate Limits (evitar timeouts/rate limits)
-                    const jitter = Math.floor(Math.random() * 2000) + 500;
-                    await new Promise(r => setTimeout(r, jitter));
-
-                    const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            messages: [{ role: 'user', content: batchPrompt }],
-                            model: 'Meta-Llama-3.1-405B-Instruct',
-                            temperature: 0.85
-                        })
+                    const Groq = (await import('groq-sdk')).default;
+                    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+                    const response = await groq.chat.completions.create({
+                        messages: [
+                            { role: 'user', content: batchPrompt }
+                        ],
+                        model: 'llama-3.3-70b-versatile',
                     });
 
-                    if (!response.ok) {
-                        if (response.status === 429) {
-                            await new Promise(r => setTimeout(r, 4000 * attempts));
-                        }
-                        throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
-                    }
-
-                    const data = await response.json();
-                    let rawText = extractJSON(data.choices[0].message.content);
-                    
+                    let rawText = extractJSON(response.choices[0]?.message?.content || '');
                     batchData = JSON.parse(rawText);
 
                     if (!batchData.plan || !Array.isArray(batchData.plan)) {
-                        throw new Error('La respuesta de SambaNova no tiene el formato esperado (plan[]).');
+                        throw new Error('La respuesta de GROQ no tiene el formato esperado (plan[]).');
                     }
                 } catch (err) {
                     console.log(`[MONTHLY-PLAN] Fallo en batch ${startDay}-${endDay} (Intento ${attempts}/${maxAttempts}):`, err.message);
@@ -990,7 +974,7 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
         (async () => {
             try {
                 // Dividimos en 6 pequeños lotes de 5 días para NUNCA truncar el JSON
-                const batches = [
+                let batches = [
                     { start: 1, end: 5 },
                     { start: 6, end: 10 },
                     { start: 11, end: 15 },
@@ -998,6 +982,10 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                     { start: 21, end: 25 },
                     { start: 26, end: 30 }
                 ];
+
+                if (req.body.testMode || req.body.days === 1) {
+                    batches = [{ start: 1, end: 1 }];
+                }
                 
                 let fullPlan = [];
                 let totalInput = 0;

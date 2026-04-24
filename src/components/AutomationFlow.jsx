@@ -1108,6 +1108,184 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
+              {selectedNode.title === 'Telegram Bot' && (
+                <div className="space-y-2">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2"><p className="text-[9px] text-blue-400 font-bold">💡 Obtén tu token gratis en @BotFather en Telegram</p></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Bot Token</label><input type="password" value={selectedNode.config?.botToken||''} onChange={e=>updateNode({config:{...selectedNode.config, botToken:e.target.value}})} placeholder="O usa .env: TELEGRAM_BOT_TOKEN" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Chat ID</label><input value={selectedNode.config?.chatId||''} onChange={e=>updateNode({config:{...selectedNode.config, chatId:e.target.value}})} placeholder="Ej: -1001234567890 o tu ID personal" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="🤖 {{ $json.titulo }} generado exitosamente" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 transition resize-none"/></div>
+                </div>
+              )}
+
+              {['Discord Webhook','Slack Webhook'].includes(selectedNode.title) && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Webhook URL</label><input value={selectedNode.config?.webhookUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, webhookUrl:e.target.value}})} placeholder="https://discord.com/api/webhooks/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-indigo-500 transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="✅ {{ $json.title }} completado" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Twilio SMS' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Teléfono Destino</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="+521656XXXXXXX o {{ $json.phone }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje SMS</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="Hola {{ $json.nombre }}, tu cita es el {{ $json.fecha }}" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credenciales en .env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Resend' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Para (email)</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.email }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Asunto</label><input value={selectedNode.config?.subject||''} onChange={e=>updateNode({config:{...selectedNode.config, subject:e.target.value}})} placeholder="Tu plan está listo 🤖" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">HTML Body</label><textarea value={selectedNode.config?.html||''} onChange={e=>updateNode({config:{...selectedNode.config, html:e.target.value}})} placeholder="<p>Hola {{ $json.nombre }}...</p>" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: RESEND_API_KEY — 3,000 emails/mes gratis</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'OpenAI / ChatGPT' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
+                    <select value={selectedNode.config?.model||'gpt-4o-mini'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="gpt-4o-mini">GPT-4o Mini (barato + rápido)</option>
+                      <option value="gpt-4o">GPT-4o (más potente)</option>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (económico)</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Analiza este contenido: {{ $json.titulo }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: OPENAI_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Airtable' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
+                    <select value={selectedNode.config?.action||'write'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="write">Escribir registro</option><option value="read">Leer registros</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Base ID</label><input value={selectedNode.config?.baseId||''} onChange={e=>updateNode({config:{...selectedNode.config, baseId:e.target.value}})} placeholder="appXXXXXXXXXXXXXX" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Tabla</label><input value={selectedNode.config?.table||''} onChange={e=>updateNode({config:{...selectedNode.config, table:e.target.value}})} placeholder="Nombre de la tabla" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: AIRTABLE_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Supabase' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
+                    <select value={selectedNode.config?.action||'insert'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="insert">Insertar</option><option value="select">Leer</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Tabla</label><input value={selectedNode.config?.table||''} onChange={e=>updateNode({config:{...selectedNode.config, table:e.target.value}})} placeholder="users, leads, orders..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credenciales en .env: SUPABASE_URL, SUPABASE_ANON_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Notion' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Database ID</label><input value={selectedNode.config?.databaseId||''} onChange={e=>updateNode({config:{...selectedNode.config, databaseId:e.target.value}})} placeholder="ID de la base de datos de Notion" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Título de la página</label><input value={selectedNode.config?.title||''} onChange={e=>updateNode({config:{...selectedNode.config, title:e.target.value}})} placeholder="{{ $json.tema }} - {{ $json.fecha }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: NOTION_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Google Sheets' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
+                    <select value={selectedNode.config?.action||'append'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="append">Agregar fila</option><option value="read">Leer datos</option><option value="update">Actualizar celda</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">ID del Spreadsheet</label><input value={selectedNode.config?.spreadsheetId||''} onChange={e=>updateNode({config:{...selectedNode.config, spreadsheetId:e.target.value}})} placeholder="ID de la URL de Google Sheets" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Hoja (Sheet)</label><input value={selectedNode.config?.sheetName||''} onChange={e=>updateNode({config:{...selectedNode.config, sheetName:e.target.value}})} placeholder="Hoja1" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Cal.com' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Endpoint</label>
+                    <select value={selectedNode.config?.endpoint||'bookings'} onChange={e=>updateNode({config:{...selectedNode.config, endpoint:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="bookings">Leer citas</option><option value="slots">Ver disponibilidad</option>
+                    </select>
+                  </div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: CALCOM_API_KEY — Alternativa gratis a Calendly</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Pinterest API' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Board ID</label><input value={selectedNode.config?.boardId||''} onChange={e=>updateNode({config:{...selectedNode.config, boardId:e.target.value}})} placeholder="ID del tablero de Pinterest" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Título del Pin</label><input value={selectedNode.config?.title||''} onChange={e=>updateNode({config:{...selectedNode.config, title:e.target.value}})} placeholder="{{ $json.tema }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">URL de la imagen</label><input value={selectedNode.config?.imageUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, imageUrl:e.target.value}})} placeholder="{{ $json._imageUrl }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: PINTEREST_ACCESS_TOKEN</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Delay / Espera' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Minutos</label><input type="number" min="0" max="5" value={selectedNode.config?.minutes||0} onChange={e=>updateNode({config:{...selectedNode.config, minutes:parseInt(e.target.value)||0}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Segundos adicionales</label><input type="number" min="0" max="59" value={selectedNode.config?.seconds||0} onChange={e=>updateNode({config:{...selectedNode.config, seconds:parseInt(e.target.value)||0}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">Máximo 5 minutos por paso para no bloquear el engine</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Loop / Iterador' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Campo del array a iterar</label><input value={selectedNode.config?.arrayField||'plan'} onChange={e=>updateNode({config:{...selectedNode.config, arrayField:e.target.value}})} placeholder="plan, items, results..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">El loop expone _loopItems y _loopCount al siguiente nodo</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Set Variables' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Variables (JSON)</label><textarea value={selectedNode.config?.variablesRaw||''} onChange={e=>updateNode({config:{...selectedNode.config, variablesRaw:e.target.value, variables: (() => { try { return JSON.parse(e.target.value); } catch{ return {}; } })()}})} placeholder={'{ "clienteNombre": "{{ $json.nombre }}", "total": 0 }'} rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Estas variables estarán disponibles en todos los nodos siguientes vía {'{{ $json.varName }}'}</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'PDF Generator' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Nombre del archivo</label><input value={selectedNode.config?.filename||''} onChange={e=>updateNode({config:{...selectedNode.config, filename:e.target.value}})} placeholder="contrato-{{ $json.nombre }}.pdf" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">HTML del documento</label><textarea value={selectedNode.config?.htmlTemplate||''} onChange={e=>updateNode({config:{...selectedNode.config, htmlTemplate:e.target.value}})} placeholder="<h1>Contrato para {{ $json.nombre }}</h1>..." rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none resize-none transition"/></div>
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2"><p className="text-[9px] text-emerald-400">Usa Puppeteer (ya instalado) — genera PDF sin servicios externos</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'RSS Feed' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">URL del Feed RSS</label><input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://feeds.ejemplo.com/rss" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Máximo artículos</label><input type="number" min="1" max="20" value={selectedNode.config?.limit||5} onChange={e=>updateNode({config:{...selectedNode.config, limit:parseInt(e.target.value)||5}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Resultado disponible como {'{{ $json._rssFeedItems }}'} en el siguiente nodo</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Google Analytics' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Nombre del Evento</label><input value={selectedNode.config?.eventName||'automation_triggered'} onChange={e=>updateNode({config:{...selectedNode.config, eventName:e.target.value}})} placeholder="lead_generated, sale_completed..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credenciales en .env: GA_MEASUREMENT_ID, GA_API_SECRET</p></div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Stripe Webhook' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Evento a escuchar</label>
+                    <select value={selectedNode.config?.event||'payment_intent.succeeded'} onChange={e=>updateNode({config:{...selectedNode.config, event:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="payment_intent.succeeded">Pago exitoso</option>
+                      <option value="customer.subscription.created">Nueva suscripción</option>
+                      <option value="invoice.paid">Factura pagada</option>
+                      <option value="any">Cualquier evento</option>
+                    </select>
+                  </div>
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2"><p className="text-[9px] text-cyan-400">Configura el endpoint en dashboard.stripe.com/webhooks → tu URL de webhook</p></div>
+                </div>
+              )}
+
+              {['YouTube Data API', 'Facebook Ads API', 'Google Calendar API'].includes(selectedNode.title) && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label><input value={selectedNode.config?.action||''} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} placeholder="create, read, update, delete..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">⚠️ Requiere OAuth — configura en Google Cloud Console / Meta Developers</p></div>
+                </div>
+              )}
+
               {['Brevo', 'GoDaddy'].includes(selectedNode.title) && (
                 <div>
                   <label className="text-[10px] text-neutral-400 mb-1 block">API Key / Token (Oculto)</label>

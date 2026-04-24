@@ -43,6 +43,23 @@ async function ensureSchema() {
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         `);
+
+        // ✅ flow_runs — historial de ejecuciones del motor de automatización
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS flow_runs (
+                id          SERIAL PRIMARY KEY,
+                flow_id     INTEGER DEFAULT 1,
+                status      VARCHAR(20) NOT NULL DEFAULT 'running',
+                source      VARCHAR(100),
+                started_at  TIMESTAMPTZ DEFAULT NOW(),
+                finished_at TIMESTAMPTZ,
+                duration_ms INTEGER,
+                log         JSONB DEFAULT '[]'::jsonb
+            )
+        `);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_flow_runs_flow_id ON flow_runs(flow_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_flow_runs_status  ON flow_runs(status)`);
+
     } catch(e) {
         console.error('[Automation] Schema bootstrap error:', e.message);
     }

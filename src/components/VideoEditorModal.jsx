@@ -37,6 +37,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [isBotRunning, setIsBotRunning] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSettings, setExportSettings] = useState({ quality: 'medium', fps: 30 });
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -165,6 +168,44 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       setIsGenTTS(false);
     }
   }, [ttsText, ttsVoice, editor, engine]);
+
+  const handleVoiceRecord = useCallback(async () => {
+    if (isRecordingVoice) {
+      mediaRecorderRef.current?.stop();
+      setIsRecordingVoice(false);
+      engine.pause();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        const dur = await getVideoDuration(url);
+        const audioLayer = editor.project.layers.find(l => l.type === 'audio');
+        const t = engine.currentTimeRef.current;
+        const newClip = makeAudioClip(url, `Grabación de Voz`, t - dur, t);
+        editor.addClip(audioLayer.id, newClip);
+        setSelectedClipId(newClip.id);
+      };
+
+      recorder.start();
+      setIsRecordingVoice(true);
+      engine.play(); // Play video while recording
+    } catch (err) {
+      alert('Error accediendo al micrófono: ' + err.message);
+    }
+  }, [isRecordingVoice, editor, engine]);
 
   const handleRender = useCallback(async () => {
     setShowExportModal(false);
@@ -840,6 +881,13 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             <button onClick={() => editor.addLayer(makeLayer('video'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Video className="w-3 h-3" /> + Video</button>
             <button onClick={() => editor.addLayer(makeLayer('audio'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Music className="w-3 h-3" /> + Audio</button>
             <button onClick={() => editor.addLayer(makeLayer('text'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Type className="w-3 h-3" /> + Texto</button>
+            
+            <div className="w-px h-4 bg-neutral-700 mx-1"></div>
+            
+            <button onClick={handleVoiceRecord} className={`text-[10px] font-bold px-3 py-1 rounded border flex items-center gap-1.5 transition-all ${isRecordingVoice ? 'bg-red-600/20 text-red-500 border-red-500 animate-pulse' : 'bg-[#27272a] text-neutral-400 hover:text-white hover:bg-[#3f3f46] border-[#3f3f46]'}`}>
+              <div className={`w-2 h-2 rounded-full ${isRecordingVoice ? 'bg-red-500' : 'bg-neutral-500'}`}></div>
+              {isRecordingVoice ? 'Grabando...' : 'Grabar Voz'}
+            </button>
           </div>
           <div className="flex items-center gap-6 ml-auto">
             {/* Timeline Zoom */}

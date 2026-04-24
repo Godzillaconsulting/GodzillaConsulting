@@ -666,12 +666,27 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         status: 'warning', tipo: 'pendiente', raw: t
     }));
 
+    const aiContentEvents = tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).map(t => {
+        let deadlineStr = t.deadline || new Date().toISOString().split('T')[0];
+        if (!deadlineStr.includes('T')) deadlineStr += 'T12:00:00';
+        return {
+            id: `ia-${t.id}`,
+            title: `🤖 ${t.que || '(Sin título)'}`,
+            start: new Date(deadlineStr),
+            end: new Date(deadlineStr),
+            status: t.status === 'published' ? 'published' : t.status === 'approved' ? 'approved' : 'queued',
+            tipo: 'contenido_ia',
+            raw: t
+        };
+    });
+
     const calendarEventsMap = {
         contenido: filteredEvents,
+        contenido_ia: aiContentEvents,
         citas: citas,
         pendientes: pendingTaskEvents,
         aprobadas: tasks.filter(t => t.status === 'approved'),
-        todos: [...filteredEvents, ...citas, ...pendingTaskEvents]
+        todos: [...filteredEvents, ...citas, ...pendingTaskEvents, ...aiContentEvents]
     };
 
     const myFilteredTasks = tasks.filter(t =>

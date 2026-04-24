@@ -152,7 +152,7 @@ Solo el JSON array, nada más.`;
                     })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error?.message || \`SambaNova HTTP \${res.status}\`);
+                if (!res.ok) throw new Error(data.error?.message || `SambaNova HTTP ${res.status}`);
                 
                 const raw  = data?.choices?.[0]?.message?.content || '[]';
                 const clean = raw
@@ -237,7 +237,7 @@ Solo el JSON array, nada más.`;
             const value = cfg.value;
             const match = ctx[field] === value || String(ctx[field]) === String(value);
             console.log(`[Engine] 🔀 Router — ${field}=${ctx[field]} ${match ? '✅ MATCH' : '❌ NO MATCH'}`);
-            return { ...ctx, _routerMatch: match };
+            } return ctx;
         },
 
         // ── SINKS / ACCIONES REALES ───────────────────────────────────────────

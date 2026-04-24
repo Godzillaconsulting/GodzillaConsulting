@@ -61,24 +61,46 @@ async function generateVoice(text, outputPath) {
     return outputPath;
 }
 
-// Generación de imagen con Imagen 3
+// Generación de imagen con Imagen 3 + Fallback a Pollinations Libre
 async function generateImage(prompt, outputPath) {
     console.log(`[MediaWorker] Generando Imagen: "${prompt.substring(0, 30)}..."`);
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const response = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-001',
-        prompt: prompt,
-        config: { numberOfImages: 1, outputMimeType: 'image/png', aspectRatio: '9:16' }
-    });
     
-    if (response.generatedImages?.[0]?.image?.imageBytes) {
-        const b64 = response.generatedImages[0].image.imageBytes;
-        const buffer = Buffer.from(b64, 'base64');
-        fs.writeFileSync(outputPath, buffer);
-        console.log(`[MediaWorker] ✅ Imagen generada.`);
-        return outputPath;
+    // Opción 1: Google Imagen 3
+    if (process.env.GEMINI_API_KEY) {
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const response = await ai.models.generateImages({
+                model: 'imagen-3.0-generate-001',
+                prompt: prompt,
+                config: { numberOfImages: 1, outputMimeType: 'image/png', aspectRatio: '9:16' }
+            });
+            
+            if (response.generatedImages?.[0]?.image?.imageBytes) {
+                const b64 = response.generatedImages[0].image.imageBytes;
+                const buffer = Buffer.from(b64, 'base64');
+                fs.writeFileSync(outputPath, buffer);
+                console.log(`[MediaWorker] ✅ Imagen generada (Google Imagen 3).`);
+                return outputPath;
+            }
+        } catch (e) {
+            console.warn(`[MediaWorker] ⚠️ Google Imagen 3 falló (${e.message}). Usando Fallback...`);
+        }
+    } else {
+        console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada. Usando Fallback...`);
     }
-    throw new Error('Fallo en generación de imagen');
+
+    // Opción 2: Fallback Libre (Pollinations AI)
+    console.log(`[MediaWorker] 🔄 Generando con motor de respaldo libre...`);
+    const safePrompt = prompt.length > 300 ? prompt.substring(0, 300) : prompt;
+    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+    
+    const res = await fetch(fallbackUrl);
+    if (!res.ok) throw new Error(`Fallo Fallback: ${res.statusText}`);
+    
+    const buffer = await res.buffer();
+    fs.writeFileSync(outputPath, buffer);
+    console.log(`[MediaWorker] ✅ Imagen generada (Fallback Libre).`);
+    return outputPath;
 }
 
 async function processTask() {

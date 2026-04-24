@@ -237,9 +237,10 @@ async function buildCommand(ffmpeg, project, exportSettings = {}) {
       const vol   = clip.volume ?? 1;
       
       const fxFilters = [];
-      if (clip.voiceFx === 'robot') fxFilters.push(`afftfilt="real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75"`);
+      if (clip.voiceFx === 'deep') fxFilters.push('asetrate=44100*0.8,aresample=44100,atempo=1.25');
+      if (clip.voiceFx === 'chipmunk') fxFilters.push('asetrate=44100*1.3,aresample=44100,atempo=0.76');
       if (clip.voiceFx === 'echo') fxFilters.push('aecho=0.8:0.9:1000:0.3');
-      if (clip.voiceFx === 'highpitch') fxFilters.push('asetrate=44100*1.2,aresample=44100');
+      if (clip.voiceFx === 'radio') fxFilters.push('highpass=f=200,lowpass=f=3000');
       if (clip.noiseReduction) fxFilters.push('afftdn');
       
       if (clip.fadeIn > 0) fxFilters.push(`afade=t=in:st=0:d=${clip.fadeIn}`);

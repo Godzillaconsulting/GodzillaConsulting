@@ -43,6 +43,33 @@ export function usePlaybackEngine(project, videoRef) {
       const expectedVol = clip.volume !== undefined ? clip.volume : 1;
       if (videoRef.current.volume !== expectedVol) videoRef.current.volume = expectedVol;
       
+      // Visual Effects (CSS)
+      let filterStr = '';
+      if (clip.color) {
+        if (clip.color.brightness !== undefined) filterStr += `brightness(${Math.max(0, 1 + clip.color.brightness)}) `;
+        if (clip.color.contrast !== undefined) filterStr += `contrast(${clip.color.contrast}) `;
+        if (clip.color.saturation !== undefined) filterStr += `saturate(${clip.color.saturation}) `;
+      }
+      if (clip.effects) {
+        if (clip.effects.includes('blur')) filterStr += `blur(4px) `;
+        if (clip.effects.includes('bw')) filterStr += `grayscale(100%) `;
+        if (clip.effects.includes('vignette')) filterStr += `drop-shadow(0 0 20px black) `; // Simple approx
+        if (clip.effects.includes('vhs')) filterStr += `hue-rotate(-20deg) contrast(1.2) saturate(1.5) `; // Simple vhs approx
+      }
+      const finalFilter = filterStr.trim();
+      if (videoRef.current.style.filter !== finalFilter) {
+        videoRef.current.style.filter = finalFilter;
+      }
+
+      // PiP / Transform
+      let transformStr = '';
+      if (clip.transform) {
+        transformStr = `translate(${clip.transform.x || 0}px, ${clip.transform.y || 0}px) scale(${clip.transform.scale ?? 1})`;
+      }
+      if (videoRef.current.style.transform !== transformStr) {
+        videoRef.current.style.transform = transformStr;
+      }
+
       if (isPlayingRef.current && videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
       }

@@ -118,7 +118,7 @@ export function usePlaybackEngine(project, videoRef) {
     syncAudioToTime(globalTimeRef.current);
 
     displayTickRef.current += delta;
-    if (displayTickRef.current >= 0.066) {
+    if (displayTickRef.current >= 0.016) {
       displayTickRef.current = 0;
       setDisplayTime(globalTimeRef.current);
     }

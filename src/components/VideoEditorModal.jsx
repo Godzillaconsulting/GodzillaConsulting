@@ -576,9 +576,13 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide mb-1.5 block">Voz</label>
                     <select value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}
                       className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-md p-2 outline-none focus:border-blue-500 transition-colors">
-                      <option value="es-MX">🇲🇽 Español (México)</option>
-                      <option value="es-ES">🇪🇸 Español (España)</option>
-                      <option value="en-US">🇺🇸 Inglés (EEUU)</option>
+                      <option value="es-MX-Standard-A">🇲🇽 Mujer Joven (Neutro)</option>
+                      <option value="es-MX-Standard-B">🇲🇽 Hombre Maduro (Neutro)</option>
+                      <option value="alloy">🇺🇸 Alloy (OpenAI - Joven)</option>
+                      <option value="nova">🇺🇸 Nova (OpenAI - Femenina)</option>
+                      <option value="onyx">🇺🇸 Onyx (Narrador Épico)</option>
+                      <option value="shimmer">🇺🇸 Shimmer (Voz Suave)</option>
+                      <option value="hormozi">🎙️ Clon Alex Hormozi (Inglés)</option>
                     </select>
                   </div>
 

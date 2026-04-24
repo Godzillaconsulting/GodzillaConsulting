@@ -324,6 +324,136 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     }
   }, [selectedClipId, editor, engine]);
 
+  const handleHormoziBot = useCallback(async () => {
+    if (!selectedClipId) return alert('Selecciona un clip de video para aplicar el Bot Hormozi.');
+    const targetClip = editor.project.layers.flatMap(l=>l.clips).find(c=>c.id===selectedClipId);
+    if (!targetClip || targetClip.type !== 'video') return alert('El Bot Hormozi solo funciona en clips de video.');
+
+    setIsBotRunning(true);
+    try {
+      // 1. SILENCE DETECTION
+      const response = await fetch(targetClip.sourceUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const decodedAudio = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+      const channelData = decodedAudio.getChannelData(0);
+      const sampleRate = decodedAudio.sampleRate;
+      
+      const windowSize = Math.floor(0.05 * sampleRate);
+      const threshold = 0.035;
+      const minSilenceDuration = 0.5;
+      
+      const keepRegions = [];
+      let isSilent = false;
+      let silenceStart = 0;
+      let currentRegionStart = 0;
+
+      for (let i = 0; i < channelData.length; i += windowSize) {
+         let sumSquares = 0;
+         const endIdx = Math.min(i + windowSize, channelData.length);
+         for(let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
+         const rms = Math.sqrt(sumSquares / (endIdx - i));
+         const timeSec = i / sampleRate;
+
+         if (rms < threshold) {
+            if (!isSilent) { isSilent = true; silenceStart = timeSec; }
+         } else {
+            if (isSilent) {
+               if (timeSec - silenceStart >= minSilenceDuration) {
+                  if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
+                  currentRegionStart = timeSec;
+               }
+               isSilent = false;
+            }
+         }
+      }
+
+      const totalDurationSec = channelData.length / sampleRate;
+      if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
+         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
+      } else if (silenceStart > currentRegionStart) {
+         keepRegions.push({ start: currentRegionStart, end: silenceStart });
+      }
+
+      // 2. WHISPER INITIALIZATION
+      const { pipeline } = await import('@huggingface/transformers');
+      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { revision: 'main' });
+
+      // 3. PROCESS AUDIO FOR WHISPER (16kHz requirement)
+      const audioCtx16k = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const decoded16k = await audioCtx16k.decodeAudioData(arrayBuffer);
+      const audioData16k = decoded16k.getChannelData(0);
+
+      const result = await transcriber(audioData16k, {
+         chunk_length_s: 30,
+         stride_length_s: 5,
+         return_timestamps: true,
+         language: 'spanish',
+         task: 'transcribe'
+      });
+
+      // 4. ASSEMBLE CLIPS & TEXT
+      const layer = editor.project.layers.find(l => l.clips.some(c => c.id === targetClip.id));
+      const textLayer = editor.project.layers.find(l => l.type === 'text');
+      let currentTimelineStart = targetClip.start;
+      let punchIn = false;
+      
+      keepRegions.forEach((region, idx) => {
+         const duration = region.end - region.start;
+         
+         // Add Video Clip (Alternating Zoom)
+         const newClip = makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration);
+         newClip.sourceStart = targetClip.sourceStart + region.start;
+         newClip.speed = targetClip.speed || 1;
+         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
+         
+         if (punchIn) newClip.transform = { scale: 1.15, x: 0, y: 0 };
+         punchIn = !punchIn; // Toggle zoom for next clip
+         
+         editor.addClip(layer.id, newClip);
+
+         // Add Subtitles matching this region
+         if (result.chunks) {
+            result.chunks.forEach(chunk => {
+               const [start, end] = chunk.timestamp;
+               if (start === null || end === null) return;
+               
+               // Check if subtitle overlaps with this keep region
+               if (start >= region.start && start < region.end) {
+                  const relativeStart = start - region.start;
+                  const relativeEnd = Math.min(end, region.end) - region.start;
+                  
+                  const clipStart = currentTimelineStart + relativeStart;
+                  const clipEnd = currentTimelineStart + relativeEnd;
+                  
+                  editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
+                     fontSize: 52,
+                     fontColor: '#facc15',
+                     posY: 0.80,
+                     bold: true,
+                     align: 'center',
+                     animation: 'typewriter'
+                  }));
+               }
+            });
+         }
+
+         currentTimelineStart += duration;
+      });
+      
+      editor.deleteClip(targetClip.id);
+      setSelectedClipId(null);
+      setLeftTab('text');
+      alert(`¡Bot Hormozi completado! Se eliminaron silencios, se añadieron zooms dinámicos y autogeneraron subtítulos estilo Hormozi.`);
+      
+    } catch(e) {
+      console.error(e);
+      alert('Error ejecutando Bot Hormozi: ' + e.message);
+    } finally {
+      setIsBotRunning(false);
+    }
+  }, [selectedClipId, editor]);
+
   const handleExtractAudio = useCallback(() => {
     if (!selectedClipId) return;
     const { clip, layer } = selectedClip || {};
@@ -444,7 +574,10 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             <span className="hidden sm:inline">IA Tools</span>
           </button>
           {/* Dropdown IA Tools */}
-          <div className="absolute top-12 right-[180px] w-48 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
+          <div className="absolute top-12 right-[180px] w-56 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
+            <button onClick={handleHormoziBot} className="w-full text-left px-4 py-3 text-xs text-white hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-blue-600/20 flex items-center gap-2 border-b border-[#27272a] font-bold">
+               <Wand2 className="w-4 h-4 text-purple-400"/> Bot Hormozi (Todo en 1)
+            </button>
             <button onClick={handleSmartCut} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-purple-400 flex items-center gap-2">
                <Scissors className="w-3.5 h-3.5"/> Smart Cut (Silencios)
             </button>

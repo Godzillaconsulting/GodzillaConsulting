@@ -17,9 +17,9 @@ const TRACK_COLORS = { video: '#3b82f6', audio: '#10b981', text: '#eab308' };
 
 export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [initialVideoUrl, setInitialVideoUrl] = useState(() => {
-     try { return localStorage.getItem('godzilla_editor_draft_src') || ''; } catch { return ''; }
+    try { return localStorage.getItem('godzilla_editor_draft_src') || ''; } catch { return ''; }
   });
-  
+
   const editor = useEditorProject(initialVideoUrl);
   const { render, isRendering, progress } = useFFmpegRenderer();
   const videoRef = useRef(null);
@@ -103,12 +103,15 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     const layerType = isAudio ? 'audio' : 'video';
     const layer = editor.project.layers.find(l => l.type === layerType);
     const lastEnd = layer?.clips.reduce((m, c) => Math.max(m, c.end), 0) || 0;
-    
+
+    let newClip;
     if (isAudio) {
-      editor.addClip(layer.id, makeAudioClip(url, mediaObj.caption || 'Audio', lastEnd, lastEnd + dur));
+      newClip = makeAudioClip(url, mediaObj.caption || 'Audio', lastEnd, lastEnd + dur);
     } else {
-      editor.addClip(layer.id, makeVideoClip(url, mediaObj.caption || 'Video', lastEnd, lastEnd + dur));
+      newClip = makeVideoClip(url, mediaObj.caption || 'Video', lastEnd, lastEnd + dur);
     }
+    editor.addClip(layer.id, newClip);
+    setSelectedClipId(newClip.id);
   }, [editor]);
 
   const handleSplit = useCallback(() => {
@@ -122,7 +125,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     if (!newText.trim()) return;
     const textLayer = editor.project.layers.find(l => l.type === 'text');
     const t = engine.currentTimeRef.current;
-    editor.addClip(textLayer.id, makeTextClip(newText.trim(), t, t + 4));
+    const newClip = makeTextClip(newText.trim(), t, t + 4);
+    editor.addClip(textLayer.id, newClip);
+    setSelectedClipId(newClip.id);
     setNewText('');
   }, [newText, editor, engine]);
 
@@ -141,7 +146,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const audioLayer = editor.project.layers.find(l => l.type === 'audio');
       const t = engine.currentTimeRef.current;
       const dur = ttsText.length * 0.07 + 1;
-      editor.addClip(audioLayer.id, makeAudioClip(url, `TTS: ${ttsText.slice(0, 14)}`, t, t + dur));
+      const newClip = makeAudioClip(url, `TTS: ${ttsText.slice(0, 14)}`, t, t + dur);
+      editor.addClip(audioLayer.id, newClip);
+      setSelectedClipId(newClip.id);
       setTtsText('');
     } catch {
       try {
@@ -158,8 +165,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         await stopPromise;
         stream.getTracks().forEach(t => t.stop());
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        const url  = URL.createObjectURL(blob);
-        const dur  = ttsText.length * 0.07 + 1;
+        const url = URL.createObjectURL(blob);
+        const dur = ttsText.length * 0.07 + 1;
         const audioLayer = editor.project.layers.find(l => l.type === 'audio');
         const t = engine.currentTimeRef.current;
         editor.addClip(audioLayer.id, makeAudioClip(url, `TTS: ${ttsText.slice(0, 14)}`, t, t + dur));
@@ -180,9 +187,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const handleSmartCut = useCallback(async () => {
     if (!selectedClipId) return alert('Selecciona un clip para eliminar silencios.');
-    const targetClip = editor.project.layers.flatMap(l=>l.clips).find(c=>c.id===selectedClipId);
+    const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
     if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return;
-    
+
     setIsBotRunning(true);
     try {
       const response = await fetch(targetClip.sourceUrl);
@@ -191,69 +198,69 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const channelData = audioBuffer.getChannelData(0);
       const sampleRate = audioBuffer.sampleRate;
-      
+
       const windowSize = Math.floor(0.05 * sampleRate); // 50ms windows
       const threshold = 0.035; // ~ -29dB RMS
       const minSilenceDuration = 0.5; // 500ms
-      
+
       const keepRegions = [];
       let isSilent = false;
       let silenceStart = 0;
       let currentRegionStart = 0;
 
       for (let i = 0; i < channelData.length; i += windowSize) {
-         let sumSquares = 0;
-         const endIdx = Math.min(i + windowSize, channelData.length);
-         for(let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
-         const rms = Math.sqrt(sumSquares / (endIdx - i));
-         const timeSec = i / sampleRate;
+        let sumSquares = 0;
+        const endIdx = Math.min(i + windowSize, channelData.length);
+        for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
+        const rms = Math.sqrt(sumSquares / (endIdx - i));
+        const timeSec = i / sampleRate;
 
-         if (rms < threshold) {
-            if (!isSilent) { isSilent = true; silenceStart = timeSec; }
-         } else {
-            if (isSilent) {
-               if (timeSec - silenceStart >= minSilenceDuration) {
-                  if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
-                  currentRegionStart = timeSec;
-               }
-               isSilent = false;
+        if (rms < threshold) {
+          if (!isSilent) { isSilent = true; silenceStart = timeSec; }
+        } else {
+          if (isSilent) {
+            if (timeSec - silenceStart >= minSilenceDuration) {
+              if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
+              currentRegionStart = timeSec;
             }
-         }
+            isSilent = false;
+          }
+        }
       }
 
       const totalDurationSec = channelData.length / sampleRate;
       if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
-         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
+        if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
       } else if (silenceStart > currentRegionStart) {
-         keepRegions.push({ start: currentRegionStart, end: silenceStart });
+        keepRegions.push({ start: currentRegionStart, end: silenceStart });
       }
 
       if (keepRegions.length <= 1) {
-         alert('No se detectaron suficientes silencios largos. El clip ya está limpio.');
-         return;
+        alert('No se detectaron suficientes silencios largos. El clip ya está limpio.');
+        return;
       }
 
       const layer = editor.project.layers.find(l => l.clips.some(c => c.id === targetClip.id));
       let currentTimelineStart = targetClip.start;
-      
+
       keepRegions.forEach((region, idx) => {
-         const duration = region.end - region.start;
-         const newClip = targetClip.type === 'video' 
-            ? makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration)
-            : makeAudioClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration);
-         
-         newClip.sourceStart = targetClip.sourceStart + region.start;
-         newClip.speed = targetClip.speed || 1;
-         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
-         
-         editor.addClip(layer.id, newClip);
-         currentTimelineStart += duration;
+        const duration = region.end - region.start;
+        const newClip = targetClip.type === 'video'
+          ? makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration)
+          : makeAudioClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration);
+
+        newClip.sourceStart = targetClip.sourceStart + region.start;
+        newClip.speed = targetClip.speed || 1;
+        newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
+
+        editor.addClip(layer.id, newClip);
+        currentTimelineStart += duration;
       });
-      
+
       editor.deleteClip(targetClip.id);
       setSelectedClipId(null);
       alert(`¡Corte Mágico completado! Se eliminaron ${keepRegions.length - 1} silencios.`);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       alert('Error procesando el audio para cortes inteligentes.');
     } finally {
@@ -263,60 +270,60 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const handleAutoCaptions = useCallback(async () => {
     if (!selectedClipId) return alert('Selecciona un clip de video/audio para autogenerar subtítulos.');
-    const targetClip = editor.project.layers.flatMap(l=>l.clips).find(c=>c.id===selectedClipId);
+    const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
     if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return;
 
     setIsBotRunning(true);
     try {
       const { pipeline } = await import('@huggingface/transformers');
-      
+
       const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-         revision: 'main'
+        revision: 'main'
       });
 
       const response = await fetch(targetClip.sourceUrl);
       const arrayBuffer = await response.arrayBuffer();
-      
+
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const audioData = audioBuffer.getChannelData(0);
 
       const result = await transcriber(audioData, {
-         chunk_length_s: 30,
-         stride_length_s: 5,
-         return_timestamps: true,
-         language: 'spanish',
-         task: 'transcribe'
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        return_timestamps: true,
+        language: 'spanish',
+        task: 'transcribe'
       });
 
       if (!result.chunks || result.chunks.length === 0) {
-         return alert('No se detectó voz clara en el clip.');
+        return alert('No se detectó voz clara en el clip.');
       }
 
       const textLayer = editor.project.layers.find(l => l.type === 'text');
       let currentTimelineStart = targetClip.start;
 
       result.chunks.forEach(chunk => {
-         const [start, end] = chunk.timestamp;
-         if (start === null || end === null) return;
-         
-         const clipStart = currentTimelineStart + start;
-         const clipEnd = currentTimelineStart + end;
-         
-         editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
-            fontSize: 52,
-            fontColor: '#facc15',
-            posY: 0.80,
-            bold: true,
-            align: 'center',
-            animation: 'typewriter'
-         }));
+        const [start, end] = chunk.timestamp;
+        if (start === null || end === null) return;
+
+        const clipStart = currentTimelineStart + start;
+        const clipEnd = currentTimelineStart + end;
+
+        editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
+          fontSize: 52,
+          fontColor: '#facc15',
+          posY: 0.80,
+          bold: true,
+          align: 'center',
+          animation: 'typewriter'
+        }));
       });
-      
+
       setLeftTab('text');
       alert('¡Subtítulos estilo Hormozi generados exitosamente con IA local!');
-      
-    } catch(e) {
+
+    } catch (e) {
       console.error(e);
       alert('Error en Whisper IA: ' + e.message);
     } finally {
@@ -326,7 +333,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const handleHormoziBot = useCallback(async () => {
     if (!selectedClipId) return alert('Selecciona un clip de video para aplicar el Bot Hormozi.');
-    const targetClip = editor.project.layers.flatMap(l=>l.clips).find(c=>c.id===selectedClipId);
+    const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
     if (!targetClip || targetClip.type !== 'video') return alert('El Bot Hormozi solo funciona en clips de video.');
 
     setIsBotRunning(true);
@@ -338,41 +345,41 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const decodedAudio = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
       const channelData = decodedAudio.getChannelData(0);
       const sampleRate = decodedAudio.sampleRate;
-      
+
       const windowSize = Math.floor(0.05 * sampleRate);
       const threshold = 0.035;
       const minSilenceDuration = 0.5;
-      
+
       const keepRegions = [];
       let isSilent = false;
       let silenceStart = 0;
       let currentRegionStart = 0;
 
       for (let i = 0; i < channelData.length; i += windowSize) {
-         let sumSquares = 0;
-         const endIdx = Math.min(i + windowSize, channelData.length);
-         for(let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
-         const rms = Math.sqrt(sumSquares / (endIdx - i));
-         const timeSec = i / sampleRate;
+        let sumSquares = 0;
+        const endIdx = Math.min(i + windowSize, channelData.length);
+        for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
+        const rms = Math.sqrt(sumSquares / (endIdx - i));
+        const timeSec = i / sampleRate;
 
-         if (rms < threshold) {
-            if (!isSilent) { isSilent = true; silenceStart = timeSec; }
-         } else {
-            if (isSilent) {
-               if (timeSec - silenceStart >= minSilenceDuration) {
-                  if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
-                  currentRegionStart = timeSec;
-               }
-               isSilent = false;
+        if (rms < threshold) {
+          if (!isSilent) { isSilent = true; silenceStart = timeSec; }
+        } else {
+          if (isSilent) {
+            if (timeSec - silenceStart >= minSilenceDuration) {
+              if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
+              currentRegionStart = timeSec;
             }
-         }
+            isSilent = false;
+          }
+        }
       }
 
       const totalDurationSec = channelData.length / sampleRate;
       if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
-         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
+        if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
       } else if (silenceStart > currentRegionStart) {
-         keepRegions.push({ start: currentRegionStart, end: silenceStart });
+        keepRegions.push({ start: currentRegionStart, end: silenceStart });
       }
 
       // 2. WHISPER INITIALIZATION
@@ -385,11 +392,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const audioData16k = decoded16k.getChannelData(0);
 
       const result = await transcriber(audioData16k, {
-         chunk_length_s: 30,
-         stride_length_s: 5,
-         return_timestamps: true,
-         language: 'spanish',
-         task: 'transcribe'
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        return_timestamps: true,
+        language: 'spanish',
+        task: 'transcribe'
       });
 
       // 4. ASSEMBLE CLIPS & TEXT
@@ -397,56 +404,56 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const textLayer = editor.project.layers.find(l => l.type === 'text');
       let currentTimelineStart = targetClip.start;
       let punchIn = false;
-      
+
       keepRegions.forEach((region, idx) => {
-         const duration = region.end - region.start;
-         
-         // Add Video Clip (Alternating Zoom)
-         const newClip = makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx+1}`, currentTimelineStart, currentTimelineStart + duration);
-         newClip.sourceStart = targetClip.sourceStart + region.start;
-         newClip.speed = targetClip.speed || 1;
-         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
-         
-         if (punchIn) newClip.transform = { scale: 1.15, x: 0, y: 0 };
-         punchIn = !punchIn; // Toggle zoom for next clip
-         
-         editor.addClip(layer.id, newClip);
+        const duration = region.end - region.start;
 
-         // Add Subtitles matching this region
-         if (result.chunks) {
-            result.chunks.forEach(chunk => {
-               const [start, end] = chunk.timestamp;
-               if (start === null || end === null) return;
-               
-               // Check if subtitle overlaps with this keep region
-               if (start >= region.start && start < region.end) {
-                  const relativeStart = start - region.start;
-                  const relativeEnd = Math.min(end, region.end) - region.start;
-                  
-                  const clipStart = currentTimelineStart + relativeStart;
-                  const clipEnd = currentTimelineStart + relativeEnd;
-                  
-                  editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
-                     fontSize: 52,
-                     fontColor: '#facc15',
-                     posY: 0.80,
-                     bold: true,
-                     align: 'center',
-                     animation: 'typewriter'
-                  }));
-               }
-            });
-         }
+        // Add Video Clip (Alternating Zoom)
+        const newClip = makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration);
+        newClip.sourceStart = targetClip.sourceStart + region.start;
+        newClip.speed = targetClip.speed || 1;
+        newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
 
-         currentTimelineStart += duration;
+        if (punchIn) newClip.transform = { scale: 1.15, x: 0, y: 0 };
+        punchIn = !punchIn; // Toggle zoom for next clip
+
+        editor.addClip(layer.id, newClip);
+
+        // Add Subtitles matching this region
+        if (result.chunks) {
+          result.chunks.forEach(chunk => {
+            const [start, end] = chunk.timestamp;
+            if (start === null || end === null) return;
+
+            // Check if subtitle overlaps with this keep region
+            if (start >= region.start && start < region.end) {
+              const relativeStart = start - region.start;
+              const relativeEnd = Math.min(end, region.end) - region.start;
+
+              const clipStart = currentTimelineStart + relativeStart;
+              const clipEnd = currentTimelineStart + relativeEnd;
+
+              editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
+                fontSize: 52,
+                fontColor: '#facc15',
+                posY: 0.80,
+                bold: true,
+                align: 'center',
+                animation: 'typewriter'
+              }));
+            }
+          });
+        }
+
+        currentTimelineStart += duration;
       });
-      
+
       editor.deleteClip(targetClip.id);
       setSelectedClipId(null);
       setLeftTab('text');
       alert(`¡Bot Hormozi completado! Se eliminaron silencios, se añadieron zooms dinámicos y autogeneraron subtítulos estilo Hormozi.`);
-      
-    } catch(e) {
+
+    } catch (e) {
       console.error(e);
       alert('Error ejecutando Bot Hormozi: ' + e.message);
     } finally {
@@ -473,7 +480,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     const newAudioClip = makeAudioClip(clip.sourceUrl, `Audio Extraído`, clip.start, clip.end);
     newAudioClip.sourceStart = clip.sourceStart;
     newAudioClip.speed = clip.speed;
-    
+
     editor.addClip(audioLayer.id, newAudioClip);
     alert('Audio extraído exitosamente a la pista de audio.');
   }, [selectedClipId, selectedClip, editor]);
@@ -529,7 +536,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       <div className="bg-red-600/90 text-white text-[11px] font-bold text-center py-1.5 uppercase tracking-wide shrink-0 shadow-md z-50">
         ⚠️ AVISO: Si no guardas el borrador, los archivos se perderán al cerrar.
       </div>
-      
+
       {/* Header */}
       <div className="h-14 bg-[#18181b] border-b border-[#27272a] flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4">
@@ -569,20 +576,20 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           <div className="h-4 w-px bg-neutral-700"></div>
 
           {/* Magic Bot */}
-          <button onClick={() => {}} disabled={isBotRunning} className="peer flex items-center gap-2 bg-[#27272a] hover:bg-[#3f3f46] text-white px-3 py-1.5 rounded-md text-xs font-medium border border-purple-500/30 hover:border-purple-500/60 transition-all group relative">
+          <button onClick={() => { }} disabled={isBotRunning} className="peer flex items-center gap-2 bg-[#27272a] hover:bg-[#3f3f46] text-white px-3 py-1.5 rounded-md text-xs font-medium border border-purple-500/30 hover:border-purple-500/60 transition-all group relative">
             <Zap className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
             <span className="hidden sm:inline">IA Tools</span>
           </button>
           {/* Dropdown IA Tools */}
           <div className="absolute top-12 right-[180px] w-56 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
             <button onClick={handleHormoziBot} className="w-full text-left px-4 py-3 text-xs text-white hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-blue-600/20 flex items-center gap-2 border-b border-[#27272a] font-bold">
-               <Wand2 className="w-4 h-4 text-purple-400"/> Bot Hormozi (Todo en 1)
+              <Wand2 className="w-4 h-4 text-purple-400" /> Bot Hormozi (Todo en 1)
             </button>
             <button onClick={handleSmartCut} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-purple-400 flex items-center gap-2">
-               <Scissors className="w-3.5 h-3.5"/> Smart Cut (Silencios)
+              <Scissors className="w-3.5 h-3.5" /> Smart Cut (Silencios)
             </button>
             <button onClick={handleAutoCaptions} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-blue-400 flex items-center gap-2 border-t border-[#27272a]">
-               <Type className="w-3.5 h-3.5"/> Auto-Subtítulos
+              <Type className="w-3.5 h-3.5" /> Auto-Subtítulos
             </button>
           </div>
 
@@ -602,7 +609,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
       {/* Main Workspace */}
       <div className="flex flex-1 min-h-0">
-        
+
         {/* LEFT PANEL: Library (Media, Text, Audio) */}
         <div className="w-72 sm:w-80 flex flex-col border-r border-[#27272a] bg-[#18181b] shrink-0">
           {/* Tabs */}
@@ -613,9 +620,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               { id: 'tts', icon: <Music className="w-4 h-4" />, label: 'Voz IA' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setLeftTab(tab.id)}
-                className={`flex-1 flex flex-col items-center py-2.5 rounded-md gap-1 text-[11px] font-medium transition-all ${
-                  leftTab === tab.id ? 'bg-[#27272a] text-white shadow-sm' : 'text-neutral-400 hover:bg-[#27272a]/50 hover:text-neutral-200'
-                }`}>
+                className={`flex-1 flex flex-col items-center py-2.5 rounded-md gap-1 text-[11px] font-medium transition-all ${leftTab === tab.id ? 'bg-[#27272a] text-white shadow-sm' : 'text-neutral-400 hover:bg-[#27272a]/50 hover:text-neutral-200'
+                  }`}>
                 {tab.icon}
                 {tab.label}
               </button>
@@ -635,7 +641,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                       onChange={e => e.target.files[0] && handleUpload(e.target.files[0])} />
                   </label>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   {allMedia.length === 0 && <div className="col-span-2 text-center py-8 text-neutral-500 text-xs bg-[#27272a]/30 rounded-lg border border-dashed border-neutral-700">Arrastra archivos aquí o haz clic en Importar</div>}
                   {allMedia.map(m => {
@@ -684,7 +690,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 <div className="pt-4 border-t border-[#27272a]">
                   <h4 className="text-[10px] text-neutral-400 font-semibold mb-2 uppercase tracking-wide">Plantillas Rápidas</h4>
                   <div className="space-y-1.5">
-                    {['🔥 ¡No te lo pierdas!','💡 Tip del día','🚀 Resultados reales','❓ ¿Sabías que...?','✅ Garantizado'].map(t => (
+                    {['🔥 ¡No te lo pierdas!', '💡 Tip del día', '🚀 Resultados reales', '❓ ¿Sabías que...?', '✅ Garantizado'].map(t => (
                       <button key={t} onClick={() => setNewText(t)}
                         className="w-full text-left text-xs text-neutral-300 bg-[#27272a]/50 hover:bg-[#27272a] border border-transparent hover:border-[#3f3f46] p-2.5 rounded-md transition-all">
                         {t}
@@ -699,7 +705,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             {leftTab === 'tts' && (
               <div className="space-y-4">
                 <h3 className="text-xs font-semibold text-white">Generador de Voz IA</h3>
-                
+
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide mb-1.5 block">Voz</label>
@@ -738,7 +744,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
         {/* CENTER PANEL: Player Preview */}
         <div className="flex-1 flex flex-col bg-[#080808] relative min-w-0">
-          
+
           <div className="flex-1 flex items-center justify-center p-4 min-h-0 relative">
             {/* Player Container */}
             <div className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ring-1 ring-white/10 ${isPortrait ? 'h-full' : 'w-full'}`}
@@ -748,7 +754,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 maxWidth: '100%',
               }}>
               <video ref={videoRef} className="w-full h-full object-contain" controls={false} />
-              
+
               {/* Text overlay preview */}
               {editor.project.layers.find(l => l.type === 'text')?.clips
                 .filter(c => engine.displayTime >= c.start && engine.displayTime <= c.end)
@@ -768,19 +774,19 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     }}>
                     {c.text}
                   </div>
-              ))}
+                ))}
             </div>
           </div>
 
           {/* Player Controls */}
           <div className="h-16 shrink-0 flex items-center justify-center gap-6 bg-gradient-to-t from-[#080808] to-transparent absolute bottom-0 left-0 right-0 pb-2">
-             <div className="flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-md rounded-full px-6 py-2 border border-[#3f3f46] shadow-xl">
-               <span className="text-neutral-400 font-mono text-xs w-12 text-right">{engine.displayTime.toFixed(1)}s</span>
-               <button onClick={engine.toggle} className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform">
-                 {engine.isPlaying ? <Pause className="w-5 h-5" fill="currentColor" /> : <Play className="w-5 h-5 ml-1" fill="currentColor" />}
-               </button>
-               <span className="text-neutral-400 font-mono text-xs w-12">{editor.totalDuration.toFixed(1)}s</span>
-             </div>
+            <div className="flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-md rounded-full px-6 py-2 border border-[#3f3f46] shadow-xl">
+              <span className="text-neutral-400 font-mono text-xs w-12 text-right">{engine.displayTime.toFixed(1)}s</span>
+              <button onClick={engine.toggle} className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform">
+                {engine.isPlaying ? <Pause className="w-5 h-5" fill="currentColor" /> : <Play className="w-5 h-5 ml-1" fill="currentColor" />}
+              </button>
+              <span className="text-neutral-400 font-mono text-xs w-12">{editor.totalDuration.toFixed(1)}s</span>
+            </div>
           </div>
         </div>
 
@@ -807,16 +813,16 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => editor.addLayer(makeLayer('video'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Video className="w-3 h-3"/> + Video</button>
-            <button onClick={() => editor.addLayer(makeLayer('audio'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Music className="w-3 h-3"/> + Audio</button>
-            <button onClick={() => editor.addLayer(makeLayer('text'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Type className="w-3 h-3"/> + Texto</button>
+            <button onClick={() => editor.addLayer(makeLayer('video'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Video className="w-3 h-3" /> + Video</button>
+            <button onClick={() => editor.addLayer(makeLayer('audio'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Music className="w-3 h-3" /> + Audio</button>
+            <button onClick={() => editor.addLayer(makeLayer('text'))} className="text-[10px] font-semibold text-neutral-400 hover:text-white px-2 py-1 bg-[#27272a] hover:bg-[#3f3f46] rounded border border-[#3f3f46] flex items-center gap-1"><Type className="w-3 h-3" /> + Texto</button>
           </div>
           <div className="flex items-center gap-3 ml-auto">
-             <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider hidden sm:inline-block">Línea de Tiempo</span>
-             <input type="range" min="0" max={editor.totalDuration || 10} step="0.1"
-                value={engine.displayTime}
-                onChange={e => engine.seek(parseFloat(e.target.value))}
-                className="w-32 sm:w-48 accent-blue-500" />
+            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider hidden sm:inline-block">Línea de Tiempo</span>
+            <input type="range" min="0" max={editor.totalDuration || 10} step="0.1"
+              value={engine.displayTime}
+              onChange={e => engine.seek(parseFloat(e.target.value))}
+              className="w-32 sm:w-48 accent-blue-500" />
           </div>
         </div>
 
@@ -828,19 +834,23 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             const t = engine.currentTimeRef.current;
 
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-               const file = e.dataTransfer.files[0];
-               if (!file.type.match(/^(video|audio|image)\//)) return;
-               const url = URL.createObjectURL(file);
-               const dur = await getVideoDuration(url);
-               const isAudio = file.type.startsWith('audio/');
-               const layerType = isAudio ? 'audio' : 'video';
-               const layer = editor.project.layers.find(l => l.type === layerType);
-               
-               if (isAudio) editor.addClip(layer.id, makeAudioClip(url, file.name, t, t + dur));
-               else editor.addClip(layer.id, makeVideoClip(url, file.name, t, t + dur));
-               
-               setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, caption: file.name, media_options: [{ url }] }]);
-               return;
+              const file = e.dataTransfer.files[0];
+              if (!file.type.match(/^(video|audio|image)\//)) return;
+              const url = URL.createObjectURL(file);
+              const dur = await getVideoDuration(url);
+              const isAudio = file.type.startsWith('audio/');
+              const layerType = isAudio ? 'audio' : 'video';
+              const layer = editor.project.layers.find(l => l.type === layerType);
+
+              const newClip = isAudio 
+                ? makeAudioClip(url, file.name, t, t + dur)
+                : makeVideoClip(url, file.name, t, t + dur);
+              
+              editor.addClip(layer.id, newClip);
+              setSelectedClipId(newClip.id);
+
+              setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, caption: file.name, media_options: [{ url }] }]);
+              return;
             }
 
             if (!draggedMedia) return;
@@ -849,11 +859,14 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
             const layerType = isAudio ? 'audio' : 'video';
             const layer = editor.project.layers.find(l => l.type === layerType);
-            if (isAudio) {
-               editor.addClip(layer.id, makeAudioClip(url, draggedMedia.caption || 'Audio', t, t + dur));
-            } else {
-               editor.addClip(layer.id, makeVideoClip(url, draggedMedia.caption || 'Video', t, t + dur));
-            }
+            
+            const newClip = isAudio
+              ? makeAudioClip(url, draggedMedia.caption || 'Audio', t, t + dur)
+              : makeVideoClip(url, draggedMedia.caption || 'Video', t, t + dur);
+            
+            editor.addClip(layer.id, newClip);
+            setSelectedClipId(newClip.id);
+            
             setDraggedMedia(null);
           }}>
           {timelineNode}
@@ -867,12 +880,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             <button onClick={() => setShowExportModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Download className="w-5 h-5 text-blue-500"/> Exportar Video</h3>
-            
+            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Download className="w-5 h-5 text-blue-500" /> Exportar Video</h3>
+
             <div className="space-y-4 mb-6">
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1.5 block">Calidad (Bitrate)</label>
-                <select value={exportSettings.quality} onChange={e => setExportSettings({...exportSettings, quality: e.target.value})} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-sm rounded-md p-2 outline-none focus:border-blue-500">
+                <select value={exportSettings.quality} onChange={e => setExportSettings({ ...exportSettings, quality: e.target.value })} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-sm rounded-md p-2 outline-none focus:border-blue-500">
                   <option value="high">Alta (Mejor calidad, más pesado)</option>
                   <option value="medium">Media (Recomendado para Redes)</option>
                   <option value="low">Baja (Rápido, menos espacio)</option>
@@ -880,7 +893,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               </div>
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1.5 block">Cuadros por Segundo (FPS)</label>
-                <select value={exportSettings.fps} onChange={e => setExportSettings({...exportSettings, fps: parseInt(e.target.value)})} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-sm rounded-md p-2 outline-none focus:border-blue-500">
+                <select value={exportSettings.fps} onChange={e => setExportSettings({ ...exportSettings, fps: parseInt(e.target.value) })} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-sm rounded-md p-2 outline-none focus:border-blue-500">
                   <option value={30}>30 FPS (Estándar)</option>
                   <option value={60}>60 FPS (Fluido)</option>
                 </select>
@@ -888,7 +901,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             </div>
 
             <button onClick={handleRender} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-               <Zap className="w-4 h-4"/> Procesar y Descargar
+              <Zap className="w-4 h-4" /> Procesar y Descargar
             </button>
           </div>
         </div>

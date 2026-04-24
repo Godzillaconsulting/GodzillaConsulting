@@ -4,11 +4,14 @@ import { Volume2, Gauge, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Music 
 export default function FloatingToolbar({ selectedClip, editor }) {
   const [activeTab, setActiveTab] = useState(null);
 
-  if (!selectedClip) return null;
-  const clip = selectedClip.clip;
-  const type = selectedClip.layer.type;
+  const clip = selectedClip?.clip;
+  const type = selectedClip?.layer?.type;
+  const disabled = !selectedClip;
 
-  const toggleTab = (tab) => setActiveTab(activeTab === tab ? null : tab);
+  const toggleTab = (tab) => {
+    if (disabled) return;
+    setActiveTab(activeTab === tab ? null : tab);
+  };
 
   const Popover = ({ isOpen, title, children }) => {
     if (!isOpen) return null;
@@ -26,11 +29,11 @@ export default function FloatingToolbar({ selectedClip, editor }) {
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-1 p-1 bg-[#18181b]/95 backdrop-blur-md shadow-2xl rounded-xl border border-[#27272a]">
       
       {/* Volume */}
-      {(type === 'audio' || type === 'video') && (
-        <div className="relative">
-          <button onClick={() => toggleTab('volume')} className={`p-2 rounded-lg transition-colors ${activeTab === 'volume' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Volume2 className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('volume')} disabled={disabled || (type !== 'audio' && type !== 'video')} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'volume' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Volume2 className="w-4 h-4" />
+        </button>
+        {clip && (type === 'audio' || type === 'video') && (
           <Popover isOpen={activeTab === 'volume'} title="Volumen">
             <div className="flex items-center gap-3">
               <input type="range" min="0" max="2" step="0.05"
@@ -51,16 +54,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 <input type="range" min="0" max="5" step="0.1" value={clip.fadeOut ?? 0} onChange={e => editor.updateClip(clip.id, { fadeOut: parseFloat(e.target.value) }, true)} className="w-full accent-blue-500 h-1 bg-neutral-700 rounded-lg appearance-none" />
               </div>
             </div>
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Speed */}
-      {type !== 'text' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('speed')} className={`p-2 rounded-lg transition-colors ${activeTab === 'speed' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Gauge className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('speed')} disabled={disabled || type === 'text'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'speed' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Gauge className="w-4 h-4" />
+        </button>
+        {clip && type !== 'text' && (
           <Popover isOpen={activeTab === 'speed'} title="Velocidad">
             <div className="flex items-center gap-3">
               <input type="range" min="0.25" max="4" step="0.25"
@@ -72,16 +74,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 <span className="text-[10px] font-mono text-white">{clip.speed ?? 1}x</span>
               </div>
             </div>
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Audio FX */}
-      {(type === 'audio' || type === 'video') && (
-        <div className="relative">
-          <button onClick={() => toggleTab('audiofx')} className={`p-2 rounded-lg transition-colors ${activeTab === 'audiofx' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Music className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('audiofx')} disabled={disabled || (type !== 'audio' && type !== 'video')} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'audiofx' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Music className="w-4 h-4" />
+        </button>
+        {clip && (type === 'audio' || type === 'video') && (
           <Popover isOpen={activeTab === 'audiofx'} title="Efectos de Voz IA">
             <select value={clip.voiceFx || ''} onChange={e => editor.updateClip(clip.id, { voiceFx: e.target.value })}
               className="w-full bg-[#27272a] text-[11px] p-2 rounded-lg outline-none border border-[#3f3f46] text-white focus:border-blue-500 transition-colors">
@@ -97,16 +98,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 className="accent-emerald-500 w-3.5 h-3.5" />
               Eliminar Ruido de Fondo
             </label>
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Text Styles */}
-      {type === 'text' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('text')} className={`p-2 rounded-lg transition-colors ${activeTab === 'text' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Type className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('text')} disabled={disabled || type !== 'text'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'text' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Type className="w-4 h-4" />
+        </button>
+        {clip && type === 'text' && (
           <Popover isOpen={activeTab === 'text'} title="Formato de Texto">
             <textarea value={clip.text || ''}
               onChange={e => editor.updateClip(clip.id, { text: e.target.value }, true)}
@@ -142,16 +142,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 <option value="slideup">Deslizar hacia arriba</option>
               </select>
             </div>
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* PiP & Transform */}
-      {type === 'video' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('pip')} className={`p-2 rounded-lg transition-colors ${activeTab === 'pip' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <ImageIcon className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('pip')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'pip' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <ImageIcon className="w-4 h-4" />
+        </button>
+        {clip && type === 'video' && (
           <Popover isOpen={activeTab === 'pip'} title="Transformación (PiP)">
             {[
               { key: 'scale', label: 'Escala', min: 0.1, max: 3, step: 0.1, def: 1, unit: 'x' },
@@ -172,16 +171,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 </div>
               )
             })}
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Color Grading */}
-      {type === 'video' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('color')} className={`p-2 rounded-lg transition-colors ${activeTab === 'color' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Palette className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('color')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'color' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Palette className="w-4 h-4" />
+        </button>
+        {clip && type === 'video' && (
           <Popover isOpen={activeTab === 'color'} title="Corrección de Color">
             {[
               {k:'brightness', label:'Brillo', min:-1, max:1, step:0.05, c:'accent-yellow-500'},
@@ -200,16 +198,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                   className={`w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer ${c.c}`} />
               </div>
             ))}
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* FX Filters & Chroma */}
-      {type === 'video' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('fx')} className={`p-2 rounded-lg transition-colors ${activeTab === 'fx' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <Wand2 className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('fx')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'fx' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Wand2 className="w-4 h-4" />
+        </button>
+        {clip && type === 'video' && (
           <Popover isOpen={activeTab === 'fx'} title="Filtros Visuales & Chroma">
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[ {id:'blur', label:'Desenfocar'}, {id:'vhs', label:'Retro VHS'}, {id:'bw', label:'Blanco/Negro'}, {id:'vignette', label:'Viñeta'} ].map(fx => {
@@ -251,16 +248,15 @@ export default function FloatingToolbar({ selectedClip, editor }) {
                 </div>
               )}
             </div>
-          </Popover>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Transition */}
-      {type === 'video' && (
-        <div className="relative">
-          <button onClick={() => toggleTab('transition')} className={`p-2 rounded-lg transition-colors ${activeTab === 'transition' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
-            <ArrowLeftRight className="w-4 h-4" />
-          </button>
+      <div className="relative">
+        <button onClick={() => toggleTab('transition')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'transition' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <ArrowLeftRight className="w-4 h-4" />
+        </button>
+        {clip && type === 'video' && (
           <Popover isOpen={activeTab === 'transition'} title="Transición (Entrada)">
             <div className="grid grid-cols-2 gap-2 mb-3">
               {[['cut','Ninguna'],['fade','Fundido'],['wipeleft','Barrido'],['slideleft','Deslizar'],['zoom','Zoom In']].map(([t, label]) => {

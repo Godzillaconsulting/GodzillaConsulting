@@ -112,7 +112,14 @@ class AutomationEngine {
 
             } catch (error) {
                 console.error(`[Engine] ❌ Error en Planificador IA: ${error.message}`);
-                return { ...ctx, _error: error.message };
+                console.log(`[Engine] ⚠️ Activando Plan de Emergencia (Fallback) para no detener la producción...`);
+                return { ...ctx, plan: [{
+                    "Tema": `${ctx.niche || 'Contenido'} - Día de Prueba (Emergencia)`,
+                    "NARRACION ESCENA 1": `¡Bienvenidos a la mejor actualización de ${ctx.niche || 'hoy'}!`,
+                    "VISUAL ESCENA 1 (Prompt Imagen Detallado)": `A cinematic, highly detailed and vibrant professional photography of ${ctx.niche || 'an interesting subject'}, 4k resolution, hyperrealistic`,
+                    "NARRACION ESCENA 2 (CTA)": "¡Si te gustó, dale like y síguenos para no perderte nada!",
+                    "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "A highly professional and clean end screen background, neon colors, cyberpunk style, cinematic lighting"
+                }], _error: error.message };
             }
         },
 

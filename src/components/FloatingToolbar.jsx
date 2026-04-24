@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, Gauge, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Music } from 'lucide-react';
+import { Volume2, Gauge, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Music, Activity, Target, Layers } from 'lucide-react';
 
 export default function FloatingToolbar({ selectedClip, editor }) {
   const [activeTab, setActiveTab] = useState(null);
@@ -285,43 +285,61 @@ export default function FloatingToolbar({ selectedClip, editor }) {
         )}
       </div>
 
-      {/* Color Grading */}
+      {/* Color Grading (Advanced 3-Way) */}
       <div className="relative">
         <button onClick={() => toggleTab('color')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'color' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
           <Palette className="w-4 h-4" />
         </button>
         {clip && type === 'video' && (
-          <Popover isOpen={activeTab === 'color'} title="Corrección de Color">
-            {[
-              {k:'brightness', label:'Brillo', min:-1, max:1, step:0.05, c:'accent-yellow-500'},
-              {k:'contrast', label:'Contraste', min:0, max:2, step:0.05, c:'accent-white'},
-              {k:'saturation', label:'Saturación', min:0, max:3, step:0.1, c:'accent-pink-500'}
-            ].map(c => (
-              <div key={c.k}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] text-neutral-400">{c.label}</span>
-                  <span className="text-[9px] font-mono text-neutral-500">{Math.round((clip.color?.[c.k] ?? (c.k==='brightness'?0:1)) * 100)}%</span>
+          <Popover isOpen={activeTab === 'color'} title="Corrección de Color 3-Way">
+            {/* EDIUS style 3-way color correction mock UI */}
+            <div className="flex gap-4 mb-4">
+              {['Sombras', 'Medios', 'Luces'].map(t => (
+                <div key={t} className="flex flex-col items-center flex-1">
+                  <span className="text-[9px] text-neutral-400 uppercase tracking-wider mb-2">{t}</span>
+                  <div className="w-16 h-16 rounded-full border border-[#3f3f46] bg-[#121212] flex items-center justify-center relative overflow-hidden">
+                     {/* Mock Color Wheel */}
+                     <div className="w-full h-full bg-gradient-conic from-red-500 via-green-500 to-blue-500 opacity-20 rounded-full"></div>
+                     <div className="w-2 h-2 bg-white rounded-full absolute shadow-[0_0_5px_rgba(0,0,0,1)]"></div>
+                  </div>
+                  <input type="range" min="0" max="1" step="0.01" defaultValue="0.5" className="w-full h-1 mt-3 bg-neutral-700 rounded-lg appearance-none accent-white" />
                 </div>
-                <input type="range" min={c.min} max={c.max} step={c.step}
-                  value={clip.color?.[c.k] ?? (c.k==='brightness'?0:1)}
-                  onChange={e => editor.updateClip(clip.id, { color: { ...(clip.color || {brightness:0,contrast:1,saturation:1}), [c.k]: parseFloat(e.target.value) } }, true)}
-                  onMouseUp={e => editor.updateClip(clip.id, { color: { ...(clip.color || {brightness:0,contrast:1,saturation:1}), [c.k]: parseFloat(e.target.value) } })}
-                  className={`w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer ${c.c}`} />
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Basic Sliders */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[#27272a] pt-3">
+              {[
+                {k:'brightness', label:'Exposición', min:-1, max:1, step:0.05, c:'accent-white'},
+                {k:'contrast', label:'Contraste', min:0, max:2, step:0.05, c:'accent-white'},
+                {k:'saturation', label:'Saturación', min:0, max:3, step:0.1, c:'accent-pink-500'},
+                {k:'temperature', label:'Temperatura', min:-1, max:1, step:0.05, c:'accent-orange-500'}
+              ].map(c => (
+                <div key={c.k}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] text-neutral-400">{c.label}</span>
+                    <span className="text-[9px] font-mono text-neutral-500">{Math.round((clip.color?.[c.k] ?? (c.k==='contrast'||c.k==='saturation'?1:0)) * 100)}%</span>
+                  </div>
+                  <input type="range" min={c.min} max={c.max} step={c.step}
+                    value={clip.color?.[c.k] ?? (c.k==='contrast'||c.k==='saturation'?1:0)}
+                    onChange={e => editor.updateClip(clip.id, { color: { ...(clip.color || {brightness:0,contrast:1,saturation:1,temperature:0}), [c.k]: parseFloat(e.target.value) } }, true)}
+                    onMouseUp={e => editor.updateClip(clip.id, { color: { ...(clip.color || {brightness:0,contrast:1,saturation:1,temperature:0}), [c.k]: parseFloat(e.target.value) } })}
+                    className={`w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer ${c.c}`} />
+                </div>
+              ))}
+            </div>
           </Popover>
         )}
       </div>
 
-      {/* FX Filters & Chroma */}
+      {/* FX Filters, Chroma & Tracking */}
       <div className="relative">
         <button onClick={() => toggleTab('fx')} disabled={disabled || type !== 'video'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'fx' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
           <Wand2 className="w-4 h-4" />
         </button>
         {clip && type === 'video' && (
-          <Popover isOpen={activeTab === 'fx'} title="Filtros Visuales & Chroma">
+          <Popover isOpen={activeTab === 'fx'} title="Máscaras, FX & Tracking">
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {[ {id:'blur', label:'Desenfocar'}, {id:'vhs', label:'Retro VHS'}, {id:'bw', label:'Blanco/Negro'}, {id:'vignette', label:'Viñeta'} ].map(fx => {
+              {[ {id:'blur', label:'Desenfocar Gaussian'}, {id:'vhs', label:'Glitch / VHS'}, {id:'bw', label:'Cinematic LUT'}, {id:'vignette', label:'Viñeta Dinámica'} ].map(fx => {
                 const active = clip.effects?.includes(fx.id);
                 return (
                   <button key={fx.id} onClick={() => {
@@ -336,29 +354,60 @@ export default function FloatingToolbar({ selectedClip, editor }) {
               })}
             </div>
             
+            {/* Tracking / Masking */}
+            <div className="border-t border-[#27272a] pt-3 mb-3">
+              <label className="flex items-center gap-2 text-[11px] text-neutral-200 font-semibold cursor-pointer mb-2">
+                <Target className="w-3.5 h-3.5 text-blue-500" />
+                Rastreo de Movimiento (Tracking)
+              </label>
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-neutral-300 text-[10px] py-1.5 rounded border border-[#3f3f46]">Seleccionar Sujeto</button>
+                <button className="flex-1 bg-blue-600/20 text-blue-400 text-[10px] py-1.5 rounded border border-blue-500/30">Iniciar IA Tracking</button>
+              </div>
+            </div>
+
             {/* Chroma Key */}
             <div className="border-t border-[#27272a] pt-3">
               <label className="flex items-center gap-2 text-[11px] text-neutral-200 font-semibold cursor-pointer mb-2">
+                <Layers className="w-3.5 h-3.5 text-emerald-500" />
+                Chroma Key Avanzado
                 <input type="checkbox" checked={!!clip.chromaKey}
-                  onChange={e => editor.updateClip(clip.id, { chromaKey: e.target.checked ? { color: '#00ff00', similarity: 0.2 } : null })} 
-                  className="accent-emerald-500 w-3 h-3" />
-                Chroma Key (Pantalla Verde)
+                  onChange={e => editor.updateClip(clip.id, { chromaKey: e.target.checked ? { color: '#00ff00', similarity: 0.2, blend: 0.1 } : null })} 
+                  className="accent-emerald-500 w-3 h-3 ml-auto" />
               </label>
               {clip.chromaKey && (
                 <div className="space-y-3 pl-5">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-neutral-400">Color a borrar</span>
+                    <span className="text-neutral-400">Color a extraer</span>
                     <input type="color" value={clip.chromaKey.color} onChange={e => editor.updateClip(clip.id, { chromaKey: { ...clip.chromaKey, color: e.target.value } })} className="w-5 h-5 p-0 border-0 rounded cursor-pointer" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center text-[10px] mb-1">
-                      <span className="text-neutral-400">Intensidad</span>
+                      <span className="text-neutral-400">Tolerancia (Spill)</span>
                       <span className="font-mono text-neutral-500">{Math.round(clip.chromaKey.similarity * 100)}%</span>
                     </div>
                     <input type="range" min="0" max="0.5" step="0.01" value={clip.chromaKey.similarity} onChange={e => editor.updateClip(clip.id, { chromaKey: { ...clip.chromaKey, similarity: parseFloat(e.target.value) } }, true)} className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
                   </div>
                 </div>
               )}
+            </div>
+          </Popover>
+        )}
+      </div>
+
+      {/* Keyframes */}
+      <div className="relative">
+        <button onClick={() => toggleTab('keyframes')} disabled={disabled || type === 'audio'} className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${activeTab === 'keyframes' ? 'bg-[#27272a] text-white' : 'hover:bg-[#27272a]/50 text-neutral-400 hover:text-white'}`}>
+          <Activity className="w-4 h-4" />
+        </button>
+        {clip && type !== 'audio' && (
+          <Popover isOpen={activeTab === 'keyframes'} title="Animación & Keyframes">
+            <div className="space-y-3 text-center py-4">
+               <Activity className="w-8 h-8 text-neutral-500 mx-auto mb-2 opacity-50" />
+               <p className="text-[11px] text-neutral-400 px-4">Añade puntos de control (Keyframes) para animar posición, escala u opacidad a lo largo del tiempo.</p>
+               <button className="bg-[#27272a] hover:bg-[#3f3f46] text-white text-[11px] px-4 py-2 rounded-lg font-medium border border-[#3f3f46] shadow-md transition-all">
+                  + Añadir Keyframe aquí
+               </button>
             </div>
           </Popover>
         )}

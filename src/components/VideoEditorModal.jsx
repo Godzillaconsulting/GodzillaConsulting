@@ -322,7 +322,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const result = await transcriber(audioData, {
         chunk_length_s: 30,
         stride_length_s: 5,
-        return_timestamps: true,
+        return_timestamps: 'word',
         language: 'spanish',
         task: 'transcribe'
       });
@@ -334,25 +334,48 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const textLayer = editor.project.layers.find(l => l.type === 'text');
       let currentTimelineStart = targetClip.start;
 
-      result.chunks.forEach(chunk => {
-        const [start, end] = chunk.timestamp;
-        if (start === null || end === null) return;
+      let currentSentence = [];
+      let currentSentenceText = '';
+
+      const flushSentence = () => {
+        if (currentSentence.length === 0) return;
+        const start = currentSentence[0].timestamp[0];
+        const end = currentSentence[currentSentence.length - 1].timestamp[1];
+        if (start === null || end === null) { currentSentence = []; return; }
 
         const clipStart = currentTimelineStart + start;
         const clipEnd = currentTimelineStart + end;
 
-        editor.addClip(textLayer.id, makeTextClip(chunk.text.trim(), clipStart, clipEnd, {
+        const wordsArr = currentSentence.map(w => ({
+          text: w.text.trim().toUpperCase(),
+          start: currentTimelineStart + w.timestamp[0],
+          end: currentTimelineStart + w.timestamp[1]
+        }));
+
+        editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
           fontSize: 52,
-          fontColor: '#facc15',
+          fontColor: '#ffffff',
           posY: 0.80,
           bold: true,
           align: 'center',
-          animation: 'typewriter'
+          words: wordsArr,
+          karaoke: true
         }));
+
+        currentSentence = [];
+        currentSentenceText = '';
+      };
+
+      result.chunks.forEach(chunk => {
+        if (!chunk.timestamp || chunk.timestamp[0] === null || chunk.timestamp[1] === null) return;
+        currentSentence.push(chunk);
+        currentSentenceText += chunk.text + ' ';
+        if (chunk.text.match(/[.!?]$/) || currentSentence.length >= 5) flushSentence();
       });
+      flushSentence();
 
       setLeftTab('text');
-      alert('¡Subtítulos estilo Hormozi generados exitosamente con IA local!');
+      alert('¡Subtítulos con efecto Karaoke generados exitosamente con IA local!');
 
     } catch (e) {
       console.error(e);
@@ -454,32 +477,54 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
         editor.addClip(layer.id, newClip);
 
-        // Add Subtitles matching this region
+        // Add Subtitles matching this region (Grouped in chunks for Karaoke effect to save timeline memory)
         if (result.chunks) {
-          result.chunks.forEach(chunk => {
-            const [start, end] = chunk.timestamp;
-            if (start === null || end === null) return;
-
-            // Check if subtitle overlaps with this keep region
-            if (start >= region.start && start < region.end) {
-              const relativeStart = start - region.start;
-              const relativeEnd = Math.min(end, region.end) - region.start;
-
-              const clipStart = currentTimelineStart + relativeStart;
-              const clipEnd = currentTimelineStart + relativeEnd;
-
-              // Upper case for impact
-              const wordText = chunk.text.trim().toUpperCase();
-              editor.addClip(textLayer.id, makeTextClip(wordText, clipStart, clipEnd, {
-                fontSize: 64, // Bigger for short form
-                fontColor: '#facc15',
-                posY: 0.85,
-                bold: true,
-                align: 'center',
-                animation: 'pop' // Snap in instantly with a tiny bounce effect
-              }));
-            }
+          const regionChunks = result.chunks.filter(c => {
+             const [start, end] = c.timestamp;
+             return start !== null && end !== null && start >= region.start && start < region.end;
           });
+
+          let currentSentence = [];
+          let currentSentenceText = '';
+
+          const flushSentence = () => {
+            if (currentSentence.length === 0) return;
+            const start = currentSentence[0].timestamp[0];
+            const end = currentSentence[currentSentence.length - 1].timestamp[1];
+
+            const relativeStart = start - region.start;
+            const relativeEnd = Math.min(end, region.end) - region.start;
+
+            const clipStart = currentTimelineStart + relativeStart;
+            const clipEnd = currentTimelineStart + relativeEnd;
+
+            const wordsArr = currentSentence.map(w => ({
+              text: w.text.trim().toUpperCase(),
+              start: currentTimelineStart + (w.timestamp[0] - region.start),
+              end: currentTimelineStart + (Math.min(w.timestamp[1], region.end) - region.start)
+            }));
+
+            editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
+              fontSize: 64, // Bigger for short form
+              fontColor: '#ffffff',
+              posY: 0.85,
+              bold: true,
+              align: 'center',
+              words: wordsArr,
+              karaoke: true
+            }));
+
+            currentSentence = [];
+            currentSentenceText = '';
+          };
+
+          regionChunks.forEach(chunk => {
+            currentSentence.push(chunk);
+            currentSentenceText += chunk.text + ' ';
+            // Max 4 words per clip for high impact Hormozi style
+            if (chunk.text.match(/[.!?]$/) || currentSentence.length >= 4) flushSentence();
+          });
+          flushSentence();
         }
 
         currentTimelineStart += duration;
@@ -835,13 +880,33 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                       fontSize: `${(c.style?.fontSize || 48) * (isPortrait ? 0.4 : 0.6)}px`,
                       color: c.style?.fontColor || '#fff',
                       fontWeight: 'bold',
-                      textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000',
-                      background: c.style?.bgColor ? c.style.bgColor : 'rgba(0,0,0,0.4)',
-                      display: 'inline-block',
-                      width: 'fit-content',
+                      textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 4px 15px rgba(0,0,0,0.8)',
+                      background: c.style?.bgColor ? c.style.bgColor : 'transparent',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      width: '90%',
                       userSelect: 'none'
                     }}>
-                    {c.text}
+                    {c.style?.karaoke && c.style?.words ? (
+                       c.style.words.map((w, idx) => {
+                          const isActive = engine.displayTime >= w.start && engine.displayTime <= w.end;
+                          const isPast = engine.displayTime > w.end;
+                          return (
+                             <span key={idx} style={{ 
+                                color: isActive ? '#facc15' : (isPast ? '#e5e5e5' : '#ffffff'), 
+                                transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)', 
+                                display: 'inline-block', 
+                                margin: '0 6px',
+                                transform: isActive ? 'scale(1.15) translateY(-4px)' : 'scale(1)'
+                             }}>
+                               {w.text}
+                             </span>
+                          )
+                       })
+                    ) : (
+                       c.text
+                    )}
                   </div>
                 ))}
             </div>

@@ -167,11 +167,12 @@ async function handleAILogic(senderId, messageText) {
                         fRes = { disponible: parseInt(r.rows[0].total) === 0 };
                     }
                                 } else if (callName === "save_appointment") {
-                    const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                    const valErr = validateBusinessHours(fecha, hora);
+                    try {
+                        const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
+                        const valErr = validateBusinessHours(fecha, hora);
 
-                    if (valErr) {
-                        fRes = { success: false, error: valErr };
+                        if (valErr) {
+                            fRes = { success: false, error: valErr };
                     } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);

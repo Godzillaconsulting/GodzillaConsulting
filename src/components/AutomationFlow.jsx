@@ -658,7 +658,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const canvasRef = useRef(null);
   const isCore = flowId === 1;
-  const canSave = !isCore || username === 'jareg';
+  const isJaregAdmin = username === 'jareg' || username === 'oscar';
+  const canSave = !isCore || isJaregAdmin;
 
   const nodeMap = useMemo(() => { const m = new Map(); nodes.forEach(n => m.set(n.id, n)); return m; }, [nodes]);
   const selectedNode = nodeMap.get(selectedNodeId);
@@ -1126,7 +1127,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
           {edges.map(e=>{
             const s=nodePositions.get(e.source), t=nodePositions.get(e.target);
             if(!s||!t) return null;
-            return <CurvedConnector key={e.id} startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} color={e.color} animated={isRunning || isExecuting}/>;
+            return <CurvedConnector key={e.id} startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} color={e.color} animated={executingNodes.has(e.source) || isExecuting}/>;
           })}
           {connectingFrom&&connectingToPos&&(()=>{
             const s=nodePositions.get(connectingFrom);
@@ -1728,7 +1729,7 @@ export default function AutomationFlow() {
     try { return JSON.parse(localStorage.getItem('godzilla_cached_profile')) || {}; } catch { return {}; }
   }, []);
   const username = (adminProfile.username || '').toLowerCase();
-  const isJareg = username === 'jareg';
+  const isJareg = username === 'jareg' || username === 'oscar' || adminProfile.role === 'admin';
 
   const loadGalaxy = useCallback(async () => {
     const token = localStorage.getItem('adminToken');

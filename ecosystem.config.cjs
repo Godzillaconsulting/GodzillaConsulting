@@ -42,7 +42,7 @@ module.exports = {
     },
     {
       name: "tiktok-bot",
-      script: "./server/tiktok_bot.cjs",
+      script: "./server/tiktok_bypass.js",
       instances: 1,
       exec_mode: "fork",
       max_memory_restart: "1G",

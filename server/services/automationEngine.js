@@ -1,7 +1,6 @@
 import pool from '../config/db.js';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
-import { parseExpression } from 'cron-parser';
 
 class AutomationEngine {
 

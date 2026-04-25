@@ -80,3 +80,7 @@ tmp/
 test_*.js
 *_test.js
 debug_*.js
+nssm*
+nssm-2.24/
+nssm.exe
+nssm.zip

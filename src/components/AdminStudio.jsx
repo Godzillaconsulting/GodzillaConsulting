@@ -99,7 +99,7 @@ export default function AdminStudio() {
   const location = useLocation();
   const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true });
   
   const activeSection = useMemo(() => {
     if (location.pathname.includes('/calendar')) return 'social';
@@ -138,7 +138,7 @@ export default function AdminStudio() {
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
  const [bugReporterPos, setBugReporterPos] = useState(null);
  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
- const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true });
+
  
  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
  const [feedbackText, setFeedbackText] = useState('');

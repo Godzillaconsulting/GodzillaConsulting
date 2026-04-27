@@ -67,20 +67,14 @@ export default function AnalyticsDashboard() {
         );
     }
 
-    const sankeyOptions = {
-        sankey: {
-            node: {
-                colors: ['#FF0055', '#00F0FF', '#9D00FF', '#00FF66', '#FFEA00', '#FF0055'],
-                label: { fontName: 'Inter', fontSize: 14, color: '#A3A3A3', bold: true },
-                nodePadding: 60,
-                width: 12
-            },
-            link: {
-                colorMode: 'gradient',
-                colors: ['#FF0055', '#9D00FF', '#111111']
-            }
-        },
-        backgroundColor: 'transparent'
+    // Sanitizador de texto para problemas de codificación de AnswerThePublic
+    const sanitizeText = (txt) => {
+        if (!txt) return "";
+        return txt
+            .replace(/cmo/gi, 'cómo').replace(/cmo/gi, 'cómo').replace(/cmo/gi, 'cómo')
+            .replace(/qu/gi, 'qué').replace(/qu/gi, 'qué').replace(/qu/gi, 'qué')
+            .replace(/ms/gi, 'más').replace(/ms/gi, 'más')
+            .replace(//g, 'ó');
     };
 
     // Calculate aggregated totals based on traffic sources
@@ -212,23 +206,34 @@ export default function AnalyticsDashboard() {
             {/* Main Graphs Area */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
                 
-                {/* Traffic Flow Sankey Chart */}
+                {/* Traffic Funnel Chart */}
                 <div className="xl:col-span-2 bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative animate-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#FF0055] to-transparent opacity-20"></div>
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                         <Activity size={20} className="text-[#CC0000]" />
-                        Matriz de Conversión (Sankey Flow)
+                        Embudo de Conversión (Funnel)
                     </h3>
                     
-                    {data.sankeyData && data.sankeyData.length > 2 ? (
+                    {data.funnelData && data.funnelData.length > 0 ? (
                         <div className="w-full h-[400px] bg-transparent rounded-2xl">
-                             <GoogleChart
-                                chartType="Sankey"
-                                width="100%"
-                                height="100%"
-                                data={data.sankeyData}
-                                options={sankeyOptions}
-                             />
+                             <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    layout="vertical"
+                                    data={data.funnelData}
+                                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#222" horizontal={true} vertical={false} />
+                                    <XAxis type="number" stroke="#666" tick={{ fill: '#666' }} />
+                                    <YAxis type="category" dataKey="stage" stroke="#A3A3A3" tick={{ fill: '#A3A3A3', fontSize: 14, fontWeight: 'bold' }} width={150} />
+                                    <RechartsTooltip cursor={{fill: 'rgba(255, 0, 85, 0.05)'}} contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '10px', color: '#fff' }} />
+                                    <Bar dataKey="count" name="Usuarios" radius={[0, 8, 8, 0]} barSize={40}>
+                                        {data.funnelData.map((entry, index) => {
+                                            const colors = ['#FF0055', '#9D00FF', '#00F0FF', '#00FF66'];
+                                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                        })}
+                                    </Bar>
+                                </BarChart>
+                             </ResponsiveContainer>
                         </div>
                     ) : (
                         <div className="w-full h-[400px] flex items-center justify-center border border-dashed border-neutral-800 rounded-2xl bg-[#111]">
@@ -332,7 +337,7 @@ export default function AnalyticsDashboard() {
                                 {Object.keys(data.searchTrends.aggregated_questions).map((kw) => (
                                     data.searchTrends.aggregated_questions[kw].map((q, idx) => (
                                         <span key={`${kw}-${idx}`} className="bg-black/40 border border-white/5 text-xs text-neutral-300 px-3 py-1.5 rounded-full hover:border-[#00F0FF]/50 hover:text-[#00F0FF] transition-colors cursor-default">
-                                            {q}
+                                            {sanitizeText(q)}
                                         </span>
                                     ))
                                 ))}
@@ -344,7 +349,9 @@ export default function AnalyticsDashboard() {
                                 <Zap size={16} /> Síntesis IA Ejecutiva
                             </h4>
                             <div className="flex-1 overflow-y-auto custom-scrollbar text-sm text-neutral-300 leading-relaxed whitespace-pre-line relative z-10">
-                                {data.searchTrends.summary}
+                                {data.searchTrends.summary && data.searchTrends.summary.includes("Fallo de API") 
+                                    ? <span className="text-neutral-500 italic flex items-center gap-2 mt-4"><Bot size={16}/> Procesando síntesis de mercado... (Pendiente)</span>
+                                    : sanitizeText(data.searchTrends.summary)}
                             </div>
                         </div>
                     </div>

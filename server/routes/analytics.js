@@ -242,6 +242,15 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             sankeyData.push(["A la espera de tráfico", "Landing Page", 1]);
         }
 
+        // --- Funnel Data (Para Gráfica de Embudo Horizontal) ---
+        // Refleja exactamente las mismas métricas pero estructuradas para Recharts
+        const funnelData = [
+            { stage: 'Tráfico Global', count: totalVisitors },
+            { stage: 'Visitas a Landing', count: landingVisitors },
+            { stage: 'Leads Capturados', count: totalLeads },
+            { stage: 'Llamadas Agendadas', count: totalCalls }
+        ];
+
         // --- ROI Dinámico ---
         // Al no tener API de facturación, pasamos vacío / base cero para que empiece de cero.
         const roiData = [
@@ -295,16 +304,41 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
                 ORDER BY total_cost DESC
             `);
             
-            apiTelemetry = telemetryRes.rows.map(r => {
+            // Mapa base con todas las herramientas para que nunca se vea vacío
+            const apiTelemetryMap = {
+                'Planificador IA': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Estudio IA (Imágenes)': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Editor Video IA (SmartCuts/Subs)': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Radar de Tendencias B2B': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Newsletter Inteligente': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Agente Multicanal (Meta/TikTok)': { inputTokens: 0, outputTokens: 0, costUsd: 0 }
+            };
+
+            telemetryRes.rows.forEach(r => {
                 const cost = parseFloat(r.total_cost) || 0;
                 totalApiCostUsd += cost;
-                return {
-                    service: r.service_name,
-                    inputTokens: parseInt(r.total_input, 10) || 0,
-                    outputTokens: parseInt(r.total_output, 10) || 0,
-                    costUsd: cost
-                };
+                
+                // Si ya existe en el mapa base, se actualiza; si es nuevo, se agrega
+                if (apiTelemetryMap[r.service_name]) {
+                    apiTelemetryMap[r.service_name] = {
+                        inputTokens: parseInt(r.total_input, 10) || 0,
+                        outputTokens: parseInt(r.total_output, 10) || 0,
+                        costUsd: cost
+                    };
+                } else {
+                    apiTelemetryMap[r.service_name] = {
+                        inputTokens: parseInt(r.total_input, 10) || 0,
+                        outputTokens: parseInt(r.total_output, 10) || 0,
+                        costUsd: cost
+                    };
+                }
             });
+
+            // Convertir el mapa a un array plano
+            apiTelemetry = Object.keys(apiTelemetryMap).map(serviceName => ({
+                service: serviceName,
+                ...apiTelemetryMap[serviceName]
+            }));
         } catch (e) {
             console.warn("Could not fetch API telemetry", e.message);
         }
@@ -329,6 +363,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             success: true,
             trafficSources,
             sankeyData,
+            funnelData, // Added for new BarChart funnel
             roiData,
             webGraphData,
             pixelEvents: pixelEventCounts.events, // Export this to front so dashboard accesses it

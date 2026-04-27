@@ -1171,7 +1171,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 <div key={task.id} className="bg-black/30 border border-red-900/40 hover:border-red-500/60 p-4 rounded-xl transition-colors">
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <p className="text-xs font-black text-white leading-snug">{task.que}</p>
-                                        <button onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: true } : t))}
+                                        <button onClick={() => handleToggleTaskDone(task.id, true)}
                                             className="shrink-0 w-6 h-6 rounded-full border-2 border-neutral-700 hover:border-green-500 hover:bg-green-500/20 transition-all flex items-center justify-center">
                                             <span className="text-[10px]">✔</span>
                                         </button>
@@ -1224,6 +1224,34 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 </div>
             </div>
         );
+    };
+
+    const handleToggleTaskDone = async (taskId, forceStatus = null) => {
+        const currentTask = tasks.find(t => t.id === taskId);
+        if (!currentTask) return;
+        const newDone = forceStatus !== null ? forceStatus : !currentTask.done;
+        
+        // Optimistic UI update
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: newDone, status: newDone ? 'approved' : 'pending' } : t));
+        if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(prev => ({ ...prev, done: newDone, status: newDone ? 'approved' : 'pending' }));
+
+        try {
+            const token = localStorage.getItem('adminToken');
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const res = await fetch(`${API}/api/studio/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ status: newDone ? 'approved' : 'pending' })
+            });
+            const data = await res.json();
+            if (!data.success && !res.ok) throw new Error(data.error || data.message || 'Error DB');
+        } catch (error) {
+            console.error('Error toggling task:', error);
+            // Revert UI update if failed
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !newDone, status: !newDone ? 'approved' : 'pending' } : t));
+            if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(prev => ({ ...prev, done: !newDone, status: !newDone ? 'approved' : 'pending' }));
+            alert('Error al guardar estado de la tarea en la base de datos.');
+        }
     };
 
     const handleApproveAIContent = async (eventId) => {
@@ -1554,7 +1582,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                                 ) : tasks.map(task => (
                                                     <div key={task.id} onClick={() => setSelectedTaskBoard(task)}
                                                         className={`flex items-center border-b border-neutral-800/50 px-4 py-2 cursor-pointer max-h-12 transition-all ${selectedTaskBoard?.id === task.id ? 'bg-[#CC0000]/10 border-l-[3px] border-l-[#CC0000]' : 'hover:bg-white/5 border-l-[3px] border-l-transparent'}`}>
-                                                        <div onClick={(e) => { e.stopPropagation(); setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t)); }}
+                                                        <div onClick={(e) => { e.stopPropagation(); handleToggleTaskDone(task.id); }}
                                                             className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-600 hover:border-green-500 hover:text-green-500'}`}>
                                                             {task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
                                                         </div>
@@ -1579,7 +1607,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                             <div className="flex-1 flex flex-col overflow-hidden">
                                                 <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
                                                     <div className="flex items-center space-x-3 text-xs">
-                                                        <button onClick={() => { setTasks(prev => prev.map(t => t.id === selectedTaskBoard.id ? { ...t, done: !t.done } : t)); setSelectedTaskBoard({...selectedTaskBoard, done: !selectedTaskBoard.done}); }}
+                                                        <button onClick={() => handleToggleTaskDone(selectedTaskBoard.id)}
                                                             className={`border rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all ${selectedTaskBoard.done ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'border-neutral-700 hover:border-green-500 hover:text-green-500'}`}>
                                                             <span className={`mr-2 ${selectedTaskBoard.done ? 'text-green-500' : 'text-neutral-500'}`}>✓</span> {selectedTaskBoard.done ? 'Completado' : 'Marcar Acción'}
                                                         </button>

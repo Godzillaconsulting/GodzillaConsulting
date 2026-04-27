@@ -53,9 +53,33 @@ const FormAbordaje = () => {
     tiktokVariant: '', // 'login', 'business', 'ninguna'
     googleVariant: '',
     redes: { meta: false, tiktok: false, google: false }, // 'login', 'email'
+    metaAccessStatus: '', // 'done', 'help'
+    googleAccessStatus: '',
+    tiktokAccessStatus: '',
     termsAccepted: false,
     infoAccepted: false
   });
+
+  const isStepValid = () => {
+    if (step === 1) return formData.empresa.trim() !== '';
+    if (step === 2) return formData.servicios.trim() !== '' && formData.metas.trim() !== '' && formData.diferenciadores.trim() !== '' && formData.dbOption !== '';
+    if (step === 3) {
+      if (formData.redes.meta) {
+        if (!formData.metaVariant) return false;
+        if ((formData.metaVariant === 'portafolio' || formData.metaVariant === 'pagina') && !formData.metaAccessStatus) return false;
+      }
+      if (formData.redes.google) {
+        if (!formData.googleVariant) return false;
+        if (formData.googleVariant === 'email' && !formData.googleAccessStatus) return false;
+      }
+      if (formData.redes.tiktok) {
+        if (!formData.tiktokVariant) return false;
+        if (formData.tiktokVariant === 'business' && !formData.tiktokAccessStatus) return false;
+      }
+      return true;
+    }
+    return true;
+  };
 
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
@@ -344,6 +368,22 @@ const FormAbordaje = () => {
                           <Facebook className="w-5 h-5" />
                           Configuración de Negocio
                         </a>
+                        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.metaAccessStatus === 'done' ? 'bg-[#34C759] border-[#34C759]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.metaAccessStatus === 'done' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.metaAccessStatus === 'done'} onChange={() => setFormData({ ...formData, metaAccessStatus: formData.metaAccessStatus === 'done' ? '' : 'done' })} />
+                            <span className="text-[11px] text-white/90">Confirmo que ya otorgué los accesos.</span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.metaAccessStatus === 'help' ? 'bg-[#CC0000] border-[#CC0000]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.metaAccessStatus === 'help' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.metaAccessStatus === 'help'} onChange={() => setFormData({ ...formData, metaAccessStatus: formData.metaAccessStatus === 'help' ? '' : 'help' })} />
+                            <span className="text-[11px] text-white/90">Me atoré / Necesito ayuda con esto en la llamada.</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -364,6 +404,22 @@ const FormAbordaje = () => {
                           <Facebook className="w-5 h-5" />
                           Dar Acceso en Página
                         </button>
+                        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.metaAccessStatus === 'done' ? 'bg-[#34C759] border-[#34C759]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.metaAccessStatus === 'done' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.metaAccessStatus === 'done'} onChange={() => setFormData({ ...formData, metaAccessStatus: formData.metaAccessStatus === 'done' ? '' : 'done' })} />
+                            <span className="text-[11px] text-white/90">Confirmo que ya otorgué los accesos.</span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.metaAccessStatus === 'help' ? 'bg-[#CC0000] border-[#CC0000]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.metaAccessStatus === 'help' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.metaAccessStatus === 'help'} onChange={() => setFormData({ ...formData, metaAccessStatus: formData.metaAccessStatus === 'help' ? '' : 'help' })} />
+                            <span className="text-[11px] text-white/90">Me atoré / Necesito ayuda con esto en la llamada.</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -437,6 +493,22 @@ const FormAbordaje = () => {
                           <GoogleIcon className="w-5 h-5 text-[#CC0000]" />
                           Google Business Profile
                         </a>
+                        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.googleAccessStatus === 'done' ? 'bg-[#34C759] border-[#34C759]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.googleAccessStatus === 'done' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.googleAccessStatus === 'done'} onChange={() => setFormData({ ...formData, googleAccessStatus: formData.googleAccessStatus === 'done' ? '' : 'done' })} />
+                            <span className="text-[11px] text-white/90">Confirmo que ya otorgué los accesos.</span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.googleAccessStatus === 'help' ? 'bg-[#CC0000] border-[#CC0000]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.googleAccessStatus === 'help' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.googleAccessStatus === 'help'} onChange={() => setFormData({ ...formData, googleAccessStatus: formData.googleAccessStatus === 'help' ? '' : 'help' })} />
+                            <span className="text-[11px] text-white/90">Me atoré / Necesito ayuda con esto en la llamada.</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -512,6 +584,22 @@ const FormAbordaje = () => {
                           <TikTokIcon className="w-5 h-5" />
                           TikTok For Business
                         </a>
+                        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10 text-left">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.tiktokAccessStatus === 'done' ? 'bg-[#34C759] border-[#34C759]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.tiktokAccessStatus === 'done' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.tiktokAccessStatus === 'done'} onChange={() => setFormData({ ...formData, tiktokAccessStatus: formData.tiktokAccessStatus === 'done' ? '' : 'done' })} />
+                            <span className="text-[11px] text-white/90">Confirmo que ya otorgué los accesos.</span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.tiktokAccessStatus === 'help' ? 'bg-[#CC0000] border-[#CC0000]' : 'border-white/30 group-hover:border-white/50'}`}>
+                              {formData.tiktokAccessStatus === 'help' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <input type="checkbox" className="hidden" checked={formData.tiktokAccessStatus === 'help'} onChange={() => setFormData({ ...formData, tiktokAccessStatus: formData.tiktokAccessStatus === 'help' ? '' : 'help' })} />
+                            <span className="text-[11px] text-white/90">Me atoré / Necesito ayuda con esto en la llamada.</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -606,7 +694,12 @@ const FormAbordaje = () => {
             {step < 5 ? (
               <button
                 onClick={nextStep}
-                className="flex-1 h-14 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1 transition-all active:scale-95"
+                disabled={!isStepValid()}
+                className={`flex-1 h-14 font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                  isStepValid() 
+                    ? 'bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] shadow-[0_0_20px_rgba(204,0,0,0.4)] hover:shadow-[0_0_30px_rgba(204,0,0,0.6)] hover:-translate-y-1' 
+                    : 'bg-white/10 text-white/20 cursor-not-allowed shadow-none grayscale'
+                }`}
               >
                 Siguiente
                 <ArrowRight className="w-5 h-5" />

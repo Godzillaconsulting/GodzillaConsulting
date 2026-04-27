@@ -155,11 +155,14 @@ function reducer(state, action) {
       return pushHistory(state, newLayers);
     }
     case 'DELETE_CLIP': {
-      // Revoke blob URL to free RAM
+      // Revoke blob URL to free RAM only if no other clip uses it
       const allClips = state.project.layers.flatMap(l => l.clips);
       const target = allClips.find(c => c.id === action.clipId);
       if (target?.sourceUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(target.sourceUrl);
+        const isUrlUsedElsewhere = allClips.some(c => c.id !== action.clipId && c.sourceUrl === target.sourceUrl);
+        if (!isUrlUsedElsewhere) {
+          URL.revokeObjectURL(target.sourceUrl);
+        }
       }
       const newLayers = deleteClipFromLayer(state.project.layers, action.clipId);
       return pushHistory(state, newLayers);

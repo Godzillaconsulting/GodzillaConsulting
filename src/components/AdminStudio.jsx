@@ -13,11 +13,8 @@ import AutomationFlow from './AutomationFlow';
 import AIContentPlanner from './AIContentPlanner';
 import IntegratedVideoEditor from './VideoEditorModal';
 import BugReporterModal from './BugReporterModal';
-import DBStudioPanel from './DBStudioPanel';
 import BugTrackerUI from './BugTrackerUI';
-import CeoEstudioPanel from './CeoEstudioPanel';
-import PanelMaestroPanel from './PanelMaestroPanel';
-import SqlAtaquesPanel from './SqlAtaquesPanel';
+import ITStudioPanel from './ITStudioPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields, MEDIA_PATTERNS } from '../utils/editorParser';
@@ -111,9 +108,7 @@ export default function AdminStudio() {
     if (location.pathname.includes('/profile')) return 'profile';
     if (location.pathname.includes('/bugs')) return 'bugs';
     if (location.pathname.includes('/newsletter')) return 'newsletter';
-    if (location.pathname.includes('/ceo')) return 'ceo_estudio';
-    if (location.pathname.includes('/master')) return 'panel_maestro';
-    if (location.pathname.includes('/sql')) return 'sql_ataques';
+    if (location.pathname.includes('/it')) return 'it_studio';
     if (location.pathname.includes('/ai-planner')) return 'ai-planner';
     if (location.pathname.includes('/automation-flow')) return 'automation-flow';
     return 'editor';
@@ -285,15 +280,11 @@ export default function AdminStudio() {
  
  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
  
- // Editores pueden modificar el sitio principal y ver Estudio IA, etc. (Alex y Judith caen aquí)
  const isEditor = adminProfile?.role === 'admin' || isCEO || ['judith'].includes(username);
  const canEditSite = isEditor;
 
- // Lógica explícita de vistas
- const canSeeDBEstudio    = isTechAdmin;
- const canSeePanelMaestro = isTechAdmin;
- const canSeeSqlAtaques   = isTechAdmin;
- const canSeeCeoEstudio   = isEditor;
+ // Vista de Centro Técnico IT
+ const canSeeITStudio = isTechAdmin || isEditor;
 
  // Sync draftData → preview
  useEffect(() => {
@@ -514,14 +505,27 @@ export default function AdminStudio() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-orange-500/10 blur-[50px] pointer-events-none rounded-t-full"></div>
         
         <div className="flex items-center justify-between p-6 border-b border-white/10 relative z-10">
-          <div>
-            <h3 className="text-xl font-black text-white flex items-center gap-2">
+          <div className="flex-1 mr-4">
+            <h3 className="text-xl font-black text-white flex items-center gap-2 mb-3">
               <span className="text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">🔥</span> 
               Búsquedas Activas B2B
             </h3>
+            <div className="flex gap-2 mb-2">
+                <input 
+                    type="text" 
+                    placeholder="Buscar tema (ej. automatización, marketing)..." 
+                    className="flex-1 bg-black/50 border border-orange-500/30 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors placeholder:text-neutral-600"
+                />
+                <button 
+                    onClick={() => { alert('Iniciando búsqueda profunda B2B... (Funcionalidad en desarrollo)'); }}
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm transition-colors shadow-[0_0_10px_rgba(249,115,22,0.4)]"
+                >
+                    Buscar Tema
+                </button>
+            </div>
             <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">Resumen extraído por Godzilla Trends Bot</p>
           </div>
-          <button onClick={() => setShowTrendsModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">✕</button>
+          <button onClick={() => setShowTrendsModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all self-start">✕</button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 relative z-10 custom-scrollbar">
@@ -668,42 +672,43 @@ export default function AdminStudio() {
    <span className="text-xs mr-2 drop-shadow-sm">🤖</span> Planificador IA
    </button>
    
-   {!selectedNodeId && (
-       <button onClick={openTrendsModal}
-       className={`w-full text-[10px] py-2 shadow-[0_0_10px_rgba(249,115,22,0.3)] rounded-xl transition-all font-black uppercase flex items-center justify-center border border-orange-500/50 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-400`}>
-       <span className="text-xs mr-2 drop-shadow-sm">🔥</span> Búsquedas Virales
+   {/* Búsquedas Virales Dropdown (Siempre visible) */}
+   <div className="relative group">
+       <button 
+       className={`w-full text-[10px] py-2 shadow-[0_0_10px_rgba(249,115,22,0.3)] rounded-xl transition-all font-black uppercase flex items-center justify-center border border-orange-500/50 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-400 peer`}>
+           <span className="text-xs mr-2 drop-shadow-sm">🔥</span> Búsquedas Virales
        </button>
-   )}
+       <div className="absolute left-[100%] top-[-20px] ml-3 w-72 bg-[#0a0a0a] border border-orange-500/30 rounded-xl shadow-[0_0_30px_rgba(249,115,22,0.2)] z-[100] hidden hover:block peer-hover:block p-4">
+           <div className="absolute -left-3 top-[30px] w-3 h-6 bg-transparent"></div> {/* Puente invisible para el hover */}
+           <h4 className="text-white text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+               <span className="text-orange-500 text-lg">🔥</span> Analítica Global B2B
+           </h4>
+           <p className="text-[10px] text-gray-400 mb-3">Busca oportunidades de contenido o revisa el catálogo global.</p>
+           
+           <div className="flex gap-2 mb-4">
+               <input type="text" placeholder="Ej. marketing automation..." className="w-full bg-black/60 border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-orange-500 transition-colors" />
+               <button onClick={() => alert('Buscando tema en la IA... (En desarrollo)')} className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-3 py-2 font-bold transition-colors">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+               </button>
+           </div>
+           
+           <div className="border-t border-white/10 pt-3">
+               <button onClick={openTrendsModal} className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg px-3 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                   Ver Catálogo de Tendencias
+               </button>
+           </div>
+       </div>
+   </div>
+
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
    <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
-   
-   {canSeeDBEstudio && (
-       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/db'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='db_studio' ?'bg-neutral-900 text-[#00ff88] border-[#00ff88]/50 shadow-[0_0_15px_rgba(0,255,136,0.2)]' :'text-neutral-300 border-transparent hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 hover:text-white' }`}>
-       <span className="text-xs mr-2 drop-shadow-sm">🗄️</span> DB Studio
-       </button>
-   )}
 
-   {canSeeCeoEstudio && (
-       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/ceo'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ceo_estudio' ?'bg-neutral-900 text-[#d946ef] border-[#d946ef]/50 shadow-[0_0_15px_rgba(217,70,239,0.2)]' :'text-neutral-300 border-transparent hover:border-[#d946ef]/40 hover:bg-[#d946ef]/5 hover:text-white' }`}>
-       <span className="text-xs mr-2 drop-shadow-sm">👑</span> CEO Estudio
-       </button>
-   )}
-
-   {canSeePanelMaestro && (
-       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/master'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='panel_maestro' ?'bg-neutral-900 text-[#fbbf24] border-[#fbbf24]/50 shadow-[0_0_15px_rgba(251,191,36,0.2)]' :'text-neutral-300 border-transparent hover:border-[#fbbf24]/40 hover:bg-[#fbbf24]/5 hover:text-white' }`}>
-       <span className="text-xs mr-2 drop-shadow-sm">🏛️</span> Panel Maestro
-       </button>
-   )}
-
-   {canSeeSqlAtaques && (
-       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/sql'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='sql_ataques' ?'bg-neutral-900 text-[#ef4444] border-[#ef4444]/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :'text-neutral-300 border-transparent hover:border-[#ef4444]/40 hover:bg-[#ef4444]/5 hover:text-white' }`}>
-       <span className="text-xs mr-2 drop-shadow-sm">🛡️</span> Ataques SQL
+   {canSeeITStudio && (
+       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); }}
+       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='it_studio' ?'bg-neutral-900 text-purple-400 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-500/5 hover:text-white' }`}>
+       <span className="text-xs mr-2 drop-shadow-sm">⚙️</span> Centro Técnico IT
        </button>
    )}
    
@@ -771,14 +776,8 @@ export default function AdminStudio() {
       <AutomationFlow />
   ) : activeSection === 'ai-planner' ? (
       <AIContentPlanner adminProfile={adminProfile} />
-  ) : activeSection === 'db_studio' ? (
-      <DBStudioPanel adminProfile={adminProfile} />
-  ) : activeSection === 'ceo_estudio' ? (
-      <CeoEstudioPanel adminProfile={adminProfile} />
-  ) : activeSection === 'panel_maestro' ? (
-      <PanelMaestroPanel adminProfile={adminProfile} />
-  ) : activeSection === 'sql_ataques' ? (
-      <SqlAtaquesPanel adminProfile={adminProfile} />
+  ) : activeSection === 'it_studio' ? (
+      <ITStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'bugs' ? (
       <BugTrackerUI />
   ) : (<>

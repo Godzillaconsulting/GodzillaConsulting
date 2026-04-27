@@ -257,14 +257,21 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const threshold = 0.035; // ~ -29dB RMS
       const minSilenceDuration = 0.5; // 500ms
 
+      const sourceStart = targetClip.sourceStart || 0;
+      const clipDuration = targetClip.end - targetClip.start;
+      const sourceEnd = sourceStart + clipDuration;
+
+      const startIndex = Math.floor(sourceStart * sampleRate);
+      const endIndex = Math.min(Math.floor(sourceEnd * sampleRate), channelData.length);
+
       const keepRegions = [];
       let isSilent = false;
       let silenceStart = 0;
-      let currentRegionStart = 0;
+      let currentRegionStart = sourceStart;
 
-      for (let i = 0; i < channelData.length; i += windowSize) {
+      for (let i = startIndex; i < endIndex; i += windowSize) {
         let sumSquares = 0;
-        const endIdx = Math.min(i + windowSize, channelData.length);
+        const endIdx = Math.min(i + windowSize, endIndex);
         for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
         const rms = Math.sqrt(sumSquares / (endIdx - i));
         const timeSec = i / sampleRate;
@@ -282,7 +289,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         }
       }
 
-      const totalDurationSec = channelData.length / sampleRate;
+      const totalDurationSec = sourceEnd;
       if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
       } else if (silenceStart > currentRegionStart) {
@@ -303,7 +310,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           ? makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration)
           : makeAudioClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration);
 
-        newClip.sourceStart = targetClip.sourceStart + region.start;
+        newClip.sourceStart = region.start;
         newClip.speed = targetClip.speed || 1;
         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
 
@@ -351,12 +358,21 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         task: 'transcribe'
       });
 
-      if (!result.chunks || result.chunks.length === 0) {
-        return alert('No se detectó voz clara en el clip.');
-      }
-
       const textLayer = editor.project.layers.find(l => l.type === 'text');
+      if (!textLayer) return alert('No se encontró la capa de texto.');
+
       let currentTimelineStart = targetClip.start;
+      const sourceOffset = targetClip.sourceStart || 0;
+      const sourceEnd = sourceOffset + (targetClip.end - targetClip.start);
+
+      const validChunks = result.chunks ? result.chunks.filter(c => {
+         if (!c.timestamp || c.timestamp[0] === null || c.timestamp[1] === null) return false;
+         return c.timestamp[0] >= sourceOffset && c.timestamp[0] < sourceEnd;
+      }) : [];
+
+      if (validChunks.length === 0) {
+        return alert('No se detectó voz clara en el segmento seleccionado del clip.');
+      }
 
       let currentSentence = [];
       let currentSentenceText = '';
@@ -367,13 +383,16 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         const end = currentSentence[currentSentence.length - 1].timestamp[1];
         if (start === null || end === null) { currentSentence = []; return; }
 
-        const clipStart = currentTimelineStart + start;
-        const clipEnd = currentTimelineStart + end;
+        const relativeStart = start - sourceOffset;
+        const relativeEnd = Math.min(end, sourceEnd) - sourceOffset;
+
+        const clipStart = currentTimelineStart + relativeStart;
+        const clipEnd = currentTimelineStart + relativeEnd;
 
         const wordsArr = currentSentence.map(w => ({
           text: w.text.trim().toUpperCase(),
-          start: currentTimelineStart + w.timestamp[0],
-          end: currentTimelineStart + w.timestamp[1]
+          start: currentTimelineStart + (w.timestamp[0] - sourceOffset),
+          end: currentTimelineStart + (Math.min(w.timestamp[1], sourceEnd) - sourceOffset)
         }));
 
         editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
@@ -390,8 +409,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         currentSentenceText = '';
       };
 
-      result.chunks.forEach(chunk => {
-        if (!chunk.timestamp || chunk.timestamp[0] === null || chunk.timestamp[1] === null) return;
+      validChunks.forEach(chunk => {
         currentSentence.push(chunk);
         currentSentenceText += chunk.text + ' ';
         if (chunk.text.match(/[.!?]$/) || currentSentence.length >= 5) flushSentence();
@@ -428,14 +446,21 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const threshold = 0.035;
       const minSilenceDuration = 0.5;
 
+      const sourceStart = targetClip.sourceStart || 0;
+      const clipDuration = targetClip.end - targetClip.start;
+      const sourceEnd = sourceStart + clipDuration;
+
+      const startIndex = Math.floor(sourceStart * sampleRate);
+      const endIndex = Math.min(Math.floor(sourceEnd * sampleRate), channelData.length);
+
       const keepRegions = [];
       let isSilent = false;
       let silenceStart = 0;
-      let currentRegionStart = 0;
+      let currentRegionStart = sourceStart;
 
-      for (let i = 0; i < channelData.length; i += windowSize) {
+      for (let i = startIndex; i < endIndex; i += windowSize) {
         let sumSquares = 0;
-        const endIdx = Math.min(i + windowSize, channelData.length);
+        const endIdx = Math.min(i + windowSize, endIndex);
         for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
         const rms = Math.sqrt(sumSquares / (endIdx - i));
         const timeSec = i / sampleRate;
@@ -453,7 +478,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         }
       }
 
-      const totalDurationSec = channelData.length / sampleRate;
+      const totalDurationSec = sourceEnd;
       if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
         if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
       } else if (silenceStart > currentRegionStart) {
@@ -492,7 +517,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
         // Add Video Clip (Alternating Zoom)
         const newClip = makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration);
-        newClip.sourceStart = targetClip.sourceStart + region.start;
+        newClip.sourceStart = region.start;
         newClip.speed = targetClip.speed || 1;
         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
 

@@ -92,7 +92,8 @@ export const wafMiddleware = (req, res, next) => {
 
     // A. Detección de Bots de IA y Scrapers
     if (!riskLevel && aiBotPatterns.some(regex => regex.test(safeUserAgent))) {
-        if (!/facebookexternalhit|twitterbot|linkedinbot|googlebot/i.test(safeUserAgent)) {
+        // Excluir scrapers legítimos y nuestro propio proxy de Vercel
+        if (!/facebookexternalhit|twitterbot|linkedinbot|googlebot/i.test(safeUserAgent) && req.headers['x-vercel-proxy'] !== '1') {
             riskLevel = 'Alto';
             categoryName = 'AI/Scraping Bot';
         }

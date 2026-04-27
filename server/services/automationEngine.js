@@ -64,29 +64,17 @@ class AutomationEngine {
                     - Genera contenido vibrante, para videos verticales rápidos (TikTok/Reels).
                 `;
 
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+
                 const fetchBlock = async (blockIndex) => {
                     const blockPrompt = baseSystemPrompt + `\n\nGenera el bloque de contenido (Días ${blockIndex * blockSize + 1} al ${Math.min((blockIndex + 1) * blockSize, totalDays)}). RESPUESTA SOLO JSON.`;
                     
-                    const res = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: "Meta-Llama-3.1-405B-Instruct",
-                            messages: [
-                                { role: "system", content: "Eres un estratega de contenido experto en redes sociales. DEBES responder estrictamente con un array JSON válido y nada de markdown." },
-                                { role: "user", content: blockPrompt }
-                            ],
-                            temperature: 0.75,
-                            max_tokens: maxTokens
-                        })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || `SambaNova HTTP ${res.status}`);
+                    const waterfallRes = await executeAiWaterfall([
+                        { role: "system", content: "Eres un estratega de contenido experto en redes sociales. DEBES responder estrictamente con un array JSON válido y nada de markdown." },
+                        { role: "user", content: blockPrompt }
+                    ], { jsonMode: true, maxTokens: 4000 });
                     
-                    const raw  = data?.choices?.[0]?.message?.content || '[]';
+                    const raw  = waterfallRes.content || '[]';
                     const clean = raw.replace(/```json\n?/gi, '').replace(/```\n?/gi, '').trim();
                     return JSON.parse(clean);
                 };

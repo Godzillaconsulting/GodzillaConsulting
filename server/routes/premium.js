@@ -1,33 +1,8 @@
 import express from 'express';
 import pool from '../config/db.js';
 import { buildPremiumPDF } from '../services/pdfPremiumBuilder.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const router = express.Router();
-
-const translatePremiumJSON = async (baseJson, targetLang) => {
-    if (targetLang === 'es') return JSON.parse(baseJson);
-
-    console.log(`🌍 [JIT Translation] Traduciendo PDF JSON base a idioma: ${targetLang}...`);
-    try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            systemInstruction: "You are Godzilla AI Translator. You receive a JSON object of a B2B newsletter. You must translate ALL string values into the target ISO language perfectly, adapting the B2B executive tone. Keep the exact same JSON schema and structure. Return ONLY pure valid JSON, without any markdown formatting."
-        });
-
-        const prompt = `Translate this entire JSON into language ISO code: [${targetLang}].\n\nJSON:\n${baseJson}`;
-        
-        const result = await model.generateContent(prompt);
-        let text = result.response.text();
-        text = text.replace(/```json/i, '').replace(/```/i, '').trim();
-        return JSON.parse(text);
-    } catch (e) {
-        console.error("❌ Fallo en JIT Translation:", e.message);
-        // Fallback to original spanish if crash occurs
-        return JSON.parse(baseJson);
-    }
-};
 
 router.get('/download/:id', async (req, res) => {
     try {
@@ -67,15 +42,21 @@ router.get('/download/:id', async (req, res) => {
 
         
         
-        const nlRes = await pool.query(`SELECT base_json FROM newsletters WHERE id = $1`, [newsletterId]);
+        const nlRes = await pool.query(`SELECT base_json, translations_json FROM newsletters WHERE id = $1`, [newsletterId]);
         if (nlRes.rows.length === 0 || !nlRes.rows[0].base_json) {
             return res.status(404).send("Reporte Premium no encontrado o Data no disponible.");
         }
 
-        const baseJsonStr = nlRes.rows[0].base_json;
+        const translationsDict = nlRes.rows[0].translations_json;
+        let dataForPDF;
         
-        // JIT Trnaslation if needed
-        const dataForPDF = await translatePremiumJSON(baseJsonStr, reqLang);
+        if (translationsDict && translationsDict[reqLang]) {
+            dataForPDF = translationsDict[reqLang];
+            console.log(`🌍 [Zero-Token PDF] Sirviendo PDF del diccionario para idioma: ${reqLang}`);
+        } else {
+            console.log(`🌍 [Zero-Token PDF] Idioma ${reqLang} no encontrado en diccionario. Fallback a base_json (es).`);
+            dataForPDF = JSON.parse(nlRes.rows[0].base_json);
+        }
 
         // Build doc
         const pdfBuffer = await buildPremiumPDF(dataForPDF, reqLang);

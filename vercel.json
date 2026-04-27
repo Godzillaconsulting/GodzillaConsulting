@@ -15,6 +15,18 @@
             "destination": "/api/translate"
         },
         {
+            "source": "/media/:path*",
+            "destination": "/api/proxy?path=media/:path*"
+        },
+        {
+            "source": "/api/media/:path*",
+            "destination": "/api/proxy?path=api/media/:path*"
+        },
+        {
+            "source": "/outputs/:path*",
+            "destination": "/api/proxy?path=outputs/:path*"
+        },
+        {
             "source": "/api/:path*",
             "destination": "/api/proxy?path=:path*"
         },

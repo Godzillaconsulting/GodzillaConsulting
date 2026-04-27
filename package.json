@@ -16,6 +16,7 @@
     "@google/genai": "^1.48.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/transformers": "^4.2.0",
+    "@lancedb/lancedb": "^0.27.2",
     "@sanity/client": "^7.16.0",
     "@sanity/image-url": "^2.0.3",
     "@tailwindcss/vite": "^4.2.1",

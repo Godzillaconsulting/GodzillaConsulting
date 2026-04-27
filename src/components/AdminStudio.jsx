@@ -133,6 +133,8 @@ export default function AdminStudio() {
  const [activePresences, setActivePresences] = useState({});
 
  const [showPublishModal, setShowPublishModal] = useState(false);
+ const [showTrendsModal, setShowTrendsModal] = useState(false);
+ const [trendsData, setTrendsData] = useState(null);
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);

@@ -64,24 +64,30 @@ export const runTrendsScraper = async () => {
 
     if (uniqueQuestions.length === 0) return;
 
-    // Síntesis con IA Open Source (Pollinations Text - Sin Costo / Sin Key)
-    console.log(`[${BOT_NAME}] 🧠 Analizando tendencias crudas con IA (Pollinations)...`);
+    // Síntesis con Cascada IA (Groq -> Gemini -> Pollinations)
+    console.log(`[${BOT_NAME}] 🧠 Analizando tendencias con Motor de Cascada IA...`);
     let summaryText = "";
     try {
-        const systemPrompt = "Eres el Director de Estrategia de Godzilla Consulting. Analiza estas búsquedas de Google y dime los 3 temas B2B más virales para hoy. Sé ultra conciso y enumera del 1 al 3.";
-        const userPrompt = `Búsquedas reales extraídas:\n${uniqueQuestions.slice(0, 50).join(', ')}`;
+        const systemPrompt = `Eres el Director de Estrategia de Datos de Godzilla Consulting. Tu misión es analizar el volumen de búsquedas reales de Google y extraer las tendencias crudas.
+REGLAS:
+1. Analiza los temas principales que la gente está buscando.
+2. Extrae los hashtags o términos de búsqueda más usados y virales.
+3. No uses emojis ni relleno. Entrega 3 bloques de puro análisis de datos duros y tendencias B2B/Tech.`;
+
+        const userPrompt = `Búsquedas reales extraídas HOY:\n${uniqueQuestions.slice(0, 80).join(', ')}\n\nGenera los 3 bloques virales.`;
         
-        const pollinationsUrl = `https://text.pollinations.ai/${encodeURIComponent(systemPrompt + " " + userPrompt)}?model=mistral`;
+        const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
         
-        const response = await fetch(pollinationsUrl);
+        const waterfallRes = await executeAiWaterfall([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ]);
         
-        if (!response.ok) throw new Error(`Pollinations API regresó un error de red: ${response.statusText}`);
-        
-        summaryText = await response.text();
-        console.log(`[${BOT_NAME}] ✅ Síntesis de IA (Open Source) completada exitosamente.`);
+        summaryText = waterfallRes.content || "No se pudo generar la síntesis estructural.";
+        console.log(`[${BOT_NAME}] ✅ Síntesis de Cascada IA completada exitosamente.`);
     } catch (e) {
-        console.error(`[${BOT_NAME}] ❌ Fallo en la síntesis de IA (Pollinations):`, e.message);
-        summaryText = "Fallo de API Open Source al sintetizar las tendencias.";
+        console.error(`[${BOT_NAME}] ❌ Fallo en la síntesis de IA:`, e.message);
+        summaryText = "Fallo de Cascada IA al sintetizar las tendencias.";
     }
 
     // Inyectar en Base de Datos (Para Analytics y CEO Studio)

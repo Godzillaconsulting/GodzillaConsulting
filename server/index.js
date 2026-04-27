@@ -356,8 +356,9 @@ const staticMediaOptions = {
 };
 app.use('/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
 app.use('/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
+app.use('/api/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
 app.use('/outputs', express.static(path.join(__dirname, '..', 'outputs'), staticMediaOptions));
-
+app.use('/api/outputs', express.static(path.join(__dirname, '..', 'outputs'), staticMediaOptions));
 
 // Configuración para servir el Front-End compilado (React/Vite)
 // Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)

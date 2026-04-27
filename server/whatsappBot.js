@@ -14,6 +14,9 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import dotenv from 'dotenv';
+import { executeAiWaterfall } from './utils/aiWaterfall.js';
+import { searchMemories } from './core_engine/aiCore.js';
+
 // child_process ya no se usa — limpieza garantizada por shutdown handlers
 dotenv.config();
 
@@ -63,10 +66,6 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         
         const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
         const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
 
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes (nombre, servicio de interés, citas o detalles clave).\n\nConversación:\n${historyText}`;
@@ -74,8 +73,11 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
         }
 
-        const chatCompletion = await model.generateContent(prompt);
-        const newSummary = chatCompletion.response.text();
+        const waterfallResponse = await executeAiWaterfall([
+            { role: 'system', content: systemPromptContexto },
+            { role: 'user', content: prompt }
+        ]);
+        const newSummary = waterfallResponse.content;
 
         const query = `
             UPDATE sesiones_chat 
@@ -346,6 +348,21 @@ export const initWhatsAppBot = async () => {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
+            // --- RAG: Inyectar Cerebro LanceDB ---
+            try {
+                const vectorMemories = await searchMemories(senderId, messageText, 3);
+                if (vectorMemories && vectorMemories.length > 0) {
+                    finalSystemPrompt += `\n\n## CEREBRO LANCEDB (Conocimiento Histórico):\n`;
+                    vectorMemories.forEach(mem => {
+                        finalSystemPrompt += `- ${mem.content}\n`;
+                    });
+                    finalSystemPrompt += `(Usa esta información vectorizada de discusiones previas si es relevante al mensaje actual).`;
+                }
+            } catch (ragErr) {
+                console.error("⚠️ Fallo en RAG LanceDB:", ragErr.message);
+            }
+            // -------------------------------------
+
             const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
             const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
 
@@ -362,8 +379,6 @@ export const initWhatsAppBot = async () => {
             }
             groqMessages.push({ role: "user", content: messageText });
 
-            const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-            
             const groqTools = chatTools.map(t => ({
                 type: "function",
                 function: {
@@ -377,40 +392,29 @@ export const initWhatsAppBot = async () => {
             let functionCalls = [];
 
             try {
-                const chatCompletion = await withTimeout(
-                    groq.chat.completions.create({
-                        messages: groqMessages,
-                        model: "llama-3.3-70b-versatile",
-                        tools: groqTools,
-                        tool_choice: "auto",
-                        temperature: 0.1,
-                        max_tokens: 1024
-                    }),
-                    "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
-                );
-
-                if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-                    const responseMessage = chatCompletion.choices[0].message;
-                    botReply = responseMessage.content || "";
+                const waterfallResponse = await executeAiWaterfall(groqMessages, { tools: groqTools });
+                botReply = waterfallResponse.content || "";
+                
+                if (waterfallResponse.tool_calls && waterfallResponse.tool_calls.length > 0) {
+                    groqMessages.push({ 
+                        role: 'assistant', 
+                        content: botReply, 
+                        tool_calls: waterfallResponse.tool_calls 
+                    });
                     
-                    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-                        groqMessages.push(responseMessage);
-                        functionCalls = responseMessage.tool_calls.map(tc => {
-                            let parsedArgs = {};
-                            try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
-                            return {
-                                name: tc.function.name,
-                                args: parsedArgs,
-                                id: tc.id
-                            };
-                        });
-                    }
+                    functionCalls = waterfallResponse.tool_calls.map(tc => {
+                        let parsedArgs = {};
+                        try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                        return {
+                            name: tc.function.name,
+                            args: parsedArgs,
+                            id: tc.id
+                        };
+                    });
                 }
             } catch(error) {
-                console.error("Groq Error:", error.message);
-                if (error.status === 429) {
-                    botReply = "Dame un momento por favor, estoy procesando mucha información... ⏳";
-                }
+                console.error("❌ Waterfall Error en WA:", error.message);
+                botReply = "Dame un momento por favor, estoy procesando mucha información... ⏳";
             }
 
             if (functionCalls.length > 0) {
@@ -562,22 +566,10 @@ export const initWhatsAppBot = async () => {
                 
                 // Second call to Groq with tool results
                 try {
-                    const chatCompletion2 = await withTimeout(
-                        groq.chat.completions.create({
-                            messages: groqMessages,
-                            model: "llama-3.3-70b-versatile",
-                            temperature: 0.1,
-                            max_tokens: 1024
-                        }),
-                        "Disculpa la demora, estaba registrando los datos pero mi conexión falló un instante. ¿Podrías confirmarme lo último?"
-                    );
-                    
-                    if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
-                        const finalResponse = chatCompletion2.choices[0].message;
-                        botReply = finalResponse.content || 'Reserva procesada.';
-                    }
+                    const waterfallResponse2 = await executeAiWaterfall(groqMessages);
+                    botReply = waterfallResponse2.content || 'Reserva procesada.';
                 } catch(e) {
-                    console.error("Error en segunda llamada Groq (tools):", e.message);
+                    console.error("❌ Error en segunda llamada Waterfall (tools):", e.message);
                 }
             }
 

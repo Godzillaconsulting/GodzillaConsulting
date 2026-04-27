@@ -4,9 +4,10 @@ module.exports = {
     { name: "whatsapp-bot", script: "./server/whatsappBot.js", exec_mode: "fork", max_memory_restart: "256M", max_restarts: 5, restart_delay: 15000, watch: false, env: { NODE_ENV: "production" } },
     { name: "email-worker", script: "./server/emailWorker.js", exec_mode: "fork", max_memory_restart: "128M", watch: false, restart_delay: 5000, max_restarts: 10, env: { NODE_ENV: "production", QUEUE_DELAY_MS: "2000" } },
     
+    // --- CEREBRO CENTRAL (MEMORIA VECTORIAL) ---
+    { name: "ai-core", script: "./server/core_engine/aiCore.js", exec_mode: "fork", max_memory_restart: "256M" },
+    
     // --- BOTS EN DESARROLLO (PLACEHOLDERS) ---
-    { name: "ai-core", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
-    { name: "vector-db", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "zilla-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "goyi-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "meta-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },

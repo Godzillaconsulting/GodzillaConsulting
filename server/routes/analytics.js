@@ -251,19 +251,21 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
         // --- PM2 Bot Health (Monitoreo de El Bebé) ---
         let botHealth = [];
         try {
-            const { stdout } = await execPromise('pm2 jlist');
-            const pm2Data = JSON.parse(stdout);
-            
-            const targetBots = ['godzilla-bot-ig', 'tiktok-bot', 'whatsapp-bot', 'godzilla-sora-engine'];
-            botHealth = pm2Data
-                .filter(proc => targetBots.includes(proc.name))
-                .map(proc => ({
-                    name: proc.name,
-                    status: proc.pm2_env.status,
-                    restarts: proc.pm2_env.restart_time,
-                    memoryMb: Math.round(proc.monit.memory / 1024 / 1024),
-                    cpuPercent: proc.monit.cpu
-                }));
+            const { stdout } = await execPromise('pm2 jlist', { timeout: 1500 });
+            if (stdout) {
+                const pm2Data = JSON.parse(stdout);
+                
+                const targetBots = ['godzilla-bot-ig', 'tiktok-bot', 'whatsapp-bot', 'godzilla-sora-engine'];
+                botHealth = pm2Data
+                    .filter(proc => targetBots.includes(proc.name))
+                    .map(proc => ({
+                        name: proc.name,
+                        status: proc.pm2_env?.status || 'offline',
+                        restarts: proc.pm2_env?.restart_time || 0,
+                        memoryMb: proc.monit?.memory ? Math.round(proc.monit.memory / 1024 / 1024) : 0,
+                        cpuPercent: proc.monit?.cpu || 0
+                    }));
+            }
         } catch (e) {
             console.error("Error reading PM2", e.message);
         }

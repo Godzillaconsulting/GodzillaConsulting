@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import logo from '../assets/Godzilla Consulting.png';
-import '../assets/light-circle.css';
 import {
   ChevronRight,
   ChevronLeft,
@@ -82,11 +81,25 @@ const FormAbordaje = () => {
           </button>
 
           <div className="relative w-40 h-40 mt-8 mb-6 flex items-center justify-center z-10">
-            {/* Animación Custom: Light Circle */}
-            <div className="scale-[0.35]">
-              <div className="circle">
-                <div className="noise animated"></div>
-              </div>
+            {/* Anillo de Partículas (Verde Éxito + Rojo Godzilla) */}
+            <div className="absolute inset-0 animate-[spin_8s_linear_infinite]">
+              <div className="absolute top-2 left-1/2 w-2 h-2 bg-[#34C759] rounded-full shadow-[0_0_8px_#34C759]"></div>
+              <div className="absolute top-8 right-6 w-1.5 h-1.5 bg-[#CC0000]/60 rounded-full"></div>
+              <div className="absolute bottom-4 left-1/3 w-3 h-3 bg-[#34C759]/80 rounded-full shadow-[0_0_10px_#34C759]"></div>
+              <div className="absolute bottom-10 -left-2 w-1.5 h-1.5 bg-white/60 rounded-full"></div>
+              <div className="absolute top-1/2 right-2 w-2 h-2 bg-[#34C759]/50 rounded-full"></div>
+              <div className="absolute top-1/3 left-4 w-1 h-1 bg-[#CC0000]/40 rounded-full"></div>
+            </div>
+            
+            <div className="absolute inset-0 animate-[spin_12s_linear_infinite_reverse]">
+              <div className="absolute bottom-8 right-4 w-2 h-2 bg-[#34C759]/80 rounded-full shadow-[0_0_8px_#34C759]"></div>
+              <div className="absolute top-1/4 left-8 w-1 h-1 bg-white/80 rounded-full"></div>
+              <div className="absolute bottom-1/3 left-2 w-1.5 h-1.5 bg-[#CC0000]/50 rounded-full shadow-[0_0_5px_#CC0000]"></div>
+            </div>
+            
+            {/* Circulo Central */}
+            <div className="relative z-10 w-20 h-20 rounded-full border-[3px] border-[#34C759] bg-[#34C759]/10 flex items-center justify-center animate-in zoom-in duration-500 shadow-[0_0_30px_rgba(52,199,89,0.2)] backdrop-blur-sm">
+              <Check className="w-10 h-10 text-[#34C759] stroke-[3]" />
             </div>
           </div>
 

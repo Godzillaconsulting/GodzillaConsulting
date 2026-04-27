@@ -73,8 +73,7 @@ export default function AnalyticsDashboard() {
         return txt
             .replace(/cmo/gi, 'cómo').replace(/cmo/gi, 'cómo').replace(/cmo/gi, 'cómo')
             .replace(/qu/gi, 'qué').replace(/qu/gi, 'qué').replace(/qu/gi, 'qué')
-            .replace(/ms/gi, 'más').replace(/ms/gi, 'más')
-            .replace(//g, 'ó');
+            .replace(/ms/gi, 'más').replace(/ms/gi, 'más');
     };
 
     // Calculate aggregated totals based on traffic sources

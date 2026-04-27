@@ -193,7 +193,7 @@ const FormAbordaje = () => {
               </label>
               <input
                 className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 px-6 text-sm"
-                placeholder="Ej: Tacos El Rey o Clínica Dental Salud"
+                placeholder="Ej: Spa Renacer o Despacho Jurídico"
                 value={formData.empresa}
                 onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
               />
@@ -203,7 +203,7 @@ const FormAbordaje = () => {
               <label className="block text-xs font-bold uppercase mb-2 text-white/70 tracking-widest">Sitio Web (Opcional)</label>
               <input
                 className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 px-6 text-sm"
-                placeholder="Ej: www.tacoselrey.com"
+                placeholder="Ej: www.sparenacer.com"
                 value={formData.web}
                 onChange={(e) => setFormData({ ...formData, web: e.target.value })}
               />
@@ -244,7 +244,7 @@ const FormAbordaje = () => {
               </label>
               <textarea
                 className="w-full bg-black/40 border border-[#CC0000]/50 rounded-[32px] p-5 focus:border-[#CC0000] focus:bg-black outline-none transition-all h-24 text-sm"
-                placeholder="1. Carne de primera calidad, 2. Tortillas hechas a mano, 3. Salsa secreta de la abuela."
+                placeholder="1. Atención personalizada 24/7, 2. Más de 10 años de experiencia, 3. Instalaciones premium y confortables."
                 value={formData.diferenciadores}
                 onChange={(e) => setFormData({ ...formData, diferenciadores: e.target.value })}
               />

@@ -4,7 +4,7 @@ import { Chart as GoogleChart } from "react-google-charts";
 import { 
     Activity, ArrowUpRight, Users, MousePointerClick, 
     Smartphone, ArrowRight, DollarSign, Target, Orbit, Zap, Database, Bot, Cpu,
-    X, MessageSquare, Heart, Clock, Eye, BarChart2, ChevronRight, Share2, PlayCircle, Globe, Edit2
+    X, MessageSquare, Heart, Clock, Eye, BarChart2, ChevronRight, Share2, PlayCircle, Globe, Edit2, Search
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
@@ -304,6 +304,56 @@ export default function AnalyticsDashboard() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Radar de Tendencias B2B (Godzilla AnswerThePublic Engine) */}
+            <div className="bg-[#111]/40 backdrop-blur-2xl border border-white/5 p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] mb-10 overflow-hidden animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
+                <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-3">
+                        <Globe size={20} className="text-[#00F0FF]" />
+                        Radar de Tendencias B2B (Data Cruda Google)
+                    </h3>
+                    {data.searchTrends && (
+                        <div className="bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg">
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                                Última lectura: {new Date(data.searchTrends.created_at).toLocaleTimeString()}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {data.searchTrends ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 bg-[#161615]/50 border border-white/5 p-5 rounded-2xl h-80 flex flex-col">
+                            <h4 className="text-white font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-widest">
+                                <Search size={16} className="text-neutral-500" /> Búsquedas Crudas en Tiempo Real
+                            </h4>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-wrap gap-2 content-start">
+                                {Object.keys(data.searchTrends.aggregated_questions).map((kw) => (
+                                    data.searchTrends.aggregated_questions[kw].map((q, idx) => (
+                                        <span key={`${kw}-${idx}`} className="bg-black/40 border border-white/5 text-xs text-neutral-300 px-3 py-1.5 rounded-full hover:border-[#00F0FF]/50 hover:text-[#00F0FF] transition-colors cursor-default">
+                                            {q}
+                                        </span>
+                                    ))
+                                ))}
+                            </div>
+                        </div>
+                        <div className="lg:col-span-1 bg-gradient-to-br from-[#161615] to-[#111] border border-[#00F0FF]/20 p-5 rounded-2xl flex flex-col relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-[#00F0FF]/5 rounded-bl-full blur-xl"></div>
+                            <h4 className="text-[#00F0FF] font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-widest relative z-10">
+                                <Zap size={16} /> Síntesis IA Ejecutiva
+                            </h4>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar text-sm text-neutral-300 leading-relaxed whitespace-pre-line relative z-10">
+                                {data.searchTrends.summary}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="p-10 text-center text-neutral-600 font-bold border border-dashed border-neutral-800 rounded-2xl flex flex-col items-center gap-3">
+                        <Globe size={40} className="text-neutral-800" />
+                        Aún no hay lecturas del algoritmo de tendencias.
+                    </div>
+                )}
             </div>
 
             {/* Performance Over Time (Area Chart) & Table */}

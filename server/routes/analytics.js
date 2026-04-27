@@ -307,6 +307,22 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             console.warn("Could not fetch API telemetry", e.message);
         }
 
+        // --- Search Trends (Godzilla AnswerThePublic Engine) ---
+        let searchTrends = null;
+        try {
+            const trendsRes = await pool.query(`SELECT keywords, aggregated_questions, summary, created_at FROM search_trends ORDER BY created_at DESC LIMIT 1`);
+            if (trendsRes.rows.length > 0) {
+                searchTrends = {
+                    keywords: trendsRes.rows[0].keywords,
+                    aggregated_questions: trendsRes.rows[0].aggregated_questions,
+                    summary: trendsRes.rows[0].summary,
+                    created_at: trendsRes.rows[0].created_at
+                };
+            }
+        } catch (e) {
+            console.warn("Could not fetch search_trends", e.message);
+        }
+
         res.json({
             success: true,
             trafficSources,
@@ -318,6 +334,7 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
             botProductivity,
             apiTelemetry,
             totalApiCostUsd,
+            searchTrends,
             kpis: {
                 totalSpend: '$0.00',
                 totalRevenue: 'Pendiente Pauta',

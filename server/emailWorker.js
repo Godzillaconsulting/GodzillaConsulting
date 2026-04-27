@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-import { resumeQueueFromDB } from './services/emailQueue.js';
+import { resumeQueueFromDB, enqueueNewsletter } from './services/emailQueue.js';
 import { checkAndEnqueue } from './services/retargetingService.js';
 
 console.log('📬 [EmailWorker] Iniciando worker de correos...');
@@ -37,7 +37,13 @@ cron.schedule('0 7 * * *', async () => {
     console.log('⏳ [CRON] Activando Despliegue Automático del Newsletter (7:00 AM)...');
     try {
         const result = await generateAndSendAutoNewsletter();
-        console.log('✅ [CRON] Éxito masivo. El boletín en PDF se ha puesto en circulación:', result);
+        console.log('✅ [CRON] Borrador generado exitosamente:', result);
+        
+        if (result && result.newsletterId) {
+            console.log(`🚀 [CRON] Encolando Newsletter ID ${result.newsletterId} a todos los suscriptores...`);
+            const totalEnqueued = await enqueueNewsletter(result.newsletterId);
+            console.log(`✅ [CRON] Éxito masivo. Se han encolado ${totalEnqueued} correos y el PDF está en circulación.`);
+        }
     } catch (e) {
         console.error('❌ [CRON] Falla en la programación del Newsletter:', e.message);
     }

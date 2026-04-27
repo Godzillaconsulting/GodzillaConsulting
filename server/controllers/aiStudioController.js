@@ -131,7 +131,7 @@ ${cacheBuster}`;
 
             (async () => {
                 const aiPrimary = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                const aiFree = new GoogleGenAI({ apiKey: 'AIzaSyDrjLO0q0Wqo0B7NEacxih5fH247erp0CA' });
+                const aiFree = new GoogleGenAI({ apiKey: process.env.GEMINI_FREE_KEY || process.env.GEMINI_API_KEY });
                 const validRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
                 const ratio = validRatios.includes(config?.aspect_ratio) ? config.aspect_ratio : '16:9';
 

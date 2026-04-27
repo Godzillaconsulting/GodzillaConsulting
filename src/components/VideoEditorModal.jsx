@@ -57,6 +57,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [stockQuery, setStockQuery] = useState('');
+  const [captionLanguage, setCaptionLanguage] = useState('spanish');
   
   const filteredStock = useMemo(() => {
     if (!stockQuery) return STOCK_VIDEOS;
@@ -346,7 +347,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         chunk_length_s: 30,
         stride_length_s: 5,
         return_timestamps: 'word',
-        language: 'spanish',
+        language: captionLanguage,
         task: 'transcribe'
       });
 
@@ -476,7 +477,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         chunk_length_s: 30,
         stride_length_s: 5,
         return_timestamps: 'word',
-        language: 'spanish',
+        language: captionLanguage,
         task: 'transcribe'
       });
 
@@ -663,6 +664,23 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             {Object.entries(ASPECT_RATIOS).map(([k, v]) => (
               <option key={k} value={k}>{v.label} ({k})</option>
             ))}
+          </select>
+          
+          <div className="h-4 w-px bg-neutral-700 hidden sm:block mx-1"></div>
+          
+          {/* Caption Language */}
+          <select
+            value={captionLanguage}
+            onChange={e => setCaptionLanguage(e.target.value)}
+            title="Idioma para Subtítulos IA"
+            className="bg-[#27272a] hover:bg-[#3f3f46] border border-[#3f3f46] text-white text-xs rounded-md px-3 py-1.5 outline-none cursor-pointer transition-colors"
+          >
+            <option value="spanish">Español</option>
+            <option value="english">Inglés</option>
+            <option value="portuguese">Portugués</option>
+            <option value="french">Francés</option>
+            <option value="german">Alemán</option>
+            <option value="italian">Italiano</option>
           </select>
         </div>
 

@@ -99,17 +99,8 @@ REGLAS:
             [JSON.stringify(KEYWORDS), JSON.stringify(structuredQuestions), summaryText]
         );
 
-        // 2. Inyectar como Tarea pendiente en el CEO Studio
-        await client.query(
-            `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, content_type) VALUES ($1, $2, $3, $4, $5)`,
-            [
-                `🔥 [Trending] Ideas Virales del Día (${new Date().toLocaleDateString()})`,
-                `Contexto Crudo:\n${JSON.stringify(structuredQuestions, null, 2)}\n\nResumen Directivo:\n${summaryText}`,
-                'AI Content Planner',
-                JSON.stringify(['Trending', 'Urgente']),
-                'TikTok / Reels'
-            ]
-        );
+        // 2. Tareas en el CEO Studio desactivadas por petición del usuario
+        // El bot ahora solo guarda métricas de Analytics y el menú lateral consume las tendencias en vivo.
         console.log(`[${BOT_NAME}] 💾 Datos inyectados en la DB exitosamente.`);
     } catch (err) {
         console.error(`[${BOT_NAME}] ❌ Error guardando en BD:`, err.message);

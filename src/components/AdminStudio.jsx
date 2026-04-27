@@ -475,6 +475,35 @@ export default function AdminStudio() {
    <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#CC0000]/10 rounded-full blur-[120px] pointer-events-none"></div>
    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/50 rounded-full blur-[100px] pointer-events-none"></div>
 
+   {/* Botón Flotante Búsquedas Virales tipo Gemini */}
+   <div className="fixed bottom-6 right-6 z-[120] group">
+       <button className="w-14 h-14 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.4)] flex items-center justify-center text-white hover:scale-110 transition-transform peer border border-orange-300/30">
+           <span className="text-2xl drop-shadow-md">🔥</span>
+       </button>
+       <div className="absolute bottom-[calc(100%+16px)] right-0 w-[320px] bg-[#0a0a0a] border border-orange-500/30 rounded-2xl shadow-[0_0_40px_rgba(249,115,22,0.3)] z-[120] hidden hover:block peer-hover:block p-5 transform origin-bottom-right transition-all">
+           {/* bridge para el hover */}
+           <div className="absolute -bottom-4 right-0 w-14 h-6 bg-transparent"></div>
+           <h4 className="text-white text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+               <span className="text-orange-500 text-xl">🔥</span> Analítica Viral Global
+           </h4>
+           <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">Busca oportunidades de contenido o revisa el catálogo global extraído por Godzilla Trends Bot.</p>
+           
+           <div className="flex flex-col gap-3 mb-4">
+               <input type="text" placeholder="Buscar tema (ej. SaaS)..." className="w-full bg-black/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors" />
+               <button onClick={() => alert('Buscando tema en la IA... (En desarrollo)')} className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                   Buscar Tema
+               </button>
+           </div>
+           
+           <div className="border-t border-white/10 pt-4">
+               <button onClick={openTrendsModal} className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-3 text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                   Ver Catálogo de Tendencias
+               </button>
+           </div>
+       </div>
+   </div>
+
 
   {showPublishModal && (
   <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
@@ -508,7 +537,7 @@ export default function AdminStudio() {
           <div className="flex-1 mr-4">
             <h3 className="text-xl font-black text-white flex items-center gap-2 mb-3">
               <span className="text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">🔥</span> 
-              Búsquedas Activas B2B
+              Búsquedas Virales Globales
             </h3>
             <div className="flex gap-2 mb-2">
                 <input 
@@ -671,34 +700,6 @@ export default function AdminStudio() {
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ai-planner' ?'bg-gradient-to-r from-purple-800 to-fuchsia-900 text-white border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-900/40 hover:text-white' }`}>
    <span className="text-xs mr-2 drop-shadow-sm">🤖</span> Planificador IA
    </button>
-   
-   {/* Búsquedas Virales Dropdown (Siempre visible) */}
-   <div className="relative group">
-       <button 
-       className={`w-full text-[10px] py-2 shadow-[0_0_10px_rgba(249,115,22,0.3)] rounded-xl transition-all font-black uppercase flex items-center justify-center border border-orange-500/50 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-400 peer`}>
-           <span className="text-xs mr-2 drop-shadow-sm">🔥</span> Búsquedas Virales
-       </button>
-       <div className="absolute left-[100%] top-[-20px] ml-3 w-72 bg-[#0a0a0a] border border-orange-500/30 rounded-xl shadow-[0_0_30px_rgba(249,115,22,0.2)] z-[100] hidden hover:block peer-hover:block p-4">
-           <div className="absolute -left-3 top-[30px] w-3 h-6 bg-transparent"></div> {/* Puente invisible para el hover */}
-           <h4 className="text-white text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-               <span className="text-orange-500 text-lg">🔥</span> Analítica Global B2B
-           </h4>
-           <p className="text-[10px] text-gray-400 mb-3">Busca oportunidades de contenido o revisa el catálogo global.</p>
-           
-           <div className="flex gap-2 mb-4">
-               <input type="text" placeholder="Ej. marketing automation..." className="w-full bg-black/60 border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-orange-500 transition-colors" />
-               <button onClick={() => alert('Buscando tema en la IA... (En desarrollo)')} className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-3 py-2 font-bold transition-colors">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-               </button>
-           </div>
-           
-           <div className="border-t border-white/10 pt-3">
-               <button onClick={openTrendsModal} className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg px-3 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-2">
-                   Ver Catálogo de Tendencias
-               </button>
-           </div>
-       </div>
-   </div>
 
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>

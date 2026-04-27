@@ -42,7 +42,8 @@ async function generateVoice(text, outputPath) {
             });
 
             if (response.ok) {
-                const buffer = await response.buffer();
+                const arrayBuffer = await response.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
                 fs.writeFileSync(outputPath, buffer);
                 console.log(`[MediaWorker] ✅ ElevenLabs TTS generado.`);
                 return outputPath;
@@ -97,7 +98,8 @@ async function generateImage(prompt, outputPath) {
     const res = await fetch(fallbackUrl);
     if (!res.ok) throw new Error(`Fallo Fallback: ${res.statusText}`);
     
-    const buffer = await res.buffer();
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     fs.writeFileSync(outputPath, buffer);
     console.log(`[MediaWorker] ✅ Imagen generada (Fallback Libre).`);
     return outputPath;

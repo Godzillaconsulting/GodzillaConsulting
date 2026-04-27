@@ -234,7 +234,8 @@ ${cacheBuster}`;
                         const res = await fetch(fallbackUrl);
                         if (!res.ok) throw new Error("Pollinations falló");
                         
-                        const buffer = await res.buffer();
+                        const arrayBuffer = await res.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
                         const imgName = `${taskId}_fallback.jpg`;
                         const imgPath = path.join(OUTPUT_DIR, imgName);
                         fs.writeFileSync(imgPath, buffer);
@@ -373,7 +374,8 @@ ${cacheBuster}`;
                         const res = await fetch(fallbackUrl);
                         if (!res.ok) throw new Error("Pollinations API failed");
                         
-                        const buffer = await res.buffer();
+                        const arrayBuffer = await res.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
                         const fileName = `${taskId}_fallback.jpg`;
                         const savePath = path.join(OUTPUT_DIR, fileName);
                         fs.writeFileSync(savePath, buffer);

@@ -124,9 +124,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   }, [editor]);
 
   const handleAddToTimeline = useCallback(async (mediaObj) => {
-    const url = mediaObj.media_options[0].url;
+    const url = mediaObj.media_options?.[0]?.url || mediaObj.url;
     const dur = await getVideoDuration(url);
-    const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
+    const isAudio = mediaObj.type === 'audio' || url.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || (mediaObj.caption && mediaObj.caption.match(/\.(mp3|wav|ogg|m4a|aac)$/i));
     const layerType = isAudio ? 'audio' : 'video';
     const layer = editor.project.layers.find(l => l.type === layerType);
     const lastEnd = layer?.clips.reduce((m, c) => Math.max(m, c.end), 0) || 0;
@@ -618,7 +618,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const handleUpload = useCallback((file) => {
     const url = URL.createObjectURL(file);
-    setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, caption: file.name, media_options: [{ url }] }]);
+    const isAudio = file.type.startsWith('audio/');
+    setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, type: isAudio ? 'audio' : 'video', caption: file.name, media_options: [{ url }] }]);
   }, []);
 
   const savedVideos = useMemo(() => queue.filter(q =>
@@ -797,7 +798,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 <div className="grid grid-cols-2 gap-2">
                   {allMedia.length === 0 && <div className="col-span-2 text-center py-8 text-neutral-500 text-xs bg-[#27272a]/30 rounded-lg border border-dashed border-neutral-700">Arrastra archivos aquí o haz clic en Importar</div>}
                   {allMedia.map(m => {
-                    const isAudio = m.media_options[0].url.match(/\.(mp3|wav|ogg)$/i);
+                    const isAudio = m.type === 'audio' || m.media_options[0].url.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || (m.caption && m.caption.match(/\.(mp3|wav|ogg|m4a|aac)$/i));
                     return (
                       <div key={m.id} draggable onDragStart={e => { setDraggedMedia(m); e.dataTransfer.setData('text/plain', m.media_options[0].url); }}
                         className="group relative flex flex-col bg-[#27272a] rounded-lg border border-[#3f3f46] overflow-hidden cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors">
@@ -1136,9 +1137,9 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             }
 
             if (!draggedMedia) return;
-            const url = draggedMedia.media_options[0].url;
+            const url = draggedMedia.media_options?.[0]?.url || draggedMedia.url;
             const dur = await getVideoDuration(url);
-            const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
+            const isAudio = draggedMedia.type === 'audio' || url.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || (draggedMedia.caption && draggedMedia.caption.match(/\.(mp3|wav|ogg|m4a|aac)$/i));
             const layerType = isAudio ? 'audio' : 'video';
             const layer = editor.project.layers.find(l => l.type === layerType);
             

@@ -105,20 +105,20 @@ const FormAbordaje = () => {
           </button>
 
           <div className="relative w-40 h-40 mt-8 mb-6 flex items-center justify-center z-10">
-            {/* Anillo de Partículas (Verde Éxito + Rojo Godzilla) */}
+            {/* Anillo de Partículas (Verde Éxito) */}
             <div className="absolute inset-0 animate-[spin_8s_linear_infinite]">
               <div className="absolute top-2 left-1/2 w-2 h-2 bg-[#34C759] rounded-full shadow-[0_0_8px_#34C759]"></div>
-              <div className="absolute top-8 right-6 w-1.5 h-1.5 bg-[#CC0000]/60 rounded-full"></div>
+              <div className="absolute top-8 right-6 w-1.5 h-1.5 bg-[#34C759]/60 rounded-full shadow-[0_0_5px_#34C759]"></div>
               <div className="absolute bottom-4 left-1/3 w-3 h-3 bg-[#34C759]/80 rounded-full shadow-[0_0_10px_#34C759]"></div>
-              <div className="absolute bottom-10 -left-2 w-1.5 h-1.5 bg-white/60 rounded-full"></div>
+              <div className="absolute bottom-10 -left-2 w-1.5 h-1.5 bg-[#34C759]/60 rounded-full shadow-[0_0_5px_#34C759]"></div>
               <div className="absolute top-1/2 right-2 w-2 h-2 bg-[#34C759]/50 rounded-full"></div>
-              <div className="absolute top-1/3 left-4 w-1 h-1 bg-[#CC0000]/40 rounded-full"></div>
+              <div className="absolute top-1/3 left-4 w-1 h-1 bg-[#34C759]/40 rounded-full"></div>
             </div>
             
             <div className="absolute inset-0 animate-[spin_12s_linear_infinite_reverse]">
               <div className="absolute bottom-8 right-4 w-2 h-2 bg-[#34C759]/80 rounded-full shadow-[0_0_8px_#34C759]"></div>
-              <div className="absolute top-1/4 left-8 w-1 h-1 bg-white/80 rounded-full"></div>
-              <div className="absolute bottom-1/3 left-2 w-1.5 h-1.5 bg-[#CC0000]/50 rounded-full shadow-[0_0_5px_#CC0000]"></div>
+              <div className="absolute top-1/4 left-8 w-1 h-1 bg-[#34C759]/80 rounded-full"></div>
+              <div className="absolute bottom-1/3 left-2 w-1.5 h-1.5 bg-[#34C759]/50 rounded-full shadow-[0_0_5px_#34C759]"></div>
             </div>
             
             {/* Circulo Central */}

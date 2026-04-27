@@ -808,7 +808,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3 (Toma 1)', 'Veo 3 (Toma 2)', 'Veo 3 (Toma 3)', 'Veo 3 Fast']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image'];
+            : ['Pollinations (Opt 1)', 'Pollinations (Opt 2)', 'Pollinations (Opt 3)', 'Pollinations (Opt 4)'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -847,6 +847,25 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             for (let idx = 0; idx < enginesToRun.length; idx++) {
                 if (cancelRef.current) break;
                 const engineName = enginesToRun[idx];
+                
+                // --- POLLINATIONS BYPASS (FREE & 4 OPTIONS) ---
+                if (engineName.startsWith('Pollinations')) {
+                    const seed = Math.floor(Math.random() * 1000000);
+                    let w = 1024, h = 1024;
+                    if (ar === '16:9') { w = 1280; h = 720; }
+                    else if (ar === '9:16') { w = 720; h = 1280; }
+                    else if (ar === '3:4') { w = 768; h = 1024; }
+                    else if (ar === '4:3') { w = 1024; h = 768; }
+                    
+                    updateSlot(idx, { status: 'loading', progress: 40 });
+                    await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+                    
+                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptAmentado)}?seed=${seed}&width=${w}&height=${h}&nologo=true`;
+                    
+                    updateSlot(idx, { status: 'done', url: pollUrl, progress: 100, provider: engineName });
+                    continue;
+                }
+
                 if (idx > 0) await new Promise(r => setTimeout(r, 1800));
                 try {
                     const resFetch = await fetch('/api/studio/generate', {
@@ -1454,7 +1473,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             <div className="flex-1 bg-black relative flex flex-col overflow-hidden">
                 
                 {/* STUDIO CONTENT (Galería y Live Slots) */}
-                <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all h-[45%] min-h-[350px]`}>
+                <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all flex-1 min-h-[350px]`}>
                 
                 {/* Cabecera del Lienzo */}
                 <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-[#000000cc] to-transparent">

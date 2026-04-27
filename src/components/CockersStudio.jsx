@@ -451,6 +451,22 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             }
         } catch (e) {
             console.error(e);
+            // Fallback a Pollinations si el refine nativo falla
+            const fallbackPrompt = `${promptContext || 'ultra realistic, highly detailed masterpiece, 8k resolution'}`;
+            const fbUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fallbackPrompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+            setSelectedDraft(prev => {
+                if (!prev) return prev;
+                const newOpts = [...prev.media_options];
+                const origOpt = newOpts[optionIndex];
+                newOpts.splice(optionIndex + 1, 0, {
+                    url: fbUrl,
+                    provider: origOpt.provider + ' + ✨ Ultra HQ (FB)',
+                    isVideo: origOpt.isVideo
+                });
+                const newState = { ...prev, media_options: newOpts };
+                setQueue(q => q.map(post => post.id === prev.id ? newState : post));
+                return newState;
+            });
             setRefiningTasks(prev => ({ ...prev, [optionIndex]: false }));
         }
     };
@@ -504,7 +520,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 updateOption(draftId, optIndex, { refinedUrl: 'error' });
             }
         } catch(e) {
-            updateOption(draftId, optIndex, { refinedUrl: 'error' });
+            // Fallback a Pollinations en caso de error de red o API
+            const fallbackPrompt = `${promptText || 'ultra realistic, highly detailed masterpiece'}`;
+            const fbUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fallbackPrompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+            updateOption(draftId, optIndex, { refinedUrl: fbUrl });
         }
     };
 
@@ -808,7 +827,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3 (Toma 1)', 'Veo 3 (Toma 2)', 'Veo 3 (Toma 3)', 'Veo 3 Fast']
-            : ['Pollinations (Opt 1)', 'Pollinations (Opt 2)', 'Pollinations (Opt 3)', 'Pollinations (Opt 4)'];
+            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image', 'Gemini 3 Pro'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -848,8 +867,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 if (cancelRef.current) break;
                 const engineName = enginesToRun[idx];
                 
-                // --- POLLINATIONS BYPASS (FREE & 4 OPTIONS) ---
-                if (engineName.startsWith('Pollinations')) {
+                if (idx > 0) await new Promise(r => setTimeout(r, 1800));
+                
+                // --- FALLBACK CASCADE ---
+                const triggerPollinationsFallback = async (fallbackName, pollModel) => {
                     const seed = Math.floor(Math.random() * 1000000);
                     let w = 1024, h = 1024;
                     if (ar === '16:9') { w = 1280; h = 720; }
@@ -857,23 +878,30 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     else if (ar === '3:4') { w = 768; h = 1024; }
                     else if (ar === '4:3') { w = 1024; h = 768; }
                     
-                    updateSlot(idx, { status: 'loading', progress: 40 });
-                    await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+                    updateSlot(idx, { status: 'loading', progress: 60, provider: fallbackName });
                     
-                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptAmentado)}?seed=${seed}&width=${w}&height=${h}&nologo=true`;
-                    
-                    updateSlot(idx, { status: 'done', url: pollUrl, progress: 100, provider: engineName });
-                    continue;
-                }
+                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptAmentado)}?seed=${seed}&width=${w}&height=${h}&nologo=true&model=${pollModel}`;
+                    try {
+                        const res = await fetch(pollUrl);
+                        if (!res.ok) throw new Error('Pollinations Limit');
+                        const blob = await res.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        updateSlot(idx, { status: 'done', url: objectUrl, progress: 100, provider: fallbackName });
+                    } catch(e) {
+                        updateSlot(idx, { status: 'done', url: pollUrl, progress: 100, provider: fallbackName });
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                };
 
-                if (idx > 0) await new Promise(r => setTimeout(r, 1800));
                 try {
+                    // Try Primary Engine (Google or Veo)
                     const resFetch = await fetch('/api/studio/generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ prompt: promptAmentado, mode: isVideoMode ? 'video' : 'imagen', engine: engineName, config: { ...builderData, refImage } })
                     });
                     const data = await resFetch.json();
+                    
                     if (!resFetch.ok) throw new Error(data.error || `HTTP ${resFetch.status}`);
 
                     if (data.status === 'succeed' && data.result_url) {
@@ -883,10 +911,19 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         toPoll.push({ idx, engineName, job_id: data.job_id, done: false });
                         updateSlot(idx, { status: 'loading', progress: 5 });
                     } else {
-                        updateSlot(idx, { status: 'failed', progress: 100 });
+                        throw new Error("Respuesta inválida del servidor");
                     }
                 } catch(e) {
-                    updateSlot(idx, { status: 'failed', progress: 100 });
+                    if (isVideoMode) {
+                        updateSlot(idx, { status: 'failed', progress: 100 });
+                    } else {
+                        // Cascade to Free Open Source Models
+                        let fbName = 'FLUX.1'; let fbModel = 'flux';
+                        if (engineName === 'Imagen 4 Pro') { fbName = 'FLUX Realism'; fbModel = 'flux-realism'; }
+                        if (engineName === 'Gemini 3.1 Flash Image') { fbName = 'SDXL Turbo'; fbModel = 'turbo'; }
+                        if (engineName === 'Gemini 3 Pro') { fbName = 'Anime/Dark'; fbModel = 'any-dark'; }
+                        await triggerPollinationsFallback(fbName, fbModel);
+                    }
                 }
             }
 

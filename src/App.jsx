@@ -37,6 +37,7 @@ const OptimizacionWebSeo = React.lazy(() => import('./components/OptimizacionWeb
 const CrmSaas = React.lazy(() => import('./components/CrmSaas'));
 const LandingPaqueteDynamic = React.lazy(() => import('./components/LandingPaqueteDynamic'));
 const Login = React.lazy(() => import('./components/Login'));
+const FormAbordaje = React.lazy(() => import('./components/FormAbordaje'));
 const SEOPageWrapper = React.lazy(() => import('./components/SEOPageWrapper'));
 
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
@@ -129,7 +130,7 @@ function GodzillaTracker() {
 
 function FloatingWhatsApp() {
   const { pathname } = useLocation();
-  const hiddenRoutes = ['/login', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio', '/godzilla-sora'];
+  const hiddenRoutes = ['/login', '/terminos', '/aviso-privacidad', '/politica-cookies', '/admin', '/cm', '/studio', '/godzilla-sora', '/form'];
 
   if (hiddenRoutes.some(route => pathname.startsWith(route))) return null;
 
@@ -175,7 +176,7 @@ function AppLayout() {
   const { loading } = useSiteData();
   const hideChromeRoutes = [
     '/login', '/admin', '/cm', '/studio', '/godzilla-sora',
-    '/posicionamiento-social', '/control-ia', '/expansion', '/elite'
+    '/posicionamiento-social', '/control-ia', '/expansion', '/elite', '/form'
   ];
   const hideChrome = hideChromeRoutes.some(route => pathname.startsWith(route));
 
@@ -248,6 +249,7 @@ function AppLayout() {
                 <Route path="/recursos/:recursoId" element={<RecursoPage />} />
                 <Route path="/:slug" element={<LandingPaqueteDynamic />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/form" element={<FormAbordaje />} />
                 <Route path="/faq" element={<PreguntasFrecuentes />} />
                 <Route path="/socios" element={
                   <SEOPageWrapper title="Socios Executive" description="Desbloquea el PDF Ejecutivo Inteligente">

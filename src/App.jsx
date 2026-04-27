@@ -176,7 +176,7 @@ function AppLayout() {
   const { loading } = useSiteData();
   const hideChromeRoutes = [
     '/login', '/admin', '/cm', '/studio', '/godzilla-sora',
-    '/posicionamiento-social', '/control-ia', '/expansion', '/elite', '/form'
+    '/posicionamiento-social', '/control-ia', '/expansion', '/elite', '/formulario'
   ];
   const hideChrome = hideChromeRoutes.some(route => pathname.startsWith(route));
 
@@ -249,7 +249,7 @@ function AppLayout() {
                 <Route path="/recursos/:recursoId" element={<RecursoPage />} />
                 <Route path="/:slug" element={<LandingPaqueteDynamic />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/form" element={<FormAbordaje />} />
+                <Route path="/formulario" element={<FormAbordaje />} />
                 <Route path="/faq" element={<PreguntasFrecuentes />} />
                 <Route path="/socios" element={
                   <SEOPageWrapper title="Socios Executive" description="Desbloquea el PDF Ejecutivo Inteligente">

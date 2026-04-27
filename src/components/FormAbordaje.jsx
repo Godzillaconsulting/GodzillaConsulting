@@ -193,7 +193,7 @@ const FormAbordaje = () => {
               </label>
               <input
                 className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 px-6 text-sm"
-                placeholder="Ej: Spa Renacer o Despacho Jurídico"
+                placeholder="Ej: Spa Renacer, Clínica Dental o Despacho Jurídico"
                 value={formData.empresa}
                 onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
               />

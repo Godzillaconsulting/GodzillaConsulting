@@ -777,8 +777,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
     // Agrupar eventos por día para el grid
     const eventsByDay = useCallback(() => {
         const map = {};
-        const eventsToShow = calendarTab === 'contenido' ? filteredEvents :
-                             calendarTab === 'todos' ? [...filteredEvents, ...citas, ...pendingTaskEvents] : filteredEvents;
+        const eventsToShow = calendarEventsMap[calendarTab] || calendarEventsMap['todos'];
 
         eventsToShow.forEach(ev => {
             const d = ev.start instanceof Date ? ev.start : new Date(ev.start);
@@ -787,7 +786,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
             map[key].push(ev);
         });
         return map;
-    }, [filteredEvents, citas, pendingTaskEvents, calendarTab]);
+    }, [filteredEvents, citas, pendingTaskEvents, aiContentEvents, calendarTab]);
 
     const dayEventsMap = eventsByDay();
 
@@ -1225,6 +1224,57 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 </div>
             </div>
         );
+    };
+
+    const handleApproveAIContent = async (eventId) => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const realId = String(eventId).replace('ia-', '').replace('task-', '');
+            
+            const res = await fetch(`${API}/api/studio/tasks/${realId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ status: 'approved' })
+            });
+            const data = await res.json();
+            if (data.success || res.ok) {
+                setTasks(prev => prev.map(t => t.id == realId ? { ...t, status: 'approved' } : t));
+                setEvents(prev => prev.map(e => String(e.id).replace('ia-','').replace('task-','') == realId ? { ...e, status: 'approved' } : e));
+                setSelectedEvent(prev => prev ? { ...prev, status: 'approved' } : prev);
+                alert('Contenido aprobado y agendado correctamente.');
+            } else {
+                alert('Error al aprobar: ' + (data.message || data.error));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        }
+    };
+
+    const handleRejectAIContent = async (eventId) => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const realId = String(eventId).replace('ia-', '').replace('task-', '');
+            
+            const res = await fetch(`${API}/api/studio/tasks/${realId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setTasks(prev => prev.filter(t => t.id != realId));
+                setEvents(prev => prev.filter(e => String(e.id).replace('ia-','').replace('task-','') != realId));
+                setSelectedEvent(null);
+                alert('Contenido rechazado. La IA deberá rehacer la petición.');
+            } else {
+                const data = await res.json();
+                alert('Error al rechazar: ' + (data.error || data.message));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        }
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1736,9 +1786,12 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-white/[0.06]">
-                            <button className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-sm tracking-widest">Aprobar y Agendar ✔️</button>
-                        </div>
+                        {(selectedEvent.tipo === 'contenido_ia' || selectedEvent.isPendiente || selectedEvent.status === 'pending') && (
+                            <div className="pt-3 border-t border-white/[0.06] flex gap-3">
+                                <button onClick={() => handleRejectAIContent(selectedEvent.id)} className="w-1/3 bg-transparent border border-[#CC0000] text-[#CC0000] hover:bg-[#CC0000] hover:text-white font-black py-3 rounded-xl transition-all uppercase text-[10px] tracking-widest">Tachar ❌</button>
+                                <button onClick={() => handleApproveAIContent(selectedEvent.id)} className="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-[10px] tracking-widest">Aprobar y Agendar ✔️</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

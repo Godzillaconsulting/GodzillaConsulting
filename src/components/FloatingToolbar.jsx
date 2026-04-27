@@ -1,7 +1,7 @@
 import React from 'react';
 import { Volume2, Gauge, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Music, Activity, Target, Layers } from 'lucide-react';
 
-export default function FloatingToolbar({ selectedClip, editor }) {
+export default function FloatingToolbar({ selectedClip, editor, engine }) {
   const clip = selectedClip?.clip;
   const type = selectedClip?.layer?.type;
 

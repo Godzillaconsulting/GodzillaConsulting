@@ -605,72 +605,27 @@ export default function AdminStudio() {
 
   <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
      <div className="py-4 px-2 space-y-6 shrink-0">
-   {[
-     {
-       title: "Sitio Principal",
-       filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag)
-     },
-     {
-       title: "Paquetes",
-       filter: (n, tag) => n.id.startsWith('paquete-')
-     },
-     {
-       title: "Servicios",
-       filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-')
-     },
-     {
-       title: "Recursos",
-       filter: (n, tag) => n.id.startsWith('landing-recurso')
-     }
-   ].map((group, gIdx) => {
-     const groupNodes = sortedNodes.filter(n => {
-        const meta = PAGE_SECTIONS.find(s => s.id === n.id);
-        return group.filter(n, meta?.tag);
-     });
-     
-     if (groupNodes.length === 0) return null;
-
-     return (
-       <div key={gIdx} className="space-y-1 mb-4">
-         <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest mb-2 drop-shadow-sm flex items-center justify-between cursor-pointer border transition-all group ${
-              !collapsedGroups[gIdx] ? 'bg-white text-[#CC0000] border-white/20 shadow-md' : 'border-transparent text-white/80 hover:bg-white hover:text-[#CC0000] hover:border-white/20'
-            }`}>
-             <span>{group.title}</span>
-             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
-                  className={`transition-transform duration-300 ${!collapsedGroups[gIdx] ? 'text-[#CC0000] -rotate-180' : 'text-white/40 group-hover:text-[#CC0000] rotate-0'}`}>
-               <polyline points="6 9 12 15 18 9"></polyline>
-             </svg>
-         </p>
-         
-         {!collapsedGroups[gIdx] && (
-           <div className="space-y-0.5 relative animate-in fade-in slide-in-from-top-2 duration-300">
-             {groupNodes.map((node) => {
-                const meta = PAGE_SECTIONS.find(s => s.id === node.id);
-                const isSelected = selectedNodeId === node.id;
-                const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
-                return (
-                <button key={node.id} onClick={() => handleSelectSection(node)}
+    {sortedNodes.map((node) => {
+        const meta = PAGE_SECTIONS.find(s => s.id === node.id);
+        const isSelected = selectedNodeId === node.id;
+        const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
+        return (
+            <button key={node.id} onClick={() => handleSelectSection(node)}
                 className={`group/btn w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
                 isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
                 }`}
-                >
+            >
                 <div className="min-w-0 flex-1">
-                <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover/btn:text-white'}`}>
-                {meta?.label || node.id}
-                </span>
-                <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover/btn:text-white/50'}`}>
-                §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
-                </span>
+                    <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover/btn:text-white'}`}>
+                        {meta?.label || node.id}
+                    </span>
+                    <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover/btn:text-white/50'}`}>
+                        §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
+                    </span>
                 </div>
-                </button>
-                );
-             })}
-           </div>
-         )}
-       </div>
-     );
-   })}
+            </button>
+        );
+    })}
   </div>
 
    <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">

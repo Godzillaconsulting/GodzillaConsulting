@@ -241,6 +241,7 @@ export default function AIContentPlanner({ adminProfile }) {
     const [extraContext, setExtra]    = useState('');
     const [isGenerating, setGenerating] = useState(false);
     const [plan, setPlan]             = useState(null);
+    const [durationDays, setDurationDays] = useState(30);
     const [generatedNiche, setGNiche] = useState('');
     const [webhookUrl, setWebhookUrl] = useState('');
     const [isSendingWebhook, setIsSendingWebhook] = useState(false);
@@ -285,7 +286,7 @@ export default function AIContentPlanner({ adminProfile }) {
             const res   = await fetch(`${API}/api/studio/generate-monthly-plan`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ niche, month, year, extraContext }),
+                body: JSON.stringify({ niche, month, year, extraContext, durationDays }),
             });
             const data = await res.json();
             
@@ -317,7 +318,21 @@ export default function AIContentPlanner({ adminProfile }) {
                                 setGenerating(false);
                             } else {
                                 setProgress(statusData.progress || 0);
-                                setProgressText(`Generando plan (Lote ${Math.ceil((statusData.progress || 1) / 16.66)} de 6)...`);
+                                const totalBatches = Math.ceil(durationDays / 5);
+                                const currentBatch = Math.ceil((statusData.progress || 1) / (100 / totalBatches));
+                                setProgressText(`Generando plan (Lote ${currentBatch} de ${totalBatches})...`);
+                                
+                                // Live streaming del plan
+                                if (statusData.partialPlan && statusData.partialPlan.length > 0) {
+                                    setPlan(statusData.partialPlan);
+                                    setGNiche(niche);
+                                    setSelections(prev => {
+                                        const newSel = { ...prev };
+                                        statusData.partialPlan.forEach((_, i) => { if (!newSel[i]) newSel[i] = 'ia'; });
+                                        return newSel;
+                                    });
+                                    setReviewMode(true);
+                                }
                             }
                         }
                     } catch (e) {
@@ -373,8 +388,9 @@ export default function AIContentPlanner({ adminProfile }) {
                     title: day['Tema'] || 'Día sin título',
                     prompt: narrations,
                     assigned_to: 'auto',
-                    tags: JSON.stringify([generatedNiche || niche || 'auto', 'manual-generated']),
+                    tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                     priority: 'Media',
+                    status: 'pending', // Aseguramos que se cree como pendiente para el CEO
                     content_type: 'Video Corto',
                     ig_publish_date: isoDate,
                     media_payload: JSON.stringify(mediaPayload)
@@ -440,6 +456,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 assigned_to: 'auto',
                 tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                 priority: 'Media',
+                status: 'pending', // Aseguramos que se cree como pendiente para el CEO
                 content_type: 'Video Corto',
                 ig_publish_date: isoDate,
                 media_payload: JSON.stringify(mediaPayload)
@@ -459,10 +476,10 @@ export default function AIContentPlanner({ adminProfile }) {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3">
                         <CalendarIcon className="w-5 h-5 text-purple-500" />
-                        Planificador IA · Contenido Mensual
+                        Planificador IA · Contenido Continuo
                     </h2>
                     <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">
-                        30 días · 5 escenas por video · Faceless · Reels / Shorts / TikTok
+                        {durationDays} días · 5 escenas por video · Faceless · Reels / Shorts / TikTok
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -537,6 +554,20 @@ export default function AIContentPlanner({ adminProfile }) {
                             className="w-full bg-black/50 border border-neutral-800 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
                         />
                     </div>
+                    <div className="w-32">
+                        <label className="text-[9px] text-purple-400 font-bold uppercase tracking-widest block mb-1.5">Duración</label>
+                        <select
+                            value={durationDays}
+                            onChange={e => setDurationDays(+e.target.value)}
+                            disabled={!canEdit || isGenerating}
+                            className="w-full bg-black/50 border border-neutral-800 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                        >
+                            <option value={1}>1 Día (Prueba)</option>
+                            <option value={7}>1 Semana (7 Días)</option>
+                            <option value={15}>15 Días</option>
+                            <option value={30}>1 Mes (30 Días)</option>
+                        </select>
+                    </div>
                     <div className="flex-1 min-w-[160px]">
                         <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest block mb-1.5">Contexto Extra (opcional)</label>
                         <input
@@ -554,7 +585,7 @@ export default function AIContentPlanner({ adminProfile }) {
                         className="bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/40 text-white font-black uppercase tracking-widest px-8 py-2.5 rounded-xl disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all text-sm shrink-0"
                     >
                         {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                        {isGenerating ? 'Generando...' : 'Generar 30 Días'}
+                        {isGenerating ? 'Generando...' : `Generar ${durationDays} Días`}
                     </button>
                 </div>
 
@@ -570,25 +601,39 @@ export default function AIContentPlanner({ adminProfile }) {
             </div>
 
             {/* ── Contenido ── */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-                {isGenerating ? (
+            <div className="flex-1 overflow-y-auto px-6 py-6 relative">
+                
+                {/* ── BARRA DE PROGRESO FLOTANTE CUANDO SE ESTÁ GENERANDO EN VIVO ── */}
+                {isGenerating && plan && plan.length > 0 && (
+                    <div className="sticky top-0 z-50 mb-6 bg-neutral-900/90 backdrop-blur-md border border-purple-500/50 rounded-2xl p-4 shadow-[0_10px_40px_rgba(168,85,247,0.15)] flex flex-col items-center">
+                        <div className="flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                            <p className="text-sm font-bold text-white">{progressText || 'Diseñando la estrategia en vivo...'}</p>
+                        </div>
+                        <div className="w-full max-w-md bg-black/50 h-2 rounded-full overflow-hidden mt-3 border border-white/5">
+                            <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    </div>
+                )}
+
+                {isGenerating && !plan ? (
                     <div className="h-full flex flex-col items-center justify-center gap-4 text-neutral-500">
                         <div className="relative">
                             <div className="w-16 h-16 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
                             <CalendarIcon className="w-6 h-6 absolute inset-0 m-auto text-purple-400" />
                         </div>
-                        <p className="text-sm font-bold text-white">{progressText || 'Gemini está diseñando tu estrategia de 30 días...'}</p>
+                        <p className="text-sm font-bold text-white">{progressText || `Gemini está diseñando tu estrategia de ${durationDays} días...`}</p>
                         
                         <div className="w-64 bg-black/50 h-2 rounded-full overflow-hidden mt-2 border border-white/5">
                             <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
                         </div>
 
-                        <p className="text-xs text-neutral-700">Generando 150 escenas completas en 6 lotes</p>
+                        <p className="text-xs text-neutral-700">Generando hasta {durationDays * 5} escenas completas en vivo</p>
                     </div>
                 ) : !plan ? (
                     <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                         <CalendarIcon className="w-16 h-16 mb-4 opacity-20" />
-                        <p className="text-sm font-bold">Ingresa un nicho y genera la estrategia del mes.</p>
+                        <p className="text-sm font-bold">Ingresa un nicho y genera la estrategia.</p>
                         {!canEdit && (
                             <p className="text-xs mt-2 text-red-500/60 font-bold">Solo Alex u Oscar pueden generar planes.</p>
                         )}

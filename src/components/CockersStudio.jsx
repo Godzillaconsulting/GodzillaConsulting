@@ -870,7 +870,22 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 if (idx > 0) await new Promise(r => setTimeout(r, 1800));
                 
                 // --- FALLBACK CASCADE ---
-                const triggerPollinationsFallback = async (fallbackName, pollModel) => {
+                const runFallback = async (slotIdx, eName) => {
+                    let fbName = 'FLUX.1'; let fbModel = 'flux';
+                    let injectedStyle = '';
+                    if (eName === 'Imagen 4 Pro') { 
+                        fbName = 'FLUX Realism'; fbModel = 'flux-realism';
+                        injectedStyle = ', ultra-realistic photography, 8k resolution, highly detailed, 85mm lens, photorealistic';
+                    }
+                    if (eName === 'Gemini 3.1 Flash Image') { 
+                        fbName = 'SDXL Turbo'; fbModel = 'turbo';
+                        injectedStyle = ', vibrant vivid colors, digital art, highly creative, dramatic lighting, masterpiece';
+                    }
+                    if (eName === 'Gemini 3 Pro') { 
+                        fbName = 'Anime/Dark'; fbModel = 'any-dark';
+                        injectedStyle = ', dark fantasy style, gloomy, studio ghibli 2d illustration, cinematic dark lighting';
+                    }
+
                     const seed = Math.floor(Math.random() * 1000000);
                     let w = 1024, h = 1024;
                     if (ar === '16:9') { w = 1280; h = 720; }
@@ -878,17 +893,18 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     else if (ar === '3:4') { w = 768; h = 1024; }
                     else if (ar === '4:3') { w = 1024; h = 768; }
                     
-                    updateSlot(idx, { status: 'loading', progress: 60, provider: fallbackName });
+                    updateSlot(slotIdx, { status: 'loading', progress: 60, provider: fbName });
                     
-                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptAmentado)}?seed=${seed}&width=${w}&height=${h}&nologo=true&model=${pollModel}`;
+                    const augmentedPrompt = promptAmentado + injectedStyle;
+                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(augmentedPrompt)}?seed=${seed}&width=${w}&height=${h}&nologo=true&model=${fbModel}`;
                     try {
                         const res = await fetch(pollUrl);
                         if (!res.ok) throw new Error('Pollinations Limit');
                         const blob = await res.blob();
                         const objectUrl = URL.createObjectURL(blob);
-                        updateSlot(idx, { status: 'done', url: objectUrl, progress: 100, provider: fallbackName });
+                        updateSlot(slotIdx, { status: 'done', url: objectUrl, progress: 100, provider: fbName });
                     } catch(e) {
-                        updateSlot(idx, { status: 'done', url: pollUrl, progress: 100, provider: fallbackName });
+                        updateSlot(slotIdx, { status: 'done', url: pollUrl, progress: 100, provider: fbName });
                         await new Promise(r => setTimeout(r, 2000));
                     }
                 };
@@ -918,11 +934,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         updateSlot(idx, { status: 'failed', progress: 100 });
                     } else {
                         // Cascade to Free Open Source Models
-                        let fbName = 'FLUX.1'; let fbModel = 'flux';
-                        if (engineName === 'Imagen 4 Pro') { fbName = 'FLUX Realism'; fbModel = 'flux-realism'; }
-                        if (engineName === 'Gemini 3.1 Flash Image') { fbName = 'SDXL Turbo'; fbModel = 'turbo'; }
-                        if (engineName === 'Gemini 3 Pro') { fbName = 'Anime/Dark'; fbModel = 'any-dark'; }
-                        await triggerPollinationsFallback(fbName, fbModel);
+                        await runFallback(idx, engineName);
                     }
                 }
             }
@@ -968,7 +980,11 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                             updateSlot(task.idx, { status: 'done', url, progress: 100, isVideo: sData.isVideo || isVideoMode });
                         } else if (sData.status === 'failed') {
                             task.done = true;
-                            updateSlot(task.idx, { status: 'failed', progress: 100, errorMsg: sData.error || "Falla desconocida" });
+                            if (!isVideoMode) {
+                                runFallback(task.idx, task.engineName);
+                            } else {
+                                updateSlot(task.idx, { status: 'failed', progress: 100, errorMsg: sData.error || "Falla desconocida" });
+                            }
                         }
                     } catch(e) { /* silencioso */ }
                 }

@@ -901,7 +901,7 @@ IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales)
 // ══════════════════════════════════════════════════════════════════════════════
 export const generateMonthlyPlan = async (req, res) => {
     try {
-        const { niche, month, year, extraContext } = req.body;
+        const { niche, month, year, extraContext, durationDays = 30 } = req.body;
         if (!niche) return res.status(400).json({ error: 'Se requiere el nicho/producto.' });
 
         if (!process.env.SAMBANOVA_API_KEY) {
@@ -918,11 +918,31 @@ export const generateMonthlyPlan = async (req, res) => {
             console.log("[MONTHLY-PLAN] Fallo al recuperar memoria:", dbErr.message);
         }
 
+        // 2. Obtener Tendencias Virales en Tiempo Real usando el Algoritmo del Trends Bot
+        let realTimeTrendsText = "";
+        try {
+            console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
+            const result = await model.generateContent(trendPrompt);
+            let text = result.response.text();
+            if (text.startsWith('\`\`\`json')) text = text.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
+            else if (text.startsWith('\`\`\`')) text = text.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
+            
+            const trendsData = JSON.parse(text.trim());
+            realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${trendsData.hashtags.join(', ')}\n- Ganchos (Hooks) altamente comprobados: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
+            console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito.`);
+        } catch (trendErr) {
+            console.log("[MONTHLY-PLAN] ⚠️ Fallo al obtener trends en tiempo real (usando default):", trendErr.message);
+        }
+
         const systemPrompt = `
 Eres un estratega experto en marketing digital, tendencias virales y creación de contenido para redes sociales.
 Tu tarea es diseñar un calendario de contenido de 30 días para Instagram Reels, YouTube Shorts y TikTok.
 El formato es FACELESS (sin rostro). El contenido debe estar en ESPAÑOL.
 ${learningContext}
+${realTimeTrendsText}
 
 REGLAS ESTRICTAS:
 1. Analiza el nicho: identifica puntos de dolor, dudas frecuentes y ángulos virales.
@@ -1051,17 +1071,14 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
         // ================= BACKGROUND WORKER ================= //
         (async () => {
             try {
-                // Dividimos en 6 pequeños lotes de 5 días para NUNCA truncar el JSON
-                let batches = [
-                    { start: 1, end: 5 },
-                    { start: 6, end: 10 },
-                    { start: 11, end: 15 },
-                    { start: 16, end: 20 },
-                    { start: 21, end: 25 },
-                    { start: 26, end: 30 }
-                ];
+                // Dividir dinámicamente en lotes de máximo 5 días
+                let batches = [];
+                for (let start = 1; start <= durationDays; start += 5) {
+                    let end = Math.min(start + 4, durationDays);
+                    batches.push({ start, end });
+                }
 
-                if (req.body.testMode || req.body.days === 1) {
+                if (req.body.testMode) {
                     batches = [{ start: 1, end: 1 }];
                 }
                 
@@ -1071,6 +1088,13 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
 
                 for (let i = 0; i < batches.length; i++) {
                     const b = batches[i];
+
+                    // ── PREVENCIÓN DE RATE LIMIT (TOKENS/MIN) PARA IA GRATUITA (GROQ) ──
+                    if (i > 0) {
+                        console.log(`[MONTHLY-PLAN] ⏳ Pausa de enfriamiento (4 segundos) para proteger la cuota de Groq...`);
+                        await new Promise(r => setTimeout(r, 4000));
+                    }
+
                     // Ejecución secuencial para no ahogar la API con 'fetch failed' (Rate Limits)
                     const batchResult = await generateBatch(b.start, b.end);
                     fullPlan = [...fullPlan, ...batchResult.plan];
@@ -1079,7 +1103,7 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                     
                     // Actualizar el progreso para que el cliente lo lea en su polling
                     const progress = Math.round(((i + 1) / batches.length) * 100);
-                    plannerJobs.set(taskId, { status: 'working', progress });
+                    plannerJobs.set(taskId, { status: 'working', progress, partialPlan: fullPlan });
                 }
 
                 // Calcular costo (Flash: $0.075 por 1M input, $0.30 por 1M output)

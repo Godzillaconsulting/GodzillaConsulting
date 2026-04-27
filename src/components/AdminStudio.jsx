@@ -441,6 +441,26 @@ export default function AdminStudio() {
   ...(selectedNodeId === 'recursos' ? [{ id: 'correos', label: <span className="flex items-center justify-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Correos</span> }] : [])
  ].filter(t => t.id !=='elementos' || showElemTab);
 
+  const openTrendsModal = async () => {
+    setShowTrendsModal(true);
+    setTrendsData(null);
+    try {
+        const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/analytics/dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.data?.searchTrends) {
+            setTrendsData(data.data.searchTrends);
+        } else {
+            setTrendsData('No se encontraron tendencias recientes. El bot podría estar recolectando datos aún.');
+        }
+    } catch (err) {
+        setTrendsData('Error al contactar con Godzilla Trends Bot. Por favor verifica la conexión.');
+    }
+  };
+
  return (
  <div 
    className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative"
@@ -465,27 +485,70 @@ export default function AdminStudio() {
    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/50 rounded-full blur-[100px] pointer-events-none"></div>
 
 
- {/* ── MODAL PUBLICAR ── */}
- {showPublishModal && (
- <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
- <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
- <div className="flex items-center justify-between p-6 border-b border-neutral-700">
- <div>
- <h3 className="text-xl font-black text-white">📡 Vista Previa antes de Publicar</h3>
- <p className="text-sm text-gray-400 mt-1">Confirma que todo se ve bien.</p>
- </div>
- <button onClick={() => setShowPublishModal(false)} className="text-xl text-neutral-500 hover:text-white">✕</button>
- </div>
- <div className="flex-1 overflow-hidden p-4">
- <iframe src="https://godzillaconsulting.ai" title="Preview" className="w-full h-[52vh] rounded-xl border border-neutral-700" />
- </div>
- <div className="flex justify-end gap-3 p-5 border-t border-neutral-700">
- <button onClick={() => setShowPublishModal(false)} disabled={isPublishing} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 rounded-full font-bold text-sm transition">Cancelar</button>
- <button onClick={handlePublish} disabled={isPublishing} className="px-7 py-2.5 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] disabled:opacity-50 rounded-full font-black text-sm transition-colors duration-300 shadow-[0_4px_20px_rgba(204,0,0,0.5)]">{isPublishing ? 'Publicando...' : 'Confirmar y Publicar'}</button>
- </div>
- </div>
- </div>
- )}
+  {showPublishModal && (
+  <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
+  <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+  <div className="flex items-center justify-between p-6 border-b border-neutral-700">
+  <div>
+  <h3 className="text-xl font-black text-white">📡 Vista Previa antes de Publicar</h3>
+  <p className="text-sm text-gray-400 mt-1">Confirma que todo se ve bien.</p>
+  </div>
+  <button onClick={() => setShowPublishModal(false)} className="text-xl text-neutral-500 hover:text-white">✕</button>
+  </div>
+  <div className="flex-1 overflow-hidden p-4">
+  <iframe src="https://godzillaconsulting.ai" title="Preview" className="w-full h-[52vh] rounded-xl border border-neutral-700" />
+  </div>
+  <div className="flex justify-end gap-3 p-5 border-t border-neutral-700">
+  <button onClick={() => setShowPublishModal(false)} disabled={isPublishing} className="px-5 py-2.5 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 rounded-full font-bold text-sm transition">Cancelar</button>
+  <button onClick={handlePublish} disabled={isPublishing} className="px-7 py-2.5 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] disabled:opacity-50 rounded-full font-black text-sm transition-colors duration-300 shadow-[0_4px_20px_rgba(204,0,0,0.5)]">{isPublishing ? 'Publicando...' : 'Confirmar y Publicar'}</button>
+  </div>
+  </div>
+  </div>
+  )}
+
+  {/* ── MODAL TENDENCIAS B2B ── */}
+  {showTrendsModal && (
+    <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#0a0a0a] rounded-2xl border border-orange-500/30 shadow-[0_0_30px_rgba(249,115,22,0.15)] w-full max-w-3xl max-h-[80vh] flex flex-col relative overflow-hidden">
+        {/* Glow effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-orange-500/10 blur-[50px] pointer-events-none rounded-t-full"></div>
+        
+        <div className="flex items-center justify-between p-6 border-b border-white/10 relative z-10">
+          <div>
+            <h3 className="text-xl font-black text-white flex items-center gap-2">
+              <span className="text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">🔥</span> 
+              Búsquedas Activas B2B
+            </h3>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">Resumen extraído por Godzilla Trends Bot</p>
+          </div>
+          <button onClick={() => setShowTrendsModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">✕</button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-6 relative z-10 custom-scrollbar">
+          {!trendsData ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(249,115,22,0.4)]"></div>
+              <p className="text-sm font-bold text-orange-500 animate-pulse tracking-widest uppercase">Analizando Búsquedas Globales...</p>
+            </div>
+          ) : (
+            <div className="prose prose-invert prose-sm max-w-none 
+              prose-h2:text-orange-400 prose-h2:font-black prose-h2:border-b prose-h2:border-orange-500/20 prose-h2:pb-2 prose-h2:mb-3 
+              prose-h3:text-white prose-h3:font-bold prose-h3:mt-4 
+              prose-p:text-gray-300 prose-p:leading-relaxed 
+              prose-ul:text-gray-400 prose-li:marker:text-orange-500 
+              prose-strong:text-orange-300">
+              <div dangerouslySetInnerHTML={{ __html: trendsData.replace(/\n/g, '<br/>').replace(/## (.*?)(<br\/>|$)/g, '<h2>$1</h2>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/- (.*?)(<br\/>|$)/g, '<li>$1</li>') }} />
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4 border-t border-white/10 flex justify-between items-center bg-black/40 relative z-10">
+          <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Motor Cascada Llama 3 + RAG</p>
+          <button onClick={() => setShowTrendsModal(false)} className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-xs transition-all">Cerrar Monitor</button>
+        </div>
+      </div>
+    </div>
+  )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
@@ -604,6 +667,13 @@ export default function AdminStudio() {
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ai-planner' ?'bg-gradient-to-r from-purple-800 to-fuchsia-900 text-white border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-900/40 hover:text-white' }`}>
    <span className="text-xs mr-2 drop-shadow-sm">🤖</span> Planificador IA
    </button>
+   
+   {!selectedNodeId && (
+       <button onClick={openTrendsModal}
+       className={`w-full text-[10px] py-2 shadow-[0_0_10px_rgba(249,115,22,0.3)] rounded-xl transition-all font-black uppercase flex items-center justify-center border border-orange-500/50 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-400`}>
+       <span className="text-xs mr-2 drop-shadow-sm">🔥</span> Búsquedas Virales
+       </button>
+   )}
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
    <span className="text-xs mr-2">📅</span> Calendario Global

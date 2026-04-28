@@ -32,7 +32,7 @@ async function computeWaveform(url, bars = 120) {
   }
 }
 
-export default function WaveformCanvas({ url, color = '#10b981', width = 300, height = 36 }) {
+export default function WaveformCanvas({ url, color = '#10b981', width = 300, height = 36, className, style }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -65,7 +65,8 @@ export default function WaveformCanvas({ url, color = '#10b981', width = 300, he
   return (
     <canvas
       ref={canvasRef}
-      style={{ width, height, opacity: 0.85, pointerEvents: 'none' }}
+      className={className}
+      style={{ width, height, opacity: 0.85, pointerEvents: 'none', ...style }}
     />
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Wand2, Play, Pause, Scissors, Loader2, Download, Video, Music, Type, Trash2, PlusCircle, Undo2, Redo2, Gauge, Zap, Volume2, ArrowLeftRight, Settings2, Image as ImageIcon, Search } from 'lucide-react';
 import FloatingToolbar from './FloatingToolbar';
 import WaveformCanvas from './WaveformCanvas';
@@ -57,6 +58,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingStartTimeRef = useRef(0);
   const [stockQuery, setStockQuery] = useState('');
   const [captionLanguage, setCaptionLanguage] = useState('spanish');
   
@@ -111,6 +113,28 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     setSelectedClipId(clipId);
   }, []);
 
+  const insertClipWithoutOverlap = useCallback((newClip, type) => {
+    const layersOfType = editor.project.layers.filter(l => l.type === type);
+    
+    // Find a layer where this clip doesn't overlap with any existing clip
+    let targetLayer = layersOfType.find(layer => {
+      const hasOverlap = layer.clips.some(c => 
+        (newClip.start < c.end && newClip.end > c.start)
+      );
+      return !hasOverlap;
+    });
+
+    if (targetLayer) {
+      editor.addClip(targetLayer.id, newClip);
+    } else {
+      // Create a new layer of the same type and insert the clip
+      const newLayer = makeLayer(type);
+      newLayer.clips.push(newClip);
+      editor.addLayer(newLayer);
+    }
+    setSelectedClipId(newClip.id);
+  }, [editor]);
+
   const handleTimelineChange = useCallback((data) => {
     data.forEach(row => {
       const layer = editor.project.layers.find(l => l.id === row.id);
@@ -129,18 +153,18 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     const dur = await getVideoDuration(url);
     const isAudio = mediaObj.type === 'audio' || url.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || (mediaObj.caption && mediaObj.caption.match(/\.(mp3|wav|ogg|m4a|aac)$/i));
     const layerType = isAudio ? 'audio' : 'video';
-    const layer = editor.project.layers.find(l => l.type === layerType);
-    const lastEnd = layer?.clips.reduce((m, c) => Math.max(m, c.end), 0) || 0;
+    
+    const t = engine.currentTimeRef.current;
 
     let newClip;
     if (isAudio) {
-      newClip = makeAudioClip(url, mediaObj.caption || 'Audio', lastEnd, lastEnd + dur);
+      newClip = makeAudioClip(url, mediaObj.caption || 'Audio', t, t + dur);
     } else {
-      newClip = makeVideoClip(url, mediaObj.caption || 'Video', lastEnd, lastEnd + dur);
+      newClip = makeVideoClip(url, mediaObj.caption || 'Video', t, t + dur);
     }
-    editor.addClip(layer.id, newClip);
-    setSelectedClipId(newClip.id);
-  }, [editor]);
+    
+    insertClipWithoutOverlap(newClip, layerType);
+  }, [editor, engine, insertClipWithoutOverlap]);
 
   const handleSplit = useCallback(() => {
     if (!selectedClipId) return;
@@ -151,13 +175,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const handleAddText = useCallback(() => {
     if (!newText.trim()) return;
-    const textLayer = editor.project.layers.find(l => l.type === 'text');
     const t = engine.currentTimeRef.current;
     const newClip = makeTextClip(newText.trim(), t, t + 4);
-    editor.addClip(textLayer.id, newClip);
-    setSelectedClipId(newClip.id);
+    insertClipWithoutOverlap(newClip, 'text');
     setNewText('');
-  }, [newText, editor, engine]);
+  }, [newText, editor, engine, insertClipWithoutOverlap]);
 
   const handleTTS = useCallback(async () => {
     if (!ttsText.trim()) return;
@@ -176,20 +198,18 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       const blob = await res.blob();
       const localUrl = URL.createObjectURL(blob);
       
-      const audioLayer = editor.project.layers.find(l => l.type === 'audio');
       const t = engine.currentTimeRef.current;
       const dur = ttsText.length * 0.07 + 1; // Approx duration, audio will pause when it ends naturally
       
       const newClip = makeAudioClip(localUrl, `Voz IA: ${ttsText.slice(0, 14)}`, t, t + dur);
-      editor.addClip(audioLayer.id, newClip);
-      setSelectedClipId(newClip.id);
+      insertClipWithoutOverlap(newClip, 'audio');
       setTtsText('');
     } catch (e) {
       alert('Error en el servicio de Voz IA: ' + e.message);
     } finally {
       setIsGenTTS(false);
     }
-  }, [ttsText, ttsVoice, ttsReferenceAudio, editor, engine]);
+  }, [ttsText, ttsVoice, ttsReferenceAudio, editor, engine, insertClipWithoutOverlap]);
 
   const handleVoiceRecord = useCallback(async () => {
     if (isRecordingVoice) {
@@ -209,16 +229,19 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
+      recorder.onstart = () => {
+        recordingStartTimeRef.current = Date.now();
+      };
+
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(blob);
-        const dur = await getVideoDuration(url);
-        const audioLayer = editor.project.layers.find(l => l.type === 'audio');
+        const dur = (Date.now() - recordingStartTimeRef.current) / 1000;
+        
         const t = engine.currentTimeRef.current;
-        const newClip = makeAudioClip(url, `Grabación de Voz`, t - dur, t);
-        editor.addClip(audioLayer.id, newClip);
-        setSelectedClipId(newClip.id);
+        const newClip = makeAudioClip(url, `Grabación de Voz`, Math.max(0, t - dur), t);
+        insertClipWithoutOverlap(newClip, 'audio');
       };
 
       recorder.start();
@@ -227,7 +250,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     } catch (err) {
       alert('Error accediendo al micrófono: ' + err.message);
     }
-  }, [isRecordingVoice, editor, engine]);
+  }, [isRecordingVoice, editor, engine, insertClipWithoutOverlap]);
 
   const handleRender = useCallback(async () => {
     setShowExportModal(false);
@@ -596,21 +619,14 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     // Silenciar el video original
     editor.updateClip(clip.id, { volume: 0 });
 
-    // Buscar capa de audio
-    let audioLayer = editor.project.layers.find(l => l.type === 'audio');
-    if (!audioLayer) {
-      alert('Añade primero una capa de audio para alojar la extracción.');
-      return;
-    }
-
     // Crear clip de audio con los mismos tiempos
     const newAudioClip = makeAudioClip(clip.sourceUrl, `Audio Extraído`, clip.start, clip.end);
     newAudioClip.sourceStart = clip.sourceStart;
     newAudioClip.speed = clip.speed;
 
-    editor.addClip(audioLayer.id, newAudioClip);
+    insertClipWithoutOverlap(newAudioClip, 'audio');
     alert('Audio extraído exitosamente a la pista de audio.');
-  }, [selectedClipId, selectedClip, editor]);
+  }, [selectedClipId, selectedClip, editor, insertClipWithoutOverlap]);
 
   const handleUpload = useCallback((file) => {
     const url = URL.createObjectURL(file);
@@ -651,8 +667,34 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       onCursorDragEnd={(time) => seek(time)}
       autoScroll={true}
       style={{ backgroundColor: '#18181b', color: '#fff', height: '100%' }}
+      getActionRender={(action, row) => {
+        const isAudio = row.id.startsWith('layer-a-');
+        const isVideo = row.id.startsWith('layer-v-');
+        const layer = editor.project.layers.find(l => l.id === row.id);
+        const clip = layer?.clips.find(c => c.id === action.id);
+
+        return (
+          <div className={`relative w-full h-full rounded flex items-center overflow-hidden px-2 
+            ${selectedClipId === action.id ? 'ring-2 ring-white z-10 shadow-lg' : ''}`}
+            style={{ backgroundColor: action.color }}>
+            <span className="text-[10px] font-bold text-white whitespace-nowrap z-10 drop-shadow-md">
+              {action.name}
+            </span>
+            {isAudio && clip && clip.sourceUrl && (
+              <div className="absolute inset-0 opacity-40 pointer-events-none flex items-center justify-center">
+                <WaveformCanvas url={clip.sourceUrl} width={800} height={32} color="#ffffff" className="w-full h-full object-cover" style={{ width: '100%', height: '100%' }} />
+              </div>
+            )}
+            {isVideo && clip && clip.sourceUrl && (
+               <div className="absolute inset-0 opacity-20 pointer-events-none">
+                 <video src={clip.sourceUrl} className="w-full h-full object-cover" />
+               </div>
+            )}
+          </div>
+        );
+      }}
     />
-  ), [editorData, timelineEffects, handleTimelineChange, handleClipSelect, seek]);
+  ), [editorData, timelineEffects, handleTimelineChange, handleClipSelect, seek, selectedClipId, editor.project.layers]);
 
   useEffect(() => {
     if (timelineRef.current) {
@@ -1155,14 +1197,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               const dur = await getVideoDuration(url);
               const isAudio = file.type.startsWith('audio/');
               const layerType = isAudio ? 'audio' : 'video';
-              const layer = editor.project.layers.find(l => l.type === layerType);
 
               const newClip = isAudio 
                 ? makeAudioClip(url, file.name, t, t + dur)
                 : makeVideoClip(url, file.name, t, t + dur);
               
-              editor.addClip(layer.id, newClip);
-              setSelectedClipId(newClip.id);
+              insertClipWithoutOverlap(newClip, layerType);
 
               setLocalUploads(prev => [...prev, { id: `local-${Date.now()}`, caption: file.name, media_options: [{ url }] }]);
               return;
@@ -1173,14 +1213,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             const dur = await getVideoDuration(url);
             const isAudio = draggedMedia.type === 'audio' || url.match(/\.(mp3|wav|ogg|m4a|aac)$/i) || (draggedMedia.caption && draggedMedia.caption.match(/\.(mp3|wav|ogg|m4a|aac)$/i));
             const layerType = isAudio ? 'audio' : 'video';
-            const layer = editor.project.layers.find(l => l.type === layerType);
             
             const newClip = isAudio
               ? makeAudioClip(url, draggedMedia.caption || 'Audio', t, t + dur)
               : makeVideoClip(url, draggedMedia.caption || 'Video', t, t + dur);
             
-            editor.addClip(layer.id, newClip);
-            setSelectedClipId(newClip.id);
+            insertClipWithoutOverlap(newClip, layerType);
             
             setDraggedMedia(null);
           }}>
@@ -1189,8 +1227,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       </div>
 
       {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
+      {showExportModal && createPortal(
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] backdrop-blur-sm">
           <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6 w-80 shadow-2xl relative">
             <button onClick={() => setShowExportModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">
               <X className="w-5 h-5" />
@@ -1220,7 +1258,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             </button>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }

@@ -108,12 +108,13 @@ export default function AdminStudio() {
     if (location.pathname.includes('/profile')) return 'profile';
     if (location.pathname.includes('/bugs')) return 'bugs';
     if (location.pathname.includes('/newsletter')) return 'newsletter';
-    if (location.pathname.includes('/it')) return 'it_studio';
     if (location.pathname.includes('/ai-planner')) return 'ai-planner';
     if (location.pathname.includes('/automation-flow')) return 'automation-flow';
     if (location.pathname.includes('/laboratorio/estudio')) return 'social_studio';
+    if (location.pathname.includes('/laboratorio/editor')) return 'video_editor';
     if (location.pathname.includes('/laboratorio/flujo')) return 'automation-flow';
     if (location.pathname.includes('/laboratorio/planificador')) return 'ai-planner';
+    if (location.pathname.includes('/laboratorio/calendario')) return 'social';
     return 'editor';
   }, [location.pathname]);
 
@@ -688,17 +689,8 @@ export default function AdminStudio() {
    </button>
   
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ ['social_studio', 'automation-flow', 'ai-planner'].includes(activeSection) ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
+   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
    <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Laboratorio IA
-   </button>
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/video-editor'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='video_editor' ?'bg-gradient-to-r from-blue-800 to-indigo-900 text-white border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.4)]' :'text-neutral-300 border-transparent hover:border-blue-500/40 hover:bg-blue-900/40 hover:text-white' }`}>
-   <span className="text-xs mr-2 drop-shadow-sm">🎬</span> Editor Pro
-   </button>
-
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='social' ?'bg-white/70 text-[#CC0000] border-[#CC0000]/50' :'text-neutral-300 border-transparent hover:border-[#CC0000]/40 hover:bg-black/50 hover:text-white' }`}>
-   <span className="text-xs mr-2">📅</span> Calendario Global
    </button>
 
    {canSeeITStudio && (
@@ -752,12 +744,14 @@ export default function AdminStudio() {
   </button>
   
   {/* Header Tabs para Laboratorio IA */}
-  {['social_studio', 'automation-flow', 'ai-planner'].includes(activeSection) && !isAnalyticsMode && (
+  {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && !isAnalyticsMode && (
       <div className="flex items-center gap-2 px-6 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
           {[
               { id: 'social_studio', label: '🤖 Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
+              { id: 'video_editor', label: '🎬 Editor Pro', path: '/admin/laboratorio/editor', color: 'text-blue-400', border: 'border-blue-500' },
               { id: 'automation-flow', label: '⚡ Flujo Automático', path: '/admin/laboratorio/flujo', color: 'text-emerald-400', border: 'border-emerald-500' },
-              { id: 'ai-planner', label: '🤖 Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' }
+              { id: 'ai-planner', label: '🤖 Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' },
+              { id: 'social', label: '📅 Calendario Global', path: '/admin/laboratorio/calendario', color: 'text-yellow-400', border: 'border-yellow-500' }
           ].map(tab => (
               <button 
                   key={tab.id}
@@ -786,6 +780,9 @@ export default function AdminStudio() {
   <div style={{ display: (!isAnalyticsMode && activeSection === 'ai-planner') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <AIContentPlanner adminProfile={adminProfile} />
   </div>
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'social') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <CMCalendar adminProfile={adminProfile} />
+  </div>
 
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
@@ -793,9 +790,7 @@ export default function AdminStudio() {
  <AdminProfile profile={adminProfile} onProfileUpdate={setAdminProfile} />
  ) : activeSection ==='newsletter' ? (
   <NewsletterPanel />
-  ) : activeSection ==='social' ? (
-      <CMCalendar adminProfile={adminProfile} />
-) : ['social_studio', 'video_editor', 'automation-flow', 'ai-planner'].includes(activeSection) ? (
+) : ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? (
       null /* Renderizado persistentemente arriba para evitar pérdida de estado */
   ) : activeSection === 'it_studio' ? (
       <ITStudioPanel adminProfile={adminProfile} />

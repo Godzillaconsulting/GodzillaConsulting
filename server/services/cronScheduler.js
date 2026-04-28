@@ -46,6 +46,9 @@ class CronScheduler {
             case 'every_hour':
                 fire = mm === 0;
                 break;
+            case 'every_day_8':
+                fire = hh === 8 && mm === 0;
+                break;
             case 'every_day_9':
                 fire = hh === 9 && mm === 0;
                 break;

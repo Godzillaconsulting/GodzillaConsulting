@@ -60,7 +60,87 @@ export async function executeAiWaterfall(messages, options = {}) {
     }
 
     // ==========================================
-    // NIVEL 2: GEMINI
+    // NIVEL 2: CEREBRAS (LLAMA 3.3 70B)
+    // ==========================================
+    try {
+        if (process.env.CEREBRAS_API_KEY) {
+            console.log(`[WATERFALL] ➡️ Intentando Nivel 2: CEREBRAS`);
+            const reqData = {
+                messages: messages,
+                model: "llama3.3-70b",
+                temperature: temperature,
+                max_tokens: maxTokens
+            };
+
+            if (tools && tools.length > 0) {
+                reqData.tools = tools;
+                reqData.tool_choice = "auto";
+            }
+
+            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reqData)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const responseMessage = data.choices[0]?.message;
+                console.log(`[WATERFALL] ✅ Éxito con Cerebras.`);
+                return {
+                    content: responseMessage.content || "",
+                    tool_calls: responseMessage.tool_calls || []
+                };
+            } else {
+                console.error(`[WATERFALL] Cerebras devolvió HTTP ${response.status}`);
+            }
+        }
+    } catch (e) {
+        console.error(`[WATERFALL] ❌ Nivel 2 (Cerebras) falló:`, e.message);
+    }
+
+    // ==========================================
+    // NIVEL 3: OLLAMA (OPEN SOURCE LOCAL)
+    // ==========================================
+    try {
+        console.log(`[WATERFALL] ➡️ Intentando Nivel 3: OLLAMA LOCAL`);
+        const reqData = {
+            messages: messages,
+            model: "llama3", // Modelo estándar en Ollama
+            temperature: temperature,
+            stream: false
+        };
+
+        if (tools && tools.length > 0) {
+            reqData.tools = tools;
+        }
+
+        const response = await fetch('http://127.0.0.1:11434/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reqData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const responseMessage = data.message;
+            console.log(`[WATERFALL] ✅ Éxito con Ollama Local.`);
+            return {
+                content: responseMessage.content || "",
+                tool_calls: responseMessage.tool_calls || []
+            };
+        } else {
+            console.error(`[WATERFALL] Ollama devolvió HTTP ${response.status}`);
+        }
+    } catch (e) {
+        console.error(`[WATERFALL] ❌ Nivel 3 (Ollama) falló: Posiblemente apagado o no instalado.`, e.message);
+    }
+
+    // ==========================================
+    // NIVEL 4: GEMINI
     // ==========================================
     try {
         if (process.env.GEMINI_API_KEY) {
@@ -80,14 +160,14 @@ export async function executeAiWaterfall(messages, options = {}) {
             };
         }
     } catch (e) {
-        console.error(`[WATERFALL] ❌ Nivel 2 (Gemini) falló:`, e.message);
+        console.error(`[WATERFALL] ❌ Nivel 4 (Gemini) falló:`, e.message);
     }
 
     // ==========================================
-    // NIVEL 3: POLLINATIONS (OPEN SOURCE)
+    // NIVEL 5: POLLINATIONS (OPEN SOURCE)
     // ==========================================
     try {
-        console.log(`[WATERFALL] ➡️ Intentando Nivel 3: POLLINATIONS (Open Source Mistral)`);
+        console.log(`[WATERFALL] ➡️ Intentando Nivel 5: POLLINATIONS (Open Source Mistral)`);
         
         // Limpiar messages para Pollinations (eliminar tool_calls viejos si vienen en historial)
         const cleanMessages = messages.map(m => ({

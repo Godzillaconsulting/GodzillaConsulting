@@ -9,6 +9,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const path = require('path');
 const { existsSync, mkdirSync } = require('fs');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const userDataDir = path.join(__dirname, '.puppeteer_ig_profile');
 if (!existsSync(userDataDir)) {
@@ -18,17 +19,18 @@ if (!existsSync(userDataDir)) {
 (async () => {
     console.log('');
     console.log('═══════════════════════════════════════════════════');
-    console.log('  🦖 Godzilla Consulting — Setup Puppeteer IG Bot');
+    console.log('  🦖 Godzilla Consulting — Auto-Setup IG Bot');
     console.log('═══════════════════════════════════════════════════');
-    console.log('Abriendo navegador chromium en pantalla...');
+    console.log('Abriendo navegador para auto-login...');
     
     const browser = await puppeteer.launch({
-        headless: false, // Visible para el humano
+        headless: 'old', // Puede correr invisible ahora porque es automático
         userDataDir: userDataDir,
         args: [
             '--window-size=1200,800', 
             '--disable-notifications',
-            '--disable-infobars'
+            '--disable-infobars',
+            '--no-sandbox'
         ]
     });
 
@@ -38,26 +40,25 @@ if (!existsSync(userDataDir)) {
     console.log('Navegando a la bandeja de entrada de Instagram...');
     await page.goto('https://www.instagram.com/direct/inbox/', { waitUntil: 'networkidle2' });
 
-    console.log('\n======================================================');
-    console.log('🚨 ACCIÓN MANUAL REQUERIDA EN EL NAVEGADOR QUE SE ABRIÓ:');
-    console.log('1. Ingresa tu usuario y contraseña de Instagram.');
-    console.log('2. Si te pide código 2FA, ingrésalo manualmente.');
-    console.log('3. Dale a "Guardar información de inicio de sesión".');
-    console.log('4. Cierra popups de "Activar notificaciones" ("Ahora no").');
-    console.log('5. CUANDO VEAS TUS DMs CARGADOS, cierras el navegador con la "X".');
-    console.log('======================================================\n');
-    console.log('El script detectará el cierre y guardará todo automáticamente.');
+    console.log('Iniciando sesión automáticamente con las credenciales de .env...');
+    try {
+        await page.waitForSelector('input[name="username"]', { timeout: 8000 });
+        await page.type('input[name="username"]', process.env.IG_USERNAME, { delay: 100 });
+        await page.type('input[name="password"]', process.env.IG_PASSWORD, { delay: 100 });
+        await page.click('button[type="submit"]');
+        
+        console.log('Esperando a que cargue la bandeja...');
+        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
+        console.log('✅ ¡Inicio de sesión automático exitoso!');
+    } catch(e) {
+        console.log('✅ Sesión ya estaba activa o se saltó el login.');
+    }
     
-    browser.on('disconnected', () => {
-        console.log('\n✅ ¡Navegador cerrado!');
-        console.log('💾 La sesión/cookies vivirá ahora permanentemente en:');
-        console.log('   ' + userDataDir);
-        console.log('\n✅ SETUP COMPLETADO. ¡Corre el bot en PM2 de nuevo!');
-        console.log('   pm2 restart godzilla-bot-ig');
-        console.log('═══════════════════════════════════════════════════');
-        process.exit(0);
-    });
-
+    console.log('Guardando sesión y cerrando navegador...');
+    await browser.close();
+    
+    console.log('✅ SETUP COMPLETADO AUTOMÁTICAMENTE.');
+    process.exit(0);
 })().catch(err => {
     console.error('Fatal Error:', err.message);
     process.exit(1);

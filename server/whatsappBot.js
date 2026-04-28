@@ -108,7 +108,8 @@ export const initWhatsAppBot = async () => {
     
     // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
 
-    const sessionPath = path.join(os.homedir(), '.godzilla-sessions', 'whatsapp');
+    // Forzamos la ruta al usuario correcto para evitar crasheos de EPERM bajo Windows Service (LocalSystem)
+    const sessionPath = path.join('C:\\Users\\GODZILLA.IA', '.godzilla-sessions', 'whatsapp');
     
     // Rutina de Seguridad: Bloquear lectura externa (chmod 700)
     try {

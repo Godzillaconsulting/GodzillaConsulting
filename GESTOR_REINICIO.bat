@@ -68,7 +68,6 @@ cls
 echo.
 echo  Reiniciando SOLO whatsapp-bot...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-taskkill /F /IM chrome.exe /T >nul 2>&1
 call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd restart whatsapp-bot --update-env
 echo  Esperando 20s para que Chrome cargue...
 timeout /t 20 /nobreak >nul
@@ -132,7 +131,6 @@ cls
 echo.
 echo  Reiniciando SOLO tiktok-bot...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-taskkill /F /IM chrome.exe /T >nul 2>&1
 call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd restart tiktok-bot --update-env
 echo  Esperando 10s para que TikTok cargue...
 timeout /t 10 /nobreak >nul
@@ -146,7 +144,6 @@ cls
 echo.
 echo  Reiniciando SOLO instagram-bot...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-taskkill /F /IM chrome.exe /T >nul 2>&1
 call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd restart instagram-bot --update-env
 echo  Esperando 10s para que IG cargue...
 timeout /t 10 /nobreak >nul
@@ -200,8 +197,9 @@ taskkill /F /IM node.exe /T
 echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
-echo  [4/4] Limpiando sockets de PM2...
+echo  [4/4] Limpiando sockets de PM2 y sesion corrupta de WhatsApp...
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
+rmdir /S /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp" 2>nul
 timeout /t 3 /nobreak >nul
 
 echo.

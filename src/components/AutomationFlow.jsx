@@ -1401,7 +1401,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                     <option value="">— Selecciona frecuencia —</option>
                     <option value="every_minute">⚡ Cada minuto (pruebas)</option>
                     <option value="every_hour">🕐 Cada hora en punto</option>
-                    <option value="every_day_9">🌅 Cada día a las 9:00 AM</option>
+                    <option value="every_day_8">?? Cada d�a a las 8:00 AM</option><option value="every_day_9">🌅 Cada día a las 9:00 AM</option>
                     <option value="every_day_12">☀️ Cada día al mediodía</option>
                     <option value="every_day_18">🌆 Cada día a las 6:00 PM</option>
                     <option value="every_monday">📅 Cada lunes a las 9 AM</option>

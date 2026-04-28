@@ -30,22 +30,24 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
     const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'full', timeStyle: 'short' });
 
     const prompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}
-TAREA CRÍTICA: Busca las 2 o 3 noticias y herramientas de IA, Startups o Tech más valiosas de HOY. NO TE LIMITES A B2B, abarca también innovaciones B2C, Ciberseguridad, y emprendimiento general. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
+TAREA CRÍTICA: Eres un analista Senior de primer nivel. Busca las 2 o 3 noticias, herramientas de IA, Startups o Tech más valiosas y disruptivas de HOY. 
+NO TE LIMITES A B2B, abarca también innovaciones B2C, Ciberseguridad, y emprendimiento general. 
+IMPORTANTE: El contenido generado debe ser PROFUNDO, EXTENSO y detallado. Nada de resúmenes de una línea. Explica el contexto, el impacto real en el mercado y las implicaciones a largo plazo. Piensa como un reporte de McKinsey o Gartner. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
 
 DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA BASE (TODO EN ESPAÑOL POR AHORA):
 {
     "subject_es": "Asunto (con emoji)",
     "miniSummary_es": "Misterio y valor agresivo de 2 renglones para que abran el PDF.",
     "coverPrompt": "English prompt for text2image merging the day's topics in 'TIME magazine cover' style...",
-    "emailHTML_es": "<h2>Lo que debes saber hoy</h2><ul><li><strong>Noticia: </strong>1 oración.</li></ul>",
+    "emailHTML_es": "<h2>Lo que debes saber hoy</h2><ul><li><strong>Noticia: </strong>1 o 2 oraciones de alto impacto.</li></ul>",
     "pdfTitle": "DIARIO GODZILLA AI",
     "pdfSubtitle": "Inteligencia Ejecutiva Diaria",
-    "pdfIntro": "Párrafo introductorio hablando de tú a tú. (Solo plain text, nada de HTML)",
+    "pdfIntro": "Un editorial inicial extenso (al menos 2 párrafos) hablando de tú a tú, analizando el panorama macro actual. (Solo plain text, nada de HTML)",
     "pdfMetrics": [ { "label": "Impacto a Productividad (%)", "value": 85 } ],
     "pdfChart": { "title": "Adopción de Mercado", "data": [ {"label": "Líder", "value": 60}, {"label": "Rival", "value": 40} ] },
-    "pdfSections": [ { "heading": "Título Noticia", "content": "Detalle analítico. (Solo plain text)", "sourceName": "TechCrunch", "url": "https://techcrunch.com" } ],
-    "pdfQuote": "Insight de supervivencia tecnológica.",
-    "pdfConclusion": "Conclusión orientada al ROI o Crecimiento."
+    "pdfSections": [ { "heading": "Título Noticia", "content": "Detalle analítico profundo de al menos 2 párrafos explicando el por qué, el cómo y el impacto en los negocios. (Solo plain text)", "sourceName": "TechCrunch", "url": "https://techcrunch.com" } ],
+    "pdfQuote": "Insight profundo de supervivencia tecnológica o reflexión de un líder de la industria.",
+    "pdfConclusion": "Conclusión estratégica orientada al ROI, pasos a seguir o predicciones para el resto de la semana."
 }`;
 
     // 1. GENERAR JSON BASE (ESPAÑOL)

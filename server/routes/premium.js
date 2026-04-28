@@ -20,9 +20,8 @@ router.get('/download/:id', async (req, res) => {
             }
         }
         
-        // Blindaje final: Si Vercel manda basura o ISOs raros, forzar a español para evitar alucinaciones IA
-        const validLangs = ['es', 'en', 'fr', 'pt', 'de', 'ja', 'it', 'zh'];
-        if (!reqLang || !validLangs.includes(reqLang)) {
+        // Si reqLang no es válido o tiene basura, forzar a 'es'
+        if (!reqLang || reqLang.length !== 2) {
             reqLang = 'es';
         }
         
@@ -47,15 +46,39 @@ router.get('/download/:id', async (req, res) => {
             return res.status(404).send("Reporte Premium no encontrado o Data no disponible.");
         }
 
-        const translationsDict = nlRes.rows[0].translations_json;
+        let translationsDict = nlRes.rows[0].translations_json || {};
         let dataForPDF;
         
         if (translationsDict && translationsDict[reqLang]) {
             dataForPDF = translationsDict[reqLang];
             console.log(`🌍 [Zero-Token PDF] Sirviendo PDF del diccionario para idioma: ${reqLang}`);
         } else {
-            console.log(`🌍 [Zero-Token PDF] Idioma ${reqLang} no encontrado en diccionario. Fallback a base_json (es).`);
-            dataForPDF = JSON.parse(nlRes.rows[0].base_json);
+            console.log(`🌍 [On-Demand PDF] Idioma ${reqLang} no encontrado en diccionario. Iniciando traducción dinámica...`);
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const baseJsonText = nlRes.rows[0].base_json;
+                const transPrompt = `Translate the following JSON precisely into ISO language code [${reqLang}]. Keep EXACT JSON keys and schema. Do not change structure. Return ONLY pure valid JSON:\n\n${baseJsonText}`;
+                
+                const transRes = await executeAiWaterfall([
+                    { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
+                    { role: 'user', content: transPrompt }
+                ], { jsonMode: true });
+                
+                let jsonStr = transRes.content.replace(/```json/i, '').replace(/```/i, '').trim();
+                if (!jsonStr.startsWith('{')) jsonStr = '{' + jsonStr.substring(jsonStr.indexOf('{'));
+                if (!jsonStr.endsWith('}')) jsonStr = jsonStr.substring(0, jsonStr.lastIndexOf('}') + 1);
+                
+                dataForPDF = JSON.parse(jsonStr);
+
+                // Guardar en la DB para enriquecer el Mega-Diccionario
+                translationsDict[reqLang] = dataForPDF;
+                await pool.query(`UPDATE newsletters SET translations_json = $1 WHERE id = $2`, [JSON.stringify(translationsDict), newsletterId]);
+                console.log(`✅ Traducción dinámica a ${reqLang} exitosa y guardada permanentemente.`);
+            } catch (aiErr) {
+                console.error(`❌ Fallo traduciendo al vuelo a ${reqLang}. Fallback de emergencia a español (es).`, aiErr.message);
+                dataForPDF = JSON.parse(nlRes.rows[0].base_json);
+                reqLang = 'es';
+            }
         }
 
         // Build doc

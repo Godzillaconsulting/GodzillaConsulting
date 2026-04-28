@@ -351,7 +351,9 @@ async function startBot() {
 
     if (!csrfToken || !myUserId) {
         console.error('[Instagram] ❌ Sesión web expirada o inválida. Ejecuta el setup manualmente de nuevo.');
-        console.error('[Instagram] 🛑 BOT PAUSADO. Entrando en cuarentena...');
+        console.error('[Instagram] 🛑 BOT PAUSADO. Cerrando navegador para liberar la sesión y entrando en cuarentena...');
+        try { await browser.close(); } catch(e){}
+        // Espera 60 segundos con el navegador cerrado para dar tiempo al usuario o al auto-setup de renovar la sesión
         setInterval(() => {}, 60000);
         await new Promise(() => {});
     }

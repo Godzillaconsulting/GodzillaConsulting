@@ -28,6 +28,7 @@ export const verifyWebhook = (req, res) => {
 
 export const receiveMessage = async (req, res) => {
     const body = req.body;
+    console.log('[WEBHOOK INCOMING]', JSON.stringify(body).substring(0, 200));
 
     if (!body.object) {
         return res.sendStatus(404);
@@ -144,33 +145,18 @@ async function processAndReply(from, text, phoneNumberId, platform) {
         let functionCalls = [];
 
         try {
-            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: groqMessages,
-                    model: "llama3.1-70b",
-                    tools: groqTools,
-                    temperature: 0.1,
-                    max_tokens: 1024
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Cerebras Error: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            if (data.choices && data.choices.length > 0) {
-                const responseMessage = data.choices[0].message;
-                responseText = responseMessage.content || "";
-                
-                if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-                    groqMessages.push(responseMessage);
-                    functionCalls = responseMessage.tool_calls.map(tc => {
+            const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+            const aiRes = await executeAiWaterfall(groqMessages, { tools: groqTools, temperature: 0.1 });
+            
+            if (aiRes) {
+                responseText = aiRes.content || "";
+                if (aiRes.tool_calls && aiRes.tool_calls.length > 0) {
+                    groqMessages.push({
+                        role: "assistant",
+                        content: aiRes.content || null,
+                        tool_calls: aiRes.tool_calls
+                    });
+                    functionCalls = aiRes.tool_calls.map(tc => {
                         let parsedArgs = {};
                         try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
                         return {
@@ -182,7 +168,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                 }
             }
         } catch(error) {
-            console.error(`[${platform}] Cerebras Error:`, error.message);
+            console.error(`[${platform}] Waterfall Error:`, error.message);
         }
         
         if (functionCalls.length > 0) {
@@ -302,30 +288,13 @@ async function processAndReply(from, text, phoneNumberId, platform) {
             }
             
             try {
-                const response2 = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        messages: groqMessages,
-                        model: "llama3.1-70b",
-                        temperature: 0.1,
-                        max_tokens: 1024
-                    })
-                });
-
-                if (response2.ok) {
-                    const data2 = await response2.json();
-                    if (data2.choices && data2.choices.length > 0) {
-                        responseText = data2.choices[0].message.content || responseText;
-                    }
-                } else {
-                    console.error(`[${platform}] Error Cerebras HTTP:`, response2.status);
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const aiRes2 = await executeAiWaterfall(groqMessages, { temperature: 0.1 });
+                if (aiRes2 && aiRes2.content) {
+                    responseText = aiRes2.content;
                 }
             } catch(e) {
-                console.error(`[${platform}] Error en segunda llamada Cerebras:`, e.message);
+                console.error(`[${platform}] Error en segunda llamada Waterfall:`, e.message);
             }
             console.log(`[${platform}] Ejecutó tools:`, functionCalls.map(c => c.name).join(", "));
         }

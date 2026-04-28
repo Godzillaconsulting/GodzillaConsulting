@@ -21,6 +21,31 @@ function encryptCredentials(plainObj) {
     return `${iv.toString('base64')}.${tag.toString('base64')}.${encrypted.toString('base64')}`;
 }
 
+// ── Utilidad de desencriptado AES-256-GCM ──────────────────────────────────────────
+function decryptCredentials(encryptedString) {
+    const key = process.env.ENCRYPTION_KEY;
+    if (!key || key.length < 64 || !encryptedString) return null;
+    
+    try {
+        const parts = encryptedString.split('.');
+        if (parts.length !== 3) return null;
+        
+        const [ivStr, tagStr, encryptedStr] = parts;
+        const keyBuffer = Buffer.from(key, 'hex');
+        const iv = Buffer.from(ivStr, 'base64');
+        const tag = Buffer.from(tagStr, 'base64');
+        const encryptedText = Buffer.from(encryptedStr, 'base64');
+
+        const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, iv);
+        decipher.setAuthTag(tag);
+        const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+        return JSON.parse(decrypted.toString('utf8'));
+    } catch (err) {
+        console.error('[Abordaje] Error decrypting credentials:', err.message);
+        return null;
+    }
+}
+
 // ── Controlador principal ─────────────────────────────────────────────────────
 export const processAbordaje = async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
@@ -227,5 +252,39 @@ export const processAbordaje = async (req, res) => {
             success: false,
             error: 'Error interno del servidor. Intenta de nuevo.'
         });
+    }
+};
+
+// ── Obtener leads para Admin Studio (Panel IT) ──────────────────────────────
+export const getAbordajes = async (req, res) => {
+    try {
+        // Obtenemos los abordajes más recientes
+        const result = await pool.query(`
+            SELECT id, empresa, web, servicios, metas, diferenciadores, db_option,
+                   redes_meta_variant, redes_google_variant, redes_tiktok_variant,
+                   meta_access_status, google_access_status, tiktok_access_status,
+                   credenciales_cifradas,
+                   cita_fecha, cita_hora, google_calendar_id, ip_address,
+                   created_at
+            FROM abordajes
+            ORDER BY created_at DESC
+            LIMIT 50
+        `);
+
+        // Desencriptar credenciales para el panel admin seguro
+        const leads = result.rows.map(row => {
+            const creds = decryptCredentials(row.credenciales_cifradas);
+            // Quitamos la data encriptada cruda para no mandarla
+            delete row.credenciales_cifradas;
+            return {
+                ...row,
+                credenciales_desencriptadas: creds
+            };
+        });
+
+        res.json({ success: true, leads });
+    } catch (error) {
+        console.error('❌ [Abordaje Controller] Error obteniendo leads:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch abordajes' });
     }
 };

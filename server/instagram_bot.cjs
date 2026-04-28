@@ -150,45 +150,32 @@ async function processAndReply(userId, text, replyFn) {
     try {
         history.push({ role: 'user', parts: [{ text }] });
 
-        const geminiTools = [{
-            functionDeclarations: chatTools.map(t => ({
+        const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
+        let waterfallMessages = [{ role: 'system', content: finalSystemPrompt }];
+        for (const msg of history) {
+            waterfallMessages.push({
+                role: (msg.role === 'model' || msg.role === 'assistant') ? 'assistant' : 'user',
+                content: msg.parts[0].text
+            });
+        }
+
+        const waterfallTools = chatTools.map(t => ({
+            type: "function",
+            function: {
                 name: t.name,
                 description: t.description,
-                parameters: {
-                    type: "OBJECT",
-                    properties: Object.fromEntries(
-                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
-                    ),
-                    ...(t.parameters.required ? { required: t.parameters.required } : {})
-                }
-            }))
-        }];
-
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: finalSystemPrompt,
-            tools: geminiTools,
-            generationConfig: {
-                temperature: 0.1,
-                topK: 40,
-                topP: 0.95
+                parameters: t.parameters
             }
+        }));
+
+        const aiResult = await executeAiWaterfall(waterfallMessages, {
+            tools: waterfallTools,
+            temperature: 0.1,
+            maxTokens: 1024
         });
 
-        const chat = model.startChat({ history: history.slice(0, -1) });
-        let chatCompletion = await chat.sendMessage(text);
-        
-        let responseText = "Lo siento, fallé al entender.";
-        let functionCalls = [];
-
-        if (chatCompletion && chatCompletion.response) {
-            const response = chatCompletion.response;
-            try { responseText = response.text() || responseText; } catch(e){}
-            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
-            if (calls && calls.length > 0) {
-                functionCalls = calls;
-            }
-        }
+        let responseText = aiResult.content || "Lo siento, fallé al entender.";
+        let functionCalls = aiResult.tool_calls || [];
 
         if (functionCalls.length > 0) {
             for (const call of functionCalls) {
@@ -245,16 +232,26 @@ async function processAndReply(userId, text, replyFn) {
                             }
                         }
                     } catch(err) { fRes = { success: false, error: err.message }; }
+                    }
                 }
 
-                // Send tool results back to Gemini via existing chat object
-                const chatCompletion2 = await chat.sendMessage([{
-                    functionResponse: { name: callName, response: fRes }
-                }]);
+                waterfallMessages.push({
+                    role: "assistant",
+                    tool_calls: aiResult.tool_calls
+                });
+                waterfallMessages.push({
+                    role: "tool",
+                    tool_call_id: call.id || "tool_call_id",
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
                 
-                if (chatCompletion2 && chatCompletion2.response) {
-                    try { responseText = chatCompletion2.response.text() || 'Reserva procesada.'; } catch(e){}
-                }
+                const aiResult2 = await executeAiWaterfall(waterfallMessages, {
+                    temperature: 0.1,
+                    maxTokens: 1024
+                });
+                
+                responseText = aiResult2.content || responseText;
             }
         }
 
@@ -330,13 +327,16 @@ async function startBot() {
 
     // Optimizaciones Extremas de RAM (Sin romper la capa visual para Analytics)
     browser = await puppeteer.launch({
-        headless: true,
+        headless: 'old',
+        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         userDataDir: userDataDir,
         args: [
             '--disable-gpu',
             '--disable-dev-shm-usage',
             '--no-sandbox',
             '--disable-setuid-sandbox',
+            '--disable-software-rasterizer',
+            '--disable-background-networking'
         ]
     });
     browserClient = browser;

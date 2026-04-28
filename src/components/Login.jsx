@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, ArrowRight, AlertCircle, Loader, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import CanvasCaptcha from './CanvasCaptcha';
 import logo from '../assets/Godzilla Consulting.png';
 
 const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
@@ -10,6 +11,7 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [captchaValid, setCaptchaValid] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [checking, setChecking] = useState(true);
@@ -110,6 +112,11 @@ const Login = () => {
         e.preventDefault();
         if (isLocked) return;
         setError('');
+
+        if (!captchaValid) {
+            setError('Por favor resuelve el CAPTCHA de seguridad.');
+            return;
+        }
 
         // Validación básica del lado del cliente
         if (!username.trim() || !password.trim()) {
@@ -303,9 +310,13 @@ const Login = () => {
                                 </div>
                             </div>
 
+                            <div className="pt-2">
+                                <CanvasCaptcha onValidate={setCaptchaValid} height={46} length={5} />
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={loading || isLocked}
+                                disabled={loading || isLocked || !captchaValid}
                                 className="w-full flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-white text-white hover:text-[#CC0000] py-3.5 rounded-xl font-black transition-all shadow-lg hover:shadow-xl mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {loading

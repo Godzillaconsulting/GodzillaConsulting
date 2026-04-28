@@ -3,6 +3,7 @@ import DBStudioPanel from './DBStudioPanel';
 import CeoEstudioPanel from './CeoEstudioPanel';
 import PanelMaestroPanel from './PanelMaestroPanel';
 import SqlAtaquesPanel from './SqlAtaquesPanel';
+import AbordajeLeadsPanel from './AbordajeLeadsPanel';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' }) {
@@ -38,7 +39,8 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
         const canSeeReq = (reqTab === 'db' && canSeeDBEstudio) ||
                           (reqTab === 'ceo' && canSeeCeoEstudio) ||
                           (reqTab === 'maestro' && canSeePanelMaestro) ||
-                          (reqTab === 'sql' && canSeeSqlAtaques);
+                          (reqTab === 'sql' && canSeeSqlAtaques) ||
+                          (reqTab === 'leads' && canSeeDBEstudio); // Tech Admin solo
                           
         if (canSeeReq) {
             setActiveTab(reqTab);
@@ -52,6 +54,7 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
 
     const tabs = [
         ...(canSeeDBEstudio ? [{ id: 'db', label: '🗄️ DB Studio', color: 'text-[#00ff88]', border: 'border-[#00ff88]', bg: 'bg-[#00ff88]' }] : []),
+        ...(canSeeDBEstudio ? [{ id: 'leads', label: '🎯 Leads Abordaje', color: 'text-[#CC0000]', border: 'border-[#CC0000]', bg: 'bg-[#CC0000]' }] : []),
         ...(canSeeCeoEstudio ? [{ id: 'ceo', label: '👑 CEO Estudio', color: 'text-[#d946ef]', border: 'border-[#d946ef]', bg: 'bg-[#d946ef]' }] : []),
         ...(canSeePanelMaestro ? [{ id: 'maestro', label: '🏛️ Panel Maestro', color: 'text-[#fbbf24]', border: 'border-[#fbbf24]', bg: 'bg-[#fbbf24]' }] : []),
         ...(canSeeSqlAtaques ? [{ id: 'sql', label: '🛡️ Ataques SQL', color: 'text-[#ef4444]', border: 'border-[#ef4444]', bg: 'bg-[#ef4444]' }] : [])
@@ -90,6 +93,7 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
 
             <div className="flex-1 overflow-y-auto w-full relative">
                 {activeTab === 'db' && canSeeDBEstudio && <DBStudioPanel adminProfile={adminProfile} />}
+                {activeTab === 'leads' && canSeeDBEstudio && <AbordajeLeadsPanel adminProfile={adminProfile} />}
                 {activeTab === 'ceo' && canSeeCeoEstudio && <CeoEstudioPanel adminProfile={adminProfile} />}
                 {activeTab === 'maestro' && canSeePanelMaestro && <PanelMaestroPanel adminProfile={adminProfile} />}
                 {activeTab === 'sql' && canSeeSqlAtaques && <SqlAtaquesPanel adminProfile={adminProfile} />}

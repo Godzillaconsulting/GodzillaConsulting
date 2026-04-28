@@ -4,11 +4,12 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-// child_process ya no se usa — limpieza garantizada por try-catch-finally
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
+import { executeAiWaterfall } from './utils/aiWaterfall.js';
+import { chatTools } from './config/zilla-prompt.js';
+import { withTimeout } from './config/zilla-prompt.js';
 
 puppeteer.use(StealthPlugin());
 
@@ -95,59 +96,32 @@ async function handleAILogic(senderId, messageText) {
             finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
         }
 
-        let geminiMessages = [];
-        let rawHistory = historial_mensajes.slice(0, -1);
-        for (const msg of rawHistory) {
-            geminiMessages.push({
-                role: (msg.role === "assistant" || msg.role === "model") ? "model" : "user",
-                parts: [{ text: msg.contenido }]
+        let waterfallMessages = [{ role: "system", content: finalSystemPrompt }];
+        for (const msg of historial_mensajes.slice(0, -1)) {
+            waterfallMessages.push({
+                role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
+                content: msg.contenido
             });
         }
+        waterfallMessages.push({ role: "user", content: messageText });
 
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
-        // Format tools for Gemini 1.5
-        const geminiTools = [{
-            functionDeclarations: chatTools.map(t => ({
+        const waterfallTools = chatTools.map(t => ({
+            type: "function",
+            function: {
                 name: t.name,
                 description: t.description,
-                parameters: {
-                    type: "OBJECT",
-                    properties: Object.fromEntries(
-                        Object.entries(t.parameters.properties).map(([k, v]) => [k, typeof v === 'object' ? { type: "STRING", description: v.description } : v])
-                    ),
-                    ...(t.parameters.required ? { required: t.parameters.required } : {})
-                }
-            }))
-        }];
+                parameters: t.parameters
+            }
+        }));
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: finalSystemPrompt,
-            tools: geminiTools
+        let aiResult = await executeAiWaterfall(waterfallMessages, {
+            tools: waterfallTools,
+            temperature: 0.1,
+            maxTokens: 1024
         });
 
-        const chat = model.startChat({ history: geminiMessages });
-
-        let chatCompletion = await withTimeout(
-            chat.sendMessage(messageText),
-            "Lo lamento, la señal de mi servidor es un poco débil ahora mismo. ¿Podemos intentarlo en unos minutos?"
-        );
-
-        let botReply = "Lo siento, fallé al entender.";
-        let responseMessage = null;
-        let functionCalls = [];
-
-        if (chatCompletion && chatCompletion.response) {
-            const response = chatCompletion.response;
-            try { botReply = response.text() || botReply; } catch(e){}
-            
-            const calls = typeof response.functionCalls === 'function' ? response.functionCalls() : response.functionCalls;
-            if (calls && calls.length > 0) {
-                functionCalls = calls;
-            }
-        }
+        let botReply = aiResult.content || "Lo siento, fallé al entender.";
+        let functionCalls = aiResult.tool_calls || [];
 
         if (functionCalls.length > 0) {
             for (const call of functionCalls) {
@@ -235,17 +209,24 @@ async function handleAILogic(senderId, messageText) {
                         }
                     } catch(e) { fRes = { success: false, error: "Error." }; }
                 }
-
-                // Send tool results back to Gemini via existing chat object
-                const chatCompletion2 = await withTimeout(
-                    chat.sendMessage([{
-                        functionResponse: { name: callName, response: fRes }
-                    }]),
-                    "Hubo un fallo temporal de procesamiento."
-                );
-                if (chatCompletion2 && chatCompletion2.response) {
-                    try { botReply = chatCompletion2.response.text() || botReply; } catch(e){}
-                }
+                waterfallMessages.push({
+                    role: "assistant",
+                    tool_calls: aiResult.tool_calls
+                });
+                waterfallMessages.push({
+                    role: "tool",
+                    tool_call_id: call.id || "tool_call_id",
+                    name: callName,
+                    content: JSON.stringify(fRes)
+                });
+                
+                // Segunda llamada a la IA después de ejecutar tools
+                const aiResult2 = await executeAiWaterfall(waterfallMessages, {
+                    temperature: 0.1,
+                    maxTokens: 1024
+                });
+                
+                botReply = aiResult2.content || botReply;
             }
         }
 
@@ -562,9 +543,10 @@ export const initTikTokBypass = async (isHeadless = true) => {
     } catch(_) { /* wmic no disponible, omitir */ }
 
     browser = await puppeteer.launch({
-        headless: isHeadless ? 'new' : false,
+        headless: 'old',
+        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         userDataDir: sessionDir,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-software-rasterizer'],
         protocolTimeout: 120000
     });
 

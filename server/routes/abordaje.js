@@ -1,6 +1,7 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { processAbordaje } from '../controllers/abordajeController.js';
+import { processAbordaje, getAbordajes } from '../controllers/abordajeController.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
@@ -27,5 +28,12 @@ const jitterMiddleware = (req, res, next) => {
  * Envía correo y WhatsApp de confirmación a cliente y alertas internas al equipo.
  */
 router.post('/', abordajeLimiter, jitterMiddleware, processAbordaje);
+
+/**
+ * GET /api/abordaje/leads
+ * Recupera los leads encriptados y los desencripta al vuelo para el Panel IT.
+ * Requiere ser administrador técnico.
+ */
+router.get('/leads', requireAdmin, getAbordajes);
 
 export default router;

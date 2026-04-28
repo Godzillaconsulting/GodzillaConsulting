@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import CanvasCaptcha from './CanvasCaptcha';
 import logo from '../assets/Godzilla Consulting.png';
 import {
   ChevronRight,
@@ -40,6 +41,7 @@ const FormAbordaje = () => {
   const [step, setStep] = useState(1);
   const [isFinished, setIsFinished] = useState(false);
   const [showSecurityPopup, setShowSecurityPopup] = useState(false);
+  const [captchaValid, setCaptchaValid] = useState(false);
   const [formData, setFormData] = useState({
     empresa: '',
     web: '',
@@ -725,6 +727,12 @@ const FormAbordaje = () => {
                 Tu información está protegida por encriptación de nivel bancario. Godzilla Consulting nunca compartirá tus datos con terceros sin autorización explícita.
               </p>
             </div>
+
+            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl flex flex-col gap-3">
+               <span className="font-bold uppercase text-xs tracking-widest text-white/80">Verificación de Seguridad</span>
+               <CanvasCaptcha onValidate={setCaptchaValid} height={50} length={5} />
+            </div>
+
             {submitError && (
               <div className="mt-4 p-4 bg-red-900/30 border border-red-500/50 rounded-2xl text-center">
                 <p className="text-red-200 text-xs font-bold uppercase">{submitError}</p>
@@ -761,7 +769,7 @@ const FormAbordaje = () => {
               </button>
             ) : (
               <button
-                disabled={!formData.termsAccepted || !formData.infoAccepted || loading}
+                disabled={!formData.termsAccepted || !formData.infoAccepted || !captchaValid || loading}
                 onClick={async () => {
                   setLoading(true);
                   setSubmitError(null);
@@ -783,7 +791,7 @@ const FormAbordaje = () => {
                     setLoading(false);
                   }
                 }}
-                className={`flex-1 h-14 font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center transition-all active:scale-95 ${formData.termsAccepted && formData.infoAccepted && !loading
+                className={`flex-1 h-14 font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center transition-all active:scale-95 ${formData.termsAccepted && formData.infoAccepted && captchaValid && !loading
                     ? 'bg-[#34C759] hover:bg-[#2eb350] text-white shadow-[0_0_20px_rgba(52,199,89,0.4)] hover:shadow-[0_0_30px_rgba(52,199,89,0.6)] hover:-translate-y-1'
                     : 'bg-white/10 text-white/20 cursor-not-allowed shadow-none grayscale'
                   }`}

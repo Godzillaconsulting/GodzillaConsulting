@@ -251,6 +251,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
                             console.error(`[${platform}] Error en save_appointment:`, err.message);
                             fRes = { success: false, error: err.message };
                         }
+                        }
                     }
                 } else if (callName === "get_available_downloads") {
                     const r = await pool.query("SELECT title, slug FROM lead_magnets");

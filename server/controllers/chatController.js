@@ -202,6 +202,7 @@ export const processChatMessage = async (req, res) => {
                                 }
                             }
                         }
+                        }
                     } else {
                         resultMessage = "Herramienta ejecutada o no soportada.";
                     }

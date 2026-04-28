@@ -57,8 +57,13 @@ const FormAbordaje = () => {
     googleAccessStatus: '',
     tiktokAccessStatus: '',
     termsAccepted: false,
-    infoAccepted: false
+    infoAccepted: false,
+    citaFecha: '',
+    citaHora: '',
+    telefono: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const isStepValid = () => {
     if (step === 1) return formData.empresa.trim() !== '';
@@ -77,6 +82,10 @@ const FormAbordaje = () => {
         if (formData.tiktokVariant === 'business' && !formData.tiktokAccessStatus) return false;
       }
       return true;
+      return true;
+    }
+    if (step === 4) {
+      return formData.citaFecha !== '' && formData.citaHora !== '' && formData.telefono.trim() !== '';
     }
     return true;
   };
@@ -621,16 +630,57 @@ const FormAbordaje = () => {
 
         {/* PASO 6: CALENDARIO */}
         {step === 4 && (
-          <div className="animate-in slide-in-from-right duration-300 space-y-6 text-center">
+          <div className="animate-in slide-in-from-right duration-300 space-y-6">
+            <div className="text-center mb-6">
+              <p className="text-xs text-white/70 mb-2 uppercase tracking-widest font-bold">Reserva tu lugar en nuestra agenda</p>
+              <p className="text-[11px] text-[#CC0000] mb-4">Esta sesión estratégica no tiene costo, pero los cupos son limitados.</p>
+            </div>
+            
+            <div className="space-y-4 max-w-sm mx-auto">
+              <div>
+                <label className="block text-xs font-bold uppercase mb-2 text-white/70 tracking-widest">
+                  Fecha <span className="text-[#CC0000]">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                    <CalendarIcon className="w-5 h-5 text-white/50" />
+                  </div>
+                  <input
+                    type="date"
+                    className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 pl-12 text-sm text-white [color-scheme:dark]"
+                    value={formData.citaFecha}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setFormData({ ...formData, citaFecha: e.target.value })}
+                  />
+                </div>
+              </div>
 
+              <div>
+                <label className="block text-xs font-bold uppercase mb-2 text-white/70 tracking-widest">
+                  Hora <span className="text-[#CC0000]">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="time"
+                    className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 px-6 text-sm text-white [color-scheme:dark]"
+                    value={formData.citaHora}
+                    onChange={(e) => setFormData({ ...formData, citaHora: e.target.value })}
+                  />
+                </div>
+              </div>
 
-            <div className="bg-white/5 border-2 border-white/10 rounded-[40px] p-8 min-h-[350px] flex flex-col items-center justify-center border-dashed">
-              <div className="w-16 h-16 rounded-full border-4 border-[#CC0000] border-t-transparent animate-spin mb-6"></div>
-              <p className="font-bold text-lg mb-2 italic uppercase">Cargando Agenda Godzilla...</p>
-              <p className="text-xs text-white/70">Selecciona el horario que más te convenga.</p>
-              <button className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 hover:-translate-y-0.5 rounded-full text-[10px] font-bold tracking-widest border border-white/10 uppercase transition-all">
-                Refrescar Calendario
-              </button>
+              <div>
+                <label className="block text-xs font-bold uppercase mb-2 text-white/70 tracking-widest">
+                  Tu WhatsApp / Teléfono <span className="text-[#CC0000]">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Ej: +52 656 123 4567"
+                  className="w-full bg-black/40 border border-[#CC0000]/50 focus:border-[#CC0000] focus:bg-black outline-none transition-all rounded-full p-4 px-6 text-sm text-white"
+                  value={formData.telefono}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -675,6 +725,11 @@ const FormAbordaje = () => {
                 Tu información está protegida por encriptación de nivel bancario. Godzilla Consulting nunca compartirá tus datos con terceros sin autorización explícita.
               </p>
             </div>
+            {submitError && (
+              <div className="mt-4 p-4 bg-red-900/30 border border-red-500/50 rounded-2xl text-center">
+                <p className="text-red-200 text-xs font-bold uppercase">{submitError}</p>
+              </div>
+            )}
           </div>
         )}
         </div> {/* Cierra el contenedor scrolleable */}
@@ -706,14 +761,36 @@ const FormAbordaje = () => {
               </button>
             ) : (
               <button
-                disabled={!formData.termsAccepted || !formData.infoAccepted}
-                onClick={() => setIsFinished(true)}
-                className={`flex-1 h-14 font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center transition-all active:scale-95 ${formData.termsAccepted && formData.infoAccepted
+                disabled={!formData.termsAccepted || !formData.infoAccepted || loading}
+                onClick={async () => {
+                  setLoading(true);
+                  setSubmitError(null);
+                  try {
+                    const res = await fetch('/api/abordaje', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(formData)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setIsFinished(true);
+                    } else {
+                      setSubmitError(data.error || 'Error al enviar el formulario.');
+                    }
+                  } catch (err) {
+                    setSubmitError('Sin conexión al servidor. Revisa tu red.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className={`flex-1 h-14 font-bold uppercase tracking-tighter rounded-2xl flex items-center justify-center transition-all active:scale-95 ${formData.termsAccepted && formData.infoAccepted && !loading
                     ? 'bg-[#34C759] hover:bg-[#2eb350] text-white shadow-[0_0_20px_rgba(52,199,89,0.4)] hover:shadow-[0_0_30px_rgba(52,199,89,0.6)] hover:-translate-y-1'
                     : 'bg-white/10 text-white/20 cursor-not-allowed shadow-none grayscale'
                   }`}
               >
-                Enviar
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                ) : 'Enviar'}
               </button>
             )}
           </div>

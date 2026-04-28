@@ -157,23 +157,32 @@ async function handleAILogic(senderId, messageText) {
 
                                 if (callName === "check_availability") {
                     const { fecha, hora } = callArgs;
-                    const valErr = validateBusinessHours(fecha, hora);
-
-                    if (valErr) {
-                        fRes = { disponible: false, razon: valErr };
+                    
+                    if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };
                     } else {
-                        const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                        const r = await pool.query(query, [fecha, hora]);
-                        fRes = { disponible: parseInt(r.rows[0].total) === 0 };
+                        const valErr = validateBusinessHours(fecha, hora);
+
+                        if (valErr) {
+                            fRes = { error: `La fecha/hora solicitada es inválida o está fuera de horario de atención: ${valErr}. Dile al usuario que elija otro horario.` };
+                        } else {
+                            const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                            const r = await pool.query(query, [fecha, hora]);
+                            fRes = { disponible: parseInt(r.rows[0].total) === 0 };
+                        }
                     }
                                 } else if (callName === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                        const valErr = validateBusinessHours(fecha, hora);
+                        
+                        if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                            fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
+                        } else {
+                            const valErr = validateBusinessHours(fecha, hora);
 
-                        if (valErr) {
-                            fRes = { success: false, error: valErr };
-                    } else {
+                            if (valErr) {
+                                fRes = { success: false, error: `Error de fecha/hora: ${valErr}` };
+                            } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
                             

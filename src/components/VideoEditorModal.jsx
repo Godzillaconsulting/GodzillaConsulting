@@ -44,7 +44,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
   const [selectedClipId, setSelectedClipId] = useState(null);
   const [ttsText, setTtsText] = useState('');
-  const [ttsVoice, setTtsVoice] = useState('es-MX');
+  const [ttsVoice, setTtsVoice] = useState('edge:es-MX-JorgeNeural');
+  const [ttsReferenceAudio, setTtsReferenceAudio] = useState('');
   const [isGenTTS, setIsGenTTS] = useState(false);
   const [localUploads, setLocalUploads] = useState([]);
   const [newText, setNewText] = useState('');
@@ -162,21 +163,16 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     if (!ttsText.trim()) return;
     setIsGenTTS(true);
     try {
-      // Map frontend voice to StreamElements (Amazon Polly)
-      const voiceMap = {
-         'es-MX-Standard-A': 'Mia',
-         'es-MX-Standard-B': 'Miguel',
-         'alloy': 'Brian',
-         'nova': 'Salli',
-         'onyx': 'Matthew',
-         'shimmer': 'Joanna',
-         'hormozi': 'Justin'
-      };
-      const pollyVoice = voiceMap[ttsVoice] || 'Conchita';
-      
-      const url = `https://api.streamelements.com/kappa/v2/speech?voice=${pollyVoice}&text=${encodeURIComponent(ttsText)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Error generando TTS');
+      const res = await fetch('/api/studio/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+        body: JSON.stringify({
+          text: ttsText,
+          voice: ttsVoice,
+          referenceAudio: ttsVoice.startsWith('xtts:') ? ttsReferenceAudio : null
+        })
+      });
+      if (!res.ok) throw new Error('Error generando TTS en el backend');
       const blob = await res.blob();
       const localUrl = URL.createObjectURL(blob);
       
@@ -193,7 +189,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     } finally {
       setIsGenTTS(false);
     }
-  }, [ttsText, ttsVoice, editor, engine]);
+  }, [ttsText, ttsVoice, ttsReferenceAudio, editor, engine]);
 
   const handleVoiceRecord = useCallback(async () => {
     if (isRecordingVoice) {
@@ -864,15 +860,51 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide mb-1.5 block">Voz</label>
                     <select value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}
                       className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-md p-2 outline-none focus:border-blue-500 transition-colors">
-                      <option value="es-MX-Standard-A">🇲🇽 Mujer Joven (Neutro)</option>
-                      <option value="es-MX-Standard-B">🇲🇽 Hombre Maduro (Neutro)</option>
-                      <option value="alloy">🇺🇸 Alloy (OpenAI - Joven)</option>
-                      <option value="nova">🇺🇸 Nova (OpenAI - Femenina)</option>
-                      <option value="onyx">🇺🇸 Onyx (Narrador Épico)</option>
-                      <option value="shimmer">🇺🇸 Shimmer (Voz Suave)</option>
-                      <option value="hormozi">🎙️ Clon Alex Hormozi (Inglés)</option>
+                      <optgroup label="⚡ Piper TTS — Local (Ultarrápido)">
+                        <option value="piper:es_MX-ald-medium">🇲🇽 Narrador Neutro (es_MX)</option>
+                      </optgroup>
+                      <optgroup label="☁️ Edge TTS — Básico (Respaldo)">
+                        <option value="edge:es-MX-JorgeNeural">🇲🇽 Jorge MX — Narrador épico</option>
+                      </optgroup>
+                      <optgroup label="🎭 FakeYou — Celebridades (Gratis)">
+                        <option value="fakeyou:adal-ramones">🎤 Adal Ramones (Español)</option>
+                        <option value="fakeyou:alucard-latino">🧛 Alucard — Hellsing (Latino)</option>
+                        <option value="fakeyou:ballas-gta">🎮 Pandillero Ballas — GTA</option>
+                        <option value="fakeyou:spongebob">🧽 Bob Esponja (EN)</option>
+                        <option value="fakeyou:andrew-tate">💪 Andrew Tate (EN)</option>
+                        <option value="fakeyou:alan-watts">🧘 Alan Watts (EN)</option>
+                      </optgroup>
+                      <optgroup label="🐕 Bark (HuggingFace) — Muy Expresivas">
+                        <option value="bark:v2/es_speaker_0">🇪🇸 Español Speaker 0 (Hombre)</option>
+                        <option value="bark:v2/es_speaker_1">🇪🇸 Español Speaker 1 (Mujer)</option>
+                        <option value="bark:v2/es_speaker_2">🇪🇸 Español Speaker 2 (Hombre suave)</option>
+                        <option value="bark:v2/es_speaker_9">🇪🇸 Español Speaker 9 (Mujer cálida)</option>
+                      </optgroup>
+                      <optgroup label="🧬 XTTS-v2 (HuggingFace) — Clonación">
+                        <option value="xtts:clone">🎙️ Clonar Voz (Sube un audio)</option>
+                      </optgroup>
                     </select>
                   </div>
+
+                  {ttsVoice.startsWith('xtts:') && (
+                      <div className="bg-red-500/10 border border-red-500/30 p-2.5 rounded-md">
+                          <label className="text-[10px] text-red-400 font-semibold mb-1 block">Sube Audio de Referencia (5-10s)</label>
+                          <input 
+                              type="file" 
+                              accept="audio/*"
+                              onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => setTtsReferenceAudio(reader.result);
+                                      reader.readAsDataURL(file);
+                                  }
+                              }}
+                              className="w-full text-[10px] text-white file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-red-500/20 file:text-red-300 hover:file:bg-red-500/30"
+                          />
+                          {ttsReferenceAudio && <p className="text-[9px] text-green-400 mt-1">✓ Audio listo para clonar</p>}
+                      </div>
+                  )}
 
                   <div>
                     <div className="flex justify-between items-center mb-1.5">

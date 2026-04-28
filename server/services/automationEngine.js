@@ -385,7 +385,7 @@ class AutomationEngine {
                             headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 messages: [{ role: 'user', content: prompt }],
-                                model: 'Meta-Llama-3.1-405B-Instruct',
+                                model: 'Meta-Llama-3.1-70B-Instruct',
                                 temperature: 0.85
                             })
                         });

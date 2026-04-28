@@ -105,7 +105,6 @@ export default function AdminStudio() {
     if (location.pathname.includes('/calendar')) return 'social';
     if (location.pathname.includes('/studio')) return 'social_studio';
     if (location.pathname.includes('/video-editor')) return 'video_editor';
-    if (location.pathname.includes('/db')) return 'db_studio';
     if (location.pathname.includes('/profile')) return 'profile';
     if (location.pathname.includes('/bugs')) return 'bugs';
     if (location.pathname.includes('/newsletter')) return 'newsletter';

@@ -2,6 +2,7 @@ import pool from '../config/db.js';
 import { GoogleGenAI } from '@google/genai';
 import { EdgeTTS } from 'node-edge-tts';
 import fetch from 'node-fetch';
+import { generateVoice } from '../services/ttsService.js';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffprobePath from '@ffprobe-installer/ffprobe';
@@ -18,49 +19,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 
 let isProcessing = false;
 
-// Configuración TTS (ElevenLabs y EdgeTTS)
-const tts = new EdgeTTS({ voice: 'es-MX-JorgeNeural' }); // Voz excelente en español latino neutro
-
-async function generateVoice(text, outputPath) {
-    console.log(`[MediaWorker] Generando TTS para: "${text.substring(0, 30)}..."`);
-    
-    // Opción 1: ElevenLabs
-    if (process.env.ELEVENLABS_API_KEY) {
-        try {
-            console.log(`[MediaWorker] Intentando ElevenLabs...`);
-            const voiceId = 'pNInz6obbfIdGwnf8p5A'; // Adam (Ejemplo), idealmente uno configurado
-            const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
-                method: 'POST',
-                headers: {
-                    'xi-api-key': process.env.ELEVENLABS_API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: text,
-                    model_id: "eleven_multilingual_v2"
-                })
-            });
-
-            if (response.ok) {
-                const arrayBuffer = await response.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                fs.writeFileSync(outputPath, buffer);
-                console.log(`[MediaWorker] ✅ ElevenLabs TTS generado.`);
-                return outputPath;
-            } else {
-                console.warn(`[MediaWorker] ⚠️ ElevenLabs falló (Quizás por cuota o invoice). Cayendo a Edge TTS... Status: ${response.status}`);
-            }
-        } catch (e) {
-            console.error(`[MediaWorker] Error en ElevenLabs: ${e.message}`);
-        }
-    }
-
-    // Opción 2: Fallback a Microsoft Edge TTS (Open Source - 100% Gratis y Excelente calidad)
-    console.log(`[MediaWorker] Usando Edge TTS (Fallback)...`);
-    await tts.ttsPromise(text, outputPath);
-    console.log(`[MediaWorker] ✅ Edge TTS generado.`);
-    return outputPath;
-}
+// La lógica de generación de voz fue extraída a server/services/ttsService.js
 
 // Generación de imagen con Imagen 3 + Fallback a Pollinations Libre
 async function generateImage(prompt, outputPath) {
@@ -138,24 +97,24 @@ async function processTask() {
         }
 
         const dayData = payload.scenes;
+        const selectedVoice = payload.voice || 'edge:es-MX-JorgeNeural';
         const clipsPaths = [];
 
-        // Por ahora, simularemos un ensamblaje básico de SlideShow + Voz si no es video puro
-        // Generaremos las imágenes por cada escena
+        // Generaremos las imágenes + voz por cada escena
         for (let i = 1; i <= 5; i++) {
             const visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`];
             const narration = i === 5 ? dayData['NARRACION ESCENA 5 (CTA)'] : dayData[`NARRACION ESCENA ${i}`];
             
             if (!visualPrompt && !narration) continue;
 
-            console.log(`[MediaWorker] Procesando Escena ${i}...`);
+            console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
             const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.png`);
             const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
             
             // Generar Medios en Paralelo para agilizar
             const promises = [];
             if (visualPrompt) promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
-            if (narration) promises.push(generateVoice(narration, sceneAudioPath).catch(e => null));
+            if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
 

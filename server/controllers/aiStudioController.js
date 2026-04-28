@@ -543,7 +543,7 @@ export const getInspirationGallery = async (req, res) => {
             },
             body: JSON.stringify({
                 messages: [{ role: 'user', content: promptInstruction }],
-                model: 'Meta-Llama-3.1-405B-Instruct',
+                model: 'Meta-Llama-3.1-70B-Instruct',
                 temperature: 0.9
             })
         });
@@ -574,7 +574,19 @@ export const getInspirationGallery = async (req, res) => {
                 model: item.model
             };
         });
-        
+
+        // --- TELEMETRÍA ---
+        try {
+            const inputTk  = data.usage?.prompt_tokens     || 0;
+            const outputTk = data.usage?.completion_tokens || 0;
+            // SambaNova 70B Free Tier: coste simbólico ~$0.60/1M tokens
+            const costUsd = ((inputTk + outputTk) / 1_000_000) * 0.60;
+            await pool.query(
+                `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
+                ['Estudio IA (Im\u00e1genes)', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
+            );
+        } catch (telErr) { console.warn('[TELEMETRY] Galería:', telErr.message); }
+
         res.status(200).json({ success: true, gallery: finalGallery });
     } catch (error) {
         console.error("Error getInspirationGallery:", error);
@@ -602,7 +614,7 @@ export const getDynamicFilters = async (req, res) => {
             },
             body: JSON.stringify({
                 messages: [{ role: 'user', content: promptInstruction }],
-                model: 'Meta-Llama-3.1-405B-Instruct',
+                model: 'Meta-Llama-3.1-70B-Instruct',
                 temperature: 1.0
             })
         });
@@ -622,6 +634,17 @@ export const getDynamicFilters = async (req, res) => {
             throw new Error("Fallo al generar filtros dinámicos.");
         }
         
+        // --- TELEMETRÍA ---
+        try {
+            const inputTk  = data.usage?.prompt_tokens     || 0;
+            const outputTk = data.usage?.completion_tokens || 0;
+            const costUsd  = ((inputTk + outputTk) / 1_000_000) * 0.60;
+            await pool.query(
+                `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
+                ['Radar de Tendencias B2B', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
+            );
+        } catch (telErr) { console.warn('[TELEMETRY] Filtros:', telErr.message); }
+
         res.status(200).json({ success: true, filters: filtersList });
     } catch (error) {
         console.error("Error getDynamicFilters:", error);
@@ -675,7 +698,7 @@ Reglas Estrictas:
             },
             body: JSON.stringify({
                 messages: history,
-                model: 'Meta-Llama-3.1-405B-Instruct',
+                model: 'Meta-Llama-3.1-70B-Instruct',
                 temperature: 0.7
             })
         });
@@ -691,17 +714,24 @@ Reglas Estrictas:
         aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
         aiResponse = aiResponse.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
 
-        // Intentar loguear esto en la base de datos de aprendizaje (Para Elite Prompts / Option 2)
+        // --- TELEMETRÍA + MEMORIA APRENDIZAJE ---
         try {
-            const query = `
-                INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type)
-                VALUES ($1, $2, $3)
-            `;
-            // Guardamos el input del user como original y la respuesta en improved
-            await pool.query(query, [message, aiResponse, 'script_chat']);
-        } catch (dbErr) {
-            console.log("[STUDIO] Info: goyi_learning log saltado", dbErr.message);
-        }
+            const inputTk  = data.usage?.prompt_tokens     || 0;
+            const outputTk = data.usage?.completion_tokens || 0;
+            const costUsd  = ((inputTk + outputTk) / 1_000_000) * 0.60;
+            await pool.query(
+                `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
+                ['Agente Multicanal (Meta/TikTok)', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
+            );
+        } catch (telErr) { console.warn('[TELEMETRY] Chat:', telErr.message); }
+
+        // Loguear en goyi_learning para memoria a largo plazo del asistente
+        try {
+            await pool.query(
+                `INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type) VALUES ($1, $2, $3)`,
+                [message, aiResponse, 'script_chat']
+            );
+        } catch (dbErr) { console.log('[STUDIO] goyi_learning log saltado', dbErr.message); }
 
         return res.status(200).json({ success: true, text: aiResponse });
     } catch (error) {

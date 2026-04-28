@@ -10,14 +10,6 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
     const location = useLocation();
     const [activeTab, setActiveTab] = useState(activeTabInitial);
 
-    // Permitir deep linking si es necesario
-    useEffect(() => {
-        if (location.pathname.includes('/admin/it/db')) setActiveTab('db');
-        else if (location.pathname.includes('/admin/it/ceo')) setActiveTab('ceo');
-        else if (location.pathname.includes('/admin/it/maestro')) setActiveTab('maestro');
-        else if (location.pathname.includes('/admin/it/sql')) setActiveTab('sql');
-    }, [location.pathname]);
-
     // Lógica de Permisos de roles para ver pestañas
     const username = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
@@ -34,6 +26,29 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
     const canSeePanelMaestro = isTechAdmin;
     const canSeeSqlAtaques   = isTechAdmin;
     const canSeeCeoEstudio   = isEditor;
+
+    // Permitir deep linking si es necesario
+    useEffect(() => {
+        let reqTab = 'db';
+        if (location.pathname.includes('/admin/it/db')) reqTab = 'db';
+        else if (location.pathname.includes('/admin/it/ceo')) reqTab = 'ceo';
+        else if (location.pathname.includes('/admin/it/maestro')) reqTab = 'maestro';
+        else if (location.pathname.includes('/admin/it/sql')) reqTab = 'sql';
+        
+        const canSeeReq = (reqTab === 'db' && canSeeDBEstudio) ||
+                          (reqTab === 'ceo' && canSeeCeoEstudio) ||
+                          (reqTab === 'maestro' && canSeePanelMaestro) ||
+                          (reqTab === 'sql' && canSeeSqlAtaques);
+                          
+        if (canSeeReq) {
+            setActiveTab(reqTab);
+        } else {
+            if (canSeeDBEstudio) { setActiveTab('db'); navigate('/admin/it/db', { replace: true }); }
+            else if (canSeeCeoEstudio) { setActiveTab('ceo'); navigate('/admin/it/ceo', { replace: true }); }
+            else if (canSeePanelMaestro) { setActiveTab('maestro'); navigate('/admin/it/maestro', { replace: true }); }
+            else if (canSeeSqlAtaques) { setActiveTab('sql'); navigate('/admin/it/sql', { replace: true }); }
+        }
+    }, [location.pathname, canSeeDBEstudio, canSeeCeoEstudio, canSeePanelMaestro, canSeeSqlAtaques, navigate]);
 
     const tabs = [
         ...(canSeeDBEstudio ? [{ id: 'db', label: '🗄️ DB Studio', color: 'text-[#00ff88]', border: 'border-[#00ff88]', bg: 'bg-[#00ff88]' }] : []),

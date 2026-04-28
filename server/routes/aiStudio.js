@@ -1,7 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import os from 'os';
-
+import path from 'path';
+import fs from 'fs';
+import { generateVoice } from '../services/ttsService.js';
 const upload = multer({ dest: os.tmpdir() });
 import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters, magicEditAnalysis, generateMonthlyPlan, getMonthlyPlanStatus } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM, requireCMOrCockers } from '../middleware/adminAuth.js';
@@ -25,6 +27,73 @@ router.get('/inspiration', authenticateToken, getInspirationGallery);
 router.get('/dynamic-filters', authenticateToken, getDynamicFilters);
 router.post('/generate-monthly-plan', authenticateToken, generateMonthlyPlan);
 router.get('/plan-status/:taskId', authenticateToken, getMonthlyPlanStatus);
+
+// ==========================================
+// Generación TTS Directa (Editor de Video)
+// ==========================================
+router.post('/tts', authenticateToken, async (req, res) => {
+    try {
+        const { text, voice, referenceAudio } = req.body;
+        if (!text || !voice) {
+            return res.status(400).json({ success: false, error: 'Text and voice are required' });
+        }
+        
+        const outputFilename = `tts_${Date.now()}_${Math.random().toString(36).slice(2)}.wav`;
+        const outputPath = path.join(os.tmpdir(), outputFilename);
+
+        await generateVoice(text, outputPath, voice, referenceAudio);
+
+        res.download(outputPath, outputFilename, (err) => {
+            try {
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+            } catch (e) {
+                console.error('Error cleanup TTS:', e);
+            }
+        });
+    } catch (error) {
+        console.error('[aiStudio.js] Error in /tts:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Crear tarea de video autónomo (Faceless) para el MediaWorker
+router.post('/create-video-script', authenticateToken, async (req, res) => {
+    try {
+        const { title, voice, scenes } = req.body;
+        if (!title || !scenes || scenes.length === 0) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios: title, scenes' });
+        }
+
+        // Construir el payload en el formato que espera mediaWorker.js
+        const scenesPayload = {};
+        scenes.forEach((scene, i) => {
+            const n = i + 1;
+            const isLast = n === scenes.length;
+            const narKey = isLast ? `NARRACION ESCENA ${n} (CTA)` : `NARRACION ESCENA ${n}`;
+            scenesPayload[`VISUAL ESCENA ${n} (Prompt Imagen Detallado)`] = scene.visual || '';
+            scenesPayload[narKey] = scene.narration || '';
+        });
+
+        const mediaPayload = { scenes: scenesPayload, voice: voice || 'es-MX-JorgeNeural' };
+        if (req.body.referenceAudio) {
+            mediaPayload.referenceAudio = req.body.referenceAudio;
+        }
+
+        const result = await pool.query(
+            `INSERT INTO studio_tasks (title, visual_prompt, caption, status, assigned_to, media_payload, scheduled_date)
+             VALUES ($1, $2, $3, 'pending_cm_approval', 'auto', $4, NOW())
+             RETURNING id`,
+            [title, scenes[0]?.visual || title, title, JSON.stringify(mediaPayload)]
+        );
+
+        const taskId = result.rows[0].id;
+        console.log(`[VideoScript] ✅ Tarea #${taskId} creada para MediaWorker: "${title}"`);
+        res.json({ success: true, taskId, message: `Video "${title}" encolado. El MediaWorker lo ensambla en ~2 min.` });
+    } catch (e) {
+        console.error('[VideoScript] Error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // ==========================================
 // In-House Cluster (Sora / Python Local Bridge)

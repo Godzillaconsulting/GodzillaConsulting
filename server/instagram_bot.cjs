@@ -197,16 +197,24 @@ async function processAndReply(userId, text, replyFn) {
                 let callArgs = call.args || {};
 
                 if (callName === 'check_availability') {
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [callArgs.fecha, callArgs.hora]);
-                    fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    const { fecha, hora } = callArgs;
+                    if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };
+                    } else {
+                        const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
+                        fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    }
                 } else if (callName === 'save_appointment') {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                    try {
-                        const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
-                        if (dup.rows.length > 0) {
-                            fRes = { success: true, id: dup.rows[0].id };
-                        } else {
-                            const gRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
+                    if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes." };
+                    } else {
+                        try {
+                            const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
+                            if (dup.rows.length > 0) {
+                                fRes = { success: true, id: dup.rows[0].id };
+                            } else {
+                                const gRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
                             if (gRes?.id) {
                                 const r = await pool.query(
                                     `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_event_id, origen)

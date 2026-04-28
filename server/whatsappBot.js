@@ -140,30 +140,33 @@ export const initWhatsAppBot = async () => {
         if (count > 0) console.log(`[WhatsApp] 🧹 ${count} Chrome zombie(s) del perfil eliminado(s) exitosamente.`);
     } catch(_) { /* wmic no disponible, omitir */ }
 
+    // Ruta explícita al Chrome del sistema para evitar crasheos cuando el proceso
+    // corre como Windows Service (NSSM/SYSTEM) que no tiene acceso al caché de puppeteer.
+    const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+
     const client = new Client({
 
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
             headless: true,
+            executablePath: CHROME_PATH,
             args: [
+                '--headless=old',              // Legacy headless: compatible con SYSTEM account en Windows
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-gpu',
-                '--disable-dev-shm-usage',       // Evita crash en RAM baja (usa /tmp)
-                '--disable-accelerated-2d-canvas',// Apaga canvas GPU
+                '--disable-gpu-sandbox',       // Requerido bajo SYSTEM (sin sesión de escritorio)
+                '--disable-software-rasterizer',
+                '--disable-dev-shm-usage',
                 '--no-first-run',
-                '--no-zygote',                   // Reduce procesos hijo de Chrome
-                '--single-process',              // Corre todo en 1 proceso (menos RAM)
+                '--no-zygote',
                 '--disable-extensions',
                 '--disable-background-networking',
                 '--disable-default-apps',
                 '--disable-sync',
-                '--disable-translate',
-                '--hide-scrollbars',
-                '--metrics-recording-only',
                 '--mute-audio',
+                '--disable-translate',
                 '--safebrowsing-disable-auto-update',
-                '--js-flags=--max-old-space-size=256', // Limitar JS heap a 256MB
             ]
         }
     });
@@ -388,11 +391,21 @@ export const initWhatsAppBot = async () => {
                 }
             }));
 
+            // ─── GUARDIA PROGRAMÁTICA ANTI-ALUCINACIÓN ─────────────────────
+            // Si el mensaje es un saludo puro, forzamos que el modelo NO pueda
+            // invocar herramientas sin importar qué modelo esté activo (Groq/Gemini/Pollinations).
+            const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)[!¡.,\s]*$/i;
+            const isGreetingOnly = GREETING_REGEX.test(messageText.trim());
+
             let botReply = "Lo siento, fallé al entender.";
             let functionCalls = [];
 
             try {
-                const waterfallResponse = await executeAiWaterfall(groqMessages, { tools: groqTools });
+                // Si es saludo: no pasamos tools al waterfall (evita alucinaciones de tool_call)
+                const waterfallOptions = isGreetingOnly
+                    ? { temperature: 0.5 }
+                    : { tools: groqTools };
+                const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);
                 botReply = waterfallResponse.content || "";
                 
                 if (waterfallResponse.tool_calls && waterfallResponse.tool_calls.length > 0) {
@@ -425,34 +438,44 @@ export const initWhatsAppBot = async () => {
 
                                         if (callName === "check_availability") {
                         const { fecha, hora } = callArgs;
-                        const valErr = validateBusinessHours(fecha, hora);
-
-                        if (valErr) {
-                            fRes = { disponible: false, razon: valErr };
+                        
+                        // Anti-hallucination guard
+                        if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                            fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };
                         } else {
-                            const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                            const r = await pool.query(query, [fecha, hora]);
-                            fRes = { disponible: parseInt(r.rows[0].total) === 0 };
-                            console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
+                            const valErr = validateBusinessHours(fecha, hora);
+
+                            if (valErr) {
+                                fRes = { error: `La fecha/hora solicitada es inválida o está fuera de horario de atención: ${valErr}. Dile al usuario que elija otro horario.` };
+                            } else {
+                                const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                const r = await pool.query(query, [fecha, hora]);
+                                fRes = { disponible: parseInt(r.rows[0].total) === 0 };
+                                console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
+                            }
                         }
                                         } else if (callName === "save_appointment") {
                         try {
                             const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                             
-                            const valErr = validateBusinessHours(fecha, hora);
-
-                            if (valErr) {
-                                 fRes = { success: false, error: valErr };
+                            // Anti-hallucination guard
+                            if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                                fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
                             } else {
-                                const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                                const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
-                                
-                                if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                     console.warn(`⚠️ [WA Empalme] Intento de agendar ocupado: ${fecha} ${hora}`);
-                                     fRes = { success: false, error: "Horario recién ocupado." };
+                                const valErr = validateBusinessHours(fecha, hora);
+
+                                if (valErr) {
+                                     fRes = { success: false, error: `Error de fecha/hora: ${valErr}` };
                                 } else {
-                                    const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                                    let calendarId = null;
+                                    const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                    const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                                    
+                                    if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                         console.warn(`⚠️ [WA Empalme] Intento de agendar ocupado: ${fecha} ${hora}`);
+                                         fRes = { success: false, error: "Horario recién ocupado." };
+                                    } else {
+                                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                        let calendarId = null;
                                     let gRes = null;
                                     
                                     try {
@@ -490,6 +513,7 @@ export const initWhatsAppBot = async () => {
                                     }
                                 }
                             }
+                        }
                         } catch (waErr) {
                             console.error("❌ Error WA Webhook Save_Appointment:", waErr);
                             fRes = { success: false, error: "Error de servidor interno." };
@@ -585,7 +609,7 @@ export const initWhatsAppBot = async () => {
             groqMessages = null;
             rawHistory = null;
             finalSystemPrompt = null;
-            chatCompletion = null;
+            // chatCompletion eliminado - variable nunca declarada (causaba ReferenceError)
 
         } catch (error) {
             console.error("❌ Error interno procesando WA message:", error);

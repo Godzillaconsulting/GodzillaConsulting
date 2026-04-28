@@ -141,23 +141,34 @@ export const processChatMessage = async (req, res) => {
                 try {
                     if (name === "check_availability") {
                         const { fecha, hora } = args;
-                        const errorValidacion = validateBusinessHours(fecha, hora);
-
-                        if (errorValidacion) {
-                            resultMessage = errorValidacion;
+                        
+                        // Anti-hallucination guard
+                        if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                            resultMessage = "Error: Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad.";
                         } else {
-                            const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                            const r = await pool.query(query, [fecha, hora]);
-                            if (parseInt(r.rows[0].total) > 0) resultMessage = "El horario está ocupado (hay otra cita a menos de 1 hora de diferencia). Ofrece otra hora.";
-                            else resultMessage = "Horario disponible.";
+                            const errorValidacion = validateBusinessHours(fecha, hora);
+
+                            if (errorValidacion) {
+                                resultMessage = `Error: La fecha/hora solicitada es inválida o está fuera de horario de atención: ${errorValidacion}. Dile al usuario que elija otro horario.`;
+                            } else {
+                                const query = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                const r = await pool.query(query, [fecha, hora]);
+                                if (parseInt(r.rows[0].total) > 0) resultMessage = "El horario está ocupado (hay otra cita a menos de 1 hora de diferencia). Ofrece otra hora.";
+                                else resultMessage = "Horario disponible.";
+                            }
                         }
                     } else if (name === "save_appointment") {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = args;
-                        const errorValidacion = validateBusinessHours(fecha, hora);
-
-                        if (errorValidacion) {
-                            resultMessage = errorValidacion;
+                        
+                        // Anti-hallucination guard
+                        if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                            resultMessage = "Error: Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes.";
                         } else {
+                            const errorValidacion = validateBusinessHours(fecha, hora);
+
+                            if (errorValidacion) {
+                                resultMessage = errorValidacion;
+                            } else {
                             const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
                             const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
                             

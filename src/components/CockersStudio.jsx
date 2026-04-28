@@ -582,6 +582,49 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         negativo: ''
     });
 
+    // Video Script Form State (Faceless Video Pipeline)
+    const EMPTY_SCENE = { narration: '', visual: '' };
+    const [videoScript, setVideoScript] = useState({
+        title: '',
+        voice: 'edge:es-MX-JorgeNeural',
+        scenes: [{ ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }]
+    });
+    const [submittingVideo, setSubmittingVideo] = useState(false);
+    const [videoQueueMsg, setVideoQueueMsg] = useState(null);
+
+    const updateVideoScene = (idx, field, val) => {
+        setVideoScript(prev => {
+            const next = [...prev.scenes];
+            next[idx] = { ...next[idx], [field]: val };
+            return { ...prev, scenes: next };
+        });
+    };
+
+    const submitVideoScript = async () => {
+        if (!videoScript.title.trim()) return alert('Pon un título al video primero.');
+        const hasContent = videoScript.scenes.some(s => s.narration.trim() || s.visual.trim());
+        if (!hasContent) return alert('Llena al menos una escena con narración o descripción visual.');
+        setSubmittingVideo(true);
+        setVideoQueueMsg(null);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch('/api/studio/create-video-script', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(videoScript)
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
+            setVideoQueueMsg(data.message);
+            // Reset form
+            setVideoScript(v => ({ ...v, title: '', scenes: Array(5).fill(null).map(() => ({ ...EMPTY_SCENE })) }));
+        } catch(e) {
+            alert(`Error al encolar video: ${e.message}`);
+        } finally {
+            setSubmittingVideo(false);
+        }
+    };
+
     const [elitePrompts, setElitePrompts] = useState([
         "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight...",
         "Extreme macro close-up of a glowing glowing server rack cable snapping, sparks flying in explosive super slow motion..."
@@ -827,7 +870,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
         const enginesToRun = genMode === 'video'
             ? ['Veo 3 (Toma 1)', 'Veo 3 (Toma 2)', 'Veo 3 (Toma 3)', 'Veo 3 Fast']
-            : ['Imagen 4 Ultra', 'Imagen 4 Pro', 'Gemini 3.1 Flash Image', 'Gemini 3 Pro'];
+            : ['FLUX.1 Pro', 'FLUX Realism', 'SDXL Turbo', 'Anime/Dark'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -871,18 +914,18 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 
                 // --- FALLBACK CASCADE ---
                 const runFallback = async (slotIdx, eName) => {
-                    let fbName = 'FLUX.1'; let fbModel = 'flux';
+                    let fbName = eName;
+                    let fbModel = 'flux';
                     let injectedStyle = '';
-                    if (eName === 'Imagen 4 Pro') { 
-                        fbName = 'FLUX Realism'; fbModel = 'flux-realism';
+                    
+                    if (eName === 'FLUX Realism') { 
+                        fbModel = 'flux-realism';
                         injectedStyle = ', ultra-realistic photography, 8k resolution, highly detailed, 85mm lens, photorealistic';
-                    }
-                    if (eName === 'Gemini 3.1 Flash Image') { 
-                        fbName = 'SDXL Turbo'; fbModel = 'turbo';
+                    } else if (eName === 'SDXL Turbo') { 
+                        fbModel = 'turbo';
                         injectedStyle = ', vibrant vivid colors, digital art, highly creative, dramatic lighting, masterpiece';
-                    }
-                    if (eName === 'Gemini 3 Pro') { 
-                        fbName = 'Anime/Dark'; fbModel = 'any-dark';
+                    } else if (eName === 'Anime/Dark') { 
+                        fbModel = 'any-dark';
                         injectedStyle = ', dark fantasy style, gloomy, studio ghibli 2d illustration, cinematic dark lighting';
                     }
 
@@ -909,12 +952,18 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     }
                 };
 
+                if (!isVideoMode) {
+                    // Bypass Primary API completely para imágenes
+                    await runFallback(idx, engineName);
+                    continue;
+                }
+
                 try {
-                    // Try Primary Engine (Google or Veo)
+                    // Try Primary Engine (Solo para Video)
                     const resFetch = await fetch('/api/studio/generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ prompt: promptAmentado, mode: isVideoMode ? 'video' : 'imagen', engine: engineName, config: { ...builderData, refImage } })
+                        body: JSON.stringify({ prompt: promptAmentado, mode: 'video', engine: engineName, config: { ...builderData, refImage } })
                     });
                     const data = await resFetch.json();
                     
@@ -930,12 +979,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         throw new Error("Respuesta inválida del servidor");
                     }
                 } catch(e) {
-                    if (isVideoMode) {
-                        updateSlot(idx, { status: 'failed', progress: 100 });
-                    } else {
-                        // Cascade to Free Open Source Models
-                        await runFallback(idx, engineName);
-                    }
+                    updateSlot(idx, { status: 'failed', progress: 100 });
                 }
             }
 
@@ -1642,8 +1686,182 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     );
                 })()}
 
-                {/* ── PROGRESSIVE LIVE SLOTS ── Aparece en cuanto se da clic en Generar */}
-                {liveSlots.length > 0 && (
+                {/* ── VIDEO SCRIPT FORM (Modo Faceless) ── Se muestra en lugar de los Live Slots cuando está en modo video */}
+                {genMode === 'video' ? (
+                    <div className="absolute inset-0 overflow-auto custom-scrollbar pt-24 pb-10 px-6">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="mb-6">
+                                <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em]">Pipeline Autónomo</p>
+                                <h2 className="text-xl font-black text-white flex items-center gap-3">
+                                    🎬 Nuevo Video Faceless
+                                </h2>
+                                <p className="text-[11px] text-neutral-500 mt-1">Llena las 5 escenas. El MediaWorker las ensambla con voz + imágenes automáticamente.</p>
+                            </div>
+
+                            {videoQueueMsg && (
+                                <div className="mb-6 bg-emerald-900/30 border border-emerald-500/40 rounded-2xl p-4 flex items-center gap-3">
+                                    <span className="text-2xl">✅</span>
+                                    <div>
+                                        <p className="text-emerald-400 font-black text-sm">Video Encolado</p>
+                                        <p className="text-emerald-300/70 text-xs mt-0.5">{videoQueueMsg}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Título y Voz */}
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block mb-1.5">ícono + Título del Video</label>
+                                    <input
+                                        value={videoScript.title}
+                                        onChange={e => setVideoScript(v => ({ ...v, title: e.target.value }))}
+                                        placeholder="Ej: Los Misterios de GTA San Andreas"
+                                        className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#CC0000] transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block mb-1.5">🎙️ Voz del Narrador</label>
+                                    <select
+                                        value={videoScript.voice}
+                                        onChange={e => setVideoScript(v => ({ ...v, voice: e.target.value }))}
+                                        className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#CC0000] transition-colors"
+                                    >
+                                        <optgroup label="🆓 Edge TTS — Gratis & Sin Límite">
+                                            <option value="edge:es-MX-JorgeNeural">🇲🇽 Jorge MX — Narrador épico (⭐ Más popular)</option>
+                                            <option value="edge:es-MX-DaliaNeural">🇲🇽 Dalia MX — Femenina viral TikTok</option>
+                                            <option value="edge:es-ES-AlvaroNeural">🇪🇸 Álvaro ES — Castellano dinámico</option>
+                                            <option value="edge:es-ES-ElviraNeural">🇪🇸 Elvira ES — Documentales Spain</option>
+                                            <option value="edge:es-CO-GonzaloNeural">🇨🇴 Gonzalo CO — Podcast suave</option>
+                                            <option value="edge:es-AR-TomasNeural">🇦🇷 Tomás AR — Neutro Argentina</option>
+                                            <option value="edge:es-CL-LorenzoNeural">🇨🇱 Lorenzo CL — Chile</option>
+                                            <option value="edge:es-VE-SebastianNeural">🇻🇪 Sebastián VE — Energético</option>
+                                            <option value="edge:en-US-ChristopherNeural">🇺🇸 Christopher US — Grave autoritario</option>
+                                            <option value="edge:en-US-SteffanNeural">🇺🇸 Steffan US — Voz viral TikTok original</option>
+                                            <option value="edge:en-US-DavisNeural">🇺🇸 Davis US — Dramático crimen/misterios</option>
+                                            <option value="edge:en-US-JennyNeural">🇺🇸 Jenny US — Femenina estilo Siri</option>
+                                            <option value="edge:en-GB-RyanNeural">🇬🇧 Ryan GB — Acento BBC premium</option>
+                                            <option value="edge:en-AU-WilliamNeural">🇦🇺 William AU — Narrador australiano</option>
+                                        </optgroup>
+                                        <optgroup label="🎭 FakeYou — Celebridades & Personajes Virales (Gratis)">
+                                            <option value="fakeyou:adal-ramones">🎤 Adal Ramones (Español)</option>
+                                            <option value="fakeyou:alucard-latino">🧛 Alucard — Hellsing (Latino)</option>
+                                            <option value="fakeyou:ballas-gta">🎮 Pandillero Ballas — GTA San Andreas</option>
+                                            <option value="fakeyou:spongebob">🧽 Bob Esponja (EN)</option>
+                                            <option value="fakeyou:andrew-tate">💪 Andrew Tate (EN)</option>
+                                            <option value="fakeyou:alan-watts">🧘 Alan Watts — Narrador filosófico (EN)</option>
+                                            <option value="fakeyou:morgan-freeman">🎬 Morgan Freeman (EN) — búsqueda dinámica</option>
+                                            <option value="fakeyou:darth-vader">⚔️ Darth Vader (EN) — búsqueda dinámica</option>
+                                            <option value="fakeyou:david-attenborough">🌿 David Attenborough (EN) — documentales</option>
+                                        </optgroup>
+                                        <optgroup label="⚡ Piper TTS — Local Open Source (Sin Internet)">
+                                            <option value="piper:es_MX-ald-medium">🇲🇽 ALD MX (Masculino Medio) - Ultra rápido</option>
+                                            <option value="piper:es_ES-sharvard-medium">🇪🇸 Sharvard ES (Masculino)</option>
+                                            <option value="piper:es_ES-carlfm-x_low">🇪🇸 CarlFM ES (Masculino Grave)</option>
+                                        </optgroup>
+                                        <optgroup label="🎭 Bark (Suno) — Nube HF (Alta Expresividad)">
+                                            <option value="bark:v2/es_speaker_0">🇪🇸 Bark Speaker 0 (Español)</option>
+                                            <option value="bark:v2/es_speaker_1">🇪🇸 Bark Speaker 1 (Español)</option>
+                                            <option value="bark:v2/es_speaker_2">🇪🇸 Bark Speaker 2 (Español)</option>
+                                            <option value="bark:v2/es_speaker_9">🇪🇸 Bark Speaker 9 (Español Emocional)</option>
+                                        </optgroup>
+                                        <optgroup label="🧬 XTTS-v2 (Coqui) — Nube HF (Clonación)">
+                                            <option value="xtts:clone">🗣️ Clonar Voz desde Audio</option>
+                                            <option value="xtts:default">🗣️ Clonar Voz Base (Default)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                
+                                {videoScript.voice.startsWith('xtts:') && (
+                                    <div className="col-span-2 bg-[#CC0000]/10 border border-[#CC0000]/30 rounded-xl p-4 mt-2">
+                                        <label className="text-[9px] font-black text-white uppercase tracking-widest block mb-2 flex items-center gap-2">
+                                            <span>🎙️</span> Audio de Referencia (Para clonar)
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input 
+                                                type="file" 
+                                                accept="audio/*" 
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setVideoScript(v => ({ ...v, referenceAudio: reader.result }));
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    } else {
+                                                        setVideoScript(v => ({ ...v, referenceAudio: null }));
+                                                    }
+                                                }}
+                                                className="text-xs text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#CC0000] file:text-white hover:file:bg-red-700 transition-colors cursor-pointer"
+                                            />
+                                            {videoScript.referenceAudio && (
+                                                <span className="text-xs text-emerald-400 font-bold bg-emerald-900/40 px-3 py-1 rounded-full">✅ Audio cargado en memoria</span>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] text-neutral-500 mt-2">Sube un audio de 5 a 10 segundos donde la persona hable claro y sin ruido de fondo.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 5 Escenas */}
+                            <div className="space-y-4">
+                                {videoScript.scenes.map((scene, i) => (
+                                    <div key={i} className="bg-[#111]/60 border border-white/5 rounded-2xl p-5 hover:border-[#CC0000]/20 transition-colors">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${
+                                                i === videoScript.scenes.length - 1
+                                                    ? 'bg-[#CC0000] text-white'
+                                                    : 'bg-neutral-800 text-neutral-400'
+                                            }`}>{i + 1}</div>
+                                            <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                                                {i === videoScript.scenes.length - 1 ? 'Escena Final (CTA / Llamada a la Acción)' : `Escena ${i + 1}`}
+                                            </p>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[9px] font-black text-[#00F0FF]/70 uppercase tracking-widest block mb-1.5">🎙️ Narración (Lo que dice la voz)</label>
+                                                <textarea
+                                                    value={scene.narration}
+                                                    onChange={e => updateVideoScene(i, 'narration', e.target.value)}
+                                                    placeholder={i === 0 ? "Ej: En 1992, un misterioso evento sacudió San Andreas..." : `Narración de la escena ${i + 1}...`}
+                                                    rows={4}
+                                                    className="w-full bg-[#0a0a0a] border border-[#00F0FF]/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#00F0FF]/50 transition-colors placeholder-neutral-700 resize-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-black text-violet-400/70 uppercase tracking-widest block mb-1.5">🖼️ Descripción Visual (Imagen IA)</label>
+                                                <textarea
+                                                    value={scene.visual}
+                                                    onChange={e => updateVideoScene(i, 'visual', e.target.value)}
+                                                    placeholder={i === 0 ? "Ej: GTA San Andreas dark night gameplay, CJ running cinematic 9:16" : `Qué imagen mostrar en la escena ${i + 1}...`}
+                                                    rows={4}
+                                                    className="w-full bg-[#0a0a0a] border border-violet-500/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500/50 transition-colors placeholder-neutral-700 resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Botón Submit */}
+                            <button
+                                onClick={submitVideoScript}
+                                disabled={submittingVideo}
+                                className="w-full mt-8 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-red-500 hover:to-[#CC0000] disabled:opacity-50 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(204,0,0,0.4)] hover:shadow-[0_0_40px_rgba(204,0,0,0.6)] transition-all flex items-center justify-center gap-3 text-sm"
+                            >
+                                {submittingVideo ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Encolando...</>
+                                ) : (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+                                        Generar Video Autónomo (5 Escenas)
+                                    </>
+                                )}
+                            </button>
+                            <p className="text-center text-[10px] text-neutral-600 mt-3">El video se ensambla en ~2 min usando EdgeTTS + FLUX.1 → FFmpeg</p>
+                        </div>
+                    </div>
+                ) : liveSlots.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1844,8 +2062,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     </motion.div>
                 )}
 
-                {/* Si no hay liveSlots ni generación, mostramos el Explore Gallery */}
-                {!renderingAI && liveSlots.length === 0 && (
+                {/* Si no hay liveSlots ni generación, mostramos el Explore Gallery (solo en modo imagen) */}
+                {!renderingAI && liveSlots.length === 0 && genMode !== 'video' && (
 
                     <div 
                         key={genMode}

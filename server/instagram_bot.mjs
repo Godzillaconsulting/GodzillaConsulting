@@ -99,15 +99,22 @@ async function processAndReply(userId, text, ig, replyFn) {
                 let fRes = {};
                 if (call.name === 'check_availability') {
                     const { fecha, hora } = call.args;
-                    const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
-                    fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };
+                    } else {
+                        const r = await pool.query("SELECT COUNT(*) FROM citas WHERE fecha=$1 AND hora=$2 AND status!='cancelada'", [fecha, hora]);
+                        fRes = { disponible: parseInt(r.rows[0].count) === 0 };
+                    }
                 } else if (call.name === 'save_appointment') {
                     const { nombre, correo, telefono, servicio, fecha, hora, notas } = call.args;
-                    try {
-                        const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
-                        if (dup.rows.length > 0) {
-                            fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada' };
-                        } else {
+                    if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes." };
+                    } else {
+                        try {
+                            const dup = await pool.query("SELECT id FROM citas WHERE email=$1 AND fecha=$2 AND hora=$3 AND status='confirmada'", [correo, fecha, hora]);
+                            if (dup.rows.length > 0) {
+                                fRes = { success: true, id: dup.rows[0].id, message: 'Cita ya registrada' };
+                            } else {
                             const googleRes = await agendarEnGoogleCalendar({ nombre, correo, telefono, servicio, fecha, hora, notas });
                             if (googleRes?.id) {
                                 const r = await pool.query(

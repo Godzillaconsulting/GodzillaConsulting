@@ -32,6 +32,7 @@ export default function ITStudioPanel({ adminProfile, activeTabInitial = 'db' })
     useEffect(() => {
         let reqTab = 'db';
         if (location.pathname.includes('/admin/it/db')) reqTab = 'db';
+        else if (location.pathname.includes('/admin/it/leads')) reqTab = 'leads';
         else if (location.pathname.includes('/admin/it/ceo')) reqTab = 'ceo';
         else if (location.pathname.includes('/admin/it/maestro')) reqTab = 'maestro';
         else if (location.pathname.includes('/admin/it/sql')) reqTab = 'sql';

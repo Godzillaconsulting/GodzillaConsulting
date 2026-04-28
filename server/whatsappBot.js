@@ -151,7 +151,6 @@ export const initWhatsAppBot = async () => {
             headless: true,
             executablePath: CHROME_PATH,
             args: [
-                '--headless=old',              // Legacy headless: compatible con SYSTEM account en Windows
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-gpu',

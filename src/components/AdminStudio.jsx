@@ -111,6 +111,9 @@ export default function AdminStudio() {
     if (location.pathname.includes('/it')) return 'it_studio';
     if (location.pathname.includes('/ai-planner')) return 'ai-planner';
     if (location.pathname.includes('/automation-flow')) return 'automation-flow';
+    if (location.pathname.includes('/laboratorio/estudio')) return 'social_studio';
+    if (location.pathname.includes('/laboratorio/flujo')) return 'automation-flow';
+    if (location.pathname.includes('/laboratorio/planificador')) return 'ai-planner';
     return 'editor';
   }, [location.pathname]);
 
@@ -684,21 +687,13 @@ export default function AdminStudio() {
    <span className="text-xs mr-2 drop-shadow-sm">💎</span> Landing / Socios VIP
    </button>
   
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/studio'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ activeSection ==='social_studio' ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
-   <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Estudio IA
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); }}
+   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ ['social_studio', 'automation-flow', 'ai-planner'].includes(activeSection) ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
+   <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Laboratorio IA
    </button>
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/video-editor'); setSelectedNodeId(null); }}
    className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='video_editor' ?'bg-gradient-to-r from-blue-800 to-indigo-900 text-white border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.4)]' :'text-neutral-300 border-transparent hover:border-blue-500/40 hover:bg-blue-900/40 hover:text-white' }`}>
    <span className="text-xs mr-2 drop-shadow-sm">🎬</span> Editor Pro
-   </button>
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/automation-flow'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='automation-flow' ?'bg-gradient-to-r from-emerald-800 to-teal-900 text-white border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.4)]' :'text-neutral-300 border-transparent hover:border-emerald-500/40 hover:bg-emerald-900/40 hover:text-white' }`}>
-   <span className="text-xs mr-2 drop-shadow-sm">⚡</span> Flujo Automático
-   </button>
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/ai-planner'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='ai-planner' ?'bg-gradient-to-r from-purple-800 to-fuchsia-900 text-white border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-900/40 hover:text-white' }`}>
-   <span className="text-xs mr-2 drop-shadow-sm">🤖</span> Planificador IA
    </button>
 
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/calendar'); setSelectedNodeId(null); }}
@@ -755,12 +750,43 @@ export default function AdminStudio() {
   <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
   </button>
+  
+  {/* Header Tabs para Laboratorio IA */}
+  {['social_studio', 'automation-flow', 'ai-planner'].includes(activeSection) && !isAnalyticsMode && (
+      <div className="flex items-center gap-2 px-6 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
+          {[
+              { id: 'social_studio', label: '🤖 Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
+              { id: 'automation-flow', label: '⚡ Flujo Automático', path: '/admin/laboratorio/flujo', color: 'text-emerald-400', border: 'border-emerald-500' },
+              { id: 'ai-planner', label: '🤖 Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' }
+          ].map(tab => (
+              <button 
+                  key={tab.id}
+                  onClick={() => navigate(tab.path)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all shadow-sm border ${
+                      activeSection === tab.id 
+                          ? `bg-neutral-900 ${tab.color} ${tab.border}/50 shadow-[0_0_15px_rgba(255,255,255,0.05)]` 
+                          : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800 border-transparent'
+                  }`}
+              >
+                  {tab.label}
+              </button>
+          ))}
+      </div>
+  )}
+
   <div style={{ display: (!isAnalyticsMode && activeSection === 'social_studio') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <CockersStudio adminProfile={adminProfile} forceOpenEditor={false} />
   </div>
   <div style={{ display: (!isAnalyticsMode && activeSection === 'video_editor') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <IntegratedVideoEditor />
   </div>
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'automation-flow') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <AutomationFlow />
+  </div>
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'ai-planner') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <AIContentPlanner adminProfile={adminProfile} />
+  </div>
+
  {isAnalyticsMode ? (
  <AnalyticsDashboard />
  ) : activeSection ==='profile' ? (
@@ -769,14 +795,8 @@ export default function AdminStudio() {
   <NewsletterPanel />
   ) : activeSection ==='social' ? (
       <CMCalendar adminProfile={adminProfile} />
-) : activeSection === 'social_studio' ? (
-      null /* Renderizado persistentemente arriba para evitar pérdida de estado de renders IA */
-) : activeSection === 'video_editor' ? (
-      null /* Renderizado persistentemente arriba para evitar pérdida de estado del editor */
-  ) : activeSection === 'automation-flow' ? (
-      <AutomationFlow />
-  ) : activeSection === 'ai-planner' ? (
-      <AIContentPlanner adminProfile={adminProfile} />
+) : ['social_studio', 'video_editor', 'automation-flow', 'ai-planner'].includes(activeSection) ? (
+      null /* Renderizado persistentemente arriba para evitar pérdida de estado */
   ) : activeSection === 'it_studio' ? (
       <ITStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'bugs' ? (

@@ -15,8 +15,8 @@ module.exports = {
     { name: "trends-bot", script: "./server/trendsBot.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "publisher-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "linkedin-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
-    { name: "twitter-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" }
-    
-    // NOTA: instagram-bot está intencionalmente omitido ("dormido") según instrucciones.
+    { name: "twitter-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "tiktok-bot", script: "./server/tiktok_bypass.js", exec_mode: "fork", max_memory_restart: "512M" },
+    { name: "instagram-bot", script: "./server/instagram_bot.cjs", exec_mode: "fork", max_memory_restart: "512M" }
   ]
 };

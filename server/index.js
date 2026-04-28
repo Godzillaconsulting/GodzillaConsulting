@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { Readable } from 'stream';
 import { fileURLToPath } from 'url';
+import abordajeRoutes from './routes/abordaje.js';
 import leadsRoutes from './routes/leads.js';
 import contactRoutes from './routes/contact.js';
 import mediaRoutes from './routes/media.js';
@@ -191,6 +192,7 @@ app.use(wafMiddleware);
 
 // Montamos el limitador y el router en el path `/api/leads`
 app.use('/api/leads', leadsRoutes);
+app.use('/api/abordaje', abordajeRoutes); // 📋 Formulario de Abordaje (5 pasos)
 app.use('/api/contact', contactRoutes);
 app.use('/api/bugs', bugsRoutes); // IT Bugs Router
 app.use('/api/chat', chatRoutes);

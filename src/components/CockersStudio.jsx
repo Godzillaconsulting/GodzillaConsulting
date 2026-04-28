@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import Masonry from 'react-masonry-css';
@@ -1511,8 +1512,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 </div>
 
                 {/* Modal de Asistente de Guiones / Copywriting (Shared) */}
-                {showScriptGen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                {showScriptGen && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <div className="w-full max-w-2xl h-[70vh] bg-[#111111] border border-[#CC0000]/30 shadow-[0_0_50px_rgba(204,0,0,0.2)] rounded-3xl overflow-hidden flex flex-col relative transform scale-100 transition-all">
                             <div className="bg-[#CC0000]/10 border-b border-red-900/30 p-4 shrink-0 flex justify-between items-center relative">
                                 <div>
@@ -1552,7 +1553,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                             </div>
                         </div>
                     </div>
-                )}
+                , document.body)}
 
             {/* Renderización del VideoEditorModal manejada dentro del canvas derecho */}
 
@@ -1596,8 +1597,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         return false;
                     });
                     
-                    return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    return createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <div className="w-full max-w-4xl max-h-[85vh] bg-[#111111] border border-neutral-800 shadow-2xl rounded-3xl overflow-hidden flex flex-col relative">
                             <div className="bg-[#1a1a1a] border-b border-neutral-800 p-5 flex justify-between items-center">
                                 <div>
@@ -1673,7 +1674,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                             </div>
                         </div>
                     </div>
-                    );
+                    , document.body);
                 })()}
 
                 {/* ── VIDEO SCRIPT FORM (Modo Faceless) ── Se muestra en lugar de los Live Slots cuando está en modo video */}
@@ -2400,7 +2401,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         </button>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
     );
 });

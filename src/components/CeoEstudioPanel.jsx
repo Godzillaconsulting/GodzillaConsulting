@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const STATUS_MAP = {
     pending_cm_approval: { label: '⏳ En Revisión', tab: 'pendientes', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
@@ -405,8 +406,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
             </div>
 
             {/* ── MODAL DE REVISIÓN ── */}
-            {selected && !showPublish && (
-                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+            {selected && !showPublish && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-neutral-900 border border-neutral-700 w-full max-w-5xl h-[88vh] rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_50px_rgba(217,70,239,0.15)]">
 
                         {/* Visualizador */}
@@ -547,11 +548,11 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ── HUD DE PUBLICACIÓN ── */}
-            {showPublish && selected && (
-                <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4">
+            {showPublish && selected && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4">
                     <div className="w-full max-w-4xl flex gap-6 h-[82vh]">
                         {/* Formulario */}
                         <div className="flex-1 bg-neutral-900 border border-neutral-700 rounded-3xl p-6 flex flex-col">
@@ -675,7 +676,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
     );
 }

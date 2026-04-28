@@ -108,38 +108,27 @@ export const initWhatsAppBot = async () => {
     
     // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
 
-    // Forzamos la ruta al usuario correcto para evitar crasheos de EPERM bajo Windows Service (LocalSystem)
-    const sessionPath = path.join('C:\\Users\\GODZILLA.IA', '.godzilla-sessions', 'whatsapp');
+    // ==============================================================================
+    // 🚨 RECORDATORIO PARA FUTUROS AGENTES (ZILLA IA) 🚨
+    // NUNCA, BAJO NINGUNA CIRCUNSTANCIA, BORRES O ALTERES LOS PERMISOS (chmod) DE ESTA SESIÓN.
+    // Aunque el usuario ejecute la "Opción 10" (Limpieza Zombie), NO intentes
+    // meter un "taskkill /F" aquí adentro ni borrar la carpeta `.wwebjs_auth`.
+    // La sesión debe persistir siempre para evitar pedir el QR. Solo reinicia el bot
+    // y deja que recupere su sesión existente. 
+    // ==============================================================================
+    const sessionPath = 'C:\\Users\\GODZILLA.IA\\GodzillaConsulting\\server\\.wwebjs_auth';
     
-    // Rutina de Seguridad: Bloquear lectura externa (chmod 700)
     try {
         if (!fs.existsSync(sessionPath)) {
-            fs.mkdirSync(sessionPath, { recursive: true, mode: 0o700 });
-        } else {
-            fs.chmodSync(sessionPath, 0o700);
+            fs.mkdirSync(sessionPath, { recursive: true });
+            console.log(`[Seguridad] Directorio de sesión creado.`);
         }
-        console.log(`🔒 [Seguridad] Permisos 700 aplicados a la sesión de WhatsApp.`);
     } catch (e) {
-        console.warn(`⚠️ [Seguridad] No se pudieron aplicar permisos 700 a la sesión: ${e.message}`);
+        console.warn(`⚠️ [Seguridad] Error verificando el directorio de sesión: ${e.message}`);
     }
     
-    // 🧹 Limpieza quirúrgica al arrancar: matar solo los Chrome de ESTE bot
-    try {
-        const { execSync: _execSync } = await import('child_process');
-        const out = _execSync('wmic process where "name=\'chrome.exe\'" get ProcessId,CommandLine', { encoding: 'utf-8', windowsHide: true });
-        const lines = out.split('\n');
-        let count = 0;
-        for (const line of lines) {
-            // Buscamos cualquier proceso Chrome que coincida con nuestro perfil de sesión
-            if (line.includes('godzilla-sessions') && line.includes('whatsapp')) {
-                const match = line.match(/\s+(\d+)\s*$/);
-                if (match) {
-                    try { _execSync(`taskkill /F /PID ${match[1]} /T`, { windowsHide: true, stdio: 'ignore' }); count++; } catch(_){}
-                }
-            }
-        }
-        if (count > 0) console.log(`[WhatsApp] 🧹 ${count} Chrome zombie(s) del perfil eliminado(s) exitosamente.`);
-    } catch(_) { /* wmic no disponible, omitir */ }
+    // 🧹 Limpieza al arrancar: Evitamos taskkill /F porque corrompe la sesión de LevelDB de Chrome.
+    // Si Chrome quedó colgado, permitimos que el OS maneje los locks o que client.destroy() lo haya limpiado antes.
 
     // Ruta explícita al Chrome del sistema para evitar crasheos cuando el proceso
     // corre como Windows Service (NSSM/SYSTEM) que no tiene acceso al caché de puppeteer.

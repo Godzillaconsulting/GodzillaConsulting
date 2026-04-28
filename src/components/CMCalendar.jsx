@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -1823,8 +1824,8 @@ export default React.memo(function CMCalendar({ adminProfile }) {
             )}
 
             {/* ── MODAL: ASIGNAR TAREA ── */}
-            {showNewAssignModal && canCreate && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            {showNewAssignModal && canCreate && createPortal(
+                <div className="absolute inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-[#0d0d0d] border border-white/[0.06] p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.15)] relative">
                         <button onClick={() => setShowNewAssignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
                         <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">📋</span> Asignar Tarea</h3>
@@ -1902,11 +1903,11 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ── MODAL: NUEVA CAMPAÑA ── */}
-            {showNewCampaignModal && canCreate && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            {showNewCampaignModal && canCreate && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-[#0d0d0d] border border-white/[0.06] p-6 md:p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(204,0,0,0.15)] relative">
                         <button onClick={() => setShowNewCampaignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
                         <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2">
@@ -1979,10 +1980,10 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
             {/* ── MODAL: PUBLICACIÓN (PREVIEW Y ENVIO A REDES) ── */}
-            {showPublishModal && selectedPublishTask && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            {showPublishModal && selectedPublishTask && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                     <div className="bg-[#0a0a0a] border border-[#d4af37]/30 p-0 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(212,175,55,0.15)] relative overflow-hidden">
                         <div className="bg-[#111] p-5 border-b border-neutral-800 flex justify-between items-center shrink-0">
                             <div>
@@ -2082,10 +2083,10 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
             {/* ═══ MODAL: IMPORTAR DESDE GOOGLE SHEETS ═══ */}
-            {showSheetsModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+            {showSheetsModal && createPortal(
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
                     <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_30px_80px_rgba(0,0,0,0.9)]">
                         <div className="flex items-center justify-between p-6 border-b border-white/10">
                             <div>
@@ -2174,7 +2175,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
 
     );

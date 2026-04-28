@@ -115,6 +115,7 @@ export default function AdminStudio() {
     if (location.pathname.includes('/laboratorio/flujo')) return 'automation-flow';
     if (location.pathname.includes('/laboratorio/planificador')) return 'ai-planner';
     if (location.pathname.includes('/laboratorio/calendario')) return 'social';
+    if (location.pathname.includes('/admin/it')) return 'it_studio';
     return 'editor';
   }, [location.pathname]);
 
@@ -844,14 +845,10 @@ export default function AdminStudio() {
  </div>
  ) : (
   <div className="flex flex-col justify-center w-full h-full">
-    {activeSection === 'editor' && !isAnalyticsMode ? (
-      <ITStudioPanel adminProfile={adminProfile} />
-    ) : (
       <div className="flex flex-col items-center justify-center">
         <p className="text-sm font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
         <p className="text-xs text-[#CC0000] font-bold mt-1 tracking-widest uppercase">Studio</p>
       </div>
-    )}
   </div>
  )}
 

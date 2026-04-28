@@ -199,9 +199,8 @@ taskkill /F /IM node.exe /T
 echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
-echo  [4/4] Limpiando sockets de PM2 y sesion corrupta de WhatsApp...
+echo  [4/4] Limpiando sockets de PM2...
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
-rmdir /S /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp" 2>nul
 timeout /t 3 /nobreak >nul
 
 echo.

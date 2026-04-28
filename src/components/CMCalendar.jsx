@@ -16,9 +16,7 @@ const TEAM = ['JareG', 'Oscar', 'Judith', 'Alex'];
 
 // ─── ROLES ────────────────────────────────────────────────────────────────
 const canAssign = (profile) => {
-    if (!profile) return false;
-    const usr = (profile.username || '').toLowerCase();
-    return usr === 'godzilla_admin' || usr === 'judith' || usr === 'oscar' || profile.is_superadmin;
+    return true; // Desbloqueado para todos los usuarios
 };
 
 // ─── PARSEAR MENCIONES para resaltado ─────────────────────────────────────

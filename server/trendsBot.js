@@ -3,7 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import fetch from 'node-fetch';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './config/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 import { GoogleGenAI } from '@google/genai'; // SDK nuevo - soporta responseModalities para imagen
 import pool from '../config/db.js';
 import fs from 'fs';
@@ -535,31 +535,21 @@ export const getInspirationGallery = async (req, res) => {
         Random Seed to ensure total uniqueness this time: ${Date.now()}.
         Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
         
-        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: [{ role: 'user', content: promptInstruction }],
-                model: 'Meta-Llama-3.1-70B-Instruct',
-                temperature: 0.9
-            })
-        });
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: promptInstruction }
+        ], { temperature: 0.9 });
 
-        if (!response.ok) {
-            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
+        if (!aiRes || !aiRes.content) {
+            throw new Error(`Waterfall Error: No content returned`);
         }
 
-        const data = await response.json();
-        let jsonStr = extractJSON(data.choices[0].message.content);
+        let jsonStr = extractJSON(aiRes.content);
         
         let generationList;
         try {
             generationList = JSON.parse(jsonStr.trim());
         } catch(err) {
-            console.error("SambaNova failed standard JSON", err);
+            console.error("Waterfall failed standard JSON", err);
             throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
         }
         
@@ -606,31 +596,21 @@ export const getDynamicFilters = async (req, res) => {
         3. "prompt": hyper-detailed english prompt instructions for the AI engine to apply this visual style. (Focus on lighting, camera lens, color grading, mood, medium format, rendering engine etc). Max 200 characters.
         Return ONLY valid JSON array with 15 objects. Do not include markdown \`\`\` blocks.`;
         
-        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: [{ role: 'user', content: promptInstruction }],
-                model: 'Meta-Llama-3.1-70B-Instruct',
-                temperature: 1.0
-            })
-        });
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: promptInstruction }
+        ], { temperature: 1.0 });
 
-        if (!response.ok) {
-            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
+        if (!aiRes || !aiRes.content) {
+            throw new Error(`Waterfall Error: No content returned`);
         }
 
-        const data = await response.json();
-        let jsonStr = extractJSON(data.choices[0].message.content);
+        let jsonStr = extractJSON(aiRes.content);
         
         let filtersList;
         try {
             filtersList = JSON.parse(jsonStr.trim());
         } catch(err) {
-            console.error("SambaNova failed filters JSON", err);
+            console.error("Waterfall failed filters JSON", err);
             throw new Error("Fallo al generar filtros dinámicos.");
         }
         
@@ -690,25 +670,9 @@ Reglas Estrictas:
         }
         history.push({ role: 'user', content: message });
 
-        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: history,
-                model: 'Meta-Llama-3.1-70B-Instruct',
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`SambaNova Error: ${response.status} ${response.statusText}`);
-        }
+        const aiRes = await executeAiWaterfall(history, { temperature: 0.7 });
         
-        const data = await response.json();
-        let aiResponse = data.choices[0].message.content || "No obtuve respuesta de mis servidores neuronales.";
+        let aiResponse = aiRes.content || "No obtuve respuesta de mis servidores neuronales.";
         
         // Strip out any thinking / thought blocks produced by new reasoning models
         aiResponse = aiResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
@@ -952,13 +916,11 @@ export const generateMonthlyPlan = async (req, res) => {
         let realTimeTrendsText = "";
         try {
             console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
-            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
-            const result = await model.generateContent(trendPrompt);
-            let text = result.response.text();
-            if (text.startsWith('\`\`\`json')) text = text.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
-            else if (text.startsWith('\`\`\`')) text = text.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
+            const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }]);
+            let text = aiRes.content || '';
+            if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/```$/, '');
+            else if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/```$/, '');
             
             const trendsData = JSON.parse(text.trim());
             realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${trendsData.hashtags.join(', ')}\n- Ganchos (Hooks) altamente comprobados: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
@@ -1067,16 +1029,11 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
                 attempts++;
                 try {
                     // Jitter for API Rate Limits (evitar timeouts/rate limits)
-                    const Groq = (await import('groq-sdk')).default;
-                    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-                    const response = await groq.chat.completions.create({
-                        messages: [
-                            { role: 'user', content: batchPrompt }
-                        ],
-                        model: 'llama-3.3-70b-versatile',
-                    });
+                    const aiRes = await executeAiWaterfall([
+                        { role: 'user', content: batchPrompt }
+                    ]);
 
-                    let rawText = extractJSON(response.choices[0]?.message?.content || '');
+                    let rawText = extractJSON(aiRes.content || '');
                     batchData = JSON.parse(rawText);
 
                     if (!batchData.plan || !Array.isArray(batchData.plan)) {

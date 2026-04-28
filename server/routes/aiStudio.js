@@ -186,33 +186,34 @@ router.get('/tasks', authenticateToken, async (req, res) => {
     }
 });
 
-// POST: Cockers o Admin crea/envía una tarea a revisión
-router.post('/tasks', authenticateToken, requireCMOrCockers, async (req, res) => {
+// POST: Cualquier usuario puede crear/enviar una tarea
+router.post('/tasks', authenticateToken, async (req, res) => {
     try {
         const { title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, media_payload } = req.body;
-        const uploader = req.admin?.username || 'unknown';
-        const isSelfPost = uploader.toLowerCase() === 'alex' || req.admin?.role === 'cockers';
+        const uploaderName = req.admin?.username || 'unknown';
+        const uploaderId = req.admin?.id || 'N/A';
+        const createdByStr = `${uploaderName} (ID: ${uploaderId})`;
         
         // Todos los envíos desde el Studio van a revisión (pending_cm_approval)
-        // Alex y Judith pueden aprobar en CEO Estudio, pero el envío es siempre una solicitud de revisión
         const initialStatus = media_payload ? 'pending_cm_approval' : 'draft';
         
         const query = `
-            INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *;
         `;
         
         const values = [
-            title || 'Subida directa por ' + uploader, 
+            title || 'Subida directa por ' + uploaderName, 
             prompt, 
-            assigned_to || uploader, 
+            assigned_to || uploaderName, 
             JSON.stringify(tags || []),
             priority || 'Media',
             content_type || 'Imagen',
             ig_publish_date || null,
             initialStatus,
-            media_payload ? JSON.stringify(media_payload) : null
+            media_payload ? JSON.stringify(media_payload) : null,
+            createdByStr
         ];
 
         const result = await pool.query(query, values);

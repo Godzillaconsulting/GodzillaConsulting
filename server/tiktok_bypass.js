@@ -148,54 +148,50 @@ async function handleAILogic(senderId, messageText) {
                                 } else if (callName === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                        
-                        if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
-                            fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
-                        } else {
-                            const valErr = validateBusinessHours(fecha, hora);
-
-                            if (valErr) {
-                                fRes = { success: false, error: `Error de fecha/hora: ${valErr}` };
+                        try {
+                            if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                                fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
                             } else {
-                            const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
-                            
-                            if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                 fRes = { success: false, error: "Horario recién ocupado." };
-                            } else {
-                                const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
-                                let calendarId = null;
-                                let gRes = null;
-                                
-                                try {
-                                    gRes = await agendarEnGoogleCalendar(datosCita);
-                                    calendarId = gRes.id;
+                                const valErr = validateBusinessHours(fecha, hora);
+                                if (valErr) {
+                                    fRes = { success: false, error: `Error de fecha/hora: ${valErr}` };
+                                } else {
+                                    const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                    const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
                                     
-                                    try {
-                                        const r = await pool.query(
-                                            "INSERT INTO citas (nombre_completo, telefono, email, tipo_sesion, fecha, hora, status, google_calendar_id, origen, notas_adicionales) VALUES ($1,$2,$3,$4,$5,$6,'confirmada',$7,'tiktok',$8) RETURNING id",
-                                            [nombre, telefono, correo || 'sin-correo@tiktok.com', servicio, fecha, hora, calendarId, notas]
-                                        );
-                                        
-                                        if (correo && correo !== 'sin-correo@tiktok.com') {
-                                            await sendCitaConfirmationEmail({
-                                                nombre, email: correo, fecha, hora, tipoSesion: servicio, personalCalendarLink: gRes.personalCalendarLink
-                                            });
+                                    if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                        fRes = { success: false, error: "Horario recién ocupado." };
+                                    } else {
+                                        const datosCita = { nombre, correo, telefono, servicio, fecha, hora, notas };
+                                        let calendarId = null;
+                                        let gRes = null;
+                                        try {
+                                            gRes = await agendarEnGoogleCalendar(datosCita);
+                                            calendarId = gRes.id;
+                                            try {
+                                                const r = await pool.query(
+                                                    "INSERT INTO citas (nombre_completo, telefono, email, tipo_sesion, fecha, hora, status, google_calendar_id, origen, notas_adicionales) VALUES ($1,$2,$3,$4,$5,$6,'confirmada',$7,'tiktok',$8) RETURNING id",
+                                                    [nombre, telefono, correo || 'sin-correo@tiktok.com', servicio, fecha, hora, calendarId, notas]
+                                                );
+                                                if (correo && correo !== 'sin-correo@tiktok.com') {
+                                                    await sendCitaConfirmationEmail({
+                                                        nombre, email: correo, fecha, hora, tipoSesion: servicio, personalCalendarLink: gRes.personalCalendarLink
+                                                    });
+                                                }
+                                                fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB, Calendar y correo enviado." };
+                                            } catch (dbErr) {
+                                                if (calendarId) await cancelarEnGoogleCalendar(calendarId).catch(console.error);
+                                                fRes = { success: false, error: "Hubo un error de base de datos (" + dbErr.message + ")." };
+                                            }
+                                        } catch (calErr) {
+                                            fRes = { success: false, error: "Google Calendar rechazó (" + calErr.message + ")." };
                                         }
-                                        
-                                        fRes = { success: true, id: r.rows[0].id, alert: "Guardado en DB, Calendar y correo enviado." };
-                                    } catch (dbErr) {
-                                        if (calendarId) await cancelarEnGoogleCalendar(calendarId).catch(console.error);
-                                        fRes = { success: false, error: "Hubo un error de base de datos (" + dbErr.message + ")." };
                                     }
-                                } catch (calErr) {
-                                     fRes = { success: false, error: "Google Calendar rechazó (" + calErr.message + ")." };
                                 }
                             }
+                        } catch (e) {
+                            fRes = { success: false, error: "Error de servidor interno." };
                         }
-                    } catch (e) {
-                        fRes = { success: false, error: "Error de servidor interno." };
-                    }
                 } else if (callName === "cancel_appointment") {
                     const { telefono } = callArgs;
                     try {

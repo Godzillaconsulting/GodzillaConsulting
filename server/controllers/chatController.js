@@ -3,15 +3,12 @@ import { GOYI_SYSTEM_PROMPT, goyiChatTools } from '../config/goyi-prompt.js';
 import pool from '../config/db.js';
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import Groq from 'groq-sdk';
+import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar } from '../services/calendarService.js';
 import { validateBusinessHours } from '../utils/businessHours.js';
 
 export const processChatMessage = async (req, res) => {
     const { messages, isGoyi, lang } = req.body;
-    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-    if (!apiKey) return res.status(500).json({ error: "API Key missing" });
 
     try {
         let finalGoyiPrompt = GOYI_SYSTEM_PROMPT;
@@ -69,18 +66,18 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        let groqMessages = [{ role: "system", content: systemPrompt }];
+        let waterfallMessages = [{ role: "system", content: systemPrompt }];
         for (const msg of history) {
-            groqMessages.push({
+            waterfallMessages.push({
                 role: msg.role === 'model' ? 'assistant' : 'user',
                 content: msg.parts[0].text
             });
         }
-        groqMessages.push({ role: "user", content: lastMsg });
+        waterfallMessages.push({ role: "user", content: lastMsg });
 
-        let groqTools = undefined;
+        let waterfallTools = undefined;
         if (tools && tools.length > 0) {
-            groqTools = tools.map(t => ({
+            waterfallTools = tools.map(t => ({
                 type: "function",
                 function: {
                     name: t.name,
@@ -90,46 +87,37 @@ export const processChatMessage = async (req, res) => {
             }));
         }
 
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        let chatCompletion = null;
         let responseText = '';
         let functionCalls = [];
 
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                chatCompletion = await groq.chat.completions.create({
-                    messages: groqMessages,
-                    model: "llama-3.3-70b-versatile",
-                    temperature: 0.1,
-                    max_tokens: 1024,
-                    ...(groqTools ? { tools: groqTools, tool_choice: "auto" } : {})
-                });
+        try {
+            const aiRes = await executeAiWaterfall(waterfallMessages, {
+                tools: waterfallTools,
+                temperature: 0.1
+            });
 
-                if (chatCompletion && chatCompletion.choices && chatCompletion.choices.length > 0) {
-                    const responseMessage = chatCompletion.choices[0].message;
-                    responseText = responseMessage.content || '';
-                    
-                    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-                        groqMessages.push(responseMessage);
-                        functionCalls = responseMessage.tool_calls.map(tc => {
-                            let parsedArgs = {};
-                            try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
-                            return {
-                                name: tc.function.name,
-                                args: parsedArgs,
-                                id: tc.id
-                            };
-                        });
-                    }
-                }
-                break;
-            } catch (error) {
-                if (error.status === 429 && attempt < 3) {
-                    await new Promise(r => setTimeout(r, 4000 * attempt));
-                    continue;
-                }
-                throw error;
+            responseText = aiRes.content || '';
+            
+            if (aiRes.tool_calls && aiRes.tool_calls.length > 0) {
+                // Agregar el call original al historial para que Llama/OpenAI no se queje
+                waterfallMessages.push({
+                    role: 'assistant',
+                    content: aiRes.content || '',
+                    tool_calls: aiRes.tool_calls
+                });
+                
+                functionCalls = aiRes.tool_calls.map(tc => {
+                    let parsedArgs = {};
+                    try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                    return {
+                        name: tc.function.name,
+                        args: parsedArgs,
+                        id: tc.id
+                    };
+                });
             }
+        } catch (error) {
+             throw error;
         }
 
         if (functionCalls.length > 0) {
@@ -208,7 +196,7 @@ export const processChatMessage = async (req, res) => {
                     }
                 } catch(e) { resultMessage = "Error interno ejecutando la herramienta: " + e.message; }
 
-                groqMessages.push({
+                waterfallMessages.push({
                     role: "tool",
                     tool_call_id: toolCall.id,
                     name: name,
@@ -217,18 +205,15 @@ export const processChatMessage = async (req, res) => {
             }
 
             try {
-                const chatCompletion2 = await groq.chat.completions.create({
-                    messages: groqMessages,
-                    model: "llama-3.3-70b-versatile",
-                    temperature: 0.1,
-                    max_tokens: 1024
+                const aiRes2 = await executeAiWaterfall(waterfallMessages, {
+                    temperature: 0.1
                 });
                 
-                if (chatCompletion2 && chatCompletion2.choices && chatCompletion2.choices.length > 0) {
-                    responseText = chatCompletion2.choices[0].message.content || responseText;
+                if (aiRes2 && aiRes2.content) {
+                    responseText = aiRes2.content;
                 }
             } catch(e) {
-                console.error("Error en segunda llamada Groq (chatController):", e.message);
+                console.error("Error en segunda llamada de Cascada (chatController):", e.message);
             }
         }
 

@@ -738,11 +738,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     visual_prompt: t.prompt,
                     media_options: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || [])
                 }));
-                if (mapped.length === 0) {
-                    setQueue([{ id: 999, status: 'cockers_review', scheduled_for: '2026-04-05T10:00:00Z', caption: '🚀 El boca a boca no te va a pagar la nómina...', visual_prompt: 'Cinematic 35mm wide shot, modern corporate office...', media_options: [] }]);
-                } else {
-                    setQueue(mapped);
-                }
+                setQueue(mapped);
             }
         } catch (e) {
             console.error('Error', e);
@@ -771,13 +767,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         
         try {
             const token = localStorage.getItem('adminToken');
-            if (selectedDraft.id === 999) {
-                // Modo prototipo
-                alert(`✅ Acción simulada: Contenido marcado como ${newStatus}.`);
-                setQueue(q => q.filter(p => p.id !== selectedDraft.id));
-                setSelectedDraft(null);
-                return;
-            }
+
 
             const res = await fetch(`${'' || ''}/api/studio/tasks/${selectedDraft.id}`, {
                 method: 'PUT',
@@ -810,7 +800,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         const token = localStorage.getItem('adminToken');
         try {
             // Si hay draft ya cargado, solo actualizamos su estado
-            if (selectedDraft && selectedDraft.id && selectedDraft.id !== 999) {
+            if (selectedDraft && selectedDraft.id) {
                 const res = await fetch(`/api/studio/tasks/${selectedDraft.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

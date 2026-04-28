@@ -7,8 +7,11 @@ import fetch from 'node-fetch'; // O usar fetch nativo si es Node 18+
  * Diseñado para integrarse como "Nodo de Acción" en el Godzilla Automation Engine.
  * 
  * Nivel 1: Groq (Llama 3 70B) - Ultra rápido, soporta tools.
- * Nivel 2: Gemini 2.5 - Fallback corporativo.
- * Nivel 3: Pollinations (Mistral) - Supervivencia Open Source.
+ * Nivel 2: Cerebras (Llama 3.3 70B)
+ * Nivel 3: SambaNova (Meta-Llama-3.1-70B-Instruct)
+ * Nivel 4: Gemini 2.5 - Suspendido temporalmente.
+ * Nivel 5: Ollama (Open Source Local)
+ * Nivel 6: Pollinations (Mistral) - Supervivencia Open Source.
  */
 export async function executeAiWaterfall(messages, options = {}) {
     const { 
@@ -103,7 +106,44 @@ export async function executeAiWaterfall(messages, options = {}) {
     }
 
     // ==========================================
-    // NIVEL 3: OLLAMA (OPEN SOURCE LOCAL)
+    // NIVEL 3: SAMBANOVA (LLAMA 3.1 70B)
+    // ==========================================
+    try {
+        if (process.env.SAMBANOVA_API_KEY) {
+            console.log(`[WATERFALL] ➡️ Intentando Nivel 3: SAMBANOVA`);
+            const reqData = {
+                messages: messages,
+                model: "Meta-Llama-3.1-70B-Instruct",
+                temperature: temperature
+            };
+
+            const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reqData)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const responseMessage = data.choices[0]?.message;
+                console.log(`[WATERFALL] ✅ Éxito con SambaNova.`);
+                return {
+                    content: responseMessage.content || "",
+                    tool_calls: responseMessage.tool_calls || []
+                };
+            } else {
+                console.error(`[WATERFALL] SambaNova devolvió HTTP ${response.status}`);
+            }
+        }
+    } catch (e) {
+        console.error(`[WATERFALL] ❌ Nivel 3 (SambaNova) falló:`, e.message);
+    }
+
+    // ==========================================
+    // NIVEL 4: OLLAMA (OPEN SOURCE LOCAL)
     // ==========================================
     try {
         console.log(`[WATERFALL] ➡️ Intentando Nivel 3: OLLAMA LOCAL`);
@@ -140,7 +180,7 @@ export async function executeAiWaterfall(messages, options = {}) {
     }
 
     // ==========================================
-    // NIVEL 4: GEMINI
+    // NIVEL 5: GEMINI (ACTUALMENTE SUSPENDIDO, PERO EN CASCADA POR SI ACASO)
     // ==========================================
     try {
         if (process.env.GEMINI_API_KEY) {
@@ -164,7 +204,7 @@ export async function executeAiWaterfall(messages, options = {}) {
     }
 
     // ==========================================
-    // NIVEL 5: POLLINATIONS (OPEN SOURCE)
+    // NIVEL 6: POLLINATIONS (OPEN SOURCE)
     // ==========================================
     try {
         console.log(`[WATERFALL] ➡️ Intentando Nivel 5: POLLINATIONS (Open Source Mistral)`);

@@ -28,14 +28,13 @@ export async function generarGuionDelDia(tema) {
     `;
 
     try {
-        const guionModel = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro",
-            systemInstruction: promptDelSistema,
-            generationConfig: { responseMimeType: "application/json" }
-        });
+        const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
+        const aiRes = await executeAiWaterfall([
+            { role: 'system', content: promptDelSistema },
+            { role: 'user', content: `Genera el contenido para el tema: ${tema}` }
+        ]);
         
-        const result = await guionModel.generateContent(`Genera el contenido para el tema: ${tema}`);
-        let text = result.response.text();
+        let text = aiRes.content || '';
         
         // Anti-errores: Borrar código residual de markdown si la IA es testaruda
         text = text.replace(/```json/gi, '').replace(/```/g, '').trim();

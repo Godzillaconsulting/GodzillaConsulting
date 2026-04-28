@@ -134,6 +134,7 @@ export default function AdminStudio() {
  const [showPublishModal, setShowPublishModal] = useState(false);
  const [showTrendsModal, setShowTrendsModal] = useState(false);
  const [trendsData, setTrendsData] = useState(null);
+ const [trendsSearchQuery, setTrendsSearchQuery] = useState('');
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
@@ -456,6 +457,31 @@ export default function AdminStudio() {
     }
   };
 
+  const handleDeepSearch = async () => {
+    if (!trendsSearchQuery.trim()) return;
+    setShowTrendsModal(true);
+    setTrendsData(null);
+    try {
+        const token = localStorage.getItem('adminToken');
+        const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+        const res = await fetch(`${API}/api/trends?network=General&filter=${encodeURIComponent(trendsSearchQuery)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+            const formatted = `## Análisis de IA: ${data.data.niche}\n\n### 📈 Ganchos Virales Sugeridos\n` + 
+                data.data.hooks.map(h => `- ${h}`).join('\n') + 
+                `\n\n### 🏷️ Hashtags Optimizados\n**` + 
+                data.data.hashtags.join(' ') + `**`;
+            setTrendsData(formatted);
+        } else {
+            setTrendsData('No se lograron extraer tendencias analíticas para esta búsqueda.');
+        }
+    } catch (e) {
+        setTrendsData('Error al contactar con el motor de IA Trends.');
+    }
+  };
+
  return (
  <div 
    className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative"
@@ -493,11 +519,11 @@ export default function AdminStudio() {
            <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">Busca oportunidades de contenido o revisa el catálogo global extraído por Godzilla Trends Bot.</p>
            
            <div className="flex flex-col gap-3 mb-4">
-               <input type="text" placeholder="Buscar tema (ej. SaaS)..." className="w-full bg-black/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors" />
-               <button onClick={() => alert('Buscando tema en la IA... (En desarrollo)')} className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                   Buscar Tema
-               </button>
+                <input value={trendsSearchQuery} onChange={e => setTrendsSearchQuery(e.target.value)} type="text" placeholder="Buscar tema (ej. SaaS)..." className="w-full bg-black/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors" />
+                <button onClick={handleDeepSearch} className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    Buscar Tema
+                </button>
            </div>
            
            <div className="border-t border-white/10 pt-4">
@@ -545,12 +571,14 @@ export default function AdminStudio() {
             </h3>
             <div className="flex gap-2 mb-2">
                 <input 
+                    value={trendsSearchQuery}
+                    onChange={e => setTrendsSearchQuery(e.target.value)}
                     type="text" 
                     placeholder="Buscar tema (ej. automatización, marketing)..." 
                     className="flex-1 bg-black/50 border border-orange-500/30 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors placeholder:text-neutral-600"
                 />
                 <button 
-                    onClick={() => { alert('Iniciando búsqueda profunda B2B... (Funcionalidad en desarrollo)'); }}
+                    onClick={handleDeepSearch}
                     className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm transition-colors shadow-[0_0_10px_rgba(249,115,22,0.4)]"
                 >
                     Buscar Tema

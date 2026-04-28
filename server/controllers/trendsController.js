@@ -1,16 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
 export const getTrends = async (req, res) => {
     const { network = 'General', filter = 'B2B Tech' } = req.query;
     
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY no configurada en el servidor. Activando Fallback.');
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `Actúa como un experto Director de Marketing Analítico.
 Necesitamos los Hashtags y Hooks (ganchos de video/copy) más en tendencia HOY MISMO para la red social: "${network}", dentro del nicho: "${filter}".
@@ -27,14 +20,17 @@ Asegúrate de basarte en el ecosistema real de hoy. Eres una API, devuelve ÚNIC
   ]
 }`;
 
-        const result = await model.generateContent(prompt);
-        let responseText = result.response.text();
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: prompt }
+        ]);
+
+        let responseText = aiRes.content || '';
         
         // Limpiar backticks si el modelo los retorna
-        if (responseText.startsWith('\`\`\`json')) {
-            responseText = responseText.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
-        } else if (responseText.startsWith('\`\`\`')) {
-            responseText = responseText.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
+        if (responseText.startsWith('```json')) {
+            responseText = responseText.replace(/```json\n?/, '').replace(/```$/, '');
+        } else if (responseText.startsWith('```')) {
+            responseText = responseText.replace(/```\n?/, '').replace(/```$/, '');
         }
         
         const data = JSON.parse(responseText.trim());

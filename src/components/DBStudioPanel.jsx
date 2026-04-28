@@ -13,7 +13,7 @@ export default function DBStudioPanel({ adminProfile }) {
     const token = localStorage.getItem('adminToken');
     const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 
-    const isJareg = adminProfile?.username?.toLowerCase() === 'jareg';
+    const isJareg = ['jareg', 'godzilla_admin'].includes(adminProfile?.username?.toLowerCase());
 
     // Cargar lista de tablas al inicio
     useEffect(() => {

@@ -153,6 +153,7 @@ export const initWhatsAppBot = async () => {
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
+                '--disable-blink-features=AutomationControlled',
                 '--disable-gpu',
                 '--disable-gpu-sandbox',       // Requerido bajo SYSTEM (sin sesión de escritorio)
                 '--disable-software-rasterizer',

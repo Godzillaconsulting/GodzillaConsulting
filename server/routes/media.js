@@ -8,8 +8,7 @@ import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
-// ─── Directorio Temporal (Solo para recibir unida de multer) ───────────────
-const TEMP_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(os.tmpdir(), 'godzilla-uploads');
+const TEMP_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'server', 'tmp-uploads');
 try { if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true }); } catch {}
 
 // ─── Directorio Constante para Archivos Pesados (Bypass Vercel) ───────────

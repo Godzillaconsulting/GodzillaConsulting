@@ -588,7 +588,7 @@ export default function AdminStudio() {
   )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
- <div className={`relative z-10 transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[200px] min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
+ <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#050505] md:bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[240px] md:w-[200px] min-w-[240px] md:min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
   <div className="flex items-center gap-2.5">
   <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer hover:scale-110 transition-transform">
@@ -693,12 +693,10 @@ export default function AdminStudio() {
    <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Laboratorio IA
    </button>
 
-   {canSeeITStudio && (
-       <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); }}
-       className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='it_studio' ?'bg-neutral-900 text-purple-400 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-500/5 hover:text-white' }`}>
-       <span className="text-xs mr-2 drop-shadow-sm">⚙️</span> Centro Técnico IT
-       </button>
-   )}
+   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='it_studio' ?'bg-neutral-900 text-purple-400 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-500/5 hover:text-white' }`}>
+   <span className="text-xs mr-2 drop-shadow-sm">⚙️</span> Centro Técnico IT
+   </button>
    
    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>

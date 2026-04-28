@@ -40,9 +40,11 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
     const username  = adminProfile?.username?.toLowerCase() || '';
     const isCockers = adminProfile?.role === 'cockers' || username === 'alex' || username === 'cockers';
-    // Alex puede aprobar y publicar; Judith también. Ambos ven CEO Estudio.
-    const canReview  = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
-    const canPublish = isCockers || ['judith', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    
+    // Solo Judith, Oscar, Alex y Godzilla_admin pueden modificar/publicar
+    const canReview  = ['judith', 'oscar', 'alex', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    const canPublish = ['judith', 'oscar', 'alex', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    
     // Alex debe dejar nota al APROBAR; Judith no
     const approveNeedsReason = isCockers;
 

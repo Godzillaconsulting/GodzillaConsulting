@@ -129,6 +129,18 @@ export const chatTools = [
             type: "object",
             properties: {}
         }
+    },
+    {
+        name: "actualizar_perfil_usuario",
+        description: "Actualiza la memoria a largo plazo del usuario guardando su personalidad, nicho o intereses relevantes que haya mencionado.",
+        parameters: {
+            type: "object",
+            properties: {
+                personalidad: { type: "string", description: "Rasgos de personalidad del usuario (ej: 'prefiere respuestas cortas', 'muy formal')" },
+                intereses: { type: "string", description: "El nicho o los intereses del usuario (ej: 'tiene una inmobiliaria', 'busca SEO')" }
+            },
+            required: ["personalidad", "intereses"]
+        }
     }
 ];
 

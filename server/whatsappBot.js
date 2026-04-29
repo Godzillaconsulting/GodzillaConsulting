@@ -57,6 +57,20 @@ async function appendMessageToSession(senderId, role, content, plataforma = 'wha
     return session;
 }
 
+// Helper: Fetch Long Term User Memory
+async function getUserMemory(senderId) {
+    try {
+        const res = await pool.query('SELECT personalidad, intereses FROM user_memory WHERE platform_id = $1', [senderId]);
+        if (res.rows.length > 0) {
+            return res.rows[0];
+        }
+        return null;
+    } catch(e) {
+        console.error('Error fetching user_memory:', e.message);
+        return null;
+    }
+}
+
 // Helper: Compresión con Gemini
 async function compressContextIfNeeded(senderId, historial_mensajes, resumen_contexto) {
     if (!historial_mensajes || historial_mensajes.length < 20) return;
@@ -355,6 +369,13 @@ export const initWhatsAppBot = async () => {
                 finalSystemPrompt += `\n\n## MEMORIA A LARGO PLAZO DEL CLIENTE:\n${resumen_contexto}\n(Usa esta información para no preguntar cosas que ya sabes, pero no la repitas robóticamente).`;
             }
 
+            // --- INYECTAR PERFIL DEL USUARIO (Memoria de Personalidad) ---
+            const userMem = await getUserMemory(senderId);
+            if (userMem && (userMem.personalidad || userMem.intereses)) {
+                finalSystemPrompt += `\n\n## PERFIL DEL USUARIO (MEMORIA INDIVIDUAL):\n- Personalidad/Preferencias: ${userMem.personalidad}\n- Intereses/Nicho: ${userMem.intereses}\n(Adapta tu tono, palabras y ejemplos exactamente a este perfil).`;
+            }
+            // -------------------------------------------------------------
+
             // --- RAG: Inyectar Cerebro LanceDB ---
             try {
                 const vectorMemories = await searchMemories(senderId, messageText, 3);
@@ -440,7 +461,24 @@ export const initWhatsAppBot = async () => {
                     const callName = call.name;
                     let callArgs = call.args || {};
 
-                                        if (callName === "check_availability") {
+                    if (callName === "actualizar_perfil_usuario") {
+                        const { personalidad, intereses } = callArgs;
+                        try {
+                            await pool.query(`
+                                INSERT INTO user_memory (platform_id, personalidad, intereses, ultima_interaccion)
+                                VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+                                ON CONFLICT (platform_id) DO UPDATE SET
+                                    personalidad = EXCLUDED.personalidad,
+                                    intereses = EXCLUDED.intereses,
+                                    ultima_interaccion = CURRENT_TIMESTAMP
+                            `, [senderId, personalidad || '', intereses || '']);
+                            fRes = { success: true, message: "Perfil guardado en memoria permanentemente." };
+                            console.log(`[WA Tool] Perfil actualizado para ${senderId}: ${personalidad} | ${intereses}`);
+                        } catch(err) {
+                            console.error("❌ Error guardando perfil de usuario:", err.message);
+                            fRes = { success: false, error: "Error interno guardando perfil." };
+                        }
+                    } else if (callName === "check_availability") {
                         const { fecha, hora } = callArgs;
                         
                         // Anti-hallucination guard

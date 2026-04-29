@@ -142,11 +142,32 @@ async function getChatHistory(userId) {
     return { history: chatSessions.get(userId), prompt: activePrompt };
 }
 
+// Helper: Fetch Long Term User Memory
+async function getUserMemory(userId) {
+    try {
+        const res = await pool.query("SELECT personalidad, intereses FROM user_memory WHERE platform_id = $1", [userId]);
+        if (res.rows.length > 0) {
+            return res.rows[0];
+        }
+        return null;
+    } catch(e) {
+        console.error('[Instagram] Error fetching user_memory:', e.message);
+        return null;
+    }
+}
+
 // ── Procesar mensaje y responder ──────────────────────────────────────────────
 async function processAndReply(userId, text, replyFn) {
     const sessionData = await getChatHistory(userId);
     const history = sessionData.history;
-    const finalSystemPrompt = sessionData.prompt;
+    let finalSystemPrompt = sessionData.prompt;
+
+    // --- INYECTAR PERFIL DEL USUARIO (Memoria de Personalidad) ---
+    const userMem = await getUserMemory(userId);
+    if (userMem && (userMem.personalidad || userMem.intereses)) {
+        finalSystemPrompt += `\n\n## PERFIL DEL USUARIO (MEMORIA INDIVIDUAL):\n- Personalidad/Preferencias: ${userMem.personalidad}\n- Intereses/Nicho: ${userMem.intereses}\n(Adapta tu tono, palabras y ejemplos exactamente a este perfil).`;
+    }
+    // -------------------------------------------------------------
     try {
         history.push({ role: 'user', parts: [{ text }] });
 
@@ -183,7 +204,24 @@ async function processAndReply(userId, text, replyFn) {
                 const callName = call.name;
                 let callArgs = call.args || {};
 
-                if (callName === 'check_availability') {
+                if (callName === "actualizar_perfil_usuario") {
+                    const { personalidad, intereses } = callArgs;
+                    try {
+                        await pool.query(`
+                            INSERT INTO user_memory (platform_id, personalidad, intereses, ultima_interaccion)
+                            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+                            ON CONFLICT (platform_id) DO UPDATE SET
+                                personalidad = EXCLUDED.personalidad,
+                                intereses = EXCLUDED.intereses,
+                                ultima_interaccion = CURRENT_TIMESTAMP
+                        `, [userId, personalidad || '', intereses || '']);
+                        fRes = { success: true, message: "Perfil guardado en memoria permanentemente." };
+                        console.log(`[Instagram Tool] Perfil actualizado para ${userId}: ${personalidad} | ${intereses}`);
+                    } catch(err) {
+                        console.error("❌ Error guardando perfil de usuario IG:", err.message);
+                        fRes = { success: false, error: "Error interno guardando perfil." };
+                    }
+                } else if (callName === 'check_availability') {
                     const { fecha, hora } = callArgs;
                     if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
                         fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };

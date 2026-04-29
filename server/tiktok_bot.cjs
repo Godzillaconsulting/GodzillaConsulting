@@ -92,6 +92,20 @@ async function getChatHistory(userId) {
     return sessions.get(userId);
 }
 
+// Helper: Fetch Long Term User Memory
+async function getUserMemory(userId) {
+    try {
+        const res = await pool.query("SELECT personalidad, intereses FROM user_memory WHERE platform_id = $1", [userId]);
+        if (res.rows.length > 0) {
+            return res.rows[0];
+        }
+        return null;
+    } catch(e) {
+        console.error('[TikTok] Error fetching user_memory:', e.message);
+        return null;
+    }
+}
+
 // ── TikTok API helpers ───────────────────────────────────────────────────────
 async function ttGet(endpoint, params = {}) {
     const url = new URL(`https://open.tiktokapis.com${endpoint}`);
@@ -145,7 +159,14 @@ async function processComment(comment, videoId) {
         const context = `[Comentario en TikTok de @${comment.username || 'usuario'}]: "${comment.text}"`;
         
         // Obtener el prompt activo (sincronizado con BD)
-        const activePrompt = await getSystemPrompt();
+        let activePrompt = await getSystemPrompt();
+
+        // --- INYECTAR PERFIL DEL USUARIO (Memoria de Personalidad) ---
+        const userMem = await getUserMemory(`tiktok:${comment.username}`);
+        if (userMem && (userMem.personalidad || userMem.intereses)) {
+            activePrompt += `\n\n## PERFIL DEL USUARIO (MEMORIA INDIVIDUAL):\n- Personalidad/Preferencias: ${userMem.personalidad}\n- Intereses/Nicho: ${userMem.intereses}\n(Adapta tu tono, palabras y ejemplos exactamente a este perfil).`;
+        }
+        // -------------------------------------------------------------
 
         // Formatear el historial para Gemini
         const geminiHistory = history.map(msg => ({

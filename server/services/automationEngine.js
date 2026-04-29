@@ -373,35 +373,21 @@ class AutomationEngine {
             if (!prompt) { console.log(`[Engine] ⚠️  Gemini API — sin prompt configurado`); return ctx; }
 
             try {
-                const apiKey = process.env.SAMBANOVA_API_KEY;
-                if (!apiKey) throw new Error('SAMBANOVA_API_KEY no configurada');
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const waterfallRes = await executeAiWaterfall([
+                    { role: 'user', content: prompt }
+                ], { temperature: 0.85 });
                 
                 let result = null;
-                for (let attempt = 1; attempt <= 3 && !result; attempt++) {
-                    await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1500) + 500));
-                    try {
-                        const res = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                messages: [{ role: 'user', content: prompt }],
-                                model: 'Meta-Llama-3.1-70B-Instruct',
-                                temperature: 0.85
-                            })
-                        });
-                        if (!res.ok) {
-                            if (res.status === 429) await new Promise(r => setTimeout(r, 4000 * attempt));
-                            throw new Error('SambaNova ' + res.status);
-                        }
-                        const data  = await res.json();
-                        const raw   = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '[]';
-                        const clean = raw.replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
-                        try { result = JSON.parse(clean); } catch { result = { response: clean }; }
-                    } catch (e) {
-                        console.warn('[Engine] Gemini API intento ' + attempt + '/3: ' + e.message);
-                    }
+                const raw = waterfallRes.content || '[]';
+                const clean = raw.replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
+                
+                try { 
+                    result = JSON.parse(clean); 
+                } catch { 
+                    result = { response: clean }; 
                 }
-                if (!result) throw new Error('SambaNova no respondio tras 3 intentos');
+                
                 return { ...ctx, _geminiResult: result };
             } catch (e) {
                 console.error(`[Engine] ❌ Gemini API error: ${e.message}`);

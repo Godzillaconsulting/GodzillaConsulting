@@ -150,10 +150,14 @@ export const initWhatsAppBot = async () => {
     // Heartbeat global para evitar que Node.js se cierre silenciosamente si falla la inyección de Puppeteer
     setInterval(() => {}, 60000);
 
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const sessionPath = path.join(__dirname, '.wwebjs_auth');
+
     const client = new Client({
-        authStrategy: new LocalAuth(),
+        authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
-            headless: 'old',
+            headless: false,
             executablePath: CHROME_PATH,
             args: [
                 '--no-sandbox',
@@ -677,7 +681,21 @@ export const initWhatsAppBot = async () => {
                 } catch(e) { /* No es JSON válido, es texto normal con llaves */ }
             }
             
-            await client.sendMessage(senderId, botReply);
+            // Resolve @lid to @c.us to ensure delivery
+            let targetId = senderId;
+            if (senderId.includes('@lid')) {
+                try {
+                    const contact = await message.getContact();
+                    if (contact && contact.id && contact.id._serialized) {
+                        targetId = contact.id._serialized;
+                        console.log(`[WA] Resuelto @lid a ID real: ${targetId}`);
+                    }
+                } catch (e) {
+                    console.error("⚠️ No se pudo resolver el @lid:", e.message);
+                }
+            }
+            
+            await client.sendMessage(targetId, botReply);
 
             const postBotSession = await appendMessageToSession(senderId, "model", botReply);
             if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {
@@ -720,9 +738,9 @@ export const initWhatsAppBot = async () => {
             console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
             try {
                 // Forzar limpieza de locks nativos de Puppeteer/Chrome
-                const sessionPath = path.join(process.cwd(), '.wwebjs_auth', 'session');
-                const lockfile = path.join(sessionPath, 'lockfile');
-                const singleton = path.join(sessionPath, 'SingletonLock');
+                const lockSessionPath = path.join(process.cwd(), '.wwebjs_auth', 'session');
+                const lockfile = path.join(lockSessionPath, 'lockfile');
+                const singleton = path.join(lockSessionPath, 'SingletonLock');
                 if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
                 if (fs.existsSync(singleton)) { fs.unlinkSync(singleton); console.log('🗑️ SingletonLock eliminado.'); }
                 console.log('✅ Lockfiles limpiados. PM2 reiniciará el proceso automáticamente.');
@@ -733,14 +751,11 @@ export const initWhatsAppBot = async () => {
             return;
         }
 
-        // Si WhatsApp Web rechaza la inyección o recarga la página, reintentar automáticamente
+        // Si WhatsApp Web rechaza la inyección o recarga la página, es mejor reiniciar el proceso Node completo
         if (err && err.message && (err.message.includes('Target closed') || err.message.includes('detached Frame'))) {
-            console.warn(`⚠️ [RECOVERY] Frame desprendido o navegador cerrado. Reintentando inicialización en 5 segundos...`);
+            console.warn(`⚠️ [RECOVERY] Frame desprendido o navegador cerrado. Forzando reinicio limpio vía PM2...`);
             try { await client.destroy(); } catch(e) {}
-            setTimeout(() => {
-                console.log('🔄 Re-inicializando cliente WhatsApp...');
-                client.initialize();
-            }, 5000);
+            process.exit(1);
             return;
         }
         console.error(`🛑 [ERROR] (${origin}):`, err?.message || err);

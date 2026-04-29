@@ -8,6 +8,8 @@ import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffprobePath from '@ffprobe-installer/ffprobe';
 import fs from 'fs';
 import path from 'path';
+import pkgWave from 'wavefile';
+const { WaveFile } = pkgWave;
 
 // Helper: Formato de tiempo para SRT
 function formatSrtTime(seconds) {
@@ -124,7 +126,7 @@ async function processTask() {
             SET status = 'rendering'
             WHERE id = (
                 SELECT id FROM studio_tasks 
-                WHERE status = 'pending_cm_approval' AND assigned_to = 'auto' 
+                WHERE status = 'pending_cm_approval' AND assigned_to = 'test' 
                 ORDER BY created_at ASC LIMIT 1
             )
             RETURNING *;
@@ -183,10 +185,29 @@ async function processTask() {
                     env.cacheDir = 'E:/Godzilla_Studio_Cache/models';
                     env.backends.onnx.wasm.numThreads = 2;
                     
-                    const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { device: 'wasm', dtype: 'fp32' });
-                    const fileUrl = 'file://' + path.resolve(sceneAudioPath).replace(/\\/g, '/');
-                    const output = await transcriber(fileUrl, { chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word' });
+                    const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { dtype: 'fp32' });
                     
+                    // Extraer WAV a 16kHz usando ffmpeg para Transformers.js
+                    const tempWavPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_temp.wav`);
+                    await new Promise((resolve, reject) => {
+                        ffmpeg(sceneAudioPath)
+                            .outputOptions(['-ar 16000', '-ac 1'])
+                            .save(tempWavPath)
+                            .on('end', resolve)
+                            .on('error', reject);
+                    });
+
+                    let buffer = fs.readFileSync(tempWavPath);
+                    let wav = new WaveFile(buffer);
+                    wav.toBitDepth('32f');
+                    wav.toSampleRate(16000);
+                    let audioData = wav.getSamples();
+                    if (Array.isArray(audioData)) audioData = audioData[0];
+
+                    const output = await transcriber(audioData, { chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word' });
+                    
+                    if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
+
                     if (output.chunks && output.chunks.length > 0) {
                         const srtContent = chunksToSRT(output.chunks);
                         srtPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.srt`);

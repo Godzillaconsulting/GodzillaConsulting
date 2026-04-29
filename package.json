@@ -60,7 +60,8 @@
     "resend": "^6.9.3",
     "socket.io-client": "^4.8.3",
     "three": "^0.183.2",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "wavefile": "^11.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -2,6 +2,7 @@ import pool from '../config/db.js';
 import crypto from 'crypto';
 import { agendarEnGoogleCalendar } from '../services/calendarService.js';
 import { sendCitaConfirmationEmail } from '../services/emailService.js';
+import bcrypt from 'bcryptjs';
 
 // ── Utilidad de cifrado AES-256-GCM ──────────────────────────────────────────
 // La ENCRYPTION_KEY debe estar en .env como 64 chars hex (= 32 bytes).
@@ -271,14 +272,14 @@ export const getAbordajes = async (req, res) => {
             LIMIT 50
         `);
 
-        // Desencriptar credenciales para el panel admin seguro
+        // No desencriptamos por defecto para el panel (Doble Blindaje)
         const leads = result.rows.map(row => {
-            const creds = decryptCredentials(row.credenciales_cifradas);
+            const has_credentials = !!row.credenciales_cifradas;
             // Quitamos la data encriptada cruda para no mandarla
             delete row.credenciales_cifradas;
             return {
                 ...row,
-                credenciales_desencriptadas: creds
+                has_credentials
             };
         });
 
@@ -286,5 +287,76 @@ export const getAbordajes = async (req, res) => {
     } catch (error) {
         console.error('❌ [Abordaje Controller] Error obteniendo leads:', error.message);
         res.status(500).json({ success: false, error: 'Failed to fetch abordajes' });
+    }
+};
+
+// ── Doble Blindaje: Revelar Credenciales ─────────────────────────────────────
+export const revealCredentials = async (req, res) => {
+    try {
+        const { leadId, password, captchaValid } = req.body;
+        const adminUser = req.admin; // Obtenido del middleware de jwt
+
+        if (!leadId || !password || !captchaValid) {
+            return res.status(400).json({ success: false, error: 'Faltan parámetros de seguridad.' });
+        }
+
+        // 1. Obtener el hash de la contraseña del admin actual
+        const adminResult = await pool.query('SELECT password_hash FROM admins WHERE LOWER(username) = LOWER($1)', [adminUser.username]);
+        if (adminResult.rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Administrador no encontrado.' });
+        }
+
+        // 2. Verificar la contraseña
+        const isMatch = await bcrypt.compare(password, adminResult.rows[0].password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, error: 'Contraseña incorrecta.' });
+        }
+
+        // 3. Obtener el lead y sus credenciales cifradas
+        const leadResult = await pool.query('SELECT empresa, credenciales_cifradas FROM abordajes WHERE id = $1', [leadId]);
+        if (leadResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Lead no encontrado.' });
+        }
+
+        const credenciales_cifradas = leadResult.rows[0].credenciales_cifradas;
+        if (!credenciales_cifradas) {
+            return res.status(400).json({ success: false, error: 'El lead no tiene credenciales.' });
+        }
+
+        // 4. Desencriptar
+        const creds = decryptCredentials(credenciales_cifradas);
+        if (!creds) {
+            return res.status(500).json({ success: false, error: 'Error interno al desencriptar.' });
+        }
+
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+
+        // 5. Registro de Auditoría
+        await pool.query(
+            `INSERT INTO audit_logs (admin_id, admin_username, lead_id, action, ip_address, details)
+             VALUES ($1, $2, $3, 'reveal_credentials', $4, $5)`,
+            [adminUser.id, adminUser.username, leadId, ip, JSON.stringify({ empresa: leadResult.rows[0].empresa })]
+        );
+
+        // 6. Alerta de WhatsApp al equipo
+        const teamNumbers = [
+            "5216562006682", "5216563236397", "5216565784301",
+            "5216567437995", "5216561031350", "5216565624319", "5216565965757"
+        ];
+        
+        const internalMsg = `🚨 *ALERTA DE SEGURIDAD (DOBLE BLINDAJE)* 🚨\n\nEl administrador *${adminUser.username}* acaba de desencriptar y visualizar las contraseñas del cliente *${leadResult.rows[0].empresa}* en el Centro Técnico.`;
+
+        for (const number of teamNumbers) {
+            await pool.query(
+                `INSERT INTO bot_outbound_queue (bot_name, payload, status) VALUES ('whatsapp', $1, 'pending')`,
+                [JSON.stringify({ to: number, message: internalMsg })]
+            ).catch(e => console.error("Error encolando alerta WA:", e));
+        }
+
+        return res.json({ success: true, credenciales_desencriptadas: creds });
+
+    } catch (error) {
+        console.error('❌ [Abordaje Controller] Error en revealCredentials:', error.message);
+        res.status(500).json({ success: false, error: 'Error interno al revelar credenciales.' });
     }
 };

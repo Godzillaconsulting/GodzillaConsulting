@@ -1725,49 +1725,76 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                        {/* Preview */}
-                        <div>
-                            <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest mb-2">Vista Previa en Red Social:</p>
-                            {renderSocialMockup(selectedEvent)}
-                        </div>
-
-                        {/* Caption editable */}
-                        <div>
-                            <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption:</p>
-                            {canCreate
-                                ? <textarea defaultValue={selectedEvent.caption} className="w-full bg-black/60 border border-white/10 p-3 rounded-xl text-sm text-white outline-none focus:border-yellow-500 transition-colors resize-none" rows="3" />
-                                : <p className="bg-black/40 border border-white/5 p-3 rounded-xl text-sm text-neutral-300 font-bold">{selectedEvent.caption}</p>
-                            }
-                        </div>
-
-                        {/* Asignar corrección — solo admins */}
-                        {canCreate && (
-                            <div className="pt-3 border-t border-white/[0.06]">
-                                <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar Corrección al diseñador:</p>
-                                <div className="space-y-2 mb-3">
-                                    <input type="text" placeholder="¿El qué? (Ej: Oscurecer imagen)" value={correctionForm.que} onChange={e => setCorrectionForm({...correctionForm, que: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="text" placeholder="¿El cuándo? (Ej: Urgente, Hoy 5PM)" value={correctionForm.cuando} onChange={e => setCorrectionForm({...correctionForm, cuando: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="text" placeholder="¿Para qué? (Ej: Post de mañana IG)" value={correctionForm.paraQue} onChange={e => setCorrectionForm({...correctionForm, paraQue: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <input type="url" placeholder="Referencias (URLs, Drive, etc.)" value={correctionForm.referencias} onChange={e => setCorrectionForm({...correctionForm, referencias: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
-                                    <textarea placeholder="Comentarios adicionales / @Menciones..." value={correctionForm.comentarios} onChange={e => setCorrectionForm({...correctionForm, comentarios: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg resize-none outline-none focus:border-[#CC0000]" rows="2" />
+                        {selectedEvent.isCita || selectedEvent.tipo === 'cita' ? (
+                            <div className="space-y-4">
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                    <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 flex items-center gap-2">
+                                        <span>👤</span> Información del Cliente
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                        <p><span className="text-neutral-500 font-bold">Nombre:</span> <span className="text-white font-bold">{selectedEvent.raw?.nombre_completo || selectedEvent.raw?.nombre || 'No especificado'}</span></p>
+                                        <p><span className="text-neutral-500 font-bold">Email:</span> <span className="text-white font-bold">{selectedEvent.raw?.email || 'No especificado'}</span></p>
+                                        <p><span className="text-neutral-500 font-bold">Teléfono:</span> <span className="text-white font-bold">{selectedEvent.raw?.telefono || 'No especificado'}</span></p>
+                                        <p><span className="text-neutral-500 font-bold">Tipo de Sesión:</span> <span className="text-white font-bold">{selectedEvent.raw?.tipo_sesion || 'Consultoría'}</span></p>
+                                    </div>
                                 </div>
-                                <button onClick={() => {
-                                    if (!correctionForm.que) return alert('Debes especificar al menos el ¿Qué?');
-                                    const finalComment = `📌 NUEVO PENDIENTE:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Refs: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
-                                    const newComment = { id: Date.now(), author: currentUser, text: finalComment, time: 'ahora' };
-                                    const mentioned = TEAM.filter(u => correctionForm.comentarios.toLowerCase().includes(`@${u.toLowerCase()}`));
-                                    if (mentioned.length > 0) {
-                                        const newNotifs = mentioned.map(u => ({ id: Date.now() + Math.random(), to: u, from: currentUser, text: `Asignación: ${correctionForm.que}`, read: false, time: 'ahora', eventTitle: selectedEvent.title }));
-                                        setNotifications(prev => [...newNotifs, ...prev]);
-                                    }
-                                    setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, status: 'urgent', comments: [...(ev.comments || []), newComment] } : ev));
-                                    setSelectedEvent(prev => ({ ...prev, status: 'urgent', comments: [...(prev.comments || []), newComment] }));
-                                    setCorrectionForm({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
-                                    alert('Tarea de corrección enviada.');
-                                }} className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700 shadow-md">
-                                    Mandar a Corregir ➔
-                                </button>
+
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                    <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 flex items-center gap-2">
+                                        <span>📝</span> Resumen de Conversación / Notas
+                                    </h4>
+                                    <p className="text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
+                                        {selectedEvent.raw?.notas_adicionales || selectedEvent.raw?.resumen || 'No hay notas adicionales o resumen de conversación disponible para esta cita.'}
+                                    </p>
+                                </div>
                             </div>
+                        ) : (
+                            <>
+                                {/* Preview */}
+                                <div>
+                                    <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest mb-2">Vista Previa en Red Social:</p>
+                                    {renderSocialMockup(selectedEvent)}
+                                </div>
+
+                                {/* Caption editable */}
+                                <div>
+                                    <p className="text-xs font-black text-neutral-500 uppercase mb-2">Copy / Caption:</p>
+                                    {canCreate
+                                        ? <textarea defaultValue={selectedEvent.caption} className="w-full bg-black/60 border border-white/10 p-3 rounded-xl text-sm text-white outline-none focus:border-yellow-500 transition-colors resize-none" rows="3" />
+                                        : <p className="bg-black/40 border border-white/5 p-3 rounded-xl text-sm text-neutral-300 font-bold">{selectedEvent.caption}</p>
+                                    }
+                                </div>
+
+                                {/* Asignar corrección — solo admins */}
+                                {canCreate && (
+                                    <div className="pt-3 border-t border-white/[0.06]">
+                                        <p className="text-xs font-black text-neutral-500 uppercase mb-2">Asignar Corrección al diseñador:</p>
+                                        <div className="space-y-2 mb-3">
+                                            <input type="text" placeholder="¿El qué? (Ej: Oscurecer imagen)" value={correctionForm.que} onChange={e => setCorrectionForm({...correctionForm, que: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                            <input type="text" placeholder="¿El cuándo? (Ej: Urgente, Hoy 5PM)" value={correctionForm.cuando} onChange={e => setCorrectionForm({...correctionForm, cuando: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                            <input type="text" placeholder="¿Para qué? (Ej: Post de mañana IG)" value={correctionForm.paraQue} onChange={e => setCorrectionForm({...correctionForm, paraQue: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                            <input type="url" placeholder="Referencias (URLs, Drive, etc.)" value={correctionForm.referencias} onChange={e => setCorrectionForm({...correctionForm, referencias: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg outline-none focus:border-[#CC0000]" />
+                                            <textarea placeholder="Comentarios adicionales / @Menciones..." value={correctionForm.comentarios} onChange={e => setCorrectionForm({...correctionForm, comentarios: e.target.value})} className="w-full bg-black/30 border border-red-900/50 p-2.5 text-white text-xs rounded-lg resize-none outline-none focus:border-[#CC0000]" rows="2" />
+                                        </div>
+                                        <button onClick={() => {
+                                            if (!correctionForm.que) return alert('Debes especificar al menos el ¿Qué?');
+                                            const finalComment = `📌 NUEVO PENDIENTE:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Refs: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
+                                            const newComment = { id: Date.now(), author: currentUser, text: finalComment, time: 'ahora' };
+                                            const mentioned = TEAM.filter(u => correctionForm.comentarios.toLowerCase().includes(`@${u.toLowerCase()}`));
+                                            if (mentioned.length > 0) {
+                                                const newNotifs = mentioned.map(u => ({ id: Date.now() + Math.random(), to: u, from: currentUser, text: `Asignación: ${correctionForm.que}`, read: false, time: 'ahora', eventTitle: selectedEvent.title }));
+                                                setNotifications(prev => [...newNotifs, ...prev]);
+                                            }
+                                            setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, status: 'urgent', comments: [...(ev.comments || []), newComment] } : ev));
+                                            setSelectedEvent(prev => ({ ...prev, status: 'urgent', comments: [...(prev.comments || []), newComment] }));
+                                            setCorrectionForm({ que: '', cuando: '', paraQue: '', referencias: '', comentarios: '' });
+                                            alert('Tarea de corrección enviada.');
+                                        }} className="w-full bg-gradient-to-r from-[#CC0000] to-red-800 text-white font-black py-2.5 rounded-xl text-xs uppercase transition-all hover:from-red-700 shadow-md">
+                                            Mandar a Corregir ➔
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Comentarios */}
@@ -1998,7 +2025,15 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                             {/* Panel Izquierdo: Selección y Config */}
                             <div className="w-full md:w-1/3 border-r border-neutral-800 bg-[#050505] p-5 flex flex-col overflow-y-auto">
-                                <label className="text-[10px] font-black uppercase text-neutral-500 mb-2">Canales a Publicar & Preview</label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-[10px] font-black uppercase text-neutral-500">Canales a Publicar & Preview</label>
+                                    <button 
+                                        onClick={() => setPublishTargets(['instagram', 'tiktok', 'facebook'])}
+                                        className="text-[9px] font-bold text-[#d4af37] hover:text-white transition-colors uppercase"
+                                    >
+                                        [ Seleccionar Todas ]
+                                    </button>
+                                </div>
                                 <div className="flex flex-col gap-2 mb-6">
                                     {[
                                         { id: 'instagram', icon: '🟣', label: 'Instagram Feed' }, 

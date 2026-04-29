@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Loader, RefreshCw, ShieldCheck, ExternalLink, Calendar as CalendarIcon, Copy, Building, Globe, Phone } from 'lucide-react';
+import { Eye, EyeOff, Loader, RefreshCw, ShieldCheck, ExternalLink, Calendar as CalendarIcon, Copy, Building, Globe, Phone, Lock, X } from 'lucide-react';
+import CanvasCaptcha from './CanvasCaptcha';
 
 export default function AbordajeLeadsPanel({ adminProfile }) {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [visibleCreds, setVisibleCreds] = useState({});
+    const [decryptedCredsMap, setDecryptedCredsMap] = useState({});
+    
+    // Estados del Modal de Seguridad
+    const [revealModalOpen, setRevealModalOpen] = useState(false);
+    const [selectedLeadId, setSelectedLeadId] = useState(null);
+    const [adminPassword, setAdminPassword] = useState('');
+    const [captchaValid, setCaptchaValid] = useState(false);
+    const [revealing, setRevealing] = useState(false);
+    const [revealError, setRevealError] = useState(null);
 
     const API_BASE = '' || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 
@@ -34,8 +44,53 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
         fetchLeads();
     }, []);
 
-    const toggleCreds = (id) => {
-        setVisibleCreds(prev => ({ ...prev, [id]: !prev[id] }));
+    const handleRevealClick = (id) => {
+        if (visibleCreds[id]) {
+            setVisibleCreds(prev => ({ ...prev, [id]: false }));
+        } else {
+            if (decryptedCredsMap[id]) {
+                // Si ya las desencriptamos en esta sesión, las mostramos directo
+                setVisibleCreds(prev => ({ ...prev, [id]: true }));
+            } else {
+                setSelectedLeadId(id);
+                setRevealModalOpen(true);
+                setAdminPassword('');
+                setCaptchaValid(false);
+                setRevealError(null);
+            }
+        }
+    };
+
+    const submitReveal = async () => {
+        setRevealing(true);
+        setRevealError(null);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`${API_BASE}/api/abordaje/reveal`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    leadId: selectedLeadId,
+                    password: adminPassword,
+                    captchaValid
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDecryptedCredsMap(prev => ({ ...prev, [selectedLeadId]: data.credenciales_desencriptadas }));
+                setVisibleCreds(prev => ({ ...prev, [selectedLeadId]: true }));
+                setRevealModalOpen(false);
+            } else {
+                setRevealError(data.error || 'Error al desencriptar.');
+            }
+        } catch (err) {
+            setRevealError('Error de red al intentar desencriptar.');
+        } finally {
+            setRevealing(false);
+        }
     };
 
     const copyToClipboard = (text) => {
@@ -98,8 +153,8 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {leads.map((lead) => {
                         const showCreds = visibleCreds[lead.id];
-                        const creds = lead.credenciales_desencriptadas || {};
-                        const hasCreds = Object.keys(creds).length > 0;
+                        const hasCreds = lead.has_credentials;
+                        const creds = decryptedCredsMap[lead.id] || {};
 
                         return (
                             <div key={lead.id} className="bg-[#111111] border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col relative overflow-hidden group hover:border-[#CC0000]/30 transition-colors">
@@ -191,7 +246,7 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
                                                 </span>
                                             </div>
                                             <button 
-                                                onClick={() => toggleCreds(lead.id)}
+                                                onClick={() => handleRevealClick(lead.id)}
                                                 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border transition-all ${showCreds ? 'bg-yellow-500 text-black border-yellow-500 hover:bg-yellow-400' : 'bg-transparent text-white/50 border-white/20 hover:text-white hover:border-white/50'}`}
                                             >
                                                 {showCreds ? <><EyeOff className="w-3 h-3"/> Ocultar</> : <><Eye className="w-3 h-3"/> Revelar</>}
@@ -243,6 +298,56 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
                             </div>
                         );
                     })}
+                </div>
+            )}
+            {/* Modal de Doble Blindaje */}
+            {revealModalOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#111111] border border-yellow-500/30 rounded-3xl w-full max-w-md p-6 shadow-[0_0_50px_rgba(234,179,8,0.15)] relative overflow-hidden flex flex-col items-center">
+                        <button onClick={() => setRevealModalOpen(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4 border border-yellow-500/30">
+                            <Lock className="w-8 h-8 text-yellow-500" />
+                        </div>
+                        
+                        <h3 className="text-xl font-black text-white text-center uppercase tracking-tight mb-2">Bóveda de Seguridad</h3>
+                        <p className="text-xs text-white/60 text-center mb-6 px-4">
+                            Ingresa tu contraseña de administrador y resuelve el captcha para desencriptar las credenciales. Esta acción quedará registrada en el log de auditoría.
+                        </p>
+
+                        <div className="w-full space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1 ml-2">Contraseña Admin</label>
+                                <input 
+                                    type="password" 
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    placeholder="Tu contraseña actual"
+                                    className="w-full bg-black/50 border border-white/20 focus:border-yellow-500 outline-none rounded-full px-5 py-3 text-sm text-white transition-colors"
+                                />
+                            </div>
+
+                            <div className="bg-black/30 border border-white/10 rounded-2xl p-4 flex justify-center">
+                                <CanvasCaptcha onValidate={setCaptchaValid} height={40} length={5} />
+                            </div>
+
+                            {revealError && (
+                                <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-center">
+                                    <p className="text-[10px] font-bold text-red-400 uppercase">{revealError}</p>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={submitReveal}
+                                disabled={!adminPassword || !captchaValid || revealing}
+                                className={`w-full py-3 rounded-full font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 transition-all ${adminPassword && captchaValid && !revealing ? 'bg-yellow-500 text-black hover:bg-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)] hover:-translate-y-0.5' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
+                            >
+                                {revealing ? <><Loader className="w-4 h-4 animate-spin"/> Desencriptando...</> : <><ShieldCheck className="w-4 h-4"/> Autorizar y Revelar</>}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

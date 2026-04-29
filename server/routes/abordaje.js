@@ -1,6 +1,6 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { processAbordaje, getAbordajes } from '../controllers/abordajeController.js';
+import { processAbordaje, getAbordajes, revealCredentials } from '../controllers/abordajeController.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
@@ -35,5 +35,12 @@ router.post('/', abordajeLimiter, jitterMiddleware, processAbordaje);
  * Requiere ser administrador técnico.
  */
 router.get('/leads', requireAdmin, getAbordajes);
+
+/**
+ * POST /api/abordaje/reveal
+ * Desencripta credenciales de un lead específico validando password + captcha
+ * Requiere ser administrador técnico.
+ */
+router.post('/reveal', requireAdmin, revealCredentials);
 
 export default router;

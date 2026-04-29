@@ -150,7 +150,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
 
         try {
             const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-            const aiRes = await executeAiWaterfall(groqMessages, { tools: groqTools, temperature: 0.1 });
+            const aiRes = await executeAiWaterfall(groqMessages, { temperature: 0.1 });
             
             if (aiRes) {
                 responseText = aiRes.content || "";

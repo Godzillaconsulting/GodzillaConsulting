@@ -9,6 +9,46 @@ import ffprobePath from '@ffprobe-installer/ffprobe';
 import fs from 'fs';
 import path from 'path';
 
+// Helper: Formato de tiempo para SRT
+function formatSrtTime(seconds) {
+    const date = new Date(seconds * 1000);
+    const hh = String(date.getUTCHours()).padStart(2, '0');
+    const mm = String(date.getUTCMinutes()).padStart(2, '0');
+    const ss = String(date.getUTCSeconds()).padStart(2, '0');
+    const ms = String(date.getUTCMilliseconds()).padStart(3, '0');
+    return `${hh}:${mm}:${ss},${ms}`;
+}
+
+// Helper: Convertir chunks de Whisper a SRT
+function chunksToSRT(chunks) {
+    let srt = '';
+    let counter = 1;
+    let currentPhrase = [];
+    
+    const flushPhrase = () => {
+        if (currentPhrase.length === 0) return;
+        const start = currentPhrase[0].timestamp[0];
+        const end = currentPhrase[currentPhrase.length - 1].timestamp[1];
+        if (start === null || end === null) return;
+        const text = currentPhrase.map(w => w.text.trim().toUpperCase()).join(' ');
+
+        srt += `${counter}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${text}\n\n`;
+        counter++;
+        currentPhrase = [];
+    };
+
+    chunks.forEach(chunk => {
+        if (!chunk.timestamp || chunk.timestamp[0] === null || chunk.timestamp[1] === null) return;
+        currentPhrase.push(chunk);
+        // Cortar frases cortas y contundentes
+        if (chunk.text.match(/[.!?]$/) || currentPhrase.length >= 4) {
+            flushPhrase();
+        }
+    });
+    flushPhrase();
+    return srt;
+}
+
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 ffmpeg.setFfprobePath(ffprobePath.path);
 
@@ -20,6 +60,14 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 let isProcessing = false;
 
 // La lógica de generación de voz fue extraída a server/services/ttsService.js
+
+const STOCK_VIDEOS = [
+  'https://cdn.coverr.co/videos/coverr-a-person-typing-on-a-laptop-5291/1080p.mp4',
+  'https://cdn.coverr.co/videos/coverr-person-counting-dollar-bills-1080p.mp4',
+  'https://cdn.coverr.co/videos/coverr-walking-in-a-crowded-city-1080p.mp4',
+  'https://cdn.coverr.co/videos/coverr-man-working-out-at-the-gym-1080p.mp4',
+  'https://cdn.coverr.co/videos/coverr-crypto-trading-1080p.mp4'
+];
 
 // Generación de imagen con Imagen 3 + Fallback a Pollinations Libre
 async function generateImage(prompt, outputPath) {
@@ -113,13 +161,48 @@ async function processTask() {
             
             // Generar Medios en Paralelo para agilizar
             const promises = [];
-            if (visualPrompt) promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
+            
+            // Para Videos Faceless, ALTERNAMOS: Escenas impares usan IA, Escenas pares usan Stock (o al revés)
+            const isFaceless = (i % 2 === 0); // Escena 2, 4 serán Stock; 1, 3, 5 serán IA
+            const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
+
+            if (!isFaceless && visualPrompt) {
+                promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
+            }
+
             if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
 
-            if (fs.existsSync(sceneImgPath) && fs.existsSync(sceneAudioPath)) {
-                clipsPaths.push({ img: sceneImgPath, audio: sceneAudioPath, id: i });
+            let srtPath = null;
+            if (fs.existsSync(sceneAudioPath)) {
+                // Generar subtítulos quemados usando Whisper
+                try {
+                    console.log(`[MediaWorker] 🎙️ Generando Subtítulos con Whisper para Escena ${i}...`);
+                    const { pipeline, env } = await import('@huggingface/transformers');
+                    env.cacheDir = 'E:/Godzilla_Studio_Cache/models';
+                    env.backends.onnx.wasm.numThreads = 2;
+                    
+                    const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { device: 'wasm', dtype: 'fp32' });
+                    const fileUrl = 'file://' + path.resolve(sceneAudioPath).replace(/\\/g, '/');
+                    const output = await transcriber(fileUrl, { chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word' });
+                    
+                    if (output.chunks && output.chunks.length > 0) {
+                        const srtContent = chunksToSRT(output.chunks);
+                        srtPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.srt`);
+                        fs.writeFileSync(srtPath, srtContent);
+                    }
+                } catch (err) {
+                    console.error(`[MediaWorker] ⚠️ Error en Whisper para Escena ${i}:`, err.message);
+                }
+
+                clipsPaths.push({ 
+                    img: isFaceless ? randomStock : sceneImgPath, 
+                    audio: sceneAudioPath, 
+                    srt: srtPath,
+                    id: i,
+                    isFaceless 
+                });
             }
         }
 
@@ -139,18 +222,35 @@ async function processTask() {
         for (const clip of clipsPaths) {
             const clipOutput = path.join(OUTPUT_DIR, `task_${task.id}_clip_${clip.id}.mp4`);
             await new Promise((resolve, reject) => {
-                ffmpeg()
-                    .input(clip.img)
-                    .loop()
-                    .input(clip.audio)
+                const command = ffmpeg();
+                
+                if (clip.isFaceless) {
+                    // Si es faceless, repetimos el video de stock infinitamente hasta que acabe el audio
+                    command.input(clip.img).inputOptions(['-stream_loop', '-1']);
+                } else {
+                    command.input(clip.img).loop();
+                }
+
+                const filterBase = clip.isFaceless
+                    ? `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`
+                    : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30`; // Efecto de zoom para imágenes
+
+                let vfStr = filterBase;
+                if (clip.srt) {
+                    // Escapar ruta para FFmpeg en Windows (C:/ruta -> C\:/ruta)
+                    const escapedSrt = clip.srt.replace(/\\/g, '/').replace(':', '\\:');
+                    vfStr += `,subtitles='${escapedSrt}':force_style='FontSize=26,PrimaryColour=&H00FFFF&,Bold=1,Alignment=2,MarginV=180'`;
+                }
+
+                command.input(clip.audio)
                     .outputOptions([
                         '-c:v libx264',
-                        '-tune stillimage',
+                        '-preset fast',
                         '-c:a aac',
                         '-b:a 192k',
                         '-pix_fmt yuv420p',
                         '-shortest', // El video dura lo que dura el audio
-                        '-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2'
+                        `-vf ${vfStr}`
                     ])
                     .save(clipOutput)
                     .on('end', () => {
@@ -183,16 +283,16 @@ async function processTask() {
 
         console.log(`[MediaWorker] ✅ Video Final Completado: ${finalOutput}`);
 
-        // Actualizar tarea a 'published' para que el AutoPublisher la tome en su fecha
+        // Actualizar tarea a 'pending_cm_approval' para que el CEO pueda revisarla
         payload.url = `/outputs/task_${task.id}_final.mp4`;
         
         await pool.query(`
             UPDATE studio_tasks 
-            SET status = 'published', media_payload = $1, title = $2
+            SET status = 'pending_cm_approval', assigned_to = 'alex', media_payload = $1, title = $2
             WHERE id = $3
-        `, [JSON.stringify(payload), task.title, task.id]);
+        `, [JSON.stringify([payload]), task.title, task.id]);
         
-        console.log(`[MediaWorker] Tarea #${task.id} marcada como lista para publicación.`);
+        console.log(`[MediaWorker] Tarea #${task.id} marcada como lista para revisión del CEO.`);
 
     } catch (error) {
         console.error(`[MediaWorker] ❌ Error crítico:`, error.message);

@@ -1089,7 +1089,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       {/* Canvas */}
       <div ref={canvasRef} className={`flex-1 overflow-auto relative ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`} style={{background:'#060608'}}
         onPointerDown={handleCanvasPointerDown} onWheel={handleWheel}>
-        <div className="canvas-bg min-w-[3000px] min-h-[2000px] relative origin-top-left transition-transform duration-75"
+        <div className="canvas-bg w-[10000px] h-[10000px] min-w-[10000px] min-h-[10000px] relative origin-top-left transition-transform duration-75"
              style={{ 
                transform: `scale(${zoom})`,
                backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px)',
@@ -1337,6 +1337,53 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
+              {selectedNode.title === 'Trends Bot' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho a Analizar</label>
+                    <input
+                      value={selectedNode.config?.niche || ''}
+                      onChange={e => updateNode({ config: { ...selectedNode.config, niche: e.target.value } })}
+                      placeholder='Ej: "Marketing Digital" o {{ $json.niche }}'
+                      className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition"
+                    />
+                  </div>
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2.5">
+                     <p className="text-[9px] text-purple-400 leading-relaxed">
+                        ⚡ <strong>Motor IA:</strong> El bot extraerá datos y cruzará tendencias virales de hoy para pasarlas al siguiente nodo.
+                     </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedNode.title === 'Paquete de Contenido Social' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">🧠 Tema (Opcional)</label>
+                    <input
+                      value={selectedNode.config?.topic || ''}
+                      onChange={e => updateNode({ config: { ...selectedNode.config, topic: e.target.value } })}
+                      placeholder='Por defecto usará la tendencia conectada'
+                      className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">🛍️ Producto a vender (Opcional)</label>
+                    <input
+                      value={selectedNode.config?.product || ''}
+                      onChange={e => updateNode({ config: { ...selectedNode.config, product: e.target.value } })}
+                      placeholder='Ej: Curso de automatización'
+                      className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-orange-500 transition"
+                    />
+                  </div>
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5">
+                     <p className="text-[9px] text-orange-400 leading-relaxed">
+                        ⚠️ <strong>Flujo:</strong> El paquete de 3 redes se enviará automáticamente al "CEO Estudio" para aprobación humana y publicación a un clic.
+                     </p>
+                  </div>
+                </div>
+              )}
+
               {selectedNode.title === 'Webhook Entrada' && (
                 <div className="space-y-2">
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">
@@ -1430,41 +1477,52 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
               )}
 
 
-              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(selectedNode.title) && (
+              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNode.title) && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] font-bold text-neutral-300 mb-1.5 block uppercase tracking-widest">⚡ Acción del Bot</label>
                     <select value={selectedNode.config?.action||'trigger_flow'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-emerald-500 transition">
-                      <option value="trigger_flow">🔗 Disparar Flujo (al recibir msg)</option>
-                      <option value="send_message">📤 Enviar Mensaje</option>
-                      <option value="schedule_message">⏰ Agendar Mensaje</option>
+                      <option value="trigger_flow">🔗 Disparar Flujo (al recibir msg/evento)</option>
+                      <option value="send_message">📤 Enviar Mensaje / Post</option>
+                      <option value="schedule_message">⏰ Agendar Mensaje / Post</option>
                       {selectedNode.title === 'TikTok Bot' && <option value="post_content">🎬 Publicar Contenido TikTok</option>}
                       {selectedNode.title === 'TikTok Bot' && <option value="reply_comment">💬 Responder Comentario</option>}
                       {selectedNode.title === 'IG / Messenger Bot' && <option value="post_story">📸 Publicar Story IG</option>}
                       {selectedNode.title === 'IG / Messenger Bot' && <option value="post_feed">🖼️ Publicar en Feed IG</option>}
+                      {selectedNode.title === 'Twitter / X Bot' && <option value="post_thread">🧵 Publicar Hilo (Thread)</option>}
+                      {selectedNode.title === 'LinkedIn Bot' && <option value="post_article">📝 Publicar Artículo B2B</option>}
+                      {selectedNode.title === 'Telegram Bot' && <option value="send_broadcast">📢 Enviar Difusión (Broadcast)</option>}
                     </select>
                   </div>
-                  {(selectedNode.config?.action==='send_message') && (
-                    <div className="space-y-2">
-                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Destinatario</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.telefono }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
-                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="Hola {{ $json.nombre }}!" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  
+                  {['Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNode.title) && (
+                    <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+                      <div><label className="text-[10px] text-neutral-400 mb-1 block flex items-center gap-1">🔑 API Key / Access Token</label>
+                      <input type="password" value={selectedNode.config?.apiKey||''} onChange={e=>updateNode({config:{...selectedNode.config, apiKey:e.target.value}})} placeholder="Token de autenticación..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition focus:border-purple-500"/></div>
+                    </div>
+                  )}
+
+                  {['send_message', 'post_thread', 'post_article', 'send_broadcast'].includes(selectedNode.config?.action) && (
+                    <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Destinatario / Canal (Opcional)</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.telefono }} o canal" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Contenido / Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="Contenido del mensaje o post..." rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                     </div>
                   )}
                   {(!selectedNode.config?.action || selectedNode.config?.action==='trigger_flow') && (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5">
                       <p className="text-[9px] text-emerald-400 font-bold">🔗 Modo Trigger Activo</p>
-                      <p className="text-[9px] text-emerald-500/70 mt-1 leading-relaxed">Cada mensaje disparará este flujo. Variables: <code className="bg-black/30 px-1 rounded">{'{{ $json.message }}'}</code> y <code className="bg-black/30 px-1 rounded">{'{{ $json.from }}'}</code></p>
+                      <p className="text-[9px] text-emerald-500/70 mt-1 leading-relaxed">Cada mensaje o evento disparará este flujo. Variables: <code className="bg-black/30 px-1 rounded">{'{{ $json.message }}'}</code> y <code className="bg-black/30 px-1 rounded">{'{{ $json.from }}'}</code></p>
                     </div>
                   )}
                   {['post_content','post_story','post_feed'].includes(selectedNode.config?.action) && (
-                    <div className="space-y-2">
+                    <div className="space-y-2 pt-2 border-t border-neutral-800/60">
                       <div><label className="text-[10px] text-neutral-400 mb-1 block">URL de Media</label><input value={selectedNode.config?.mediaUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, mediaUrl:e.target.value}})} placeholder="{{ $json._contentPackage.imageUrl }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                       <div><label className="text-[10px] text-neutral-400 mb-1 block">Caption</label><textarea value={selectedNode.config?.caption||''} onChange={e=>updateNode({config:{...selectedNode.config, caption:e.target.value}})} placeholder="{{ $json._contentPackage.tiktok.descripcion }}" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                     </div>
                   )}
                   {selectedNode.config?.action==='schedule_message' && (
-                    <div className="space-y-2">
-                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Destinatario</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.telefono }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+                    <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+                      <div><label className="text-[10px] text-neutral-400 mb-1 block">Destinatario / Canal</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.telefono }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                       <div><label className="text-[10px] text-neutral-400 mb-1 block">Enviar a las (ISO)</label><input value={selectedNode.config?.sendAt||''} onChange={e=>updateNode({config:{...selectedNode.config, sendAt:e.target.value}})} placeholder="2025-05-01T09:00:00" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                       <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                     </div>

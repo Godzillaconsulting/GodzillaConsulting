@@ -69,10 +69,12 @@ export async function executeAiWaterfall(messages, options = {}) {
         if (!process.env.SAMBANOVA_API_KEY) throw new Error("SAMBANOVA_API_KEY no configurada");
         console.log(`[WATERFALL] ➡️ Intentando: SAMBANOVA (Llama 3.3 70B)`);
         const reqData = {
-            messages: sanitizeForBasicProviders(messages), // NO soporta tool messages
+            messages: messages, // SambaNova soporta tool_calls y role: tool nativamente
             model: "Meta-Llama-3.3-70B-Instruct",
             temperature: temperature
         };
+        if (hasTools) reqData.tools = tools;
+        if (jsonMode) reqData.response_format = { type: "json_object" };
 
         const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
             method: 'POST',
@@ -86,7 +88,7 @@ export async function executeAiWaterfall(messages, options = {}) {
         const responseMessage = data.choices[0]?.message;
         if (!responseMessage) throw new Error("SambaNova devolvió respuesta vacía");
         console.log(`[WATERFALL] ✅ Éxito con SambaNova.`);
-        return { content: responseMessage.content || "", tool_calls: [] };
+        return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
     };
 
     const callCerebras = async () => {
@@ -190,7 +192,7 @@ export async function executeAiWaterfall(messages, options = {}) {
     if (hasTools) {
         // Con tools: Groq primero (único con soporte completo de function calling)
         console.log(`[WATERFALL] 🔧 Petición con Tools. Groq primario...`);
-        activeWaterfall = [callGroq, callCerebras, callSambaNova, callOllama, callGemini, callPollinations];
+        activeWaterfall = [callSambaNova, callGroq, callCerebras, callOllama, callGemini, callPollinations];
     } else {
         // Sin tools: Groq va ÚLTIMO para preservar cuota diaria (100k tokens/día).
         console.log(`[WATERFALL] ⚖️ Texto libre — priorizando proveedores sin cuota...`);
@@ -201,6 +203,13 @@ export async function executeAiWaterfall(messages, options = {}) {
     for (const provider of activeWaterfall) {
         try {
             const result = await provider();
+            
+            // 🛡️ ANTI-ALUCINACIÓN GLOBAL: Si el modelo devuelve su propio System Prompt, lo silenciamos
+            if (result.content && (result.content.includes("Posicionamiento Social") || result.content.includes("*Reglas de Comportamiento*") || result.content.includes("Protocolo de Agendamiento"))) {
+                console.warn("[WATERFALL] ⚠️ El modelo alucinó devolviendo el System Prompt. Filtrando respuesta.");
+                result.content = "Dame un momento para organizar esta información... ⏳";
+            }
+            
             return result;
         } catch (e) {
             console.error(`[WATERFALL] ⚠️ Proveedor falló (${e.message}). Saltando al siguiente en la cascada...`);
@@ -218,3 +227,4 @@ export async function executeAiWaterfall(messages, options = {}) {
         tool_calls: [] 
     };
 }
+

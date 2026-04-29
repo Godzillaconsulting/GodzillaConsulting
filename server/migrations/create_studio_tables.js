@@ -34,6 +34,7 @@ const runMigration = async () => {
                 original_prompt TEXT NOT NULL,
                 improved_prompt TEXT NOT NULL,
                 context_type VARCHAR(100) DEFAULT 'studio_canvas',
+                username VARCHAR(255) DEFAULT 'admin',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);

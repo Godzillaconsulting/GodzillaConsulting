@@ -117,7 +117,16 @@ REGLAS:
         scenesPayload[narKey] = scene.narration || '';
     });
     
-    const mediaPayload = JSON.stringify({ scenes: scenesPayload, voice: 'edge:es-MX-JorgeNeural' });
+    const VOICES = [
+        'edge:es-MX-JorgeNeural',
+        'fakeyou:adal-ramones',
+        'fakeyou:alucard-latino',
+        'fakeyou:ballas-gta',
+        'piper:es_MX-ald-medium',
+        'bark:v2/es_speaker_0'
+    ];
+    const selectedVoice = VOICES[Math.floor(Math.random() * VOICES.length)];
+    const mediaPayload = JSON.stringify({ scenes: scenesPayload, voice: selectedVoice });
 
     // Inyectar en Base de Datos
     const client = await pool.connect();

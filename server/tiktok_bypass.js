@@ -115,7 +115,6 @@ async function handleAILogic(senderId, messageText) {
         }));
 
         let aiResult = await executeAiWaterfall(waterfallMessages, {
-            tools: waterfallTools,
             temperature: 0.1,
             maxTokens: 1024
         });

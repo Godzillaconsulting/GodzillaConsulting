@@ -645,7 +645,8 @@ export const generateScriptChat = async (req, res) => {
         // 1. Recuperar memoria de aprendizaje de la Base de Datos (Últimas 5 correcciones)
         let learningContext = "";
         try {
-            const { rows } = await pool.query(`SELECT original_prompt, improved_prompt FROM goyi_learning WHERE context_type = 'script_chat' ORDER BY created_at DESC LIMIT 5`);
+            const username = req.user?.username || req.admin?.username || 'admin';
+            const { rows } = await pool.query(`SELECT original_prompt, improved_prompt FROM goyi_learning WHERE context_type = 'script_chat' AND username = $1 ORDER BY created_at DESC LIMIT 5`, [username]);
             if (rows.length > 0) {
                 learningContext = "\n\nREGLAS APRENDIDAS DE CORRECCIONES PASADAS DEL USUARIO:\n" + rows.map(r => `Cuando pidan algo como: "${r.original_prompt}" -> Tú debes aplicar este estilo/mejora: "${r.improved_prompt}"`).join('\n');
             }
@@ -691,9 +692,10 @@ Reglas Estrictas:
 
         // Loguear en goyi_learning para memoria a largo plazo del asistente
         try {
+            const username = req.user?.username || req.admin?.username || 'admin';
             await pool.query(
-                `INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type) VALUES ($1, $2, $3)`,
-                [message, aiResponse, 'script_chat']
+                `INSERT INTO goyi_learning (original_prompt, improved_prompt, context_type, username) VALUES ($1, $2, $3, $4)`,
+                [message, aiResponse, 'script_chat', username]
             );
         } catch (dbErr) { console.log('[STUDIO] goyi_learning log saltado', dbErr.message); }
 
@@ -904,7 +906,8 @@ export const generateMonthlyPlan = async (req, res) => {
         // 1. Recuperar memoria a largo plazo (Días/Formatos Ganadores)
         let learningContext = "";
         try {
-            const { rows } = await pool.query(`SELECT improved_prompt FROM goyi_learning WHERE context_type = 'monthly_plan' ORDER BY created_at DESC LIMIT 5`);
+            const username = req.user?.username || req.admin?.username || 'admin';
+            const { rows } = await pool.query(`SELECT improved_prompt FROM goyi_learning WHERE context_type = 'monthly_plan' AND username = $1 ORDER BY created_at DESC LIMIT 5`, [username]);
             if (rows.length > 0) {
                 learningContext = "\n\nCRÍTICO - REGLAS APRENDIDAS DE MESES ANTERIORES (EVOLUCIÓN):\n" + rows.map(r => `- Aplica estrictamente esta mejora de estilo/formato: "${r.improved_prompt}"`).join('\n');
             }

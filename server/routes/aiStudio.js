@@ -381,8 +381,8 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
 
         // Solo actualizar los campos explícitos, sino mantener los que existen
         const updatedStatus = status !== undefined ? status : currentTask.status;
-        const updatedMedia = media_payload !== undefined ? (typeof media_payload === 'string' ? media_payload : JSON.stringify(media_payload)) : currentTask.media_payload;
-        const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : currentTask.publish_targets;
+        const updatedMedia = media_payload !== undefined ? (typeof media_payload === 'string' ? media_payload : JSON.stringify(media_payload)) : JSON.stringify(currentTask.media_payload || []);
+        const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : JSON.stringify(currentTask.publish_targets || []);
         const updatedIgDate = ig_publish_date !== undefined ? ig_publish_date : currentTask.ig_publish_date;
         const updatedTitle = title !== undefined ? title : currentTask.title;
 

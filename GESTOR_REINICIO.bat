@@ -195,14 +195,21 @@ echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
 echo  [4/4] Limpiando sockets de PM2 y candados de Chrome...
-if exist "server\.wwebjs_auth\session\lockfile" del /F /Q "server\.wwebjs_auth\session\lockfile" 2>nul
-if exist "server\.wwebjs_auth\session\SingletonLock" del /F /Q "server\.wwebjs_auth\session\SingletonLock" 2>nul
+if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" 2>nul
+if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" 2>nul
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
 timeout /t 3 /nobreak >nul
 
 echo.
 echo  Iniciando servicio GodzillaBackend de forma limpia...
 net start GodzillaBackend
+timeout /t 3 /nobreak >nul
+
+echo  [5/5] Resucitando procesos de PM2 guardados en memoria...
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd resurrect
+timeout /t 3 /nobreak >nul
+
 echo.
 echo  [!] Listo. Si tenias sesion pendiente de WhatsApp, escanea en http://localhost:3002/qr
 echo.
@@ -246,7 +253,7 @@ echo [2/3] Forzando cierre de navegadores zombies...
 taskkill /F /IM chrome.exe /T 2>nul
 
 echo [3/3] Borrando carpeta de sesion corrupta...
-rmdir /S /Q "server\.wwebjs_auth"
+rmdir /S /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp"
 
 echo [Listo] Arrancando bot fresco...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2

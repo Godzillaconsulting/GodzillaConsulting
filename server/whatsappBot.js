@@ -24,6 +24,19 @@ dotenv.config();
 const activeSessionsCache = new Map();
 const userMessageQueues = new Map();
 
+class Mutex {
+    constructor() { this.queue = []; this.locked = false; }
+    async lock() {
+        if (!this.locked) { this.locked = true; return; }
+        return new Promise(resolve => this.queue.push(resolve));
+    }
+    release() {
+        if (this.queue.length > 0) { const next = this.queue.shift(); next(); }
+        else { this.locked = false; }
+    }
+}
+const waMutex = new Mutex();
+
 async function appendMessageToSession(senderId, role, content, plataforma = 'whatsapp_web') {
     let session = activeSessionsCache.get(senderId);
     if (!session) {
@@ -131,7 +144,8 @@ export const initWhatsAppBot = async () => {
     // La sesión debe persistir siempre para evitar pedir el QR. Solo reinicia el bot
     // y deja que recupere su sesión existente. 
     // ==============================================================================
-    const sessionPath = 'C:\\Users\\GODZILLA.IA\\GodzillaConsulting\\server\\.wwebjs_auth';
+    const baseDir = process.cwd();
+    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp';
     
     try {
         if (!fs.existsSync(sessionPath)) {
@@ -153,25 +167,14 @@ export const initWhatsAppBot = async () => {
 
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
-            headless: true,
+            headless: false,
             executablePath: CHROME_PATH,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-blink-features=AutomationControlled',
-                '--disable-gpu',
-                '--disable-gpu-sandbox',       // Requerido bajo SYSTEM (sin sesión de escritorio)
-                '--disable-software-rasterizer',
-                '--disable-dev-shm-usage',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-extensions',
-                '--disable-background-networking',
-                '--disable-default-apps',
-                '--disable-sync',
-                '--mute-audio',
-                '--disable-translate',
-                '--safebrowsing-disable-auto-update',
+                '--hide-crash-restore-bubble',
+                '--disable-infobars'
             ]
         }
     });
@@ -706,6 +709,10 @@ export const initWhatsAppBot = async () => {
 
         } catch (error) {
             console.error("❌ Error interno procesando WA message:", error);
+        } finally {
+            // Jitter for Global Queue: Prevent slamming APIs back-to-back
+            await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1000) + 1000));
+            waMutex.release();
         }
         }, 2000 + jitter); // Ventana de 2 segundos de agrupación de mensajes + Jitter
     });
@@ -734,7 +741,8 @@ export const initWhatsAppBot = async () => {
         if (err && err.message && err.message.includes('The browser is already running')) {
             console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
             try {
-                const sessionPath = 'C:\\Users\\GODZILLA.IA\\GodzillaConsulting\\server\\.wwebjs_auth\\session';
+                // Forzar limpieza de locks nativos de Puppeteer/Chrome
+                const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp\\session';
                 const lockfile = path.join(sessionPath, 'lockfile');
                 const singleton = path.join(sessionPath, 'SingletonLock');
                 if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
@@ -779,3 +787,5 @@ const isPM2 = process.env.pm_id !== undefined;
 if (isPM2 || process.argv[1] === fileURLToPath(import.meta.url)) {
     initWhatsAppBot();
 }
+
+

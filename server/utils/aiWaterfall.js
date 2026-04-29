@@ -66,7 +66,8 @@ export async function executeAiWaterfall(messages, options = {}) {
         const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqData)
+            body: JSON.stringify(reqData),
+            signal: AbortSignal.timeout(15000)
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
@@ -94,7 +95,8 @@ export async function executeAiWaterfall(messages, options = {}) {
         const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqData)
+            body: JSON.stringify(reqData),
+            signal: AbortSignal.timeout(15000)
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
@@ -117,7 +119,8 @@ export async function executeAiWaterfall(messages, options = {}) {
         const response = await fetch('http://127.0.0.1:11434/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqData)
+            body: JSON.stringify(reqData),
+            signal: AbortSignal.timeout(15000)
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -149,7 +152,8 @@ export async function executeAiWaterfall(messages, options = {}) {
         const response = await fetch('https://text.pollinations.ai/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: cleanMessages, model: 'mistral', jsonMode: jsonMode })
+            body: JSON.stringify({ messages: cleanMessages, model: 'mistral', jsonMode: jsonMode }),
+            signal: AbortSignal.timeout(15000)
         });
         
         if (!response.ok) throw new Error(`HTTP ${response.status}`);

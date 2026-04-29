@@ -819,7 +819,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     const nx = (e.clientX - cr.left + canvasRef.current.scrollLeft) / zoom;
     const ny = (e.clientY - cr.top + canvasRef.current.scrollTop) / zoom;
     
-    if(isDraggingNode) { setNodes(p=>p.map(n=>n.id===isDraggingNode ? {...n, x: nx - dragOffset.x, y: ny - dragOffset.y} : n));
+    if(isDraggingNode) { setNodes(p=>p.map(n=>n.id===isDraggingNode ? {...n, x: nx - dragOffset.x, y: ny - dragOffset.y} : n)); }
   };
 
   const handlePointerUp = (e) => {
@@ -1430,7 +1430,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
               )}
 
 
- ['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(selectedNode.title) && (
+              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(selectedNode.title) && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] font-bold text-neutral-300 mb-1.5 block uppercase tracking-widest">⚡ Acción del Bot</label>

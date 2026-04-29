@@ -69,59 +69,71 @@ export const runTrendsScraper = async () => {
 
     // Síntesis con Cascada IA (Groq -> Gemini -> Pollinations)
     console.log(`[${BOT_NAME}] 🧠 Analizando tendencias con Motor de Cascada IA...`);
+    let generatedScenes = null;
     let summaryText = "";
     try {
-        const systemPrompt = `Eres el Director de Estrategia de Datos de Godzilla Consulting. Tu misión es analizar el volumen de búsquedas reales de Google y extraer las tendencias crudas.
+        const systemPrompt = `Eres el Director Creativo de Godzilla Consulting. Tu misión es analizar las búsquedas reales y crear un guion de 5 escenas para TikTok.
 REGLAS:
-1. Analiza los temas principales que la gente está buscando.
-2. Extrae los hashtags o términos de búsqueda más usados y virales.
-3. No uses emojis ni relleno. Entrega 3 bloques de puro análisis de datos duros y tendencias B2B/Tech.`;
+1. Crea un guion sobre la tendencia más interesante.
+2. Responde ÚNICAMENTE con un JSON válido con este formato:
+{
+  "title": "título corto del video",
+  "scenes": [
+    { "visual": "hyper-detailed english prompt for image generation, cinematic lighting, ultra realistic", "narration": "texto corto en español para la voz en off" },
+    ... (debe tener exactamente 5 escenas, la escena 5 debe ser el CTA)
+  ]
+}`;
 
-        const userPrompt = `Búsquedas reales extraídas HOY:\n${uniqueQuestions.slice(0, 80).join(', ')}\n\nGenera los 3 bloques virales.`;
+        const userPrompt = `Búsquedas extraídas HOY:\n${uniqueQuestions.slice(0, 80).join(', ')}\n\nGenera el JSON de 5 escenas.`;
         
         const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
         
         const waterfallRes = await executeAiWaterfall([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
-        ]);
+        ], { jsonMode: true });
         
-        summaryText = waterfallRes.content || "No se pudo generar la síntesis estructural.";
-        console.log(`[${BOT_NAME}] ✅ Síntesis de Cascada IA completada exitosamente.`);
+        const jsonMatch = waterfallRes.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            generatedScenes = parsed.scenes;
+            summaryText = parsed.title;
+        } else {
+            throw new Error("El modelo no devolvió un JSON válido.");
+        }
+        console.log(`[${BOT_NAME}] ✅ Guion de Cascada IA generado exitosamente.`);
     } catch (e) {
         console.error(`[${BOT_NAME}] ❌ Fallo en la síntesis de IA:`, e.message);
-        summaryText = "Fallo de Cascada IA al sintetizar las tendencias.";
+        return; // Detener si falla la IA
     }
 
-    // Inyectar en Base de Datos (Para Analytics y CEO Studio)
+    // Preparar payload para el MediaWorker
+    const scenesPayload = {};
+    generatedScenes.forEach((scene, i) => {
+        const n = i + 1;
+        const isLast = n === generatedScenes.length;
+        const narKey = isLast ? `NARRACION ESCENA ${n} (CTA)` : `NARRACION ESCENA ${n}`;
+        scenesPayload[`VISUAL ESCENA ${n} (Prompt Imagen Detallado)`] = scene.visual || '';
+        scenesPayload[narKey] = scene.narration || '';
+    });
+    
+    const mediaPayload = JSON.stringify({ scenes: scenesPayload, voice: 'edge:es-MX-JorgeNeural' });
+
+    // Inyectar en Base de Datos
     const client = await pool.connect();
     try {
-        // 1. Guardar data verdadera para Analytics
-        await client.query(
-            `INSERT INTO search_trends (keywords, aggregated_questions, summary) VALUES ($1, $2, $3)`,
-            [JSON.stringify(KEYWORDS), JSON.stringify(structuredQuestions), summaryText]
-        );
-
-        // 2. Tareas en el CEO Studio (Reactivado con Generación Automática de Media)
-        const taskTitle = `🔥 TENDENCIA VIRAL HOY: ${KEYWORDS[0]} / ${KEYWORDS[2]}`;
-        const taskPrompt = `Crea un video dinámico estilo TikTok basado en estas tendencias virales reales encontradas hoy:\n\n${summaryText}`;
+        // 1. Tareas en el CEO Studio (Asignadas a 'auto' para el MediaWorker)
+        const taskTitle = `🔥 AUTO-VIDEO: ${summaryText}`;
+        const taskPrompt = `Generación automática de video sobre tendencias.`;
         
-        // Generación de Media Automática (MP4 animado o stock)
-        const safePrompt = summaryText.substring(0, 200).replace(/\n/g, ' ');
-        const mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
-        
-        const mediaPayload = JSON.stringify([{
-            url: mediaUrl,
-            provider: 'Auto Pollinations',
-            isVideo: false // Se guarda como imagen inicialmente, en el panel pueden refinar/animar
-        }]);
-
         await client.query(
             `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, status, content_type, ig_publish_date, media_payload, created_by) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '2 hours', $8, $9)`,
-            [taskTitle, taskPrompt, 'alex', JSON.stringify(['Tendencias Virales', 'Auto']), 'alta', 'pending_cm_approval', 'video', mediaPayload, 'trends_bot']
+            [taskTitle, taskPrompt, 'auto', JSON.stringify(['Tendencias Virales', 'AutoVideo']), 'alta', 'pending_cm_approval', 'video', mediaPayload, 'trends_bot']
         );
-        console.log(`[${BOT_NAME}] 💾 Datos inyectados y Media generada exitosamente.`);
+        console.log(`[${BOT_NAME}] 🎬 Tarea inyectada en DB. El MediaWorker la comenzará a procesar pronto.`);
+
+
     } catch (err) {
         console.error(`[${BOT_NAME}] ❌ Error guardando en BD:`, err.message);
     } finally {

@@ -27,9 +27,20 @@ async function runEnforcement() {
     </p>
 </div>`;
 
+        // Parsear el JSON para inyectar la nota sin corromper la estructura
+        let bodyJson;
+        try {
+            bodyJson = JSON.parse(draft.body_html);
+        } catch(e) {
+            bodyJson = { es: draft.body_html, en: draft.body_html };
+        }
+
+        bodyJson.es = (bodyJson.es || '') + autoDeployNote;
+        bodyJson.en = (bodyJson.en || '') + autoDeployNote; // Podríamos traducirlo, pero por ahora lo dejamos igual o usamos la misma variable
+
         await pool.query(
             `UPDATE newsletters SET body_html = $1 WHERE id = $2`,
-            [draft.body_html + autoDeployNote, draft.id]
+            [JSON.stringify(bodyJson), draft.id]
         );
 
         console.log(`🚀 [CRON-ENFORCE] Forzando envío masivo para boletín [ID: ${draft.id}]...`);

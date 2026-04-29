@@ -6,6 +6,7 @@ import path from 'path';
 import { ARCHIVOS_PESADOS_DIR } from '../routes/media.js';
 import { fileURLToPath } from 'url';
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,10 @@ const cleanJsonStr = (text) => {
     let t = text.replace(/```json/i, '').replace(/```/i, '').trim();
     if (!t.startsWith('{')) t = '{' + t.substring(t.indexOf('{'));
     if (!t.endsWith('}')) t = t.substring(0, t.lastIndexOf('}') + 1);
+    // Sanitizar saltos de línea literales dentro de los valores string generados por la IA
+    t = t.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/gs, (match, p1) => {
+        return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '') + '"';
+    });
     return t;
 };
 
@@ -24,15 +29,28 @@ const cleanJsonStr = (text) => {
 export async function generateAndSendAutoNewsletter(feedback = null) {
     console.log("🤖 Iniciando Generador Godzilla (WATERFALL METHOD & MEGA-DICTIONARY)...");
     
-    const systemInstruction = "Eres Godzilla AI, consultor estratégico. Escribes reportes ejecutivos dirigidos de 'tú a tú' a líderes empresariales, emprendedores y entusiastas de la tecnología. Prohibido usar relleno paja.\nREGLA JSON CRÍTICA: Tu salida será consumida por JSON.parse() estricto. LAS CLAVES Y VALORES DEL ESQUEMA PADRE DEBEN USAR COMILLAS DOBLES (\"). Pero DENTRO del texto, si necesitas citar algo, usa SOLAMENTE comillas simples (''). Nunca metas comillas dobles internas sin escapar.\nREGLA ANTI-ALUCINACIÓN (ROJA): Es una ofensa inaceptable inventar rutas web y dar errores 404. Jamás fabriques URLs largas.";
+    const systemInstruction = "Eres Godzilla AI, consultor estratégico. Escribes reportes ejecutivos dirigidos de 'tú a tú' a líderes empresariales, emprendedores y entusiastas de la tecnología. Prohibido usar relleno paja.\nREGLA JSON CRÍTICA: Tu salida será consumida por JSON.parse() estricto. LAS CLAVES Y VALORES DEL ESQUEMA PADRE DEBEN USAR COMILLAS DOBLES (\"). Pero DENTRO del texto, si necesitas citar algo, usa SOLAMENTE comillas simples (''). NUNCA uses saltos de línea literales; si necesitas un salto de línea, escribe estrictamente '\\n'. Jamás metas comillas dobles internas sin escapar.\nREGLA ANTI-ALUCINACIÓN (ROJA): Es una ofensa inaceptable inventar rutas web y dar errores 404. Jamás fabriques URLs largas.";
 
     let fdbkStr = feedback ? `\n[ATENCIÓN ORDEN DEL CEO: Corrige el borrador anterior aplicando esto: "${feedback}"]\n` : '';
     const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'full', timeStyle: 'short' });
 
-    const prompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}
-TAREA CRÍTICA: Eres un analista Senior de primer nivel. Busca las 2 o 3 noticias, herramientas de IA, Startups o Tech más valiosas y disruptivas de HOY. 
-NO TE LIMITES A B2B, abarca también innovaciones B2C, Ciberseguridad, y emprendimiento general. 
-IMPORTANTE: El contenido generado debe ser PROFUNDO, EXTENSO y detallado. Nada de resúmenes de una línea. Explica el contexto, el impacto real en el mercado y las implicaciones a largo plazo. Piensa como un reporte de McKinsey o Gartner. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
+    // 0. FETCH CONTEXTO REAL (NOTICIAS DE HOY) PARA EVITAR ALUCINACIONES
+    let realNewsContext = "";
+    try {
+        console.log("📰 Obteniendo contexto de noticias reales para inyectar en el cerebro de Godzilla...");
+        const rssRes = await fetch('https://news.google.com/rss/search?q=Inteligencia+Artificial+OR+Startups+OR+Tecnologia+when:1d&hl=es-419&gl=MX&ceid=MX:es-419');
+        const xml = await rssRes.text();
+        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 15).map(m => m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'));
+        realNewsContext = "\nCONTEXTO DE NOTICIAS REALES DE LAS ÚLTIMAS 24 HORAS (Úsalo como base obligatoria para tu análisis):\n- " + titles.join("\n- ");
+        console.log("📰 " + titles.length + " titulares inyectados al prompt.");
+    } catch(e) {
+        console.error("❌ Fallo obteniendo RSS de noticias:", e.message);
+    }
+
+    const prompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}${realNewsContext}
+
+TAREA CRÍTICA: Eres un analista Senior de primer nivel. Extrae del CONTEXTO DE NOTICIAS proporcionado las 2 o 3 noticias, herramientas de IA, Startups o Tech más valiosas y disruptivas de HOY. 
+IMPORTANTE: El contenido generado debe ser PROFUNDO, EXTENSO y detallado basándose EXCLUSIVAMENTE en las noticias reales. Nada de resúmenes de una línea. Explica el contexto, el impacto real en el mercado y las implicaciones a largo plazo. Piensa como un reporte de McKinsey o Gartner. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
 
 DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA BASE (TODO EN ESPAÑOL POR AHORA):
 {

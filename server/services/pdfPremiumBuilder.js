@@ -11,14 +11,20 @@ const cleanHtmlStr = (str) => {
     return str.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' '); 
 };
 
-export async function buildPremiumPDF(data, lang = 'es') {
-    // SCraping pre-render. Buscamos de la noticia 1 (Principal) la imagen OG
+export async function buildPremiumPDF(data, lang = 'es', coverUrl = null) {
+    // Descargar la portada generada por IA (TIME Magazine Style) para el PDF
     let coverImgBuf = null;
-    if (data.pdfSections && data.pdfSections[0] && data.pdfSections[0].url) {
+    if (coverUrl) {
         try {
-            const { scrapeOgImage } = await import('./ogScraper.js');
-            coverImgBuf = await scrapeOgImage(data.pdfSections[0].url);
-        } catch(e) {}
+            const fetch = (await import('node-fetch')).default;
+            const res = await fetch(coverUrl);
+            if (res.ok) {
+                const arrayBuffer = await res.arrayBuffer();
+                coverImgBuf = Buffer.from(arrayBuffer);
+            }
+        } catch(e) {
+            console.error("[PDF Builder] Error descargando AI Cover:", e.message);
+        }
     }
 
     return new Promise((resolve, reject) => {

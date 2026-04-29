@@ -199,7 +199,9 @@ taskkill /F /IM node.exe /T
 echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
-echo  [4/4] Limpiando sockets de PM2...
+echo  [4/4] Limpiando sockets de PM2 y candados de Chrome...
+if exist "server\.wwebjs_auth\session\lockfile" del /F /Q "server\.wwebjs_auth\session\lockfile" 2>nul
+if exist "server\.wwebjs_auth\session\SingletonLock" del /F /Q "server\.wwebjs_auth\session\SingletonLock" 2>nul
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
 timeout /t 3 /nobreak >nul
 

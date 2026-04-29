@@ -82,7 +82,7 @@ router.get('/download/:id', async (req, res) => {
         }
 
         // Build doc
-        const pdfBuffer = await buildPremiumPDF(dataForPDF, reqLang);
+        const pdfBuffer = await buildPremiumPDF(dataForPDF, reqLang, nlRes.rows[0].cover_url);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Godzilla-Premium-Report-${reqLang}.pdf"`);

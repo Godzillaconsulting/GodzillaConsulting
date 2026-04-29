@@ -734,13 +734,18 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
                 // Save to studio_tasks for CEO review
                 try {
-                    const dbModule = await import('../db.js');
-                    const pool = dbModule.pool || dbModule.default;
-                    await pool.query(
-                        `INSERT INTO studio_tasks (titulo, tipo, datos_ia, estado, created_at) VALUES ($1, 'paquete_social', $2, 'pendiente_revision', NOW())`,
-                        [paquete.tema || topic, JSON.stringify({ ...paquete, imageUrl })]
+                    const dbModule = await import('../config/db.js');
+                    const poolObj = dbModule.pool || dbModule.default || pool;
+                    const res = await poolObj.query(
+                        `INSERT INTO studio_tasks (title, prompt, media_payload, status, created_at) VALUES ($1, $2, $3, 'rendering', NOW()) RETURNING id`,
+                        [
+                            paquete.tema || topic, 
+                            paquete.prompt || `Paquete de Contenido: ${topic}`, 
+                            JSON.stringify({ scenes: paquete.guion || {}, voice: paquete.narracion || 'Automático', imageUrl })
+                        ]
                     );
-                    console.log('[Engine] 💾 Paquete guardado en studio_tasks para revisión');
+                    ctx.taskId = res.rows[0].id;
+                    console.log(`[Engine] 💾 Paquete guardado en studio_tasks para revisión (ID: ${ctx.taskId})`);
                 } catch(dbErr) {
                     console.warn('[Engine] ⚠️ No se pudo guardar en DB:', dbErr.message);
                 }

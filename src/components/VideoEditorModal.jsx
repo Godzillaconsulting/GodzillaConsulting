@@ -70,6 +70,13 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [captionLanguage, setCaptionLanguage] = useState('spanish');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [iaScope, setIaScope] = useState('clip');
+  const [captionStyle, setCaptionStyle] = useState('hormozi');
+
+  const CAPTION_STYLES = {
+    hormozi: { fontSize: 52, fontColor: '#ffffff', posY: 0.80, bold: true, align: 'center', karaoke: true },
+    classic: { fontSize: 40, fontColor: '#ffffff', posY: 0.90, bold: false, align: 'center', karaoke: false },
+    yellowBox: { fontSize: 44, fontColor: '#000000', bgColor: '#facc15', posY: 0.80, bold: true, align: 'center', karaoke: false }
+  };
   
   const filteredStock = useMemo(() => {
     if (!stockQuery) return STOCK_VIDEOS;
@@ -145,13 +152,38 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   }, [editor]);
 
   const handleTimelineChange = useCallback((data) => {
+    const SNAP_THRESHOLD = 0.3; // 0.3 segundos de magnetismo
+
     data.forEach(row => {
       const layer = editor.project.layers.find(l => l.id === row.id);
       if (!layer) return;
       row.actions.forEach(action => {
         const clip = layer.clips.find(c => c.id === action.id);
         if (clip && (Math.abs(clip.start - action.start) > 0.01 || Math.abs(clip.end - action.end) > 0.01)) {
-          editor.updateClip(clip.id, { start: action.start, end: action.end });
+          let newStart = action.start;
+          let newEnd = action.end;
+          const dur = newEnd - newStart;
+
+          // Magnetismo (Snap)
+          const otherClips = layer.clips.filter(c => c.id !== clip.id);
+          for (const other of otherClips) {
+             if (Math.abs(newStart - other.end) < SNAP_THRESHOLD) {
+                 newStart = other.end;
+                 newEnd = newStart + dur;
+                 break;
+             }
+             if (Math.abs(newEnd - other.start) < SNAP_THRESHOLD) {
+                 newEnd = other.start;
+                 newStart = newEnd - dur;
+                 break;
+             }
+          }
+          if (newStart < SNAP_THRESHOLD) {
+              newStart = 0;
+              newEnd = dur;
+          }
+
+          editor.updateClip(clip.id, { start: newStart, end: newEnd });
         }
       });
     });
@@ -432,14 +464,17 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           end: currentTimelineStart + (Math.min(w.timestamp[1], sourceEnd) - sourceOffset)
         }));
 
+        const selectedStyle = CAPTION_STYLES[captionStyle];
+
         editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
-          fontSize: 52,
-          fontColor: '#ffffff',
-          posY: 0.80,
-          bold: true,
-          align: 'center',
+          fontSize: selectedStyle.fontSize,
+          fontColor: selectedStyle.fontColor,
+          bgColor: selectedStyle.bgColor || 'rgba(0,0,0,0.5)',
+          posY: selectedStyle.posY,
+          bold: selectedStyle.bold,
+          align: selectedStyle.align,
           words: wordsArr,
-          karaoke: true
+          karaoke: selectedStyle.karaoke
         }));
 
         currentSentence = [];
@@ -472,99 +507,61 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
 
     setIsBotRunning(true);
     try {
-      // 1. SILENCE DETECTION
       const response = await fetch(targetClip.sourceUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const decodedAudio = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-      const channelData = decodedAudio.getChannelData(0);
-      const sampleRate = decodedAudio.sampleRate;
+      const blob = await response.blob();
+      
+      const formData = new FormData();
+      formData.append('mediaFile', blob, 'clip.mp4');
+      formData.append('language', captionLanguage);
 
-      const windowSize = Math.floor(0.05 * sampleRate);
-      const threshold = 0.035;
-      const minSilenceDuration = 0.5;
+      const [cutRes, capRes] = await Promise.all([
+          fetch('/api/studio/smart-cut', { method: 'POST', body: formData }),
+          fetch('/api/studio/auto-captions', { method: 'POST', body: formData })
+      ]);
 
-      const sourceStart = targetClip.sourceStart || 0;
-      const clipDuration = targetClip.end - targetClip.start;
-      const sourceEnd = sourceStart + clipDuration;
+      if (!cutRes.ok || !capRes.ok) throw new Error('Error en los servicios de IA de backend.');
+      
+      const cutData = await cutRes.json();
+      const capData = await capRes.json();
 
-      const startIndex = Math.floor(sourceStart * sampleRate);
-      const endIndex = Math.min(Math.floor(sourceEnd * sampleRate), channelData.length);
+      const keepRegions = cutData.keepRegions || [];
+      const result = { chunks: capData.captions || [] };
 
-      const keepRegions = [];
-      let isSilent = false;
-      let silenceStart = 0;
-      let currentRegionStart = sourceStart;
-
-      for (let i = startIndex; i < endIndex; i += windowSize) {
-        let sumSquares = 0;
-        const endIdx = Math.min(i + windowSize, endIndex);
-        for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
-        const rms = Math.sqrt(sumSquares / (endIdx - i));
-        const timeSec = i / sampleRate;
-
-        if (rms < threshold) {
-          if (!isSilent) { isSilent = true; silenceStart = timeSec; }
-        } else {
-          if (isSilent) {
-            if (timeSec - silenceStart >= minSilenceDuration) {
-              if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
-              currentRegionStart = timeSec;
-            }
-            isSilent = false;
-          }
-        }
+      if (keepRegions.length === 0) {
+          keepRegions.push({ start: targetClip.sourceStart || 0, end: (targetClip.sourceStart || 0) + (targetClip.end - targetClip.start) });
       }
 
-      const totalDurationSec = sourceEnd;
-      if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
-        if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
-      } else if (silenceStart > currentRegionStart) {
-        keepRegions.push({ start: currentRegionStart, end: silenceStart });
-      }
-
-      // 2. WHISPER INITIALIZATION
-      const { pipeline, env } = await import('@huggingface/transformers');
-      env.backends.onnx.wasm.numThreads = 1;
-      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { 
-         device: 'wasm',
-         dtype: 'fp32'
-      });
-
-      // 3. PROCESS AUDIO FOR WHISPER (16kHz requirement)
-      const audioCtx16k = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      const decoded16k = await audioCtx16k.decodeAudioData(arrayBuffer);
-      const audioData16k = decoded16k.getChannelData(0);
-
-      const result = await transcriber(audioData16k, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: 'word',
-        language: captionLanguage,
-        task: 'transcribe'
-      });
-
-      // 4. ASSEMBLE CLIPS & TEXT
       const layer = editor.project.layers.find(l => l.clips.some(c => c.id === targetClip.id));
       const textLayer = editor.project.layers.find(l => l.type === 'text');
+      
+      let overlayLayer = editor.project.layers.find(l => l.type === 'video' && l.id !== layer.id);
+      if (!overlayLayer) {
+          overlayLayer = makeLayer('video');
+          editor.addLayer(overlayLayer);
+      }
+      
+      let sfxLayer = editor.project.layers.find(l => l.type === 'audio');
+      if (!sfxLayer) {
+          sfxLayer = makeLayer('audio');
+          editor.addLayer(sfxLayer);
+      }
+
       let currentTimelineStart = targetClip.start;
       let punchIn = false;
 
       keepRegions.forEach((region, idx) => {
         const duration = region.end - region.start;
 
-        // Add Video Clip (Alternating Zoom)
         const newClip = makeVideoClip(targetClip.sourceUrl, `${targetClip.sourceName} p${idx + 1}`, currentTimelineStart, currentTimelineStart + duration);
         newClip.sourceStart = region.start;
         newClip.speed = targetClip.speed || 1;
         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
 
         if (punchIn) newClip.transform = { scale: 1.15, x: 0, y: 0 };
-        punchIn = !punchIn; // Toggle zoom for next clip
+        punchIn = !punchIn; 
 
         editor.addClip(layer.id, newClip);
 
-        // Add Subtitles matching this region (Grouped in chunks for Karaoke effect to save timeline memory)
         if (result.chunks) {
           const regionChunks = result.chunks.filter(c => {
              const [start, end] = c.timestamp;
@@ -591,14 +588,35 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               end: currentTimelineStart + (Math.min(w.timestamp[1], region.end) - region.start)
             }));
 
+            const textUpper = currentSentenceText.toUpperCase();
+            if (textUpper.match(/SUSCRIB|CAMPANITA|LIKE/)) {
+                const mg = MOTION_GRAPHICS_LIBRARY[1];
+                const mgClip = makeVideoClip(mg.url, mg.caption, clipStart, clipStart + 3);
+                mgClip.chromaKey = mg.chromaKey;
+                mgClip.transform = { scale: 0.5, x: 0, y: -0.3 };
+                editor.addClip(overlayLayer.id, mgClip);
+                
+                const sfx = SFX_LIBRARY[1];
+                editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 1));
+            } else if (textUpper.match(/DINERO|DÓLAR|VENTA|COMPRA/)) {
+                const sfx = SFX_LIBRARY[3];
+                editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 1.5));
+            } else if (textUpper.match(/ALERTA|CUIDADO|PELIGRO|IMPORTANTE/)) {
+                const sfx = SFX_LIBRARY[4];
+                editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 2));
+            }
+
+            const selectedStyle = CAPTION_STYLES[captionStyle];
+
             editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
-              fontSize: 64, // Bigger for short form
-              fontColor: '#ffffff',
-              posY: 0.85,
-              bold: true,
-              align: 'center',
+              fontSize: selectedStyle.fontSize,
+              fontColor: selectedStyle.fontColor,
+              bgColor: selectedStyle.bgColor || 'rgba(0,0,0,0.5)',
+              posY: selectedStyle.posY,
+              bold: selectedStyle.bold,
+              align: selectedStyle.align,
               words: wordsArr,
-              karaoke: true
+              karaoke: selectedStyle.karaoke
             }));
 
             currentSentence = [];
@@ -608,7 +626,6 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           regionChunks.forEach(chunk => {
             currentSentence.push(chunk);
             currentSentenceText += chunk.text + ' ';
-            // Max 4 words per clip for high impact Hormozi style
             if (chunk.text.match(/[.!?]$/) || currentSentence.length >= 4) flushSentence();
           });
           flushSentence();
@@ -618,9 +635,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       });
 
       editor.deleteClip(targetClip.id);
-      setSelectedClipId(null);
       setLeftTab('text');
-      alert(`¡Bot Hormozi completado! Se eliminaron silencios, se añadieron zooms dinámicos y autogeneraron subtítulos estilo Hormozi.`);
+      alert('¡Bot Hormozi completado! Se eliminaron silencios, inyectaron gráficos, y generaron subtítulos.');
 
     } catch (e) {
       console.error(e);
@@ -628,7 +644,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     } finally {
       setIsBotRunning(false);
     }
-  }, [selectedClipId, editor]);
+  }, [selectedClipId, editor, engine, captionLanguage, captionStyle]);
 
   const handleExtractAudio = useCallback(() => {
     if (!selectedClipId) return;
@@ -751,24 +767,6 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           
           <div className="h-4 w-px bg-neutral-700 hidden sm:block mx-1"></div>
           
-          {/* Caption Language */}
-          <select
-            value={captionLanguage}
-            onChange={e => setCaptionLanguage(e.target.value)}
-            title="Idioma para Subtítulos IA"
-            className="bg-[#27272a] hover:bg-[#3f3f46] border border-[#3f3f46] text-white text-xs rounded-md px-3 py-1.5 outline-none cursor-pointer transition-colors"
-          >
-            <option value="spanish">Español</option>
-            <option value="english">Inglés</option>
-            <option value="portuguese">Portugués</option>
-            <option value="french">Francés</option>
-            <option value="german">Alemán</option>
-            <option value="italian">Italiano</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Undo/Redo */}
           <div className="flex items-center bg-[#27272a] rounded-md p-0.5 border border-[#3f3f46]">
             <button onClick={editor.undo} disabled={!editor.canUndo} title="Deshacer (Ctrl+Z)"
               className="p-1.5 rounded hover:bg-[#3f3f46] text-neutral-300 disabled:opacity-30 transition-colors">

@@ -351,14 +351,22 @@ export const initWhatsAppBot = async () => {
         const queueObj = userMessageQueues.get(senderId);
         queueObj.msgBuffer.push(rawMessageText);
 
-        if (queueObj.timer) return; // Si ya hay un timer corriendo, solo aglomera el spam
+        // ── FIX PRINCIPAL: Si ya hay un timer corriendo, solo añadir al buffer ──
+        // El timer anterior procesará el mensaje nuevo porque lee todo el buffer al ejecutar.
+        // NO hacemos return aquí porque eso ya está manejado por el timer existente.
+        if (queueObj.timer) {
+            console.log(`📦 Mensaje añadido al buffer de [${maskedSender}]. Hay timer activo, acumulando...`);
+            return;
+        }
 
-        const jitter = Math.floor(Math.random() * 800) + 200; // Inyectar 200 a 1000ms de retardo
+        const jitter = Math.floor(Math.random() * 800) + 200;
         
         queueObj.timer = setTimeout(async () => {
-            const messageText = queueObj.msgBuffer.join(" \\n ");
-            userMessageQueues.delete(senderId); // Limpiar cola
-            console.log(`🚀 WA Procesando batch para [${maskedSender}] (Jitter: ${jitter}ms)`);
+            // Leer TODO el buffer acumulado y limpiar el estado ANTES de procesar
+            const currentQueue = userMessageQueues.get(senderId);
+            const messageText = currentQueue ? currentQueue.msgBuffer.join(" \n ") : rawMessageText;
+            userMessageQueues.delete(senderId); // Limpia timer + buffer del mapa
+            console.log(`🚀 WA Procesando batch para [${maskedSender}] (${messageText.split('\n').length} msg, Jitter: ${jitter}ms)`);
 
         try {
             // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
@@ -440,12 +448,22 @@ export const initWhatsAppBot = async () => {
                     ? { temperature: 0.5 }
                     : { tools: groqTools };
                 const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);
-                botReply = waterfallResponse.content || "";
+                
+                // Guard: nunca enviar string vacío a WhatsApp
+                botReply = (waterfallResponse.content && waterfallResponse.content.trim())
+                    ? waterfallResponse.content.trim()
+                    : "Entendido, ¿en qué más te puedo ayudar? 😊";
                 
                 if (waterfallResponse.tool_calls && waterfallResponse.tool_calls.length > 0) {
+                    // ⚠️ FIX CRÍTICO: Resetear botReply cuando hay tool_calls.
+                    // Algunos proveedores meten el JSON del tool_call dentro del `content`,
+                    // lo que causaba que se enviara el JSON crudo al usuario si la 2ª llamada falló.
+                    // La respuesta real la pondrá la segunda llamada al waterfall.
+                    botReply = "Un momento, estoy consultando el sistema... ⏳";
+                    
                     groqMessages.push({ 
                         role: 'assistant', 
-                        content: botReply, 
+                        content: waterfallResponse.content || null,
                         tool_calls: waterfallResponse.tool_calls 
                     });
                     
@@ -505,7 +523,7 @@ export const initWhatsAppBot = async () => {
                                 console.log(`[WA Tool] Disponibilidad ${fecha} a las ${hora}: ${fRes.disponible}`);
                             }
                         }
-                                        } else if (callName === "save_appointment") {
+                    } else if (callName === "save_appointment") {
                         try {
                             const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
                             
@@ -627,8 +645,13 @@ export const initWhatsAppBot = async () => {
                             fRes = { success: false, error: "Error técnico reagendando, intenta de nuevo más tarde." };
                         }
                     } else if (callName === "get_available_downloads") {
-                        const r = await pool.query("SELECT title, slug FROM lead_magnets");
-                        fRes = { resources: r.rows };
+                        try {
+                            const r = await pool.query("SELECT title, slug FROM lead_magnets");
+                            fRes = { resources: r.rows };
+                        } catch(dlErr) {
+                            console.error("❌ Error en get_available_downloads:", dlErr.message);
+                            fRes = { resources: [], error: "No se pudieron cargar los recursos." };
+                        }
                     }
                     // Pushing tool response to Groq messages
                     groqMessages.push({
@@ -652,6 +675,22 @@ export const initWhatsAppBot = async () => {
             }
 
             console.log(`🤖 ZillaBot (WA) respondió a [${maskedSender}] exitosamente.`);
+            
+            // 🔒 SAFETY NET FINAL: Nunca enviar JSON crudo ni string vacío a WhatsApp
+            if (!botReply || !botReply.trim()) {
+                botReply = "Entendido, ¿en qué más te puedo ayudar? 😊";
+            }
+            // Detectar si botReply es JSON crudo accidental (tool_call filtrado)
+            if (botReply.trim().startsWith('{') && botReply.trim().endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(botReply);
+                    if (parsed.type === 'function' || parsed.name || parsed.tool_calls) {
+                        console.warn("⚠️ [SAFETY NET] Se detectó JSON crudo en botReply. Reemplazando con mensaje seguro.");
+                        botReply = "Ya processé tu solicitud. ¿Hay algo más en lo que pueda ayudarte? 😊";
+                    }
+                } catch(e) { /* No es JSON válido, es texto normal con llaves */ }
+            }
+            
             await client.sendMessage(senderId, botReply);
 
             const postBotSession = await appendMessageToSession(senderId, "model", botReply);

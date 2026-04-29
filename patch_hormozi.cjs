@@ -1,27 +1,17 @@
 const fs = require('fs');
 const path = require('path');
+
 const filePath = path.join(__dirname, 'src/components/VideoEditorModal.jsx');
 let content = fs.readFileSync(filePath, 'utf8');
 
-const oldStart = "  const handleHormoziBot = useCallback(async () => {";
-
-const startIndex = content.indexOf(oldStart);
-if (startIndex !== -1) {
-    const nextFunction = "  const handleExtractAudio";
-    let endIndex = content.indexOf(nextFunction, startIndex);
-    
-    if (endIndex === -1) {
-        console.error("No se encontró handleExtractAudio.");
-        process.exit(1);
-    }
-
-    const newFunction = `  const handleHormoziBot = useCallback(async () => {
+const newFunction = `  const handleHormoziBot = useCallback(async () => {
     if (!selectedClipId) return alert('Selecciona un clip de video para aplicar el Bot Hormozi.');
     const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
     if (!targetClip || targetClip.type !== 'video') return alert('El Bot Hormozi solo funciona en clips de video.');
 
     setIsBotRunning(true);
     try {
+      // 1. OBTENER BLOB PARA EL BACKEND
       const response = await fetch(targetClip.sourceUrl);
       const blob = await response.blob();
       
@@ -29,6 +19,7 @@ if (startIndex !== -1) {
       formData.append('mediaFile', blob, 'clip.mp4');
       formData.append('language', captionLanguage);
 
+      // 2. PEDIR SILENCIOS Y TRANSCRIPCIÓN AL BACKEND (Paralelo)
       const [cutRes, capRes] = await Promise.all([
           fetch('/api/studio/smart-cut', { method: 'POST', body: formData }),
           fetch('/api/studio/auto-captions', { method: 'POST', body: formData })
@@ -42,13 +33,16 @@ if (startIndex !== -1) {
       const keepRegions = cutData.keepRegions || [];
       const result = { chunks: capData.captions || [] };
 
+      // Si no hubo cortes porque era corto, usar todo el clip
       if (keepRegions.length === 0) {
           keepRegions.push({ start: targetClip.sourceStart || 0, end: (targetClip.sourceStart || 0) + (targetClip.end - targetClip.start) });
       }
 
+      // 3. ASSEMBLE CLIPS, TEXT & MOTION GRAPHICS
       const layer = editor.project.layers.find(l => l.clips.some(c => c.id === targetClip.id));
       const textLayer = editor.project.layers.find(l => l.type === 'text');
       
+      // Asegurarnos de tener una capa de video secundaria para los motion graphics
       let overlayLayer = editor.project.layers.find(l => l.type === 'video' && l.id !== layer.id);
       if (!overlayLayer) {
           overlayLayer = makeLayer('video');
@@ -67,16 +61,18 @@ if (startIndex !== -1) {
       keepRegions.forEach((region, idx) => {
         const duration = region.end - region.start;
 
+        // Add Video Clip (Alternating Zoom)
         const newClip = makeVideoClip(targetClip.sourceUrl, \`\${targetClip.sourceName} p\${idx + 1}\`, currentTimelineStart, currentTimelineStart + duration);
         newClip.sourceStart = region.start;
         newClip.speed = targetClip.speed || 1;
         newClip.volume = targetClip.volume !== undefined ? targetClip.volume : 1;
 
         if (punchIn) newClip.transform = { scale: 1.15, x: 0, y: 0 };
-        punchIn = !punchIn; 
+        punchIn = !punchIn; // Toggle zoom for next clip
 
         editor.addClip(layer.id, newClip);
 
+        // Add Subtitles matching this region
         if (result.chunks) {
           const regionChunks = result.chunks.filter(c => {
              const [start, end] = c.timestamp;
@@ -103,21 +99,22 @@ if (startIndex !== -1) {
               end: currentTimelineStart + (Math.min(w.timestamp[1], region.end) - region.start)
             }));
 
+            // VERIFICAR PALABRAS CLAVE PARA MOTION GRAPHICS
             const textUpper = currentSentenceText.toUpperCase();
             if (textUpper.match(/SUSCRIB|CAMPANITA|LIKE/)) {
-                const mg = MOTION_GRAPHICS_LIBRARY[1];
+                const mg = MOTION_GRAPHICS_LIBRARY[1]; // Like & bell
                 const mgClip = makeVideoClip(mg.url, mg.caption, clipStart, clipStart + 3);
                 mgClip.chromaKey = mg.chromaKey;
                 mgClip.transform = { scale: 0.5, x: 0, y: -0.3 };
                 editor.addClip(overlayLayer.id, mgClip);
                 
-                const sfx = SFX_LIBRARY[1];
+                const sfx = SFX_LIBRARY[1]; // Pop
                 editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 1));
             } else if (textUpper.match(/DINERO|DÓLAR|VENTA|COMPRA/)) {
-                const sfx = SFX_LIBRARY[3];
+                const sfx = SFX_LIBRARY[3]; // Caja registradora
                 editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 1.5));
             } else if (textUpper.match(/ALERTA|CUIDADO|PELIGRO|IMPORTANTE/)) {
-                const sfx = SFX_LIBRARY[4];
+                const sfx = SFX_LIBRARY[4]; // Riser
                 editor.addClip(sfxLayer.id, makeAudioClip(sfx.url, sfx.caption, clipStart, clipStart + 2));
             }
 
@@ -159,13 +156,17 @@ if (startIndex !== -1) {
     } finally {
       setIsBotRunning(false);
     }
-  }, [selectedClipId, editor, engine, captionLanguage, captionStyle]);
+  }, [selectedClipId, editor, engine, captionLanguage, captionStyle, CAPTION_STYLES]);`;
 
-`;
+const oldStart = "  const handleHormoziBot = useCallback(async () => {";
+const oldEnd = "  }, [selectedClipId, editor, engine]);";
 
+const startIndex = content.indexOf(oldStart);
+if (startIndex !== -1) {
+    const endIndex = content.indexOf(oldEnd, startIndex) + oldEnd.length;
     content = content.substring(0, startIndex) + newFunction + content.substring(endIndex);
     fs.writeFileSync(filePath, content, 'utf8');
-    console.log("Parche 2 completado exitosamente.");
+    console.log("Parche aplicado exitosamente.");
 } else {
-    console.error("No se encontro start");
+    console.error("No se encontró la función oldStart.");
 }

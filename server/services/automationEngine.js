@@ -661,6 +661,141 @@ class AutomationEngine {
             return { ...ctx, _zapierStatus: 'triggered' };
         },
 
+        'Paquete de Contenido Social': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            
+            // Input: Trends Bot result, Planificador entry, or raw config
+            const topic = cfg.topic 
+                        || ctx._trendsData?.trending?.[0]?.title 
+                        || (ctx.plan?.[0]?.['Tema']) 
+                        || 'Tendencia del día';
+            const niche = cfg.niche || ctx.niche || 'Marketing Digital';
+            const product = cfg.product || ctx._product || null;
+
+            console.log(`[Engine] 📦 Paquete de Contenido Social — Generando para: "${topic}"`);
+
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+
+                const productLine = product ? ` y el producto/servicio: "${product}"` : '';
+                const prompt = `Eres un experto en marketing viral y redes sociales latinoamericanas.
+Para el siguiente tema: "${topic}" en el nicho: "${niche}"${productLine}.
+
+Genera un PAQUETE DE CONTENIDO COMPLETO en formato JSON con esta estructura exacta:
+
+{
+  "tema": "título del contenido",
+  "imagen_prompt": "prompt detallado en inglés para generar una infografía visual viral, estilo moderno, tipografía grande, colores vibrantes, sin texto en español, formato vertical 9:16",
+  "tiktok": {
+    "descripcion": "descripción viral de máximo 150 caracteres con emojis al inicio",
+    "hashtags": ["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8"],
+    "musica": "nombre de canción trending en TikTok 2025 que amplifique el mensaje",
+    "hook": "primeras 3 palabras del video que detienen el scroll",
+    "llamada_accion": "frase para los comentarios / duets"
+  },
+  "instagram_feed": {
+    "caption": "caption con storytelling de 2-3 párrafos + emojis + pregunta al final",
+    "hashtags": ["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],
+    "tipo_post": "carrusel o imagen única",
+    "musica": "nombre de audio viral para Reels de Instagram 2025"
+  },
+  "instagram_story": {
+    "texto_overlay": "texto corto y poderoso para poner encima de la imagen (máximo 8 palabras)",
+    "sticker_sugerido": "tipo de sticker de IG: encuesta / pregunta / cuenta regresiva / quiz",
+    "swipe_up_texto": "texto del enlace si aplica"
+  },
+  "facebook": {
+    "post": "publicación para Facebook sin música. Tono profesional/informativo. 2 párrafos + CTA clara.",
+    "tipo": "imagen estática o historia sin audio",
+    "boost_sugerido": "si se recomienda hacer boost y a qué audiencia"
+  },
+  "estrategia_viral": "párrafo con la estrategia de publicación: plataforma primero, horario recomendado (hora MX), y por qué esta combinación maximiza el alcance orgánico"
+}
+
+Responde SOLO el JSON válido, sin bloques de código markdown.`;
+
+                const aiResponse = await executeAiWaterfall([{ role: 'user', content: prompt }], { temperature: 0.85 });
+                
+                let paquete = {};
+                try {
+                    const raw = (aiResponse.content || '').replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
+                    paquete = JSON.parse(raw);
+                } catch(parseErr) {
+                    console.warn('[Engine] ⚠️ Paquete JSON parse failed, returning raw');
+                    paquete = { raw: aiResponse.content };
+                }
+
+                // Generate the infographic image via Pollinations (free, no API key)
+                let imageUrl = null;
+                const imgPrompt = paquete.imagen_prompt || `viral infographic about ${topic}, vertical format, bold typography, vibrant neon colors, modern design`;
+                const encodedPrompt = encodeURIComponent(imgPrompt);
+                imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1920&nologo=true&seed=${Date.now()}`;
+                console.log(`[Engine] 🖼️  Imagen URL generada vía Pollinations`);
+
+                // Save to studio_tasks for CEO review
+                try {
+                    const dbModule = await import('../db.js');
+                    const pool = dbModule.pool || dbModule.default;
+                    await pool.query(
+                        `INSERT INTO studio_tasks (titulo, tipo, datos_ia, estado, created_at) VALUES ($1, 'paquete_social', $2, 'pendiente_revision', NOW())`,
+                        [paquete.tema || topic, JSON.stringify({ ...paquete, imageUrl })]
+                    );
+                    console.log('[Engine] 💾 Paquete guardado en studio_tasks para revisión');
+                } catch(dbErr) {
+                    console.warn('[Engine] ⚠️ No se pudo guardar en DB:', dbErr.message);
+                }
+
+                console.log(`[Engine] ✅ Paquete de Contenido Social completado para: "${topic}"`);
+                return { 
+                    ...ctx, 
+                    _contentPackage: { ...paquete, imageUrl, generatedAt: new Date().toISOString(), topic, niche } 
+                };
+
+            } catch (e) {
+                console.error(`[Engine] ❌ Paquete de Contenido Social error: ${e.message}`);
+                return { ...ctx, _contentPackageError: e.message };
+            }
+        },
+
+        'Trends Bot': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const niche = cfg.niche || ctx.niche || 'Marketing Digital';
+            console.log(`[Engine] 📈 Trends Bot — analizando tendencias para: "${niche}"`);
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const response = await executeAiWaterfall([{
+                    role: 'user',
+                    content: `Eres un analista de tendencias. Dame las 5 tendencias más virales de hoy en el nicho: "${niche}". Responde solo JSON: { "trending": [{ "title": "...", "angle": "...", "virality": "alta|media" }] }`
+                }], { temperature: 0.7 });
+                const raw = (response.content || '').replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
+                const trendsData = JSON.parse(raw);
+                console.log(`[Engine] 📈 Trends Bot — ${trendsData.trending?.length || 0} tendencias encontradas`);
+                return { ...ctx, _trendsData: trendsData, niche };
+            } catch(e) {
+                console.error(`[Engine] ❌ Trends Bot error: ${e.message}`);
+                return { ...ctx, niche };
+            }
+        },
+
+        'Bot Newsletter': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const topic = cfg.topic || ctx._trendsData?.trending?.[0]?.title || 'Novedades de la semana';
+            const instructions = cfg.instructions || '';
+            console.log(`[Engine] 📰 Bot Newsletter — generando para: "${topic}"`);
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const instrLine = instructions ? `Instrucciones extra: ${instructions}` : '';
+                const response = await executeAiWaterfall([{
+                    role: 'user',
+                    content: `Eres un redactor de newsletters premium. Redacta una newsletter completa sobre "${topic}". ${instrLine}\nIncluye: título llamativo, introducción de 2 párrafos, 3 secciones con subtítulos, CTA final. Tono profesional pero cercano en español latino.`
+                }], { temperature: 0.75 });
+                return { ...ctx, _newsletterContent: response.content };
+            } catch(e) {
+                console.error(`[Engine] ❌ Bot Newsletter error: ${e.message}`);
+                return { ...ctx, _newsletterError: e.message };
+            }
+        },
+
         '_default': async (node, ctx) => {
             console.log(`[Engine] ℹ️  Nodo "${node.title}" — Acción Genérica ejecutada`);
             return ctx;

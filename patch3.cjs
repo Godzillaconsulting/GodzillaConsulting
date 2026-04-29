@@ -1,173 +1,122 @@
 const fs = require('fs');
-let content = fs.readFileSync('server/services/automationEngine.js', 'utf8');
+const path = require('path');
+const filePath = path.join(__dirname, 'src/components/VideoEditorModal.jsx');
+let content = fs.readFileSync(filePath, 'utf8');
 
-const targetStr = `        'Anthropic Claude': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🧠 Claude API — Prompt: "\${cfg.prompt}"\`);
-            return { ...ctx, _claudeResult: \`Mock Claude response for: \${cfg.prompt}\` };
-        },
+// 1. Añadir el estado
+const stateTarget = "  const [captionLanguage, setCaptionLanguage] = useState('spanish');\n  const [isDraggingOver, setIsDraggingOver] = useState(false);\n  const [iaScope, setIaScope] = useState('clip');";
+const stateNew = `  const [captionLanguage, setCaptionLanguage] = useState('spanish');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [iaScope, setIaScope] = useState('clip');
+  const [captionStyle, setCaptionStyle] = useState('hormozi');
 
-        'OpenAI / ChatGPT': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🧠 OpenAI API — Prompt: "\${cfg.prompt}"\`);
-            return { ...ctx, _openaiResult: \`Mock OpenAI response for: \${cfg.prompt}\` };
-        },
+  const CAPTION_STYLES = {
+    hormozi: { fontSize: 52, fontColor: '#ffffff', posY: 0.80, bold: true, align: 'center', karaoke: true },
+    classic: { fontSize: 40, fontColor: '#ffffff', posY: 0.90, bold: false, align: 'center', karaoke: false },
+    yellowBox: { fontSize: 44, fontColor: '#000000', bgColor: '#facc15', posY: 0.80, bold: true, align: 'center', karaoke: false }
+  };`;
+content = content.replace(stateTarget, stateNew);
 
-        'DeepSeek API': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🧠 DeepSeek API — Prompt: "\${cfg.prompt}"\`);
-            return { ...ctx, _deepseekResult: \`Mock DeepSeek response\` };
-        },
+// 2. Snap magnético
+const snapTarget = `  const handleTimelineChange = useCallback((data) => {
+    data.forEach(row => {
+      const layer = editor.project.layers.find(l => l.id === row.id);
+      if (!layer) return;
+      row.actions.forEach(action => {
+        const clip = layer.clips.find(c => c.id === action.id);
+        if (clip && (Math.abs(clip.start - action.start) > 0.01 || Math.abs(clip.end - action.end) > 0.01)) {
+          editor.updateClip(clip.id, { start: action.start, end: action.end });
+        }
+      });
+    });
+  }, [editor]);`;
 
-        'ElevenLabs': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🗣️ ElevenLabs — Text: "\${cfg.text}", Voice: \${cfg.voiceId}\`);
-            return { ...ctx, _audioUrl: \`https://mock.elevenlabs.io/audio.mp3\` };
-        },
+const snapNew = `  const handleTimelineChange = useCallback((data) => {
+    const SNAP_THRESHOLD = 0.3; // 0.3 segundos de magnetismo
 
-        'Notion': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🗄 Notion — Insertando en DB: \${cfg.databaseId}\`);
-            return { ...ctx, _notionStatus: 'success' };
-        },`;
+    data.forEach(row => {
+      const layer = editor.project.layers.find(l => l.id === row.id);
+      if (!layer) return;
+      row.actions.forEach(action => {
+        const clip = layer.clips.find(c => c.id === action.id);
+        if (clip && (Math.abs(clip.start - action.start) > 0.01 || Math.abs(clip.end - action.end) > 0.01)) {
+          let newStart = action.start;
+          let newEnd = action.end;
+          const dur = newEnd - newStart;
 
-const insertStr = `        'Anthropic Claude': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.prompt) { console.log('[Engine] ⚠️ Claude API — sin prompt configurado'); return ctx; }
-            try {
-                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
-                    overrideProvider: 'anthropic', model: 'claude-3-5-sonnet-20241022' 
-                });
-                return { ...ctx, _claudeResult: waterfallRes.content };
-            } catch (e) {
-                console.error(\`[Engine] ❌ Claude error: \${e.message}\`);
-                return { ...ctx, _claudeError: e.message };
-            }
-        },
+          const otherClips = layer.clips.filter(c => c.id !== clip.id);
+          for (const other of otherClips) {
+             if (Math.abs(newStart - other.end) < SNAP_THRESHOLD) {
+                 newStart = other.end;
+                 newEnd = newStart + dur;
+                 break;
+             }
+             if (Math.abs(newEnd - other.start) < SNAP_THRESHOLD) {
+                 newEnd = other.start;
+                 newStart = newEnd - dur;
+                 break;
+             }
+          }
+          if (newStart < SNAP_THRESHOLD) {
+              newStart = 0;
+              newEnd = dur;
+          }
 
-        'OpenAI / ChatGPT': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.prompt) { console.log('[Engine] ⚠️ OpenAI API — sin prompt configurado'); return ctx; }
-            try {
-                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
-                    overrideProvider: 'openai', model: cfg.model || 'gpt-4o' 
-                });
-                return { ...ctx, _openaiResult: waterfallRes.content };
-            } catch (e) {
-                console.error(\`[Engine] ❌ OpenAI error: \${e.message}\`);
-                return { ...ctx, _openaiError: e.message };
-            }
-        },
+          editor.updateClip(clip.id, { start: newStart, end: newEnd });
+        }
+      });
+    });
+  }, [editor]);`;
+content = content.replace(snapTarget, snapNew);
 
-        'DeepSeek API': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.prompt) { console.log('[Engine] ⚠️ DeepSeek API — sin prompt configurado'); return ctx; }
-            try {
-                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
-                    overrideProvider: 'deepseek', model: cfg.model || 'deepseek-chat' 
-                });
-                return { ...ctx, _deepseekResult: waterfallRes.content };
-            } catch (e) {
-                console.error(\`[Engine] ❌ DeepSeek error: \${e.message}\`);
-                return { ...ctx, _deepseekError: e.message };
-            }
-        },
+// 3. UI del selector de estilos en el dropdown IA
+const uiTarget = `              <div className="flex bg-[#27272a] rounded p-1">
+                <button onClick={() => setIaScope('clip')} className={\`flex-1 text-[10px] py-1 rounded transition-colors \${iaScope === 'clip' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}\`}>Clip Sel.</button>
+                <button onClick={() => setIaScope('all')} className={\`flex-1 text-[10px] py-1 rounded transition-colors \${iaScope === 'all' ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}\`}>Todo el Video</button>
+              </div>
+            </div>`;
 
-        'ElevenLabs': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            const voiceId = cfg.voiceId;
-            const text = cfg.text;
-            if (!voiceId || !text || !process.env.ELEVENLABS_API_KEY) { console.log('[Engine] ⚠️ ElevenLabs — falta configuración'); return ctx; }
-            try {
-                const url = \`https://api.elevenlabs.io/v1/text-to-speech/\${voiceId}\`;
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, model_id: "eleven_multilingual_v2" })
-                });
-                if (!res.ok) throw new Error(\`ElevenLabs returned \${res.status}\`);
-                const arrayBuffer = await res.arrayBuffer();
-                // En un caso real, guardarías este buffer en S3/R2 o localmente y retornarías la URL pública.
-                // Simularemos retornando que se generó correctamente.
-                console.log(\`[Engine] 🗣️ ElevenLabs — Audio generado correctamente (\${arrayBuffer.byteLength} bytes)\`);
-                return { ...ctx, _audioGenerated: true, _audioBytes: arrayBuffer.byteLength };
-            } catch (e) {
-                console.error(\`[Engine] ❌ ElevenLabs error: \${e.message}\`);
-                return { ...ctx, _elevenLabsError: e.message };
-            }
-        },
+const uiNew = `              <div className="flex bg-[#27272a] rounded p-1">
+                <button onClick={() => setIaScope('clip')} className={\`flex-1 text-[10px] py-1 rounded transition-colors \${iaScope === 'clip' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}\`}>Clip Sel.</button>
+                <button onClick={() => setIaScope('all')} className={\`flex-1 text-[10px] py-1 rounded transition-colors \${iaScope === 'all' ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}\`}>Todo el Video</button>
+              </div>
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide block mt-3 mb-2">Estilo de Subtítulos</label>
+              <select value={captionStyle} onChange={e => setCaptionStyle(e.target.value)} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-[10px] rounded p-1.5 outline-none focus:border-purple-500">
+                 <option value="hormozi">Hormozi (Karaoke Bold)</option>
+                 <option value="classic">Clásico (Cine)</option>
+                 <option value="yellowBox">Caja Amarilla</option>
+              </select>
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide block mt-3 mb-2">Idioma Transcripción</label>
+              <select value={captionLanguage} onChange={e => setCaptionLanguage(e.target.value)} className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-[10px] rounded p-1.5 outline-none focus:border-purple-500 mb-2">
+                 <option value="spanish">Español</option>
+                 <option value="english">Inglés</option>
+              </select>
+            </div>`;
+content = content.replace(uiTarget, uiNew);
 
-        'Notion': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.databaseId) { console.log('[Engine] ⚠️ Notion — sin base de datos configurada'); return ctx; }
-            try {
-                // Aquí iría la llamada real al SDK de Notion. Por simplicidad usamos fetch directo
-                const res = await fetch('https://api.notion.com/v1/pages', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': \`Bearer \${process.env.NOTION_API_KEY}\`,
-                        'Notion-Version': '2022-06-28',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        parent: { database_id: cfg.databaseId },
-                        properties: {
-                            // Este es un payload de ejemplo
-                            Name: { title: [ { text: { content: cfg.title || 'Nueva Entrada' } } ] }
-                        }
-                    })
-                });
-                console.log(\`[Engine] 🗄️ Notion — status: \${res.status}\`);
-                return { ...ctx, _notionStatus: res.status };
-            } catch (e) {
-                console.error(\`[Engine] ❌ Notion error: \${e.message}\`);
-                return { ...ctx, _notionError: e.message };
-            }
-        },
+// 4. Update Auto-Captions to use style
+const autoCapTarget = `        editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
+          fontSize: 52,
+          fontColor: '#ffffff',
+          posY: 0.80,
+          bold: true,
+          align: 'center',
+          words: wordsArr,
+          karaoke: true
+        }));`;
 
-        'Make (Integromat)': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.webhookUrl) return ctx;
-            try {
-                let payload = {};
-                try { payload = cfg.payload ? JSON.parse(cfg.payload) : { data: 'ping' }; } catch(e){}
-                const res = await fetch(cfg.webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                console.log(\`[Engine] ⚡ Make Webhook disparado — \${res.status}\`);
-                return { ...ctx, _makeStatus: res.status };
-            } catch(e) { console.error(\`[Engine] ❌ Make error: \${e.message}\`); return ctx; }
-        },
+const autoCapNew = `        const selectedStyle = CAPTION_STYLES[captionStyle];
+        editor.addClip(textLayer.id, makeTextClip(currentSentenceText.trim().toUpperCase(), clipStart, clipEnd, {
+          fontSize: selectedStyle.fontSize,
+          fontColor: selectedStyle.fontColor,
+          bgColor: selectedStyle.bgColor || 'rgba(0,0,0,0.5)',
+          posY: selectedStyle.posY,
+          bold: selectedStyle.bold,
+          align: selectedStyle.align,
+          words: wordsArr,
+          karaoke: selectedStyle.karaoke
+        }));`;
+content = content.replace(autoCapTarget, autoCapNew);
 
-        'Zapier Webhook': async (node, ctx) => {
-            return AutomationEngine.NODE_ACTIONS['Make (Integromat)'](node, ctx);
-        },
-
-        'Transformador JSON': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            if (!cfg.mapping) return ctx;
-            try {
-                const mapObj = typeof cfg.mapping === 'string' ? JSON.parse(cfg.mapping) : cfg.mapping;
-                console.log(\`[Engine] 🔄 Transformador JSON ejecutado\`);
-                return { ...ctx, _transformedData: mapObj };
-            } catch(e) {
-                console.error(\`[Engine] ❌ Transformador JSON error: \${e.message}\`);
-                return ctx;
-            }
-        },
-
-        'Merge / Combinar': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(\`[Engine] 🔀 Merge / Combinar ejecutado con estrategia: \${cfg.strategy || 'append'}\`);
-            return { ...ctx, _mergeStrategy: cfg.strategy };
-        },`;
-
-if (content.includes(targetStr)) {
-  content = content.replace(targetStr, insertStr);
-  fs.writeFileSync('server/services/automationEngine.js', content, 'utf8');
-  console.log('Successfully updated automationEngine.js (Group B)');
-} else {
-  console.error('Target string not found!');
-  console.log('File content snapshot:', content.substring(content.indexOf('Anthropic Claude') - 50, content.indexOf('Anthropic Claude') + 500));
-}
+fs.writeFileSync(filePath, content, 'utf8');
+console.log('Parche 3 aplicado!');

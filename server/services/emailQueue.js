@@ -178,73 +178,8 @@ export async function enqueueNewsletter(newsletterId) {
         );
         const subs = subsRes.rows;
 
-        // INYECCIÓN B2B (Foto y Gráficas dentro del Correo antes del envío O(1) Fetching)
-        let visualHtml_es = '';
-        let visualHtml_en = '';
-        try {
-            const dBase = typeof nl.base_json === 'string' ? JSON.parse(nl.base_json) : (nl.base_json || {});
-            
-            let coverHtml = '';
-            // Si la IA generó una portada estilo TIME, la usamos.
-            if (nl.cover_url) {
-                coverHtml = `
-                <div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:2px solid #CC0000;background:#000;">
-                    <img src="${nl.cover_url}" alt="Godzilla AI Cover" style="width:100%;height:auto;display:block;max-height:450px;object-fit:cover;min-height:200px;" />
-                </div>`;
-            } else {
-                // Fallback a opengraph si por alguna razon falló la IA del cover
-                const newsUrl = dBase?.pdfSections?.[0]?.url;
-                if (newsUrl) {
-                    const ogUrl = await extractOgImageUrl(newsUrl);
-                    if (ogUrl) {
-                        coverHtml = `
-                        <div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,0.5);border:1px solid #333;">
-                            <img src="${ogUrl}" alt="Corporate Review" style="width:100%;height:auto;display:block;max-height:280px;object-fit:cover;" />
-                        </div>`;
-                    }
-                }
-            }
-
-            // Inyectamos el enganche (teaser) que la IA generó justo debajo de la portada
-            const buildTeaser = (text) => text ? `
-            <div style="background:#111;padding:25px;border-radius:0 0 12px 12px;margin-bottom:30px;border:1px solid #333;border-top:none;">
-                <p style="margin:0;font-size:16px;color:#fff;font-style:italic;line-height:1.6;font-weight:600;">"${text}"</p>
-            </div>` : '';
-
-            visualHtml_es = coverHtml + buildTeaser(dBase?.miniSummary_es);
-            visualHtml_en = coverHtml + buildTeaser(dBase?.miniSummary_en);
-            
-            let chartHtml_es = ''; let chartHtml_en = '';
-            if (dBase?.pdfChart?.data) {
-                const cData = dBase.pdfChart.data;
-                const colors = ['#CC0000', '#990000', '#660000', '#330000'];
-                
-                const buildChart = (title) => {
-                    let cHTML = `<div style="margin-top:40px;padding:25px;background:#18181b;border-left:4px solid #CC0000;border-radius:0 12px 12px 0;border:1px solid #333;border-left:4px solid #CC0000;">`;
-                    cHTML += `<h4 style="margin:0 0 20px 0;font-size:14px;color:#fff;text-transform:uppercase;letter-spacing:1px;font-weight:900;">${title}</h4>`;
-                    cData.forEach((item, idx) => {
-                        const c = colors[idx % colors.length];
-                        cHTML += `
-                        <div style="margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-bottom:5px;font-weight:bold;">
-                                <span style="font-family:Arial,sans-serif">${item.label}</span><span style="color:#fff">${item.value}%</span>
-                            </div>
-                            <div style="width:100%;background:#000;height:6px;border-radius:3px;overflow:hidden;">
-                                <div style="width:${item.value}%;background:${c};height:100%;"></div>
-                            </div>
-                        </div>`;
-                    });
-                    cHTML += `</div>`;
-                    return cHTML;
-                };
-                chartHtml_es = buildChart('Análisis Geométrico de Mercado');
-                chartHtml_en = buildChart('Geometric Market Analysis');
-            }
-            
-            nl.chart_es = chartHtml_es;
-            nl.chart_en = chartHtml_en;
-
-        } catch(e) { console.error('Error inyectando Visuales HTML en DB: ', e); }
+        const translationsDict = typeof nl.translations_json === 'string' ? JSON.parse(nl.translations_json) : (nl.translations_json || {});
+        const dBase = typeof nl.base_json === 'string' ? JSON.parse(nl.base_json) : (nl.base_json || {});
 
         if (subs.length === 0) {
             console.log('⚠️  No hay suscriptores activos.');
@@ -263,18 +198,70 @@ export async function enqueueNewsletter(newsletterId) {
                 [newsletterId, sub.email]
             );
 
-            // RENDERIZADO DINÁMICO EN VUELO
-            let finalSubject = nl.subject;
-            let finalBodyHtml = nl.body_html;
-            let finalAttachmentUrl = nl.attachment_url;
             const lang = sub.language || 'es';
+            const dataForLang = (lang === 'es') ? dBase : (translationsDict[lang] || dBase);
 
+            let finalSubject = nl.subject;
             try { const jSub = JSON.parse(nl.subject); finalSubject = lang === 'en' ? (jSub.en || jSub.es) : (jSub.es || nl.subject); } catch(e){}
-            try { const jBody = JSON.parse(nl.body_html); finalBodyHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html); } catch(e){}
-            
-            // CONCATENACIÓN EDITORIAL (Foto Arriba, Texto Medio, Gráfica Abajo)
-            finalBodyHtml = (lang === 'en' ? visualHtml_en : visualHtml_es) + finalBodyHtml + (lang === 'en' ? (nl.chart_en || '') : (nl.chart_es || ''));
 
+            // 1. COVER
+            let coverHtml = '';
+            if (nl.cover_url) {
+                coverHtml = `<div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:2px solid #CC0000;background:#000;"><img src="${nl.cover_url}" alt="Godzilla AI Cover" style="width:100%;height:auto;display:block;max-height:450px;object-fit:cover;min-height:200px;" /></div>`;
+            }
+
+            // 2. TEASER (Hook)
+            const teaserText = dataForLang.miniSummary_es || dataForLang.miniSummary_en || dataForLang.pdfIntro || '';
+            const teaserHtml = teaserText ? `<div style="background:#111;padding:25px;border-radius:0 0 12px 12px;margin-bottom:30px;border:1px solid #333;border-top:none;"><p style="margin:0;font-size:16px;color:#fff;font-style:italic;line-height:1.6;font-weight:600;">"${teaserText}"</p></div>` : '';
+
+            // 3. NEWS HOOK (List of articles to bait PDF download)
+            let newsHtml = `<h2 style="color:#CC0000; font-size: 20px; text-transform: uppercase;">${lang === 'en' ? "Today's Executive Briefing" : 'Inteligencia Ejecutiva de Hoy'}</h2><ul style="padding-left: 20px;">`;
+            if (dataForLang.pdfSections && Array.isArray(dataForLang.pdfSections)) {
+                dataForLang.pdfSections.slice(0, 3).forEach(sec => {
+                    newsHtml += `<li style="margin-bottom: 20px; font-size: 15px; color: #e5e5e5;"><strong style="color: #fff; font-size: 16px;">${sec.heading}:</strong> <br/><span style="color: #aaa; font-size: 14px;">${sec.content.substring(0, 160)}...</span></li>`;
+                });
+            }
+            newsHtml += `</ul>`;
+
+            // 4. DATA VISUALIZATION CHART
+            let chartHtml = '';
+            if (dataForLang.pdfChart && dataForLang.pdfChart.data) {
+                const cData = dataForLang.pdfChart.data;
+                const colors = ['#CC0000', '#990000', '#660000', '#330000'];
+                const title = dataForLang.pdfChart.title || (lang === 'en' ? 'Market Topology' : 'Topología de Mercado');
+                
+                chartHtml += `<div style="margin-top:40px;padding:25px;background:#18181b;border-left:4px solid #CC0000;border-radius:0 12px 12px 0;border:1px solid #333;border-left:4px solid #CC0000;">`;
+                chartHtml += `<h4 style="margin:0 0 20px 0;font-size:14px;color:#fff;text-transform:uppercase;letter-spacing:1px;font-weight:900;">${title}</h4>`;
+                cData.forEach((item, idx) => {
+                    const c = colors[idx % colors.length];
+                    chartHtml += `
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-bottom:5px;font-weight:bold;">
+                            <span style="font-family:Arial,sans-serif">${item.label}</span><span style="color:#fff; float:right;">${item.value}%</span>
+                        </div>
+                        <div style="width:100%;background:#000;height:6px;border-radius:3px;overflow:hidden;">
+                            <div style="width:${item.value}%;background:${c};height:100%;"></div>
+                        </div>
+                    </div>`;
+                });
+                chartHtml += `</div>`;
+            }
+
+            // 5. AUTO DEPLOY NOTE (If enforced)
+            let extraNote = '';
+            try {
+                const jBody = JSON.parse(nl.body_html);
+                const rawHtml = lang === 'en' ? (jBody.en || jBody.es) : (jBody.es || nl.body_html);
+                if (rawHtml && rawHtml.includes('AUTO-DESPLIEGUE ACTIVO')) {
+                    const match = rawHtml.match(/<div style="background-color: #f9f9f9;[^>]+>([\s\S]+?)<\/div>/);
+                    if (match) extraNote = `<br><hr><br><div style="background-color: #111; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 20px; border-radius: 4px;">${match[1]}</div>`;
+                }
+            } catch(e){}
+
+            // ASSEMBLE FINAL HTML
+            const finalBodyHtml = coverHtml + teaserHtml + newsHtml + chartHtml + extraNote;
+
+            let finalAttachmentUrl = nl.attachment_url;
             if(finalAttachmentUrl) finalAttachmentUrl = `${finalAttachmentUrl}?lang=${lang}`;
 
             emailQueue.enqueue(

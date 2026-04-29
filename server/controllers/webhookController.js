@@ -120,6 +120,10 @@ async function processAndReply(from, text, phoneNumberId, platform) {
         ];
 
         let rawHistory = history.slice(0, -1);
+        // Truncar a los últimos 6 mensajes para ahorrar tokens (peticiones en bloques)
+        if (rawHistory.length > 6) {
+            rawHistory = rawHistory.slice(-6);
+        }
         for (const msg of rawHistory) {
             groqMessages.push({
                 role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",

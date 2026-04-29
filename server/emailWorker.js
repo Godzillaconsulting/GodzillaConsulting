@@ -31,27 +31,9 @@ setInterval(() => {
     console.log(`💓 [EmailWorker] Alive — ${new Date().toLocaleTimeString('es-MX')}`);
 }, 30_000);
 
-// ── PROGRAMACIÓN DEL NEWSLETTER ─────────────────────────────────────────────
-// Ejecutar TODOS LOS DÍAS a las 8:00 AM hora de Ciudad Juárez
-cron.schedule('0 8 * * *', async () => {
-    console.log('⏳ [CRON] Activando Despliegue Automático del Newsletter (8:00 AM)...');
-    try {
-        const result = await generateAndSendAutoNewsletter();
-        console.log('✅ [CRON] Borrador generado exitosamente:', result);
-        
-        if (result && result.newsletterId) {
-            console.log(`🚀 [CRON] Encolando Newsletter ID ${result.newsletterId} a todos los suscriptores...`);
-            const totalEnqueued = await enqueueNewsletter(result.newsletterId);
-            console.log(`✅ [CRON] Éxito masivo. Se han encolado ${totalEnqueued} correos y el PDF está en circulación.`);
-        }
-    } catch (e) {
-        console.error('❌ [CRON] Falla en la programación del Newsletter:', e.message);
-    }
-}, {
-    scheduled: true,
-    timezone: "America/Ciudad_Juarez"
-});
-console.log('⏰ [CRON] Programador activado: TODOS LOS DÍAS a las 8:00 AM (Cd. Juárez).');
+// ── LA PROGRAMACIÓN DEL NEWSLETTER AHORA VIVE EN newsletterBot.js ─────────
+// Este worker se dedica exclusivamente a mantener viva la cola de correos y 
+// manejar los envíos programados por retargeting.
 
 // Retargeting: revisar reglas cada hora
 // Primera ejecución a los 5 minutos de arrancar (dar tiempo a la DB)

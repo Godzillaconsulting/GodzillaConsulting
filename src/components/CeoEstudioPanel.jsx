@@ -274,8 +274,26 @@ export default function CeoEstudioPanel({ adminProfile }) {
         aprobadas:  tasks.filter(t => ['approved','published'].includes(t.status)).length,
     };
 
-    const firstMedia = selected?.media_options?.[0];
+    const firstMedia = Array.isArray(selected?.media_options) ? selected.media_options[0] : null;
+    const isAutoVideo = selected && !Array.isArray(selected.media_options) && selected.media_options?.scenes;
     const isVideo = firstMedia?.isVideo || firstMedia?.url?.match(/\.(mp4|webm|mov)$/i);
+
+    const handleUpdateSchedule = async (e) => {
+        const localVal = e.target.value;
+        if (!localVal) return;
+        const isoDate = new Date(localVal).toISOString();
+        try {
+            await fetch(`/api/studio/tasks/${selected.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ig_publish_date: isoDate })
+            });
+            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, scheduled_for: isoDate } : t));
+            setSelected(prev => ({...prev, scheduled_for: isoDate}));
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col p-6 bg-black text-white overflow-hidden relative">
@@ -351,7 +369,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 )}
 
                 {!loading && visible.map(item => {
-                    const media = item.media_options?.[0];
+                    const isGridAuto = !Array.isArray(item.media_options) && item.media_options?.scenes;
+                    const media = Array.isArray(item.media_options) ? item.media_options[0] : null;
                     const statusInfo = STATUS_MAP[item.status] || { label: item.status, color: 'text-neutral-400 bg-neutral-800 border-neutral-700' };
                     return (
                         <div key={item.id} onClick={() => { setSelected(item); setFeedback(''); setPublishReport(null); }}
@@ -363,6 +382,11 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     ) : (
                                         <img src={resolveMedia(media.url)} alt="Media" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                                     )
+                                ) : isGridAuto ? (
+                                    <div className="flex flex-col items-center justify-center text-neutral-400">
+                                        <span className="text-4xl mb-1 text-[#d946ef]">📜</span>
+                                        <span className="text-[10px] font-bold uppercase text-center px-4">Guion de Video<br/>(Renderizando)</span>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center opacity-40">
                                         <span className="text-3xl mb-1">🖼</span>
@@ -411,13 +435,32 @@ export default function CeoEstudioPanel({ adminProfile }) {
                     <div className="bg-neutral-900 border border-neutral-700 w-full max-w-5xl h-[88vh] rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_50px_rgba(217,70,239,0.15)]">
 
                         {/* Visualizador */}
-                        <div className="flex-1 bg-black flex items-center justify-center relative p-4 min-h-[50%]">
+                        <div className="flex-1 bg-black flex items-center justify-center relative p-4 min-h-[50%] overflow-y-auto custom-scrollbar">
                             {firstMedia?.url ? (
                                 isVideo ? (
                                     <video src={resolveMedia(firstMedia.url)} controls autoPlay muted className="max-w-full max-h-full rounded-xl" />
                                 ) : (
                                     <img src={resolveMedia(firstMedia.url)} className="max-w-full max-h-full object-contain rounded-xl" alt="Asset" />
                                 )
+                            ) : isAutoVideo ? (
+                                <div className="w-full h-full p-8 max-w-2xl mx-auto flex flex-col justify-start">
+                                    <div className="bg-[#d946ef]/10 border border-[#d946ef]/30 text-[#d946ef] rounded-xl p-4 mb-6 flex items-center gap-4">
+                                        <div className="w-10 h-10 border-4 border-[#d946ef]/20 border-t-[#d946ef] rounded-full animate-spin shrink-0" />
+                                        <div>
+                                            <p className="font-black tracking-widest uppercase">Video en Renderizado</p>
+                                            <p className="text-xs text-[#d946ef]/80">MediaWorker está produciendo los clips visuales y la voz en off. Lee el guion mientras tanto.</p>
+                                        </div>
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-4">📜 Guion Aprobado</h3>
+                                    <div className="space-y-4 text-sm pb-10">
+                                        {Object.entries(selected.media_options.scenes).map(([key, text]) => (
+                                            <div key={key} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl">
+                                                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-1">{key}</p>
+                                                <p className="text-neutral-200">{text}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="text-neutral-600 flex flex-col items-center gap-2">
                                     <span className="text-5xl">🖼</span>
@@ -425,12 +468,12 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 </div>
                             )}
                             <button onClick={() => setSelected(null)}
-                                className="absolute top-4 left-4 w-10 h-10 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-colors text-lg">
+                                className="absolute top-4 left-4 w-10 h-10 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-colors text-lg z-50">
                                 ✕
                             </button>
                             {firstMedia?.url && (
                                 <a href={resolveMedia(firstMedia.url)} download={`asset_${selected.id}`} target="_blank" rel="noreferrer"
-                                    className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2">
+                                    className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2 z-50">
                                     ⬇️ Descargar
                                 </a>
                             )}
@@ -461,7 +504,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             <hr className="border-neutral-800 my-3" />
 
                             {/* PENDIENTE → Judith puede aprobar/rechazar */}
-                            {['pending_cm_approval', 'backlog'].includes(selected.status) && canReview && (
+                            {['pending_cm_approval', 'backlog', 'rendering'].includes(selected.status) && canReview && (
                                 <div className="flex-1 flex flex-col">
                                     <label className="text-xs font-bold text-neutral-400 mb-2 block uppercase tracking-widest">
                                         Notas (obligatorio si se devuelve):
@@ -483,7 +526,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {/* PENDIENTE → Alex solo ve estado */}
-                            {['pending_cm_approval', 'backlog'].includes(selected.status) && !canReview && (
+                            {['pending_cm_approval', 'backlog', 'rendering'].includes(selected.status) && !canReview && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                                     <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                                         <span className="text-2xl">⏳</span>
@@ -508,14 +551,25 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             {(selected.status === 'approved' || selected.status === 'published') && (
                                 <div className="flex-1 flex flex-col gap-3">
                                     <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl text-center">
-                                        <p className="text-sm font-black text-green-400">{selected.status === 'published' ? '🚀 YA PUBLICADA' : '✅ LISTO PARA PUBLICAR'}</p>
+                                        <p className="text-sm font-black text-green-400">{selected.status === 'published' ? '🚀 YA PUBLICADA' : '✅ APROBADA'}</p>
                                     </div>
-                                    {selected.scheduled_for && selected.status !== 'published' && (
-                                        <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-center">
-                                            <p className="text-[10px] font-bold text-blue-400 uppercase">Fecha sugerida (CM Calendar)</p>
-                                            <p className="text-sm text-white font-black">{new Date(selected.scheduled_for).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                    
+                                    {/* Selector de fecha directo en CEO Estudio */}
+                                    {selected.status !== 'published' && canPublish && (
+                                        <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl flex flex-col gap-2">
+                                            <label className="text-[10px] font-bold text-blue-400 uppercase text-center flex items-center justify-center gap-1">
+                                                📅 Escoger Fecha y Hora
+                                            </label>
+                                            <input 
+                                                type="datetime-local" 
+                                                value={selected.scheduled_for ? new Date(new Date(selected.scheduled_for).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+                                                onChange={handleUpdateSchedule}
+                                                className="bg-black border border-blue-500/50 rounded-lg p-2.5 text-white text-sm text-center outline-none focus:border-blue-400 cursor-pointer hover:bg-neutral-900 transition-colors"
+                                            />
+                                            <p className="text-[9px] text-neutral-500 text-center leading-tight mt-1">Si programas la fecha, el bot publicará en IG en automático.</p>
                                         </div>
                                     )}
+
                                     {canPublish && selected.status !== 'published' && firstMedia?.url && (
                                         <button onClick={() => setShowPublish(true)}
                                             className="mt-auto w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">

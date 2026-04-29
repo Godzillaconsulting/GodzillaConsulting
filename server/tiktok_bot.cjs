@@ -158,6 +158,20 @@ async function processComment(comment, videoId) {
     try {
         const context = `[Comentario en TikTok de @${comment.username || 'usuario'}]: "${comment.text}"`;
         
+        // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
+        try {
+            const { default: AutomationEngine } = await import('./services/automationEngine.js');
+            AutomationEngine.triggerFlow('TikTok Bot', {
+                userName: comment.username,
+                message: comment.text,
+                videoId: videoId,
+                commentId: comment.id,
+                timestamp: new Date().toISOString()
+            }).catch(e => console.error("⚠️ [Engine] Error disparando flujo visual desde TikTok:", e.message));
+        } catch(e) {
+            console.error("⚠️ Error importando AutomationEngine en TikTok:", e.message);
+        }
+
         // Obtener el prompt activo (sincronizado con BD)
         let activePrompt = await getSystemPrompt();
 
@@ -315,6 +329,49 @@ async function poll() {
 }
 
 
+// ── Polling Outbound Queue ───────────────────────────────────────────────────
+async function pollOutboundQueue() {
+    try {
+        const resQueue = await pool.query(`
+            SELECT id, payload 
+            FROM bot_outbound_queue 
+            WHERE bot_name = 'tiktok' AND status = 'pending' 
+            ORDER BY id ASC LIMIT 5
+        `);
+        for (const row of resQueue.rows) {
+            const { id, payload } = row;
+            try {
+                // Para TikTok necesitamos el video_id y opcionalmente parent_comment_id
+                const { video_id, parent_comment_id, message } = payload;
+                if (!video_id || !message) {
+                    throw new Error("Payload de TikTok incompleto (falta video_id o message).");
+                }
+                
+                console.log(`[TikTok Outbound Queue] 📤 Publicando comentario en video ${video_id}...`);
+                const postRes = await ttPost('/v2/video/comment/create/', {
+                    video_id: video_id,
+                    text: message,
+                    parent_comment_id: parent_comment_id || undefined
+                });
+
+                if (postRes.error?.code && postRes.error.code !== 'ok') {
+                    throw new Error(postRes.error.message || postRes.error.code);
+                }
+
+                await pool.query(`UPDATE bot_outbound_queue SET status = 'sent', processed_at = NOW() WHERE id = $1`, [id]);
+                console.log(`[TikTok Outbound Queue] ✅ Comentario ${id} publicado.`);
+                
+                await new Promise(r => setTimeout(r, 2000)); // Rate limit
+            } catch (sendErr) {
+                console.error(`[TikTok Outbound Queue] ❌ Error publicando msj ${id}:`, sendErr.message);
+                await pool.query(`UPDATE bot_outbound_queue SET status = 'error', error_log = $1, processed_at = NOW() WHERE id = $2`, [sendErr.message, id]);
+            }
+        }
+    } catch (queueErr) {
+        console.error('[TikTok Outbound Queue] Error en el polling:', queueErr.message);
+    }
+}
+
 // ── Inicio ───────────────────────────────────────────────────────────────────
 async function main() {
     if (!ACCESS_TOKEN || !REFRESH_TOKEN) {
@@ -324,6 +381,7 @@ async function main() {
     console.log(`[TikTok] 🚀 Bot iniciado. Polling cada ${POLL_MS/1000}s...`);
     await poll();
     setInterval(poll, POLL_MS);
+    setInterval(pollOutboundQueue, 15000);
 }
 
 main().catch(err => { console.error('[TikTok] Fatal:', err.message); process.exit(1); });

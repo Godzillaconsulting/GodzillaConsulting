@@ -29,6 +29,19 @@ export async function executeAiWaterfall(messages, options = {}) {
     
     const hasTools = tools && tools.length > 0;
 
+    // Sanitizador: convierte mensajes con role:'tool' y tool_calls al formato texto plano
+    // que proveedores no-OpenAI (SambaNova, Pollinations, Gemini) pueden procesar.
+    const sanitizeForBasicProviders = (msgs) => msgs
+        .filter(m => m.role !== 'tool') // Eliminar resultados de tool calls
+        .map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+            content: typeof m.content === 'string'
+                ? m.content
+                : (m.tool_calls
+                    ? `[Acción ejecutada: ${m.tool_calls.map(tc => tc.function?.name).join(', ')}]`
+                    : JSON.stringify(m.content))
+        }));
+
     // --- Definición de Proveedores Aislados ---
 
     const callGroq = async () => {
@@ -40,7 +53,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             messages: messages,
             model: "llama-3.3-70b-versatile",
             temperature: temperature,
-            max_tokens: maxTokens
+            max_tokens: Math.min(maxTokens, 800) // Conservar cuota diaria (100k tokens/día)
         };
 
         if (hasTools) {
@@ -58,7 +71,7 @@ export async function executeAiWaterfall(messages, options = {}) {
         if (!process.env.SAMBANOVA_API_KEY) throw new Error("SAMBANOVA_API_KEY no configurada");
         console.log(`[WATERFALL] ➡️ Intentando: SAMBANOVA (Llama 3.3 70B)`);
         const reqData = {
-            messages: messages,
+            messages: sanitizeForBasicProviders(messages), // Limpiar tool messages
             model: "Meta-Llama-3.3-70B-Instruct",
             temperature: temperature
         };
@@ -81,7 +94,7 @@ export async function executeAiWaterfall(messages, options = {}) {
         if (!process.env.CEREBRAS_API_KEY) throw new Error("CEREBRAS_API_KEY no configurada");
         console.log(`[WATERFALL] ➡️ Intentando: CEREBRAS (Llama 3.1 8B)`);
         const reqData = {
-            messages: messages,
+            messages: sanitizeForBasicProviders(messages), // Limpiar tool messages
             model: "llama3.1-8b",
             temperature: temperature,
             max_tokens: maxTokens
@@ -163,17 +176,17 @@ export async function executeAiWaterfall(messages, options = {}) {
     };
 
     // --- LÓGICA DE ENRUTAMIENTO (SMART LOAD BALANCER) ---
-    
     let activeWaterfall = [];
 
     if (hasTools) {
-        console.log(`[WATERFALL] 🔧 Petición con Tools detectada. Priorizando motor Groq...`);
+        // Con tools: Groq es indispensable (mejor soporte de function calling)
+        console.log(`[WATERFALL] 🔧 Petición con Tools. Usando Groq como primario...`);
         activeWaterfall = [callGroq, callCerebras, callSambaNova, callOllama, callGemini, callPollinations];
     } else {
-        console.log(`[WATERFALL] ⚖️ Balanceo de carga activado (Random Rotation)...`);
-        let tier1 = [callGroq, callSambaNova, callCerebras];
-        tier1.sort(() => Math.random() - 0.5); 
-        activeWaterfall = [...tier1, callOllama, callGemini, callPollinations];
+        // Sin tools: Groq va ÚLTIMO para preservar su cuota diaria de 100k tokens.
+        // SambaNova y Pollinations son gratuitos y sin cuota diaria.
+        console.log(`[WATERFALL] ⚖️ Texto libre — priorizando proveedores sin cuota...`);
+        activeWaterfall = [callSambaNova, callCerebras, callPollinations, callGemini, callOllama, callGroq];
     }
 
     // --- EJECUCIÓN CASCADA ---

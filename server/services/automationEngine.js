@@ -178,14 +178,14 @@ class AutomationEngine {
             return { ...ctx, plan: enriched };
         },
 
-        // Router (Condición) — filtra o desvía si un campo coincide
-        'Router (Condición)': async (node, ctx) => {
+        // Router (Condición) / Switch — detiene la rama si no coincide
+        'Router / Switch': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
             const field = cfg.field;
             const value = cfg.value;
             const match = ctx[field] === value || String(ctx[field]) === String(value);
-            console.log(`[Engine] 🔀 Router — ${field}=${ctx[field]} ${match ? '→ MATCH' : '❌ NO MATCH'}`);
-            return { ...ctx, _routerMatch: match };
+            console.log(`[Engine] 🔀 Router — ${field}=${ctx[field]} ${match ? '→ MATCH' : '❌ NO MATCH (Deteniendo rama)'}`);
+            return { ...ctx, _haltBranch: !match, _routerMatch: match };
         },
 
         // ── SINKS / ACCIONES REALES ───────────────────────────────────────────
@@ -409,32 +409,244 @@ class AutomationEngine {
 
         'Anthropic Claude': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] 🧠 Claude API — Prompt: "${cfg.prompt}"`);
-            return { ...ctx, _claudeResult: `Mock Claude response for: ${cfg.prompt}` };
+            if (!cfg.prompt) { console.log('[Engine] ⚠️ Claude API — sin prompt configurado'); return ctx; }
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
+                    overrideProvider: 'anthropic', model: 'claude-3-5-sonnet-20241022' 
+                });
+                return { ...ctx, _claudeResult: waterfallRes.content };
+            } catch (e) {
+                console.error(`[Engine] ❌ Claude error: ${e.message}`);
+                return { ...ctx, _claudeError: e.message };
+            }
         },
 
         'OpenAI / ChatGPT': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] 🧠 OpenAI API — Prompt: "${cfg.prompt}"`);
-            return { ...ctx, _openaiResult: `Mock OpenAI response for: ${cfg.prompt}` };
+            if (!cfg.prompt) { console.log('[Engine] ⚠️ OpenAI API — sin prompt configurado'); return ctx; }
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
+                    overrideProvider: 'openai', model: cfg.model || 'gpt-4o' 
+                });
+                return { ...ctx, _openaiResult: waterfallRes.content };
+            } catch (e) {
+                console.error(`[Engine] ❌ OpenAI error: ${e.message}`);
+                return { ...ctx, _openaiError: e.message };
+            }
         },
 
         'DeepSeek API': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] 🧠 DeepSeek API — Prompt: "${cfg.prompt}"`);
-            return { ...ctx, _deepseekResult: `Mock DeepSeek response` };
+            if (!cfg.prompt) { console.log('[Engine] ⚠️ DeepSeek API — sin prompt configurado'); return ctx; }
+            try {
+                const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+                const waterfallRes = await executeAiWaterfall([{ role: 'user', content: cfg.prompt }], { 
+                    overrideProvider: 'deepseek', model: cfg.model || 'deepseek-chat' 
+                });
+                return { ...ctx, _deepseekResult: waterfallRes.content };
+            } catch (e) {
+                console.error(`[Engine] ❌ DeepSeek error: ${e.message}`);
+                return { ...ctx, _deepseekError: e.message };
+            }
         },
 
         'ElevenLabs': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] 🗣️ ElevenLabs — Text: "${cfg.text}", Voice: ${cfg.voiceId}`);
-            return { ...ctx, _audioUrl: `https://mock.elevenlabs.io/audio.mp3` };
+            const voiceId = cfg.voiceId;
+            const text = cfg.text;
+            if (!voiceId || !text || !process.env.ELEVENLABS_API_KEY) { console.log('[Engine] ⚠️ ElevenLabs — falta configuración'); return ctx; }
+            try {
+                const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, model_id: "eleven_multilingual_v2" })
+                });
+                if (!res.ok) throw new Error(`ElevenLabs returned ${res.status}`);
+                const arrayBuffer = await res.arrayBuffer();
+                console.log(`[Engine] 🗣️ ElevenLabs — Audio generado correctamente (${arrayBuffer.byteLength} bytes)`);
+                return { ...ctx, _audioGenerated: true, _audioBytes: arrayBuffer.byteLength };
+            } catch (e) {
+                console.error(`[Engine] ❌ ElevenLabs error: ${e.message}`);
+                return { ...ctx, _elevenLabsError: e.message };
+            }
         },
 
         'Notion': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] 🗄 Notion — Insertando en DB: ${cfg.databaseId}`);
-            return { ...ctx, _notionStatus: 'success' };
+            if (!cfg.databaseId) { console.log('[Engine] ⚠️ Notion — sin base de datos configurada'); return ctx; }
+            try {
+                const res = await fetch('https://api.notion.com/v1/pages', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.NOTION_API_KEY}`,
+                        'Notion-Version': '2022-06-28',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        parent: { database_id: cfg.databaseId },
+                        properties: {
+                            Name: { title: [ { text: { content: cfg.title || 'Nueva Entrada' } } ] }
+                        }
+                    })
+                });
+                console.log(`[Engine] 🗄️ Notion — status: ${res.status}`);
+                return { ...ctx, _notionStatus: res.status };
+            } catch (e) {
+                console.error(`[Engine] ❌ Notion error: ${e.message}`);
+                return { ...ctx, _notionError: e.message };
+            }
+        },
+
+        'Make (Integromat)': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            if (!cfg.webhookUrl) return ctx;
+            try {
+                let payload = {};
+                try { payload = cfg.payload ? JSON.parse(cfg.payload) : { data: 'ping' }; } catch(e){}
+                const res = await fetch(cfg.webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                console.log(`[Engine] ⚡ Make Webhook disparado — ${res.status}`);
+                return { ...ctx, _makeStatus: res.status };
+            } catch(e) { console.error(`[Engine] ❌ Make error: ${e.message}`); return ctx; }
+        },
+
+        'Zapier Webhook': async (node, ctx) => {
+            return AutomationEngine.NODE_ACTIONS['Make (Integromat)'](node, ctx);
+        },
+
+        'Transformador JSON': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            if (!cfg.mapping) return ctx;
+            try {
+                const mapObj = typeof cfg.mapping === 'string' ? JSON.parse(cfg.mapping) : cfg.mapping;
+                console.log(`[Engine] 🔄 Transformador JSON ejecutado`);
+                return { ...ctx, _transformedData: mapObj };
+            } catch(e) {
+                console.error(`[Engine] ❌ Transformador JSON error: ${e.message}`);
+                return ctx;
+            }
+        },
+
+        'Merge / Combinar': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            console.log(`[Engine] 🔀 Merge / Combinar ejecutado con estrategia: ${cfg.strategy || 'append'}`);
+            return { ...ctx, _mergeStrategy: cfg.strategy };
+        },
+
+        'Base de Datos': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            if (!cfg.query) { console.log('[Engine] ⚠️ Base de Datos — sin query configurada'); return ctx; }
+            try {
+                let params = [];
+                if (cfg.params) {
+                    try { params = typeof cfg.params === 'string' ? JSON.parse(cfg.params) : cfg.params; } catch(e){}
+                }
+                const result = await pool.query(cfg.query, params);
+                console.log(`[Engine] 🗄️ Base de Datos — Query ejecutada (${result.rowCount} filas)`);
+                return { ...ctx, _dbResult: result.rows };
+            } catch (e) {
+                console.error(`[Engine] ❌ Base de Datos error: ${e.message}`);
+                return { ...ctx, _dbError: e.message };
+            }
+        },
+
+        'Neon DB': async (node, ctx) => {
+            // Usa la misma conexión por defecto ya que usamos Neon en este proyecto
+            return AutomationEngine.NODE_ACTIONS['Base de Datos'](node, ctx);
+        },
+
+        'Telegram Bot': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const token = cfg.botToken || process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = cfg.chatId;
+            const text = cfg.message;
+            if (!token || !chatId || !text) { console.log('[Engine] ⚠️ Telegram Bot — falta configuración'); return ctx; }
+            try {
+                const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text })
+                });
+                console.log(`[Engine] ✈️ Telegram Bot — status: ${res.status}`);
+                return { ...ctx, _telegramStatus: res.status };
+            } catch (e) {
+                console.error(`[Engine] ❌ Telegram error: ${e.message}`);
+                return ctx;
+            }
+        },
+
+        'Twilio SMS': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const to = cfg.to;
+            const body = cfg.message;
+            if (!to || !body || !process.env.TWILIO_ACCOUNT_SID) { console.log('[Engine] ⚠️ Twilio SMS — falta configuración'); return ctx; }
+            try {
+                const sid = process.env.TWILIO_ACCOUNT_SID;
+                const auth = process.env.TWILIO_AUTH_TOKEN;
+                const from = process.env.TWILIO_FROM;
+                const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+                
+                const data = new URLSearchParams();
+                data.append('To', to);
+                data.append('From', from);
+                data.append('Body', body);
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Basic ' + Buffer.from(sid + ':' + auth).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: data
+                });
+                console.log(`[Engine] 📱 Twilio SMS — status: ${res.status}`);
+                return { ...ctx, _twilioStatus: res.status };
+            } catch(e) {
+                console.error(`[Engine] ❌ Twilio error: ${e.message}`);
+                return ctx;
+            }
+        },
+
+        'Discord Webhook': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const url = cfg.webhookUrl;
+            if (!url || !cfg.message) return ctx;
+            try {
+                await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content: cfg.message }) });
+                console.log('[Engine] 👾 Discord Webhook — disparado');
+            } catch(e) { console.error(`[Engine] ❌ Discord error: ${e.message}`); }
+            return ctx;
+        },
+
+        'Slack Webhook': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const url = cfg.webhookUrl;
+            if (!url || !cfg.message) return ctx;
+            try {
+                await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ text: cfg.message }) });
+                console.log('[Engine] 💬 Slack Webhook — disparado');
+            } catch(e) { console.error(`[Engine] ❌ Slack error: ${e.message}`); }
+            return ctx;
+        },
+
+        'Brevo': async (node, ctx) => {
+            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
+            const apiKey = process.env.BREVO_API_KEY || cfg.apiKey;
+            if (!apiKey || !cfg.to || !cfg.subject) { console.log('[Engine] ⚠️ Brevo — falta configuración'); return ctx; }
+            try {
+                const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+                    method: 'POST',
+                    headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender: { name: 'Godzilla Studio', email: process.env.EMAIL_USER || 'studio@godzillaconsulting.com' },
+                        to: [{ email: cfg.to }],
+                        subject: cfg.subject,
+                        htmlContent: cfg.html || '<p>Notificación</p>'
+                    })
+                });
+                console.log(`[Engine] 📧 Brevo Email — status: ${res.status}`);
+            } catch(e) { console.error(`[Engine] ❌ Brevo error: ${e.message}`); }
+            return ctx;
         },
 
         'Make (Integromat)': async (node, ctx) => {
@@ -502,41 +714,64 @@ class AutomationEngine {
     }
 
     static async _executeNodePath(nodes, edges, startNodeId, inputPayload, runId, runLog) {
-        const executionOrder = this.topologicalSort(nodes, edges, startNodeId);
-        console.log(`[Engine] Orden: ${executionOrder.map(n => n.title).join(' → ')}`);
+        const nodeMap = new Map(nodes.map(n => [n.id, n]));
+        
+        // Ejecución BFS Dinámica (Tree-like execution)
+        let queue = [ { nodeId: startNodeId, ctx: { ...inputPayload } } ];
+        const executed = new Set();
+        
+        while (queue.length > 0) {
+            const { nodeId, ctx } = queue.shift();
+            
+            // Prevenir loops infinitos puros (aunque en un árbol no debería haber)
+            if (executed.has(nodeId)) continue;
+            executed.add(nodeId);
 
-        let ctx = { ...inputPayload };
+            const node = nodeMap.get(nodeId);
+            if (!node) continue;
 
-        for (const node of executionOrder) {
             const t0 = Date.now();
+            let newCtx = ctx;
+            let haltBranch = false;
+
             try {
-                const action = this.NODE_ACTIONS[node.title] || this.NODE_ACTIONS['_default'];
-                const previousKeys = Object.keys(ctx);
+                // Soportar aliases por si cambian de nombre en el UI
+                const actionName = node.title === 'Router (Condición)' ? 'Router / Switch' : node.title;
+                const action = this.NODE_ACTIONS[actionName] || this.NODE_ACTIONS['_default'];
                 
-                const newCtx = await action(node, ctx);
+                newCtx = await action(node, ctx);
                 
-                // Extraemos únicamente las variables nuevas o modificadas por este nodo
-                // para guardarlas en el namespace del nodo y permitir mapeo {{ Nodo.salida.var }}
-                const outputData = {};
-                for (const key in newCtx) {
-                    if (newCtx[key] !== ctx[key]) {
-                        outputData[key] = newCtx[key];
-                    }
+                // Si el nodo decide detener esta rama (ej. condición no cumplida)
+                if (newCtx._haltBranch) {
+                    haltBranch = true;
+                    delete newCtx._haltBranch; // Limpiar para logs
                 }
                 
-                ctx = newCtx;
-                // Guardar la salida bajo el nombre del nodo. 
-                // Ejemplo: si el nodo se llama "ElevenLabs", su salida estará en ctx["ElevenLabs"]["salida"]
-                ctx[node.title] = { salida: outputData };
+                const outputData = {};
+                for (const key in newCtx) {
+                    if (newCtx[key] !== ctx[key]) outputData[key] = newCtx[key];
+                }
+                
+                newCtx[node.title] = { salida: outputData };
                 
                 runLog.push({ node: node.title, status: 'success', ms: Date.now() - t0 });
                 console.log(`[Engine] ✅ ${node.title} — ${Date.now() - t0}ms`);
             } catch (e) {
                 runLog.push({ node: node.title, status: 'error', error: e.message, ms: Date.now() - t0 });
                 console.error(`[Engine] ❌ ${node.title} falló: ${e.message}`);
+                haltBranch = true; // Error detiene la rama
+            }
+
+            // Si la rama no fue detenida (por error o filtro), agregar hijos a la cola
+            if (!haltBranch) {
+                const children = edges.filter(e => e.source === nodeId);
+                for (const edge of children) {
+                    queue.push({ nodeId: edge.target, ctx: { ...newCtx } });
+                }
             }
         }
-        return ctx;
+        
+        return inputPayload; // El contexto final se diluye en ramas, retornamos algo neutral
     }
 
     static async triggerFlow(sourceTitle, inputPayload = {}, flowId = null) {

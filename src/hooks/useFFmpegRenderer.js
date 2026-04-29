@@ -83,6 +83,7 @@ async function buildCommand(ffmpeg, project, exportSettings = {}) {
   const write = async (url) => {
     if (written.has(url)) return;
     const name = `src${fi++}.mp4`;
+    // Escribimos en WASM por compatibilidad, pero lo guardamos en writtenMap para el backend
     await ffmpeg.writeFile(name, await fetchFile(url));
     written.set(url, name);
   };
@@ -278,13 +279,15 @@ async function buildCommand(ffmpeg, project, exportSettings = {}) {
     finalV = '[vfinaltext]';
   }
 
-  return { inputs, filterComplex: fc.trim(), finalV, finalA, exportSettings };
+  return { inputs, filterComplex: fc.trim(), finalV, finalA, exportSettings, writtenMap: written };
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useFFmpegRenderer() {
   const [isRendering, setIsRendering] = useState(false);
   const [progress, setProgress]       = useState(0);
+
+  const USE_NATIVE_BACKEND = true;
 
   const render = useCallback(async (project, exportSettings = {}) => {
     setIsRendering(true);
@@ -305,26 +308,62 @@ export function useFFmpegRenderer() {
 
     try {
       const ffmpeg = await getFFmpeg(setProgress);
-      const { inputs, filterComplex, finalV, finalA } = await buildCommand(ffmpeg, project, exportSettings);
+      const { inputs, filterComplex, finalV, finalA, writtenMap } = await buildCommand(ffmpeg, project, exportSettings);
 
-      await ffmpeg.exec([
+      const preset = exportSettings.preset || 'ultrafast';
+      const crf    = exportSettings.crf || '28';
+      const fps    = exportSettings.fps || 30;
+
+      const args = [
         ...inputs,
         '-filter_complex', filterComplex,
         '-map', finalV, '-map', finalA,
         '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-r', `${fps}`,
         '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
         'output.mp4',
-      ]);
+      ];
 
-      setProgress(100);
-      const data = await ffmpeg.readFile('output.mp4');
-      const blob = new Blob([data.buffer], { type: 'video/mp4' });
-      const a    = Object.assign(document.createElement('a'), {
-        href:     URL.createObjectURL(blob),
-        download: `godzilla_edit_${Date.now()}.mp4`,
-      });
-      a.click();
-      await ffmpeg.deleteFile('output.mp4');
+      if (USE_NATIVE_BACKEND) {
+        setProgress(10);
+        const formData = new FormData();
+        formData.append('args', JSON.stringify(args));
+        
+        for (const [url, name] of writtenMap.entries()) {
+            const dataBuffer = await fetchFile(url);
+            const blob = new Blob([dataBuffer]);
+            formData.append('mediaFiles', blob, name);
+        }
+        setProgress(30); // Subida en progreso
+        
+        const token = localStorage.getItem('adminToken') || '';
+        const apiRes = await fetch('/api/studio/render-native', {
+           method: 'POST',
+           headers: { 'Authorization': `Bearer ${token}` },
+           body: formData
+        });
+
+        if (!apiRes.ok) throw new Error('Error Render Nativo Backend.');
+        setProgress(100);
+
+        const videoBlob = await apiRes.blob();
+        const a = Object.assign(document.createElement('a'), {
+           href: URL.createObjectURL(videoBlob),
+           download: `godzilla_edit_${Date.now()}.mp4`,
+        });
+        a.click();
+      } else {
+        await ffmpeg.exec(args);
+
+        setProgress(100);
+        const data = await ffmpeg.readFile('output.mp4');
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        const a    = Object.assign(document.createElement('a'), {
+          href:     URL.createObjectURL(blob),
+          download: `godzilla_edit_${Date.now()}.mp4`,
+        });
+        a.click();
+        await ffmpeg.deleteFile('output.mp4');
+      }
       
       // Notify user
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {

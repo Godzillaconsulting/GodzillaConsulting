@@ -8,6 +8,7 @@ const upload = multer({ dest: os.tmpdir() });
 import { generateRenderJob, refineRenderJob, checkRenderStatus, getElitePrompts, generateScriptChat, purifyVideo, getInspirationGallery, getDynamicFilters, magicEditAnalysis, generateMonthlyPlan, getMonthlyPlanStatus } from '../controllers/aiStudioController.js';
 import { verifyAdminToken as authenticateToken, requireCM, requireCMOrCockers } from '../middleware/adminAuth.js';
 import pool from '../config/db.js';
+import { detectSilences } from '../utils/videoProcessor.js';
 
 const router = express.Router();
 
@@ -53,6 +54,121 @@ router.post('/tts', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('[aiStudio.js] Error in /tts:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+// ==========================================
+// Tareas IA (Smart Cut & Whisper en Backend)
+// ==========================================
+router.post('/smart-cut', authenticateToken, upload.single('mediaFile'), async (req, res) => {
+    try {
+        const filePath = req.file?.path;
+        if (!filePath) return res.status(400).json({ error: 'No media file provided.' });
+
+        const silences = await detectSilences(filePath);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+        res.json({ success: true, silences });
+    } catch (e) {
+        if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+router.post('/auto-captions', authenticateToken, upload.single('mediaFile'), async (req, res) => {
+    try {
+        const filePath = req.file?.path;
+        if (!filePath) return res.status(400).json({ error: 'No media file provided.' });
+
+        // Cargar Whisper de HuggingFace en Node.js, almacenando el modelo en el disco duro.
+        const { pipeline, env } = await import('@huggingface/transformers');
+        
+        // Configuramos la cache en el disco para evitar descargas.
+        env.cacheDir = 'E:/Godzilla_Studio_Cache/models';
+        env.backends.onnx.wasm.numThreads = 2; // Node.js tiene más threads
+        
+        const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+            device: 'wasm',
+            dtype: 'fp32'
+        });
+
+        // Importante: Transformers.js Node API requiere file URL para locales
+        const fileUrl = 'file://' + path.resolve(filePath);
+        const output = await transcriber(fileUrl, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: 'word'
+        });
+
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        
+        // Devolvemos los subtítulos con marcas de tiempo, tal como lo esperaba el frontend
+        res.json({ success: true, captions: output.chunks || [] });
+    } catch (e) {
+        console.error('[Whisper Backend]', e);
+        if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// ==========================================
+// Renderizado FFmpeg Nativo (Backend)
+// ==========================================
+import { spawn } from 'child_process';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+
+router.post('/render-native', authenticateToken, upload.array('mediaFiles'), (req, res) => {
+    try {
+        const argsStr = req.body.args;
+        if (!argsStr) return res.status(400).json({ error: 'Faltan argumentos (args)' });
+        
+        const args = JSON.parse(argsStr);
+        const workDir = os.tmpdir();
+        
+        // Mover archivos renombrados al dir de trabajo
+        req.files.forEach(f => {
+            const originalName = f.originalname;
+            const tempPath = path.join(workDir, originalName);
+            fs.renameSync(f.path, tempPath);
+        });
+
+        // Configurar output final
+        const outName = `render_final_${Date.now()}.mp4`;
+        // Reemplazamos la salida final 'output.mp4' (o el último arg) por nuestra ruta real
+        const outIdx = args.length - 1;
+        args[outIdx] = path.join(workDir, outName);
+
+        // Añadir paths a las fuentes nativas de ffmpeg
+        // Spawn el proceso nativo
+        const child = spawn(ffmpegPath.path, args, { cwd: workDir });
+
+        child.stderr.on('data', (data) => {
+            // Se puede hacer broadcast de progreso aquí si fuera necesario
+            // console.log(`[FFmpeg Native]: ${data}`);
+        });
+
+        child.on('close', (code) => {
+            if (code !== 0) {
+                return res.status(500).json({ error: `FFmpeg falló con código ${code}` });
+            }
+            
+            const finalPath = path.join(workDir, outName);
+            if (!fs.existsSync(finalPath)) return res.status(500).json({ error: 'Archivo final no encontrado' });
+
+            res.download(finalPath, outName, (err) => {
+                // Cleanup general de la carpeta
+                try {
+                    fs.unlinkSync(finalPath);
+                    req.files.forEach(f => {
+                        const t = path.join(workDir, f.originalname);
+                        if (fs.existsSync(t)) fs.unlinkSync(t);
+                    });
+                } catch(e) {}
+            });
+        });
+        
+    } catch (e) {
+        console.error('[Render Native Error]', e);
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 

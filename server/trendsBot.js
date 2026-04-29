@@ -13,14 +13,18 @@ console.log(`[${BOT_NAME}] 🚀 Inicializado exitosamente y desconectado de Anti
 console.log(`[${BOT_NAME}] 🕒 Sincronizando reloj interno...`);
 
 const KEYWORDS = [
+    "Marketing Digital",
+    "Publicidad Creativa",
+    "Tecnología",
     "Inteligencia Artificial",
-    "Marketing B2B",
-    "Ventas Corporativas"
+    "Emprendimiento",
+    "Redes Sociales",
+    "Tendencias Virales"
 ];
 
-// Preguntas comunes para emular AnswerThePublic
+// Preguntas comunes para emular AnswerThePublic y buscar lo viral
 const MODIFIERS = [
-    "qué es", "cómo hacer", "por qué", "cuánto cuesta", "mejores herramientas para"
+    "qué es", "cómo hacer", "tendencias en", "lo más nuevo de", "viral en", "herramientas para"
 ];
 
 const fetchGoogleAutocomplete = async (query) => {
@@ -98,9 +102,26 @@ REGLAS:
             [JSON.stringify(KEYWORDS), JSON.stringify(structuredQuestions), summaryText]
         );
 
-        // 2. Tareas en el CEO Studio desactivadas por petición del usuario
-        // El bot ahora solo guarda métricas de Analytics y el menú lateral consume las tendencias en vivo.
-        console.log(`[${BOT_NAME}] 💾 Datos inyectados en la DB exitosamente.`);
+        // 2. Tareas en el CEO Studio (Reactivado con Generación Automática de Media)
+        const taskTitle = `🔥 TENDENCIA VIRAL HOY: ${KEYWORDS[0]} / ${KEYWORDS[2]}`;
+        const taskPrompt = `Crea un video dinámico estilo TikTok basado en estas tendencias virales reales encontradas hoy:\n\n${summaryText}`;
+        
+        // Generación de Media Automática (MP4 animado o stock)
+        const safePrompt = summaryText.substring(0, 200).replace(/\n/g, ' ');
+        const mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+        
+        const mediaPayload = JSON.stringify([{
+            url: mediaUrl,
+            provider: 'Auto Pollinations',
+            isVideo: false // Se guarda como imagen inicialmente, en el panel pueden refinar/animar
+        }]);
+
+        await client.query(
+            `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, status, content_type, ig_publish_date, media_payload, created_by) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '2 hours', $8, $9)`,
+            [taskTitle, taskPrompt, 'alex', JSON.stringify(['Tendencias Virales', 'Auto']), 'alta', 'pending_cm_approval', 'video', mediaPayload, 'trends_bot']
+        );
+        console.log(`[${BOT_NAME}] 💾 Datos inyectados y Media generada exitosamente.`);
     } catch (err) {
         console.error(`[${BOT_NAME}] ❌ Error guardando en BD:`, err.message);
     } finally {

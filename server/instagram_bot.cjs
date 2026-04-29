@@ -466,6 +466,18 @@ async function startBot() {
                 await new Promise(r => setTimeout(r, jitter));
                 console.log(`🚀 [Instagram] DM agrupado de @${userName} (Jitter: ${jitter}ms, ${allTexts.length} msg(s)): ${msgText.substring(0,60)}...`);
 
+                // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
+                try {
+                    const { default: AutomationEngine } = await import('./services/automationEngine.js');
+                    AutomationEngine.triggerFlow('IG / Messenger Bot', {
+                        userName,
+                        message: msgText,
+                        timestamp: new Date().toISOString()
+                    }).catch(e => console.error("⚠️ [Engine] Error disparando flujo visual desde IG:", e.message));
+                } catch(e) {
+                    console.error("⚠️ Error importando AutomationEngine en IG:", e.message);
+                }
+
                 // Marcar como en proceso ANTES de llamar a Gemini
                 processingUsers.add(userName);
 
@@ -511,6 +523,49 @@ async function startBot() {
                 console.log('[Instagram] ⚠️ ¡Pestaña corrupta o separada por ataque anti-bot de IG! Forzando reinicio limpio...');
                 throw new Error("Detached frame detectado. Reiniciando proceso para evitar Chrome Zombies.");
             }
+        }
+
+        // ===============================================
+        // POLLING: COLA DE AUTOMATIZACIÓN (bot_outbound_queue)
+        // ===============================================
+        try {
+            const resQueue = await pool.query(`
+                SELECT id, payload 
+                FROM bot_outbound_queue 
+                WHERE bot_name = 'instagram' AND status = 'pending' 
+                ORDER BY id ASC LIMIT 5
+            `);
+            for (const row of resQueue.rows) {
+                const { id, payload } = row;
+                try {
+                    const targetUser = payload.to;
+                    const messageToSend = payload.message;
+                    console.log(`[IG Outbound Queue] 📤 Enviando DM a @${targetUser}...`);
+                    
+                    // Asegurarnos de que no choque con Gemini
+                    processingUsers.add(targetUser);
+                    
+                    await page.goto(`https://www.instagram.com/direct/t/${payload.threadId || ''}/`, { waitUntil: 'domcontentloaded' });
+                    // Si no tenemos threadId, habría que buscar al usuario (complejo por UI de IG).
+                    // Asumiremos que el payload trae threadId o que ya estamos en la página correcta.
+                    // Idealmente, el payload debería traer el threadId para IG.
+                    await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
+                    await page.type('div[role="textbox"]', messageToSend, { delay: 15 });
+                    await page.keyboard.press('Enter');
+                    
+                    await pool.query(`UPDATE bot_outbound_queue SET status = 'sent', processed_at = NOW() WHERE id = $1`, [id]);
+                    console.log(`[IG Outbound Queue] ✅ DM ${id} enviado.`);
+                    
+                    processingUsers.delete(targetUser);
+                    await new Promise(r => setTimeout(r, 2000));
+                } catch(sendErr) {
+                    console.error(`[IG Outbound Queue] ❌ Error enviando DM ${id}:`, sendErr.message);
+                    await pool.query(`UPDATE bot_outbound_queue SET status = 'error', error_log = $1, processed_at = NOW() WHERE id = $2`, [sendErr.message, id]);
+                    if (payload.to) processingUsers.delete(payload.to);
+                }
+            }
+        } catch (queueErr) {
+            console.error('[IG Outbound Queue] Error en el polling:', queueErr.message);
         }
 
         await new Promise(r => setTimeout(r, POLL_MS));

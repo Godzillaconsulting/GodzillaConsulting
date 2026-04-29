@@ -2,16 +2,6 @@
 :: ============================================================
 ::  GODZILLA - GESTOR MAESTRO DE REINICIO GRANULAR
 ::  Elige QUE reiniciar sin tumbar el resto del stack.
-::
-::  Procesos disponibles:
-::    1. whatsapp-bot
-::    2. godzilla-server
-::    3. email-worker
-::    4. ai-core
-::    5. trends-bot
-::    6. tiktok-bot
-::    7. instagram-bot
-::    8. TODOS (full restart del servicio - usa solo si es necesario)
 :: ============================================================
 
 net session >nul 2>&1
@@ -19,6 +9,9 @@ if %errorLevel% neq 0 (
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     exit /b
 )
+
+:: FIX THE CURRENT DIRECTORY WHEN RUN AS ADMIN
+cd /d "%~dp0"
 
 title GODZILLA - Gestor de Reinicio Granular
 color 0A
@@ -43,6 +36,7 @@ echo   [8] Ver estado PM2       (sin reiniciar nada)
 echo   [9] REINICIO TOTAL       (servicio completo - TODOS se caen)
 echo   [10] LIMPIEZA ZOMBIE     (mata todo Node/Chrome atascado)
 echo   [11] Auto-Renovar IG     (inicia sesion automaticamente)
+echo   [12] REPARAR WHATSAPP    (borra sesion corrupta - usa solo si hay bucle)
 echo   [0] Salir
 echo.
 set /p OPCION="  Tu eleccion: "
@@ -58,6 +52,7 @@ if "%OPCION%"=="8" goto STATUS
 if "%OPCION%"=="9" goto RESTART_TOTAL
 if "%OPCION%"=="10" goto LIMPIEZA_ZOMBIE
 if "%OPCION%"=="11" goto RENOVAR_IG
+if "%OPCION%"=="12" goto REPARAR_WP
 if "%OPCION%"=="0" exit /b
 goto MENU
 
@@ -229,8 +224,40 @@ node server/ig_puppeteer_setup.cjs
 
 echo.
 echo  =======================================================
-echo    LISTO. ¡La sesion ha sido renovada exitosamente!
+echo    LISTO. La sesion ha sido renovada exitosamente!
 echo    El bot maestro tomara el control en unos segundos.
 echo  =======================================================
 pause
+goto MENU
+
+:REPARAR_WP
+cls
+color 4F
+echo.
+echo ========================================================
+echo   LIMPIEZA EXTREMA DE SESION CORRUPTA DE WHATSAPP
+echo ========================================================
+echo.
+echo [1/3] Deteniendo el bot...
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd stop whatsapp-bot
+
+echo [2/3] Forzando cierre de navegadores zombies...
+taskkill /F /IM chrome.exe /T 2>nul
+
+echo [3/3] Borrando carpeta de sesion corrupta...
+rmdir /S /Q "server\.wwebjs_auth"
+
+echo [Listo] Arrancando bot fresco...
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd restart whatsapp-bot --update-env
+
+echo.
+echo ========================================================
+echo PROCESO COMPLETADO. 
+echo Ahora ve a http://localhost:3002/qr , escanealo por ultima vez
+echo y mandale el mensaje de prueba.
+echo ========================================================
+pause
+color 0A
 goto MENU

@@ -16,6 +16,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { executeAiWaterfall } from './utils/aiWaterfall.js';
 import { searchMemories } from './core_engine/aiCore.js';
+import AutomationEngine from './services/automationEngine.js';
 
 // child_process ya no se usa — limpieza garantizada por shutdown handlers
 dotenv.config();
@@ -205,20 +206,22 @@ export const initWhatsAppBot = async () => {
         console.log('🔄 Escaneando y recuperando mensajes que entraron mientras estaba apagado...');
         try {
             const chats = await client.getChats();
-            let unreadCount = 0;
+            const pendingMsgs = [];
             for (const chat of chats) {
                 if (chat.unreadCount > 0 && !chat.isGroup) {
                     const messages = await chat.fetchMessages({ limit: chat.unreadCount });
                     for (const msg of messages) {
-                        if (!msg.fromMe) {
-                            unreadCount++;
-                            // Forzamos al bot a que procese este mensaje como si acabara de llegar
-                            client.emit('message', msg);
-                        }
+                        if (!msg.fromMe) pendingMsgs.push(msg);
                     }
                 }
             }
-            console.log(`✅ Se recuperaron y enviaron a procesar ${unreadCount} mensajes perdidos.`);
+            console.log(`✅ Se encontraron ${pendingMsgs.length} mensajes perdidos. Procesando de forma SECUENCIAL para no saturar la IA...`);
+            // ── PROCESAMIENTO SECUENCIAL: 1 mensaje cada 5 segundos ──
+            // Enviarlos todos en paralelo colapsaba el rate-limit de Groq.
+            for (let i = 0; i < pendingMsgs.length; i++) {
+                await new Promise(r => setTimeout(r, 5000 * i)); // Escalonar 5s entre cada uno
+                client.emit('message', pendingMsgs[i]);
+            }
         } catch (e) {
             console.error('⚠️ Error al recuperar mensajes perdidos:', e.message);
         }
@@ -357,8 +360,14 @@ export const initWhatsAppBot = async () => {
             userMessageQueues.delete(senderId); // Limpiar cola
             console.log(`🚀 WA Procesando batch para [${maskedSender}] (Jitter: ${jitter}ms)`);
 
-
         try {
+            // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
+            AutomationEngine.triggerFlow('WhatsApp Bot', {
+                senderId,
+                message: messageText,
+                timestamp: new Date().toISOString()
+            }).catch(e => console.error("⚠️ [Engine] Error disparando flujo visual desde WA:", e.message));
+
             const sessionData = await appendMessageToSession(senderId, "user", messageText);
             if (!sessionData) return;
 
@@ -630,12 +639,15 @@ export const initWhatsAppBot = async () => {
                     });
                 }
                 
-                // Second call to Groq with tool results
+                // Segunda llamada: SIEMPRE usa Groq primero porque el historial
+                // contiene mensajes con role:'tool' que solo APIs OpenAI-compatible entienden.
+                // SambaNova/Pollinations crashean si reciben ese formato.
                 try {
-                    const waterfallResponse2 = await executeAiWaterfall(groqMessages);
+                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools });
                     botReply = waterfallResponse2.content || 'Reserva procesada.';
                 } catch(e) {
                     console.error("❌ Error en segunda llamada Waterfall (tools):", e.message);
+                    botReply = "Procese tu solicitud pero tuve un problema al redactar la respuesta. ¿Puedes repetirme tu pregunta?";
                 }
             }
 
@@ -668,16 +680,43 @@ export const initWhatsAppBot = async () => {
     // y evitar que quede congelado en memoria RAM tomando rehén la sesión.
     
     const emergencyShutdown = async (err, origin) => {
+        // Ignorar errores de puerto ocupado (no fatales para WhatsApp)
         if (err && err.code === 'EADDRINUSE') {
-            console.warn(`⚠️ [Ignorado] PM2 lanzó uncaughtException por EADDRINUSE. Escaneo QR usando puerto ocupado. El bot seguirá corriendo.`);
-            return; // No matar el proceso de WhatsApp, dejar que el callback se ocupe!
+            console.warn(`⚠️ [Ignorado] Puerto ocupado (EADDRINUSE). El bot sigue corriendo.`);
+            return;
         }
-        console.error(`🛑 [CRASH] Fatal Error (${origin}):`, err);
-        try {
-            console.log('Cerrando Chrome de emergencia...');
-            await client.destroy();
-        } catch (e) {}
-        process.exit(1);
+
+        // ── BLINDAJE ANTI-LOCKFILE ──────────────────────────────────────────
+        // Este error ocurre cuando Chrome anterior no cerró limpiamente y dejó
+        // un archivo "lockfile" o "SingletonLock" en la carpeta de sesión.
+        // SOLUCIÓN: Borramos el lockfile y dejamos que PM2 reintente automáticamente.
+        // NO llamamos client.initialize() aquí porque eso crea una SEGUNDA instancia
+        // de Chrome encima de la primera, causando el loop de 'browser already running'.
+        if (err && err.message && err.message.includes('The browser is already running')) {
+            console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
+            try {
+                const sessionPath = 'C:\\Users\\GODZILLA.IA\\GodzillaConsulting\\server\\.wwebjs_auth\\session';
+                const lockfile = path.join(sessionPath, 'lockfile');
+                const singleton = path.join(sessionPath, 'SingletonLock');
+                if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
+                if (fs.existsSync(singleton)) { fs.unlinkSync(singleton); console.log('🗑️ SingletonLock eliminado.'); }
+                console.log('🔄 Lockfiles limpiados. PM2 reiniciará el proceso automáticamente.');
+            } catch(cleanErr) {
+                console.error('⚠️ Error al limpiar lockfiles:', cleanErr.message);
+            }
+            // Forzar salida para que PM2 reinicie limpiamente (sin Chrome zombie)
+            process.exit(1);
+            return;
+        }
+
+        // Para cualquier otro error desconocido: loggear pero NO morir
+        console.error(`🛑 [ERROR] (${origin}):`, err?.message || err);
+        console.warn(`⚠️ [BLINDAJE] Error no fatal ignorado para mantener el bot 24/7.`);
+        // Solo morir si es un error absolutamente catastrófico de Node mismo
+        if (err && (err.code === 'ERR_WORKER_INIT_FAILURE' || err.code === 'MODULE_NOT_FOUND')) {
+            console.error('💀 Error catastrófico de módulo. Apagando para forzar recarga de PM2.');
+            process.exit(1);
+        }
     };
 
     process.on('uncaughtException', (err) => emergencyShutdown(err, 'uncaughtException'));

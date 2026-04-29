@@ -24,6 +24,13 @@ const STOCK_VIDEOS = [
   { id: 'v5', type: 'video', url: 'https://cdn.coverr.co/videos/coverr-crypto-trading-1080p.mp4', caption: 'Trading / Crypto', tags: ['trading', 'crypto', 'bitcoin', 'graficas'] }
 ];
 
+const MOTION_GRAPHICS_LIBRARY = [
+  { id: 'mg1', type: 'video', url: 'https://cdn.pixabay.com/video/2020/05/26/40134-424722510_large.mp4', caption: 'Suscríbete (Chroma Verde)', chromaKey: { color: '#00ff00', similarity: 0.3, blend: 0.1 } },
+  { id: 'mg2', type: 'video', url: 'https://cdn.pixabay.com/video/2021/08/04/83893-585149301_large.mp4', caption: 'Like & Bell (Chroma Verde)', chromaKey: { color: '#00ff00', similarity: 0.3, blend: 0.1 } },
+  { id: 'mg3', type: 'video', url: 'https://raw.githubusercontent.com/misterhat/transparent-video-demo/master/demo.webm', caption: 'Loading (WebM Transparente)', chromaKey: null },
+  { id: 'mg4', type: 'video', url: 'https://cdn.pixabay.com/video/2023/10/22/186008-877209765_large.mp4', caption: 'Explosión (Chroma Negro)', chromaKey: { color: '#000000', similarity: 0.15, blend: 0.1 } }
+];
+
 const SFX_LIBRARY = [
   { id: 's1', type: 'audio', url: 'https://actions.google.com/sounds/v1/foley/whoosh.ogg', caption: '💨 Whoosh Rápido', icon: '💨' },
   { id: 's2', type: 'audio', url: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg', caption: '🫧 Pop Text', icon: '🫧' },
@@ -61,6 +68,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const recordingStartTimeRef = useRef(0);
   const [stockQuery, setStockQuery] = useState('');
   const [captionLanguage, setCaptionLanguage] = useState('spanish');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [iaScope, setIaScope] = useState('clip');
   
   const filteredStock = useMemo(() => {
     if (!stockQuery) return STOCK_VIDEOS;
@@ -194,7 +203,10 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           referenceAudio: ttsVoice.startsWith('xtts:') ? ttsReferenceAudio : null
         })
       });
-      if (!res.ok) throw new Error('Error generando TTS en el backend');
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || 'Error generando TTS en el backend');
+      }
       const blob = await res.blob();
       const localUrl = URL.createObjectURL(blob);
       
@@ -205,7 +217,8 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       insertClipWithoutOverlap(newClip, 'audio');
       setTtsText('');
     } catch (e) {
-      alert('Error en el servicio de Voz IA: ' + e.message);
+      console.error('[TTS Error]', e);
+      alert(`⚠️ Error en el servicio de Voz IA:\n\n${e.message}\n\nAsegúrate de que el backend está corriendo y el modelo seleccionado está disponible.`);
     } finally {
       setIsGenTTS(false);
     }
@@ -259,60 +272,58 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   }, [render, editor.project, exportSettings]);
 
   const handleSmartCut = useCallback(async () => {
-    if (!selectedClipId) return alert('Selecciona un clip para eliminar silencios.');
-    const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
-    if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return;
+    let targetClips = [];
+    if (iaScope === 'all') {
+      const layer = editor.project.layers.find(l => l.type === 'video');
+      targetClips = layer ? layer.clips : [];
+      if (!targetClips.length) return alert('No hay clips de video en la línea principal para procesar.');
+    } else {
+      if (!selectedClipId) return alert('Selecciona un clip para eliminar silencios, o usa "Todo el Video".');
+      const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
+      if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return alert('Clip no válido para esta acción.');
+      targetClips = [targetClip];
+    }
 
     setIsBotRunning(true);
+    let totalCortes = 0;
     try {
+      for (const targetClip of targetClips) {
+        // Ejecutamos la lógica para cada clip
+
       const response = await fetch(targetClip.sourceUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      const channelData = audioBuffer.getChannelData(0);
-      const sampleRate = audioBuffer.sampleRate;
+      const blob = await response.blob();
+      
+      const formData = new FormData();
+      formData.append('mediaFile', blob, 'clip.mp4');
 
-      const windowSize = Math.floor(0.05 * sampleRate); // 50ms windows
-      const threshold = 0.035; // ~ -29dB RMS
-      const minSilenceDuration = 0.5; // 500ms
+      const apiRes = await fetch('/api/studio/smart-cut', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+        body: formData
+      });
 
+      if (!apiRes.ok) throw new Error('Error en el servidor de Smart Cut.');
+      const data = await apiRes.json();
+      
       const sourceStart = targetClip.sourceStart || 0;
       const clipDuration = targetClip.end - targetClip.start;
       const sourceEnd = sourceStart + clipDuration;
 
-      const startIndex = Math.floor(sourceStart * sampleRate);
-      const endIndex = Math.min(Math.floor(sourceEnd * sampleRate), channelData.length);
-
       const keepRegions = [];
-      let isSilent = false;
-      let silenceStart = 0;
       let currentRegionStart = sourceStart;
 
-      for (let i = startIndex; i < endIndex; i += windowSize) {
-        let sumSquares = 0;
-        const endIdx = Math.min(i + windowSize, endIndex);
-        for (let j = i; j < endIdx; j++) sumSquares += channelData[j] * channelData[j];
-        const rms = Math.sqrt(sumSquares / (endIdx - i));
-        const timeSec = i / sampleRate;
-
-        if (rms < threshold) {
-          if (!isSilent) { isSilent = true; silenceStart = timeSec; }
-        } else {
-          if (isSilent) {
-            if (timeSec - silenceStart >= minSilenceDuration) {
-              if (silenceStart > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: silenceStart });
-              currentRegionStart = timeSec;
-            }
-            isSilent = false;
+      (data.silences || []).forEach(s => {
+          // Si el silencio está dentro de los límites del clip
+          if (s.start > currentRegionStart && s.start < sourceEnd) {
+              keepRegions.push({ start: currentRegionStart, end: s.start });
           }
-        }
-      }
+          if (s.end > currentRegionStart) {
+              currentRegionStart = s.end;
+          }
+      });
 
-      const totalDurationSec = sourceEnd;
-      if (!isSilent || (totalDurationSec - silenceStart < minSilenceDuration)) {
-        if (totalDurationSec > currentRegionStart) keepRegions.push({ start: currentRegionStart, end: totalDurationSec });
-      } else if (silenceStart > currentRegionStart) {
-        keepRegions.push({ start: currentRegionStart, end: silenceStart });
+      if (sourceEnd > currentRegionStart) {
+          keepRegions.push({ start: currentRegionStart, end: sourceEnd });
       }
 
       if (keepRegions.length <= 1) {
@@ -338,8 +349,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       });
 
       editor.deleteClip(targetClip.id);
+      totalCortes += (keepRegions.length - 1);
+      } // Fin for
+
       setSelectedClipId(null);
-      alert(`¡Corte Mágico completado! Se eliminaron ${keepRegions.length - 1} silencios.`);
+      alert(`¡Corte Mágico completado! Se eliminaron ${totalCortes} silencios en total.`);
     } catch (e) {
       console.error(e);
       alert('Error procesando el audio para cortes inteligentes.');
@@ -349,33 +363,37 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
   }, [selectedClipId, editor]);
 
   const handleAutoCaptions = useCallback(async () => {
-    if (!selectedClipId) return alert('Selecciona un clip de video/audio para autogenerar subtítulos.');
-    const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
-    if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return;
+    let targetClips = [];
+    if (iaScope === 'all') {
+      const layer = editor.project.layers.find(l => l.type === 'video' || l.type === 'audio');
+      targetClips = layer ? layer.clips : [];
+      if (!targetClips.length) return alert('No hay clips para procesar.');
+    } else {
+      if (!selectedClipId) return alert('Selecciona un clip de video/audio para autogenerar subtítulos.');
+      const targetClip = editor.project.layers.flatMap(l => l.clips).find(c => c.id === selectedClipId);
+      if (!targetClip || (targetClip.type !== 'video' && targetClip.type !== 'audio')) return alert('Clip no válido.');
+      targetClips = [targetClip];
+    }
 
     setIsBotRunning(true);
     try {
-      const { pipeline, env } = await import('@huggingface/transformers');
-      env.backends.onnx.wasm.numThreads = 1;
-      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        device: 'wasm',
-        dtype: 'fp32'
-      });
+      for (const targetClip of targetClips) {
+        const response = await fetch(targetClip.sourceUrl);
+        const blob = await response.blob();
+        
+        const formData = new FormData();
+        formData.append('mediaFile', blob, 'clip.mp4');
 
-      const response = await fetch(targetClip.sourceUrl);
-      const arrayBuffer = await response.arrayBuffer();
+        const apiRes = await fetch('/api/studio/auto-captions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+          body: formData
+        });
 
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      const audioData = audioBuffer.getChannelData(0);
-
-      const result = await transcriber(audioData, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: 'word',
-        language: captionLanguage,
-        task: 'transcribe'
-      });
+        if (!apiRes.ok) throw new Error('Error en el backend de Auto-Captions');
+        const data = await apiRes.json();
+        
+        const result = { chunks: data.captions || [] };
 
       const textLayer = editor.project.layers.find(l => l.type === 'text');
       if (!textLayer) return alert('No se encontró la capa de texto.');
@@ -434,9 +452,10 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         if (chunk.text.match(/[.!?]$/) || currentSentence.length >= 5) flushSentence();
       });
       flushSentence();
+      } // Fin for
 
       setLeftTab('text');
-      alert('¡Subtítulos con efecto Karaoke generados exitosamente con IA local!');
+      alert('¡Subtítulos con efecto Karaoke generados exitosamente!');
 
     } catch (e) {
       console.error(e);
@@ -770,7 +789,14 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             <span className="hidden sm:inline">IA Tools</span>
           </button>
           {/* Dropdown IA Tools */}
-          <div className="absolute top-12 right-[180px] w-56 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
+          <div className="absolute top-12 right-[180px] w-64 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
+            <div className="p-3 border-b border-[#27272a] bg-[#121212] rounded-t-md">
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide block mb-2">Alcance de IA</label>
+              <div className="flex bg-[#27272a] rounded p-1">
+                <button onClick={() => setIaScope('clip')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'clip' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Clip Sel.</button>
+                <button onClick={() => setIaScope('all')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'all' ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Todo el Video</button>
+              </div>
+            </div>
             <button onClick={handleHormoziBot} className="w-full text-left px-4 py-3 text-xs text-white hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-blue-600/20 flex items-center gap-2 border-b border-[#27272a] font-bold">
               <Wand2 className="w-4 h-4 text-purple-400" /> Bot Hormozi (Todo en 1)
             </button>
@@ -807,6 +833,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
               { id: 'media', icon: <ImageIcon className="w-4 h-4" />, label: 'Medios' },
               { id: 'text', icon: <Type className="w-4 h-4" />, label: 'Texto' },
               { id: 'tts', icon: <Music className="w-4 h-4" />, label: 'Voz IA' },
+              { id: 'motion', icon: <Wand2 className="w-4 h-4" />, label: 'Motion' },
               { id: 'stock', icon: <Search className="w-4 h-4" />, label: 'Stock' },
               { id: 'sfx', icon: <Zap className="w-4 h-4" />, label: 'SFX' },
             ].map(tab => (
@@ -879,14 +906,29 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 </div>
 
                 <div className="pt-4 border-t border-[#27272a]">
-                  <h4 className="text-[10px] text-neutral-400 font-semibold mb-2 uppercase tracking-wide">Plantillas Rápidas</h4>
-                  <div className="space-y-1.5">
-                    {['🔥 ¡No te lo pierdas!', '💡 Tip del día', '🚀 Resultados reales', '❓ ¿Sabías que...?', '✅ Garantizado'].map(t => (
-                      <button key={t} onClick={() => setNewText(t)}
-                        className="w-full text-left text-xs text-neutral-300 bg-[#27272a]/50 hover:bg-[#27272a] border border-transparent hover:border-[#3f3f46] p-2.5 rounded-md transition-all">
-                        {t}
-                      </button>
-                    ))}
+                  <h4 className="text-[10px] text-neutral-400 font-semibold mb-2 uppercase tracking-wide">Motion Graphics & Títulos</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => {
+                      const t = engine.currentTimeRef.current;
+                      const clip = makeTextClip('¡SUSCRÍBETE!', t, t + 3, { fontSize: 60, fontColor: '#ffffff', bgColor: '#ef4444', bold: true, animation: 'pop', posY: 0.85, outlineWidth: 0 });
+                      insertClipWithoutOverlap(clip, 'text');
+                    }} className="text-left text-[10px] font-bold text-white bg-red-600 hover:bg-red-500 p-2 rounded-md transition-all text-center">
+                      Botón Suscríbete
+                    </button>
+                    <button onClick={() => {
+                      const t = engine.currentTimeRef.current;
+                      const clip = makeTextClip('@TuUsuario', t, t + 4, { fontSize: 40, fontColor: '#ffffff', bgColor: 'rgba(0,0,0,0.6)', bold: true, animation: 'slideup', posY: 0.90, outlineWidth: 0, align: 'left', posX: 0.1 });
+                      insertClipWithoutOverlap(clip, 'text');
+                    }} className="text-left text-[10px] font-bold text-white bg-neutral-800 hover:bg-neutral-700 p-2 rounded-md transition-all text-center">
+                      Lower Third (Redes)
+                    </button>
+                    <button onClick={() => {
+                      const t = engine.currentTimeRef.current;
+                      const clip = makeTextClip('NUEVO VIDEO', t, t + 2, { fontSize: 80, fontColor: '#facc15', bgColor: 'transparent', bold: true, animation: 'bounce', posY: 0.5, outlineWidth: 4 });
+                      insertClipWithoutOverlap(clip, 'text');
+                    }} className="col-span-2 text-left text-[10px] font-bold text-yellow-400 border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black p-2 rounded-md transition-all text-center uppercase">
+                      Título Impacto (Pop)
+                    </button>
                   </div>
                 </div>
               </div>
@@ -944,7 +986,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                               }}
                               className="w-full text-[10px] text-white file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-red-500/20 file:text-red-300 hover:file:bg-red-500/30"
                           />
-                          {ttsReferenceAudio && <p className="text-[9px] text-green-400 mt-1">✓ Audio listo para clonar</p>}
+                          {ttsReferenceAudio && (
+                            <div className="mt-2">
+                              <p className="text-[9px] text-green-400 mb-1">✓ Audio listo para clonar</p>
+                              <audio src={ttsReferenceAudio} controls className="w-full h-8 outline-none rounded" />
+                            </div>
+                          )}
                       </div>
                   )}
 
@@ -970,7 +1017,17 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             {/* STOCK */}
             {leftTab === 'stock' && (
               <div className="space-y-4">
-                <h3 className="text-xs font-semibold text-white">Buscador de B-Roll</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-semibold text-white">Buscador de B-Roll</h3>
+                </div>
+                <div className="flex gap-2">
+                   <input type="text" placeholder="Pegar URL directa de MP4..." onKeyDown={e => {
+                     if (e.key === 'Enter' && e.target.value) {
+                       handleAddToTimeline({ media_options: [{ url: e.target.value }], caption: 'Video Web' });
+                       e.target.value = '';
+                     }
+                   }} className="flex-1 bg-[#27272a] border border-[#3f3f46] text-white text-[10px] rounded p-2 outline-none focus:border-blue-500 transition-colors" />
+                </div>
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-neutral-500" />
                   <input value={stockQuery} onChange={e => setStockQuery(e.target.value)}
@@ -1004,6 +1061,14 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             {leftTab === 'sfx' && (
               <div className="space-y-4">
                 <h3 className="text-xs font-semibold text-white">Efectos de Sonido</h3>
+                <div className="flex gap-2">
+                   <input type="text" placeholder="Pegar URL directa de MP3/WAV..." onKeyDown={e => {
+                     if (e.key === 'Enter' && e.target.value) {
+                       handleAddToTimeline({ media_options: [{ url: e.target.value }], type: 'audio', caption: 'Audio Web' });
+                       e.target.value = '';
+                     }
+                   }} className="flex-1 bg-[#27272a] border border-[#3f3f46] text-white text-[10px] rounded p-2 outline-none focus:border-blue-500 transition-colors" />
+                </div>
                 <div className="space-y-1.5">
                   {SFX_LIBRARY.map(s => (
                     <div key={s.id} draggable onDragStart={e => { setDraggedMedia(s); e.dataTransfer.setData('text/plain', s.url); }}
@@ -1025,6 +1090,41 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 </div>
               </div>
             )}
+
+            {/* MOTION GRAPHICS */}
+            {leftTab === 'motion' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-semibold text-white">Librería Motion Graphics</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {MOTION_GRAPHICS_LIBRARY.map(m => (
+                    <div key={m.id} draggable onDragStart={e => { setDraggedMedia(m); e.dataTransfer.setData('text/plain', m.url); }}
+                      className="group relative flex flex-col bg-[#27272a] rounded-lg border border-[#3f3f46] overflow-hidden cursor-grab active:cursor-grabbing hover:border-purple-500 transition-colors">
+                      <div className="aspect-video flex items-center justify-center relative bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAOklEQVQYV2NkYGAwYcSPgXwY8IEDMQRVwCQKj5J/D8X/4QxMglkUNwpNwG0QGwUmwSwKVUhsFJiERwkA10QhQ2/x2g8AAAAASUVORK5CYII=')]">
+                        <video src={m.url} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm pointer-events-none">
+                          <button onClick={() => {
+                            const t = engine.currentTimeRef.current;
+                            getVideoDuration(m.url).then(dur => {
+                              const newClip = makeVideoClip(m.url, m.caption, t, t + dur);
+                              if (m.chromaKey) newClip.chromaKey = m.chromaKey;
+                              insertClipWithoutOverlap(newClip, 'video');
+                            });
+                          }} className="bg-purple-600 pointer-events-auto text-white p-1.5 rounded-full hover:scale-110 transition-transform shadow-lg">
+                            <PlusCircle className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-1.5 flex flex-col items-center">
+                        <p className="text-[9px] text-neutral-300 font-medium truncate w-full text-center" title={m.caption}>{m.caption}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] text-purple-400 text-center mt-2 font-medium">✨ Se aplicará Chroma Key automático si es fondo verde/negro.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1039,7 +1139,24 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                 maxHeight: '100%',
                 maxWidth: '100%',
               }}>
-              <video ref={videoRef} className="w-full h-full object-contain" controls={false} />
+              {(() => {
+                 const currentVideoClip = editor.project.layers.find(l => l.type === 'video')?.clips.find(c => engine.displayTime >= c.start && engine.displayTime <= c.end);
+                 const activeEffects = currentVideoClip?.effects || [];
+                 let cssFilter = '';
+                 if (activeEffects.includes('blur')) cssFilter += 'blur(5px) ';
+                 if (activeEffects.includes('bw')) cssFilter += 'grayscale(100%) ';
+                 if (activeEffects.includes('vignette')) cssFilter += 'contrast(1.2) brightness(0.8) ';
+                 if (activeEffects.includes('vhs')) cssFilter += 'sepia(30%) hue-rotate(-20deg) saturate(150%) contrast(1.1) ';
+                 
+                 const color = currentVideoClip?.color || { brightness: 0, contrast: 1, saturation: 1 };
+                 if (color.brightness !== 0) cssFilter += `brightness(${1 + color.brightness}) `;
+                 if (color.contrast !== 1) cssFilter += `contrast(${color.contrast}) `;
+                 if (color.saturation !== 1) cssFilter += `saturate(${color.saturation}) `;
+
+                 return (
+                   <video ref={videoRef} className="w-full h-full object-contain transition-all duration-300" controls={false} style={{ filter: cssFilter.trim() || 'none' }} />
+                 );
+              })()}
 
               {/* Text overlay preview */}
               {editor.project.layers.find(l => l.type === 'text')?.clips
@@ -1184,10 +1301,12 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         </div>
 
         {/* Timeline Editor Canvas */}
-        <div className="flex-1 overflow-hidden"
-          onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+        <div className={`flex-1 overflow-hidden transition-all duration-200 ${isDraggingOver ? 'ring-2 ring-inset ring-blue-500 bg-blue-500/10' : ''}`}
+          onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDraggingOver(true); }}
+          onDragLeave={() => setIsDraggingOver(false)}
           onDrop={async (e) => {
             e.preventDefault();
+            setIsDraggingOver(false);
             const t = engine.currentTimeRef.current;
 
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {

@@ -443,7 +443,7 @@ const checkComments = async (page) => {
 
 const publishQueuedVideos = async (page) => {
     try {
-        const result = await pool.query(`SELECT * FROM studio_tasks WHERE status = 'published' OR status = 'ready_to_publish'`);
+        const result = await pool.query(`SELECT * FROM studio_tasks WHERE (status = 'published' OR status = 'ready_to_publish') AND (ig_publish_date IS NULL OR ig_publish_date <= NOW())`);
         const tasks = result.rows.filter(t => t.publish_targets && t.publish_targets.includes('tiktok') && t.media_payload && t.media_payload.url && !t.media_payload.published_on_tiktok);
         if (tasks.length === 0) return;
 

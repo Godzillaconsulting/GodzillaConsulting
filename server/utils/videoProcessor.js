@@ -3,6 +3,7 @@ import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffprobePath from '@ffprobe-installer/ffprobe';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 // Set the binary paths so it works cross-platform seamlessly
 ffmpeg.setFfmpegPath(ffmpegPath.path);
@@ -59,5 +60,35 @@ export const removeWatermark = async (inputPath, outputPath, onProgress = () => 
                     reject(err);
                 });
         });
+    });
+};
+
+export const detectSilences = async (inputPath, threshold = '-35dB', duration = 0.5) => {
+    return new Promise((resolve, reject) => {
+        let silences = [];
+        let currentSilence = {};
+
+        ffmpeg(inputPath)
+            .audioFilters(`silencedetect=noise=${threshold}:d=${duration}`)
+            .outputOptions('-f', 'null')
+            .on('stderr', (line) => {
+                const silenceStartMatch = line.match(/silence_start: ([\d.]+)/);
+                if (silenceStartMatch) currentSilence.start = parseFloat(silenceStartMatch[1]);
+                
+                const silenceEndMatch = line.match(/silence_end: ([\d.]+)/);
+                if (silenceEndMatch) {
+                    currentSilence.end = parseFloat(silenceEndMatch[1]);
+                    silences.push({ ...currentSilence });
+                    currentSilence = {};
+                }
+            })
+            .on('end', () => {
+                resolve(silences);
+            })
+            .on('error', (err) => {
+                console.error('[VIDEO-PROCESSOR] Error en silencedetect:', err);
+                reject(err);
+            })
+            .save(path.join(os.tmpdir(), 'nul')); // compatible cross-platform fake output
     });
 };

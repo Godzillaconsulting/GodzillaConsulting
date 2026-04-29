@@ -127,6 +127,18 @@ export async function executeAiWaterfall(messages, options = {}) {
         return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
     };
 
+    const callGemini = async () => {
+        if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY no configurada");
+        console.log(`[WATERFALL] ➡️ Intentando: GEMINI (Fallback)`);
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
+        const userPrompt = messages.filter(m => m.role !== 'system').map(m => `${m.role}: ${m.content}`).join('\n');
+        
+        const result = await model.generateContent(userPrompt);
+        console.log(`[WATERFALL] ✅ Éxito con Gemini.`);
+        return { content: result.response.text(), tool_calls: [] };
+    };
+
     const callPollinations = async () => {
         console.log(`[WATERFALL] ➡️ Intentando: POLLINATIONS (Mistral Fallback)`);
         const cleanMessages = messages.map(m => ({
@@ -152,12 +164,12 @@ export async function executeAiWaterfall(messages, options = {}) {
 
     if (hasTools) {
         console.log(`[WATERFALL] 🔧 Petición con Tools detectada. Priorizando motor Groq...`);
-        activeWaterfall = [callGroq, callCerebras, callSambaNova, callOllama, callPollinations];
+        activeWaterfall = [callGroq, callCerebras, callSambaNova, callOllama, callGemini, callPollinations];
     } else {
         console.log(`[WATERFALL] ⚖️ Balanceo de carga activado (Random Rotation)...`);
         let tier1 = [callGroq, callSambaNova, callCerebras];
         tier1.sort(() => Math.random() - 0.5); 
-        activeWaterfall = [...tier1, callOllama, callPollinations];
+        activeWaterfall = [...tier1, callOllama, callGemini, callPollinations];
     }
 
     // --- EJECUCIÓN CASCADA ---

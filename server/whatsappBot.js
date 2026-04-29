@@ -171,6 +171,20 @@ export const initWhatsAppBot = async () => {
         qrcode.generate(qr, { small: true });
     });
 
+    client.on('authenticated', (session) => {
+        console.log('🔑 [AUTH] ¡Autenticación exitosa! Esperando el evento ready...');
+    });
+
+    client.on('auth_failure', msg => {
+        console.error('❌ [AUTH FAILURE] Falla en la autenticación:', msg);
+        currentQR = null;
+    });
+
+    client.on('disconnected', (reason) => {
+        console.log('⚠️ [DISCONNECTED] Cliente desconectado. Razón:', reason);
+        currentQR = null;
+    });
+
     client.on('ready', async () => {
         currentQR = null;
         console.log('✅ ZillaBot (WhatsApp Web) está conectado y listo!');

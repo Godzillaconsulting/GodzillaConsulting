@@ -11,7 +11,7 @@ module.exports = {
     { name: "zilla-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "goyi-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "meta-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
-    { name: "newsletter-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
+    { name: "newsletter-bot", script: "./server/newsletterBot.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "trends-bot", script: "./server/trendsBot.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "publisher-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },
     { name: "linkedin-bot", script: "./server/bot_placeholder.js", exec_mode: "fork", max_memory_restart: "128M" },

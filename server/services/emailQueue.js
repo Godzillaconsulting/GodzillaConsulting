@@ -287,12 +287,11 @@ export async function enqueueNewsletter(newsletterId) {
             );
         }
 
-        emailQueue.process().then(async () => {
-            await pool.query(
-                `UPDATE newsletters SET status = 'done' WHERE id = $1`,
-                [newsletterId]
-            );
-        });
+        await emailQueue.process();
+        await pool.query(
+            `UPDATE newsletters SET status = 'done' WHERE id = $1`,
+            [newsletterId]
+        );
 
         return subs.length;
     } catch (err) {

@@ -195,8 +195,8 @@ echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
 echo  [4/4] Limpiando sockets de PM2 y candados de Chrome...
-if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" 2>nul
-if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" 2>nul
+if exist "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\lockfile" 2>nul
+if exist "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\SingletonLock" 2>nul
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
 timeout /t 3 /nobreak >nul
 
@@ -253,7 +253,7 @@ echo [2/3] Forzando cierre de navegadores zombies...
 taskkill /F /IM chrome.exe /T 2>nul
 
 echo [3/3] Borrando carpeta de sesion corrupta...
-rmdir /S /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp"
+rmdir /S /Q "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth"
 
 echo [Listo] Arrancando bot fresco...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2

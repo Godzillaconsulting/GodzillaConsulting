@@ -134,8 +134,6 @@ export const initWhatsAppBot = async () => {
 
     // La limpieza de Chrome está garantizada por los handlers de SIGINT y uncaughtException al fondo.
     
-    // Ruta persistente segura fuera del despliegue: ~/.godzilla-sessions
-
     // ==============================================================================
     // 🚨 RECORDATORIO PARA FUTUROS AGENTES (ZILLA IA) 🚨
     // NUNCA, BAJO NINGUNA CIRCUNSTANCIA, BORRES O ALTERES LOS PERMISOS (chmod) DE ESTA SESIÓN.
@@ -144,37 +142,22 @@ export const initWhatsAppBot = async () => {
     // La sesión debe persistir siempre para evitar pedir el QR. Solo reinicia el bot
     // y deja que recupere su sesión existente. 
     // ==============================================================================
-    const baseDir = process.cwd();
-    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp';
-    
-    try {
-        if (!fs.existsSync(sessionPath)) {
-            fs.mkdirSync(sessionPath, { recursive: true });
-            console.log(`[Seguridad] Directorio de sesión creado.`);
-        }
-    } catch (e) {
-        console.warn(`⚠️ [Seguridad] Error verificando el directorio de sesión: ${e.message}`);
-    }
-    
-    // 🧹 Limpieza al arrancar: Evitamos taskkill /F porque corrompe la sesión de LevelDB de Chrome.
-    // Si Chrome quedó colgado, permitimos que el OS maneje los locks o que client.destroy() lo haya limpiado antes.
 
     // Ruta explícita al Chrome del sistema para evitar crasheos cuando el proceso
     // corre como Windows Service (NSSM/SYSTEM) que no tiene acceso al caché de puppeteer.
     const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
-    const client = new Client({
+    // Heartbeat global para evitar que Node.js se cierre silenciosamente si falla la inyección de Puppeteer
+    setInterval(() => {}, 60000);
 
-        authStrategy: new LocalAuth({ dataPath: sessionPath }),
+    const client = new Client({
+        authStrategy: new LocalAuth(),
         puppeteer: {
-            headless: false,
+            headless: 'old',
             executablePath: CHROME_PATH,
             args: [
                 '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-blink-features=AutomationControlled',
-                '--hide-crash-restore-bubble',
-                '--disable-infobars'
+                '--disable-setuid-sandbox'
             ]
         }
     });
@@ -733,30 +716,33 @@ export const initWhatsAppBot = async () => {
         }
 
         // ── BLINDAJE ANTI-LOCKFILE ──────────────────────────────────────────
-        // Este error ocurre cuando Chrome anterior no cerró limpiamente y dejó
-        // un archivo "lockfile" o "SingletonLock" en la carpeta de sesión.
-        // SOLUCIÓN: Borramos el lockfile y dejamos que PM2 reintente automáticamente.
-        // NO llamamos client.initialize() aquí porque eso crea una SEGUNDA instancia
-        // de Chrome encima de la primera, causando el loop de 'browser already running'.
         if (err && err.message && err.message.includes('The browser is already running')) {
             console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
             try {
                 // Forzar limpieza de locks nativos de Puppeteer/Chrome
-                const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp\\session';
+                const sessionPath = path.join(process.cwd(), '.wwebjs_auth', 'session');
                 const lockfile = path.join(sessionPath, 'lockfile');
                 const singleton = path.join(sessionPath, 'SingletonLock');
                 if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
                 if (fs.existsSync(singleton)) { fs.unlinkSync(singleton); console.log('🗑️ SingletonLock eliminado.'); }
-                console.log('🔄 Lockfiles limpiados. PM2 reiniciará el proceso automáticamente.');
+                console.log('✅ Lockfiles limpiados. PM2 reiniciará el proceso automáticamente.');
             } catch(cleanErr) {
                 console.error('⚠️ Error al limpiar lockfiles:', cleanErr.message);
             }
-            // Forzar salida para que PM2 reinicie limpiamente (sin Chrome zombie)
             process.exit(1);
             return;
         }
 
-        // Para cualquier otro error desconocido: loggear pero NO morir
+        // Si WhatsApp Web rechaza la inyección o recarga la página, reintentar automáticamente
+        if (err && err.message && (err.message.includes('Target closed') || err.message.includes('detached Frame'))) {
+            console.warn(`⚠️ [RECOVERY] Frame desprendido o navegador cerrado. Reintentando inicialización en 5 segundos...`);
+            try { await client.destroy(); } catch(e) {}
+            setTimeout(() => {
+                console.log('🔄 Re-inicializando cliente WhatsApp...');
+                client.initialize();
+            }, 5000);
+            return;
+        }
         console.error(`🛑 [ERROR] (${origin}):`, err?.message || err);
         console.warn(`⚠️ [BLINDAJE] Error no fatal ignorado para mantener el bot 24/7.`);
         // Solo morir si es un error absolutamente catastrófico de Node mismo

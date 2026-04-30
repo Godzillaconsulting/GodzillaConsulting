@@ -164,11 +164,11 @@ async function processTask() {
             // Generar Medios en Paralelo para agilizar
             const promises = [];
             
-            // Para Videos Faceless, ALTERNAMOS: Escenas impares usan IA, Escenas pares usan Stock (o al revés)
-            const isFaceless = (i % 2 === 0); // Escena 2, 4 serán Stock; 1, 3, 5 serán IA
-            const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
+            // Ya no usamos stock videos rotos (Coverr 404), generamos imágenes IA para todas las escenas
+            const isFaceless = false;
+            const randomStock = STOCK_VIDEOS[0]; // No se usará
 
-            if (!isFaceless && visualPrompt) {
+            if (visualPrompt) {
                 promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
             }
 

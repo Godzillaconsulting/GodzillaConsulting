@@ -165,7 +165,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
 
         try {
             const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-            const aiRes = await executeAiWaterfall(groqMessages, { temperature: 0.1 });
+            const aiRes = await executeAiWaterfall(groqMessages, { temperature: 0.1, mode: 'gemini_exclusive' });
             
             if (aiRes) {
                 responseText = aiRes.content || "";
@@ -308,7 +308,7 @@ async function processAndReply(from, text, phoneNumberId, platform) {
             
             try {
                 const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
-                const aiRes2 = await executeAiWaterfall(groqMessages, { temperature: 0.1 });
+                const aiRes2 = await executeAiWaterfall(groqMessages, { temperature: 0.1, mode: 'gemini_exclusive' });
                 if (aiRes2 && aiRes2.content) {
                     responseText = aiRes2.content;
                 }

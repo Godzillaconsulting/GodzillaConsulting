@@ -555,25 +555,26 @@ export const getInspirationGallery = async (req, res) => {
         
         // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (Turbo es más estable y rápido para grid render)
         const finalGallery = generationList.map(item => {
+            const promptStr = item.prompt || item.Prompt || '';
             // Recortar strings enormes para no romper la URL de Pollinations API
-            const safePrompt = item.prompt.length > 200 ? item.prompt.substring(0, 200) : item.prompt;
+            const safePrompt = promptStr.length > 200 ? promptStr.substring(0, 200) : promptStr;
             return {
                 img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
-                prompt: item.prompt,
-                tag: item.tag,
-                model: item.model
+                prompt: promptStr,
+                tag: item.tag || item.Tag || 'Inspiración',
+                model: item.model || item.Model || 'AI Engine'
             };
         });
 
         // --- TELEMETRÍA ---
         try {
-            const inputTk  = data.usage?.prompt_tokens     || 0;
-            const outputTk = data.usage?.completion_tokens || 0;
+            const inputTk  = aiRes.usage?.prompt_tokens     || 0;
+            const outputTk = aiRes.usage?.completion_tokens || 0;
             // SambaNova 70B Free Tier: coste simbólico ~$0.60/1M tokens
             const costUsd = ((inputTk + outputTk) / 1_000_000) * 0.60;
             await pool.query(
                 `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
-                ['Estudio IA (Im\u00e1genes)', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
+                ['Estudio IA (Imágenes)', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
             );
         } catch (telErr) { console.warn('[TELEMETRY] Galería:', telErr.message); }
 
@@ -616,8 +617,8 @@ export const getDynamicFilters = async (req, res) => {
         
         // --- TELEMETRÍA ---
         try {
-            const inputTk  = data.usage?.prompt_tokens     || 0;
-            const outputTk = data.usage?.completion_tokens || 0;
+            const inputTk  = aiRes.usage?.prompt_tokens     || 0;
+            const outputTk = aiRes.usage?.completion_tokens || 0;
             const costUsd  = ((inputTk + outputTk) / 1_000_000) * 0.60;
             await pool.query(
                 `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
@@ -681,8 +682,8 @@ Reglas Estrictas:
 
         // --- TELEMETRÍA + MEMORIA APRENDIZAJE ---
         try {
-            const inputTk  = data.usage?.prompt_tokens     || 0;
-            const outputTk = data.usage?.completion_tokens || 0;
+            const inputTk  = aiRes.usage?.prompt_tokens     || 0;
+            const outputTk = aiRes.usage?.completion_tokens || 0;
             const costUsd  = ((inputTk + outputTk) / 1_000_000) * 0.60;
             await pool.query(
                 `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,

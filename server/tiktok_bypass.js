@@ -47,19 +47,21 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
     try {
         console.log(`[Compresión TK] Iniciando compresión para ${senderId}...`);
         
-        const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+            const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
         const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
-            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         let historyText = historial_mensajes.map(m => `${m.role === 'user' ? 'Cliente' : 'Zilla'}: ${m.contenido}`).join('\n');
         let prompt = `Resume esta conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nConversación:\n${historyText}`;
         if (resumen_contexto) {
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nActualiza el resumen integrando la nueva parte:\n${historyText}`;
         }
-        const chatCompletion = await model.generateContent(prompt);
-        const newSummary = chatCompletion.response.text();
+        
+        const aiRes = await executeAiWaterfall([
+            { role: 'system', content: systemPromptContexto },
+            { role: 'user', content: prompt }
+        ], { mode: 'premium', temperature: 0.3 });
+        
+        const newSummary = aiRes.content || '';
 
         const query = `
             UPDATE sesiones_chat 

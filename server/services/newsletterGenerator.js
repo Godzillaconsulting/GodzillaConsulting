@@ -91,7 +91,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     const baseResponse = await executeAiWaterfall([
         { role: 'system', content: systemInstruction },
         { role: 'user', content: premiumPrompt }
-    ], { jsonMode: true, mode: 'premium' });
+    ], { jsonMode: true, mode: 'gemini_exclusive' });
     const jsonText = cleanJsonStr(baseResponse.content);
     const data = JSON.parse(jsonText);
     console.log("✅ Contenido IA Base Generado.");
@@ -117,7 +117,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
                 const premiumTransRes = await executeAiWaterfall([
                     { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
                     { role: 'user', content: transPrompt }
-                ], { jsonMode: true, mode: 'premium' });
+                ], { jsonMode: true, mode: 'gemini_exclusive' });
                 const premStr = cleanJsonStr(premiumTransRes.content);
                 translationsJson[lang] = JSON.parse(premStr);
                 console.log(`   ✅ [${lang}] Traducido con Gemini como fallback.`);

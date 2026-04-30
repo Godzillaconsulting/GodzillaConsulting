@@ -77,7 +77,12 @@ export async function crearVisualAutonomo(visualPrompt) {
     
     try {
         console.log(`⏱️ Renderizando con Nano Banana (Esto puede tardar unos segundos)...`);
-        const result = await modelVision.generateContent(visualPrompt);
+        
+        // Cooldown preventivo anti-429 (Too Many Requests)
+        await new Promise(r => setTimeout(r, 2500));
+        
+        const payload = { contents: [{ role: 'user', parts: [{ text: visualPrompt }] }] };
+        const result = await modelVision.generateContent(payload);
         
         // La IA generalmente retorna "inlineData" con mimeType (video/mp4 o image/png) y la data en base64
         const parts = result.response.candidates[0]?.content?.parts;
@@ -113,7 +118,9 @@ export async function crearVisualAutonomo(visualPrompt) {
         console.log('\n🔄 Activando Respaldo: Motor [imagen-4.0-generate-001]...');
         try {
             const fbModel = genAI.getGenerativeModel({ model: 'imagen-4.0-generate-001' });
-            const resultFb = await fbModel.generateContent(visualPrompt);
+            
+            await new Promise(r => setTimeout(r, 2000));
+            const resultFb = await fbModel.generateContent({ contents: [{ role: 'user', parts: [{ text: visualPrompt }] }] });
             const mediaPartFb = resultFb.response.candidates[0]?.content?.parts.find(p => p.inlineData);
             
             if (mediaPartFb) {
@@ -179,7 +186,7 @@ export async function generarVideoKling(visualPrompt) {
 }
 
 // Ejecutor de prueba local rápida (Si lo corremos desde consola)
-const isMainModule = process.argv[1].endsWith('auto_content_bot.js') || process.argv[1].endsWith('auto_content_bot');
+const isMainModule = process.argv[1] && (process.argv[1].endsWith('auto_content_bot.js') || process.argv[1].endsWith('auto_content_bot'));
 if (isMainModule) {
     // Pipeline Completo
     (async () => {

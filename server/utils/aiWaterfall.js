@@ -189,7 +189,7 @@ export async function executeAiWaterfall(messages, options = {}) {
     };
 
     /**
-     * Gemini 2.5 Flash — PROVEEDOR PAGADO PREMIUM
+     * Gemini 2.0 Flash — PROVEEDOR PAGADO PREMIUM
      * Solo se activa si los proveedores gratuitos fallaron.
      * Controla maxOutputTokens para evitar facturas inesperadas.
      */
@@ -204,30 +204,90 @@ export async function executeAiWaterfall(messages, options = {}) {
             }
             geminiLastCallTime = Date.now();
 
-            console.log(`[WATERFALL] ➡️ Intentando: GEMINI 2.5 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
+            console.log(`[WATERFALL] ➡️ Intentando: GEMINI 2.0 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({
-                model: "gemini-2.5-flash",
+            const config = {
+                model: "gemini-2.0-flash",
                 systemInstruction,
                 generationConfig: {
                     maxOutputTokens: Math.min(maxTokens, 800), // 🔒 Cap de tokens pagados
                     temperature
                 }
+            };
+            
+            if (hasTools && mode !== 'compression') {
+                const geminiTools = tools.map(t => ({
+                    name: t.function.name,
+                    description: t.function.description,
+                    parameters: t.function.parameters
+                }));
+                config.tools = [{ functionDeclarations: geminiTools }];
+            }
+
+            const model = genAI.getGenerativeModel(config);
+
+            let contents = [];
+            let lastRole = null;
+            
+            trimmedMessages.filter(m => m.role !== 'system').forEach(m => {
+                let role = (m.role === 'assistant' || (m.tool_calls && m.tool_calls.length > 0)) ? 'model' : 'user';
+                let parts = [];
+                
+                if (m.tool_calls && m.tool_calls.length > 0) {
+                    parts = m.tool_calls.map(tc => {
+                        let args = typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments;
+                        return { functionCall: { name: tc.function.name, args: args } };
+                    });
+                } else if (m.role === 'tool') {
+                    let resultData = { result: "ok" };
+                    try { resultData = JSON.parse(m.content); } catch(e) { resultData = { result: m.content || "ok" }; }
+                    parts = [{
+                        functionResponse: {
+                            name: m.name || 'unknown_tool',
+                            response: resultData
+                        }
+                    }];
+                } else if (m.content) {
+                    parts = [{ text: m.content }];
+                }
+                
+                if (parts.length > 0) {
+                    if (lastRole === role && contents.length > 0) {
+                        contents[contents.length - 1].parts.push(...parts);
+                    } else {
+                        contents.push({ role, parts });
+                    }
+                    lastRole = role;
+                }
             });
+            
+            if (contents.length === 0) contents = [{ role: 'user', parts: [{ text: "..." }] }];
 
-        const sanitized = sanitizeForBasicProviders(trimmedMessages);
-        const userPrompt = sanitized
-            .filter(m => m.role !== 'system' && m.content)
-            .map(m => `${m.role}: ${m.content}`)
-            .join('\n');
-
-        const result = await model.generateContent(userPrompt);
-        console.log(`[WATERFALL] ✅ Éxito con Gemini 2.5 Flash.`);
-        return { content: result.response.text(), tool_calls: [] };
-    } finally {
-        geminiMutex.release();
-    }
-};
+            const result = await model.generateContent({ contents });
+            const responseMessage = result.response;
+            
+            const functionCalls = responseMessage.functionCalls();
+            let finalContent = "";
+            try { finalContent = responseMessage.text(); } catch(e) {}
+            
+            let finalToolCalls = [];
+            if (functionCalls && functionCalls.length > 0) {
+                finalToolCalls = functionCalls.map(fc => ({
+                    id: `call_${Math.random().toString(36).substring(2, 9)}`,
+                    type: 'function',
+                    function: {
+                        name: fc.name,
+                        arguments: JSON.stringify(fc.args)
+                    }
+                }));
+            }
+            
+            console.log(`[WATERFALL] ✅ Éxito con Gemini 2.0 Flash.`);
+            return { content: finalContent, tool_calls: finalToolCalls };
+        } finally {
+            geminiMutex.release();
+        }
+    };
 
 const callPollinations = async () => {
     console.log(`[WATERFALL] ➡️ Intentando: POLLINATIONS (Mistral — Fallback Gratuito)`);
@@ -257,20 +317,25 @@ if (mode === 'compression') {
     console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — usando proveedores rápidos y gratuitos...`);
     activeWaterfall = [callCerebras, callSambaNova, callGroq, callOllama];
 
-} else if (mode === 'premium') {
-    // Tarea de alto consumo (generación de scripts/investigación) -> Usar FREE para no subir el bill a 5000
-    console.log(`[WATERFALL] 🌟 Modo VIDEOS/INVESTIGACIÓN — Priorizando FREE para ahorrar tokens de pago...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
-
-} else if (hasTools) {
-    // Consultas y Chats de WhatsApp (con tools) -> GOOGLE PRIMERO Y EXCLUSIVO
-    console.log(`[WATERFALL] 🔧 Modo CON TOOLS (Consultas) — Gemini 2.5 Flash EXCLUSIVO...`);
+} else if (mode === 'gemini_exclusive') {
+    // 💎 GEMINI EXCLUSIVO: Para Planificador (Chatbots) y Newsletter (como ordenó el CEO)
+    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Usando solo Gemini 2.0 Flash...`);
     activeWaterfall = [callGemini];
+
+} else if (mode === 'premium') {
+    // 🧠 MODO PREMIUM (Contenido): Usar APIs gratuitas de alta capacidad (Groq/Samba)
+    console.log(`[WATERFALL] 🧠 Modo PREMIUM (Contenido) — Priorizando Groq/SambaNova para ahorrar tokens...`);
+    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
+
+} else if (mode === 'noTools') {
+    // 🚀 MODO SIN TOOLS (Chats sencillos): Solo Gratis
+    console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Usando proveedores gratuitos...`);
+    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else {
-    // Consultas sin tools -> GOOGLE PRIMERO Y EXCLUSIVO
-    console.log(`[WATERFALL] ⚖️ Modo SIN TOOLS (Consultas) — Gemini 2.5 Flash EXCLUSIVO...`);
-    activeWaterfall = [callGemini];
+    // 🤖 MODO ESTÁNDAR (auto): Prioriza Groq Llama 3.3 70B (Tiene tools, pero gratis)
+    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR (auto) — Priorizando Llama 3.3 70B en Groq/SambaNova...`);
+    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

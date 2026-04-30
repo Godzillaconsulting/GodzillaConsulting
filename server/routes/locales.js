@@ -47,14 +47,7 @@ router.get('/:lng', async (req, res) => {
         console.log(`[JIT LOCALE] Generating Universal Translation for locale [${lng}]...`);
 
         // Call Gemini
-        // We modify translateNodePayload params slightly to specify target language
-        // Or we create a specific JIT function. It's better to make a specific call:
-        const { GoogleGenAI } = await import('@google/genai');
-        const aiSDK = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
-
-        if (!aiSDK) {
-            throw new Error('No AI Configured for JIT locales');
-        }
+        const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
 
         const esData = getLocalData('es');
 
@@ -65,26 +58,19 @@ Rules:
 - Do not translate URLs, email addresses, numeric values or boolean values.
 - Ensure the ${lng} text sounds natural, professional, and is oriented to consulting sales.
 - Ensure 'features', 'guarantee', 'title' and 'planTarget' sound impactful.
-- Return purely the JSON, absolutely no markdown markdown block quotes.`;
+- Return purely the JSON, absolutely no markdown markdown block quotes.
 
-        const response = await aiSDK.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [
-                { role: 'user', parts: [
-                    { text: instruction },
-                    { text: JSON.stringify(esData) }
-                ]}
-            ],
-            config: {
-                temperature: 0.1,
-                responseMimeType: "application/json"
-            }
-        });
+JSON A TRADUCIR:
+${JSON.stringify(esData)}`;
+
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: instruction }
+        ], { mode: 'premium', temperature: 0.1 });
 
         let translatedObj = null;
-        if (response.text) {
+        if (aiRes && aiRes.content) {
             try {
-                const cleanJson = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const cleanJson = aiRes.content.replace(/```json/gi, '').replace(/```/g, '').trim();
                 translatedObj = JSON.parse(cleanJson);
             } catch (e) {
                 console.error('[JIT LOCALE] Failed to parse JSON from Gemini:', e.message);

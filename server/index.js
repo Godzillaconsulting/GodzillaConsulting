@@ -242,9 +242,7 @@ app.post('/api/sora-start', async (req, res) => {
         if (process.env.GEMINI_API_KEY && finalPrompt.length < 400) {
             console.log(`[GOTSORA DIRECTOR] Expandiendo prompt semilla: "${finalPrompt}"`);
             try {
-                const { GoogleGenerativeAI } = await import('@google/generative-ai');
-                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+                const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
                 
                 const promptTemplate = `Eres un Maestro del Prompting estilo Midjourney V6.
 Toma el siguiente concepto básico y expándelo en un prompt (en inglés) altamente visual y estético de 1 a 2 oraciones, corto pero letal.
@@ -256,8 +254,8 @@ ${global.soraDirectorMemory.join("\n")}
 NUEVO Concepto básico/Corrección: "${finalPrompt}"
 Genera ÚNICAMENTE el nuevo prompt en inglés directo, sin explicaciones.`;
 
-                const result = await model.generateContent(promptTemplate);
-                const resultText = result.response.text().trim();
+                const aiRes = await executeAiWaterfall([{ role: 'user', content: promptTemplate }], { mode: 'premium', temperature: 0.7 });
+                const resultText = aiRes.content ? aiRes.content.trim() : '';
                 
                 if (resultText && resultText.length > 10) {
                     finalPrompt = resultText;

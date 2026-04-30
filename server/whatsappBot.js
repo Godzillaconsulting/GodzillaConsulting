@@ -1,5 +1,5 @@
-import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth } = pkg;
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import qrcodeLib from 'qrcode';
 import express from 'express';
@@ -156,83 +156,48 @@ export const initWhatsAppBot = async () => {
 
     // Ruta persistente segura fuera del despliegue para evitar que el Watcher de PM2
     // se vuelva loco y reinicie el bot cientos de veces cuando WhatsApp descarga la sesión.
-    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp';
-
-    const client = new Client({
-        authStrategy: new LocalAuth({ dataPath: sessionPath }),
-        webVersionCache: {
-            type: 'local',
-        },
-        puppeteer: {
-            headless: false,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process',
-                '--disable-site-isolation-trials',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-            ]
-        }
+    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\baileys';
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    
+    const client = makeWASocket({
+        version,
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: false,
+        auth: state,
+        browser: ['Godzilla Bot', 'Chrome', '124.0.0.0']
     });
+
+    client.ev.on('creds.update', saveCreds);
 
     let currentQR = null;
 
-    client.on('qr', (qr) => {
-        currentQR = qr;
-        console.log('\n======================================================');
-        console.log('📱 CÓDIGO QR GENERADO. DISPONIBLE EN LA URL WEB Y TERMINAL 📱');
-        console.log('======================================================');
-        qrcode.generate(qr, { small: true });
-    });
-
-    client.on('authenticated', (session) => {
-        console.log('🔑 [AUTH] ¡Autenticación exitosa! Esperando el evento ready...');
-    });
-
-    client.on('auth_failure', msg => {
-        console.error('❌ [AUTH FAILURE] Falla en la autenticación:', msg);
-        currentQR = null;
-    });
-
-    client.on('disconnected', (reason) => {
-        console.log('⚠️ [DISCONNECTED] Cliente desconectado. Razón:', reason);
-        currentQR = null;
-    });
-
-    client.on('ready', async () => {
-        currentQR = null;
-        console.log('✅ ZillaBot (WhatsApp Web) está conectado y listo!');
-        console.log('🔄 Escaneando y recuperando mensajes que entraron mientras estaba apagado...');
-        try {
-            const chats = await client.getChats();
-            const pendingMsgs = [];
-            for (const chat of chats) {
-                if (chat.unreadCount > 0 && !chat.isGroup) {
-                    const messages = await chat.fetchMessages({ limit: chat.unreadCount });
-                    for (const msg of messages) {
-                        if (!msg.fromMe) pendingMsgs.push(msg);
-                    }
-                }
-            }
-            console.log(`✅ Se encontraron ${pendingMsgs.length} mensajes perdidos. Procesando de forma SECUENCIAL para no saturar la IA...`);
-            // ── PROCESAMIENTO SECUENCIAL: 1 mensaje cada 5 segundos ──
-            // Enviarlos todos en paralelo colapsaba el rate-limit de Groq.
-            for (let i = 0; i < pendingMsgs.length; i++) {
-                await new Promise(r => setTimeout(r, 5000 * i)); // Escalonar 5s entre cada uno
-                client.emit('message', pendingMsgs[i]);
-            }
-        } catch (e) {
-            console.error('⚠️ Error al recuperar mensajes perdidos:', e.message);
+    client.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) {
+            currentQR = qr;
+            console.log('\n======================================================');
+            console.log('📱 CÓDIGO QR GENERADO (BAILEYS). DISPONIBLE EN LA URL WEB Y TERMINAL 📱');
+            console.log('======================================================');
+            qrcode.generate(qr, { small: true });
         }
+
+        if (connection === 'close') {
+            const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('⚠️ [DISCONNECTED] Cliente cerrado. Razón:', lastDisconnect.error?.message);
+            if (shouldReconnect) {
+                console.log('🔄 Reconectando automáticamente Baileys...');
+                initWhatsAppBot();
+            } else {
+                console.error('❌ Sesión de WhatsApp cerrada desde el celular. Debes borrar la carpeta baileys para reiniciar.');
+                currentQR = null;
+            }
+        } else if (connection === 'open') {
+            currentQR = null;
+            console.log('✅ ZillaBot (Baileys Engine) está conectado y listo!');
+        }
+    });
 
         // ===============================================
         // POLLING: COLA DE AUTOMATIZACIÓN (bot_outbound_queue)
@@ -260,7 +225,7 @@ export const initWhatsAppBot = async () => {
                         }
 
                         console.log(`[WA Outbound Queue] 📤 Enviando mensaje a ${toPhone}...`);
-                        await client.sendMessage(toPhone, message);
+                        await client.sendMessage(toPhone, { text: message });
                         
                         await pool.query(`UPDATE bot_outbound_queue SET status = 'sent', processed_at = NOW() WHERE id = $1`, [id]);
                         console.log(`[WA Outbound Queue] ✅ Mensaje ${id} enviado y marcado como 'sent'.`);
@@ -276,8 +241,6 @@ export const initWhatsAppBot = async () => {
                 console.error('[WA Outbound Queue] Error en el polling:', err.message);
             }
         }, 10000); // Polling cada 10 segundos
-    });
-
     // ===============================================
     // MICRO-SERVIDOR WEB PARA ENVIARLE EL QR AL CLIENTE
     // ===============================================
@@ -342,26 +305,19 @@ export const initWhatsAppBot = async () => {
         return dynamicPromptWA;
     }
 
-    client.on('message', async (message) => {
-        if (message.isGroupMsg) return;
-        if (!message.body) return;
+    client.ev.on('messages.upsert', async ({ messages, type }) => {
+        if (type !== 'notify') return;
+        const message = messages[0];
+        if (!message.message) return;
+        if (message.key.fromMe) return;
 
-        let senderId = message.from;
+        let senderId = message.key.remoteJid;
         
-        // Resolve @lid to @c.us to ensure delivery and correct LanceDB history tracking
-        if (senderId.includes('@lid')) {
-            try {
-                const contact = await message.getContact();
-                if (contact && contact.id && contact.id._serialized) {
-                    senderId = contact.id._serialized;
-                    console.log(`[WA] Mensaje desde Linked Device. ID resuelto a: ${senderId}`);
-                }
-            } catch (e) {
-                console.warn(`⚠️ No se pudo resolver el @lid: ${e.message}`);
-            }
-        }
+        // Ignore groups and status broadcast
+        if (senderId.endsWith('@g.us') || senderId === 'status@broadcast') return;
 
-        const rawMessageText = message.body;
+        const rawMessageText = message.message.conversation || message.message.extendedTextMessage?.text;
+        if (!rawMessageText) return;
 
         const maskedSender = senderId.substring(0, 4) + "****" + senderId.substring(senderId.length - 4);
         console.log(`📩 WA Msg recibido [${maskedSender}]: [ENTRANDO A COLA DE ESPERA]`);
@@ -471,8 +427,8 @@ export const initWhatsAppBot = async () => {
                 // Si es saludo: no pasamos tools al waterfall (evita alucinaciones de tool_call)
                 // maxTokens calibrado: saludos cortos = 256, conversación = 768, herramientas = 512
                 const waterfallOptions = isGreetingOnly
-                    ? { temperature: 0.5, maxTokens: 256 }
-                    : { tools: groqTools, maxTokens: 768 };
+                    ? { temperature: 0.5, maxTokens: 256, mode: 'gemini_exclusive' }
+                    : { tools: groqTools, maxTokens: 768, mode: 'gemini_exclusive' };
                 const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);
 
                 // Guard: nunca enviar string vacío a WhatsApp
@@ -693,7 +649,7 @@ export const initWhatsAppBot = async () => {
                 // SambaNova/Pollinations crashean si reciben ese formato.
                 // Segunda llamada post-tool: respuesta conversacional corta, maxTokens = 512
                 try {
-                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools, maxTokens: 512 });
+                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools, maxTokens: 512, mode: 'gemini_exclusive' });
                     botReply = waterfallResponse2.content || 'Reserva procesada.';
                 } catch(e) {
                     console.error("❌ Error en segunda llamada Waterfall (tools):", e.message);
@@ -724,13 +680,16 @@ export const initWhatsAppBot = async () => {
             
             // Opcional: Enviar estado de "escribiendo..." si la librería lo soporta (si no, solo espera)
             try {
-                const chat = await client.getChatById(senderId);
-                await chat.sendStateTyping();
+                await client.sendPresenceUpdate('composing', senderId);
             } catch (e) {}
 
             await new Promise(r => setTimeout(r, humanDelay));
+            
+            try {
+                await client.sendPresenceUpdate('paused', senderId);
+            } catch(e) {}
 
-            await client.sendMessage(senderId, botReply);
+            await client.sendMessage(senderId, { text: botReply });
 
             const postBotSession = await appendMessageToSession(senderId, "model", botReply);
             if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {
@@ -752,26 +711,6 @@ export const initWhatsAppBot = async () => {
         }
         }, 2000 + jitter); // Ventana de 2 segundos de agrupación de mensajes + Jitter
     });
-
-    client.initialize().catch(async (err) => {
-        console.error('❌ Error crítico al inicializar cliente WA:', err.message);
-        try {
-            await client.destroy();
-            console.log('✅ Chrome cerrado por seguridad tras fallo de inicio.');
-        } catch (e) {}
-        
-        console.log('⏳ Esperando 10 segundos antes de reiniciar para evitar saturar la CPU...');
-        setTimeout(() => {
-            process.exit(1);
-        }, 10000);
-    });
-
-    // ==========================================
-    // 🛡️ PM2 GRACEFUL SHUTDOWN (WINDOWS FIX)
-    // ==========================================
-    // Escucha las señales de PM2 para destruir limpiamente Puppeteer
-    // y evitar que quede congelado en memoria RAM tomando rehén la sesión.
-    
     const emergencyShutdown = async (err, origin) => {
         // Ignorar errores de puerto ocupado (no fatales para WhatsApp)
         if (err && err.code === 'EADDRINUSE') {
@@ -779,30 +718,6 @@ export const initWhatsAppBot = async () => {
             return;
         }
 
-        // ── BLINDAJE ANTI-LOCKFILE ──────────────────────────────────────────
-        if (err && err.message && err.message.includes('The browser is already running')) {
-            console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
-            try {
-                // Forzar limpieza de locks nativos de Puppeteer/Chrome
-                const lockSessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp\\session';
-                const lockfile = path.join(lockSessionPath, 'lockfile');
-                const singleton = path.join(lockSessionPath, 'SingletonLock');
-                if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
-                if (fs.existsSync(singleton)) { fs.unlinkSync(singleton); console.log('🗑️ SingletonLock eliminado.'); }
-                console.log('✅ Lockfiles limpiados. PM2 reiniciará el proceso automáticamente.');
-            } catch(cleanErr) {
-                console.error('⚠️ Error al limpiar lockfiles:', cleanErr.message);
-            }
-            process.exit(1);
-            return;
-        }
-
-        // Si WhatsApp Web rechaza la inyección o recarga la página (muy común al escanear el QR),
-        // no debemos matar el proceso. whatsapp-web.js lo maneja internamente.
-        if (err && err.message && (err.message.includes('Target closed') || err.message.includes('detached Frame'))) {
-            console.warn(`⚠️ [RECOVERY] Frame desprendido (posible recarga por escaneo de QR). Ignorando para permitir el login...`);
-            return;
-        }
         console.error(`🛑 [ERROR] (${origin}):`, err?.message || err);
         console.warn(`⚠️ [BLINDAJE] Error no fatal ignorado para mantener el bot 24/7.`);
         // Solo morir si es un error absolutamente catastrófico de Node mismo
@@ -816,13 +731,11 @@ export const initWhatsAppBot = async () => {
     process.on('unhandledRejection', (err) => emergencyShutdown(err, 'unhandledRejection'));
 
     process.on('SIGINT', async () => {
-        console.log('🛑 [SIGINT] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
-        try { await client.destroy(); console.log('✅ Chrome cerrado limpiamente.'); } catch (e) {}
+        console.log('🛑 [SIGINT] Recibida orden de apagado (PM2). Cerrando limpiamente...');
         process.exit(0);
     });
     process.on('SIGTERM', async () => {
-        console.log('🛑 [SIGTERM] Recibida orden de apagado (PM2). Cerrando Chrome/Puppeteer...');
-        try { await client.destroy(); console.log('✅ Chrome cerrado limpiamente.'); } catch (e) {}
+        console.log('🛑 [SIGTERM] Recibida orden de apagado (PM2). Cerrando limpiamente...');
         process.exit(0);
     });
 };

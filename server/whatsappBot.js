@@ -150,20 +150,24 @@ export const initWhatsAppBot = async () => {
     // Heartbeat global para evitar que Node.js se cierre silenciosamente si falla la inyección de Puppeteer
     setInterval(() => {}, 60000);
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const sessionPath = path.join(__dirname, '.wwebjs_auth');
+    // Ruta persistente segura fuera del despliegue para evitar que el Watcher de PM2
+    // se vuelva loco y reinicie el bot cientos de veces cuando WhatsApp descarga la sesión.
+    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp';
 
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
-            headless: true,
+            headless: false,
             executablePath: CHROME_PATH,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
                 '--disable-gpu',
-                '--disable-dev-shm-usage'
+                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
             ]
         }
     });
@@ -740,7 +744,7 @@ export const initWhatsAppBot = async () => {
             console.warn(`⚠️ [LOCKFILE] Chrome zombie detectado. Limpiando lockfiles...`);
             try {
                 // Forzar limpieza de locks nativos de Puppeteer/Chrome
-                const lockSessionPath = path.join(process.cwd(), '.wwebjs_auth', 'session');
+                const lockSessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\whatsapp\\session';
                 const lockfile = path.join(lockSessionPath, 'lockfile');
                 const singleton = path.join(lockSessionPath, 'SingletonLock');
                 if (fs.existsSync(lockfile)) { fs.unlinkSync(lockfile); console.log('🗑️ lockfile eliminado.'); }
@@ -753,11 +757,10 @@ export const initWhatsAppBot = async () => {
             return;
         }
 
-        // Si WhatsApp Web rechaza la inyección o recarga la página, es mejor reiniciar el proceso Node completo
+        // Si WhatsApp Web rechaza la inyección o recarga la página (muy común al escanear el QR),
+        // no debemos matar el proceso. whatsapp-web.js lo maneja internamente.
         if (err && err.message && (err.message.includes('Target closed') || err.message.includes('detached Frame'))) {
-            console.warn(`⚠️ [RECOVERY] Frame desprendido o navegador cerrado. Forzando reinicio limpio vía PM2...`);
-            try { await client.destroy(); } catch(e) {}
-            process.exit(1);
+            console.warn(`⚠️ [RECOVERY] Frame desprendido (posible recarga por escaneo de QR). Ignorando para permitir el login...`);
             return;
         }
         console.error(`🛑 [ERROR] (${origin}):`, err?.message || err);

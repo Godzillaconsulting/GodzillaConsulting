@@ -221,7 +221,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             console.log(`[WATERFALL] ➡️ Intentando: GEMINI 2.0 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const config = {
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 systemInstruction,
                 generationConfig: {
                     maxOutputTokens: maxTokens, // 🔓 Sin límite restrictivo por orden del CEO

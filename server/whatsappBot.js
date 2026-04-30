@@ -203,6 +203,9 @@ export const initWhatsAppBot = async () => {
         // POLLING: COLA DE AUTOMATIZACIÓN (bot_outbound_queue)
         // ===============================================
         setInterval(async () => {
+            if (!client?.user?.id) {
+                return; // Wait until bot is connected
+            }
             try {
                 const res = await pool.query(`
                     SELECT id, payload 
@@ -217,11 +220,11 @@ export const initWhatsAppBot = async () => {
                         let toPhone = payload.to;
                         const message = payload.message;
                         
-                        // Formatear a ID de WhatsApp (ej. 521656... @c.us)
-                        if (!toPhone.includes('@c.us')) {
+                        // Formatear a ID de WhatsApp (ej. 521656... @s.whatsapp.net)
+                        if (!toPhone.includes('@s.whatsapp.net')) {
                             // Limpiar no numéricos
                             toPhone = toPhone.replace(/[^0-9]/g, '');
-                            toPhone = `${toPhone}@c.us`;
+                            toPhone = `${toPhone}@s.whatsapp.net`;
                         }
 
                         console.log(`[WA Outbound Queue] 📤 Enviando mensaje a ${toPhone}...`);

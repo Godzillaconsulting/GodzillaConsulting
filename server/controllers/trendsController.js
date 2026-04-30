@@ -12,7 +12,7 @@ export const getTrends = async (req, res) => {
         try {
             const rawRes = await executeAiWaterfall([
                 { role: 'user', content: rawTrendsPrompt }
-            ], { mode: 'default' });
+            ], { mode: 'compression' });
             rawTrends = rawRes.content || '';
             console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos.`);
         } catch(e) {

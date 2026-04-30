@@ -160,6 +160,10 @@ export const initWhatsAppBot = async () => {
 
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
+        webVersionCache: {
+            type: 'remote',
+            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+        },
         puppeteer: {
             headless: false,
             args: [
@@ -170,6 +174,11 @@ export const initWhatsAppBot = async () => {
                 '--no-first-run',
                 '--no-zygote',
                 '--disable-gpu',
+                '--window-position=-32000,-32000',
+                '--start-minimized',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
                 '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
             ]
         }

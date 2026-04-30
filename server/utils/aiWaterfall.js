@@ -263,14 +263,14 @@ if (mode === 'compression') {
     activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else if (hasTools) {
-    // Consultas y Chats de WhatsApp (con tools) -> GOOGLE PRIMERO (Ya se pagó, máxima calidad para clientes)
-    console.log(`[WATERFALL] 🔧 Modo CON TOOLS (Consultas) — Gemini 2.5 Flash primero (Encolado)...`);
-    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callGemini, callOllama];
+    // Consultas y Chats de WhatsApp (con tools) -> GOOGLE PRIMERO Y EXCLUSIVO
+    console.log(`[WATERFALL] 🔧 Modo CON TOOLS (Consultas) — Gemini 2.5 Flash EXCLUSIVO...`);
+    activeWaterfall = [callGemini];
 
 } else {
-    // Consultas sin tools -> GOOGLE PRIMERO
-    console.log(`[WATERFALL] ⚖️ Modo SIN TOOLS (Consultas) — Gemini 2.5 Flash primero (Encolado)...`);
-    activeWaterfall = [callSambaNova, callCerebras, callPollinations, callGroq, callGemini, callOllama];
+    // Consultas sin tools -> GOOGLE PRIMERO Y EXCLUSIVO
+    console.log(`[WATERFALL] ⚖️ Modo SIN TOOLS (Consultas) — Gemini 2.5 Flash EXCLUSIVO...`);
+    activeWaterfall = [callGemini];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

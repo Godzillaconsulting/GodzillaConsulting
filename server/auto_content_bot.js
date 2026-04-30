@@ -23,7 +23,7 @@ export async function generarGuionDelDia(tema) {
     try {
         const rawRes = await executeAiWaterfall([
             { role: 'user', content: `Dame 3 ángulos de marketing o puntos de dolor que conecten con el tema "${tema}" para B2B/emprendedores. Solo texto plano y rápido, sin formato.` }
-        ], { mode: 'default' });
+        ], { mode: 'compression' });
         rawAngles = rawRes.content || '';
         console.log(`✅ [Fase 1] Ángulos crudos obtenidos.`);
     } catch(e) {

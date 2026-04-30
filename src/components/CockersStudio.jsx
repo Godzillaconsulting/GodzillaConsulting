@@ -860,8 +860,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         }
 
         const enginesToRun = genMode === 'video'
-            ? ['Veo 3 (Toma 1)', 'Veo 3 (Toma 2)', 'Veo 3 (Toma 3)', 'Veo 3 Fast']
-            : ['FLUX.1 Pro', 'FLUX Realism', 'SDXL Turbo', 'Anime/Dark'];
+            ? ['Veo 3.1 Ultra', 'Sora Pro', 'Kling Pro MAX', 'Gemini Video']
+            : ['Imagen 4 Ultra', 'Gemini 3.1 Pro', 'Sora LCM', 'Midjourney V6'];
 
         const promptAmentado = selectedFilters.length > 0
             ? `${finalPrompt}. ${selectedFilters.join(', ')}` : finalPrompt;
@@ -894,14 +894,15 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         };
 
         try {
-            // ── 2. Lanzar requests con stagger ──
+            // ── 2. Lanzar requests con stagger (Petición por Bloques) ──
             const toPoll = [];
 
             for (let idx = 0; idx < enginesToRun.length; idx++) {
                 if (cancelRef.current) break;
                 const engineName = enginesToRun[idx];
                 
-                if (idx > 0) await new Promise(r => setTimeout(r, 1800));
+                // Retraso de 4.5 segundos entre peticiones para cuidado de tokens y rate-limits
+                if (idx > 0) await new Promise(r => setTimeout(r, 4500));
                 
                 // --- FALLBACK CASCADE ---
                 const runFallback = async (slotIdx, eName) => {
@@ -909,13 +910,13 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     let fbModel = 'flux';
                     let injectedStyle = '';
                     
-                    if (eName === 'FLUX Realism') { 
+                    if (eName.includes('Imagen')) { 
                         fbModel = 'flux-realism';
                         injectedStyle = ', ultra-realistic photography, 8k resolution, highly detailed, 85mm lens, photorealistic';
-                    } else if (eName === 'SDXL Turbo') { 
+                    } else if (eName.includes('Gemini')) { 
                         fbModel = 'turbo';
                         injectedStyle = ', vibrant vivid colors, digital art, highly creative, dramatic lighting, masterpiece';
-                    } else if (eName === 'Anime/Dark') { 
+                    } else if (eName.includes('Sora') || eName.includes('Midjourney')) { 
                         fbModel = 'any-dark';
                         injectedStyle = ', dark fantasy style, gloomy, studio ghibli 2d illustration, cinematic dark lighting';
                     }
@@ -943,14 +944,9 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     }
                 };
 
-                if (!isVideoMode) {
-                    // Bypass Primary API completely para imágenes
-                    await runFallback(idx, engineName);
-                    continue;
-                }
-
                 try {
-                    // Try Primary Engine (Solo para Video)
+                    // Try Primary Engine (Usamos la API para TODO: Imágenes y Videos, para tener calidad Premium)
+
                     const resFetch = await fetch('/api/studio/generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

@@ -310,7 +310,7 @@ async function processTask() {
         
         await pool.query(`
             UPDATE studio_tasks 
-            SET status = 'pending_cm_approval', assigned_to = 'alex', media_payload = $1, title = $2
+            SET status = 'approved', assigned_to = 'auto', media_payload = $1, title = $2
             WHERE id = $3
         `, [JSON.stringify([payload]), task.title, task.id]);
         

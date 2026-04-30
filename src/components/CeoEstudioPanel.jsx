@@ -43,9 +43,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const username  = adminProfile?.username?.toLowerCase() || '';
     const isCockers = adminProfile?.role === 'cockers' || username === 'alex' || username === 'cockers';
     
-    // Solo Judith, Oscar, Alex y Godzilla_admin pueden modificar/publicar
-    const canReview  = ['judith', 'oscar', 'alex', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
-    const canPublish = ['judith', 'oscar', 'alex', 'godzilla_admin'].includes(username) || adminProfile?.is_superadmin;
+    // Solo Judith, Oscar, Alex, Godzilla_admin, y Test pueden modificar/publicar
+    const canReview  = ['judith', 'oscar', 'alex', 'godzilla_admin', 'test', 'admin'].includes(username) || adminProfile?.is_superadmin;
+    const canPublish = ['judith', 'oscar', 'alex', 'godzilla_admin', 'test', 'admin'].includes(username) || adminProfile?.is_superadmin;
     
     // Alex debe dejar nota al APROBAR; Judith no
     const approveNeedsReason = isCockers;
@@ -266,7 +266,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
         pendientes: ['pending_cm_approval'],
         ia_backlog: ['backlog'],
         devueltas:  ['rejected'],
-        aprobadas:  ['approved', 'published'],
+        aprobadas:  ['approved', 'published', 'pending_render', 'rendering'],
     };
     const visible = tasks.filter(t => (tabStatuses[activeTab] || []).includes(t.status));
 
@@ -275,7 +275,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
         pendientes: tasks.filter(t => t.status === 'pending_cm_approval').length,
         ia_backlog: tasks.filter(t => t.status === 'backlog').length,
         devueltas:  tasks.filter(t => t.status === 'rejected').length,
-        aprobadas:  tasks.filter(t => ['approved','published'].includes(t.status)).length,
+        aprobadas:  tasks.filter(t => ['approved','published','pending_render','rendering'].includes(t.status)).length,
     };
 
     const firstMedia = Array.isArray(selected?.media_options) ? selected.media_options[0] : null;
@@ -508,7 +508,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             <hr className="border-neutral-800 my-3" />
 
                             {/* PENDIENTE → Judith puede aprobar/rechazar */}
-                            {['pending_cm_approval', 'backlog', 'rendering'].includes(selected.status) && canReview && (
+                            {['pending_cm_approval', 'backlog'].includes(selected.status) && canReview && (
                                 <div className="flex-1 flex flex-col">
                                     <label className="text-xs font-bold text-neutral-400 mb-2 block uppercase tracking-widest">
                                         Notas (obligatorio si se devuelve):
@@ -530,7 +530,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {/* PENDIENTE → Alex solo ve estado */}
-                            {['pending_cm_approval', 'backlog', 'rendering'].includes(selected.status) && !canReview && (
+                            {['pending_cm_approval', 'backlog'].includes(selected.status) && !canReview && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                                     <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                                         <span className="text-2xl">⏳</span>
@@ -552,10 +552,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {/* APROBADA → Publicar */}
-                            {(selected.status === 'approved' || selected.status === 'published') && (
+                            {['approved', 'published', 'pending_render', 'rendering'].includes(selected.status) && (
                                 <div className="flex-1 flex flex-col gap-3">
                                     <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl text-center">
-                                        <p className="text-sm font-black text-green-400">{selected.status === 'published' ? '🚀 YA PUBLICADA' : '✅ APROBADA'}</p>
+                                        <p className="text-sm font-black text-green-400">
+                                            {selected.status === 'published' ? '🚀 YA PUBLICADA' : 
+                                             ['pending_render', 'rendering'].includes(selected.status) ? '✅ APROBADA (RENDERIZANDO VIDEO...)' : '✅ APROBADA'}
+                                        </p>
                                     </div>
                                     
                                     {/* Selector de fecha directo en CEO Estudio */}

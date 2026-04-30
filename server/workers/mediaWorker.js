@@ -101,8 +101,9 @@ async function generateImage(prompt, outputPath) {
 
     // Opción 2: Fallback Libre (Pollinations AI)
     console.log(`[MediaWorker] 🔄 Generando con motor de respaldo libre...`);
-    const safePrompt = prompt.length > 300 ? prompt.substring(0, 300) : prompt;
-    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+    const safePrompt = prompt.length > 250 ? prompt.substring(0, 250) : prompt;
+    const enhancedPrompt = safePrompt + ", masterpiece, highly detailed, photorealistic, 8k resolution, cinematic lighting";
+    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
     
     const res = await fetch(fallbackUrl);
     if (!res.ok) throw new Error(`Fallo Fallback: ${res.statusText}`);
@@ -164,11 +165,11 @@ async function processTask() {
             // Generar Medios en Paralelo para agilizar
             const promises = [];
             
-            // Ya no usamos stock videos rotos (Coverr 404), generamos imágenes IA para todas las escenas
-            const isFaceless = false;
-            const randomStock = STOCK_VIDEOS[0]; // No se usará
+            // Alternamos entre Imágenes generadas y el Video local Faceless que el usuario prefiere
+            const isFaceless = (i % 2 === 0);
+            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
 
-            if (visualPrompt) {
+            if (!isFaceless && visualPrompt) {
                 promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
             }
 

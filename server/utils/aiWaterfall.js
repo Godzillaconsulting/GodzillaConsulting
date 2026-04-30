@@ -224,7 +224,7 @@ export async function executeAiWaterfall(messages, options = {}) {
                 model: "gemini-2.0-flash",
                 systemInstruction,
                 generationConfig: {
-                    maxOutputTokens: Math.min(maxTokens, 800), // 🔒 Cap de tokens pagados
+                    maxOutputTokens: maxTokens, // 🔓 Sin límite restrictivo por orden del CEO
                     temperature
                 }
             };
@@ -327,28 +327,27 @@ const callPollinations = async () => {
 let activeWaterfall = [];
 
 if (mode === 'compression') {
-    // Compresión de contexto: no necesita calidad alta, solo rapidez y economía
-    console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — usando proveedores rápidos y gratuitos...`);
+    // Compresión de contexto: rápida y barata
+    console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — usando proveedores gratuitos...`);
     activeWaterfall = [callCerebras, callSambaNova, callGroq, callOllama];
 
 } else if (mode === 'gemini_exclusive') {
-    // 💎 GEMINI EXCLUSIVO: Prioriza Gemini 2.0 Flash SIN RESPALDOS gratuitos (por orden del CEO para evitar alucinaciones).
-    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Usando estrictamente Gemini 2.0 Flash Premium...`);
+    // 💎 BOTS DE CHAT (WA, FB, IG): Usan tu API de PAGA de Google (gemini-2.0-flash)
+    console.log(`[WATERFALL] 💎 Modo CHATBOT — Usando Google de Paga (Flash)...`);
     activeWaterfall = [callGemini];
 
 } else if (mode === 'premium') {
-    // 🧠 MODO PREMIUM (Contenido): Usar APIs gratuitas de alta capacidad (Groq/Samba)
-    console.log(`[WATERFALL] 🧠 Modo PREMIUM (Contenido) — Priorizando Groq/SambaNova para ahorrar tokens...`);
+    // 🧠 CONTENIDO (Guiones, Newsletters): Cascada Gratuita para ahorrar
+    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Groq/SambaNova...`);
     activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else if (mode === 'noTools') {
-    // 🚀 MODO SIN TOOLS (Chats sencillos): Solo Gratis
     console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Usando proveedores gratuitos...`);
     activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else {
-    // 🤖 MODO ESTÁNDAR (auto): Prioriza Groq Llama 3.3 70B (Tiene tools, pero gratis)
-    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR (auto) — Priorizando Llama 3.3 70B en Groq/SambaNova...`);
+    // 🤖 DEFAULT: Cascada gratuita
+    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR — Cascada de Groq/SambaNova...`);
     activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 }
 

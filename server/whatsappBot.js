@@ -313,8 +313,8 @@ export const initWhatsAppBot = async () => {
 
         let senderId = message.key.remoteJid;
         
-        // Ignore groups and status broadcast
-        if (senderId.endsWith('@g.us') || senderId === 'status@broadcast') return;
+        // Ignore groups, status broadcast, and Linked Device sync messages (@lid)
+        if (senderId.endsWith('@g.us') || senderId.endsWith('@lid') || senderId === 'status@broadcast') return;
 
         const rawMessageText = message.message.conversation || message.message.extendedTextMessage?.text;
         if (!rawMessageText) return;
@@ -674,17 +674,11 @@ export const initWhatsAppBot = async () => {
                 } catch(e) { /* No es JSON válido, es texto normal con llaves */ }
             }
             
-            // ⏱️ DELAY HUMANO: Esperar ~8 segundos para simular que alguien está escribiendo y evitar baneos de Meta
-            const humanDelay = Math.floor(Math.random() * 2000) + 7000; // Entre 7 y 9 segundos
-            console.log(`⏱️ Esperando ${humanDelay}ms antes de responder a [${maskedSender}] para simular humanidad...`);
-            
             // Opcional: Enviar estado de "escribiendo..." si la librería lo soporta (si no, solo espera)
             try {
                 await client.sendPresenceUpdate('composing', senderId);
             } catch (e) {}
 
-            await new Promise(r => setTimeout(r, humanDelay));
-            
             try {
                 await client.sendPresenceUpdate('paused', senderId);
             } catch(e) {}
@@ -709,7 +703,7 @@ export const initWhatsAppBot = async () => {
             await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1000) + 1000));
             waMutex.release();
         }
-        }, 2000 + jitter); // Ventana de 2 segundos de agrupación de mensajes + Jitter
+        }, 5000 + jitter); // Ventana de 5 segundos de agrupación de mensajes + Jitter
     });
     const emergencyShutdown = async (err, origin) => {
         // Ignorar errores de puerto ocupado (no fatales para WhatsApp)

@@ -737,7 +737,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                     const dbModule = await import('../config/db.js');
                     const poolObj = dbModule.pool || dbModule.default || pool;
                     const res = await poolObj.query(
-                        `INSERT INTO studio_tasks (title, prompt, media_payload, status, created_at) VALUES ($1, $2, $3, 'rendering', NOW()) RETURNING id`,
+                        `INSERT INTO studio_tasks (title, prompt, media_payload, status, created_at) VALUES ($1, $2, $3, 'pending_render', NOW()) RETURNING id`,
                         [
                             paquete.tema || topic, 
                             paquete.prompt || `Paquete de Contenido: ${topic}`, 

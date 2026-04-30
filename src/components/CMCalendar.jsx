@@ -704,7 +704,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         status: 'warning', tipo: 'pendiente', raw: t
     }));
 
-    const aiContentEvents = tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).map(t => {
+    const aiContentEvents = tasks.filter(t => t.mediaPayload && (Array.isArray(t.mediaPayload) ? t.mediaPayload.length > 0 : Object.keys(t.mediaPayload).length > 0)).map(t => {
         let deadlineStr = t.deadline || new Date().toISOString().split('T')[0];
         if (!deadlineStr.includes('T')) deadlineStr += 'T12:00:00';
         return {

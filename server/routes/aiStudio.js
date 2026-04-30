@@ -197,7 +197,7 @@ router.post('/create-video-script', authenticateToken, async (req, res) => {
 
         const result = await pool.query(
             `INSERT INTO studio_tasks (title, visual_prompt, caption, status, assigned_to, media_payload, scheduled_date)
-             VALUES ($1, $2, $3, 'pending_cm_approval', 'auto', $4, NOW())
+             VALUES ($1, $2, $3, 'pending_render', 'auto', $4, NOW())
              RETURNING id`,
             [title, scenes[0]?.visual || title, title, JSON.stringify(mediaPayload)]
         );
@@ -310,8 +310,8 @@ router.post('/tasks', authenticateToken, async (req, res) => {
         const uploaderId = req.admin?.id || 'N/A';
         const createdByStr = `${uploaderName} (ID: ${uploaderId})`;
         
-        // Todos los envíos desde el Studio van a revisión (pending_cm_approval)
-        const initialStatus = media_payload ? 'pending_cm_approval' : 'draft';
+        // Si el cliente envía un status explícito (ej: pending_render), respetarlo
+        const initialStatus = req.body.status || (media_payload ? 'pending_cm_approval' : 'draft');
         
         const query = `
             INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, content_type, ig_publish_date, status, media_payload, created_by)

@@ -456,7 +456,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 assigned_to: 'auto',
                 tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                 priority: 'Media',
-                status: 'pending', // Aseguramos que se cree como pendiente para el CEO
+                status: 'pending_render', // Aseguramos que pase por renderizado primero
                 content_type: 'Video Corto',
                 ig_publish_date: isoDate,
                 media_payload: JSON.stringify(mediaPayload)

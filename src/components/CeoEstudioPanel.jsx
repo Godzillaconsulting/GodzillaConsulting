@@ -266,7 +266,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
         pendientes: ['pending_cm_approval'],
         ia_backlog: ['backlog'],
         devueltas:  ['rejected'],
-        aprobadas:  ['approved', 'published', 'pending_render', 'rendering'],
+        aprobadas:  ['approved', 'published'],
     };
     const visible = tasks.filter(t => (tabStatuses[activeTab] || []).includes(t.status));
 
@@ -275,7 +275,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
         pendientes: tasks.filter(t => t.status === 'pending_cm_approval').length,
         ia_backlog: tasks.filter(t => t.status === 'backlog').length,
         devueltas:  tasks.filter(t => t.status === 'rejected').length,
-        aprobadas:  tasks.filter(t => ['approved','published','pending_render','rendering'].includes(t.status)).length,
+        aprobadas:  tasks.filter(t => ['approved','published'].includes(t.status)).length,
     };
 
     const firstMedia = Array.isArray(selected?.media_options) ? selected.media_options[0] : null;

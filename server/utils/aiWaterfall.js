@@ -76,9 +76,23 @@ export async function executeAiWaterfall(messages, options = {}) {
     // Aplicar trim antes de construir las llamadas
     const trimmedMessages = mode === 'compression' ? messages : trimMessages(messages, 12);
 
-    // Extraer system prompt de los mensajes
+    // ── INYECCIÓN GLOBAL DE CONTEXTO TEMPORAL ──
+    const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
+    const globalTemporalContext = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. Toma en cuenta esta fecha real para cualquier planificación, publicación o respuesta.`;
+
+    // Extraer y potenciar system prompt
     const systemMsg = trimmedMessages.find(m => m.role === 'system');
-    const systemInstruction = systemMsg ? systemMsg.content : "Eres un asistente útil.";
+    let systemInstruction = systemMsg ? systemMsg.content : "Eres el cerebro operativo de la empresa.";
+    
+    // Inyectar el tiempo en la instrucción de Gemini
+    systemInstruction += globalTemporalContext;
+
+    // Inyectar el tiempo en la matriz de mensajes para Groq, SambaNova, Cerebras
+    if (systemMsg) {
+        systemMsg.content += globalTemporalContext;
+    } else {
+        trimmedMessages.unshift({ role: 'system', content: systemInstruction });
+    }
 
     // --- Definición de Proveedores Aislados ---
 
@@ -318,9 +332,9 @@ if (mode === 'compression') {
     activeWaterfall = [callCerebras, callSambaNova, callGroq, callOllama];
 
 } else if (mode === 'gemini_exclusive') {
-    // 💎 GEMINI EXCLUSIVO (CON RESPALDO): Prioriza Gemini 2.0 Flash, pero usa Groq/SambaNova si Gemini cae
-    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Priorizando Gemini 2.0 Flash (con respaldos Llama 3.3)...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova];
+    // 💎 GEMINI EXCLUSIVO: Prioriza Gemini 2.0 Flash SIN RESPALDOS gratuitos (por orden del CEO para evitar alucinaciones).
+    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Usando estrictamente Gemini 2.0 Flash Premium...`);
+    activeWaterfall = [callGemini];
 
 } else if (mode === 'premium') {
     // 🧠 MODO PREMIUM (Contenido): Usar APIs gratuitas de alta capacidad (Groq/Samba)

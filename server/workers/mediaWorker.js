@@ -127,7 +127,7 @@ async function processTask() {
             SET status = 'rendering'
             WHERE id = (
                 SELECT id FROM studio_tasks 
-                WHERE status = 'pending_render' AND assigned_to = 'test' 
+                WHERE status = 'pending_render' 
                 ORDER BY created_at ASC LIMIT 1
             )
             RETURNING *;
@@ -322,7 +322,7 @@ async function processTask() {
         
         await pool.query(`
             UPDATE studio_tasks 
-            SET status = 'approved', assigned_to = 'auto', media_payload = $1, title = $2
+            SET status = 'pending_cm_approval', assigned_to = 'auto', media_payload = $1, title = $2
             WHERE id = $3
         `, [JSON.stringify([payload]), task.title, task.id]);
         

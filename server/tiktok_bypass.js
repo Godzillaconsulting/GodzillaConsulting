@@ -551,13 +551,37 @@ export const initTikTokBypass = async (isHeadless = true) => {
         headless: 'old',
         executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         userDataDir: sessionDir,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-software-rasterizer'],
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-software-rasterizer'
+        ],
         protocolTimeout: 120000
     });
 
     browserClient = browser;
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    
+    // OPTIMIZACIÓN EXTREMA DE RAM Y CPU: Bloquear carga de imágenes, videos y CSS
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+        const type = req.resourceType();
+        if (['image', 'media', 'font', 'stylesheet', 'other'].includes(type)) {
+            req.abort();
+        } else {
+            req.continue();
+        }
+    });
 
     if (!isHeadless) {
         console.log('🟢 MODO LOGIN MANUAL ACTIVO. Abre tu navegador y conéctate. Cierra Chromium al terminar.');

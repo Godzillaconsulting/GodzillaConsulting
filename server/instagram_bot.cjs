@@ -371,10 +371,17 @@ async function startBot() {
         executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         userDataDir: userDataDir,
         args: [
-            '--disable-gpu',
-            '--disable-dev-shm-usage',
             '--no-sandbox',
             '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-blink-features=AutomationControlled',
             '--disable-software-rasterizer',
             '--disable-background-networking'
         ]
@@ -382,6 +389,18 @@ async function startBot() {
     browserClient = browser;
 
     const page = await browser.newPage();
+    
+    // OPTIMIZACIÓN EXTREMA DE RAM Y CPU: Bloquear carga de imágenes, videos y CSS
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+        const type = req.resourceType();
+        if (['image', 'media', 'font', 'stylesheet', 'other'].includes(type)) {
+            req.abort();
+        } else {
+            req.continue();
+        }
+    });
+
     // Navegamos a Instagram para inicializar cookies completas y entorno web nativo
     await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 

@@ -245,6 +245,12 @@ async function simulateHumanTyping(page, selector, text) {
     if(!text) return;
     console.log(`⌨️ [Typing] ${text.substring(0, 40)}...`);
     await page.waitForSelector(selector);
+    
+    // ⏱️ DELAY HUMANO: Esperar ~8 segundos para simular tiempo de lectura/redacción
+    const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+    console.log(`⏱️ Esperando ${humanDelay}ms antes de escribir en TikTok...`);
+    await new Promise(r => setTimeout(r, humanDelay));
+
     await page.click(selector);
     // Retraso entre teclas (algo rápido para optimizar la automatización)
     for (const char of text) {

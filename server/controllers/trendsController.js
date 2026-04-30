@@ -5,9 +5,26 @@ export const getTrends = async (req, res) => {
     
     try {
 
+        // FASE 1: IA Gratuita investiga tendencias crudas
+        const rawTrendsPrompt = `Dame una lista rápida y cruda de 5-7 hashtags y 3 frases gancho (hooks) que estén funcionando AHORA en ${network} para el nicho "${filter}". Solo texto plano, sin formato, sin JSON.`;
+        
+        let rawTrends = '';
+        try {
+            const rawRes = await executeAiWaterfall([
+                { role: 'user', content: rawTrendsPrompt }
+            ], { mode: 'default' });
+            rawTrends = rawRes.content || '';
+            console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos.`);
+        } catch(e) {
+            console.warn(`[Trends] ⚠️ Fallo Fase 1 (gratuita), Gemini hará todo directamente.`);
+        }
+
+        // FASE 2: Gemini Premium formatea y mejora los datos
         const prompt = `Actúa como un experto Director de Marketing Analítico.
-Necesitamos los Hashtags y Hooks (ganchos de video/copy) más en tendencia HOY MISMO para la red social: "${network}", dentro del nicho: "${filter}".
-Asegúrate de basarte en el ecosistema real de hoy. Eres una API, devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta, sin backticks ni bloques de código:
+TENEMOS ESTAS IDEAS BASE para ${network}, nicho: "${filter}":
+${rawTrends ? rawTrends : 'Sin datos previos — genera tú mismo las tendencias más probables para hoy.'}
+
+Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON sin backticks:
 
 {
   "network": "${network}",
@@ -22,7 +39,7 @@ Asegúrate de basarte en el ecosistema real de hoy. Eres una API, devuelve ÚNIC
 
         const aiRes = await executeAiWaterfall([
             { role: 'user', content: prompt }
-        ]);
+        ], { mode: 'premium' });
 
         let responseText = aiRes.content || '';
         

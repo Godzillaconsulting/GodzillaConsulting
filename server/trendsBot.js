@@ -91,7 +91,7 @@ REGLAS:
         const waterfallRes = await executeAiWaterfall([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
-        ], { jsonMode: true });
+        ], { jsonMode: true, mode: 'premium' });
         
         const jsonMatch = waterfallRes.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -138,7 +138,7 @@ REGLAS:
         await client.query(
             `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, status, content_type, ig_publish_date, media_payload, created_by) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '2 hours', $8, $9)`,
-            [taskTitle, taskPrompt, 'test', JSON.stringify(['Tendencias Virales', 'AutoVideo']), 'alta', 'pending_cm_approval', 'video', mediaPayload, 'trends_bot']
+            [taskTitle, taskPrompt, 'test', JSON.stringify(['Tendencias Virales', 'AutoVideo']), 'alta', 'pending_render', 'video', mediaPayload, 'trends_bot']
         );
         console.log(`[${BOT_NAME}] 🎬 Tarea inyectada en DB. El MediaWorker la comenzará a procesar pronto.`);
 

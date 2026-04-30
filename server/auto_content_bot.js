@@ -15,12 +15,27 @@ const model = genAI.getGenerativeModel({
 });
 
 export async function generarGuionDelDia(tema) {
-    console.log(`🧠 [Fase 1] Invocando al Cerebro Gemini para crear contenido sobre: "${tema}"...`);
-    
-    // Personalidad del GEM: Aquí puedes tunear la voz oficial de la marca.
+    const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
+
+    // ─── FASE 1: IA Gratuita investiga ángulos y sub-temas ───
+    console.log(`🧠 [Fase 1] IA Gratuita investigando ángulos para: "${tema}"...`);
+    let rawAngles = '';
+    try {
+        const rawRes = await executeAiWaterfall([
+            { role: 'user', content: `Dame 3 ángulos de marketing o puntos de dolor que conecten con el tema "${tema}" para B2B/emprendedores. Solo texto plano y rápido, sin formato.` }
+        ], { mode: 'default' });
+        rawAngles = rawRes.content || '';
+        console.log(`✅ [Fase 1] Ángulos crudos obtenidos.`);
+    } catch(e) {
+        console.warn(`⚠️ [Fase 1] Fallo gratuita, Gemini hará todo.`);
+    }
+
+    // ─── FASE 2: Gemini Premium escribe el copy final ───
+    console.log(`🧠 [Fase 2] Gemini Premium redactando Copy y Visual Prompt...`);
     const promptDelSistema = `
     Eres el maestro de copywriting de Godzilla Consulting. Especialista implacable en marketing corporativo moderno B2B y generación de leads.
     Tu tarea hoy es crear un post de alto impacto sobre: "${tema}".
+    ${rawAngles ? `\nUSA ESTOS ÁNGULOS BASE como inspiración (no los copies literal, mejóralos):\n${rawAngles}` : ''}
 
     Devuélveme tu respuesta ESTRICTAMENTE en formato objeto JSON puro y válido con dos propiedades:
     1. "caption": El texto ultra persuasivo para publicar en Facebook/Instagram (incluye un "Hook" que detenga a la gente, 2-3 emojis máximo, sin rodeos corporativos aburridos, y un CTA cortante al final).
@@ -28,11 +43,10 @@ export async function generarGuionDelDia(tema) {
     `;
 
     try {
-        const { executeAiWaterfall } = await import('./utils/aiWaterfall.js');
         const aiRes = await executeAiWaterfall([
             { role: 'system', content: promptDelSistema },
             { role: 'user', content: `Genera el contenido para el tema: ${tema}` }
-        ]);
+        ], { mode: 'premium' });
         
         let text = aiRes.content || '';
         

@@ -19,8 +19,8 @@ setInterval(async () => {
     const hora = ahora.getHours();
     const minuto = ahora.getMinutes();
     
-    // 1. Ejecutar Generación a las 8:00 AM exactamente (Se queda en Draft para revisión humana)
-    if (hora === 8 && minuto === 0) {
+    // 1. Ejecutar Generación a las 8:00 AM (Se queda en Draft para revisión humana)
+    if (hora === 8) {
         if (!hasRunToday) {
             hasRunToday = true;
             console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter...`);
@@ -32,8 +32,8 @@ setInterval(async () => {
             }
         }
     } 
-    // 2. Ejecutar Auto-Despliegue a las 9:00 AM exactamente (Si el humano no lo envió, la IA lo fuerza)
-    else if (hora === 9 && minuto === 0) {
+    // 2. Ejecutar Auto-Despliegue a las 9:00 AM (Si el humano no lo envió, la IA lo fuerza)
+    else if (hora === 9) {
         if (!hasEnforcedToday) {
             hasEnforcedToday = true;
             console.log(`[${BOT_NAME}] ⏰ ¡Ventana de revisión terminada! Forzando auto-despliegue de borradores olvidados...`);
@@ -44,8 +44,8 @@ setInterval(async () => {
             });
         }
     } 
-    // Resetear las banderas para el día siguiente
-    else if (hora !== 8 && hora !== 9) {
+    // Resetear las banderas a medianoche para el día siguiente
+    else if (hora === 0) {
         hasRunToday = false;
         hasEnforcedToday = false;
     }

@@ -72,7 +72,7 @@ class AutomationEngine {
                     const waterfallRes = await executeAiWaterfall([
                         { role: "system", content: "Eres un estratega de contenido experto en redes sociales. DEBES responder estrictamente con un array JSON válido y nada de markdown." },
                         { role: "user", content: blockPrompt }
-                    ], { jsonMode: true, maxTokens: 4000 });
+                    ], { jsonMode: true, maxTokens: 4000, mode: 'premium' });
                     
                     const raw  = waterfallRes.content || '[]';
                     const clean = raw.replace(/```json\n?/gi, '').replace(/```\n?/gi, '').trim();
@@ -232,7 +232,7 @@ class AutomationEngine {
                     narrations,
                     'auto',
                     JSON.stringify([ctx.niche || 'auto', 'ai-planner']),
-                    'Media', 'Video Corto', 'pending_cm_approval',
+                    'Media', 'Video Corto', 'pending_render',
                     JSON.stringify(mediaPayload),
                     isoDate,
                     JSON.stringify(['instagram', 'tiktok'])
@@ -376,7 +376,7 @@ class AutomationEngine {
                 const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
                 const waterfallRes = await executeAiWaterfall([
                     { role: 'user', content: prompt }
-                ], { temperature: 0.85 });
+                ], { temperature: 0.85, mode: 'premium' });
                 
                 let result = null;
                 const raw = waterfallRes.content || '[]';
@@ -714,7 +714,7 @@ Genera un PAQUETE DE CONTENIDO COMPLETO en formato JSON con esta estructura exac
 
 Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
-                const aiResponse = await executeAiWaterfall([{ role: 'user', content: prompt }], { temperature: 0.85 });
+                const aiResponse = await executeAiWaterfall([{ role: 'user', content: prompt }], { temperature: 0.85, mode: 'premium' });
                 
                 let paquete = {};
                 try {
@@ -771,7 +771,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                 const response = await executeAiWaterfall([{
                     role: 'user',
                     content: `Eres un analista de tendencias. Dame las 5 tendencias más virales de hoy en el nicho: "${niche}". Responde solo JSON: { "trending": [{ "title": "...", "angle": "...", "virality": "alta|media" }] }`
-                }], { temperature: 0.7 });
+                }], { temperature: 0.7, mode: 'premium' });
                 const raw = (response.content || '').replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
                 const trendsData = JSON.parse(raw);
                 console.log(`[Engine] 📈 Trends Bot — ${trendsData.trending?.length || 0} tendencias encontradas`);
@@ -793,7 +793,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                 const response = await executeAiWaterfall([{
                     role: 'user',
                     content: `Eres un redactor de newsletters premium. Redacta una newsletter completa sobre "${topic}". ${instrLine}\nIncluye: título llamativo, introducción de 2 párrafos, 3 secciones con subtítulos, CTA final. Tono profesional pero cercano en español latino.`
-                }], { temperature: 0.75 });
+                }], { temperature: 0.75, mode: 'premium' });
                 return { ...ctx, _newsletterContent: response.content };
             } catch(e) {
                 console.error(`[Engine] ❌ Bot Newsletter error: ${e.message}`);

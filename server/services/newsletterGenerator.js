@@ -47,10 +47,29 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
         console.error("❌ Fallo obteniendo RSS de noticias:", e.message);
     }
 
-    const prompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}${realNewsContext}
+    // 0.5. FASE 1: EXTRAER INFO CON IA GRATUITA (Cero Tokens)
+    console.log("🧠 [Fase 1] Extrayendo y resumiendo contexto crudo usando IA Gratuita...");
+    const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet. Extrae un resumen crudo en texto plano (bullet points) de las 3 más importantes sobre Inteligencia Artificial, Startups o Negocios. REGLA ESTRICTA: Las noticias deben ser frescas, no inventes eventos pasados ni repitas noticias viejas. Solo usa el contexto provisto.\n\n${realNewsContext}`;
+    
+    let rawNewsSummary = "";
+    try {
+        const rawRes = await executeAiWaterfall([
+            { role: 'user', content: rawPrompt }
+        ], { mode: 'default' }); // Fallback a Google si fallan las gratis
+        rawNewsSummary = rawRes.content || '';
+        console.log("✅ [Fase 1] Resumen crudo obtenido.");
+    } catch(e) {
+        console.error("⚠️ Fallo en la fase 1, usando contexto original crudo.");
+        rawNewsSummary = realNewsContext;
+    }
 
-TAREA CRÍTICA: Eres un analista Senior de primer nivel. Extrae del CONTEXTO DE NOTICIAS proporcionado las 2 o 3 noticias, herramientas de IA, Startups o Tech más valiosas y disruptivas de HOY. 
-IMPORTANTE: El contenido generado debe ser PROFUNDO, EXTENSO y detallado basándose EXCLUSIVAMENTE en las noticias reales. Nada de resúmenes de una línea. Explica el contexto, el impacto real en el mercado y las implicaciones a largo plazo. Piensa como un reporte de McKinsey o Gartner. Ve al grano estratégico, recordando siempre a nuestros "Socios Godzilla".
+    // 1. FASE 2: GENERAR JSON FINAL (ESPAÑOL) CON IA PREMIUM
+    const premiumPrompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}
+    
+AQUÍ TIENES LOS HECHOS CLAVE FRESCOS DE HOY (Recopilados de internet hace un instante):
+${rawNewsSummary}
+
+TAREA CRÍTICA: Eres un analista Senior de primer nivel. El contenido generado debe ser PROFUNDO y detallado basándose ÚNICAMENTE en los hechos provistos. ESTÁ TOTALMENTE PROHIBIDO alucinar noticias viejas o reciclar temas de la semana pasada. Explica el contexto actual y el impacto real. Ve al grano estratégico.
 
 DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA BASE (TODO EN ESPAÑOL POR AHORA):
 {
@@ -63,22 +82,22 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     "pdfIntro": "Un editorial inicial extenso (al menos 2 párrafos) hablando de tú a tú, analizando el panorama macro actual. (Solo plain text, nada de HTML)",
     "pdfMetrics": [ { "label": "Impacto a Productividad (%)", "value": 85 } ],
     "pdfChart": { "title": "Adopción de Mercado", "data": [ {"label": "Líder", "value": 60}, {"label": "Rival", "value": 40} ] },
-    "pdfSections": [ { "heading": "Título Noticia", "content": "Detalle analítico profundo de al menos 2 párrafos explicando el por qué, el cómo y el impacto en los negocios. (Solo plain text)", "sourceName": "TechCrunch", "url": "https://techcrunch.com" } ],
+    "pdfSections": [ { "heading": "Título Noticia", "content": "Detalle analítico profundo de al menos 2 párrafos explicando el por qué, el cómo y el impacto en los negocios. (Solo plain text)" } ],
     "pdfQuote": "Insight profundo de supervivencia tecnológica o reflexión de un líder de la industria.",
     "pdfConclusion": "Conclusión estratégica orientada al ROI, pasos a seguir o predicciones para el resto de la semana."
 }`;
 
-    // 1. GENERAR JSON BASE (ESPAÑOL)
+    console.log("🧠 [Fase 2] Enviando resumen a Gemini para diseño de Copywriting Premium...");
     const baseResponse = await executeAiWaterfall([
         { role: 'system', content: systemInstruction },
-        { role: 'user', content: prompt }
-    ], { jsonMode: true });
+        { role: 'user', content: premiumPrompt }
+    ], { jsonMode: true, mode: 'premium' });
     const jsonText = cleanJsonStr(baseResponse.content);
     const data = JSON.parse(jsonText);
     console.log("✅ Contenido IA Base Generado.");
 
-    // 2. CREACIÓN DEL MEGA-DICCIONARIO MULTI-IDIOMA
-    const targetLangs = ['en', 'fr', 'pt', 'de', 'ja', 'it', 'zh'];
+    // 2. MEGA-DICCIONARIO 11 IDIOMAS — Traducción con IA Gratuita (try→catch→Premium si falla)
+    const targetLangs = ['en', 'fr', 'pt', 'de', 'ja', 'it', 'zh', 'ko', 'ar', 'ru'];
     const translationsJson = { "es": data };
     
     console.log("🌍 Iniciando Traducción de Diccionario para Cero Fugas de Tokens...");
@@ -89,12 +108,23 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
             const transRes = await executeAiWaterfall([
                 { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
                 { role: 'user', content: transPrompt }
-            ], { jsonMode: true });
+            ], { jsonMode: true, mode: 'default' });
             const transResultStr = cleanJsonStr(transRes.content);
             translationsJson[lang] = JSON.parse(transResultStr);
         } catch (err) {
-            console.error(`   ❌ Fallo traduciendo a ${lang}, usando español por defecto.`);
-            translationsJson[lang] = data; // Fallback to spanish if one fails
+            console.error(`   ⚠️ Fallo con IA Gratuita traduciendo a ${lang}, intentando con Gemini...`);
+            try {
+                const premiumTransRes = await executeAiWaterfall([
+                    { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
+                    { role: 'user', content: transPrompt }
+                ], { jsonMode: true, mode: 'premium' });
+                const premStr = cleanJsonStr(premiumTransRes.content);
+                translationsJson[lang] = JSON.parse(premStr);
+                console.log(`   ✅ [${lang}] Traducido con Gemini como fallback.`);
+            } catch(e2) {
+                console.error(`   ❌ Fallo total traduciendo a ${lang}, usando español por defecto.`);
+                translationsJson[lang] = data; // Último recurso
+            }
         }
     }
     console.log("✅ Mega-Diccionario Guardado (8 Idiomas Listos).");

@@ -388,6 +388,9 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
 
         // <--- INJECT: Trigger Publisher --->
         let publishReport = null;
+        let publishFailed = false;
+        let publishErrorMsg = '';
+
         if (updatedStatus === 'published' && req.body.publish_targets && req.body.publish_targets.length > 0) {
             try {
                 const { publishToMeta, publishToTikTok } = await import('../services/socialPublisher.js');
@@ -406,15 +409,31 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
                     if (metaNetworks.length > 0) {
                         const resMeta = await publishToMeta(mediaUrl, captionText, metaNetworks);
                         publishReport = { ...publishReport, ...resMeta.report };
+                        // Verifica si hubo un error silencioso dentro del reporte
+                        if (resMeta.error || (resMeta.report && resMeta.report.error)) {
+                            throw new Error(resMeta.error || resMeta.report.error);
+                        }
                     }
                     if (targetsArr.includes('tiktok')) {
                         const resTikTok = await publishToTikTok(mediaUrl, captionText);
                         publishReport.tiktok = resTikTok;
+                        if (resTikTok.error) throw new Error(resTikTok.error);
                     }
+                } else {
+                    throw new Error('No hay video disponible para enviar.');
                 }
             } catch (pubErr) {
                 console.error("Error executing publisher:", pubErr);
+                publishFailed = true;
+                publishErrorMsg = pubErr.message || "Error desconocido en la red social";
             }
+        }
+
+        if (publishFailed) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Choque de API al publicar. Envíelo manualmente por este motivo: [${publishErrorMsg}]. Descargue el video en la más alta calidad y hágalo desde el celular.`
+            });
         }
 
         const query = `

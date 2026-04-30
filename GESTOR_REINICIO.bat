@@ -32,11 +32,12 @@ echo   [4] AI Core              (ai-core)
 echo   [5] Trends Bot           (trends-bot)
 echo   [6] TikTok Bot           (tiktok-bot)
 echo   [7] Instagram Bot        (instagram-bot)
-echo   [8] Ver estado PM2       (sin reiniciar nada)
-echo   [9] REINICIO TOTAL       (servicio completo - TODOS se caen)
-echo   [10] LIMPIEZA ZOMBIE     (mata todo Node/Chrome atascado)
-echo   [11] Auto-Renovar IG     (inicia sesion automaticamente)
-echo   [12] REPARAR WHATSAPP    (borra sesion corrupta - usa solo si hay bucle)
+echo   [8] Newsletter Bot       (newsletter-bot)
+echo   [9] Ver estado PM2       (sin reiniciar nada)
+echo   [10] REINICIO TOTAL      (servicio completo - TODOS se caen)
+echo   [11] LIMPIEZA ZOMBIE     (mata todo Node/Chrome atascado)
+echo   [12] Auto-Renovar IG     (inicia sesion automaticamente)
+echo   [13] REPARAR WHATSAPP    (borra sesion corrupta - usa solo si hay bucle)
 echo   [0] Salir
 echo.
 set /p OPCION="  Tu eleccion: "
@@ -48,11 +49,12 @@ if "%OPCION%"=="4" goto RESTART_AICORE
 if "%OPCION%"=="5" goto RESTART_TRENDS
 if "%OPCION%"=="6" goto RESTART_TIKTOK
 if "%OPCION%"=="7" goto RESTART_IG
-if "%OPCION%"=="8" goto STATUS
-if "%OPCION%"=="9" goto RESTART_TOTAL
-if "%OPCION%"=="10" goto LIMPIEZA_ZOMBIE
-if "%OPCION%"=="11" goto RENOVAR_IG
-if "%OPCION%"=="12" goto REPARAR_WP
+if "%OPCION%"=="8" goto RESTART_NEWSLETTER
+if "%OPCION%"=="9" goto STATUS
+if "%OPCION%"=="10" goto RESTART_TOTAL
+if "%OPCION%"=="11" goto LIMPIEZA_ZOMBIE
+if "%OPCION%"=="12" goto RENOVAR_IG
+if "%OPCION%"=="13" goto REPARAR_WP
 if "%OPCION%"=="0" exit /b
 goto MENU
 
@@ -149,6 +151,18 @@ echo.
 pause
 goto MENU
 
+:RESTART_NEWSLETTER
+cls
+echo.
+echo  Reiniciando SOLO newsletter-bot...
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd restart newsletter-bot --update-env
+timeout /t 3 /nobreak >nul
+powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\newsletter-bot-out.log'"
+echo.
+pause
+goto MENU
+
 :STATUS
 cls
 echo.
@@ -195,8 +209,8 @@ echo  [3/4] Matando procesos Chrome.exe (zombies)...
 taskkill /F /IM chrome.exe /T
 
 echo  [4/4] Limpiando sockets de PM2 y candados de Chrome...
-if exist "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\lockfile" 2>nul
-if exist "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\GodzillaConsulting\server\.wwebjs_auth\session\SingletonLock" 2>nul
+if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" 2>nul
+if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" 2>nul
 del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
 timeout /t 3 /nobreak >nul
 

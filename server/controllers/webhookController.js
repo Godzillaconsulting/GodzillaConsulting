@@ -26,6 +26,19 @@ export const verifyWebhook = (req, res) => {
     }
 };
 
+class Mutex {
+    constructor() { this.queue = []; this.locked = false; }
+    async lock() {
+        if (!this.locked) { this.locked = true; return; }
+        return new Promise(resolve => this.queue.push(resolve));
+    }
+    release() {
+        if (this.queue.length > 0) { const next = this.queue.shift(); next(); }
+        else { this.locked = false; }
+    }
+}
+const webhookMutex = new Mutex();
+
 export const receiveMessage = async (req, res) => {
     const body = req.body;
     console.log('[WEBHOOK INCOMING]', JSON.stringify(body).substring(0, 200));
@@ -113,6 +126,8 @@ async function processAndReply(from, text, phoneNumberId, platform) {
     }
 
     try {
+        await webhookMutex.lock();
+        
         history.push({ role: "user", parts: [{ text }] });
 
         let groqMessages = [
@@ -306,15 +321,26 @@ async function processAndReply(from, text, phoneNumberId, platform) {
         history.push({ role: "model", parts: [{ text: responseText }] });
 
         if (platform === 'whatsapp') {
+            const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+            console.log(`[${platform}] ⏱️ Esperando ${humanDelay}ms antes de responder...`);
+            await new Promise(resolve => setTimeout(resolve, humanDelay));
             await sendWhatsAppMessage(phoneNumberId, from, responseText);
         } else if (platform === 'messenger') {
+            const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+            console.log(`[${platform}] ⏱️ Esperando ${humanDelay}ms antes de responder...`);
+            await new Promise(resolve => setTimeout(resolve, humanDelay));
             await sendMessengerMessage(from, responseText);
         } else if (platform === 'instagram') {
+            const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+            console.log(`[${platform}] ⏱️ Esperando ${humanDelay}ms antes de responder...`);
+            await new Promise(resolve => setTimeout(resolve, humanDelay));
             await sendInstagramMessage(from, responseText);
         }
 
     } catch(err) {
         console.error(`[${platform}] Error procesando con Gemini:`, err);
+    } finally {
+        webhookMutex.release();
     }
 }
 

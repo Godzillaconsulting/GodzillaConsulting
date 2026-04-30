@@ -13,13 +13,16 @@ import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js'
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { fileURLToPath as _wa_fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { executeAiWaterfall } from './utils/aiWaterfall.js';
 import { searchMemories } from './core_engine/aiCore.js';
 import AutomationEngine from './services/automationEngine.js';
 
 // child_process ya no se usa — limpieza garantizada por shutdown handlers
-dotenv.config();
+const __filename = _wa_fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const activeSessionsCache = new Map();
 const userMessageQueues = new Map();
@@ -101,10 +104,11 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
             prompt = `Aquí tienes el resumen anterior de este cliente:\n${resumen_contexto}\n\nAhora, concatena/actualiza ese resumen integrando esta nueva parte de la conversación en 3 párrafos clave, manteniendo los datos importantes.\n\nNueva parte de la conversación:\n${historyText}`;
         }
 
+        // 📦 Modo COMPRESIÓN: usa modelos ligeros (Cerebras/SambaNova) para no gastar tokens pagados
         const waterfallResponse = await executeAiWaterfall([
             { role: 'system', content: systemPromptContexto },
             { role: 'user', content: prompt }
-        ]);
+        ], { mode: 'compression', maxTokens: 600, temperature: 0.3 });
         const newSummary = waterfallResponse.content;
 
         const query = `
@@ -157,8 +161,7 @@ export const initWhatsAppBot = async () => {
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
-            headless: true,
-            executablePath: CHROME_PATH,
+            headless: false,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -334,7 +337,21 @@ export const initWhatsAppBot = async () => {
         if (message.isGroupMsg) return;
         if (!message.body) return;
 
-        const senderId = message.from;
+        let senderId = message.from;
+        
+        // Resolve @lid to @c.us to ensure delivery and correct LanceDB history tracking
+        if (senderId.includes('@lid')) {
+            try {
+                const contact = await message.getContact();
+                if (contact && contact.id && contact.id._serialized) {
+                    senderId = contact.id._serialized;
+                    console.log(`[WA] Mensaje desde Linked Device. ID resuelto a: ${senderId}`);
+                }
+            } catch (e) {
+                console.warn(`⚠️ No se pudo resolver el @lid: ${e.message}`);
+            }
+        }
+
         const rawMessageText = message.body;
 
         const maskedSender = senderId.substring(0, 4) + "****" + senderId.substring(senderId.length - 4);
@@ -365,6 +382,8 @@ export const initWhatsAppBot = async () => {
             console.log(`🚀 WA Procesando batch para [${maskedSender}] (${messageText.split('\n').length} msg, Jitter: ${jitter}ms)`);
 
         try {
+            await waMutex.lock(); // Restaurado: Evita procesamiento paralelo que causaba respuestas dobles
+
             // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
             AutomationEngine.triggerFlow('WhatsApp Bot', {
                 senderId,
@@ -411,7 +430,8 @@ export const initWhatsAppBot = async () => {
                 { role: "system", content: finalSystemPrompt + systemPromptContexto }
             ];
 
-            let rawHistory = historial_mensajes.slice(0, -1);
+            // 🔒 TRIM DE HISTORIAL: máx 14 mensajes para no reventar tokens de proveedor pagado
+            let rawHistory = historial_mensajes.slice(0, -1).slice(-14);
             for (const msg of rawHistory) {
                 groqMessages.push({
                     role: (msg.role === "assistant" || msg.role === "model") ? "assistant" : "user",
@@ -440,29 +460,30 @@ export const initWhatsAppBot = async () => {
 
             try {
                 // Si es saludo: no pasamos tools al waterfall (evita alucinaciones de tool_call)
+                // maxTokens calibrado: saludos cortos = 256, conversación = 768, herramientas = 512
                 const waterfallOptions = isGreetingOnly
-                    ? { temperature: 0.5 }
-                    : { tools: groqTools };
+                    ? { temperature: 0.5, maxTokens: 256 }
+                    : { tools: groqTools, maxTokens: 768 };
                 const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);
-                
+
                 // Guard: nunca enviar string vacío a WhatsApp
                 botReply = (waterfallResponse.content && waterfallResponse.content.trim())
                     ? waterfallResponse.content.trim()
                     : "Entendido, ¿en qué más te puedo ayudar? 😊";
-                
+
                 if (waterfallResponse.tool_calls && waterfallResponse.tool_calls.length > 0) {
                     // ⚠️ FIX CRÍTICO: Resetear botReply cuando hay tool_calls.
                     // Algunos proveedores meten el JSON del tool_call dentro del `content`,
                     // lo que causaba que se enviara el JSON crudo al usuario si la 2ª llamada falló.
                     // La respuesta real la pondrá la segunda llamada al waterfall.
                     botReply = "Un momento, estoy consultando el sistema... ⏳";
-                    
-                    groqMessages.push({ 
-                        role: 'assistant', 
+
+                    groqMessages.push({
+                        role: 'assistant',
                         content: waterfallResponse.content || null,
-                        tool_calls: waterfallResponse.tool_calls 
+                        tool_calls: waterfallResponse.tool_calls
                     });
-                    
+
                     functionCalls = waterfallResponse.tool_calls.map(tc => {
                         let parsedArgs = {};
                         try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
@@ -661,12 +682,13 @@ export const initWhatsAppBot = async () => {
                 // Segunda llamada: SIEMPRE usa Groq primero porque el historial
                 // contiene mensajes con role:'tool' que solo APIs OpenAI-compatible entienden.
                 // SambaNova/Pollinations crashean si reciben ese formato.
+                // Segunda llamada post-tool: respuesta conversacional corta, maxTokens = 512
                 try {
-                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools });
+                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools, maxTokens: 512 });
                     botReply = waterfallResponse2.content || 'Reserva procesada.';
                 } catch(e) {
                     console.error("❌ Error en segunda llamada Waterfall (tools):", e.message);
-                    botReply = "Procese tu solicitud pero tuve un problema al redactar la respuesta. ¿Puedes repetirme tu pregunta?";
+                    botReply = "Procesé tu solicitud pero tuve un problema al redactar la respuesta. ¿Puedes repetirme tu pregunta?";
                 }
             }
 
@@ -687,21 +709,19 @@ export const initWhatsAppBot = async () => {
                 } catch(e) { /* No es JSON válido, es texto normal con llaves */ }
             }
             
-            // Resolve @lid to @c.us to ensure delivery
-            let targetId = senderId;
-            if (senderId.includes('@lid')) {
-                try {
-                    const contact = await message.getContact();
-                    if (contact && contact.id && contact.id._serialized) {
-                        targetId = contact.id._serialized;
-                        console.log(`[WA] Resuelto @lid a ID real: ${targetId}`);
-                    }
-                } catch (e) {
-                    console.error("⚠️ No se pudo resolver el @lid:", e.message);
-                }
-            }
+            // ⏱️ DELAY HUMANO: Esperar ~8 segundos para simular que alguien está escribiendo y evitar baneos de Meta
+            const humanDelay = Math.floor(Math.random() * 2000) + 7000; // Entre 7 y 9 segundos
+            console.log(`⏱️ Esperando ${humanDelay}ms antes de responder a [${maskedSender}] para simular humanidad...`);
             
-            await client.sendMessage(targetId, botReply);
+            // Opcional: Enviar estado de "escribiendo..." si la librería lo soporta (si no, solo espera)
+            try {
+                const chat = await client.getChatById(senderId);
+                await chat.sendStateTyping();
+            } catch (e) {}
+
+            await new Promise(r => setTimeout(r, humanDelay));
+
+            await client.sendMessage(senderId, botReply);
 
             const postBotSession = await appendMessageToSession(senderId, "model", botReply);
             if (postBotSession && postBotSession.historial_mensajes && postBotSession.historial_mensajes.length >= 20) {
@@ -724,7 +744,18 @@ export const initWhatsAppBot = async () => {
         }, 2000 + jitter); // Ventana de 2 segundos de agrupación de mensajes + Jitter
     });
 
-    client.initialize();
+    client.initialize().catch(async (err) => {
+        console.error('❌ Error crítico al inicializar cliente WA:', err.message);
+        try {
+            await client.destroy();
+            console.log('✅ Chrome cerrado por seguridad tras fallo de inicio.');
+        } catch (e) {}
+        
+        console.log('⏳ Esperando 10 segundos antes de reiniciar para evitar saturar la CPU...');
+        setTimeout(() => {
+            process.exit(1);
+        }, 10000);
+    });
 
     // ==========================================
     // 🛡️ PM2 GRACEFUL SHUTDOWN (WINDOWS FIX)
@@ -788,9 +819,9 @@ export const initWhatsAppBot = async () => {
 };
 
 // AUTO-START for PM2 standalone
-import { fileURLToPath } from 'url';
+
 const isPM2 = process.env.pm_id !== undefined;
-if (isPM2 || process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isPM2 || process.argv[1] === _wa_fileURLToPath(import.meta.url)) {
     initWhatsAppBot();
 }
 

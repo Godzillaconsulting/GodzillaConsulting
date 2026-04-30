@@ -127,7 +127,7 @@ async function processTask() {
             SET status = 'rendering'
             WHERE id = (
                 SELECT id FROM studio_tasks 
-                WHERE status = 'pending_cm_approval' AND assigned_to = 'test' 
+                WHERE status = 'pending_render' AND assigned_to = 'test' 
                 ORDER BY created_at ASC LIMIT 1
             )
             RETURNING *;

@@ -537,7 +537,7 @@ export const getInspirationGallery = async (req, res) => {
         
         const aiRes = await executeAiWaterfall([
             { role: 'user', content: promptInstruction }
-        ], { temperature: 0.9 });
+        ], { temperature: 0.9, mode: 'premium' });
 
         if (!aiRes || !aiRes.content) {
             throw new Error(`Waterfall Error: No content returned`);
@@ -598,7 +598,7 @@ export const getDynamicFilters = async (req, res) => {
         
         const aiRes = await executeAiWaterfall([
             { role: 'user', content: promptInstruction }
-        ], { temperature: 1.0 });
+        ], { temperature: 1.0, mode: 'premium' });
 
         if (!aiRes || !aiRes.content) {
             throw new Error(`Waterfall Error: No content returned`);
@@ -671,7 +671,7 @@ Reglas Estrictas:
         }
         history.push({ role: 'user', content: message });
 
-        const aiRes = await executeAiWaterfall(history, { temperature: 0.7 });
+        const aiRes = await executeAiWaterfall(history, { temperature: 0.7, mode: 'premium' });
         
         let aiResponse = aiRes.content || "No obtuve respuesta de mis servidores neuronales.";
         
@@ -920,7 +920,7 @@ export const generateMonthlyPlan = async (req, res) => {
         try {
             console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
             const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
-            const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }]);
+            const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'premium' });
             let text = aiRes.content || '';
             if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/```$/, '');
             else if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/```$/, '');
@@ -1022,8 +1022,10 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
 `;
 
         const generateBatch = async (startDay, endDay) => {
-            const batchPrompt = systemPrompt + `\n\nATENCIÓN: Genera ÚNICAMENTE los días del ${startDay} al ${endDay}. Asegúrate de devolver un JSON válido con la propiedad "plan" conteniendo exactamente ${endDay - startDay + 1} días. Sé conciso para no exceder los límites de tokens.`;
-            
+            const rawPrompt = `Actúa como estratega de contenido. Diseña las ideas crudas, guiones rápidos y conceptos visuales para los días ${startDay} al ${endDay} para el nicho: "${niche}". Mes: ${month}.
+${realTimeTrendsText}
+IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los títulos, narraciones crudas y el contexto de las imágenes/videos para estos ${endDay - startDay + 1} días. Sé creativo y muy persuasivo.`;
+
             let batchData = null;
             let attempts = 0;
             const maxAttempts = 3;
@@ -1031,10 +1033,19 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
             while (attempts < maxAttempts && !batchData) {
                 attempts++;
                 try {
-                    // Jitter for API Rate Limits (evitar timeouts/rate limits)
+                    // FASE 1: Obtener las ideas crudas del bot gratuito
+                    const rawRes = await executeAiWaterfall([
+                        { role: 'user', content: rawPrompt }
+                    ], { mode: 'default' });
+                    
+                    const rawContent = rawRes.content || '';
+
+                    // FASE 2: Pasar las ideas crudas al bot premium para formateo y diseño final
+                    const premiumPrompt = systemPrompt + `\n\nATENCIÓN: Aquí tienes las ideas base generadas por el equipo de estrategia para los días del ${startDay} al ${endDay}:\n\n${rawContent}\n\nTu tarea es TOMAR ESTAS IDEAS CRUDAS y convertirlas en la CHULADA DE DISEÑO FINAL. Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conteniendo exactamente estos ${endDay - startDay + 1} días, siguiendo el formato estricto y la calidad suprema del EJEMPLO DE REFERENCIA.`;
+
                     const aiRes = await executeAiWaterfall([
-                        { role: 'user', content: batchPrompt }
-                    ]);
+                        { role: 'user', content: premiumPrompt }
+                    ], { mode: 'premium' });
 
                     let rawText = extractJSON(aiRes.content || '');
                     batchData = JSON.parse(rawText);

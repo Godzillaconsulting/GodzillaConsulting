@@ -37,6 +37,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const [showPublish, setShowPublish] = useState(false);
     const [publishing, setPublishing]   = useState(false);
     const [publishReport, setPublishReport] = useState(null);
+    const [notifications, setNotifications] = useState([]);
     const evtRef = useRef(null);
 
     const username  = adminProfile?.username?.toLowerCase() || '';
@@ -104,9 +105,10 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             media_options: (() => { try { return typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || []); } catch { return []; } })() }
                         : x));
                 } else if (data.type === 'NOTIFICATION') {
-                    // Badge flash for Judith
-                    if (!document.hidden) {
-                        console.log('[CEO SSE]', data.task?.message || 'Notificación');
+                    if (data.task?.message) {
+                        const newNotif = { id: Date.now(), text: data.task.message };
+                        setNotifications(prev => [...prev, newNotif]);
+                        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== newNotif.id)), 6000);
                     }
                 }
             } catch {}
@@ -210,10 +212,12 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (!data.success) throw new Error(data.message);
+            if (!data.success) throw new Error(data.message || data.error);
             setPublishReport(data.report || { message: publishMode === 'schedule' ? 'Programado correctamente en calendario.' : 'Iniciado proceso de publicación.' });
             setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: finalStatus, scheduled_for: publishDate || t.scheduled_for } : t));
-        } catch (e) { alert('Error publicando: ' + e.message); }
+        } catch (e) { 
+            setPublishReport({ error: true, message: e.message }); 
+        }
         setPublishing(false);
     };
 
@@ -656,8 +660,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {publishReport && (
-                                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-[10px] text-green-400 font-mono break-all overflow-y-auto max-h-24">
-                                    ✅ {publishReport.message || 'Exito.'} {JSON.stringify(publishReport, null, 2)}
+                                <div className={`mb-4 p-3 rounded-xl text-xs font-bold overflow-y-auto max-h-32 border ${publishReport.error ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-green-500/10 border-green-500/30 text-green-400'}`}>
+                                    {publishReport.error ? '❌ ' : '✅ '} {publishReport.message || 'Éxito.'} 
+                                    {!publishReport.error && publishReport.tiktok && <span className="block mt-1 font-mono text-[10px] break-all">{JSON.stringify(publishReport, null, 2)}</span>}
                                 </div>
                             )}
 
@@ -729,6 +734,18 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
                         </div>
                     </div>
+                </div>
+            , document.body)}
+
+            {/* ── NOTIFICACIONES EMERGENTES (TOASTS) ── */}
+            {createPortal(
+                <div className="fixed bottom-4 right-4 z-[10000] flex flex-col gap-3 pointer-events-none">
+                    {notifications.map(n => (
+                        <div key={n.id} className="bg-[#0a0a0a] border border-[#d946ef]/50 text-white p-4 rounded-2xl shadow-[0_5px_30px_rgba(217,70,239,0.2)] animate-in slide-in-from-right-8 fade-in duration-300 max-w-sm pointer-events-auto flex items-start gap-3">
+                            <span className="text-xl shrink-0 mt-0.5">🔔</span>
+                            <p className="text-sm font-bold leading-tight">{n.text}</p>
+                        </div>
+                    ))}
                 </div>
             , document.body)}
         </div>

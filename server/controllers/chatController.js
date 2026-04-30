@@ -217,6 +217,11 @@ export const processChatMessage = async (req, res) => {
             }
         }
 
+        // ⏱️ DELAY HUMANO: Esperar ~8 segundos para simular tiempo de redacción
+        const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+        console.log(`[Web Chat] ⏱️ Esperando ${humanDelay}ms antes de responder...`);
+        await new Promise(r => setTimeout(r, humanDelay));
+
         res.json({ reply: responseText });
     } catch (e) {
         console.error("❌ Error en chatController procesando Gemini", e);

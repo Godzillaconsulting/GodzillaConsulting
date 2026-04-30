@@ -487,6 +487,12 @@ async function startBot() {
                         await processAndReply(userName, msgText, async (reply) => {
                             await page.goto(`https://www.instagram.com/direct/t/${threadId}/`, { waitUntil: 'domcontentloaded' });
                             await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
+                            
+                            // ⏱️ DELAY HUMANO
+                            const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+                            console.log(`⏱️ Esperando ${humanDelay}ms antes de responder en IG...`);
+                            await new Promise(r => setTimeout(r, humanDelay));
+
                             await page.type('div[role="textbox"]', reply, { delay: 15 });
                             await page.keyboard.press('Enter');
                             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -506,6 +512,12 @@ async function startBot() {
                             processAndReply(userName, queuedText, async (reply) => {
                                 await page.goto(`https://www.instagram.com/direct/t/${queued.threadId}/`, { waitUntil: 'domcontentloaded' });
                                 await page.waitForSelector('div[role="textbox"]', { timeout: 10000 });
+                                
+                                // ⏱️ DELAY HUMANO
+                                const humanDelay = Math.floor(Math.random() * 2000) + 7000;
+                                console.log(`⏱️ Esperando ${humanDelay}ms antes de responder en IG...`);
+                                await new Promise(r => setTimeout(r, humanDelay));
+
                                 await page.type('div[role="textbox"]', reply, { delay: 15 });
                                 await page.keyboard.press('Enter');
                                 await new Promise(resolve => setTimeout(resolve, 2000));

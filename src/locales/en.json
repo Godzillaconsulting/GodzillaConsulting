@@ -292,7 +292,14 @@
         "tableHeader1": "The Deliverable (What you get)",
         "tableHeader2": "Real Monthly Value",
         "heroTopText": "Position your brand where your audience really interacts",
-        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">14 days</span> you don't see a real increase in engagement and the quality of your brand, the next month is <span class=\"font-bold text-[#CC0000] not-italic\">FREE</span>."
+        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">14 days</span> you don't see a real increase in engagement and the quality of your brand, the next month is <span class=\"font-bold text-[#CC0000] not-italic\">FREE</span>.",
+        "planTarget": "Ideal for invisible businesses looking to generate on-demand social content",
+        "planFeaturesExtended": [
+          { "title": "Omnichannel Content Strategy", "desc": "" },
+          { "title": "Direct Response Copywriting", "desc": "" },
+          { "title": "Community Management", "desc": "" },
+          { "title": "Organic Growth Hacking", "desc": "" }
+        ]
       },
       "control-ia": {
         "heroTitle": "AI CONTROL",
@@ -304,7 +311,13 @@
         "tableHeader1": "The Deliverable (What you get)",
         "tableHeader2": "Real Monthly Value",
         "heroTopText": "Attend, qualify, and schedule automatically 24 hours a day",
-        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">7 business days</span> your system is not installed, responding to messages, and capturing customer data automatically, we will give you the next month of service completely <span class=\"font-bold text-white not-italic\">FREE</span>."
+        "heroDisclaimer": "If in <span class=\"font-bold text-white not-italic\">7 business days</span> your system is not installed, responding to messages, and capturing customer data automatically, we will give you the next month of service completely <span class=\"font-bold text-white not-italic\">FREE</span>.",
+        "planTarget": "Ideal for those who don't trust delegation and have become slaves to their own success",
+        "planFeaturesExtended": [
+          { "title": "AI Agent (Web + WhatsApp):", "desc": "Digital brain configuration to\nanswer FAQs and schedules 24/7" },
+          { "title": "Response in under 5 seconds\n24 hours a day, 7 days a week", "desc": "" },
+          { "title": "Automatic data capture", "desc": "" }
+        ]
       },
       "expansion": {
         "heroTitle": "EXPANSION",
@@ -316,7 +329,13 @@
         "tableHeader1": "The Deliverable (What you get)",
         "tableHeader2": "Real Monthly Value",
         "heroTopText": "Organize a system that captures, attends, and organizes your prospects without you lifting a finger",
-        "heroDisclaimer": "If in <span class=\"font-bold text-[#CC0000] not-italic\">30 business days</span> we do not generate a single lead, we will refund <span class=\"font-bold text-[#CC0000] not-italic\">100%</span> of your money."
+        "heroDisclaimer": "If in <span class=\"font-bold text-[#CC0000] not-italic\">30 business days</span> we do not generate a single lead, we will refund <span class=\"font-bold text-[#CC0000] not-italic\">100%</span> of your money.",
+        "planTarget": "Ideal for those with experience who fear throwing money away.",
+        "planFeaturesExtended": [
+          { "title": "Everything in Social Positioning", "desc": "• AI Agent (Web + WhatsApp)\n• Responses in under 5 seconds 24/7\n• Automatic data capture" },
+          { "title": "Bilingual Traffic (Meta/Google Ads)", "desc": "" },
+          { "title": "High-conversion Landing Page", "desc": "" }
+        ]
       },
       "elite": {
         "heroTitle": "ELITE",
@@ -328,7 +347,13 @@
         "tableHeader1": "The Deliverable (What you get)",
         "tableHeader2": "Real Monthly Value",
         "heroTopText": "The complete system to dominate your market in all aspects",
-        "heroDisclaimer": "If we do not increase your appointments by <span class=\"font-bold text-white not-italic\">20% in 90 business days</span>, we will work for <span class=\"font-bold text-white not-italic\">free</span>."
+        "heroDisclaimer": "If we do not increase your appointments by <span class=\"font-bold text-white not-italic\">20% in 90 business days</span>, we will work for <span class=\"font-bold text-white not-italic\">free</span>.",
+        "planTarget": "Ideal for those losing millions due to chaos and lack of data.",
+        "planFeaturesExtended": [
+          { "title": "Complete Godfather Strategy", "desc": "" },
+          { "title": "Database Reactivation", "desc": "" },
+          { "title": "Monthly Consulting and Closing Support", "desc": "" }
+        ]
       }
     }
   },

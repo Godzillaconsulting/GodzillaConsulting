@@ -73,7 +73,10 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  }
  const content = contentData;
  const activeLng = i18n.resolvedLanguage ? i18n.resolvedLanguage.split('-')[0].toLowerCase() : 'en';
- const localizedLanding = isIntl ? (content.translations?.[activeLng] || content.translations?.en || t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
+ const fallbackLocale = isIntl ? (t('packages.landing', { returnObjects: true })?.[slugLower] || {}) : {};
+ const dbTranslationsEn = content.translations?.en || {};
+ const dbTranslationsActive = content.translations?.[activeLng] || {};
+ const localizedLanding = isIntl ? { ...fallbackLocale, ...dbTranslationsEn, ...dbTranslationsActive } : {};
  const videoRef = useRef(null);
  const [isPlaying, setIsPlaying] = useState(true);
  const [isMuted, setIsMuted] = useState(true);
@@ -186,7 +189,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  </h2>
 
  <div className="bg-[#FACC15] text-black font-bold text-sm px-4 py-2 rounded-lg inline-block mb-10 w-fit">
- {isIntl && localizedLanding.heroSubtitle ? localizedLanding.heroSubtitle : content.planTarget}
+ {isIntl && localizedLanding.planTarget ? localizedLanding.planTarget : content.planTarget}
  </div>
 
  {/* Pricing Table */}
@@ -203,7 +206,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  </tr>
  </thead>
  <tbody>
- {content.planFeaturesExtended && content.planFeaturesExtended.map((feature, idx) => (
+ {((isIntl && localizedLanding.planFeaturesExtended) ? localizedLanding.planFeaturesExtended : content.planFeaturesExtended)?.map((feature, idx) => (
  <tr key={idx} className="border-b border-gray-700">
  <td className="py-4 pr-4 align-top">
  <span className="font-bold text-white text-sm leading-tight" dangerouslySetInnerHTML={renderHTML(feature.title + (feature.desc ? ':' : ''))} />

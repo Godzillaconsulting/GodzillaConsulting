@@ -279,7 +279,7 @@ const Recursos = () => {
                                         <input
                                             type="email"
                                             required
-                                            placeholder={isSpanish ? "tu@correo.com" : "you@email.com"}
+                                            placeholder={isSpanish ? "tu@correo.com" : "youremail@outlook.com"}
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-[#111] border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors"

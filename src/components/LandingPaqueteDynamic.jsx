@@ -183,7 +183,6 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
 
  <h2
  className="text-[1.8rem] sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight break-words max-w-full"
- style={{ wordBreak:'break-word', hyphens:'auto' }}
  >
  {isIntl && localizedLanding.heroTitle ? localizedLanding.heroTitle.replace(/\n/g, ' ') : (content.cardTitle || content.heroTitle || '').replace('\n', ' ')}
  </h2>

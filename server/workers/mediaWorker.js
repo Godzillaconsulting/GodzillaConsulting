@@ -82,7 +82,7 @@ async function generateImage(prompt, outputPath) {
             const response = await ai.models.generateImages({
                 model: 'imagen-3.0-generate-001',
                 prompt: prompt,
-                config: { numberOfImages: 1, outputMimeType: 'image/png', aspectRatio: '9:16' }
+                config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: '9:16' }
             });
             
             if (response.generatedImages?.[0]?.image?.imageBytes) {
@@ -159,7 +159,7 @@ async function processTask() {
             if (!visualPrompt && !narration) continue;
 
             console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
-            const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.png`);
+            const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
             const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
             
             // Generar Medios en Paralelo para agilizar
@@ -176,6 +176,17 @@ async function processTask() {
             if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
+
+            // Verificación de seguridad: si la imagen no se generó (o pesa 0 bytes), forzar el uso de stock
+            let finalImgPath = sceneImgPath;
+            if (!isFaceless && visualPrompt) {
+                if (!fs.existsSync(sceneImgPath) || fs.statSync(sceneImgPath).size < 1000) {
+                    console.warn(`[MediaWorker] ⚠️ Imagen para escena ${i} falló o está rota. Usando stock faceless.`);
+                    finalImgPath = randomStock;
+                }
+            } else {
+                finalImgPath = randomStock;
+            }
 
             let srtPath = null;
             if (fs.existsSync(sceneAudioPath)) {
@@ -219,7 +230,7 @@ async function processTask() {
                 }
 
                 clipsPaths.push({ 
-                    img: isFaceless ? randomStock : sceneImgPath, 
+                    img: finalImgPath, 
                     audio: sceneAudioPath, 
                     srt: srtPath,
                     id: i,
@@ -246,11 +257,12 @@ async function processTask() {
             await new Promise((resolve, reject) => {
                 const command = ffmpeg();
                 
-                if (clip.isFaceless) {
+                if (clip.isFaceless || clip.img.endsWith('.mp4')) {
                     // Si es faceless, repetimos el video de stock infinitamente hasta que acabe el audio
                     command.input(clip.img).inputOptions(['-stream_loop', '-1']);
                 } else {
-                    command.input(clip.img).loop();
+                    // Para imágenes, necesitamos loop como input option
+                    command.input(clip.img).inputOptions(['-loop', '1', '-framerate', '30']);
                 }
 
                 const filterBase = clip.isFaceless

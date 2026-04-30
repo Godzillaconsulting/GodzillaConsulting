@@ -160,6 +160,9 @@ export const initWhatsAppBot = async () => {
 
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
+        webVersionCache: {
+            type: 'local',
+        },
         puppeteer: {
             headless: false,
             args: [
@@ -170,8 +173,9 @@ export const initWhatsAppBot = async () => {
                 '--no-first-run',
                 '--no-zygote',
                 '--disable-gpu',
-                '--window-position=-32000,-32000',
-                '--start-minimized',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-site-isolation-trials',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',

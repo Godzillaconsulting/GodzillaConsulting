@@ -157,7 +157,7 @@ export const initWhatsAppBot = async () => {
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: sessionPath }),
         puppeteer: {
-            headless: false,
+            headless: true,
             executablePath: CHROME_PATH,
             args: [
                 '--no-sandbox',

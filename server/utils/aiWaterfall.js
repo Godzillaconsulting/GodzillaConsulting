@@ -318,9 +318,9 @@ if (mode === 'compression') {
     activeWaterfall = [callCerebras, callSambaNova, callGroq, callOllama];
 
 } else if (mode === 'gemini_exclusive') {
-    // 💎 GEMINI EXCLUSIVO: Para Planificador (Chatbots) y Newsletter (como ordenó el CEO)
-    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Usando solo Gemini 2.0 Flash...`);
-    activeWaterfall = [callGemini];
+    // 💎 GEMINI EXCLUSIVO (CON RESPALDO): Prioriza Gemini 2.0 Flash, pero usa Groq/SambaNova si Gemini cae
+    console.log(`[WATERFALL] 💎 Modo GEMINI EXCLUSIVO — Priorizando Gemini 2.0 Flash (con respaldos Llama 3.3)...`);
+    activeWaterfall = [callGemini, callGroq, callSambaNova];
 
 } else if (mode === 'premium') {
     // 🧠 MODO PREMIUM (Contenido): Usar APIs gratuitas de alta capacidad (Groq/Samba)

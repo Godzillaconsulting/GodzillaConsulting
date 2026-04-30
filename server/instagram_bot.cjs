@@ -192,7 +192,8 @@ async function processAndReply(userId, text, replyFn) {
         const aiResult = await executeAiWaterfall(waterfallMessages, {
             tools: waterfallTools,
             temperature: 0.1,
-            maxTokens: 1024
+            maxTokens: 1024,
+            mode: 'gemini_exclusive'
         });
 
         let responseText = aiResult.content || "Lo siento, fallé al entender.";
@@ -286,7 +287,8 @@ async function processAndReply(userId, text, replyFn) {
                 
                 const aiResult2 = await executeAiWaterfall(waterfallMessages, {
                     temperature: 0.1,
-                    maxTokens: 1024
+                    maxTokens: 1024,
+                    mode: 'gemini_exclusive'
                 });
                 
                 responseText = aiResult2.content || responseText;

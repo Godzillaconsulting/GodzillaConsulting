@@ -59,7 +59,7 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         const aiRes = await executeAiWaterfall([
             { role: 'system', content: systemPromptContexto },
             { role: 'user', content: prompt }
-        ], { mode: 'premium', temperature: 0.3 });
+        ], { mode: 'compression', temperature: 0.3 });
         
         const newSummary = aiRes.content || '';
 
@@ -118,7 +118,8 @@ async function handleAILogic(senderId, messageText) {
 
         let aiResult = await executeAiWaterfall(waterfallMessages, {
             temperature: 0.1,
-            maxTokens: 1024
+            maxTokens: 1024,
+            mode: 'gemini_exclusive'
         });
 
         let botReply = aiResult.content || "Lo siento, fallé al entender.";
@@ -220,7 +221,8 @@ async function handleAILogic(senderId, messageText) {
                 // Segunda llamada a la IA después de ejecutar tools
                 const aiResult2 = await executeAiWaterfall(waterfallMessages, {
                     temperature: 0.1,
-                    maxTokens: 1024
+                    maxTokens: 1024,
+                    mode: 'gemini_exclusive'
                 });
                 
                 botReply = aiResult2.content || botReply;

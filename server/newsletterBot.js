@@ -19,29 +19,25 @@ setInterval(async () => {
     const hora = ahora.getHours();
     const minuto = ahora.getMinutes();
     
-    // 1. Ejecutar Generación a las 8:00 AM (Se queda en Draft para revisión humana)
+    // 1. Ejecutar Generación a las 8:00 AM y enviar automáticamente
     if (hora === 8) {
         if (!hasRunToday) {
             hasRunToday = true;
             console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter...`);
             try {
                 const result = await generateAndSendAutoNewsletter();
-                console.log(`[${BOT_NAME}] ✅ Éxito masivo. Newsletter generado (Borrador creado):`, result);
+                console.log(`[${BOT_NAME}] ✅ Éxito masivo. Newsletter generado:`, result);
+                
+                // Forzar auto-despliegue inmediatamente después
+                console.log(`[${BOT_NAME}] 🚀 Iniciando auto-despliegue...`);
+                exec(`node ${path.join(__dirname, 'scripts', 'auto_newsletter_enforce_cron.js')}`, (error, stdout, stderr) => {
+                    if (error) console.error(`[${BOT_NAME}] ❌ Error en el auto-despliegue:`, error);
+                    if (stdout) console.log(`[${BOT_NAME}] 🚀 ${stdout.trim()}`);
+                    if (stderr) console.error(`[${BOT_NAME}] ⚠️ ${stderr.trim()}`);
+                });
             } catch (e) {
                 console.error(`[${BOT_NAME}] ❌ Error en la generación del Newsletter:`, e.message);
             }
-        }
-    } 
-    // 2. Ejecutar Auto-Despliegue a las 9:00 AM (Si el humano no lo envió, la IA lo fuerza)
-    else if (hora === 9) {
-        if (!hasEnforcedToday) {
-            hasEnforcedToday = true;
-            console.log(`[${BOT_NAME}] ⏰ ¡Ventana de revisión terminada! Forzando auto-despliegue de borradores olvidados...`);
-            exec(`node ${path.join(__dirname, 'scripts', 'auto_newsletter_enforce_cron.js')}`, (error, stdout, stderr) => {
-                if (error) console.error(`[${BOT_NAME}] ❌ Error en el auto-despliegue:`, error);
-                if (stdout) console.log(`[${BOT_NAME}] 🚀 ${stdout.trim()}`);
-                if (stderr) console.error(`[${BOT_NAME}] ⚠️ ${stderr.trim()}`);
-            });
         }
     } 
     // Resetear las banderas a medianoche para el día siguiente

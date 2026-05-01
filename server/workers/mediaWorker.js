@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config({path: new URL('../.env', import.meta.url).pathname.replace(/^\/([a-zA-Z]:)/, '$1')});
 import pool from '../config/db.js';
 import { GoogleGenAI } from '@google/genai';
 import { EdgeTTS } from 'node-edge-tts';
@@ -99,20 +101,47 @@ async function generateImage(prompt, outputPath) {
         console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada. Usando Fallback...`);
     }
 
-    // Opción 2: Fallback Libre (Pollinations AI)
-    console.log(`[MediaWorker] 🔄 Generando con motor de respaldo libre...`);
-    const safePrompt = prompt.length > 250 ? prompt.substring(0, 250) : prompt;
-    const enhancedPrompt = safePrompt + ", masterpiece, highly detailed, photorealistic, 8k resolution, cinematic lighting";
-    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+    // Si Imagen 3 falla, NO usamos Pollinations porque genera imágenes de muy baja calidad para este estándar.
+    // Lanzamos error para que el Obrero use automáticamente los clips de video de Stock Cinemáticos en su lugar.
+    throw new Error(`Fallback Libre desactivado para mantener calidad.`);
+}
+
+// Generación de Video corto con Google Veo
+async function generateVeoVideo(prompt, outputPath) {
+    console.log(`[MediaWorker] Generando Video Veo (5-8s): "${prompt.substring(0, 30)}..."`);
     
-    const res = await fetch(fallbackUrl);
-    if (!res.ok) throw new Error(`Fallo Fallback: ${res.statusText}`);
-    
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(outputPath, buffer);
-    console.log(`[MediaWorker] ✅ Imagen generada (Fallback Libre).`);
-    return outputPath;
+    if (process.env.GEMINI_API_KEY) {
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            // Using the Veo model available in Gemini Advanced / Plus
+            const response = await ai.models.generateVideos({
+                model: 'veo-2.0-generate-001',
+                prompt: prompt
+            });
+            
+            // Si la respuesta es directa (Base64)
+            if (response.generatedVideos?.[0]?.video?.videoBytes) {
+                const b64 = response.generatedVideos[0].video.videoBytes;
+                const buffer = Buffer.from(b64, 'base64');
+                fs.writeFileSync(outputPath, buffer);
+                console.log(`[MediaWorker] ✅ Video Veo generado correctamente.`);
+                return outputPath;
+            } else {
+                console.warn(`[MediaWorker] ⚠️ Respuesta de Veo incompleta o LRO requerido. Usando fallback...`);
+            }
+        } catch (e) {
+            console.warn(`[MediaWorker] ⚠️ Google Veo falló (${e.message}). Usando Fallback cinemático...`);
+        }
+    } else {
+        console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada para Veo.`);
+    }
+
+    // Fallback de alta calidad (Si Veo falla, no usamos imágenes feas, usamos un video cinemático limpio)
+    console.log(`[MediaWorker] 🔄 Usando video de stock Faceless de alta calidad como respaldo.`);
+    const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
+    // As it is a URL or Local path. In our current implementation, we use a local one for fallback
+    const localStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
+    return localStock;
 }
 
 async function processTask() {
@@ -151,54 +180,74 @@ async function processTask() {
 
         const isArrayFormat = Array.isArray(payload.scenes);
         const dayData = payload.scenes;
-        const selectedVoice = payload.voice || 'edge:es-MX-JorgeNeural';
+        
+        // Rotación de voces neuronales para evitar que todas suenen idénticas
+        const fallbackVoices = ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
+        const selectedVoice = payload.voice || fallbackVoices[task.id % fallbackVoices.length];
         const clipsPaths = [];
 
-        const sceneCount = isArrayFormat ? dayData.length : 5;
+        const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || 5);
 
         // Generaremos las imágenes + voz por cada escena
         for (let i = 1; i <= sceneCount; i++) {
-            let visualPrompt, narration;
+            let visualPrompt, videoPrompt, narration;
             
             if (isArrayFormat) {
                 const scene = dayData[i - 1];
-                visualPrompt = scene.visual;
+                visualPrompt = scene.visual || scene.visual_prompt;
+                videoPrompt = scene.video || scene.video_prompt;
                 narration = scene.narration;
             } else {
-                visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`];
-                narration = i === 5 ? dayData['NARRACION ESCENA 5 (CTA)'] : dayData[`NARRACION ESCENA ${i}`];
+                visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`] || dayData[`VISUAL ESCENA ${i}`];
+                videoPrompt = dayData[`VIDEO ESCENA ${i} (Prompt Movimiento Detallado)`] || dayData[`VIDEO ESCENA ${i}`];
+                narration = dayData[`NARRACION ESCENA ${i} (CTA)`] || dayData[`NARRACION ESCENA ${i}`];
             }
             
-            if (!visualPrompt && !narration) continue;
+            if (!visualPrompt && !videoPrompt && !narration) continue;
 
             console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
             const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
+            const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_veo.mp4`);
             const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
             
             // Generar Medios en Paralelo para agilizar
             const promises = [];
             
-            // Alternamos entre Imágenes generadas y el Video local Faceless que el usuario prefiere
-            const isFaceless = (i % 2 === 0);
-            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
-
-            if (!isFaceless && visualPrompt) {
-                promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
+            let usesVeoVideo = false;
+            // ESTRATEGIA HÍBRIDA DE COSTOS: Veo es carísimo. Solo lo usamos para el Hook (Escena 1).
+            // Para el resto (Escena 2-5), usamos Google Imagen 3 (mucho más barato y estable que lo free) o stock faceless.
+            if (videoPrompt && i === 1) {
+                promises.push(generateVeoVideo(videoPrompt, sceneVidPath).catch(e => null));
+                usesVeoVideo = true;
+            } else if (visualPrompt) {
+                // Alternamos entre Imágenes generadas (Imagen 3) y el Video local Faceless
+                const isFaceless = (i % 2 === 0);
+                if (!isFaceless) {
+                    promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
+                }
             }
 
             if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
 
-            // Verificación de seguridad: si la imagen no se generó (o pesa 0 bytes), forzar el uso de stock
+            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
             let finalImgPath = sceneImgPath;
-            if (!isFaceless && visualPrompt) {
+            let isFaceless = false;
+            
+            // Resolver qué medio usar como visual (Veo Video > Imagen > Stock)
+            if (usesVeoVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
+                finalImgPath = sceneVidPath;
+                isFaceless = true; // Tratamos los MP4 de Veo como "faceless" para el renderizado (loop infinito hasta acabar audio)
+            } else if (visualPrompt && !videoPrompt && i % 2 !== 0) {
                 if (!fs.existsSync(sceneImgPath) || fs.statSync(sceneImgPath).size < 1000) {
-                    console.warn(`[MediaWorker] ⚠️ Imagen para escena ${i} falló o está rota. Usando stock faceless.`);
+                    console.warn(`[MediaWorker] ⚠️ Imagen falló. Usando stock faceless.`);
                     finalImgPath = randomStock;
+                    isFaceless = true;
                 }
             } else {
                 finalImgPath = randomStock;
+                isFaceless = true;
             }
 
             let srtPath = null;
@@ -229,7 +278,13 @@ async function processTask() {
                     let audioData = wav.getSamples();
                     if (Array.isArray(audioData)) audioData = audioData[0];
 
-                    const output = await transcriber(audioData, { chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word' });
+                    const output = await transcriber(audioData, { 
+                        chunk_length_s: 30, 
+                        stride_length_s: 5, 
+                        return_timestamps: 'word',
+                        language: 'spanish',
+                        task: 'transcribe'
+                    });
                     
                     if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
 
@@ -283,11 +338,15 @@ async function processTask() {
                     : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30`; // Efecto de zoom para imágenes
 
                 let vfStr = filterBase;
+                // NOTA: Se desactiva el quemado (burn-in) de subtítulos estáticos por FFmpeg.
+                // Esto permite que el usuario pueda usar el "Bot Hormozi" o "IA Tools" 
+                // en el Godzilla Pro Editor para agregar subtítulos dinámicos sin que se sobrepongan.
+                /* 
                 if (clip.srt) {
-                    // Escapar ruta para FFmpeg en Windows (C:/ruta -> C\:/ruta)
                     const escapedSrt = clip.srt.replace(/\\/g, '/').replace(':', '\\:');
-                    vfStr += `,subtitles='${escapedSrt}':force_style='FontSize=26,PrimaryColour=&H00FFFF&,Bold=1,Alignment=2,MarginV=180'`;
+                    vfStr += `,subtitles='${escapedSrt}':force_style='FontName=Arial,FontSize=32,PrimaryColour=&H00FFFF&,OutlineColour=&H000000&,BorderStyle=1,Outline=3,Shadow=0,Bold=1,Alignment=2,MarginV=250'`;
                 }
+                */
 
                 command.input(clip.audio)
                     .outputOptions([

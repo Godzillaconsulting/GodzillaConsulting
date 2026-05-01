@@ -1,5 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config({path: './server/.env'});
 import pool from '../server/config/db.js';
-
 const mediaPayload = {
     source: 'automation_tiktok_viral',
     scenes: {

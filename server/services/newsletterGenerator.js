@@ -5,12 +5,13 @@ import fs from 'fs';
 import path from 'path';
 import { ARCHIVOS_PESADOS_DIR } from '../routes/media.js';
 import { fileURLToPath } from 'url';
-import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 import fetch from 'node-fetch';
+import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ASSETS_DIR = ARCHIVOS_PESADOS_DIR;
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const cleanJsonStr = (text) => {
     if (!text) return "{}";
@@ -23,6 +24,32 @@ const cleanJsonStr = (text) => {
         return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '') + '"';
     });
     return t;
+};
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const generateWithRetry = async (modelName, options, maxRetries = 5) => {
+    let attempt = 0;
+    while (attempt < maxRetries) {
+        try {
+            await sleep(2000 + Math.random() * 2000); // Base jitter
+            return await ai.models.generateContent({
+                model: modelName,
+                ...options
+            });
+        } catch (e) {
+            attempt++;
+            console.error(`⚠️ Error Gemini (${modelName}) Intento ${attempt}:`, e.message);
+            if (e.message.includes('503') || e.message.includes('429') || e.message.includes('fetch failed')) {
+                const waitTime = 5000 * attempt;
+                console.log(`⏳ [JITTER] Esperando ${waitTime}ms antes del próximo intento...`);
+                await sleep(waitTime);
+            } else {
+                throw e;
+            }
+        }
+    }
+    throw new Error(`Max retries reached for ${modelName}`);
 };
 
 // ==========================================
@@ -49,19 +76,19 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
         console.error("❌ Fallo obteniendo RSS de noticias:", e.message);
     }
 
-    // 0.5. FASE 1: EXTRAER INFO CON IA GRATUITA (Cero Tokens)
-    console.log("🧠 [Fase 1] Extrayendo y resumiendo contexto crudo usando IA Gratuita...");
+    // 0.5. FASE 1: EXTRAER INFO CON GEMINI Y JITTER (Evitar 429)
+    console.log("🧠 [Fase 1] Extrayendo y resumiendo contexto crudo usando Gemini...");
     const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet. Extrae un resumen crudo en texto plano (bullet points) de las 3 más importantes sobre Inteligencia Artificial, Startups o Negocios. REGLA ESTRICTA: Las noticias deben ser frescas, no inventes eventos pasados ni repitas noticias viejas. Solo usa el contexto provisto.\n\n${realNewsContext}`;
     
     let rawNewsSummary = "";
     try {
-        const rawRes = await executeAiWaterfall([
-            { role: 'user', content: rawPrompt }
-        ], { mode: 'default' }); // Fallback a Google si fallan las gratis
-        rawNewsSummary = rawRes.content || '';
+        const rawRes = await generateWithRetry('gemini-2.5-flash', {
+            contents: rawPrompt
+        });
+        rawNewsSummary = rawRes.text || '';
         console.log("✅ [Fase 1] Resumen crudo obtenido.");
     } catch(e) {
-        console.error("⚠️ Fallo en la fase 1, usando contexto original crudo.");
+        console.error("⚠️ Fallo en la fase 1, usando contexto original crudo.", e.message);
         rawNewsSummary = realNewsContext;
     }
 
@@ -90,43 +117,45 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
 }`;
 
     console.log("🧠 [Fase 2] Enviando resumen a Gemini para diseño de Copywriting Premium...");
-    const baseResponse = await executeAiWaterfall([
-        { role: 'system', content: systemInstruction },
-        { role: 'user', content: premiumPrompt }
-    ], { jsonMode: true, mode: 'gemini_exclusive' });
-    const jsonText = cleanJsonStr(baseResponse.content);
-    const data = JSON.parse(jsonText);
-    console.log("✅ Contenido IA Base Generado.");
+    let data;
+    try {
+        const baseResponse = await generateWithRetry('gemini-2.5-flash', {
+            contents: premiumPrompt,
+            config: {
+                systemInstruction: systemInstruction,
+                responseMimeType: "application/json"
+            }
+        });
+        const jsonText = cleanJsonStr(baseResponse.text);
+        data = JSON.parse(jsonText);
+        console.log("✅ Contenido IA Base Generado.");
+    } catch(err) {
+        console.error("❌ Fallo en la Fase 2 con Gemini:", err.message);
+        throw new Error("No se pudo generar el contenido base del newsletter.");
+    }
 
-    // 2. MEGA-DICCIONARIO 11 IDIOMAS — Traducción con IA Gratuita (try→catch→Premium si falla)
+    // 2. MEGA-DICCIONARIO 11 IDIOMAS — Traducción con Gemini + Jitter (Bloques)
     const targetLangs = ['en', 'fr', 'pt', 'de', 'ja', 'it', 'zh', 'ko', 'ar', 'ru'];
     const translationsJson = { "es": data };
     
-    console.log("🌍 Iniciando Traducción de Diccionario para Cero Fugas de Tokens...");
+    console.log("🌍 Iniciando Traducción de Diccionario por Bloques con Jitter...");
     for (const lang of targetLangs) {
         console.log(`   Traduciendo a [${lang}]...`);
         const transPrompt = `Translate the following JSON precisely into ISO language code [${lang}]. Keep EXACT JSON keys and schema. Do not change structure. Return ONLY pure valid JSON:\n\n${JSON.stringify(data)}`;
         try {
-            const transRes = await executeAiWaterfall([
-                { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
-                { role: 'user', content: transPrompt }
-            ], { jsonMode: true, mode: 'default' });
-            const transResultStr = cleanJsonStr(transRes.content);
+            const transRes = await generateWithRetry('gemini-2.5-flash', {
+                contents: transPrompt,
+                config: {
+                    systemInstruction: "You are a perfect JSON translator. Reply only with valid JSON.",
+                    responseMimeType: "application/json"
+                }
+            });
+            const transResultStr = cleanJsonStr(transRes.text);
             translationsJson[lang] = JSON.parse(transResultStr);
+            console.log(`   ✅ [${lang}] Traducido con Gemini.`);
         } catch (err) {
-            console.error(`   ⚠️ Fallo con IA Gratuita traduciendo a ${lang}, intentando con Gemini...`);
-            try {
-                const premiumTransRes = await executeAiWaterfall([
-                    { role: 'system', content: "You are a perfect JSON translator. Reply only with valid JSON." },
-                    { role: 'user', content: transPrompt }
-                ], { jsonMode: true, mode: 'gemini_exclusive' });
-                const premStr = cleanJsonStr(premiumTransRes.content);
-                translationsJson[lang] = JSON.parse(premStr);
-                console.log(`   ✅ [${lang}] Traducido con Gemini como fallback.`);
-            } catch(e2) {
-                console.error(`   ❌ Fallo total traduciendo a ${lang}, usando español por defecto.`);
-                translationsJson[lang] = data; // Último recurso
-            }
+            console.error(`   ❌ Fallo traduciendo a ${lang}, usando español por defecto.`, err.message);
+            translationsJson[lang] = data; // Último recurso
         }
     }
     console.log("✅ Mega-Diccionario Guardado (8 Idiomas Listos).");
@@ -137,9 +166,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         // En caso de que se resuelva la disputa, Gemini hará la imagen. 
         // TODO: Migrar a Pollinations Image si la disputa persiste.
         try {
-            const { GoogleGenAI } = await import('@google/genai');
-            const aiImg = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            const imgRes = await aiImg.models.generateImages({
+            const imgRes = await ai.models.generateImages({
                 model: 'imagen-3.0-generate-001',
                 prompt: data.coverPrompt,
                 config: { numberOfImages: 1, outputMimeType: 'image/png' }

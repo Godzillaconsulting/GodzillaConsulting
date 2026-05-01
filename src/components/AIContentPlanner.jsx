@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, Wand2, Loader2, Send, Download, ChevronDown, ChevronUp, CheckSquare, Square, Rocket } from 'lucide-react';
 
 // ─── Columnas exactas del Sheets ──────────────────────────────────────────────
@@ -271,6 +272,40 @@ export default function AIContentPlanner({ adminProfile }) {
     const [isSendingBulk, setIsSendingBulk] = useState(false);
     const [bulkResult, setBulkResult]       = useState(null);  // { sent, skipped }
     
+    // ─── Radar de Contenido (AnswerThePublic Engine) ───────────────────────
+    const [showContentRadar, setShowContentRadar] = useState(false);
+    const [radarTopic, setRadarTopic] = useState('');
+    const [radarLoading, setRadarLoading] = useState(false);
+    const [radarData, setRadarData] = useState(null);
+    const [radarCopied, setRadarCopied] = useState(false);
+
+    const fetchContentRadar = async () => {
+        if (!radarTopic.trim()) return;
+        setRadarLoading(true);
+        setRadarData(null);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const res = await fetch(`${API}/api/studio/content-radar?topic=${encodeURIComponent(radarTopic.trim())}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) setRadarData(data);
+            else console.error('ContentRadar error:', data.error);
+        } catch (e) {
+            console.error('ContentRadar fetch failed:', e);
+        } finally {
+            setRadarLoading(false);
+        }
+    };
+
+    const copyHashtags = () => {
+        if (!radarData?.hashtags?.length) return;
+        navigator.clipboard.writeText(radarData.hashtags.join(' '));
+        setRadarCopied(true);
+        setTimeout(() => setRadarCopied(false), 2000);
+    };
+
     const [plannerTrends, setPlannerTrends] = useState(null);
     const [loadingTrends, setLoadingTrends] = useState(false);
 
@@ -629,6 +664,13 @@ export default function AIContentPlanner({ adminProfile }) {
                     </button>
 
                     <button
+                        onClick={() => setShowContentRadar(true)}
+                        className="bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest px-6 py-2.5 rounded-xl transition-all text-[11px] shrink-0 h-[42px] flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.1)]"
+                    >
+                        🔍 Radar
+                    </button>
+
+                    <button
                         onClick={handleGenerate}
                         disabled={!canEdit || isGenerating || !niche.trim()}
                         className="bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/40 text-white font-black uppercase tracking-widest px-8 py-2.5 rounded-xl disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all text-sm shrink-0 h-[42px]"
@@ -788,5 +830,168 @@ export default function AIContentPlanner({ adminProfile }) {
                 )}
             </div>
         </div>
+                {/* ─────────────────────────────────────────────────────────
+                    RADAR DE CONTENIDO — AnswerThePublic Engine (Costo Cero)
+                ───────────────────────────────────────────────────────── */}
+                {showContentRadar && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-md" onClick={(e) => { if(e.target === e.currentTarget) setShowContentRadar(false); }}>
+                        <div className="w-full max-w-5xl h-[90vh] bg-[#0d0d0c] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+                            {/* Header */}
+                            <div className="shrink-0 bg-gradient-to-r from-[#0f0f0e] to-[#141413] border-b border-white/5 p-5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0FF]/20 to-[#9D00FF]/20 border border-[#00F0FF]/30 flex items-center justify-center text-lg">🔍</div>
+                                    <div>
+                                        <h3 className="text-white font-black uppercase tracking-widest text-sm">Radar de Contenido</h3>
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Búsquedas reales Google · Hashtags IA · Costo cero</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowContentRadar(false)} className="w-8 h-8 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition-colors text-lg">×</button>
+                            </div>
+
+                            {/* Search Input */}
+                            <div className="shrink-0 p-5 border-b border-white/5">
+                                <div className="flex gap-3">
+                                    <div className="flex-1 relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                        </div>
+                                        <input
+                                            id="radar-topic-input"
+                                            type="text"
+                                            value={radarTopic}
+                                            onChange={e => setRadarTopic(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && fetchContentRadar()}
+                                            placeholder="Escribe un tema (ej: Marketing Digital, Inteligencia Artificial...)"
+                                            className="w-full bg-[#1a1a19] border border-neutral-700 focus:border-[#00F0FF]/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-sm font-light placeholder-neutral-600 outline-none transition-colors"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={fetchContentRadar}
+                                        disabled={radarLoading || !radarTopic.trim()}
+                                        className="bg-gradient-to-r from-[#00F0FF]/20 to-[#9D00FF]/20 hover:from-[#00F0FF]/40 hover:to-[#9D00FF]/40 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest text-xs px-6 py-3.5 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
+                                    >
+                                        {radarLoading ? (
+                                            <><span className="w-4 h-4 border-2 border-[#00F0FF]/30 border-t-[#00F0FF] rounded-full animate-spin"/> Analizando...</>
+                                        ) : (
+                                            <>🔍 Analizar</>
+                                        )}
+                                    </button>
+                                </div>
+                                {radarData && (
+                                    <p className="mt-2 text-[10px] text-neutral-500 font-bold">
+                                        ✅ {radarData.totalQuestions} preguntas reales encontradas para <span className="text-[#00F0FF]">"{radarData.topic}"</span>
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Results */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {!radarData && !radarLoading && (
+                                    <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30">
+                                        <span className="text-6xl">🌐</span>
+                                        <p className="text-white font-bold uppercase tracking-widest text-sm">Escribe un tema y presiona Analizar</p>
+                                    </div>
+                                )}
+
+                                {radarLoading && (
+                                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                                        <div className="relative w-20 h-20">
+                                            <div className="absolute inset-0 rounded-full border-2 border-[#00F0FF]/20 animate-ping"/>
+                                            <div className="absolute inset-2 rounded-full border-2 border-[#9D00FF]/30 animate-ping" style={{animationDelay:'0.3s'}}/>
+                                            <div className="w-full h-full rounded-full border-2 border-t-[#00F0FF] border-[#00F0FF]/10 animate-spin"/>
+                                        </div>
+                                        <p className="text-[#00F0FF] font-black uppercase tracking-widest text-xs animate-pulse">Escaneando Google + Generando Hashtags IA...</p>
+                                    </div>
+                                )}
+
+                                {radarData && (
+                                    <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                                        {/* COLUMNA 1: Hashtags generados por IA */}
+                                        <div className="lg:col-span-1 flex flex-col gap-4">
+                                            {/* Hashtags */}
+                                            <div className="bg-gradient-to-br from-[#0f0f0e] to-[#141413] border border-[#9D00FF]/30 rounded-2xl p-4 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#9D00FF]/10 rounded-bl-full blur-xl"/>
+                                                <div className="flex items-center justify-between mb-3 relative z-10">
+                                                    <h4 className="text-[#9D00FF] font-black uppercase tracking-widest text-[10px] flex items-center gap-1.5">
+                                                        <span>#</span> Hashtags IA ({radarData.hashtags.length})
+                                                    </h4>
+                                                    <button
+                                                        onClick={copyHashtags}
+                                                        className="text-[9px] font-black uppercase tracking-widest bg-[#9D00FF]/20 hover:bg-[#9D00FF]/40 border border-[#9D00FF]/40 text-[#9D00FF] px-3 py-1 rounded-full transition-all"
+                                                    >
+                                                        {radarCopied ? '✅ Copiado!' : '📋 Copiar todos'}
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5 relative z-10">
+                                                    {radarData.hashtags.map((tag, i) => {
+                                                        const colors = [
+                                                            'bg-[#9D00FF]/10 border-[#9D00FF]/30 text-[#9D00FF]',
+                                                            'bg-[#00F0FF]/10 border-[#00F0FF]/30 text-[#00F0FF]',
+                                                            'bg-[#FF0055]/10 border-[#FF0055]/30 text-[#FF0055]',
+                                                            'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+                                                            'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+                                                        ];
+                                                        const color = colors[i % colors.length];
+                                                        return (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => navigator.clipboard.writeText(tag)}
+                                                                title="Click para copiar"
+                                                                className={`text-[10px] font-bold border px-2.5 py-1 rounded-full transition-all hover:scale-105 hover:brightness-125 whitespace-nowrap max-w-full truncate ${color}`}
+                                                            >
+                                                                {tag}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* AI Summary */}
+                                            {radarData.aiSummary && (
+                                                <div className="bg-gradient-to-br from-[#0f0f0e] to-[#141413] border border-[#00F0FF]/20 rounded-2xl p-4 relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/5 rounded-bl-full blur-xl"/>
+                                                    <h4 className="text-[#00F0FF] font-black uppercase tracking-widest text-[10px] mb-2 flex items-center gap-1.5 relative z-10">
+                                                        🧠 Análisis IA
+                                                    </h4>
+                                                    <p className="text-neutral-300 text-xs leading-relaxed font-light relative z-10">{radarData.aiSummary}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* COLUMNA 2-3: Preguntas de Google agrupadas */}
+                                        <div className="lg:col-span-2 flex flex-col gap-4">
+                                            {Object.keys(radarData.structured).map((modifier, mi) => (
+                                                <div key={mi} className="bg-[#111]/60 border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-colors">
+                                                    <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]"/>
+                                                        {modifier}
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {radarData.structured[modifier].map((q, qi) => (
+                                                            <button
+                                                                key={qi}
+                                                                onClick={() => {
+                                                                    // Al hacer click en una pregunta, la pone en el prompt del Planificador
+                                                                    setNiche(q);
+                                                                    setShowContentRadar(false);
+                                                                }}
+                                                                title="Click para usar como Nicho/Tema"
+                                                                className="text-[11px] text-neutral-300 bg-black/40 hover:bg-[#00F0FF]/10 border border-white/5 hover:border-[#00F0FF]/40 hover:text-[#00F0FF] px-3 py-1.5 rounded-full transition-all text-left whitespace-nowrap max-w-full truncate"
+                                                            >
+                                                                {q}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
     );
 }

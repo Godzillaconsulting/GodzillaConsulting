@@ -320,13 +320,20 @@ const FLOW_TEMPLATES = [
 ];
 
 // ─── Curved SVG connector ─────────────────────────────────────────────────────
-const CurvedConnector = ({ startX, startY, endX, endY, color, animated = true }) => {
+const CurvedConnector = ({ startX, startY, endX, endY, color, animated = true, onDoubleClick }) => {
   const midX = (startX + endX) / 2;
   const path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
   return (
     <svg className="absolute inset-0 pointer-events-none w-full h-full overflow-visible" style={{ zIndex: 0 }}>
-      <path d={path} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" opacity="0.25" />
-      <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <g 
+        style={{ pointerEvents: onDoubleClick ? 'stroke' : 'none', cursor: onDoubleClick ? 'pointer' : 'default' }} 
+        onDoubleClick={onDoubleClick}
+        title="Doble clic para eliminar conexión"
+      >
+        <path d={path} fill="none" stroke="transparent" strokeWidth="20" />
+        <path d={path} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" opacity="0.25" />
+        <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      </g>
       {animated && (
         <circle r="3.5" fill="#fff" opacity="0.9">
           <animateMotion dur="2.5s" repeatCount="indefinite" path={path} />
@@ -1199,7 +1206,18 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
           {edges.map(e=>{
             const s=nodePositions.get(e.source), t=nodePositions.get(e.target);
             if(!s||!t) return null;
-            return <CurvedConnector key={e.id} startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} color={e.color} animated={executingNodes.has(e.source) || isExecuting}/>;
+            return <CurvedConnector 
+              key={e.id} 
+              startX={s.rx} startY={s.ry} endX={t.lx} endY={t.ly} 
+              color={e.color} 
+              animated={executingNodes.has(e.source) || isExecuting}
+              onDoubleClick={(ev) => {
+                ev.stopPropagation();
+                if(window.confirm('¿Eliminar esta conexión?')) {
+                  setEdges(prev => prev.filter(edge => edge.id !== e.id));
+                }
+              }}
+            />;
           })}
           {connectingFrom&&connectingToPos&&(()=>{
             const s=nodePositions.get(connectingFrom);
@@ -1994,12 +2012,7 @@ export default function AutomationFlow() {
       
       let mappedFlows = [];
       if (fd.success) {
-        mappedFlows = (fd.flows || []).map(flow => {
-          if (flow.name === 'Sistema Central' || flow.id === 'central' || flow.id === 1) {
-            return { ...flow, nodes: FLOW_TEMPLATES[0].nodes, edges: FLOW_TEMPLATES[0].edges };
-          }
-          return flow;
-        });
+        mappedFlows = fd.flows || [];
       }
       
       if (!mappedFlows.some(f => f.id === 1 || f.name === 'Sistema Central')) {

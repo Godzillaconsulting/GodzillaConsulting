@@ -400,16 +400,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
     useEffect(() => { if (activePlatform !== 'ALL') loadBotConfig(activePlatform); }, [activePlatform]);
 
-    const fetchTrends = async (network = trendsNetwork, niche = trendsNiche) => {
-        setLoadingTrends(true);
-        try {
-            const url = import.meta.env.DEV ? `http://localhost:3000/api/trends?network=${network}&filter=${niche}` : `/api/trends?network=${network}&filter=${niche}`;
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
-            const data = await res.json();
-            if (data.success && data.data) setRealTrends(data.data);
-        } catch (e) { console.error('Error fetching trends', e); }
-        setLoadingTrends(false);
-    };
+
 
     // ═══════════════════════════════════════════════════════════════════════
     // COMENTARIOS & @MENCIONES (ahora persisten en DB)
@@ -1102,64 +1093,6 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
     // ─── SIDEBAR ──────────────────────────────────────────────────────────
     const renderSidebar = () => {
-        if (canCreate) {
-            return (
-                <div className="w-[280px] border-l border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col">
-                    <div className="p-5 border-b border-white/10 bg-black/60">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-white font-black uppercase text-sm tracking-widest">🔥 Trends & Hashtags</h3>
-                        </div>
-                        <p className="text-xs text-neutral-500 font-bold mb-3">Datos en tiempo real (IA)</p>
-                        <div className="flex flex-col gap-2">
-                            <select value={trendsNetwork} onChange={e => setTrendsNetwork(e.target.value)} className="w-full bg-black border border-white/20 text-white text-[10px] rounded p-1.5 focus:outline-none focus:border-[#CC0000]">
-                                <option value="Todas">🌐 Todas las redes</option>
-                                <option value="TikTok">⚫ TikTok</option>
-                                <option value="Instagram">🟣 Instagram</option>
-                                <option value="LinkedIn">🔵 LinkedIn</option>
-                            </select>
-                            <input value={trendsNiche} onChange={e => setTrendsNiche(e.target.value)} placeholder="Ej: SaaS, E-commerce, IA..." className="w-full bg-black border border-white/20 text-white text-[10px] rounded p-1.5 focus:outline-none focus:border-[#CC0000]" />
-                            <button onClick={() => fetchTrends(trendsNetwork, trendsNiche)} disabled={loadingTrends} className="w-full bg-[#CC0000] text-white text-[10px] font-black uppercase py-1.5 rounded disabled:opacity-50 hover:bg-white hover:text-[#CC0000] transition-colors">
-                                {loadingTrends ? 'Buscando...' : '🔎 Analizar Trends'}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-5 overflow-y-auto space-y-5">
-                        {loadingTrends ? (
-                            <div className="flex flex-col items-center justify-center h-40 opacity-50">
-                                <span className="text-2xl animate-spin mb-2">⏳</span>
-                                <p className="text-[10px] font-bold text-white uppercase tracking-widest">Extrayendo datos de la red...</p>
-                            </div>
-                        ) : realTrends ? (
-                            <>
-                                <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
-                                    <h4 className="text-[#CC0000] font-black text-[10px] uppercase mb-3">Trending {realTrends.niche} hoy:</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(realTrends.hashtags || []).map(tag => (
-                                            <span key={tag} onClick={() => setActiveHashtag(activeHashtag === tag ? null : tag)}
-                                                className={`text-[10px] font-bold px-2 py-1 rounded cursor-pointer transition-colors ${activeHashtag === tag ? 'bg-gradient-to-r from-[#CC0000] to-red-800 text-white' : 'text-neutral-300 bg-black/60 border border-white/10 hover:bg-white/20'}`}>
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="bg-black/50 border border-white/10 p-4 rounded-xl">
-                                    <h4 className="text-neutral-500 font-black text-[10px] uppercase mb-3">Hooks Sugeridos ({realTrends.network}):</h4>
-                                    <ul className="text-[10px] text-neutral-300 space-y-3 font-bold leading-tight">
-                                        {(realTrends.hooks || []).map((hk, i) => (
-                                            <li key={i} className="flex gap-2">
-                                                <span className="text-[#CC0000] shrink-0">👉</span><span>{hk}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-neutral-500 text-xs font-bold text-center">Haz clic en Analizar Trends para obtener la información de hoy.</p>
-                        )}
-                    </div>
-                </div>
-            );
-        }
 
         return (
             <div className="w-[300px] border-l border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col">

@@ -1047,7 +1047,7 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
                     // FASE 1: Obtener las ideas crudas del bot gratuito
                     const rawRes = await executeAiWaterfall([
                         { role: 'user', content: rawPrompt }
-                    ], { mode: 'default', maxTokens: 6000 });
+                    ], { mode: 'default', maxTokens: 8000 });
                     
                     const rawContent = rawRes.content || '';
 
@@ -1056,7 +1056,7 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
 
                     const aiRes = await executeAiWaterfall([
                         { role: 'user', content: premiumPrompt }
-                    ], { mode: 'premium', maxTokens: 6000 });
+                    ], { mode: 'premium', maxTokens: 8000 });
 
                     let rawText = extractJSON(aiRes.content || '');
                     batchData = JSON.parse(rawText);
@@ -1083,10 +1083,10 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
         // ================= BACKGROUND WORKER ================= //
         (async () => {
             try {
-                // Dividir dinámicamente en lotes de máximo 5 días
+                // Dividir dinámicamente en lotes de máximo 3 días para evitar que se corte el JSON por límite de tokens
                 let batches = [];
-                for (let start = 1; start <= durationDays; start += 5) {
-                    let end = Math.min(start + 4, durationDays);
+                for (let start = 1; start <= durationDays; start += 3) {
+                    let end = Math.min(start + 2, durationDays);
                     batches.push({ start, end });
                 }
 

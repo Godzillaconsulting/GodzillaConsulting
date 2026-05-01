@@ -29,10 +29,10 @@ class AutomationEngine {
                     return ctx;
                 }
 
-                const period = cfg.period || 'mes';
+                const period = ctx.topic ? 'dia' : (cfg.period || 'mes');
                 let totalDays = 30;
-                if (period === 'semana') totalDays = 7;
-                if (period === 'dia') totalDays = 1;
+                if (period === 'semana' || period === 'week') totalDays = 7;
+                if (period === 'dia' || period === 'day') totalDays = 1;
 
                 const blockSize = 5;
                 const blocks = Math.ceil(totalDays / blockSize);
@@ -42,6 +42,8 @@ class AutomationEngine {
                 const baseSystemPrompt = `
                     Actúa como un estratega de contenido experto en redes sociales.
                     Nicho de la empresa: "${ctx.niche || 'General'}".
+                    ${ctx.topic ? `\nATENCIÓN: Se solicitó específicamente crear contenido enfocado ÚNICA Y EXCLUSIVAMENTE en el siguiente tema/idea: "${ctx.topic}".` : ''}
+                    ${cfg.extraContext ? `\nContexto extra a considerar: "${cfg.extraContext}".` : ''}
                     Vas a generar contenido para ${blockSize} días consecutivos.
                     El año es ${ctx.year || new Date().getFullYear()} y el mes objetivo es ${ctx.month || 'actual'}.
                     
@@ -654,6 +656,7 @@ class AutomationEngine {
             
             // Input: Trends Bot result, Planificador entry, or raw config
             const topic = cfg.topic 
+                        || ctx.topic
                         || ctx._trendsData?.trending?.[0]?.title 
                         || (ctx.plan?.[0]?.['Tema']) 
                         || 'Tendencia del día';

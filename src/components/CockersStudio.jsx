@@ -2636,7 +2636,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                 key={i}
                                                                 onClick={() => navigator.clipboard.writeText(tag)}
                                                                 title="Click para copiar"
-                                                                className={`text-[10px] font-bold border px-2.5 py-1 rounded-full transition-all hover:scale-105 hover:brightness-125 ${color}`}
+                                                                className={`text-[10px] font-bold border px-2.5 py-1 rounded-full transition-all hover:scale-105 hover:brightness-125 whitespace-nowrap max-w-full truncate ${color}`}
                                                             >
                                                                 {tag}
                                                             </button>
@@ -2675,7 +2675,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                     setShowContentRadar(false);
                                                                 }}
                                                                 title="Click para usar como prompt"
-                                                                className="text-[11px] text-neutral-300 bg-black/40 hover:bg-[#00F0FF]/10 border border-white/5 hover:border-[#00F0FF]/40 hover:text-[#00F0FF] px-3 py-1.5 rounded-full transition-all text-left"
+                                                                className="text-[11px] text-neutral-300 bg-black/40 hover:bg-[#00F0FF]/10 border border-white/5 hover:border-[#00F0FF]/40 hover:text-[#00F0FF] px-3 py-1.5 rounded-full transition-all text-left whitespace-nowrap max-w-full truncate"
                                                             >
                                                                 {q}
                                                             </button>

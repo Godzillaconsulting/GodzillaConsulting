@@ -29,13 +29,15 @@ const CrmSaas = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
-          const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Kanban size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle1") : (content.accTitle1 || "Pipeline de Ventas Visual"), desc: isEng ? t("services.items.crm.accDesc1") : (content.accDesc1 || "Control total de en qué etapa se encuentra cada cliente potencial.") },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Zap size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle2") : (content.accTitle2 || "Automatización de Workflows"), desc: isEng ? t("services.items.crm.accDesc2") : (content.accDesc2 || "Disparadores automáticos de correos, SMS y tareas para tu equipo.") },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PieChart size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle3") : (content.accTitle3 || "Dashboard de Métricas Real-Time"), desc: isEng ? t("services.items.crm.accDesc3") : (content.accDesc3 || "Visualiza tu CAC, LTV y tasa de cierre al instante y sin demoras.") },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Inbox size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle4") : (content.accTitle4 || "Centralización de Canales"), desc: isEng ? t("services.items.crm.accDesc4") : (content.accDesc4 || "Responde WhatsApp, Instagram y Correo desde una sola bandeja de entrada.") },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <UserPlus size={20} className="shrink-0" />, title: isEng ? t("services.items.crm.accTitle5") : (content.accTitle5 || "Asignación Inteligente de Leads"), desc: isEng ? t("services.items.crm.accDesc5") : (content.accDesc5 || "Distribución automática de prospectos a tus mejores vendedores.") }
+    const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
+    const engTrans = content.translations?.en || {};
+
+    const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Kanban size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle1 || t("services.items.crm.accTitle1")) : (content.accTitle1 || "Pipeline de Ventas Visual"), desc: isEng ? (engTrans.accDesc1 || t("services.items.crm.accDesc1")) : (content.accDesc1 || "Control total de en qué etapa se encuentra cada cliente potencial.") },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Zap size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle2 || t("services.items.crm.accTitle2")) : (content.accTitle2 || "Automatización de Workflows"), desc: isEng ? (engTrans.accDesc2 || t("services.items.crm.accDesc2")) : (content.accDesc2 || "Disparadores automáticos de correos, SMS y tareas para tu equipo.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PieChart size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle3 || t("services.items.crm.accTitle3")) : (content.accTitle3 || "Dashboard de Métricas Real-Time"), desc: isEng ? (engTrans.accDesc3 || t("services.items.crm.accDesc3")) : (content.accDesc3 || "Visualiza tu CAC, LTV y tasa de cierre al instante y sin demoras.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Inbox size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle4 || t("services.items.crm.accTitle4")) : (content.accTitle4 || "Centralización de Canales"), desc: isEng ? (engTrans.accDesc4 || t("services.items.crm.accDesc4")) : (content.accDesc4 || "Responde WhatsApp, Instagram y Correo desde una sola bandeja de entrada.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <UserPlus size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle5 || t("services.items.crm.accTitle5")) : (content.accTitle5 || "Asignación Inteligente de Leads"), desc: isEng ? (engTrans.accDesc5 || t("services.items.crm.accDesc5")) : (content.accDesc5 || "Distribución automática de prospectos a tus mejores vendedores.") }
     ];
 
 const { getNodeData } = useSiteData();
@@ -180,11 +182,11 @@ const { getNodeData } = useSiteData();
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.crm.title') : content.title).replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? (engTrans.title || t('services.items.crm.title')) : content.title).replace(/\n/g, '<br />') }}
                             />
                                                         {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {isEng ? t('services.items.crm.desc') : content.subtitle}
+                                {isEng ? (engTrans.subtitle || t('services.items.crm.desc')) : content.subtitle}
                             </p>
                             
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">

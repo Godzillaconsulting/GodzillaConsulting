@@ -29,13 +29,15 @@ const GestionRedesSociales = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
-          const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Share2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle1") : (content.accTitle1 || "Estrategia de Contenido Omnicanal"), desc: isEng ? t("services.items.social.accDesc1") : (content.accDesc1 || "Presencia donde tu \"Dream 100\" interactúa diariamente.") },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PenTool size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle2") : (content.accTitle2 || "Copywriting de Respuesta Directa"), desc: isEng ? t("services.items.social.accDesc2") : (content.accDesc2 || "Textos que incitan a la acción, no solo al like.") },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageCircle size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle3") : (content.accTitle3 || "Gestión de Comunidad Activa"), desc: isEng ? t("services.items.social.accDesc3") : (content.accDesc3 || "Convertimos comentarios y DMs en oportunidades de venta reales.") },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <TrendingUp size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle4") : (content.accTitle4 || "Growth Hacking Orgánico"), desc: isEng ? t("services.items.social.accDesc4") : (content.accDesc4 || "Tácticas para escalar tu alcance sin depender únicamente de pauta.") },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <BarChart2 size={20} className="shrink-0" />, title: isEng ? t("services.items.social.accTitle5") : (content.accTitle5 || "Análisis de Sentimiento y KPIs"), desc: isEng ? t("services.items.social.accDesc5") : (content.accDesc5 || "Reportes mensuales de crecimiento de audiencia y engagement real.") }
+    const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
+    const engTrans = content.translations?.en || {};
+
+    const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Share2 size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle1 || t("services.items.social.accTitle1")) : (content.accTitle1 || "Estrategia de Contenido Omnicanal"), desc: isEng ? (engTrans.accDesc1 || t("services.items.social.accDesc1")) : (content.accDesc1 || "Presencia donde tu \"Dream 100\" interactúa diariamente.") },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <PenTool size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle2 || t("services.items.social.accTitle2")) : (content.accTitle2 || "Copywriting de Respuesta Directa"), desc: isEng ? (engTrans.accDesc2 || t("services.items.social.accDesc2")) : (content.accDesc2 || "Textos que incitan a la acción, no solo al like.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageCircle size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle3 || t("services.items.social.accTitle3")) : (content.accTitle3 || "Gestión de Comunidad Activa"), desc: isEng ? (engTrans.accDesc3 || t("services.items.social.accDesc3")) : (content.accDesc3 || "Convertimos comentarios y DMs en oportunidades de venta reales.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <TrendingUp size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle4 || t("services.items.social.accTitle4")) : (content.accTitle4 || "Growth Hacking Orgánico"), desc: isEng ? (engTrans.accDesc4 || t("services.items.social.accDesc4")) : (content.accDesc4 || "Tácticas para escalar tu alcance sin depender únicamente de pauta.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <BarChart2 size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle5 || t("services.items.social.accTitle5")) : (content.accTitle5 || "Análisis de Sentimiento y KPIs"), desc: isEng ? (engTrans.accDesc5 || t("services.items.social.accDesc5")) : (content.accDesc5 || "Reportes mensuales de crecimiento de audiencia y engagement real.") }
     ];
 
 const { getNodeData } = useSiteData();
@@ -177,11 +179,11 @@ const { getNodeData } = useSiteData();
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.social.title') : content.title).replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? (engTrans.title || t('services.items.social.title')) : content.title).replace(/\n/g, '<br />') }}
                             />
                                                         {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {isEng ? t('services.items.social.desc') : content.subtitle}
+                                {isEng ? (engTrans.subtitle || t('services.items.social.desc')) : content.subtitle}
                             </p>
                             
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">

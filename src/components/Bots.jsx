@@ -29,13 +29,15 @@ const Bots = () => {
     const [openAccordion, setOpenAccordion] = useState(0);
 
     const { t, i18n } = useTranslation();
-      const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
-          const accordionItems = [
-        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle1") : (content.accTitle1 || "Cualificación de leads en tiempo real"), desc: isEng ? t("services.items.bots.accDesc1") : (content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente.") },
-        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle2") : (content.accTitle2 || "Agendamiento directo sin intervención"), desc: isEng ? t("services.items.bots.accDesc2") : (content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas.") },
-        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle3") : (content.accTitle3 || "Soporte de IA multicanal"), desc: isEng ? t("services.items.bots.accDesc3") : (content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea.") },
-        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="Icon 4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <RefreshCw size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle4") : (content.accTitle4 || "Nurturing automatizado"), desc: isEng ? t("services.items.bots.accDesc4") : (content.accDesc4 || "Seguimiento inteligente a prospectos que no compraron al primer contacto.") },
-        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: isEng ? t("services.items.bots.accTitle5") : (content.accTitle5 || "Integración nativa con tu CRM"), desc: isEng ? t("services.items.bots.accDesc5") : (content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos.") },
+    const isEng = i18n.resolvedLanguage ? !i18n.resolvedLanguage.startsWith('es') : false;
+    const engTrans = content.translations?.en || {};
+
+    const accordionItems = [
+        { icon: content.accIcon1Url ? <img src={content.accIcon1Url} alt="Icon 1" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Filter size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle1 || t("services.items.bots.accTitle1")) : (content.accTitle1 || "Cualificación de leads en tiempo real"), desc: isEng ? (engTrans.accDesc1 || t("services.items.bots.accDesc1")) : (content.accDesc1 || "Filtra curiosos de clientes con presupuesto real automáticamente.") },
+        { icon: content.accIcon2Url ? <img src={content.accIcon2Url} alt="Icon 2" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Calendar size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle2 || t("services.items.bots.accTitle2")) : (content.accTitle2 || "Agendamiento directo sin intervención"), desc: isEng ? (engTrans.accDesc2 || t("services.items.bots.accDesc2")) : (content.accDesc2 || "Sincronización total con tu calendario para llenar tu agenda de citas.") },
+        { icon: content.accIcon3Url ? <img src={content.accIcon3Url} alt="Icon 3" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <MessageSquare size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle3 || t("services.items.bots.accTitle3")) : (content.accTitle3 || "Soporte de IA multicanal"), desc: isEng ? (engTrans.accDesc3 || t("services.items.bots.accDesc3")) : (content.accDesc3 || "Atención en WhatsApp, Instagram y Web de forma simultánea.") },
+        { icon: content.accIcon4Url ? <img src={content.accIcon4Url} alt="Icon 4" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <RefreshCw size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle4 || t("services.items.bots.accTitle4")) : (content.accTitle4 || "Nurturing automatizado"), desc: isEng ? (engTrans.accDesc4 || t("services.items.bots.accDesc4")) : (content.accDesc4 || "Seguimiento inteligente a prospectos que no compraron al primer contacto.") },
+        { icon: content.accIcon5Url ? <img src={content.accIcon5Url} alt="Icon 5" className="w-5 h-5 object-contain shrink-0 rounded-full" style={{ filter: 'brightness(0) invert(1) hue-rotate(60deg) saturate(1000%)' }} /> : <Database size={20} className="shrink-0" />, title: isEng ? (engTrans.accTitle5 || t("services.items.bots.accTitle5")) : (content.accTitle5 || "Integración nativa con tu CRM"), desc: isEng ? (engTrans.accDesc5 || t("services.items.bots.accDesc5")) : (content.accDesc5 || "Los datos de cada conversación van directo a tu base de datos.") },
     ];
 
 const { getNodeData } = useSiteData();
@@ -167,11 +169,11 @@ const { getNodeData } = useSiteData();
                         <div className="w-full max-w-sm flex flex-col items-center text-center">
                             <h1
                                 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-sm leading-tight"
-                                dangerouslySetInnerHTML={{ __html: (isEng ? t('services.items.bots.title') : content.title).replace(/\n/g, '<br />') }}
+                                dangerouslySetInnerHTML={{ __html: (isEng ? (engTrans.title || t('services.items.bots.title')) : content.title).replace(/\n/g, '<br />') }}
                             />
                             {/* SUBTITLE REPLACED BY ACCORDION */}
                             <p className="text-white text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                                {isEng ? t('services.items.bots.desc') : content.subtitle}
+                                {isEng ? (engTrans.subtitle || t('services.items.bots.desc')) : content.subtitle}
                             </p>
                             <div className="w-full text-left bg-black/20 rounded-2xl p-3 md:p-5 mb-8 space-y-1 md:space-y-2 border border-white/10 shadow-lg relative z-20">
                                 {accordionItems.map((item, index) => {

@@ -306,8 +306,6 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     ]);
                 })
                 .finally(() => setLoadingCitas(false));
-
-            fetchTrends('Todas', 'B2B Tech');
         }
 
         return () => evtSource.close(); // Cleanup SSE al desmontar
@@ -1116,9 +1114,9 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 <div key={task.id} className="bg-black/30 border border-red-900/40 hover:border-red-500/60 p-4 rounded-xl transition-colors">
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <p className="text-xs font-black text-white leading-snug">{task.que}</p>
-                                        <button onClick={() => handleToggleTaskDone(task.id, true)}
-                                            className="shrink-0 w-6 h-6 rounded-full border-2 border-neutral-700 hover:border-green-500 hover:bg-green-500/20 transition-all flex items-center justify-center">
-                                            <span className="text-[10px]">✔</span>
+                                        <button onClick={(e) => handleDeleteEvent('task-' + task.id, e)}
+                                            className="shrink-0 w-6 h-6 rounded-full border-2 border-neutral-700 hover:border-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center text-neutral-500 hover:text-red-400">
+                                            <span className="text-[10px]">✕</span>
                                         </button>
                                     </div>
                                     <div className="space-y-1 mt-2 border-t border-white/5 pt-2">

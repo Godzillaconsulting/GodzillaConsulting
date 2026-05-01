@@ -127,9 +127,10 @@ async function processAndReply(userId, text, ig, replyFn) {
                             } else {
                                 fRes = { success: false, error: 'Google Calendar no confirmó' };
                             }
+                            }
+                        } catch(err) {
+                            fRes = { success: false, error: err.message };
                         }
-                    } catch(err) {
-                        fRes = { success: false, error: err.message };
                     }
                 }
                 functionResponses.push({ functionResponse: { name: call.name, response: fRes } });

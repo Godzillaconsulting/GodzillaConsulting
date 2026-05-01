@@ -157,6 +157,7 @@ export const initWhatsAppBot = async () => {
     // Ruta persistente segura fuera del despliegue para evitar que el Watcher de PM2
     // se vuelva loco y reinicie el bot cientos de veces cuando WhatsApp descarga la sesión.
     const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\baileys';
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const { version, isLatest } = await fetchLatestBaileysVersion();
     

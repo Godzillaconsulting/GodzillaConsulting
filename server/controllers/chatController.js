@@ -94,7 +94,6 @@ export const processChatMessage = async (req, res) => {
         let responseText = '';
         let functionCalls = [];
 
-        try {
             const aiRes = await executeAiWaterfall(waterfallMessages, {
                 tools: waterfallTools,
                 temperature: isGreetingOnly ? 0.5 : 0.1,
@@ -122,9 +121,6 @@ export const processChatMessage = async (req, res) => {
                     };
                 });
             }
-        } catch (error) {
-             throw error;
-        }
 
         if (functionCalls.length > 0) {
             for (const toolCall of functionCalls) {

@@ -150,8 +150,7 @@ async function handleAILogic(senderId, messageText) {
                                 } else if (callName === "save_appointment") {
                     try {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = callArgs;
-                        try {
-                            if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                        if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
                                 fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
                             } else {
                                 const valErr = validateBusinessHours(fecha, hora);

@@ -1,10 +1,6 @@
 import pg from 'pg';
 const { Client } = pg;
 import dotenv from 'dotenv';
-dotenv.config();
-
-// Try to use the env string or the fallback one from other scripts
-import dotenv from 'dotenv';
 dotenv.config({ path: new URL('../.env', import.meta.url).pathname });
 const connectionString = process.env.DATABASE_URL;
 

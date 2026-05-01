@@ -279,11 +279,11 @@ export default function AIContentPlanner({ adminProfile }) {
         setLoadingTrends(true);
         setPlannerTrends(null);
         try {
-            const res = await fetch(`/api/trends?network=TikTok&filter=${encodeURIComponent(niche)}`, {
+            const res = await fetch(`/api/studio/content-radar?topic=${encodeURIComponent(niche)}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
             });
             const data = await res.json();
-            if (data.success && data.data) setPlannerTrends(data.data);
+            if (data.success) setPlannerTrends(data);
             else setPlannerTrends({ error: data.error || 'Sin datos de trends.' });
         } catch (e) {
             setPlannerTrends({ error: e.message });
@@ -324,7 +324,7 @@ export default function AIContentPlanner({ adminProfile }) {
             const res   = await fetch(`${API}/api/studio/generate-monthly-plan`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ niche, month, year, extraContext, durationDays }),
+                body: JSON.stringify({ niche, month, year, extraContext, durationDays, radarTrends: plannerTrends }),
             });
             const data = await res.json();
             

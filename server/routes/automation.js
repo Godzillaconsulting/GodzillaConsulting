@@ -4,6 +4,8 @@ import { verifyAdminToken } from '../middleware/adminAuth.js';
 import { exec } from 'child_process';
 import util from 'util';
 import AutomationEngine from '../services/automationEngine.js';
+import bcrypt from 'bcryptjs';
+import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
 const execPromise = util.promisify(exec);
 const router = express.Router();
@@ -125,6 +127,62 @@ router.post('/flow', verifyAdminToken, async (req, res) => {
         res.json({ success: true, message: 'Flujo guardado con éxito', flowId });
     } catch (err) {
         console.error('[Automation] POST /flow Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ─── POST /api/automation/analyze-and-save ─ Analiza y Guarda el Sistema Central
+router.post('/analyze-and-save', verifyAdminToken, async (req, res) => {
+    try {
+        const { nodes, edges, flowId, name, reason, password, captcha } = req.body;
+        const username = (req.user?.username || '').toLowerCase();
+
+        if (parseInt(flowId) !== 1) {
+            return res.status(400).json({ success: false, error: 'Este endpoint es solo para el Sistema Central.' });
+        }
+
+        if (!password || !reason || !captcha) {
+            return res.status(400).json({ success: false, error: 'Faltan parámetros de seguridad (password, captcha, reason).' });
+        }
+
+        const userResult = await pool.query('SELECT * FROM admins WHERE LOWER(username) = LOWER($1)', [username]);
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Usuario no encontrado.' });
+        }
+        
+        const admin = userResult.rows[0];
+        const isMatch = await bcrypt.compare(password, admin.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, error: 'Contraseña incorrecta.' });
+        }
+
+        // 2. AI Analysis
+        const prompt = `El usuario "${username}" quiere guardar una nueva estructura del Sistema Central de automatización.
+Razón del cambio ("Por qué"): "${reason}".
+Estructura propuesta:
+NODOS: ${JSON.stringify(nodes.map(n => ({ id: n.id, title: n.title || (n.data && n.data.label) })))}
+ARISTAS (CONEXIONES): ${JSON.stringify(edges.map(e => ({ source: e.source, target: e.target })))}
+
+Analiza si la estructura creada cumple con el "Por qué". 
+Proporciona una evaluación clara. Si no cumple o falta algo (como una arista desconectada), indícalo. Incluso si está bien, da recomendaciones de mejora. Responde en texto plano amigable y conciso (máximo 150 palabras).`;
+
+        const aiResponse = await executeAiWaterfall([
+            { role: 'system', content: 'Eres un arquitecto de automatizaciones evaluando un diagrama de nodos. Tu objetivo es dar retroalimentación constructiva y concisa.' },
+            { role: 'user', content: prompt }
+        ], { temperature: 0.7, mode: 'premium' });
+
+        const recommendations = aiResponse.content;
+
+        // 3. Save to DB
+        await pool.query(
+            `UPDATE automation_flow SET nodes = $1, edges = $2, updated_at = NOW(), created_by = $3 WHERE id = 1`,
+            [JSON.stringify(nodes), JSON.stringify(edges), username]
+        );
+
+        res.json({ success: true, message: 'Flujo guardado con éxito', recommendations });
+
+    } catch (err) {
+        console.error('[Automation] POST /analyze-and-save Error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });

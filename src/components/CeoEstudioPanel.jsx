@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import VideoEditorModal from './VideoEditorModal';
 
 const STATUS_MAP = {
     pending_cm_approval: { label: '⏳ En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
@@ -94,6 +95,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const [publishing, setPublishing]   = useState(false);
     const [publishReport, setPublishReport] = useState(null);
     const [notifications, setNotifications] = useState([]);
+    const [showEditor, setShowEditor] = useState(false);
+    const [editorData, setEditorData] = useState([]);
     const evtRef = useRef(null);
 
     const username  = adminProfile?.username?.toLowerCase() || '';
@@ -185,9 +188,10 @@ export default function CeoEstudioPanel({ adminProfile }) {
     }, [showPublish, selected]);
 
     // ── Action: approve / reject ──────────────────────────────
-    const handleAction = async (action) => {
+    const handleAction = async (action, customFeedback = null) => {
         if (!selected) return;
-        if (action === 'reject' && !feedback.trim()) {
+        const currentFeedback = customFeedback || feedback;
+        if (action === 'reject' && !currentFeedback.trim()) {
             alert('Debes escribir notas de corrección para devolver la pieza.');
             return;
         }
@@ -216,7 +220,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 body: JSON.stringify({ 
                     status: newStatus, 
                     title: finalTitle,
-                    feedback_notes: feedback.trim() || undefined 
+                    feedback_notes: currentFeedback.trim() || undefined 
                 })
             });
             const data = await res.json();
@@ -378,6 +382,10 @@ export default function CeoEstudioPanel({ adminProfile }) {
         <div className="flex-1 flex flex-col p-6 bg-black text-white overflow-hidden relative">
             {/* Ambient Orb */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#d946ef]/10 rounded-full blur-[120px] pointer-events-none" />
+
+            {showEditor && (
+                <VideoEditorModal queue={editorData} onClose={() => setShowEditor(false)} />
+            )}
 
             {/* ── Header ── */}
             <div className="mb-6 border-b border-[#d946ef]/30 pb-4 shrink-0 relative z-10 flex justify-between items-end">
@@ -658,14 +666,25 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     <textarea value={feedback} onChange={e => setFeedback(e.target.value)}
                                         className="w-full h-28 bg-neutral-900 border border-neutral-700 rounded-xl p-3 text-white text-sm focus:border-[#d946ef] outline-none resize-none mb-4"
                                         placeholder="Escribe qué debe corregir Alex o el editor..." />
-                                    <div className="mt-auto space-y-3">
+                                    <div className="mt-auto space-y-2">
                                         <button onClick={() => handleAction('approve')}
-                                            className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105">
+                                            className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105">
                                             ✅ APROBAR
                                         </button>
-                                        <button onClick={() => handleAction('reject')}
-                                            className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-black py-4 rounded-xl text-lg transition-all">
-                                            🔙 DEVOLVER A CORRECCIÓN
+                                        <button onClick={() => handleAction('reject', 'Rehacer video completo')}
+                                            className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all">
+                                            🔙 DEVOLVER (Rehacer Todo)
+                                        </button>
+                                        <button onClick={() => handleAction('reject', 'Cambiar fondo y visuales')}
+                                            className="w-full bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all">
+                                            🖼️ DEVOLVER (Cambiar Visuales)
+                                        </button>
+                                        <button onClick={() => {
+                                            setEditorData([selected]);
+                                            setShowEditor(true);
+                                        }}
+                                            className="w-full bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                                            ✂️ EDICIÓN MANUAL (Estudio Pro)
                                         </button>
                                     </div>
                                 </div>

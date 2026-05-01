@@ -578,28 +578,41 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
 }
 
 // ─── Change Request Modal ─────────────────────────────────────────────────────
-function ChangeRequestModal({ flowId, nodes, edges, username, onClose, onSubmitted }) {
+function AiSaveModal({ flowId, nodes, edges, onClose, onSaved }) {
   const [reason, setReason] = useState('');
-  const [idea, setIdea] = useState('');
+  const [password, setPassword] = useState('');
+  const [captcha, setCaptcha] = useState('');
+  const [expectedCaptcha, setExpectedCaptcha] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    // Generate a simple math captcha
+    const a = Math.floor(Math.random() * 10) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    setExpectedCaptcha({ question: `¿Cuánto es ${a} + ${b}?`, answer: (a + b).toString() });
+  }, []);
+
   const handleSubmit = async () => {
-    if (!reason.trim() || !idea.trim()) {
-      alert('Por favor completa ambos campos.');
+    if (!reason.trim() || !password.trim() || !captcha.trim()) {
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+    if (captcha.trim() !== expectedCaptcha.answer) {
+      alert('Captcha incorrecto.');
       return;
     }
     setSubmitting(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch('/api/automation/change-request', {
+      const res = await fetch('/api/automation/analyze-and-save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ flowId, reason, idea, nodes, edges }),
+        body: JSON.stringify({ flowId, reason, password, captcha, nodes, edges }),
       });
       const data = await res.json();
       if (data.success) {
-        alert('✅ Solicitud enviada a JareG para revisión.');
-        onSubmitted();
+        alert('✅ Flujo guardado. Recomendaciones de la IA:\n\n' + data.recommendations);
+        onSaved();
       } else {
         alert('Error: ' + data.error);
       }
@@ -615,33 +628,41 @@ function ChangeRequestModal({ flowId, nodes, edges, username, onClose, onSubmitt
       <div className="bg-neutral-950 border border-yellow-500/40 rounded-2xl shadow-[0_0_40px_rgba(234,179,8,0.2)] w-full max-w-md">
         <div className="flex items-center justify-between p-5 border-b border-neutral-800">
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2">🔒 Solicitud de Cambio</h3>
-            <p className="text-xs text-neutral-400 mt-0.5">Solo JareG puede editar el Sistema Central. Envía tu propuesta.</p>
+            <h3 className="text-base font-black text-white flex items-center gap-2">🧠 Guardar & Analizar</h3>
+            <p className="text-xs text-neutral-400 mt-0.5">El sistema central será evaluado por la IA antes de guardarse.</p>
           </div>
           <button onClick={onClose} className="text-neutral-500 hover:text-white transition"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs font-bold text-yellow-400 mb-1.5 block">¿Por qué necesitas este cambio?</label>
+            <label className="text-xs font-bold text-yellow-400 mb-1.5 block">¿Por qué este cambio? (Objetivo)</label>
             <textarea
               rows={2} value={reason} onChange={e => setReason(e.target.value)}
-              placeholder="Ej: El flujo actual no notifica correctamente cuando una cita se cancela..."
+              placeholder="Ej: Quiero agregar un nodo para enviar correos al cerrar tratos..."
               className="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/60 transition resize-none"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-yellow-400 mb-1.5 block">¿Cuál es tu idea o solución?</label>
-            <textarea
-              rows={3} value={idea} onChange={e => setIdea(e.target.value)}
-              placeholder="Ej: Agregar un nodo de WhatsApp Bot después de Calendario Global para enviar una alerta de cancelación automática..."
-              className="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/60 transition resize-none"
+            <label className="text-xs font-bold text-yellow-400 mb-1.5 block">Contraseña de Administrador</label>
+            <input
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Tu contraseña..."
+              className="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/60 transition"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-yellow-400 mb-1.5 block">Seguridad: {expectedCaptcha.question}</label>
+            <input
+              type="text" value={captcha} onChange={e => setCaptcha(e.target.value)}
+              placeholder="Respuesta..."
+              className="w-full bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/60 transition"
             />
           </div>
         </div>
         <div className="flex gap-3 p-5 border-t border-neutral-800">
           <button onClick={onClose} className="flex-1 py-2.5 bg-neutral-900 border border-neutral-700 hover:border-neutral-500 text-white rounded-xl text-xs font-bold transition">Cancelar</button>
           <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl text-xs font-black transition disabled:opacity-50">
-            {submitting ? 'Enviando...' : '📨 Enviar a JareG'}
+            {submitting ? 'Analizando...' : '✨ Validar y Guardar'}
           </button>
         </div>
       </div>
@@ -678,8 +699,6 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const canvasRef = useRef(null);
   const isCore = flowId === 1;
-  const isJaregAdmin = username === 'jareg' || username === 'oscar';
-  const canSave = !isCore || isJaregAdmin;
 
   const nodeMap = useMemo(() => { const m = new Map(); nodes.forEach(n => m.set(n.id, n)); return m; }, [nodes]);
   const selectedNode = nodeMap.get(selectedNodeId);
@@ -773,10 +792,6 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     fetch(`/api/automation/flow?id=${flowId}`, { headers:{ Authorization:`Bearer ${token}` } })
       .then(r => r.json()).then(d => { 
         if(d.success){ 
-          if (d.name === 'Sistema Central' || flowId === 'central') {
-            setNodes(FLOW_TEMPLATES[0].nodes);
-            setEdges(FLOW_TEMPLATES[0].edges);
-          } else {
             let safeNodes = d.nodes || [];
             let safeEdges = d.edges || [];
             if (typeof safeNodes === 'string') {
@@ -787,7 +802,6 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             }
             setNodes(Array.isArray(safeNodes) ? safeNodes : []); 
             setEdges(Array.isArray(safeEdges) ? safeEdges : []); 
-          }
           if(d.name) setEditName(d.name); 
         } 
       })
@@ -902,7 +916,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const updateNode = (upd) => setNodes(p=>p.map(n=>n.id===selectedNodeId?{...n,...upd}:n));
 
   const handleSave = async () => {
-    if(!canSave){ setShowChangeModal(true); return; }
+    if(flowId === 1){ setShowChangeModal(true); return; }
     const token=localStorage.getItem('adminToken');
     try {
       const r=await fetch('/api/automation/flow',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({nodes,edges,flowId,name:editName})});
@@ -991,7 +1005,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     <div className="flex-1 flex flex-col overflow-hidden"
       onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
 
-      {showChangeModal && <ChangeRequestModal flowId={flowId} nodes={nodes} edges={edges} username={username} onClose={()=>setShowChangeModal(false)} onSubmitted={()=>setShowChangeModal(false)} />}
+      {showChangeModal && <AiSaveModal flowId={flowId} nodes={nodes} edges={edges} onClose={()=>setShowChangeModal(false)} onSaved={()=>{setShowChangeModal(false); onSaved();}} />}
 
       {/* Toolbar */}
       <div className="relative z-50 flex items-center gap-3 px-5 py-3 border-b border-neutral-800 bg-black/60 backdrop-blur-xl shrink-0 flex-wrap">
@@ -1000,7 +1014,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
         </button>
         <div className="w-px h-5 bg-neutral-800"/>
         {isCore && <span className="text-sm">👑</span>}
-        <input value={editName} onChange={e=>setEditName(e.target.value)} disabled={!canSave}
+        <input value={editName} onChange={e=>setEditName(e.target.value)} disabled={flowId === 1}
           className="bg-transparent text-sm font-black text-white outline-none border-b border-transparent focus:border-neutral-600 transition w-48 disabled:text-neutral-500" />
         <div className="flex-1"/>
         
@@ -1090,8 +1104,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
           )}
         </div>
 
-        <button onClick={handleSave} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition border ${canSave?'bg-white text-black border-white/20 hover:bg-neutral-200':'bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20'}`}>
-          {canSave?'💾 Guardar':'🔒 Proponer'}
+        <button onClick={handleSave} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition border ${flowId===1?'bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20':'bg-white text-black border-white/20 hover:bg-neutral-200'}`}>
+          {flowId===1?'🧠 Validar IA':'💾 Guardar'}
         </button>
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-900/20 px-3 py-1.5 rounded-xl border border-emerald-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>ACTIVO

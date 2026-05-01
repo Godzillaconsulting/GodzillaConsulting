@@ -958,7 +958,8 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
             try {
                 // Soportar aliases por si cambian de nombre en el UI
-                const actionName = node.title === 'Router (Condición)' ? 'Router / Switch' : node.title;
+                const nodeTitle = node.title || (node.data && node.data.label) || 'Desconocido';
+                const actionName = nodeTitle === 'Router (Condición)' ? 'Router / Switch' : nodeTitle;
                 const action = this.NODE_ACTIONS[actionName] || this.NODE_ACTIONS['_default'];
                 
                 newCtx = await action(node, ctx);
@@ -1009,7 +1010,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                 rows = r.rows;
             } else {
                 const r = await pool.query('SELECT id, nodes, edges FROM automation_flow WHERE jsonb_array_length(nodes) > 0');
-                rows = r.rows.filter(row => (row.nodes || []).some(n => n.title === sourceTitle));
+                rows = r.rows.filter(row => (row.nodes || []).some(n => (n.title || (n.data && n.data.label)) === sourceTitle));
             }
 
             if (!rows.length) {
@@ -1019,7 +1020,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
             for (const { id: fId, nodes, edges } of rows) {
                 const runLog = [];
-                const sourceNodes = nodes.filter(n => n.title === sourceTitle);
+                const sourceNodes = nodes.filter(n => (n.title || (n.data && n.data.label)) === sourceTitle);
                 if (!sourceNodes.length) continue;
 
                 const { rows: [{ id }] } = await pool.query(
@@ -1067,9 +1068,11 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
             const sourceNode = nodes.find(n => n.id === nodeId);
             if (!sourceNode) { console.log(`[Engine] Nodo "${nodeId}" no encontrado.`); return; }
 
+            const nodeTitle = sourceNode.title || (sourceNode.data && sourceNode.data.label) || 'Desconocido';
+
             const { rows: [{ id }] } = await pool.query(
                 `INSERT INTO flow_runs (flow_id, status, source) VALUES ($1,'running',$2) RETURNING id`,
-                [fId, sourceNode.title]
+                [fId, nodeTitle]
             );
             runId = id;
 

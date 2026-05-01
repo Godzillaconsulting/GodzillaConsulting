@@ -908,11 +908,11 @@ IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales)
 // ══════════════════════════════════════════════════════════════════════════════
 export const generateMonthlyPlan = async (req, res) => {
     try {
-        const { niche, month, year, extraContext, durationDays = 30 } = req.body;
+        const { niche, month, year, extraContext, durationDays = 30, radarTrends } = req.body;
         if (!niche) return res.status(400).json({ error: 'Se requiere el nicho/producto.' });
 
-        if (!process.env.SAMBANOVA_API_KEY) {
-            return res.status(400).json({ error: "Llave SAMBANOVA_API_KEY no configurada." });
+        if (!process.env.SAMBANOVA_API_KEY && !process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ error: "Llaves de API no configuradas." });
         }
         // 1. Recuperar memoria a largo plazo (Días/Formatos Ganadores)
         let learningContext = "";
@@ -928,23 +928,29 @@ export const generateMonthlyPlan = async (req, res) => {
 
         // 2. Obtener Tendencias Virales en Tiempo Real usando el Algoritmo del Trends Bot
         let realTimeTrendsText = "";
-        try {
-            console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
-            const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
-            const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'premium' });
-            let text = aiRes.content || '';
-            if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/```$/, '');
-            else if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/```$/, '');
-            
-            const trendsData = JSON.parse(text.trim());
-            realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${trendsData.hashtags.join(', ')}\n- Ganchos (Hooks) altamente comprobados: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
-            console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito.`);
-        } catch (trendErr) {
-            console.log("[MONTHLY-PLAN] ⚠️ Fallo al obtener trends en tiempo real (usando default):", trendErr.message);
+        if (radarTrends && radarTrends.hashtags) {
+            realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (RADAR INTERNO EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${radarTrends.hashtags.join(', ')}\n- Búsquedas reales del público: ${radarTrends.questions?.slice(0, 5).join(' | ') || ''}\n- Resumen de oportunidad: ${radarTrends.aiSummary || ''}\nAplica este estilo y temática para las NARRACIONES de la ESCENA 1.`;
+            console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas del Radar Interno.`);
+        } else {
+            try {
+                console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
+                const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
+                const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'premium' });
+                let text = aiRes.content || '';
+                if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/```$/, '');
+                else if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/```$/, '');
+                
+                const trendsData = JSON.parse(text.trim());
+                realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${trendsData.hashtags.join(', ')}\n- Ganchos (Hooks) altamente comprobados: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
+                console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito.`);
+            } catch (trendErr) {
+                console.log("[MONTHLY-PLAN] ⚠️ Fallo al obtener trends en tiempo real (usando default):", trendErr.message);
+            }
         }
 
         const systemPrompt = `
 Eres un estratega experto en marketing digital, tendencias virales y creación de contenido para redes sociales.
+Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
 Tu tarea es diseñar un calendario de contenido de 30 días para Instagram Reels, YouTube Shorts y TikTok.
 El formato es FACELESS (sin rostro). El contenido debe estar en ESPAÑOL.
 ${learningContext}
@@ -1033,36 +1039,31 @@ Genera los 30 días completos basándote en la calidad suprema del ejemplo de re
 `;
 
         const generateBatch = async (startDay, endDay) => {
-            const rawPrompt = `Actúa como estratega de contenido. Diseña las ideas crudas, guiones rápidos y conceptos visuales para los días ${startDay} al ${endDay} para el nicho: "${niche}". Mes: ${month}.
-${realTimeTrendsText}
-IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los títulos, narraciones crudas y el contexto de las imágenes/videos para estos ${endDay - startDay + 1} días. Sé creativo y muy persuasivo.`;
+            const premiumPrompt = systemPrompt + `\n\nATENCIÓN: Necesitamos diseñar la CHULADA DE DISEÑO FINAL para los días del ${startDay} al ${endDay} para el nicho: "${niche}". Mes objetivo: ${month}.
+Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conteniendo exactamente estos ${endDay - startDay + 1} días, siguiendo el formato estricto y la calidad suprema del EJEMPLO DE REFERENCIA. Sé sumamente creativo y persuasivo.`;
 
             let batchData = null;
             let attempts = 0;
             const maxAttempts = 3;
+            let totalInput = 0;
+            let totalOutput = 0;
 
             while (attempts < maxAttempts && !batchData) {
                 attempts++;
                 try {
-                    // FASE 1: Obtener las ideas crudas del bot gratuito
-                    const rawRes = await executeAiWaterfall([
-                        { role: 'user', content: rawPrompt }
-                    ], { mode: 'default', maxTokens: 8000 });
-                    
-                    const rawContent = rawRes.content || '';
-
-                    // FASE 2: Pasar las ideas crudas al bot premium para formateo y diseño final
-                    const premiumPrompt = systemPrompt + `\n\nATENCIÓN: Aquí tienes las ideas base generadas por el equipo de estrategia para los días del ${startDay} al ${endDay}:\n\n${rawContent}\n\nTu tarea es TOMAR ESTAS IDEAS CRUDAS y convertirlas en la CHULADA DE DISEÑO FINAL. Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conteniendo exactamente estos ${endDay - startDay + 1} días, siguiendo el formato estricto y la calidad suprema del EJEMPLO DE REFERENCIA.`;
-
                     const aiRes = await executeAiWaterfall([
                         { role: 'user', content: premiumPrompt }
                     ], { mode: 'premium', maxTokens: 8000 });
+                    
+                    // Estimamos tokens si la API no los devuelve exactos (Gemini a veces los oculta en ciertas capas)
+                    totalInput += aiRes.inputTokens || (premiumPrompt.length / 4);
+                    totalOutput += aiRes.outputTokens || ((aiRes.content?.length || 1000) / 4);
 
                     let rawText = extractJSON(aiRes.content || '');
                     batchData = JSON.parse(rawText);
 
                     if (!batchData.plan || !Array.isArray(batchData.plan)) {
-                        throw new Error('La respuesta de GROQ no tiene el formato esperado (plan[]).');
+                        throw new Error('La respuesta de Gemini no tiene el formato esperado (plan[]).');
                     }
                 } catch (err) {
                     console.log(`[MONTHLY-PLAN] Fallo en batch ${startDay}-${endDay} (Intento ${attempts}/${maxAttempts}):`, err.message);
@@ -1071,7 +1072,7 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
                     }
                 }
             }
-            return { plan: batchData.plan, input: 0, output: 0 };
+            return { plan: batchData.plan, input: totalInput, output: totalOutput };
         };
 
         const taskId = `plan_${Date.now()}`;

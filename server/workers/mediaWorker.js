@@ -118,6 +118,7 @@ async function generateImage(prompt, outputPath) {
 async function processTask() {
     if (isProcessing) return;
     
+    let currentTaskId = null;
     try {
         isProcessing = true;
         
@@ -139,6 +140,7 @@ async function processTask() {
         }
 
         const task = res.rows[0];
+        currentTaskId = task.id;
         console.log(`\n[MediaWorker] 🚀 Iniciando ensamblaje para Tarea #${task.id}: ${task.title}`);
 
         const payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
@@ -147,14 +149,25 @@ async function processTask() {
             throw new Error('El payload no contiene escenas estructuradas.');
         }
 
+        const isArrayFormat = Array.isArray(payload.scenes);
         const dayData = payload.scenes;
         const selectedVoice = payload.voice || 'edge:es-MX-JorgeNeural';
         const clipsPaths = [];
 
+        const sceneCount = isArrayFormat ? dayData.length : 5;
+
         // Generaremos las imágenes + voz por cada escena
-        for (let i = 1; i <= 5; i++) {
-            const visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`];
-            const narration = i === 5 ? dayData['NARRACION ESCENA 5 (CTA)'] : dayData[`NARRACION ESCENA ${i}`];
+        for (let i = 1; i <= sceneCount; i++) {
+            let visualPrompt, narration;
+            
+            if (isArrayFormat) {
+                const scene = dayData[i - 1];
+                visualPrompt = scene.visual;
+                narration = scene.narration;
+            } else {
+                visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`];
+                narration = i === 5 ? dayData['NARRACION ESCENA 5 (CTA)'] : dayData[`NARRACION ESCENA ${i}`];
+            }
             
             if (!visualPrompt && !narration) continue;
 
@@ -330,9 +343,14 @@ async function processTask() {
 
     } catch (error) {
         console.error(`[MediaWorker] ❌ Error crítico:`, error.message);
-        // Si hay un error, revertir o marcar como fallido para que intervenga el CM
-        // Solo como ejemplo de robustez:
-        // await pool.query(`UPDATE studio_tasks SET status = 'failed', feedback_notes = $1 WHERE status = 'rendering' AND assigned_to = 'auto'`, [error.message]);
+        if (currentTaskId) {
+            try {
+                await pool.query(`UPDATE studio_tasks SET status = 'failed' WHERE id = $1`, [currentTaskId]);
+                console.log(`[MediaWorker] Tarea #${currentTaskId} marcada como failed.`);
+            } catch (dbErr) {
+                console.error(`[MediaWorker] ❌ Error al actualizar tarea a failed:`, dbErr.message);
+            }
+        }
     } finally {
         isProcessing = false;
     }

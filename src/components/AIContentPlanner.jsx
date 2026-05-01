@@ -544,6 +544,7 @@ export default function AIContentPlanner({ adminProfile }) {
     const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
     return (
+        <>
         <div className="w-full h-full bg-[#0a0a0a] flex flex-col relative overflow-hidden font-sans">
 
             {/* ── Header ── */}
@@ -993,5 +994,6 @@ export default function AIContentPlanner({ adminProfile }) {
                     </div>,
                     document.body
                 )}
+        </>
     );
 }

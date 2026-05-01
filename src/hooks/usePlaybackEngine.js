@@ -1,5 +1,18 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 
+const API_URL = import.meta.env ? (import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai') : 'https://bot.godzillaconsulting.ai';
+const resolveMedia = (url) => {
+    if (!url) return '';
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+        try {
+            const urlObj = new URL(url);
+            return `${API_URL}${urlObj.pathname}${urlObj.search}`;
+        } catch(e) { /* ignore */ }
+    }
+    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 /**
  * Manages the playback loop using requestAnimationFrame.
  * Uses refs exclusively inside the RAF loop to produce ZERO React re-renders per frame.
@@ -30,7 +43,7 @@ export function usePlaybackEngine(project, videoRef) {
 
     const clip = videoLayer.clips.find(c => t >= c.start && t < c.end);
     if (clip) {
-      const expectedSrc = clip.sourceUrl;
+      const expectedSrc = resolveMedia(clip.sourceUrl);
       if (videoRef.current.getAttribute('data-clip-id') !== clip.id) {
         videoRef.current.setAttribute('data-clip-id', clip.id);
         videoRef.current.src = expectedSrc;
@@ -134,7 +147,7 @@ export function usePlaybackEngine(project, videoRef) {
     for (const clip of activeClips) {
        let audio = audioPlayersRef.current.get(clip.id);
        if (!audio) {
-          audio = new Audio(clip.sourceUrl);
+          audio = new Audio(resolveMedia(clip.sourceUrl));
           audioPlayersRef.current.set(clip.id, audio);
        }
        const expectedTime = clip.sourceStart + (t - clip.start) / (clip.speed || 1);

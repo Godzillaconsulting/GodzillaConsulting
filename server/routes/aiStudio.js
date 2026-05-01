@@ -77,6 +77,7 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
     // Generar hashtags con IA Gratuita (Groq/Cerebras, costo CERO)
     let hashtags = [];
     let aiSummary = '';
+    let hooks = [];
     try {
         const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
         const aiRes = await executeAiWaterfall([{
@@ -86,8 +87,9 @@ Basado en el tema "${keyword}" y estas búsquedas reales de Google: ${allQuestio
 
 Genera EXACTAMENTE este JSON sin markdown ni texto extra:
 {
-  "hashtags": ["#hashtag1","#hashtag2",...] (25 hashtags relevantes, mezcla español e inglés, ordenados por relevancia),
-  "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido para este tema basado en las búsquedas"
+  "hashtags": ["#hashtag1","#hashtag2",...] (15 hashtags relevantes, mezcla español e inglés, ordenados por relevancia),
+  "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido para este tema basado en las búsquedas",
+  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos y virales para iniciar videos cortos basados en estas búsquedas)
 }`
         }], { mode: 'compression', temperature: 0.7 });
 
@@ -98,11 +100,13 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
             const parsed = JSON.parse(raw.substring(startObj, endObj + 1));
             hashtags = parsed.hashtags || [];
             aiSummary = parsed.summary || '';
+            hooks = parsed.hooks || [];
         }
     } catch (e) {
         console.warn('[ContentRadar] IA fallback:', e.message);
         // Fallback: generar hashtags básicos del tema sin IA
         hashtags = keyword.split(' ').map(w => `#${w.toLowerCase()}`);
+        hooks = [`Descubre los secretos de ${keyword}`, `Lo que nadie te dice de ${keyword}`, `La verdad sobre ${keyword}`];
     }
 
     res.json({
@@ -111,6 +115,7 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
         questions: allQuestions.slice(0, 80),
         structured,
         hashtags,
+        hooks,
         aiSummary,
         totalQuestions: allQuestions.length
     });

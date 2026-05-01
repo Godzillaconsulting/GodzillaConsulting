@@ -935,16 +935,42 @@ export const generateMonthlyPlan = async (req, res) => {
             console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas del Radar Interno.`);
         } else {
             try {
-                console.log(`[MONTHLY-PLAN] Analizando tendencias en tiempo real para: ${niche}...`);
-                const trendPrompt = `Eres un experto estratega de contenido B2B y viral. Necesitamos los 7 hashtags más en tendencia hoy y 5 ganchos (hooks) hiper persuasivos para iniciar videos cortos del nicho: "${niche}". Devuelve ÚNICAMENTE un JSON con formato: {"hashtags":["#..."], "hooks":["..."]}`;
-                const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'premium' });
-                let text = aiRes.content || '';
-                if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/```$/, '');
-                else if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/```$/, '');
+                console.log(`[MONTHLY-PLAN] Obteniendo tendencias reales de Google Suggest para: ${niche}...`);
+                const MODIFIERS = ['qué es', 'cómo hacer', 'cómo usar', 'cuál es el mejor', 'tendencias en', 'tips para', 'errores en'];
+                const fetchGoogle = async (query) => {
+                    try {
+                        const url = `http://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=es&gl=mx`;
+                        const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+                        const d = await r.json();
+                        return d[1] || [];
+                    } catch { return []; }
+                };
+                const results = await Promise.all(MODIFIERS.map(mod => fetchGoogle(`${mod} ${niche}`)));
+                const allQuestions = [...new Set(results.flat())].filter(q => q.toLowerCase().includes(niche.toLowerCase().split(' ')[0]));
                 
-                const trendsData = JSON.parse(text.trim());
-                realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan el mercado hoy: ${trendsData.hashtags.join(', ')}\n- Ganchos (Hooks) altamente comprobados: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
-                console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito.`);
+                const trendPrompt = `Eres un experto en marketing de contenidos en México. Basado en el tema "${niche}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 30).join(' | ')}
+Genera EXACTAMENTE este JSON sin markdown ni texto extra:
+{
+  "hashtags": ["#hashtag1","#hashtag2",...] (10 hashtags reales y relevantes),
+  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos basados en estas preguntas reales)
+}`;
+                const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'compression' });
+                let text = aiRes.content || '';
+                let trendsData = { hashtags: [], hooks: [] };
+                
+                const startObj = text.indexOf('{');
+                const endObj = text.lastIndexOf('}');
+                if (startObj !== -1 && endObj !== -1) {
+                    trendsData = JSON.parse(text.substring(startObj, endObj + 1));
+                }
+
+                if (!trendsData.hashtags || trendsData.hashtags.length === 0) {
+                     trendsData.hashtags = niche.split(' ').map(w => '#' + w.toLowerCase());
+                     trendsData.hooks = [`Descubre la verdad sobre ${niche}`, `Lo que nadie te dice sobre ${niche}`];
+                }
+
+                realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL DESDE GOOGLE SUGGEST):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan las búsquedas hoy: ${trendsData.hashtags.join(', ')}\n- Búsquedas reales del público: ${allQuestions.slice(0, 5).join(' | ')}\n- Ganchos (Hooks) altamente comprobados para este nicho: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
+                console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito de Google Suggest.`);
             } catch (trendErr) {
                 console.log("[MONTHLY-PLAN] ⚠️ Fallo al obtener trends en tiempo real (usando default):", trendErr.message);
             }

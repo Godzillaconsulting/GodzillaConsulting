@@ -13,7 +13,7 @@ export const ASPECT_RATIOS = {
 const defaultTransform = () => ({ x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 });
 const defaultColor     = () => ({ brightness: 0, contrast: 1, saturation: 1, gamma: 1 });
 
-export const makeVideoClip = (sourceUrl, sourceName, start, end, sourceStart = 0) => ({
+export const makeVideoClip = (sourceUrl, sourceName, start, end, sourceStart = 0, isImage = false) => ({
   id: uuidv4(),
   type: 'video',
   sourceUrl,
@@ -23,6 +23,7 @@ export const makeVideoClip = (sourceUrl, sourceName, start, end, sourceStart = 0
   sourceStart,
   speed: 1,
   volume: 1,
+  isImage: isImage || !sourceUrl.match(/\.(mp4|webm|mov)$/i),
   transform: defaultTransform(),
   color: defaultColor(),
   transitionIn:  null,
@@ -79,7 +80,35 @@ const createProject = (initialVideoUrl) => {
   const textLayer  = { id: 'layer-t-0', type: 'text',  locked: false, muted: false, clips: [] };
 
   if (initialVideoUrl) {
-    videoLayer.clips.push(makeVideoClip(initialVideoUrl, 'Video Inicial', 0, 10, 0));
+    try {
+      const parsedData = JSON.parse(initialVideoUrl);
+      if (Array.isArray(parsedData) && parsedData.length > 0) {
+        let currentStartTime = 0;
+        parsedData.forEach((item, index) => {
+          const url = typeof item === 'string' ? item : (item.url || '');
+          const isAudio = !!url.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
+          const isImageItem = item.isVideo === false || (typeof item === 'string' && !url.match(/\.(mp4|webm|mov)$/i));
+          const duration = 5; // Default duration of 5 seconds
+
+          if (isAudio) {
+            audioLayer.clips.push(makeAudioClip(url, item.provider || `Audio ${index+1}`, currentStartTime, currentStartTime + duration));
+          } else {
+            videoLayer.clips.push(makeVideoClip(url, item.provider || `Media ${index+1}`, currentStartTime, currentStartTime + duration, 0, isImageItem));
+          }
+          currentStartTime += duration;
+        });
+      } else {
+        throw new Error("Not an array");
+      }
+    } catch (e) {
+      // It's just a single URL string
+      const isAudio = !!initialVideoUrl.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
+      if (isAudio) {
+        audioLayer.clips.push(makeAudioClip(initialVideoUrl, 'Audio Inicial', 0, 10));
+      } else {
+        videoLayer.clips.push(makeVideoClip(initialVideoUrl, 'Video Inicial', 0, 10, 0, !initialVideoUrl.match(/\.(mp4|webm|mov)$/i)));
+      }
+    }
   }
 
   return {

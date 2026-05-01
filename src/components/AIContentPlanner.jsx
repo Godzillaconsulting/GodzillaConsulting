@@ -12,6 +12,12 @@ const COL = (n) => ({
     video:     `VIDEO ESCENA ${n} (Prompt Movimiento Detallado)`,
 });
 
+const ELEVENLABS_VOICES = [
+    { id: 'elevenlabs:pNInz6obbfIdGwnf8p5A', name: 'Adam (Joven, Profesional)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/pNInz6obbfIdGwnf8p5A/df6788f9-5c96-470d-8312-eadaf3733776.mp3' },
+    { id: 'elevenlabs:ErXwobaYiN019PkySvjV', name: 'Antoni (Maduro, Reasegurador)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/ErXwobaYiN019PkySvjV/01a3e33c-6e99-4ee7-8543-ff2216a32186.mp3' },
+    { id: 'elevenlabs:TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Dinámico, Narrador)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/TxGEqnHWrfWFTfGW9XjX/102de6f2-22ed-43e0-a1f1-111fa75c5481.mp3' }
+];
+
 const exportToCSV = (plan, niche) => {
     const headers = [
         'Tema',
@@ -116,33 +122,45 @@ function ReviewCard({ day, idx, selection, onToggle }) {
 
             {open && (
                 <div className="px-5 pb-5 space-y-2 border-t border-neutral-800 bg-black/20">
-                    {SCENE_COLUMNS.map(n => {
-                        const narr = day[COL(n).narracion] || '';
-                        const txt  = day[COL(n).texto]     || '';
-                        const vis  = day[COL(n).visual]    || '';
-                        if (!narr && !vis) return null;
-                        const isCTA = n === 5;
-                        return (
-                            <div key={n} className={`rounded-xl p-3 border mt-2 ${
-                                isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/30 border-neutral-800/50'
-                            }`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
-                                    isCTA ? 'text-emerald-400' : 'text-neutral-500'
-                                }`}>{isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1">🎙 Narración</p>
-                                        <p className="text-xs text-neutral-300 leading-relaxed">{narr}</p>
+                    {sel === 'skip' ? (
+                        <div className="p-8 text-center bg-black/40 rounded-xl mt-2 border border-neutral-800">
+                            <p className="text-neutral-500 font-bold text-xs uppercase tracking-widest">Día Omitido</p>
+                            <p className="text-[10px] text-neutral-600 mt-1">Este contenido no se enviará al estudio.</p>
+                        </div>
+                    ) : sel === 'template' ? (
+                        <div className="p-8 text-center bg-blue-950/20 rounded-xl mt-2 border border-blue-900/30">
+                            <p className="text-blue-400 font-bold text-xs uppercase tracking-widest">Template Manual</p>
+                            <p className="text-[10px] text-blue-500/70 mt-1">Se enviará el tema en blanco al Estudio IA para que lo llenes manualmente.</p>
+                        </div>
+                    ) : (
+                        SCENE_COLUMNS.map(n => {
+                            const narr = day[COL(n).narracion] || '';
+                            const txt  = day[COL(n).texto]     || '';
+                            const vis  = day[COL(n).visual]    || '';
+                            if (!narr && !vis) return null;
+                            const isCTA = n === 5;
+                            return (
+                                <div key={n} className={`rounded-xl p-3 border mt-2 ${
+                                    isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/30 border-neutral-800/50'
+                                }`}>
+                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
+                                        isCTA ? 'text-emerald-400' : 'text-neutral-500'
+                                    }`}>{isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1">🎙 Narración</p>
+                                            <p className="text-xs text-neutral-300 leading-relaxed">{narr}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] text-blue-400 font-bold uppercase mb-1">🖼 Visual Prompt</p>
+                                            <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[9px] text-blue-400 font-bold uppercase mb-1">🖼 Visual Prompt</p>
-                                        <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
-                                    </div>
+                                    {txt && <p className="text-[9px] text-yellow-400 font-bold mt-2">💬 Pantalla: <span className="text-neutral-300 font-normal">{txt}</span></p>}
                                 </div>
-                                {txt && <p className="text-[9px] text-yellow-400 font-bold mt-2">💬 Pantalla: <span className="text-neutral-300 font-normal">{txt}</span></p>}
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    )}
                 </div>
             )}
         </div>
@@ -258,6 +276,8 @@ export default function AIContentPlanner({ adminProfile }) {
     });
     const [year, setYear]             = useState(() => new Date().getFullYear());
     const [extraContext, setExtra]    = useState('');
+    const [selectedVoice, setSelectedVoice] = useState(ELEVENLABS_VOICES[0].id);
+    const [playingVoice, setPlayingVoice] = useState(null);
     const [isGenerating, setGenerating] = useState(false);
     const [plan, setPlan]             = useState(null);
     const [durationDays, setDurationDays] = useState(30);
@@ -271,6 +291,11 @@ export default function AIContentPlanner({ adminProfile }) {
     const [selections, setSelections]       = useState({});    // { idx: 'ia'|'template'|'skip' }
     const [isSendingBulk, setIsSendingBulk] = useState(false);
     const [bulkResult, setBulkResult]       = useState(null);  // { sent, skipped }
+    
+    // ── Voice Selection (Auto Flow) ──
+    const [showVoiceModal, setShowVoiceModal] = useState(false);
+    const [selectedVoice, setSelectedVoice]   = useState('edge:es-MX-JorgeNeural');
+    const [customVoiceId, setCustomVoiceId]   = useState('');
     
     // ─── Radar de Contenido (AnswerThePublic Engine) ───────────────────────
     const [showContentRadar, setShowContentRadar] = useState(false);
@@ -344,6 +369,21 @@ export default function AIContentPlanner({ adminProfile }) {
     const username    = adminProfile?.username?.toLowerCase() || '';
     const isSuperAdmin = adminProfile?.is_superadmin === true;
     const canEdit     = isSuperAdmin || username === 'alex' || username === 'oscar';
+
+    const audioRef = React.useRef(null);
+    const toggleVoicePreview = (voiceId, url) => {
+        if (playingVoice === voiceId) {
+            if (audioRef.current) audioRef.current.pause();
+            setPlayingVoice(null);
+            return;
+        }
+        if (audioRef.current) audioRef.current.pause();
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.play().catch(e => console.error("Audio play error", e));
+        setPlayingVoice(voiceId);
+        audio.onended = () => setPlayingVoice(null);
+    };
 
     const handleSendWebhook = async () => {
         if (!webhookUrl.trim() || !plan) return alert('No hay URL o plan generado.');
@@ -471,6 +511,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 month: month,
                 year: year,
                 scenes: day,
+                voice: selectedVoice,
                 visualJobs: day._visualJobs || [],
                 videoJobs: day._videoJobs || []
             };
@@ -510,15 +551,21 @@ export default function AIContentPlanner({ adminProfile }) {
         setSelections(all);
     };
 
-    const handleBulkSend = async () => {
+    const handleBulkSend = () => {
         if (!plan) return;
+        setShowVoiceModal(true);
+    };
+
+    const confirmBulkSend = async () => {
+        setShowVoiceModal(false);
         setIsSendingBulk(true);
         let sent = 0, skipped = 0;
+        const finalVoice = selectedVoice === 'custom' ? `elevenlabs:${customVoiceId}` : selectedVoice;
         for (let idx = 0; idx < plan.length; idx++) {
             const sel = selections[idx] || 'ia';
             if (sel === 'skip') { skipped++; continue; }
             try {
-                await handleSendToCalendarSilent(plan[idx], idx);
+                await handleSendToCalendarSilent(plan[idx], idx, sel, finalVoice);
                 sent++;
             } catch (_) { skipped++; }
         }
@@ -528,7 +575,7 @@ export default function AIContentPlanner({ adminProfile }) {
     };
 
     // Silent version (no alert) used by bulk send
-    const handleSendToCalendarSilent = async (day, idx) => {
+    const handleSendToCalendarSilent = async (day, idx, sel = 'ia', voiceParam = null) => {
         const token = localStorage.getItem('adminToken');
         const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
         const now = new Date();
@@ -536,11 +583,27 @@ export default function AIContentPlanner({ adminProfile }) {
         const currentYear  = parseInt(year) || now.getFullYear();
         const currentMonth = monthMap[(month||'').toLowerCase().trim()] ?? now.getMonth();
         const isoDate = new Date(currentYear, currentMonth, idx + 1).toISOString().split('T')[0];
-        const narrations = [1,2,3,4,5].map(n => {
-            const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
-            return day[key] ? `Escena ${n}: ${day[key]}` : null;
-        }).filter(Boolean).join('\n');
-        const mediaPayload = { source: 'ai_planner', niche: generatedNiche || niche, month, year, scenes: day };
+        
+        let narrations = '';
+        let scenesData = { 'Tema': day['Tema'] };
+
+        if (sel === 'ia') {
+            narrations = [1,2,3,4,5].map(n => {
+                const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+                return day[key] ? `Escena ${n}: ${day[key]}` : null;
+            }).filter(Boolean).join('\n');
+            scenesData = day;
+        } else {
+            // Si es 'template', mandamos vacío para que lo edite a mano
+            [1,2,3,4,5].forEach(n => {
+                scenesData[`NARRACION ESCENA ${n === 5 ? '5 (CTA)' : n}`] = '';
+                scenesData[`TEXTO EN PANTALLA ESCENA ${n}`] = '';
+                scenesData[`VISUAL ESCENA ${n} (Prompt Imagen Detallado)`] = '';
+            });
+            narrations = '';
+        }
+
+        const mediaPayload = { source: sel === 'template' ? 'manual_planner' : 'ai_planner', niche: generatedNiche || niche, month, year, scenes: scenesData, voice: voiceParam };
         const res = await fetch(`${API}/api/studio/tasks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -550,7 +613,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 assigned_to: 'auto',
                 tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                 priority: 'Media',
-                status: 'manual_studio', // Va al CEO Estudio para revisión antes de generar
+                status: 'pending_render', // Va directo a renderizarse (Flujo Auto)
                 content_type: 'Video Corto',
                 ig_publish_date: isoDate,
                 media_payload: JSON.stringify(mediaPayload)
@@ -1008,6 +1071,65 @@ export default function AIContentPlanner({ adminProfile }) {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>,
+                {/* ─────────────────────────────────────────────────────────
+                    MODAL DE SELECCIÓN DE VOZ (FLUJO AUTO)
+                ───────────────────────────────────────────────────────── */}
+                {showVoiceModal && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="bg-[#111] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                            <h3 className="text-white font-black text-lg mb-2 flex items-center gap-2">🎤 Selecciona el Narrador (Auto)</h3>
+                            <p className="text-xs text-neutral-400 mb-6">Elige la voz que narrará este lote de videos generados.</p>
+                            
+                            <div className="space-y-3 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                {[
+                                    { id: 'edge:es-MX-JorgeNeural', name: 'Jorge (Pro - Defecto)', desc: 'Voz dinámica y profesional' },
+                                    ...ELEVENLABS_VOICES.map(v => ({ id: v.id, name: v.name, desc: 'Premium AI Voice', preview: v.preview })),
+                                    { id: 'custom', name: 'Clonar voz (ID Personalizado)', desc: 'Usa tu propio ID de ElevenLabs' },
+                                ].map(v => (
+                                    <label key={v.id} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${selectedVoice === v.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20 bg-black/50'}`}>
+                                        <div className="flex items-center justify-between gap-3 w-full">
+                                            <div className="flex items-center gap-3">
+                                                <input type="radio" name="voice" value={v.id} checked={selectedVoice === v.id} onChange={(e) => setSelectedVoice(e.target.value)} className="accent-purple-500" />
+                                                <div>
+                                                    <p className={`text-sm font-bold ${selectedVoice === v.id ? 'text-purple-400' : 'text-white'}`}>{v.name}</p>
+                                                    <p className="text-[10px] text-neutral-500">{v.desc}</p>
+                                                </div>
+                                            </div>
+                                            {v.preview && (
+                                                <button 
+                                                    type="button" 
+                                                    onClick={(e) => { e.preventDefault(); toggleVoicePreview(v.id, v.preview); }}
+                                                    className="p-2 rounded-full bg-black/40 hover:bg-purple-500/20 text-neutral-400 hover:text-purple-400 border border-white/5 transition-colors"
+                                                    title="Escuchar Demo"
+                                                >
+                                                    {playingVoice === v.id ? (
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                                    ) : (
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </label>
+                                ))}
+
+                                {selectedVoice === 'custom' && (
+                                    <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/5">
+                                        <label className="text-[10px] text-purple-400 font-bold uppercase tracking-widest block mb-1">ID de ElevenLabs</label>
+                                        <input type="text" value={customVoiceId} onChange={e => setCustomVoiceId(e.target.value)} placeholder="Ej: pNInz6obbfIdGwnf8p5A" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3">
+                                <button onClick={() => setShowVoiceModal(false)} className="px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancelar</button>
+                                <button onClick={confirmBulkSend} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
+                                    {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                    {isSendingBulk ? 'Enviando...' : 'Mandar a Crear 🚀'}
+                                </button>
                             </div>
                         </div>
                     </div>,

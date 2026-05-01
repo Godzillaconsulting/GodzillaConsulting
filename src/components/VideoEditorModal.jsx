@@ -39,8 +39,27 @@ const SFX_LIBRARY = [
   { id: 's5', type: 'audio', url: 'https://actions.google.com/sounds/v1/science_fiction/alien_spaceship_takeoff.ogg', caption: '📈 Tensión Riser', icon: '📈' },
 ];
 
+const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+export const resolveMedia = (url) => {
+    if (!url) return '';
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+        try {
+            const urlObj = new URL(url);
+            return `${API_URL}${urlObj.pathname}${urlObj.search}`;
+        } catch(e) { /* ignore */ }
+    }
+    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export default function IntegratedVideoEditor({ queue = [], onClose }) {
   const [initialVideoUrl, setInitialVideoUrl] = useState(() => {
+    if (queue && queue.length > 0) {
+      const task = queue[0];
+      if (task && task.media_options) {
+        return JSON.stringify(task.media_options);
+      }
+    }
     try { return localStorage.getItem('godzilla_editor_draft_src') || ''; } catch { return ''; }
   });
 
@@ -103,6 +122,11 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [engine, editor, selectedClipId]);
+
+  // Force first frame load on mount
+  useEffect(() => {
+    engine.seek(0);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync timeline data
   const editorData = useMemo(() => editor.project.layers.map(layer => ({
@@ -717,12 +741,16 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
             </span>
             {isAudio && clip && clip.sourceUrl && (
               <div className="absolute inset-0 opacity-40 pointer-events-none flex items-center justify-center">
-                <WaveformCanvas url={clip.sourceUrl} width={800} height={32} color="#ffffff" className="w-full h-full object-cover" style={{ width: '100%', height: '100%' }} />
+                <WaveformCanvas url={resolveMedia(clip.sourceUrl)} width={800} height={32} color="#ffffff" className="w-full h-full object-cover" style={{ width: '100%', height: '100%' }} />
               </div>
             )}
             {isVideo && clip && clip.sourceUrl && (
                <div className="absolute inset-0 opacity-20 pointer-events-none">
-                 <video src={clip.sourceUrl} className="w-full h-full object-cover" />
+                 {clip.isImage ? (
+                   <img src={resolveMedia(clip.sourceUrl)} className="w-full h-full object-cover" />
+                 ) : (
+                   <video src={resolveMedia(clip.sourceUrl)} className="w-full h-full object-cover" />
+                 )}
                </div>
             )}
           </div>
@@ -871,7 +899,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                           {isAudio ? (
                             <Music className="w-6 h-6 text-emerald-500" />
                           ) : (
-                            <video src={m.media_options[0].url} className="w-full h-full object-cover" />
+                            <video src={resolveMedia(m.media_options[0].url)} className="w-full h-full object-cover" />
                           )}
                           {/* Hover Overlay */}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
@@ -1040,7 +1068,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     <div key={m.id} draggable onDragStart={e => { setDraggedMedia(m); e.dataTransfer.setData('text/plain', m.url); }}
                       className="group relative flex flex-col bg-[#27272a] rounded-lg border border-[#3f3f46] overflow-hidden cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors">
                       <div className="aspect-video bg-black flex items-center justify-center relative">
-                        <video src={m.url} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                        <video src={resolveMedia(m.url)} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm pointer-events-none">
                           <button onClick={() => handleAddToTimeline({ media_options: [{ url: m.url }], caption: m.caption })} className="bg-blue-600 pointer-events-auto text-white p-1.5 rounded-full hover:scale-110 transition-transform">
                             <PlusCircle className="w-5 h-5" />
@@ -1102,7 +1130,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
                     <div key={m.id} draggable onDragStart={e => { setDraggedMedia(m); e.dataTransfer.setData('text/plain', m.url); }}
                       className="group relative flex flex-col bg-[#27272a] rounded-lg border border-[#3f3f46] overflow-hidden cursor-grab active:cursor-grabbing hover:border-purple-500 transition-colors">
                       <div className="aspect-video flex items-center justify-center relative bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAOklEQVQYV2NkYGAwYcSPgXwY8IEDMQRVwCQKj5J/D8X/4QxMglkUNwpNwG0QGwUmwSwKVUhsFJiERwkA10QhQ2/x2g8AAAAASUVORK5CYII=')]">
-                        <video src={m.url} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                        <video src={resolveMedia(m.url)} className="w-full h-full object-cover" muted loop onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm pointer-events-none">
                           <button onClick={() => {
                             const t = engine.currentTimeRef.current;

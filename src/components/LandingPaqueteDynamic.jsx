@@ -194,16 +194,23 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  {/* Pricing Table */}
  <div className="w-full mb-10 overflow-x-auto">
  <table className="w-full text-left border-collapse">
- <thead>
- <tr className="border-b border-gray-600">
- <th className="py-3 pr-4 text-sm font-bold text-gray-300">
- {isIntl ? (localizedLanding.tableHeaderLeft ?? content.tableHeaderLeft ?? 'The Deliverable (What you receive)') : (content.tableHeaderLeft ?? 'El Entregable (Lo que recibes)')}
- </th>
- <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">
- {isIntl ? (localizedLanding.tableHeaderRight ?? content.tableHeaderRight ?? 'Real Monthly Value') : (content.tableHeaderRight ?? 'Valor Real Mensual')}
- </th>
- </tr>
- </thead>
+ {(() => {
+    const leftHeader = isIntl ? (localizedLanding.tableHeaderLeft || content.tableHeaderLeft) : content.tableHeaderLeft;
+    const rightHeader = isIntl ? (localizedLanding.tableHeaderRight || content.tableHeaderRight) : content.tableHeaderRight;
+    if (!leftHeader && !rightHeader) return null;
+    return (
+        <thead>
+        <tr className="border-b border-gray-600">
+        <th className="py-3 pr-4 text-sm font-bold text-gray-300">
+        {leftHeader}
+        </th>
+        <th className="py-3 pl-4 text-sm font-bold text-gray-300 text-right whitespace-nowrap">
+        {rightHeader}
+        </th>
+        </tr>
+        </thead>
+    );
+ })()}
  <tbody>
  {((isIntl && localizedLanding.planFeaturesExtended) ? localizedLanding.planFeaturesExtended : content.planFeaturesExtended)?.map((feature, idx) => (
  <tr key={idx} className="border-b border-gray-700">

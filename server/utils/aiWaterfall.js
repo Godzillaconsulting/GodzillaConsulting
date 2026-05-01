@@ -105,7 +105,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             messages: trimmedMessages,
             model: "llama-3.3-70b-versatile",
             temperature,
-            max_tokens: Math.min(maxTokens, 1024) // Groq tiene cuota diaria — limitar
+            max_tokens: maxTokens // Removido hardcap de 1024 para no romper JSON largos
         };
 
         if (hasTools && mode !== 'compression') {
@@ -155,7 +155,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             messages: hasTool_msgs ? sanitizeForBasicProviders(trimmedMessages) : trimmedMessages,
             model: "llama3.1-8b",
             temperature,
-            max_tokens: Math.min(maxTokens, 512) // Modelo 8B — respuestas cortas son más ciertas
+            max_tokens: maxTokens // Allow higher tokens if requested
         };
 
         if (hasTools && !hasTool_msgs && mode !== 'compression') {

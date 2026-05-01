@@ -390,15 +390,15 @@ export default function AIContentPlanner({ adminProfile }) {
                     assigned_to: 'auto',
                     tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                     priority: 'Media',
-                    status: 'pending', // Aseguramos que se cree como pendiente para el CEO
+                    status: 'manual_studio', // Va al CEO Estudio → bandeja "En Estudio IA" para revisión y activación manual
                     content_type: 'Video Corto',
                     ig_publish_date: isoDate,
                     media_payload: JSON.stringify(mediaPayload)
                 }),
             });
             const data = await res.json();
-            if (data.success) alert(`✅ Día ${day.dia || (idx+1)} "${day['Tema']}" enviado al Contenido IA para generación automática.`);
-            else alert(data.error || 'Error enviando al Contenido IA.');
+            if (data.success) alert(`✅ "${day['Tema']}" enviado al Estudio IA. Revísalo en CEO Estudio → bandeja "🎬 En Estudio IA" para activar la generación.`);
+            else alert(data.error || 'Error enviando al Estudio IA.');
         } catch (err) {
             console.error(err);
             alert('Fallo de conexión.');
@@ -456,7 +456,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 assigned_to: 'auto',
                 tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                 priority: 'Media',
-                status: 'pending_render', // Aseguramos que pase por renderizado primero
+                status: 'manual_studio', // Va al CEO Estudio para revisión antes de generar
                 content_type: 'Video Corto',
                 ig_publish_date: isoDate,
                 media_payload: JSON.stringify(mediaPayload)
@@ -665,10 +665,10 @@ export default function AIContentPlanner({ adminProfile }) {
                                     <button
                                         onClick={handleBulkSend}
                                         disabled={isSendingBulk || !canEdit}
-                                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all"
+                                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
                                     >
                                         {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-                                        {isSendingBulk ? 'Enviando...' : 'Enviar al Calendario IA'}
+                                        {isSendingBulk ? 'Enviando...' : '🎬 Mandar al Estudio IA'}
                                     </button>
                                 </div>
                             </div>

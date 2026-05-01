@@ -291,19 +291,38 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {
-        pendientes: ['pending_cm_approval'],
-        ia_backlog: ['backlog'],
-        devueltas:  ['rejected'],
-        aprobadas:  ['approved', 'published'],
+        pendientes:    ['pending_cm_approval'],
+        manual_studio: ['manual_studio', 'pending_render', 'rendering'],
+        ia_backlog:    ['backlog'],
+        devueltas:     ['rejected'],
+        aprobadas:     ['approved', 'published'],
     };
     const visible = tasks.filter(t => (tabStatuses[activeTab] || []).includes(t.status));
 
     // ── Counts ────────────────────────────────────────────────
     const counts = {
-        pendientes: tasks.filter(t => t.status === 'pending_cm_approval').length,
-        ia_backlog: tasks.filter(t => t.status === 'backlog').length,
-        devueltas:  tasks.filter(t => t.status === 'rejected').length,
-        aprobadas:  tasks.filter(t => ['approved','published'].includes(t.status)).length,
+        pendientes:    tasks.filter(t => t.status === 'pending_cm_approval').length,
+        manual_studio: tasks.filter(t => ['manual_studio','pending_render','rendering'].includes(t.status)).length,
+        ia_backlog:    tasks.filter(t => t.status === 'backlog').length,
+        devueltas:     tasks.filter(t => t.status === 'rejected').length,
+        aprobadas:     tasks.filter(t => ['approved','published'].includes(t.status)).length,
+    };
+
+    // ── Enviar a MediaWorker (desde bandeja manual_studio) ────
+    const handleSendToMediaWorker = async () => {
+        if (!selected) return;
+        if (!window.confirm('¿Iniciar generación automática con el MediaWorker IA? Se ensamblará con voz + imágenes en ~2 min.')) return;
+        try {
+            const res = await fetch(`/api/studio/tasks/${selected.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'pending_render' })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message);
+            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'pending_render' } : t));
+            setSelected(prev => ({ ...prev, status: 'pending_render' }));
+        } catch (e) { alert('Error: ' + e.message); }
     };
 
     const firstMedia = Array.isArray(selected?.media_options) ? selected.media_options[0] : null;
@@ -350,18 +369,28 @@ export default function CeoEstudioPanel({ adminProfile }) {
             </div>
 
             {/* ── Tabs ── */}
-            <div className="flex gap-3 mb-6 shrink-0 z-10 relative">
+            <div className="flex gap-2 mb-6 shrink-0 z-10 relative flex-wrap">
                 {[
-                    { id: 'pendientes', label: 'Pendientes por Revisar', icon: '⏳' },
-                    { id: 'ia_backlog', label: 'Bandeja IA (Autogenerados)', icon: '🤖' },
-                    { id: 'devueltas',  label: 'Devueltas',               icon: '🔙' },
-                    { id: 'aprobadas',  label: 'Aprobadas / Publicadas',  icon: '✅' },
+                    { id: 'pendientes',    label: 'Pendientes por Revisar',    icon: '⏳' },
+                    { id: 'manual_studio', label: 'En Estudio IA',             icon: '🎬' },
+                    { id: 'ia_backlog',    label: 'Bandeja IA (Autogenerados)', icon: '🤖' },
+                    { id: 'devueltas',     label: 'Devueltas',                  icon: '🔙' },
+                    { id: 'aprobadas',     label: 'Aprobadas / Publicadas',     icon: '✅' },
                 ].map(tab => (
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                        className={`relative px-5 py-2.5 rounded-xl font-black text-sm transition-all border ${activeTab === tab.id ? 'bg-[#d946ef] border-[#d946ef] text-white shadow-md' : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white hover:border-[#d946ef]/50'}`}>
+                        className={`relative px-4 py-2.5 rounded-xl font-black text-sm transition-all border ${
+                            activeTab === tab.id
+                                ? tab.id === 'manual_studio'
+                                    ? 'bg-cyan-500 border-cyan-500 text-white shadow-md'
+                                    : 'bg-[#d946ef] border-[#d946ef] text-white shadow-md'
+                                : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white hover:border-[#d946ef]/50'
+                        }`}>
                         {tab.icon} {tab.label}
                         {counts[tab.id] > 0 && (
-                            <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black text-white ${['pendientes', 'ia_backlog'].includes(tab.id) ? 'bg-[#CC0000]' : 'bg-[#d946ef]'}`}>
+                            <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black text-white ${
+                                tab.id === 'manual_studio' ? 'bg-cyan-600' :
+                                ['pendientes', 'ia_backlog'].includes(tab.id) ? 'bg-[#CC0000]' : 'bg-[#d946ef]'
+                            }`}>
                                 {counts[tab.id]}
                             </span>
                         )}
@@ -474,26 +503,87 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 ) : (
                                     <img src={resolveMedia(firstMedia.url)} className="max-w-full max-h-full object-contain rounded-xl" alt="Asset" />
                                 )
-                            ) : isAutoVideo ? (
-                                <div className="w-full h-full p-8 max-w-2xl mx-auto flex flex-col justify-start">
-                                    <div className="bg-[#d946ef]/10 border border-[#d946ef]/30 text-[#d946ef] rounded-xl p-4 mb-6 flex items-center gap-4">
-                                        <div className="w-10 h-10 border-4 border-[#d946ef]/20 border-t-[#d946ef] rounded-full animate-spin shrink-0" />
-                                        <div>
-                                            <p className="font-black tracking-widest uppercase">Video en Renderizado</p>
-                                            <p className="text-xs text-[#d946ef]/80">MediaWorker está produciendo los clips visuales y la voz en off. Lee el guion mientras tanto.</p>
-                                        </div>
+                            ) : isAutoVideo ? (() => {
+                                // Detectar si está en espera manual (manual_studio) o ya renderizando
+                                const isManualPending = selected.status === 'manual_studio';
+                                const isRenderQueued  = ['pending_render', 'rendering'].includes(selected.status);
+                                const readableScenes  = extractReadableScenes(selected.media_options);
+                                const sourceLabel     = selected.media_options?.source === 'manual_cockers' ? '🎬 Video Manual (Cockers Studio)'
+                                                      : selected.media_options?.source === 'manual_planner' ? '📅 Video del Planificador'
+                                                      : selected.media_options?.source === 'ai_planner'     ? '🤖 Plan Mensual IA'
+                                                      : '📜 Video IA';
+                                return (
+                                <div className="w-full h-full p-6 max-w-2xl mx-auto flex flex-col justify-start overflow-y-auto custom-scrollbar">
+
+                                    {/* Badge de fuente */}
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <span className="text-[10px] font-black bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-3 py-1 rounded-full uppercase tracking-widest">
+                                            {sourceLabel}
+                                        </span>
+                                        {selected.media_options?.niche && (
+                                            <span className="text-[10px] font-bold bg-neutral-800 border border-neutral-700 text-neutral-400 px-3 py-1 rounded-full">
+                                                🏷️ {selected.media_options.niche}
+                                            </span>
+                                        )}
                                     </div>
-                                    <h3 className="text-xl font-bold mb-4">📜 Guion Aprobado</h3>
-                                    <div className="space-y-4 text-sm pb-10">
-                                        {Object.entries(selected.media_options.scenes).map(([key, text]) => (
-                                            <div key={key} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl">
-                                                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-1">{key}</p>
-                                                <p className="text-neutral-200">{text}</p>
+
+                                    {/* Estado de producción */}
+                                    {isManualPending ? (
+                                        <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl p-4 mb-5 flex items-center gap-4">
+                                            <span className="text-3xl shrink-0">🎬</span>
+                                            <div>
+                                                <p className="font-black tracking-widest uppercase text-sm">Esperando Activación</p>
+                                                <p className="text-xs text-cyan-400/70 mt-0.5">Este video fue enviado al Estudio IA. Revisa el guion y presiona "Generar" cuando esté listo.</p>
                                             </div>
-                                        ))}
+                                        </div>
+                                    ) : isRenderQueued ? (
+                                        <div className="bg-orange-500/10 border border-orange-500/30 text-orange-300 rounded-xl p-4 mb-5 flex items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-400 rounded-full animate-spin shrink-0" />
+                                            <div>
+                                                <p className="font-black tracking-widest uppercase text-sm">MediaWorker Produciendo...</p>
+                                                <p className="text-xs text-orange-400/70 mt-0.5">Generando voz, imágenes IA y ensamblando con FFmpeg. Listo en ~2 min. Actualiza la bandeja para ver el resultado.</p>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {/* Guion de escenas */}
+                                    <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">📜 Guion de Escenas</h3>
+                                    <div className="space-y-3 text-sm pb-4">
+                                        {readableScenes ? readableScenes.map(({ n, isCTA, narr, visual, texto }) => (
+                                            <div key={n} className={`border rounded-xl p-4 ${
+                                                isCTA ? 'bg-[#CC0000]/5 border-[#CC0000]/30' : 'bg-neutral-900/60 border-neutral-800'
+                                            }`}>
+                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
+                                                    isCTA ? 'text-[#CC0000]' : 'text-neutral-500'
+                                                }`}>
+                                                    {isCTA ? `🎯 ESCENA ${n} — CTA` : `ESCENA ${n}`}
+                                                </p>
+                                                {narr && (
+                                                    <div className="mb-2">
+                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🎙️ Narración</p>
+                                                        <p className="text-neutral-200 text-xs leading-relaxed">{narr}</p>
+                                                    </div>
+                                                )}
+                                                {texto && (
+                                                    <div className="mb-2">
+                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">📝 Texto en Pantalla</p>
+                                                        <p className="text-yellow-300/80 text-xs leading-relaxed font-bold">{texto}</p>
+                                                    </div>
+                                                )}
+                                                {visual && (
+                                                    <div>
+                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🖼️ Visual / Imagen IA</p>
+                                                        <p className="text-violet-300/70 text-xs leading-relaxed italic">{visual}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )) : (
+                                            <p className="text-neutral-600 text-xs">No se encontró guion estructurado. El MediaWorker usará el prompt original.</p>
+                                        )}
                                     </div>
                                 </div>
-                            ) : (
+                                );
+                            })() : (
                                 <div className="text-neutral-600 flex flex-col items-center gap-2">
                                     <span className="text-5xl">🖼</span>
                                     <p className="text-sm font-bold">Sin archivo adjunto aún</p>
@@ -579,8 +669,51 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 </div>
                             )}
 
+                            {/* EN ESTUDIO IA (manual_studio) → Botón Generar */}
+                            {selected.status === 'manual_studio' && canReview && (
+                                <div className="flex-1 flex flex-col gap-3">
+                                    <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4 text-center">
+                                        <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest mb-1">Video Manual — Pendiente de Activación</p>
+                                        <p className="text-xs text-neutral-500 leading-relaxed">Revisa el guion a la izquierda. Si todo está correcto, activa el MediaWorker para que genere el video automáticamente.</p>
+                                    </div>
+                                    <button
+                                        onClick={handleSendToMediaWorker}
+                                        className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-black py-5 rounded-xl text-base shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-3"
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+                                        🎬 GENERAR CON ESTUDIO IA
+                                    </button>
+                                    <p className="text-[9px] text-neutral-600 text-center leading-relaxed">
+                                        El MediaWorker ensamblará las escenas con voz Edge TTS + imágenes Imagen 3 + subtítulos Whisper. ~2 min.
+                                    </p>
+                                    <button
+                                        onClick={(e) => handleDelete(selected.id, e)}
+                                        className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors"
+                                    >
+                                        🗑 Descartar Video Manual
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* EN COLA / RENDERIZANDO → Estado de progreso */}
+                            {['pending_render', 'rendering'].includes(selected.status) && (
+                                <div className="flex-1 flex flex-col gap-3">
+                                    <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 text-center">
+                                        <div className="w-8 h-8 border-4 border-orange-500/20 border-t-orange-400 rounded-full animate-spin mx-auto mb-3" />
+                                        <p className="text-sm font-black text-orange-400 uppercase tracking-widest">
+                                            {selected.status === 'rendering' ? '🔄 Renderizando...' : '⚙️ En Cola del MediaWorker'}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-2">Generando voz + imágenes IA + subtítulos + ensamble FFmpeg. El resultado aparecerá en "Pendientes por Revisar" al terminar.</p>
+                                    </div>
+                                    <button onClick={fetchTasks} className="border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                        Actualizar Estado
+                                    </button>
+                                </div>
+                            )}
+
                             {/* APROBADA → Publicar */}
-                            {['approved', 'published', 'pending_render', 'rendering'].includes(selected.status) && (
+                            {['approved', 'published'].includes(selected.status) && (
                                 <div className="flex-1 flex flex-col gap-3">
                                     <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl text-center">
                                         <p className="text-sm font-black text-green-400">

@@ -1047,7 +1047,7 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
                     // FASE 1: Obtener las ideas crudas del bot gratuito
                     const rawRes = await executeAiWaterfall([
                         { role: 'user', content: rawPrompt }
-                    ], { mode: 'default' });
+                    ], { mode: 'default', maxTokens: 6000 });
                     
                     const rawContent = rawRes.content || '';
 
@@ -1056,7 +1056,7 @@ IMPORTANTE: No te preocupes por el formato perfecto JSON, simplemente dame los t
 
                     const aiRes = await executeAiWaterfall([
                         { role: 'user', content: premiumPrompt }
-                    ], { mode: 'premium' });
+                    ], { mode: 'premium', maxTokens: 6000 });
 
                     let rawText = extractJSON(aiRes.content || '');
                     batchData = JSON.parse(rawText);

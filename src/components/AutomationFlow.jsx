@@ -203,6 +203,24 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
+    name: '🔥 Fábrica de Contenido Viral',
+    description: 'Input Tema → Planificador IA → Assets → CEO Studio',
+    nodes: [
+      { id: 'v1', type: 'trigger', title: 'Webhook Entrada', subtitle: 'Recibe Tema', icon: 'Globe', x: 100, y: 220, color: '#06b6d4', pm2_process: '' },
+      { id: 'v2', type: 'action', title: 'Planificador IA', subtitle: 'Generar Guión/Hooks', icon: 'Wand2', x: 380, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
+      { id: 'v3', type: 'action', title: 'Generador Visual', subtitle: 'Imagen 3 / UI', icon: 'Image', x: 660, y: 120, color: '#3b82f6', pm2_process: 'ai-core' },
+      { id: 'v4', type: 'action', title: 'Generador Video', subtitle: 'Escenas Veo', icon: 'Video', x: 660, y: 320, color: '#f59e0b', pm2_process: 'ai-core' },
+      { id: 'v5', type: 'action', title: 'Tarea de Studio', subtitle: 'Revisión Humana', icon: 'CheckSquare', x: 940, y: 220, color: '#10b981', pm2_process: '' },
+    ],
+    edges: [
+      { id: 'e1', source: 'v1', target: 'v2', color: '#06b6d4' },
+      { id: 'e2', source: 'v2', target: 'v3', color: '#a855f7' },
+      { id: 'e3', source: 'v2', target: 'v4', color: '#a855f7' },
+      { id: 'e4', source: 'v3', target: 'v5', color: '#3b82f6' },
+      { id: 'e5', source: 'v4', target: 'v5', color: '#f59e0b' },
+    ],
+  },
+  {
     name: '📅 Recepción de Citas Omnicanal',
     description: 'Cita Web → Calendario → WhatsApp + Email',
     nodes: [
@@ -656,6 +674,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const [executingNodes, setExecutingNodes] = useState(new Set());
   const [editName, setEditName] = useState(flowName || 'Sin nombre');
   const [nodeSearch, setNodeSearch] = useState('');
+  const [manualTopic, setManualTopic] = useState('');
 
   const canvasRef = useRef(null);
   const isCore = flowId === 1;
@@ -904,11 +923,16 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     const token = localStorage.getItem('adminToken');
     setIsExecuting(true); setExecutingNodes(new Set(nodes.map(n=>n.id)));
     
+    let payload = { manualTrigger: true };
+    if (manualTopic.trim() !== '') {
+        payload.topic = manualTopic.trim();
+    }
+    
     try { 
       await fetch(`/api/automation/webhook/${src.id}`, {
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-        body:JSON.stringify({ manualTrigger: true })
+        body:JSON.stringify(payload)
       }); 
     } catch(e){}
 
@@ -979,10 +1003,22 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
         <input value={editName} onChange={e=>setEditName(e.target.value)} disabled={!canSave}
           className="bg-transparent text-sm font-black text-white outline-none border-b border-transparent focus:border-neutral-600 transition w-48 disabled:text-neutral-500" />
         <div className="flex-1"/>
+        
+        {/* Campo para ingresar TEMA antes de ejecutar si es un flujo de contenido */}
+        {(editName.toLowerCase().includes('viral') || editName.toLowerCase().includes('contenido') || editName.toLowerCase().includes('fábrica')) && (
+            <input 
+                type="text" 
+                placeholder="Tema a generar (ej. IA en ventas)..." 
+                value={manualTopic} 
+                onChange={e => setManualTopic(e.target.value)}
+                className="bg-black/40 border border-emerald-500/30 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500/60 w-48 transition-all shadow-inner"
+            />
+        )}
+        
         <button onClick={()=>setShowHistory(!showHistory)} className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-700 hover:border-neutral-500 text-neutral-400 px-3 py-1.5 rounded-xl text-xs font-bold transition">
           <Clock className="w-3.5 h-3.5"/>{runHistory.length>0&&<span className={`w-1.5 h-1.5 rounded-full ${runHistory[0]?.status==='success'?'bg-emerald-400':runHistory[0]?.status==='error'?'bg-rose-400':'bg-yellow-400'}`}/>}
         </button>
-        <button onClick={executeFlow} disabled={isExecuting} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${isExecuting?'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 cursor-wait animate-pulse':'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border-emerald-500/30'}`}>
+        <button onClick={executeFlow} disabled={isExecuting} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${isExecuting?'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 cursor-wait animate-pulse':'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]'}`}>
           <Play className="w-3.5 h-3.5"/>{isExecuting?'Ejecutando...':'Ejecutar'}
         </button>
         {/* Plantillas */}

@@ -707,6 +707,16 @@ export default React.memo(function CMCalendar({ adminProfile }) {
     const aiContentEvents = tasks.filter(t => t.mediaPayload && (Array.isArray(t.mediaPayload) ? t.mediaPayload.length > 0 : Object.keys(t.mediaPayload).length > 0)).map(t => {
         let deadlineStr = t.deadline || new Date().toISOString().split('T')[0];
         if (!deadlineStr.includes('T')) deadlineStr += 'T12:00:00';
+
+        let media_url = '';
+        if (Array.isArray(t.mediaPayload) && t.mediaPayload.length > 0) {
+            media_url = t.mediaPayload[0].url || t.mediaPayload[0];
+        } else if (t.mediaPayload && t.mediaPayload.url) {
+            media_url = t.mediaPayload.url;
+        } else if (typeof t.mediaPayload === 'string') {
+            media_url = t.mediaPayload;
+        }
+
         return {
             id: `ia-${t.id}`,
             title: `🤖 ${t.que || '(Sin título)'}`,
@@ -714,6 +724,9 @@ export default React.memo(function CMCalendar({ adminProfile }) {
             end: new Date(deadlineStr),
             status: t.status === 'published' ? 'published' : t.status === 'approved' ? 'approved' : 'queued',
             tipo: 'contenido_ia',
+            platform: 'instagram', // Render as instagram for preview
+            media_url: media_url,
+            caption: t.referencias || t.que || '',
             raw: t
         };
     });
@@ -1721,7 +1734,14 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             <h3 className="font-black text-sm uppercase text-white tracking-widest">{selectedEvent.title}</h3>
                             <p className="text-[10px] text-white/60 font-bold mt-0.5 uppercase">{selectedEvent.provider}</p>
                         </div>
-                        <button onClick={() => setSelectedEvent(null)} className="text-white hover:text-black font-black text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20">×</button>
+                        <div className="flex gap-2 items-center">
+                            {canCreate && (
+                                <button onClick={(e) => { handleDeleteEvent(selectedEvent.id, e); setSelectedEvent(null); }} className="text-red-500 hover:text-white font-black text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-600 transition-colors" title="Eliminar Evento">
+                                    🗑️
+                                </button>
+                            )}
+                            <button onClick={() => setSelectedEvent(null)} className="text-white hover:text-black font-black text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">×</button>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-5 space-y-5">

@@ -30,6 +30,93 @@ router.post('/generate-monthly-plan', authenticateToken, generateMonthlyPlan);
 router.get('/plan-status/:taskId', authenticateToken, getMonthlyPlanStatus);
 
 // ==========================================
+// Radar de Contenido (AnswerThePublic Engine — Costo Cero)
+// ==========================================
+router.get('/content-radar', authenticateToken, async (req, res) => {
+    const { topic } = req.query;
+    if (!topic || topic.trim().length < 2) {
+        return res.status(400).json({ success: false, error: 'Proporciona un tema.' });
+    }
+
+    const keyword = topic.trim();
+
+    // MODIFIERS para simular AnswerThePublic con Autocompletado de Google
+    const MODIFIERS = [
+        'qué es', 'cómo hacer', 'cómo usar', 'para qué sirve',
+        'por qué es importante', 'cuál es el mejor', 'cuánto cuesta',
+        'tendencias en', 'herramientas para', 'ventajas de',
+        'ejemplos de', 'tips para', 'errores en', 'guía de'
+    ];
+
+    const fetchGoogle = async (query) => {
+        try {
+            const url = `http://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=es&gl=mx`;
+            const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+            const d = await r.json();
+            return d[1] || [];
+        } catch { return []; }
+    };
+
+    // Scraping paralelo (todos los modifiers a la vez para ser rápido)
+    const results = await Promise.all(
+        MODIFIERS.map(mod => fetchGoogle(`${mod} ${keyword}`))
+    );
+
+    // Agregamos y deduplicamos
+    const allQuestions = [...new Set(results.flat())].filter(q =>
+        q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
+    );
+
+    // Agrupar por tipo de modifier
+    const structured = {};
+    MODIFIERS.forEach((mod, i) => {
+        const qs = results[i].filter(q => q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
+        if (qs.length > 0) structured[mod] = qs;
+    });
+
+    // Generar hashtags con IA Gratuita (Groq/Cerebras, costo CERO)
+    let hashtags = [];
+    let aiSummary = '';
+    try {
+        const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+        const aiRes = await executeAiWaterfall([{
+            role: 'user',
+            content: `Eres un experto en marketing de contenidos en México. 
+Basado en el tema "${keyword}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 30).join(' | ')}
+
+Genera EXACTAMENTE este JSON sin markdown ni texto extra:
+{
+  "hashtags": ["#hashtag1","#hashtag2",...] (25 hashtags relevantes, mezcla español e inglés, ordenados por relevancia),
+  "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido para este tema basado en las búsquedas"
+}`
+        }], { mode: 'compression', temperature: 0.7 });
+
+        const raw = aiRes.content || '';
+        const startObj = raw.indexOf('{');
+        const endObj = raw.lastIndexOf('}');
+        if (startObj !== -1 && endObj !== -1) {
+            const parsed = JSON.parse(raw.substring(startObj, endObj + 1));
+            hashtags = parsed.hashtags || [];
+            aiSummary = parsed.summary || '';
+        }
+    } catch (e) {
+        console.warn('[ContentRadar] IA fallback:', e.message);
+        // Fallback: generar hashtags básicos del tema sin IA
+        hashtags = keyword.split(' ').map(w => `#${w.toLowerCase()}`);
+    }
+
+    res.json({
+        success: true,
+        topic: keyword,
+        questions: allQuestions.slice(0, 80),
+        structured,
+        hashtags,
+        aiSummary,
+        totalQuestions: allQuestions.length
+    });
+});
+
+// ==========================================
 // Generación TTS Directa (Editor de Video)
 // ==========================================
 router.post('/tts', authenticateToken, async (req, res) => {

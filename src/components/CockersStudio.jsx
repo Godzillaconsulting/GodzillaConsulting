@@ -197,6 +197,40 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [showOutbox, setShowOutbox] = useState(false);
     const [outboxTab, setOutboxTab] = useState('enviadas'); // 'enviadas' | 'aprobadas' | 'correcciones'
 
+    // ─── Radar de Contenido (AnswerThePublic Engine) ───────────────────────
+    const [showContentRadar, setShowContentRadar] = useState(false);
+    const [radarTopic, setRadarTopic] = useState('');
+    const [radarLoading, setRadarLoading] = useState(false);
+    const [radarData, setRadarData] = useState(null);
+    const [radarCopied, setRadarCopied] = useState(false);
+
+    const fetchContentRadar = async () => {
+        if (!radarTopic.trim()) return;
+        setRadarLoading(true);
+        setRadarData(null);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`/api/studio/content-radar?topic=${encodeURIComponent(radarTopic.trim())}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) setRadarData(data);
+            else console.error('ContentRadar error:', data.error);
+        } catch (e) {
+            console.error('ContentRadar fetch failed:', e);
+        } finally {
+            setRadarLoading(false);
+        }
+    };
+
+    const copyHashtags = () => {
+        if (!radarData?.hashtags?.length) return;
+        navigator.clipboard.writeText(radarData.hashtags.join(' '));
+        setRadarCopied(true);
+        setTimeout(() => setRadarCopied(false), 2000);
+    };
+
+
     // States del Redactor IA (Asistente Copywriting)
     const [showScriptGen, setShowScriptGen] = useState(false);
     const [scriptChatHistory, setScriptChatHistory] = useState([
@@ -593,6 +627,11 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     });
     const [submittingVideo, setSubmittingVideo] = useState(false);
     const [videoQueueMsg, setVideoQueueMsg] = useState(null);
+    // Nuevos states: fecha de publicación, nicho, y trends del día
+    const [videoManualDate, setVideoManualDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [videoNiche, setVideoNiche]           = useState('');
+    const [videoTrends, setVideoTrends]         = useState(null);
+    const [loadingTrends, setLoadingTrends]     = useState(false);
 
     const updateVideoScene = (idx, field, val) => {
         setVideoScript(prev => {
@@ -610,6 +649,25 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         setVideoScript(prev => ({ ...prev, scenes: prev.scenes.filter((_, i) => i !== idx) }));
     };
 
+    // Carga trends del día desde /api/trends filtrando por nicho
+    const fetchVideoTrends = async () => {
+        if (!videoNiche.trim()) return alert('Escribe primero el nicho/tema del video.');
+        setLoadingTrends(true);
+        setVideoTrends(null);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch(`/api/trends?network=TikTok&filter=${encodeURIComponent(videoNiche)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.data) setVideoTrends(data.data);
+            else setVideoTrends({ error: data.error || 'Sin datos de trends.' });
+        } catch (e) {
+            setVideoTrends({ error: e.message });
+        }
+        setLoadingTrends(false);
+    };
+
     const submitVideoScript = async () => {
         if (!videoScript.title.trim()) return alert('Pon un título al video primero.');
         const hasContent = videoScript.scenes.some(s => s.narration.trim() || s.visual.trim());
@@ -621,15 +679,20 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             const res = await fetch('/api/studio/create-video-script', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(videoScript)
+                body: JSON.stringify({
+                    ...videoScript,
+                    ig_publish_date: videoManualDate || null,
+                    niche: videoNiche || ''
+                })
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.error);
             setVideoQueueMsg(data.message);
             // Reset form
             setVideoScript(v => ({ ...v, title: '', scenes: [{ ...EMPTY_SCENE }] }));
+            setVideoTrends(null);
         } catch(e) {
-            alert(`Error al encolar video: ${e.message}`);
+            alert(`Error al enviar al Estudio IA: ${e.message}`);
         } finally {
             setSubmittingVideo(false);
         }
@@ -1578,6 +1641,12 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     </h2>
                     
                     <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowContentRadar(true)}
+                            className="text-xs font-bold text-[#00F0FF] hover:bg-[#00F0FF]/10 border border-[#00F0FF]/40 hover:border-[#00F0FF] px-4 py-2 rounded-full transition-all flex items-center gap-2 bg-[#00F0FF]/5 shadow-[0_0_8px_rgba(0,240,255,0.1)]"
+                        >
+                            🔍 Radar
+                        </button>
                         <button onClick={() => {
                             const pendings = queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved');
                             if(pendings.length > 0) setSelectedDraft(pendings[0]);
@@ -1688,22 +1757,102 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     <div className="absolute inset-0 overflow-auto custom-scrollbar pt-24 pb-10 px-6">
                         <div className="max-w-3xl mx-auto">
                             <div className="mb-6">
-                                <p className="text-[9px] font-black text-[#CC0000] uppercase tracking-[0.3em]">Pipeline Autónomo</p>
+                                <p className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.3em]">Pipeline Manual → CEO Estudio IA</p>
                                 <h2 className="text-xl font-black text-white flex items-center gap-3">
                                     🎬 Nuevo Video Faceless
                                 </h2>
-                                <p className="text-[11px] text-neutral-500 mt-1">Añade escenas poco a poco. Cada escena consume ~3 Créditos. El MediaWorker las ensambla con voz + imágenes automáticamente.</p>
+                                <p className="text-[11px] text-neutral-500 mt-1">Escribe el guión escena por escena. El video va al CEO Estudio para revisión y se genera sólo cuando el equipo presione “Generar”.</p>
                             </div>
 
-                            {videoQueueMsg && (
-                                <div className="mb-6 bg-emerald-900/30 border border-emerald-500/40 rounded-2xl p-4 flex items-center gap-3">
-                                    <span className="text-2xl">✅</span>
+                            {/* ── Fecha de Publicación + Nicho + Trends ── */}
+                            <div className="mb-6 bg-cyan-950/30 border border-cyan-500/20 rounded-2xl p-4">
+                                <p className="text-[9px] font-black text-cyan-400 uppercase tracking-widest mb-3">📊 Vincular al Planificador</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                                    {/* Fecha */}
                                     <div>
-                                        <p className="text-emerald-400 font-black text-sm">Video Encolado</p>
-                                        <p className="text-emerald-300/70 text-xs mt-0.5">{videoQueueMsg}</p>
+                                        <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block mb-1.5">📅 Fecha de Publicación</label>
+                                        <input
+                                            type="date"
+                                            value={videoManualDate}
+                                            onChange={e => setVideoManualDate(e.target.value)}
+                                            className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                                        />
                                     </div>
+                                    {/* Nicho */}
+                                    <div>
+                                        <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block mb-1.5">🏷️ Nicho / Tema</label>
+                                        <input
+                                            type="text"
+                                            value={videoNiche}
+                                            onChange={e => setVideoNiche(e.target.value)}
+                                            placeholder="Ej: Finanzas, Gaming, IA..."
+                                            className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors placeholder-neutral-700"
+                                        />
+                                    </div>
+                                    {/* Btn Trends */}
+                                    <button
+                                        onClick={fetchVideoTrends}
+                                        disabled={loadingTrends}
+                                        className="w-full bg-cyan-600/20 hover:bg-cyan-600 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-white font-black text-[10px] uppercase tracking-widest py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {loadingTrends ? (
+                                            <><div className="w-3.5 h-3.5 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" /> Cargando...</>
+                                        ) : (
+                                            <>🔥 Ver Trends del Día</>
+                                        )}
+                                    </button>
                                 </div>
-                            )}
+
+                                {/* Panel de Trends */}
+                                {videoTrends && !videoTrends.error && (
+                                    <div className="mt-4 space-y-3">
+                                        {videoTrends.hashtags && videoTrends.hashtags.length > 0 && (
+                                            <div>
+                                                <p className="text-[8px] font-black text-cyan-400/70 uppercase tracking-widest mb-1.5">#️⃣ Hashtags Trending</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {videoTrends.hashtags.slice(0, 12).map((h, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setVideoScript(v => ({ ...v, title: v.title ? v.title : h }))}
+                                                            className="text-[9px] bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full hover:bg-cyan-500/30 transition-colors font-bold"
+                                                            title="Click para usar como tema base"
+                                                        >
+                                                            {typeof h === 'string' ? h : h.tag || h.name || JSON.stringify(h)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {videoTrends.hooks && videoTrends.hooks.length > 0 && (
+                                            <div>
+                                                <p className="text-[8px] font-black text-purple-400/70 uppercase tracking-widest mb-1.5">🎯 Hooks Virales</p>
+                                                <div className="space-y-1">
+                                                    {videoTrends.hooks.slice(0, 3).map((hook, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setVideoScript(v => ({
+                                                                ...v,
+                                                                scenes: v.scenes.map((s, si) => si === 0 ? { ...s, narration: s.narration || (typeof hook === 'string' ? hook : hook.text || '') } : s)
+                                                            }))}
+                                                            className="w-full text-left text-[10px] bg-purple-500/5 border border-purple-500/20 text-purple-300/80 px-3 py-2 rounded-lg hover:bg-purple-500/15 transition-colors leading-relaxed"
+                                                            title="Click para usar en Escena 1"
+                                                        >
+                                                            {typeof hook === 'string' ? hook : hook.text || hook.content || JSON.stringify(hook)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Fallback si no tiene hashtags/hooks pero tiene otros campos */}
+                                        {!videoTrends.hashtags && !videoTrends.hooks && (
+                                            <pre className="text-[9px] text-neutral-500 bg-neutral-900 rounded-lg p-3 overflow-auto max-h-32">{JSON.stringify(videoTrends, null, 2)}</pre>
+                                        )}
+                                    </div>
+                                )}
+                                {videoTrends?.error && (
+                                    <p className="text-[10px] text-red-400 mt-3">❌ {videoTrends.error}</p>
+                                )}
+                            </div>
 
                             {/* Título y Voz */}
                             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -1863,22 +2012,22 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 </div>
                             </div>
 
-                            {/* Botón Submit */}
+                            {/* Botón Submit → Mandar al Estudio IA */}
                             <button
                                 onClick={submitVideoScript}
                                 disabled={submittingVideo}
-                                className="w-full mt-4 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-red-500 hover:to-[#CC0000] disabled:opacity-50 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(204,0,0,0.4)] hover:shadow-[0_0_40px_rgba(204,0,0,0.6)] transition-all flex items-center justify-center gap-3 text-sm"
+                                className="w-full mt-4 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 disabled:opacity-50 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] transition-all flex items-center justify-center gap-3 text-sm"
                             >
                                 {submittingVideo ? (
-                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Encolando...</>
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enviando...</>
                                 ) : (
                                     <>
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
-                                        Generar Video Autónomo ({videoScript.scenes.length} Escenas)
+                                        🎬 Mandar al Estudio IA ({videoScript.scenes.length} Escenas)
                                     </>
                                 )}
                             </button>
-                            <p className="text-center text-[10px] text-neutral-600 mt-3">El video se ensambla en ~2 min usando EdgeTTS + FLUX.1 → FFmpeg</p>
+                            <p className="text-center text-[10px] text-neutral-600 mt-3">El video aparecerá en CEO Estudio → bandeja "🎬 En Estudio IA". El equipo lo revisa y activa la generación.</p>
                         </div>
                     </div>
                 ) : liveSlots.length > 0 && (
@@ -2378,6 +2527,171 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 )}
 
                 </div> {/* FIN STUDIO CONTENT */}
+
+                {/* ─────────────────────────────────────────────────────────
+                    RADAR DE CONTENIDO — AnswerThePublic Engine (Costo Cero)
+                ───────────────────────────────────────────────────────── */}
+                {showContentRadar && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-md" onClick={(e) => { if(e.target === e.currentTarget) setShowContentRadar(false); }}>
+                        <div className="w-full max-w-5xl h-[90vh] bg-[#0d0d0c] border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+                            {/* Header */}
+                            <div className="shrink-0 bg-gradient-to-r from-[#0f0f0e] to-[#141413] border-b border-white/5 p-5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0FF]/20 to-[#9D00FF]/20 border border-[#00F0FF]/30 flex items-center justify-center text-lg">🔍</div>
+                                    <div>
+                                        <h3 className="text-white font-black uppercase tracking-widest text-sm">Radar de Contenido</h3>
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Búsquedas reales Google · Hashtags IA · Costo cero</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowContentRadar(false)} className="w-8 h-8 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition-colors text-lg">×</button>
+                            </div>
+
+                            {/* Search Input */}
+                            <div className="shrink-0 p-5 border-b border-white/5">
+                                <div className="flex gap-3">
+                                    <div className="flex-1 relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                        </div>
+                                        <input
+                                            id="radar-topic-input"
+                                            type="text"
+                                            value={radarTopic}
+                                            onChange={e => setRadarTopic(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && fetchContentRadar()}
+                                            placeholder="Escribe un tema (ej: Marketing Digital, Inteligencia Artificial...)"
+                                            className="w-full bg-[#1a1a19] border border-neutral-700 focus:border-[#00F0FF]/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-sm font-light placeholder-neutral-600 outline-none transition-colors"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={fetchContentRadar}
+                                        disabled={radarLoading || !radarTopic.trim()}
+                                        className="bg-gradient-to-r from-[#00F0FF]/20 to-[#9D00FF]/20 hover:from-[#00F0FF]/40 hover:to-[#9D00FF]/40 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest text-xs px-6 py-3.5 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 min-w-[140px] justify-center"
+                                    >
+                                        {radarLoading ? (
+                                            <><span className="w-4 h-4 border-2 border-[#00F0FF]/30 border-t-[#00F0FF] rounded-full animate-spin"/> Analizando...</>
+                                        ) : (
+                                            <>🔍 Analizar</>
+                                        )}
+                                    </button>
+                                </div>
+                                {radarData && (
+                                    <p className="mt-2 text-[10px] text-neutral-500 font-bold">
+                                        ✅ {radarData.totalQuestions} preguntas reales encontradas para <span className="text-[#00F0FF]">"{radarData.topic}"</span>
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Results */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {!radarData && !radarLoading && (
+                                    <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30">
+                                        <span className="text-6xl">🌐</span>
+                                        <p className="text-white font-bold uppercase tracking-widest text-sm">Escribe un tema y presiona Analizar</p>
+                                    </div>
+                                )}
+
+                                {radarLoading && (
+                                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                                        <div className="relative w-20 h-20">
+                                            <div className="absolute inset-0 rounded-full border-2 border-[#00F0FF]/20 animate-ping"/>
+                                            <div className="absolute inset-2 rounded-full border-2 border-[#9D00FF]/30 animate-ping" style={{animationDelay:'0.3s'}}/>
+                                            <div className="w-full h-full rounded-full border-2 border-t-[#00F0FF] border-[#00F0FF]/10 animate-spin"/>
+                                        </div>
+                                        <p className="text-[#00F0FF] font-black uppercase tracking-widest text-xs animate-pulse">Escaneando Google + Generando Hashtags IA...</p>
+                                    </div>
+                                )}
+
+                                {radarData && (
+                                    <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                                        {/* COLUMNA 1: Hashtags generados por IA */}
+                                        <div className="lg:col-span-1 flex flex-col gap-4">
+                                            {/* Hashtags */}
+                                            <div className="bg-gradient-to-br from-[#0f0f0e] to-[#141413] border border-[#9D00FF]/30 rounded-2xl p-4 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-20 h-20 bg-[#9D00FF]/10 rounded-bl-full blur-xl"/>
+                                                <div className="flex items-center justify-between mb-3 relative z-10">
+                                                    <h4 className="text-[#9D00FF] font-black uppercase tracking-widest text-[10px] flex items-center gap-1.5">
+                                                        <span>#</span> Hashtags IA ({radarData.hashtags.length})
+                                                    </h4>
+                                                    <button
+                                                        onClick={copyHashtags}
+                                                        className="text-[9px] font-black uppercase tracking-widest bg-[#9D00FF]/20 hover:bg-[#9D00FF]/40 border border-[#9D00FF]/40 text-[#9D00FF] px-3 py-1 rounded-full transition-all"
+                                                    >
+                                                        {radarCopied ? '✅ Copiado!' : '📋 Copiar todos'}
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5 relative z-10">
+                                                    {radarData.hashtags.map((tag, i) => {
+                                                        const colors = [
+                                                            'bg-[#9D00FF]/10 border-[#9D00FF]/30 text-[#9D00FF]',
+                                                            'bg-[#00F0FF]/10 border-[#00F0FF]/30 text-[#00F0FF]',
+                                                            'bg-[#FF0055]/10 border-[#FF0055]/30 text-[#FF0055]',
+                                                            'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+                                                            'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+                                                        ];
+                                                        const color = colors[i % colors.length];
+                                                        return (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => navigator.clipboard.writeText(tag)}
+                                                                title="Click para copiar"
+                                                                className={`text-[10px] font-bold border px-2.5 py-1 rounded-full transition-all hover:scale-105 hover:brightness-125 ${color}`}
+                                                            >
+                                                                {tag}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* AI Summary */}
+                                            {radarData.aiSummary && (
+                                                <div className="bg-gradient-to-br from-[#0f0f0e] to-[#141413] border border-[#00F0FF]/20 rounded-2xl p-4 relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/5 rounded-bl-full blur-xl"/>
+                                                    <h4 className="text-[#00F0FF] font-black uppercase tracking-widest text-[10px] mb-2 flex items-center gap-1.5 relative z-10">
+                                                        🧠 Análisis IA
+                                                    </h4>
+                                                    <p className="text-neutral-300 text-xs leading-relaxed font-light relative z-10">{radarData.aiSummary}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* COLUMNA 2-3: Preguntas de Google agrupadas */}
+                                        <div className="lg:col-span-2 flex flex-col gap-4">
+                                            {Object.keys(radarData.structured).map((modifier, mi) => (
+                                                <div key={mi} className="bg-[#111]/60 border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-colors">
+                                                    <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-500 mb-3 flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]"/>
+                                                        {modifier}
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {radarData.structured[modifier].map((q, qi) => (
+                                                            <button
+                                                                key={qi}
+                                                                onClick={() => {
+                                                                    // Al hacer click en una pregunta, la pone en el prompt del Studio
+                                                                    setFinalPrompt(q);
+                                                                    setShowContentRadar(false);
+                                                                }}
+                                                                title="Click para usar como prompt"
+                                                                className="text-[11px] text-neutral-300 bg-black/40 hover:bg-[#00F0FF]/10 border border-white/5 hover:border-[#00F0FF]/40 hover:text-[#00F0FF] px-3 py-1.5 rounded-full transition-all text-left"
+                                                            >
+                                                                {q}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
             </div> {/* FIN RIGHT MAIN CANVAS */}
 
 

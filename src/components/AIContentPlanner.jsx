@@ -294,7 +294,7 @@ export default function AIContentPlanner({ adminProfile }) {
     
     // ── Voice Selection (Auto Flow) ──
     const [showVoiceModal, setShowVoiceModal] = useState(false);
-    const [selectedVoice, setSelectedVoice]   = useState('edge:es-MX-JorgeNeural');
+    const [autoVoice, setAutoVoice]           = useState('edge:es-MX-JorgeNeural');
     const [customVoiceId, setCustomVoiceId]   = useState('');
     
     // ─── Radar de Contenido (AnswerThePublic Engine) ───────────────────────
@@ -560,7 +560,7 @@ export default function AIContentPlanner({ adminProfile }) {
         setShowVoiceModal(false);
         setIsSendingBulk(true);
         let sent = 0, skipped = 0;
-        const finalVoice = selectedVoice === 'custom' ? `elevenlabs:${customVoiceId}` : selectedVoice;
+        const finalVoice = autoVoice === 'custom' ? `elevenlabs:${customVoiceId}` : autoVoice;
         for (let idx = 0; idx < plan.length; idx++) {
             const sel = selections[idx] || 'ia';
             if (sel === 'skip') { skipped++; continue; }
@@ -1074,6 +1074,9 @@ export default function AIContentPlanner({ adminProfile }) {
                             </div>
                         </div>
                     </div>,
+                    document.body
+                )}
+
                 {/* ─────────────────────────────────────────────────────────
                     MODAL DE SELECCIÓN DE VOZ (FLUJO AUTO)
                 ───────────────────────────────────────────────────────── */}
@@ -1089,12 +1092,12 @@ export default function AIContentPlanner({ adminProfile }) {
                                     ...ELEVENLABS_VOICES.map(v => ({ id: v.id, name: v.name, desc: 'Premium AI Voice', preview: v.preview })),
                                     { id: 'custom', name: 'Clonar voz (ID Personalizado)', desc: 'Usa tu propio ID de ElevenLabs' },
                                 ].map(v => (
-                                    <label key={v.id} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${selectedVoice === v.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20 bg-black/50'}`}>
+                                    <label key={v.id} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${autoVoice === v.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20 bg-black/50'}`}>
                                         <div className="flex items-center justify-between gap-3 w-full">
                                             <div className="flex items-center gap-3">
-                                                <input type="radio" name="voice" value={v.id} checked={selectedVoice === v.id} onChange={(e) => setSelectedVoice(e.target.value)} className="accent-purple-500" />
+                                                <input type="radio" name="voice" value={v.id} checked={autoVoice === v.id} onChange={(e) => setAutoVoice(e.target.value)} className="accent-purple-500" />
                                                 <div>
-                                                    <p className={`text-sm font-bold ${selectedVoice === v.id ? 'text-purple-400' : 'text-white'}`}>{v.name}</p>
+                                                    <p className={`text-sm font-bold ${autoVoice === v.id ? 'text-purple-400' : 'text-white'}`}>{v.name}</p>
                                                     <p className="text-[10px] text-neutral-500">{v.desc}</p>
                                                 </div>
                                             </div>
@@ -1116,7 +1119,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                     </label>
                                 ))}
 
-                                {selectedVoice === 'custom' && (
+                                {autoVoice === 'custom' && (
                                     <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/5">
                                         <label className="text-[10px] text-purple-400 font-bold uppercase tracking-widest block mb-1">ID de ElevenLabs</label>
                                         <input type="text" value={customVoiceId} onChange={e => setCustomVoiceId(e.target.value)} placeholder="Ej: pNInz6obbfIdGwnf8p5A" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500" />

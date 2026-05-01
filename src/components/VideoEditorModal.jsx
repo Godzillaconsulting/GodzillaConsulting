@@ -782,28 +782,30 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
           <div className="h-4 w-px bg-neutral-700"></div>
 
           {/* Magic Bot */}
-          <button onClick={() => { }} disabled={isBotRunning} className="peer flex items-center gap-2 bg-[#27272a] hover:bg-[#3f3f46] text-white px-3 py-1.5 rounded-md text-xs font-medium border border-purple-500/30 hover:border-purple-500/60 transition-all group relative">
-            <Zap className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
-            <span className="hidden sm:inline">IA Tools</span>
-          </button>
-          {/* Dropdown IA Tools */}
-          <div className="absolute top-12 right-[180px] w-64 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
-            <div className="p-3 border-b border-[#27272a] bg-[#121212] rounded-t-md">
-              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide block mb-2">Alcance de IA</label>
-              <div className="flex bg-[#27272a] rounded p-1">
-                <button onClick={() => setIaScope('clip')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'clip' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Clip Sel.</button>
-                <button onClick={() => setIaScope('all')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'all' ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Todo el Video</button>
+          <div className="relative">
+            <button onClick={() => { }} disabled={isBotRunning} className="peer flex items-center gap-2 bg-[#27272a] hover:bg-[#3f3f46] text-white px-3 py-1.5 rounded-md text-xs font-medium border border-purple-500/30 hover:border-purple-500/60 transition-all group relative">
+              <Zap className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+              <span className="hidden sm:inline">IA Tools</span>
+            </button>
+            {/* Dropdown IA Tools */}
+            <div className="absolute top-full right-0 mt-2 w-64 bg-[#18181b] border border-[#3f3f46] rounded-md shadow-2xl z-50 hidden hover:block peer-hover:block">
+              <div className="p-3 border-b border-[#27272a] bg-[#121212] rounded-t-md">
+                <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wide block mb-2">Alcance de IA</label>
+                <div className="flex bg-[#27272a] rounded p-1">
+                  <button onClick={() => setIaScope('clip')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'clip' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Clip Sel.</button>
+                  <button onClick={() => setIaScope('all')} className={`flex-1 text-[10px] py-1 rounded transition-colors ${iaScope === 'all' ? 'bg-purple-600 text-white' : 'text-neutral-400 hover:text-white'}`}>Todo el Video</button>
+                </div>
               </div>
+              <button onClick={handleHormoziBot} className="w-full text-left px-4 py-3 text-xs text-white hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-blue-600/20 flex items-center gap-2 border-b border-[#27272a] font-bold">
+                <Wand2 className="w-4 h-4 text-purple-400" /> Bot Hormozi (Todo en 1)
+              </button>
+              <button onClick={handleSmartCut} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-purple-400 flex items-center gap-2">
+                <Scissors className="w-3.5 h-3.5" /> Smart Cut (Silencios)
+              </button>
+              <button onClick={handleAutoCaptions} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-blue-400 flex items-center gap-2 border-t border-[#27272a]">
+                <Type className="w-3.5 h-3.5" /> Auto-Subtítulos
+              </button>
             </div>
-            <button onClick={handleHormoziBot} className="w-full text-left px-4 py-3 text-xs text-white hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-blue-600/20 flex items-center gap-2 border-b border-[#27272a] font-bold">
-              <Wand2 className="w-4 h-4 text-purple-400" /> Bot Hormozi (Todo en 1)
-            </button>
-            <button onClick={handleSmartCut} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-purple-400 flex items-center gap-2">
-              <Scissors className="w-3.5 h-3.5" /> Smart Cut (Silencios)
-            </button>
-            <button onClick={handleAutoCaptions} className="w-full text-left px-4 py-2 text-xs text-neutral-300 hover:bg-[#27272a] hover:text-blue-400 flex items-center gap-2 border-t border-[#27272a]">
-              <Type className="w-3.5 h-3.5" /> Auto-Subtítulos
-            </button>
           </div>
 
           {/* Render */}

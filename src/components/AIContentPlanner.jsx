@@ -310,15 +310,30 @@ export default function AIContentPlanner({ adminProfile }) {
     const [loadingTrends, setLoadingTrends] = useState(false);
 
     const fetchPlannerTrends = async () => {
-        if (!niche.trim()) return alert('Escribe el nicho primero.');
+        let currentNiche = niche.trim();
+        if (!currentNiche) {
+            currentNiche = window.prompt('¿Qué tema o nicho quieres buscar en los trends estadísticos?');
+            if (!currentNiche) return;
+            setNiche(currentNiche);
+        }
+
         setLoadingTrends(true);
         setPlannerTrends(null);
         try {
-            const res = await fetch(`/api/studio/content-radar?topic=${encodeURIComponent(niche)}`, {
+            const res = await fetch(`/api/studio/content-radar?topic=${encodeURIComponent(currentNiche)}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
             });
             const data = await res.json();
-            if (data.success) setPlannerTrends(data);
+            if (data.success) {
+                setPlannerTrends(data);
+                // Dar tiempo a que renderice la UI y mostrar el confirm
+                setTimeout(() => {
+                    if (window.confirm(`🔥 Trends listos para "${currentNiche}". ¿Quieres generar el contenido del día basado en estas estadísticas?`)) {
+                        setDurationDays(1);
+                        handleGenerate(currentNiche, 1, data);
+                    }
+                }, 100);
+            }
             else setPlannerTrends({ error: data.error || 'Sin datos de trends.' });
         } catch (e) {
             setPlannerTrends({ error: e.message });
@@ -347,8 +362,12 @@ export default function AIContentPlanner({ adminProfile }) {
         setIsSendingWebhook(false);
     };
 
-    const handleGenerate = async () => {
-        if (!niche.trim()) return alert('Por favor ingresa un nicho o producto.');
+    const handleGenerate = async (overrideNiche = null, overrideDays = null, overrideTrends = null) => {
+        const finalNiche = (typeof overrideNiche === 'string' ? overrideNiche : niche) || '';
+        const finalDays = overrideDays || durationDays;
+        const finalTrends = overrideTrends || plannerTrends;
+
+        if (!finalNiche.trim()) return alert('Por favor ingresa un nicho o producto.');
         setGenerating(true);
         setPlan(null);
         setProgress(0);
@@ -359,7 +378,7 @@ export default function AIContentPlanner({ adminProfile }) {
             const res   = await fetch(`${API}/api/studio/generate-monthly-plan`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ niche, month, year, extraContext, durationDays, radarTrends: plannerTrends }),
+                body: JSON.stringify({ niche: finalNiche, month, year, extraContext, durationDays: finalDays, radarTrends: finalTrends }),
             });
             const data = await res.json();
             
@@ -392,7 +411,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                 setGenerating(false);
                             } else {
                                 setProgress(statusData.progress || 0);
-                                const totalBatches = Math.ceil(durationDays / 5);
+                                const totalBatches = Math.ceil(finalDays / 5);
                                 const currentBatch = Math.ceil((statusData.progress || 1) / (100 / totalBatches));
                                 setProgressText(`Generando plan (Lote ${currentBatch} de ${totalBatches})...`);
                                 
@@ -400,7 +419,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                 if (statusData.partialPlan && statusData.partialPlan.length > 0) {
                                     const partialWithDates = statusData.partialPlan.map(d => ({ ...d, month, year }));
                                     setPlan(partialWithDates);
-                                    setGNiche(niche);
+                                    setGNiche(finalNiche);
                                     setSelections(prev => {
                                         const newSel = { ...prev };
                                         statusData.partialPlan.forEach((_, i) => { if (!newSel[i]) newSel[i] = 'ia'; });
@@ -658,7 +677,7 @@ export default function AIContentPlanner({ adminProfile }) {
                     
                     <button
                         onClick={fetchPlannerTrends}
-                        disabled={loadingTrends || !niche.trim()}
+                        disabled={loadingTrends}
                         className="bg-black border border-white/10 hover:border-white/30 text-white font-black uppercase tracking-widest px-6 py-2.5 rounded-xl disabled:opacity-50 flex items-center gap-2 transition-all text-[11px] shrink-0 h-[42px]"
                     >
                         {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔥 Ver Trends'}

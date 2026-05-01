@@ -217,37 +217,28 @@ async function processTask() {
             const promises = [];
             
             let usesVeoVideo = false;
-            // ESTRATEGIA HÍBRIDA DE COSTOS: Veo es carísimo. Solo lo usamos para el Hook (Escena 1).
-            // Para el resto (Escena 2-5), usamos Google Imagen 3 (mucho más barato y estable que lo free) o stock faceless.
-            if (videoPrompt && i === 1) {
+            // ESTRATEGIA DE VIDEO PURO: Generar AI Video (Veo) para TODAS las escenas que lo pidan.
+            // Esto evita que salgan fotos/imágenes estáticas tipo slideshow.
+            if (videoPrompt) {
                 promises.push(generateVeoVideo(videoPrompt, sceneVidPath).catch(e => null));
                 usesVeoVideo = true;
-            } else if (visualPrompt) {
-                // Alternamos entre Imágenes generadas (Imagen 3) y el Video local Faceless
-                const isFaceless = (i % 2 === 0);
-                if (!isFaceless) {
-                    promises.push(generateImage(visualPrompt, sceneImgPath).catch(e => null));
-                }
             }
 
             if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
 
-            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
+            // Obtener un video de stock aleatorio de la lista en lugar del mismo siempre
+            const randomStockName = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)].split('/').pop();
+            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4'); 
+            
             let finalImgPath = sceneImgPath;
             let isFaceless = false;
             
-            // Resolver qué medio usar como visual (Veo Video > Imagen > Stock)
+            // Resolver qué medio usar como visual (Veo Video > Stock) - NUNCA usar fotos estáticas
             if (usesVeoVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
                 finalImgPath = sceneVidPath;
-                isFaceless = true; // Tratamos los MP4 de Veo como "faceless" para el renderizado (loop infinito hasta acabar audio)
-            } else if (visualPrompt && !videoPrompt && i % 2 !== 0) {
-                if (!fs.existsSync(sceneImgPath) || fs.statSync(sceneImgPath).size < 1000) {
-                    console.warn(`[MediaWorker] ⚠️ Imagen falló. Usando stock faceless.`);
-                    finalImgPath = randomStock;
-                    isFaceless = true;
-                }
+                isFaceless = true; // Tratamos los MP4 como "faceless" para el renderizado (loop infinito hasta acabar audio)
             } else {
                 finalImgPath = randomStock;
                 isFaceless = true;

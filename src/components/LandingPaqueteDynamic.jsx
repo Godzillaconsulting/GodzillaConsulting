@@ -214,7 +214,7 @@ const LandingPaqueteDynamic = ({ previewNodeId }) => {
  )}
  </td>
  <td translate="no" className="py-4 pl-4 text-right align-top whitespace-nowrap text-sm text-gray-300 font-medium">
- {feature.price ? formatPrice(feature.price, true) : ''}
+ {/* Precios individuales ocultos a petición del usuario ya que no son gestionables desde el dashboard */}
  </td>
  </tr>
  ))}

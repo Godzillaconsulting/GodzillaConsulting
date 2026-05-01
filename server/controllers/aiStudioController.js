@@ -543,11 +543,11 @@ export const getInspirationGallery = async (req, res) => {
         2. "tag": short catchy name in spanish representing the aesthetic style. BE CREATIVE. DO NOT USE GENERIC ONES. Invent completely new wild labels for each (e.g., "Bio-Terror", "Cyber-Gótico", "Luz Alienígena", "Plástico Fundido"). DO NOT REPEAT TAGS.
         3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "Higgsfield Cosmos", "Veo 3".
         Random Seed to ensure total uniqueness this time: ${Date.now()}.
-        Return ONLY valid JSON array with 12 objects. Do not include markdown \`\`\` blocks.`;
+        Return ONLY a valid, strict JSON array with 12 objects. DO NOT use unescaped quotes inside the strings. Do not include markdown \`\`\` blocks or any conversational text.`;
         
         const aiRes = await executeAiWaterfall([
             { role: 'user', content: promptInstruction }
-        ], { temperature: 0.9, mode: 'premium' });
+        ], { temperature: 0.9, mode: 'premium', maxTokens: 4000 });
 
         if (!aiRes || !aiRes.content) {
             throw new Error(`Waterfall Error: No content returned`);
@@ -558,8 +558,10 @@ export const getInspirationGallery = async (req, res) => {
         let generationList;
         try {
             generationList = JSON.parse(jsonStr.trim());
+            if (!Array.isArray(generationList)) throw new Error("Expected an array of objects");
         } catch(err) {
-            console.error("Waterfall failed standard JSON", err);
+            console.error("[INSPIRATION] JSON parsing failed. Raw extracted:", jsonStr);
+            console.error("[INSPIRATION] Original AI content:", aiRes.content);
             throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
         }
         

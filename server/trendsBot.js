@@ -161,6 +161,14 @@ REGLAS:
         );
         console.log(`[${BOT_NAME}] 🎬 Tarea inyectada en DB. El MediaWorker la comenzará a procesar pronto.`);
 
+        // 2. Inyectar datos crudos en la tabla search_trends para el Radar B2B (AnswerThePublic Engine)
+        await client.query(
+            `INSERT INTO search_trends (keywords, aggregated_questions, summary, created_at)
+             VALUES ($1, $2, $3, NOW())`,
+            [JSON.stringify(KEYWORDS), JSON.stringify(structuredQuestions), summaryText]
+        );
+        console.log(`[${BOT_NAME}] 🌐 Datos guardados en search_trends para el Dashboard Analítico.`);
+
 
     } catch (err) {
         console.error(`[${BOT_NAME}] ❌ Error guardando en BD:`, err.message);

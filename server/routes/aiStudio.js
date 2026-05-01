@@ -172,13 +172,16 @@ router.post('/render-native', authenticateToken, upload.array('mediaFiles'), (re
     }
 });
 
-// Crear tarea de video autónomo (Faceless) para el MediaWorker
+// Crear tarea de video manual (Faceless) — va a CEO Estudio para revisión
+// antes de que el MediaWorker la recoja (status: manual_studio)
 router.post('/create-video-script', authenticateToken, async (req, res) => {
     try {
-        const { title, voice, scenes } = req.body;
+        const { title, voice, scenes, ig_publish_date, niche } = req.body;
         if (!title || !scenes || scenes.length === 0) {
             return res.status(400).json({ error: 'Faltan campos obligatorios: title, scenes' });
         }
+
+        const uploaderName = req.admin?.username || 'manual';
 
         // Construir el payload en el formato que espera mediaWorker.js
         const scenesPayload = {};
@@ -190,21 +193,43 @@ router.post('/create-video-script', authenticateToken, async (req, res) => {
             scenesPayload[narKey] = scene.narration || '';
         });
 
-        const mediaPayload = { scenes: scenesPayload, voice: voice || 'es-MX-JorgeNeural' };
+        const mediaPayload = {
+            source: 'manual_cockers',
+            scenes: scenesPayload,
+            voice: voice || 'es-MX-JorgeNeural',
+            niche: niche || '',
+            sceneCount: scenes.length
+        };
         if (req.body.referenceAudio) {
             mediaPayload.referenceAudio = req.body.referenceAudio;
         }
 
+        const publishDate = ig_publish_date || null;
+
+        // Status: manual_studio → aparece en CEO Estudio con botón "Generar"
+        // El MediaWorker SOLO lo procesa cuando el CEO lo cambia a pending_render
         const result = await pool.query(
-            `INSERT INTO studio_tasks (title, visual_prompt, caption, status, assigned_to, media_payload, scheduled_date)
-             VALUES ($1, $2, $3, 'pending_render', 'auto', $4, NOW())
+            `INSERT INTO studio_tasks (title, prompt, caption, status, assigned_to, media_payload, ig_publish_date, created_by)
+             VALUES ($1, $2, $3, 'manual_studio', $4, $5, $6, $7)
              RETURNING id`,
-            [title, scenes[0]?.visual || title, title, JSON.stringify(mediaPayload)]
+            [
+                title,
+                scenes.map((s, i) => `Escena ${i+1}: ${s.narration || s.visual || ''}`).join('\n'),
+                title,
+                uploaderName,
+                JSON.stringify(mediaPayload),
+                publishDate,
+                uploaderName
+            ]
         );
 
         const taskId = result.rows[0].id;
-        console.log(`[VideoScript] ✅ Tarea #${taskId} creada para MediaWorker: "${title}"`);
-        res.json({ success: true, taskId, message: `Video "${title}" encolado. El MediaWorker lo ensambla en ~2 min.` });
+        console.log(`[VideoScript] ✅ Tarea manual #${taskId} creada en CEO Estudio: "${title}"`);
+        res.json({
+            success: true,
+            taskId,
+            message: `Video "${title}" enviado al CEO Estudio. Revísalo en la bandeja "🎬 En Estudio IA" y activa la generación.`
+        });
     } catch (e) {
         console.error('[VideoScript] Error:', e.message);
         res.status(500).json({ error: e.message });

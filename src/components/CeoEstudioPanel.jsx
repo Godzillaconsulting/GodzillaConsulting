@@ -2,11 +2,39 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 const STATUS_MAP = {
-    pending_cm_approval: { label: '⏳ En Revisión', tab: 'pendientes', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
-    rejected:            { label: '🔙 Devuelta',    tab: 'devueltas',  color: 'text-red-400 bg-red-500/10 border-red-500/30' },
-    approved:            { label: '✅ Aprobada',    tab: 'aprobadas',  color: 'text-green-400 bg-green-500/10 border-green-500/30' },
-    published:           { label: '🚀 Publicada',   tab: 'aprobadas',  color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+    pending_cm_approval: { label: '⏳ En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
+    rejected:            { label: '🔙 Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+    approved:            { label: '✅ Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
+    published:           { label: '🚀 Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+    manual_studio:       { label: '🎬 En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+    pending_render:      { label: '⚙️ Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+    rendering:           { label: '🔄 Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
 };
+
+// Extrae escenas legibles de cualquier formato de payload
+function extractReadableScenes(mediaOptions) {
+    if (!mediaOptions || Array.isArray(mediaOptions)) return null;
+    const scenes = mediaOptions.scenes;
+    if (!scenes || typeof scenes !== 'object') return null;
+
+    // Formato simple del script manual (manual_cockers): { "VISUAL ESCENA 1 ...": "...", "NARRACION ESCENA 1": "..." }
+    // Formato del Planificador (ai_planner/manual_planner): 26 columnas del Sheets
+    const result = [];
+    for (let n = 1; n <= 5; n++) {
+        const isLast = n === 5;
+        const narrKey = isLast ? `NARRACION ESCENA 5 (CTA)` : `NARRACION ESCENA ${n}`;
+        const visualKey = `VISUAL ESCENA ${n} (Prompt Imagen Detallado)`;
+        const videoKey  = `VIDEO ESCENA ${n} (Prompt Movimiento Detallado)`;
+        const textoKey  = `TEXTO EN PANTALLA ESCENA ${n}`;
+        const narr  = scenes[narrKey]  || '';
+        const visual = scenes[visualKey] || scenes[videoKey] || '';
+        const texto  = scenes[textoKey] || '';
+        if (narr || visual) {
+            result.push({ n, isCTA: isLast, narr, visual, texto });
+        }
+    }
+    return result.length > 0 ? result : null;
+}
 
 const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
 const resolveMedia = (url) => {

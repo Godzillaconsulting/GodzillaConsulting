@@ -114,12 +114,6 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
 
     const canManageUsers = profile?.is_superadmin || profile?.role === 'admin' || ['jareg', 'oscar', 'godzilla_admin'].includes(profile?.username?.toLowerCase());
 
-    useEffect(() => {
-        if (subTab === 'personal' && canManageUsers) {
-            fetchSecurityAlerts();
-        }
-    }, [subTab, profile, canManageUsers]);
-
     const fetchSecurityAlerts = async () => {
         try {
             const token = localStorage.getItem('adminToken');
@@ -134,6 +128,12 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
             console.error('Error fetching security alerts', e);
         }
     };
+
+    useEffect(() => {
+        if (subTab === 'personal' && canManageUsers) {
+            fetchSecurityAlerts();
+        }
+    }, [subTab, profile, canManageUsers]);
 
     const handleSavePersonal = async (e) => {
         e.preventDefault();

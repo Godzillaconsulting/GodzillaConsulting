@@ -11,6 +11,7 @@ const CanvasCaptcha = forwardRef(({ onValidate, height = 50, length = 5 }, ref) 
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // Avoid ambiguous chars
         let text = '';
         for (let i = 0; i < length; i++) {
+            // eslint-disable-next-line react-hooks/purity
             text += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         setCaptchaText(text);

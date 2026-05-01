@@ -910,7 +910,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     )}
 
                     <p className={`text-[10px] font-bold leading-tight truncate ${sm.text}`}>
-                        {event.title?.replace(/^[🔵🟣⚫🌐]\s*\w+:\s*/, '')}
+                        {event.title?.replace(/^[🔵🟣⚫🌐]\s*\w+:\s*/u, '')}
                     </p>
 
                     {/* Footer */}

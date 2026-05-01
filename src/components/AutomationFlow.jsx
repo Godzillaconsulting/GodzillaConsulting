@@ -868,8 +868,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   };
 
   const addPreset = (p) => {
-    const id=Date.now().toString(), vx=(canvasRef.current?.scrollLeft||0)+300, vy=(canvasRef.current?.scrollTop||0)+200;
-    setNodes(n=>[...n,{id,type:p.title==='Planificador IA'?'trigger':'action',title:p.title,subtitle:p.subtitle,icon:p.icon,x:vx+Math.random()*50,y:vy+Math.random()*50,color:p.color,pm2_process:p.pm2_process}]);
+    const id=crypto.randomUUID(), vx=(canvasRef.current?.scrollLeft||0)+300, vy=(canvasRef.current?.scrollTop||0)+200;
+    setNodes(n=>[...n,{id,type:p.title==='Planificador IA'?'trigger':'action',title:p.title,subtitle:p.subtitle,icon:p.icon,x:vx+50,y:vy+50,color:p.color,pm2_process:p.pm2_process}]);
     setSelectedNodeId(id); setShowNodeMenu(false);
   };
   const loadTemplate = (t) => {

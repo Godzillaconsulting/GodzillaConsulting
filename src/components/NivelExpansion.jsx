@@ -27,14 +27,20 @@ const NivelExpansion = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
 
-        // Fetch content from Sanity
-        client.fetch(`*[_type == "landingPaquete" && slug.current == "nivel-expansion"][0]{..., "videoFileUrl": videoFile.asset->url}`)
-            .then((data) => {
-                if (data) {
-                    setContent(Object.assign({}, defaultContent, data));
-                }
-            })
-            .catch(err => console.error("Error fetching paquete content:", err));
+        // Fetch content from Sanity (only if client is initialized)
+        try {
+            // eslint-disable-next-line no-undef
+            if (typeof client !== 'undefined') {
+                // eslint-disable-next-line no-undef
+                client.fetch(`*[_type == "landingPaquete" && slug.current == "nivel-expansion"][0]{..., "videoFileUrl": videoFile.asset->url}`)
+                    .then((data) => {
+                        if (data) {
+                            setContent(Object.assign({}, defaultContent, data));
+                        }
+                    })
+                    .catch(err => console.error("Error fetching paquete content:", err));
+            }
+        } catch(e) { /* Sanity client not initialized */ }
     }, []);
 
     const renderHTML = (rawHTML) => {

@@ -1,5 +1,18 @@
 import React from 'react';
-import { Volume2, Gauge, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Music, Activity, Target, Layers } from 'lucide-react';
+import { Volume2, Palette, ArrowLeftRight, Type, ImageIcon, Wand2, Activity, Target, Layers, PlusCircle } from 'lucide-react';
+
+// Section defined at module scope to avoid "cannot create components during render" warning
+const Section = ({ title, icon: Icon, children }) => (
+  <div className="mb-6">
+    <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+      <Icon className="w-4 h-4 text-blue-500" />
+      <h4 className="text-white text-xs uppercase tracking-wider font-semibold">{title}</h4>
+    </div>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
+);
 
 export default function FloatingToolbar({ selectedClip, editor, engine }) {
   const clip = selectedClip?.clip;
@@ -14,18 +27,6 @@ export default function FloatingToolbar({ selectedClip, editor, engine }) {
       </div>
     );
   }
-
-  const Section = ({ title, icon: Icon, children }) => (
-    <div className="mb-6">
-      <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
-        <Icon className="w-4 h-4 text-blue-500" />
-        <h4 className="text-white text-xs uppercase tracking-wider font-semibold">{title}</h4>
-      </div>
-      <div className="space-y-4">
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">
@@ -401,6 +402,3 @@ export default function FloatingToolbar({ selectedClip, editor, engine }) {
   );
 }
 
-// Ensure lucide icon 'PlusCircle' is available in the scope since we used it.
-// We'll import it dynamically or just add it to the top.
-import { PlusCircle } from 'lucide-react';

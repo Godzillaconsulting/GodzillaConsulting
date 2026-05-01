@@ -84,7 +84,6 @@ const FormAbordaje = () => {
         if (formData.tiktokVariant === 'business' && !formData.tiktokAccessStatus) return false;
       }
       return true;
-      return true;
     }
     if (step === 4) {
       return formData.citaFecha !== '' && formData.citaHora !== '' && formData.telefono.trim() !== '';

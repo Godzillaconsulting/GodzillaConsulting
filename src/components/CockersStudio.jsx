@@ -77,6 +77,7 @@ const forceDownloadMedia = async (url, defaultFilename) => {
 };
 
 export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor = false }) {
+    const navigate = useNavigate();
     const [queue, setQueue] = useState([]);
     // Eliminado showEditorModal
     const [selectedDraft, setSelectedDraft] = useState(null);
@@ -897,55 +898,56 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             // ── 2. Lanzar requests con stagger (Petición por Bloques) ──
             const toPoll = [];
 
+            // --- FALLBACK CASCADE (hoisted so polling callback can access it) ---
+            const runFallback = async (slotIdx, eName) => {
+                let fbName = eName;
+                let fbModel = 'flux';
+                let injectedStyle = '';
+                
+                if (eName.includes('Imagen')) { 
+                    fbModel = 'flux-realism';
+                    injectedStyle = ', ultra-realistic photography, 8k resolution, highly detailed, 85mm lens, photorealistic';
+                } else if (eName.includes('Gemini')) { 
+                    fbModel = 'turbo';
+                    injectedStyle = ', vibrant vivid colors, digital art, highly creative, dramatic lighting, masterpiece';
+                } else if (eName.includes('Sora') || eName.includes('Midjourney')) { 
+                    fbModel = 'any-dark';
+                    injectedStyle = ', dark fantasy style, gloomy, studio ghibli 2d illustration, cinematic dark lighting';
+                }
+
+                const seed = Math.floor(Math.random() * 1000000);
+                let w = 1024, h = 1024;
+                if (ar === '16:9') { w = 1280; h = 720; }
+                else if (ar === '9:16') { w = 720; h = 1280; }
+                else if (ar === '3:4') { w = 768; h = 1024; }
+                else if (ar === '4:3') { w = 1024; h = 768; }
+                
+                updateSlot(slotIdx, { status: 'loading', progress: 60, provider: fbName });
+                
+                const augmentedPrompt = promptAmentado + injectedStyle;
+                const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(augmentedPrompt)}?seed=${seed}&width=${w}&height=${h}&nologo=true&model=${fbModel}`;
+                try {
+                    const res = await fetch(pollUrl);
+                    if (!res.ok) throw new Error('Pollinations Limit');
+                    const blob = await res.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    updateSlot(slotIdx, { status: 'done', url: objectUrl, progress: 100, provider: fbName });
+                } catch(e) {
+                    updateSlot(slotIdx, { status: 'done', url: pollUrl, progress: 100, provider: fbName });
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            };
+
             for (let idx = 0; idx < enginesToRun.length; idx++) {
                 if (cancelRef.current) break;
                 const engineName = enginesToRun[idx];
                 
                 // Retraso de 4.5 segundos entre peticiones para cuidado de tokens y rate-limits
                 if (idx > 0) await new Promise(r => setTimeout(r, 4500));
-                
-                // --- FALLBACK CASCADE ---
-                const runFallback = async (slotIdx, eName) => {
-                    let fbName = eName;
-                    let fbModel = 'flux';
-                    let injectedStyle = '';
-                    
-                    if (eName.includes('Imagen')) { 
-                        fbModel = 'flux-realism';
-                        injectedStyle = ', ultra-realistic photography, 8k resolution, highly detailed, 85mm lens, photorealistic';
-                    } else if (eName.includes('Gemini')) { 
-                        fbModel = 'turbo';
-                        injectedStyle = ', vibrant vivid colors, digital art, highly creative, dramatic lighting, masterpiece';
-                    } else if (eName.includes('Sora') || eName.includes('Midjourney')) { 
-                        fbModel = 'any-dark';
-                        injectedStyle = ', dark fantasy style, gloomy, studio ghibli 2d illustration, cinematic dark lighting';
-                    }
-
-                    const seed = Math.floor(Math.random() * 1000000);
-                    let w = 1024, h = 1024;
-                    if (ar === '16:9') { w = 1280; h = 720; }
-                    else if (ar === '9:16') { w = 720; h = 1280; }
-                    else if (ar === '3:4') { w = 768; h = 1024; }
-                    else if (ar === '4:3') { w = 1024; h = 768; }
-                    
-                    updateSlot(slotIdx, { status: 'loading', progress: 60, provider: fbName });
-                    
-                    const augmentedPrompt = promptAmentado + injectedStyle;
-                    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(augmentedPrompt)}?seed=${seed}&width=${w}&height=${h}&nologo=true&model=${fbModel}`;
-                    try {
-                        const res = await fetch(pollUrl);
-                        if (!res.ok) throw new Error('Pollinations Limit');
-                        const blob = await res.blob();
-                        const objectUrl = URL.createObjectURL(blob);
-                        updateSlot(slotIdx, { status: 'done', url: objectUrl, progress: 100, provider: fbName });
-                    } catch(e) {
-                        updateSlot(slotIdx, { status: 'done', url: pollUrl, progress: 100, provider: fbName });
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
-                };
 
                 try {
                     // Try Primary Engine (Usamos la API para TODO: Imágenes y Videos, para tener calidad Premium)
+
 
                     const resFetch = await fetch('/api/studio/generate', {
                         method: 'POST',
@@ -2242,7 +2244,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                 </div>
                                                             ) : opt.refinedUrl === 'error' || !opt.refinedUrl ? (
                                                                 <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-900/30">
-                                                                    <button onClick={(e) => { e.stopPropagation(); triggerSingleRefine(opt, i, selectedDraft.id, finalPrompt || selectedDraft.visual_prompt); }} className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[9px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 xl:scale-100 scale-90">
+                                                                    <button onClick={(e) => { e.stopPropagation(); triggerUltraOnOption(opt, i, selectedDraft.id, finalPrompt || selectedDraft.visual_prompt); }} className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-[9px] font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 xl:scale-100 scale-90">
                                                                         <span>✨</span> Aplicar Filtro Ultra
                                                                     </button>
                                                                     <span className="text-[7px] text-neutral-600 mt-2">Gemini Ultra Engine</span>

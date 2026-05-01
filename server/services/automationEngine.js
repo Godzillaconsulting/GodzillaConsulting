@@ -649,18 +649,6 @@ class AutomationEngine {
             return ctx;
         },
 
-        'Make (Integromat)': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] ⚡ Make Webhook — URL: ${cfg.webhookUrl}`);
-            return { ...ctx, _makeStatus: 'triggered' };
-        },
-
-        'Zapier Webhook': async (node, ctx) => {
-            const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
-            console.log(`[Engine] ⚡ Zapier Webhook — URL: ${cfg.webhookUrl}`);
-            return { ...ctx, _zapierStatus: 'triggered' };
-        },
-
         'Paquete de Contenido Social': async (node, ctx) => {
             const cfg = AutomationEngine.evaluateConfig(node.config, ctx);
             

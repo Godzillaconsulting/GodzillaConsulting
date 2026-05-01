@@ -66,6 +66,9 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
+        const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)[!¡.,\s]*$/i;
+        const isGreetingOnly = GREETING_REGEX.test(lastMsg.trim());
+
         let waterfallMessages = [{ role: "system", content: systemPrompt }];
         for (const msg of history) {
             waterfallMessages.push({
@@ -76,7 +79,8 @@ export const processChatMessage = async (req, res) => {
         waterfallMessages.push({ role: "user", content: lastMsg });
 
         let waterfallTools = undefined;
-        if (tools && tools.length > 0) {
+        // Solo inyectar herramientas si no es un simple saludo, igual que en WA
+        if (!isGreetingOnly && tools && tools.length > 0) {
             waterfallTools = tools.map(t => ({
                 type: "function",
                 function: {
@@ -93,7 +97,9 @@ export const processChatMessage = async (req, res) => {
         try {
             const aiRes = await executeAiWaterfall(waterfallMessages, {
                 tools: waterfallTools,
-                temperature: 0.1
+                temperature: isGreetingOnly ? 0.5 : 0.1,
+                maxTokens: isGreetingOnly ? 256 : 768,
+                mode: 'gemini_exclusive'
             });
 
             responseText = aiRes.content || '';
@@ -206,7 +212,10 @@ export const processChatMessage = async (req, res) => {
 
             try {
                 const aiRes2 = await executeAiWaterfall(waterfallMessages, {
-                    temperature: 0.1
+                    tools: waterfallTools,
+                    temperature: 0.1,
+                    maxTokens: 512,
+                    mode: 'gemini_exclusive'
                 });
                 
                 if (aiRes2 && aiRes2.content) {

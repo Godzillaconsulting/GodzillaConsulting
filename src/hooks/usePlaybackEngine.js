@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 
 /**
  * Manages the playback loop using requestAnimationFrame.
@@ -14,6 +14,7 @@ export function usePlaybackEngine(project, videoRef) {
   const lastTickRef    = useRef(0);
   const isPlayingRef   = useRef(false);
   const rafIdRef       = useRef(null);
+  const rafLoopRef     = useRef(null); // ref to rafLoop to avoid hoisting issue
   const displayTickRef = useRef(0); // throttle display updates
 
   // Derived layer data as ref to avoid stale closures in RAF
@@ -186,16 +187,22 @@ export function usePlaybackEngine(project, videoRef) {
       setDisplayTime(globalTimeRef.current);
     }
 
-    rafIdRef.current = requestAnimationFrame(rafLoop);
+    rafIdRef.current = requestAnimationFrame(rafLoopRef.current);
   }, [syncVideoToTime, syncAudioToTime, videoRef]);
+
+  // Sync the ref so the loop can reference itself — must be in useLayoutEffect, not during render
+  useLayoutEffect(() => {
+    rafLoopRef.current = rafLoop;
+  });
 
   const play = useCallback(() => {
     if (isPlayingRef.current) return;
     isPlayingRef.current = true;
     lastTickRef.current  = performance.now();
     setIsPlaying(true);
-    rafIdRef.current = requestAnimationFrame(rafLoop);
-  }, [rafLoop]);
+    rafIdRef.current = requestAnimationFrame(rafLoopRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pause = useCallback(() => {
     isPlayingRef.current = false;

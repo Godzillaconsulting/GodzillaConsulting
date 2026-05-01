@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'backups/', 'server/backups/', '*.cjs', '*.mjs', 'tmp/', 'tmp_*.js']),
+  globalIgnores(['dist', 'backups/', 'server/backups/', 'server/.puppeteer_ig_profile/', '.wwebjs_cache/', '.wwebjs_auth/', 'tiktok_session/', 'server/sessions/', '*.cjs', '*.mjs', 'tmp/', 'tmp_*.js', 'temp_whatsapp.js', 'server/temp_whatsapp.js']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

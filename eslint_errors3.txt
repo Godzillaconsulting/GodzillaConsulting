@@ -1,0 +1,300 @@
+﻿
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\App.jsx
+    2:17  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+    2:38  warning  'memo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  125:14  warning  'e' is defined but never used                                                    no-unused-vars
+  125:17  warning  Empty block statement                                                            no-empty
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AIContentPlanner.jsx
+  271:18  warning  'err' is defined but never used  no-unused-vars
+  429:22  warning  '_' is defined but never used    no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AbordajeLeadsPanel.jsx
+   5:46  warning  'adminProfile' is defined but never used                                                                       no-unused-vars
+  36:18  warning  'err' is defined but never used                                                                                no-unused-vars
+  45:8   warning  React Hook useEffect has a missing dependency: 'fetchLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  89:18  warning  'err' is defined but never used                                                                                no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AdminProfile.jsx
+  103:8   warning  React Hook useEffect has a missing dependency: 'fetchTasks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  162:18  warning  'e' is defined but never used                                                                                  no-unused-vars
+  193:18  warning  'err' is defined but never used                                                                                no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AdminStudio.jsx
+  132:9   warning  'savedDraftKeys' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+  132:25  warning  'setSavedDraftKeys' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+  142:9   warning  'isLandingMenuOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+  142:28  warning  'setIsLandingMenuOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                   no-unused-vars
+  143:9   warning  'isOpsMenuOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  143:24  warning  'setIsOpsMenuOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                       no-unused-vars
+  228:17  warning  'e' is defined but never used                                                                                          no-unused-vars
+  228:19  warning  Empty block statement                                                                                                  no-empty
+  290:8   warning  'canEditSite' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+  293:8   warning  'canSeeITStudio' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+  302:5   warning  React Hook useEffect has a missing dependency: 'setPreviewOverride'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  306:5   warning  React Hook useEffect has a missing dependency: 'setPreviewOverride'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  308:8   warning  'selectedNode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                           no-unused-vars
+  406:5   warning  React Hook useMemo has an unnecessary dependency: 'selectedNodeId'. Either exclude it or remove the dependency array   react-hooks/exhaustive-deps
+  456:14  warning  'err' is defined but never used                                                                                        no-unused-vars
+  481:14  warning  'e' is defined but never used                                                                                          no-unused-vars
+  648:20  warning  'tag' is defined but never used                                                                                        no-unused-vars
+  656:20  warning  'tag' is defined but never used                                                                                        no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AnalyticsDashboard.jsx
+  456:11  warning  'isVideo' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  487:22  warning  'e' is defined but never used                                                                no-unused-vars
+  502:11  warning  'topComments' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  509:11  warning  'peakHours' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AutomationFlow.jsx
+   322:30  warning  'pm2Status' is defined but never used                                                    no-unused-vars
+   397:17  warning  'preview' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   563:53  warning  'username' is defined but never used                                                     no-unused-vars
+   588:14  warning  'e' is defined but never used                                                            no-unused-vars
+   764:64  warning  'e' is defined but never used                                                            no-unused-vars
+   767:64  warning  'e' is defined but never used                                                            no-unused-vars
+   892:13  warning  'e' is defined but never used                                                            no-unused-vars
+   913:13  warning  'e' is defined but never used                                                            no-unused-vars
+   913:15  warning  Empty block statement                                                                    no-empty
+   920:15  warning  'e' is defined but never used                                                            no-unused-vars
+   920:17  warning  Empty block statement                                                                    no-empty
+  2013:14  warning  'e' is defined but never used                                                            no-unused-vars
+  2028:14  warning  'e' is defined but never used                                                            no-unused-vars
+  2037:14  warning  'e' is defined but never used                                                            no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Bots.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\BugTrackerUI.jsx
+  13:8  warning  React Hook useEffect has a missing dependency: 'fetchBugs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CMCalendar.jsx
+    19:20  warning  'profile' is defined but never used                                                                                                                  no-unused-vars
+    50:17  warning  'e' is defined but never used                                                                                                                        no-unused-vars
+   107:12  warning  'sortBy' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                               no-unused-vars
+   107:20  warning  'setSortBy' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                            no-unused-vars
+   196:8   warning  React Hook useEffect has a missing dependency: 'showSheetsModal'. Either include it or remove the dependency array                                   react-hooks/exhaustive-deps
+   314:8   warning  React Hook useEffect has missing dependencies: 'adminProfile', 'currentUser', and 'fetchTrends'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   364:22  warning  '_' is defined but never used                                                                                                                        no-unused-vars
+   364:25  warning  Empty block statement                                                                                                                                no-empty
+   460:18  warning  'e' is defined but never used                                                                                                                        no-unused-vars
+   485:11  warning  'toggleNetwork' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                        no-unused-vars
+   492:11  warning  'handleSendToNetworks' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                 no-unused-vars
+   649:18  warning  'err' is defined but never used                                                                                                                      no-unused-vars
+   679:18  warning  'err' is defined but never used                                                                                                                      no-unused-vars
+   788:8   warning  React Hook useCallback has a missing dependency: 'calendarEventsMap'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  1923:42  warning  'error' is defined but never used                                                                                                                    no-unused-vars
+  2094:50  warning  'err' is defined but never used                                                                                                                      no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CanvasCaptcha.jsx
+  79:8  warning  React Hook useEffect has a missing dependency: 'generateCaptcha'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CasosExito.jsx
+  93:11  warning  The 'nodeData' logical expression could make the dependencies of useMemo Hook (at line 170) change on every render. To fix this, wrap the initialization of 'nodeData' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CeoEstudioPanel.jsx
+   19:17  warning  'e' is defined but never used                                                                                                no-unused-vars
+  114:21  warning  Empty block statement                                                                                                        no-empty
+  117:8   warning  React Hook useEffect has missing dependencies: 'fetchTasks' and 'token'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Chatbot.jsx
+  1:46  warning  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  4:10  warning  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CockersStudio.jsx
+     1:59  warning  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                               no-unused-vars
+     4:10  warning  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                no-unused-vars
+     4:51  warning  'useTransform' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+   111:8   warning  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   160:12  warning  'credits' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+   160:21  warning  'setCredits' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                   no-unused-vars
+   322:12  warning  'refiningTasks' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+   397:11  warning  'refineWithUltra' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   448:30  warning  'e' is defined but never used                                                                                no-unused-vars
+   519:29  warning  'e' is defined but never used                                                                                no-unused-vars
+   524:17  warning  'e' is defined but never used                                                                                no-unused-vars
+   532:11  warning  'triggerAutoUltra' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   630:12  warning  'elitePrompts' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   851:15  warning  'rawPrompt' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+   935:25  warning  'e' is defined but never used                                                                                no-unused-vars
+   970:25  warning  'e' is defined but never used                                                                                no-unused-vars
+   994:34  warning  'e' is defined but never used                                                                                no-unused-vars
+  1022:29  warning  'e' is defined but never used                                                                                no-unused-vars
+  1154:34  warning  'ratio' is defined but never used                                                                            no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\ContactForm.jsx
+    8:8   warning  'linkedinIcon' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   13:8   warning  'isSpanish' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   60:11  warning  'e' is defined but never used                                                              no-unused-vars
+  116:12  warning  'err' is defined but never used                                                            no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CrmSaas.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Cultura.jsx
+  7:7  warning  'culturaImage' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CustomCursor.jsx
+  52:37  warning  The ref value 'elementsRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'elementsRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  54:6   warning  React Hook useEffect has a missing dependency: 'hiddenRoutes'. Either include it or remove the dependency array                                                                                                                                                        react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\DBStudioPanel.jsx
+  21:8   warning  React Hook useEffect has a missing dependency: 'fetchTables'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  58:18  warning  'err' is defined but never used                                                                                 no-unused-vars
+  90:18  warning  'err' is defined but never used                                                                                 no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\DynamicMedia.jsx
+   1:36  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                  no-unused-vars
+  60:63  warning  The ref value 'videoRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'videoRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\EmbudosDeVenta.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\ErrorBoundary.jsx
+  9:35  warning  'error' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\FloatingToolbar.jsx
+  5:33  warning  'Icon' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\FormAbordaje.jsx
+  787:28  warning  'err' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\GestionRedesSociales.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\GodzillaSora.jsx
+   62:8  warning  React Hook useEffect has a missing dependency: 'fetchHistory'. Either include it or remove the dependency array                                              react-hooks/exhaustive-deps
+  106:8  warning  React Hook useEffect has missing dependencies: 'BACKEND_API_URL', 'SORA_SOCKET_URL', and 'fetchHistory'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\GoyiAdmin.jsx
+  60:25  warning  'e' is defined but never used  no-unused-vars
+  60:28  warning  Empty block statement          no-empty
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Hero.jsx
+  28:11  warning  'overline' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\LandingPaqueteDynamic.jsx
+  20:8  warning  'tr' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\LeadMagnetsPanel.jsx
+  101:18  warning  'err' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Login.jsx
+   59:8   warning  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  180:18  warning  'err' is defined but never used                                                                              no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\MediaPicker.jsx
+  111:52  warning  'url' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Navbar.jsx
+   2:16  warning  'useNavigate' is defined but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+  10:9   warning  'activeTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  10:20  warning  'setActiveTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\NewsletterPanel.jsx
+   87:8    warning  React Hook useEffect has a missing dependency: 'setPreviewOverride'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   94:8    warning  React Hook useEffect has a missing dependency: 'setPreviewOverride'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  165:25   warning  'e' is defined but never used                                                                                          no-unused-vars
+  165:27   warning  Empty block statement                                                                                                  no-empty
+  451:106  warning  'e' is defined but never used                                                                                          no-unused-vars
+  451:108  warning  Empty block statement                                                                                                  no-empty
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\NivelElite.jsx
+  32:13  warning  Unused eslint-disable directive (no problems were reported from 'no-undef')
+  43:17  warning  'e' is defined but never used                                                no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\NivelExpansion.jsx
+  32:13  warning  Unused eslint-disable directive (no problems were reported from 'no-undef')
+  43:17  warning  'e' is defined but never used                                                no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\OptimizacionWebSeo.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\PanelMaestroPanel.jsx
+   75:18  warning  'e' is defined but never used  no-unused-vars
+  101:18  warning  'e' is defined but never used  no-unused-vars
+  127:18  warning  'e' is defined but never used  no-unused-vars
+  153:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Paquetes.jsx
+  7:8  warning  'godzillaHover' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\ParticleField.jsx
+  82:5  warning  Compilation Skipped: Inline `class` declarations are not supported
+
+Move class declarations outside of components/hooks.
+
+   80 |
+   81 |     // ΓöÇΓöÇ Particle class ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+>  82 |     class Particle {
+      |     ^^^^^^^^^^^^^^^^
+>  83 |       constructor() { this.spawn(true); }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  84 |
+      ΓÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 166 |       }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 167 |     }
+      | ^^^^^^ Inline `class` declarations are not supported
+  168 |
+  169 |     let particles = Array.from(
+  170 |       { length: propsRef.current.particleCount },
+
+  react-hooks/unsupported-syntax
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\PreguntasFrecuentes.jsx
+  80:15  warning  'setFaqs' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\ProduccionAudiovisual.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'nodeData'. Either include it or remove the dependency array                               react-hooks/exhaustive-deps
+  49:9  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\Recursos.jsx
+  40:11  warning  The 'nodeData' logical expression could make the dependencies of useMemo Hook (at line 131) change on every render. To fix this, wrap the initialization of 'nodeData' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  47:26  warning  'setMagnetsState' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                   no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\SociosGodzilla.jsx
+  8:13  warning  't' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\SqlAtaquesPanel.jsx
+  3:43  warning  'adminProfile' is defined but never used  no-unused-vars
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\VideoEditorModal.jsx
+   43:27  warning  'setInitialVideoUrl' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+   70:27  warning  'setCaptionLanguage' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+   73:24  warning  'setCaptionStyle' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                       no-unused-vars
+  208:6   warning  React Hook useCallback has an unnecessary dependency: 'editor'. Either exclude it or remove the dependency array                                      react-hooks/exhaustive-deps
+  223:6   warning  React Hook useCallback has an unnecessary dependency: 'editor'. Either exclude it or remove the dependency array                                      react-hooks/exhaustive-deps
+  257:6   warning  React Hook useCallback has an unnecessary dependency: 'editor'. Either exclude it or remove the dependency array                                      react-hooks/exhaustive-deps
+  298:6   warning  React Hook useCallback has an unnecessary dependency: 'editor'. Either exclude it or remove the dependency array                                      react-hooks/exhaustive-deps
+  395:6   warning  React Hook useCallback has a missing dependency: 'iaScope'. Either include it or remove the dependency array                                          react-hooks/exhaustive-deps
+  501:6   warning  React Hook useCallback has missing dependencies: 'CAPTION_STYLES', 'captionStyle', and 'iaScope'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  647:6   warning  React Hook useCallback has a missing dependency: 'CAPTION_STYLES'. Either include it or remove the dependency array                                   react-hooks/exhaustive-deps
+  732:6   warning  React Hook useMemo has a missing dependency: 'timelineZoom'. Either include it or remove the dependency array                                         react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\context\SiteContext.jsx
+   2:10  warning  'useTranslation' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  88:1   warning  Unused eslint-disable directive (no problems were reported from 'react-refresh/only-export-components')
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\hooks\useFFmpegRenderer.js
+    1:10  warning  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                            no-unused-vars
+   38:38  warning  'w' is defined but never used                                                                                            no-unused-vars
+   38:41  warning  'h' is defined but never used                                                                                            no-unused-vars
+  243:13  warning  'isVideoWithAudio' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+  297:11  warning  'fps' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                      no-unused-vars
+  298:11  warning  'crf' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                      no-unused-vars
+  299:11  warning  'preset' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                   no-unused-vars
+  383:6   warning  React Hook useCallback has a missing dependency: 'USE_NATIVE_BACKEND'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\hooks\usePlaybackEngine.js
+  204:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+Γ£û 175 problems (0 errors, 175 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+

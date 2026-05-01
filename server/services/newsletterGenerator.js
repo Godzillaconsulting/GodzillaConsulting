@@ -13,9 +13,11 @@ const __dirname = path.dirname(__filename);
 const ASSETS_DIR = ARCHIVOS_PESADOS_DIR;
 
 const cleanJsonStr = (text) => {
-    let t = text.replace(/```json/i, '').replace(/```/i, '').trim();
-    if (!t.startsWith('{')) t = '{' + t.substring(t.indexOf('{'));
-    if (!t.endsWith('}')) t = t.substring(0, t.lastIndexOf('}') + 1);
+    if (!text) return "{}";
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1) return "{}";
+    let t = text.substring(start, end + 1);
     // Sanitizar saltos de línea literales dentro de los valores string generados por la IA
     t = t.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/gs, (match, p1) => {
         return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '') + '"';

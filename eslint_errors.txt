@@ -1,0 +1,347 @@
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\fetch-bundle.js
+  4:32  error  Unnecessary escape character: \"  no-useless-escape
+  4:59  error  Unnecessary escape character: \"  no-useless-escape
+  4:68  error  Unnecessary escape character: \"  no-useless-escape
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\fetch-bundle2.js
+  2:44  error  Unnecessary escape character: \"  no-useless-escape
+  3:55  error  Unnecessary escape character: \"  no-useless-escape
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\fetch-bundle3.js
+  5:28  error  Unnecessary escape character: \"  no-useless-escape
+  5:72  error  Unnecessary escape character: \"  no-useless-escape
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\controllers\chatController.js
+  93:9  error  Unnecessary try/catch wrapper  no-useless-catch
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\instagram_bot.mjs
+  153:7  error  Parsing error: Unexpected token catch
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\services\automationEngine.js
+  652:9  error  Duplicate key 'Make (Integromat)'  no-dupe-keys
+  658:9  error  Duplicate key 'Zapier Webhook'     no-dupe-keys
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\setup_analytics_db.js
+  7:8  error  Parsing error: Identifier 'dotenv' has already been declared
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\tiktok_bypass.js
+  151:21  error  Parsing error: Missing catch or finally clause
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\server\whatsappBot.js
+  160:40  error  React Hook "useMultiFileAuthState" is called in function "initWhatsAppBot" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word "use"  react-hooks/rules-of-hooks
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AdminProfile.jsx
+  119:13  error  Error: Cannot access variable before it is declared
+
+`fetchSecurityAlerts` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  117 |     useEffect(() => {
+  118 |         if (subTab === 'personal' && canManageUsers) {
+> 119 |             fetchSecurityAlerts();
+      |             ^^^^^^^^^^^^^^^^^^^ `fetchSecurityAlerts` accessed before it is declared
+  120 |         }
+  121 |     }, [subTab, profile, canManageUsers]);
+  122 |
+
+  121 |     }, [subTab, profile, canManageUsers]);
+  122 |
+> 123 |     const fetchSecurityAlerts = async () => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 124 |         try {
+      | ^^^^^^^^^^^^^
+> 125 |             const token = localStorage.getItem('adminToken');
+      …
+      | ^^^^^^^^^^^^^
+> 135 |         }
+      | ^^^^^^^^^^^^^
+> 136 |     };
+      | ^^^^^^^ `fetchSecurityAlerts` is declared here
+  137 |
+  138 |     const handleSavePersonal = async (e) => {
+  139 |         e.preventDefault();  react-hooks/immutability
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\AutomationFlow.jsx
+  871:14  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  869 |
+  870 |   const addPreset = (p) => {
+> 871 |     const id=Date.now().toString(), vx=(canvasRef.current?.scrollLeft||0)+300, vy=(canvasRef.current?.scrollTop||0)+200;
+      |              ^^^^^^^^^^ Cannot call impure function
+  872 |     setNodes(n=>[...n,{id,type:p.title==='Planificador IA'?'trigger':'action',title:p.title,subtitle:p.subtitle,icon:p.icon,x:vx+Math.random()*50,y:vy+Math.random()*50,color:p.color,pm2_process:p.pm2_process}]);
+  873 |     setSelectedNodeId(id); setShowNodeMenu(false);
+  874 |   };  react-hooks/purity
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CMCalendar.jsx
+  913:50  error  Unexpected surrogate pair in character class. Use 'u' flag  no-misleading-character-class
+  913:52  error  Unexpected surrogate pair in character class. Use 'u' flag  no-misleading-character-class
+  913:55  error  Unexpected surrogate pair in character class. Use 'u' flag  no-misleading-character-class
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CanvasCaptcha.jsx
+  14:45  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  12 |         let text = '';
+  13 |         for (let i = 0; i < length; i++) {
+> 14 |             text += chars.charAt(Math.floor(Math.random() * chars.length));
+     |                                             ^^^^^^^^^^^^^ Cannot call impure function
+  15 |         }
+  16 |         setCaptchaText(text);
+  17 |         drawCaptcha(text);  react-hooks/purity
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\CockersStudio.jsx
+   108:13   error  'navigate' is not defined             no-undef
+  1015:33   error  'runFallback' is not defined          no-undef
+  1633:186  error  'navigate' is not defined             no-undef
+  1932:165  error  'navigate' is not defined             no-undef
+  1947:173  error  'navigate' is not defined             no-undef
+  2085:113  error  'navigate' is not defined             no-undef
+  2221:164  error  'navigate' is not defined             no-undef
+  2231:168  error  'navigate' is not defined             no-undef
+  2245:116  error  'triggerSingleRefine' is not defined  no-undef
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\FloatingToolbar.jsx
+   42:12  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  40 |         {/* TEXT PROPERTIES */}
+  41 |         {type === 'text' && (
+> 42 |           <Section title="Tipografía & Texto" icon={Type}>
+     |            ^^^^^^^ This component is created during render
+  43 |             <textarea value={clip.text || ''}
+  44 |               onChange={e => editor.updateClip(clip.id, { text: e.target.value }, true)}
+  45 |               className="w-full bg-[#27272a] border border-[#3f3f46] text-white text-xs rounded-lg p-3 outline-none focus:border-yellow-500 transition-colors resize-none min-h-[60px]" />
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">  react-hooks/static-components
+  176:12  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  174 |         {/* AUDIO & VIDEO COMMON */}
+  175 |         {(type === 'audio' || type === 'video') && (
+> 176 |           <Section title="Volumen & Audio" icon={Volume2}>
+      |            ^^^^^^^ This component is created during render
+  177 |             <div className="flex items-center gap-3">
+  178 |               <Volume2 className="w-4 h-4 text-neutral-400" />
+  179 |               <input type="range" min="0" max="2" step="0.05"
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                                                                                              react-hooks/static-components
+  215:14  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  213 |         {type === 'video' && (
+  214 |           <>
+> 215 |             <Section title="Transformación (PiP)" icon={ImageIcon}>
+      |              ^^^^^^^ This component is created during render
+  216 |               <div className="space-y-4">
+  217 |                 {[
+  218 |                   { key: 'scale', label: 'Escala', min: 0.1, max: 3, step: 0.1, def: 1, unit: 'x' },
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                                                                                                                                                  react-hooks/static-components
+  239:14  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  237 |             </Section>
+  238 |
+> 239 |             <Section title="Color Grading Avanzado" icon={Palette}>
+      |              ^^^^^^^ This component is created during render
+  240 |               <div className="flex gap-4 mb-6">
+  241 |                 {['Sombras', 'Medios', 'Luces'].map(t => (
+  242 |                   <div key={t} className="flex flex-col items-center flex-1">
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                                                                                                                                                react-hooks/static-components
+  274:14  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  272 |             </Section>
+  273 |
+> 274 |             <Section title="Máscaras, FX & Tracking" icon={Wand2}>
+      |              ^^^^^^^ This component is created during render
+  275 |               <div className="grid grid-cols-2 gap-2 mb-6">
+  276 |                 {[ {id:'blur', label:'Desenfocar Gaussian'}, {id:'vhs', label:'Glitch / VHS'}, {id:'bw', label:'Cinematic LUT'}, {id:'vignette', label:'Viñeta Dinámica'} ].map(fx => {
+  277 |                   const active = clip.effects?.includes(fx.id);
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                      react-hooks/static-components
+  331:14  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  329 |             </Section>
+  330 |
+> 331 |             <Section title="Keyframes & Animación" icon={Activity}>
+      |              ^^^^^^^ This component is created during render
+  332 |                <div className="bg-[#27272a] border border-[#3f3f46] rounded-lg p-4">
+  333 |                  <div className="text-center mb-3">
+  334 |                    <Activity className="w-6 h-6 text-blue-500 mx-auto mb-2 opacity-80" />
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                                                                                                      react-hooks/static-components
+  375:14  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  373 |             </Section>
+  374 |
+> 375 |             <Section title="Transición (Entrada)" icon={ArrowLeftRight}>
+      |              ^^^^^^^ This component is created during render
+  376 |               <div className="grid grid-cols-2 gap-2 mb-4">
+  377 |                 {[['cut','Ninguna'],['fade','Fundido'],['wipeleft','Barrido'],['slideleft','Deslizar'],['zoom','Zoom In']].map(([t, label]) => {
+  378 |                   const active = (clip.transitionIn?.type ?? 'cut') === t;
+
+  16 |   }
+  17 |
+> 18 |   const Section = ({ title, icon: Icon, children }) => (
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     <div className="mb-6">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |       <div className="flex items-center gap-2 mb-4 border-b border-[#27272a] pb-2">
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |   );
+     | ^^^^ The component is created during render here
+  29 |
+  30 |   return (
+  31 |     <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">                                                            react-hooks/static-components
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\FormAbordaje.jsx
+  87:7  error  Unreachable code  no-unreachable
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\NivelElite.jsx
+  31:9  error  'client' is not defined  no-undef
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\components\NivelExpansion.jsx
+  31:9  error  'client' is not defined  no-undef
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\src\hooks\usePlaybackEngine.js
+  189:46  error  Error: Cannot access variable before it is declared
+
+`rafLoop` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  187 |     }
+  188 |
+> 189 |     rafIdRef.current = requestAnimationFrame(rafLoop);
+      |                                              ^^^^^^^ `rafLoop` accessed before it is declared
+  190 |   }, [syncVideoToTime, syncAudioToTime, videoRef]);
+  191 |
+  192 |   const play = useCallback(() => {
+
+  154 |   }, []);
+  155 |
+> 156 |   const rafLoop = useCallback(() => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 157 |     if (!isPlayingRef.current) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 158 |
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 189 |     rafIdRef.current = requestAnimationFrame(rafLoop);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 190 |   }, [syncVideoToTime, syncAudioToTime, videoRef]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `rafLoop` is declared here
+  191 |
+  192 |   const play = useCallback(() => {
+  193 |     if (isPlayingRef.current) return;  react-hooks/immutability
+
+C:\Users\GODZILLA.IA\GodzillaConsulting\temp_whatsapp.js
+  1:1  error  Parsing error: Unexpected character '�'
+
+✖ 41 problems (41 errors, 0 warnings)
+

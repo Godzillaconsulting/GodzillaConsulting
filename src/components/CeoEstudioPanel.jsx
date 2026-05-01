@@ -709,6 +709,14 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
                                         Actualizar Estado
                                     </button>
+                                    {canReview && (
+                                        <button 
+                                            onClick={(e) => handleDelete(selected.id, e)}
+                                            className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors mt-2"
+                                        >
+                                            🗑 Descartar / Borrar Activo
+                                        </button>
+                                    )}
                                 </div>
                             )}
 

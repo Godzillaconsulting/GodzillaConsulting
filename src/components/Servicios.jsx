@@ -29,9 +29,10 @@ const Servicios = () => {
     const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
     
     const nodeData = getNodeData('servicios') || {};
+    const engTrans = nodeData.translations?.en || {};
     
     // ── Typewriter effect ──────────────────────────────────────────────────
-    const rawTitle = isSpanish ? (nodeData.title || 'SERVICIOS') : t('services.title');
+    const rawTitle = isSpanish ? (nodeData.title || 'SERVICIOS') : (engTrans.title || t('services.title'));
     const [typedTitle, setTypedTitle] = useState('');
     const [startTyping, setStartTyping] = useState(false);
     const titleContainerRef = useRef(null);
@@ -77,8 +78,8 @@ const Servicios = () => {
 
         return {
             ...srv,
-            title: isSpanish ? (nodeData[`service${num}Title`] || srv.title) : t(`services.items.${locKey}.title`, srv.title),
-            desc: isSpanish ? (nodeData[`service${num}Desc`] || srv.desc) : t(`services.items.${locKey}.desc`, srv.desc),
+            title: isSpanish ? (nodeData[`service${num}Title`] || srv.title) : (engTrans[`service${num}Title`] || t(`services.items.${locKey}.title`, srv.title)),
+            desc: isSpanish ? (nodeData[`service${num}Desc`] || srv.desc) : (engTrans[`service${num}Desc`] || t(`services.items.${locKey}.desc`, srv.desc)),
         };
     });
 
@@ -184,14 +185,14 @@ const Servicios = () => {
                 <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#111111] to-transparent z-10"></div>
                 <div ref={titleContainerRef} className="relative z-20 flex flex-col items-center justify-center mt-10">
                     <span className="text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
-                        {isSpanish ? (nodeData.overline || "Soluciones de Alto Impacto") : t('services.overline')}
+                        {isSpanish ? (nodeData.overline || "Soluciones de Alto Impacto") : (engTrans.overline || t('services.overline'))}
                     </span>
                     <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl inline-block animate-blink-cursor">
                         {typedTitle}
                     </h2>
-                    {nodeData.subtitle && (
+                    {(isSpanish ? nodeData.subtitle : (engTrans.subtitle || nodeData.subtitle)) && (
                         <p className="text-gray-200 mt-4 max-w-2xl text-center text-base md:text-lg drop-shadow-lg px-4">
-                            {nodeData.subtitle}
+                            {isSpanish ? nodeData.subtitle : (engTrans.subtitle || nodeData.subtitle)}
                         </p>
                     )}
                 </div>

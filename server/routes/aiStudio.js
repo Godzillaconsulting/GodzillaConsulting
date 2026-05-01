@@ -296,13 +296,12 @@ router.post('/create-video-script', authenticateToken, async (req, res) => {
         // Status: manual_studio → aparece en CEO Estudio con botón "Generar"
         // El MediaWorker SOLO lo procesa cuando el CEO lo cambia a pending_render
         const result = await pool.query(
-            `INSERT INTO studio_tasks (title, prompt, caption, status, assigned_to, media_payload, ig_publish_date, created_by)
-             VALUES ($1, $2, $3, 'manual_studio', $4, $5, $6, $7)
+            `INSERT INTO studio_tasks (title, prompt, status, assigned_to, media_payload, ig_publish_date, created_by)
+             VALUES ($1, $2, 'pending_render', $3, $4, $5, $6)
              RETURNING id`,
             [
                 title,
                 scenes.map((s, i) => `Escena ${i+1}: ${s.narration || s.visual || ''}`).join('\n'),
-                title,
                 uploaderName,
                 JSON.stringify(mediaPayload),
                 publishDate,

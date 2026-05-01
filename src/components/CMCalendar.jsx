@@ -256,7 +256,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     que: t.title,
                     para: t.assigned_to,
                     referencias: t.prompt,
-                    deadline: t.ig_publish_date ? new Date(t.ig_publish_date).toISOString().split('T')[0] : '2026-12-31',
+                    deadline: t.ig_publish_date ? new Date(t.ig_publish_date).toISOString().split('T')[0] : (t.created_at ? new Date(t.created_at).toISOString().split('T')[0] : '2026-12-31'),
                     done: t.status === 'approved',
                     asignadoPor: 'Admin',
                     createdAt: t.created_at,
@@ -1238,31 +1238,24 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         );
     };
 
-    const handleToggleTaskDone = async (taskId, forceStatus = null) => {
-        const currentTask = tasks.find(t => t.id === taskId);
-        if (!currentTask) return;
-        const newDone = forceStatus !== null ? forceStatus : !currentTask.done;
+    const handleDeleteTask = async (taskId) => {
+        if(!window.confirm('¿Estás seguro de que deseas eliminar esta tarea permanentemente?')) return;
         
-        // Optimistic UI update
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: newDone, status: newDone ? 'approved' : 'pending' } : t));
-        if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(prev => ({ ...prev, done: newDone, status: newDone ? 'approved' : 'pending' }));
-
         try {
             const token = localStorage.getItem('adminToken');
             const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
             const res = await fetch(`${API}/api/studio/tasks/${taskId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ status: newDone ? 'approved' : 'pending' })
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
             if (!data.success && !res.ok) throw new Error(data.error || data.message || 'Error DB');
+            
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(null);
         } catch (error) {
-            console.error('Error toggling task:', error);
-            // Revert UI update if failed
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !newDone, status: !newDone ? 'approved' : 'pending' } : t));
-            if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(prev => ({ ...prev, done: !newDone, status: !newDone ? 'approved' : 'pending' }));
-            alert('Error al guardar estado de la tarea en la base de datos.');
+            console.error('Error deleting task:', error);
+            alert('Error al eliminar la tarea en la base de datos.');
         }
     };
 
@@ -1594,10 +1587,6 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                                 ) : tasks.map(task => (
                                                     <div key={task.id} onClick={() => setSelectedTaskBoard(task)}
                                                         className={`flex items-center border-b border-neutral-800/50 px-4 py-2 cursor-pointer max-h-12 transition-all ${selectedTaskBoard?.id === task.id ? 'bg-[#CC0000]/10 border-l-[3px] border-l-[#CC0000]' : 'hover:bg-white/5 border-l-[3px] border-l-transparent'}`}>
-                                                        <div onClick={(e) => { e.stopPropagation(); handleToggleTaskDone(task.id); }}
-                                                            className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center mr-3 cursor-pointer transition-colors ${task.done ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-black border-neutral-600 hover:border-green-500 hover:text-green-500'}`}>
-                                                            {task.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
-                                                        </div>
                                                         <div className={`flex-1 text-sm font-bold truncate transition-colors ${task.done ? 'text-neutral-500 line-through' : 'text-white'}`}>{task.que}</div>
                                                         <div className="hidden xl:flex items-center space-x-1.5 mr-3 shrink-0">
                                                             <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider w-16 text-center truncate">{task.audience || 'Marketing'}</div>
@@ -1619,9 +1608,9 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                             <div className="flex-1 flex flex-col overflow-hidden">
                                                 <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">
                                                     <div className="flex items-center space-x-3 text-xs">
-                                                        <button onClick={() => handleToggleTaskDone(selectedTaskBoard.id)}
-                                                            className={`border rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all ${selectedTaskBoard.done ? 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white' : 'border-neutral-700 hover:border-green-500 hover:text-green-500'}`}>
-                                                            <span className={`mr-2 ${selectedTaskBoard.done ? 'text-green-500' : 'text-neutral-500'}`}>✓</span> {selectedTaskBoard.done ? 'Completado' : 'Marcar Acción'}
+                                                        <button onClick={() => handleDeleteTask(selectedTaskBoard.id)}
+                                                            className="border border-red-500/50 rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all bg-red-900/20 text-red-500 hover:bg-red-500 hover:text-white">
+                                                            <span className="mr-2">❌</span> Eliminar Tarea
                                                         </button>
                                                     </div>
                                                 </div>

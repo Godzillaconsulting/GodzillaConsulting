@@ -589,7 +589,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [videoScript, setVideoScript] = useState({
         title: '',
         voice: 'edge:es-MX-JorgeNeural',
-        scenes: [{ ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }, { ...EMPTY_SCENE }]
+        scenes: [{ ...EMPTY_SCENE }]
     });
     const [submittingVideo, setSubmittingVideo] = useState(false);
     const [videoQueueMsg, setVideoQueueMsg] = useState(null);
@@ -600,6 +600,14 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             next[idx] = { ...next[idx], [field]: val };
             return { ...prev, scenes: next };
         });
+    };
+
+    const addVideoScene = () => {
+        setVideoScript(prev => ({ ...prev, scenes: [...prev.scenes, { ...EMPTY_SCENE }] }));
+    };
+
+    const removeVideoScene = (idx) => {
+        setVideoScript(prev => ({ ...prev, scenes: prev.scenes.filter((_, i) => i !== idx) }));
     };
 
     const submitVideoScript = async () => {
@@ -619,7 +627,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             if (!data.success) throw new Error(data.error);
             setVideoQueueMsg(data.message);
             // Reset form
-            setVideoScript(v => ({ ...v, title: '', scenes: Array(5).fill(null).map(() => ({ ...EMPTY_SCENE })) }));
+            setVideoScript(v => ({ ...v, title: '', scenes: [{ ...EMPTY_SCENE }] }));
         } catch(e) {
             alert(`Error al encolar video: ${e.message}`);
         } finally {
@@ -1684,7 +1692,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 <h2 className="text-xl font-black text-white flex items-center gap-3">
                                     🎬 Nuevo Video Faceless
                                 </h2>
-                                <p className="text-[11px] text-neutral-500 mt-1">Llena las 5 escenas. El MediaWorker las ensambla con voz + imágenes automáticamente.</p>
+                                <p className="text-[11px] text-neutral-500 mt-1">Añade escenas poco a poco. Cada escena consume ~3 Créditos. El MediaWorker las ensambla con voz + imágenes automáticamente.</p>
                             </div>
 
                             {videoQueueMsg && (
@@ -1802,9 +1810,14 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                     ? 'bg-[#CC0000] text-white'
                                                     : 'bg-neutral-800 text-neutral-400'
                                             }`}>{i + 1}</div>
-                                            <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                                            <p className="text-xs font-black text-neutral-400 uppercase tracking-widest flex-1">
                                                 {i === videoScript.scenes.length - 1 ? 'Escena Final (CTA / Llamada a la Acción)' : `Escena ${i + 1}`}
                                             </p>
+                                            {videoScript.scenes.length > 1 && (
+                                                <button onClick={() => removeVideoScene(i)} className="text-[10px] bg-red-900/30 hover:bg-red-900/60 text-red-400 hover:text-red-300 font-bold px-3 py-1.5 rounded-lg transition-colors">
+                                                    🗑️ Eliminar
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
@@ -1832,18 +1845,36 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 ))}
                             </div>
 
+                            <button
+                                onClick={addVideoScene}
+                                className="w-full mt-4 bg-transparent border-2 border-dashed border-neutral-700 hover:border-neutral-500 text-neutral-400 hover:text-white font-bold uppercase tracking-widest py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs"
+                            >
+                                <span>+</span> Añadir Nueva Escena
+                            </button>
+
+                            <div className="flex justify-between items-center mt-6 bg-[#1a1a1a] rounded-xl p-4 border border-neutral-800">
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Duración Estimada</p>
+                                    <p className="text-white font-bold text-sm mt-1">~{videoScript.scenes.length * 5} Segundos</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-[#CC0000] uppercase tracking-widest">Costo Generación</p>
+                                    <p className="text-[#CC0000] font-bold text-sm mt-1">{videoScript.scenes.length * 3} Créditos AI</p>
+                                </div>
+                            </div>
+
                             {/* Botón Submit */}
                             <button
                                 onClick={submitVideoScript}
                                 disabled={submittingVideo}
-                                className="w-full mt-8 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-red-500 hover:to-[#CC0000] disabled:opacity-50 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(204,0,0,0.4)] hover:shadow-[0_0_40px_rgba(204,0,0,0.6)] transition-all flex items-center justify-center gap-3 text-sm"
+                                className="w-full mt-4 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-red-500 hover:to-[#CC0000] disabled:opacity-50 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(204,0,0,0.4)] hover:shadow-[0_0_40px_rgba(204,0,0,0.6)] transition-all flex items-center justify-center gap-3 text-sm"
                             >
                                 {submittingVideo ? (
                                     <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Encolando...</>
                                 ) : (
                                     <>
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
-                                        Generar Video Autónomo (5 Escenas)
+                                        Generar Video Autónomo ({videoScript.scenes.length} Escenas)
                                     </>
                                 )}
                             </button>

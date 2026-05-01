@@ -35,7 +35,17 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 // Utilidad robusta para extraer JSON de respuestas de Gemini
 const extractJSON = (text) => {
     const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-    return match ? match[1].trim() : text.replace(/```(?:json)?|```/gi, '').trim();
+    if (match) return match[1].trim();
+    const startArray = text.indexOf('[');
+    const endArray = text.lastIndexOf(']');
+    const startObj = text.indexOf('{');
+    const endObj = text.lastIndexOf('}');
+    if (startArray !== -1 && endArray !== -1 && (startObj === -1 || startArray < startObj)) {
+        return text.substring(startArray, endArray + 1);
+    } else if (startObj !== -1 && endObj !== -1) {
+        return text.substring(startObj, endObj + 1);
+    }
+    return text.replace(/```(?:json)?|```/gi, '').trim();
 };
 export const generateRenderJob = async (req, res) => {
     try {

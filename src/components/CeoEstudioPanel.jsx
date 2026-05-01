@@ -50,6 +50,34 @@ const resolveMedia = (url) => {
     return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
+const RenderProgress = () => {
+    const [p, setP] = React.useState(0);
+    React.useEffect(() => {
+        const int = setInterval(() => {
+            setP(old => old >= 99 ? 99 : old + Math.floor(Math.random() * 5) + 1);
+        }, 2000);
+        return () => clearInterval(int);
+    }, []);
+    return (
+        <div className="w-full flex flex-col items-center justify-center h-full">
+            <div className="relative w-48 h-48 flex items-center justify-center mb-6">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#1a1a1a" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#f97316" strokeWidth="8" strokeDasharray="283" strokeDashoffset={283 - (283 * p) / 100} className="transition-all duration-1000 ease-out" />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                    <span className="text-4xl font-black text-orange-400">{p}%</span>
+                    <span className="text-[10px] text-orange-500/70 uppercase font-bold mt-1 tracking-widest animate-pulse">Ensamblando</span>
+                </div>
+            </div>
+            <p className="text-orange-300 font-bold tracking-widest uppercase text-sm mb-2">MediaWorker Produciendo</p>
+            <p className="text-neutral-500 text-xs max-w-sm text-center leading-relaxed">
+                Generando imágenes ultra-realistas, sintetizando voz neural y uniendo las escenas con FFmpeg. Por favor espera...
+            </p>
+        </div>
+    );
+};
+
 
 export default function CeoEstudioPanel({ adminProfile }) {
     const [activeTab, setActiveTab] = useState('pendientes');
@@ -527,60 +555,56 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         )}
                                     </div>
 
-                                    {/* Estado de producción */}
-                                    {isManualPending ? (
-                                        <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl p-4 mb-5 flex items-center gap-4">
-                                            <span className="text-3xl shrink-0">🎬</span>
-                                            <div>
-                                                <p className="font-black tracking-widest uppercase text-sm">Esperando Activación</p>
-                                                <p className="text-xs text-cyan-400/70 mt-0.5">Este video fue enviado al Estudio IA. Revisa el guion y presiona "Generar" cuando esté listo.</p>
-                                            </div>
-                                        </div>
-                                    ) : isRenderQueued ? (
-                                        <div className="bg-orange-500/10 border border-orange-500/30 text-orange-300 rounded-xl p-4 mb-5 flex items-center gap-4">
-                                            <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-400 rounded-full animate-spin shrink-0" />
-                                            <div>
-                                                <p className="font-black tracking-widest uppercase text-sm">MediaWorker Produciendo...</p>
-                                                <p className="text-xs text-orange-400/70 mt-0.5">Generando voz, imágenes IA y ensamblando con FFmpeg. Listo en ~2 min. Actualiza la bandeja para ver el resultado.</p>
-                                            </div>
-                                        </div>
-                                    ) : null}
-
-                                    {/* Guion de escenas */}
-                                    <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">📜 Guion de Escenas</h3>
-                                    <div className="space-y-3 text-sm pb-4">
-                                        {readableScenes ? readableScenes.map(({ n, isCTA, narr, visual, texto }) => (
-                                            <div key={n} className={`border rounded-xl p-4 ${
-                                                isCTA ? 'bg-[#CC0000]/5 border-[#CC0000]/30' : 'bg-neutral-900/60 border-neutral-800'
-                                            }`}>
-                                                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
-                                                    isCTA ? 'text-[#CC0000]' : 'text-neutral-500'
-                                                }`}>
-                                                    {isCTA ? `🎯 ESCENA ${n} — CTA` : `ESCENA ${n}`}
-                                                </p>
-                                                {narr && (
-                                                    <div className="mb-2">
-                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🎙️ Narración</p>
-                                                        <p className="text-neutral-200 text-xs leading-relaxed">{narr}</p>
-                                                    </div>
-                                                )}
-                                                {texto && (
-                                                    <div className="mb-2">
-                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">📝 Texto en Pantalla</p>
-                                                        <p className="text-yellow-300/80 text-xs leading-relaxed font-bold">{texto}</p>
-                                                    </div>
-                                                )}
-                                                {visual && (
+                                    {/* Estado de producción y Guion */}
+                                    {isRenderQueued ? (
+                                        <RenderProgress />
+                                    ) : (
+                                        <>
+                                            {isManualPending && (
+                                                <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl p-4 mb-5 flex items-center gap-4">
+                                                    <span className="text-3xl shrink-0">🎬</span>
                                                     <div>
-                                                        <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🖼️ Visual / Imagen IA</p>
-                                                        <p className="text-violet-300/70 text-xs leading-relaxed italic">{visual}</p>
+                                                        <p className="font-black tracking-widest uppercase text-sm">Esperando Activación</p>
+                                                        <p className="text-xs text-cyan-400/70 mt-0.5">Este video fue enviado al Estudio IA. Revisa el guion y presiona "Generar" cuando esté listo.</p>
                                                     </div>
+                                                </div>
+                                            )}
+                                            <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">📜 Guion de Escenas</h3>
+                                            <div className="space-y-3 text-sm pb-4">
+                                                {readableScenes ? readableScenes.map(({ n, isCTA, narr, visual, texto }) => (
+                                                    <div key={n} className={`border rounded-xl p-4 ${
+                                                        isCTA ? 'bg-[#CC0000]/5 border-[#CC0000]/30' : 'bg-neutral-900/60 border-neutral-800'
+                                                    }`}>
+                                                        <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
+                                                            isCTA ? 'text-[#CC0000]' : 'text-neutral-500'
+                                                        }`}>
+                                                            {isCTA ? `🎯 ESCENA ${n} — CTA` : `ESCENA ${n}`}
+                                                        </p>
+                                                        {narr && (
+                                                            <div className="mb-2">
+                                                                <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🎙️ Narración</p>
+                                                                <p className="text-neutral-200 text-xs leading-relaxed">{narr}</p>
+                                                            </div>
+                                                        )}
+                                                        {texto && (
+                                                            <div className="mb-2">
+                                                                <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">📝 Texto en Pantalla</p>
+                                                                <p className="text-yellow-300/80 text-xs leading-relaxed font-bold">{texto}</p>
+                                                            </div>
+                                                        )}
+                                                        {visual && (
+                                                            <div>
+                                                                <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🖼️ Visual / Imagen IA</p>
+                                                                <p className="text-violet-300/70 text-xs leading-relaxed italic">{visual}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )) : (
+                                                    <p className="text-neutral-600 text-xs">No se encontró guion estructurado. El MediaWorker usará el prompt original.</p>
                                                 )}
                                             </div>
-                                        )) : (
-                                            <p className="text-neutral-600 text-xs">No se encontró guion estructurado. El MediaWorker usará el prompt original.</p>
-                                        )}
-                                    </div>
+                                        </>
+                                    )}
                                 </div>
                                 );
                             })() : (

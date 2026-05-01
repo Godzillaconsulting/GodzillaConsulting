@@ -121,7 +121,8 @@ router.put('/:id/draft', requireAdmin, async (req, res) => {
         let { draft_data } = req.body;
         
         // Auto-Translate marketing dynamic nodes
-        if (id === 'paquetes' || id.startsWith('paquete-')) {
+        const nodesToTranslate = ['paquetes', 'servicios', 'cultura', 'hero', 'recursos', 'portafolio', 'socio-godzilla', 'footer'];
+        if (nodesToTranslate.includes(id) || id.startsWith('paquete-') || id.startsWith('servicio-') || id.startsWith('landing-')) {
             const translatedPayload = await translateNodePayload(draft_data, id);
             
             // Obtener el nodo actual para no perder traducciones si falla Gemini

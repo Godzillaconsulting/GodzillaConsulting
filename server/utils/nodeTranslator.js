@@ -18,7 +18,8 @@ export const ensureNodesTranslation = async (rows, targetLng) => {
     // Procesamos en paralelo limitado o secuencial para nodos de marketing
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        if (row.id === 'paquetes' || row.id.startsWith('paquete-')) {
+        const nodesToTranslate = ['paquetes', 'servicios', 'cultura', 'hero', 'recursos', 'portafolio', 'socio-godzilla', 'footer'];
+        if (nodesToTranslate.includes(row.id) || row.id.startsWith('paquete-') || row.id.startsWith('servicio-') || row.id.startsWith('landing-')) {
             const pubData = row.published_data || {};
             const translations = pubData.translations || {};
 

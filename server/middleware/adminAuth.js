@@ -78,10 +78,13 @@ export const requireCMOrCockers = (req, res, next) => {
     const user = req.admin;
     if (!user) return res.status(401).json({ success: false, message: 'No autenticado.' });
     
+    console.log(`[AUTH CHECK] requireCMOrCockers - User:`, user);
+    
     const allowed = user.role === 'admin' || user.role === 'cm' || user.role === 'cockers' ||
         ['jareg', 'oscar', 'godzilla_admin', 'judith', 'alex', 'cockers'].includes(user.username?.toLowerCase());
     
     if (!allowed) {
+        console.log(`[AUTH CHECK] Access denied for user:`, user);
         return res.status(403).json({ 
             success: false, 
             message: 'Acceso restringido.'

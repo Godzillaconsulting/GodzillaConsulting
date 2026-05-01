@@ -1180,13 +1180,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
-            if (!data.success && !res.ok) throw new Error(data.error || data.message || 'Error DB');
+            if (!data.success || !res.ok) throw new Error(data.error || data.message || `Error HTTP: ${res.status}`);
             
             setTasks(prev => prev.filter(t => t.id !== taskId));
             if (selectedTaskBoard?.id === taskId) setSelectedTaskBoard(null);
         } catch (error) {
             console.error('Error deleting task:', error);
-            alert('Error al eliminar la tarea en la base de datos.');
+            alert(`Error al eliminar la tarea en la base de datos: ${error.message}`);
         }
     };
 

@@ -181,8 +181,11 @@ async function processTask() {
         const isArrayFormat = Array.isArray(payload.scenes);
         const dayData = payload.scenes;
         
-        // Rotación de voces neuronales para evitar que todas suenen idénticas
-        const fallbackVoices = ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
+        // Rotación de voces hiperrealistas (ElevenLabs) vs Edge TTS (Backup)
+        const fallbackVoices = process.env.ELEVENLABS_API_KEY 
+            ? ['elevenlabs:pNInz6obbfIdGwnf8p5A', 'elevenlabs:ErXwobaYiN019PkySvjV', 'elevenlabs:TxGEqnHWrfWFTfGW9XjX'] 
+            : ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
+        
         const selectedVoice = payload.voice || fallbackVoices[task.id % fallbackVoices.length];
         const clipsPaths = [];
 
@@ -338,15 +341,13 @@ async function processTask() {
                     : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30`; // Efecto de zoom para imágenes
 
                 let vfStr = filterBase;
-                // NOTA: Se desactiva el quemado (burn-in) de subtítulos estáticos por FFmpeg.
-                // Esto permite que el usuario pueda usar el "Bot Hormozi" o "IA Tools" 
-                // en el Godzilla Pro Editor para agregar subtítulos dinámicos sin que se sobrepongan.
-                /* 
+                // Subtítulos dinámicos tipo "Hormozi" integrados (quemados) al video
                 if (clip.srt) {
                     const escapedSrt = clip.srt.replace(/\\/g, '/').replace(':', '\\:');
-                    vfStr += `,subtitles='${escapedSrt}':force_style='FontName=Arial,FontSize=32,PrimaryColour=&H00FFFF&,OutlineColour=&H000000&,BorderStyle=1,Outline=3,Shadow=0,Bold=1,Alignment=2,MarginV=250'`;
+                    // Colores BGR: Amarillo es &H0000FFFF&, Blanco es &H00FFFFFF&
+                    // Alignment=2 es Bottom-Center. MarginV=600 lo eleva para que la UI de TikTok no lo tape (no queda a media pantalla).
+                    vfStr += `,subtitles='${escapedSrt}':force_style='FontName=Arial,FontSize=48,PrimaryColour=&H0000FFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=3,Shadow=1,Bold=1,Alignment=2,MarginV=600'`;
                 }
-                */
 
                 command.input(clip.audio)
                     .outputOptions([
@@ -382,9 +383,9 @@ async function processTask() {
                 .on('error', reject);
         });
 
-        // Limpiar temporales
+        // Limpiar temporales (Evitar borrar el video de stock)
         [concatTxtPath, ...renderedClips, ...clipsPaths.flatMap(c => [c.img, c.audio])].forEach(f => {
-            if (fs.existsSync(f)) fs.unlinkSync(f);
+            if (fs.existsSync(f) && !f.includes('stock_videos')) fs.unlinkSync(f);
         });
 
         console.log(`[MediaWorker] ✅ Video Final Completado: ${finalOutput}`);

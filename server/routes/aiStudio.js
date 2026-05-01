@@ -469,7 +469,9 @@ router.post('/tasks', authenticateToken, async (req, res) => {
 router.delete('/tasks/:id', authenticateToken, requireCMOrCockers, async (req, res) => {
     try {
         const { id } = req.params;
+        console.log(`[DELETE /tasks/:id] Request received for id: ${id}`);
         const result = await pool.query('DELETE FROM studio_tasks WHERE id = $1 RETURNING id', [id]);
+        console.log(`[DELETE /tasks/:id] Query executed. rowCount: ${result.rowCount}`);
         if (result.rowCount === 0) return res.status(404).json({ success: false, message: 'Tarea no encontrada' });
         broadcast('DELETE', { id: parseInt(id) });
         res.json({ success: true, deleted: id });

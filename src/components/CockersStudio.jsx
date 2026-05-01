@@ -256,7 +256,11 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     const [dynamicFilters, setDynamicFilters] = useState([]);
     const [isFetchingFilters, setIsFetchingFilters] = useState(false);
 
-    const ALL_FILTERS = [...BASE_PHOTO_FILTERS, ...savedCustomFilters, ...dynamicFilters];
+    const ALL_FILTERS = [
+        ...BASE_PHOTO_FILTERS,
+        ...(Array.isArray(savedCustomFilters) ? savedCustomFilters : []),
+        ...(Array.isArray(dynamicFilters) ? dynamicFilters : [])
+    ];
 
     const fetchDynamicFilters = async () => {
         setIsFetchingFilters(true);

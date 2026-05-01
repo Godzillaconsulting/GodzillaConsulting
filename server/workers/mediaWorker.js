@@ -113,21 +113,43 @@ async function generateVeoVideo(prompt, outputPath) {
     if (process.env.GEMINI_API_KEY) {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            // Using the Veo model available in Gemini Advanced / Plus
-            const response = await ai.models.generateVideos({
+            // Using the Veo model available in Gemini
+            const operation = await ai.models.generateVideos({
                 model: 'veo-2.0-generate-001',
                 prompt: prompt
             });
             
-            // Si la respuesta es directa (Base64)
-            if (response.generatedVideos?.[0]?.video?.videoBytes) {
-                const b64 = response.generatedVideos[0].video.videoBytes;
-                const buffer = Buffer.from(b64, 'base64');
-                fs.writeFileSync(outputPath, buffer);
-                console.log(`[MediaWorker] ✅ Video Veo generado correctamente.`);
-                return outputPath;
-            } else {
-                console.warn(`[MediaWorker] ⚠️ Respuesta de Veo incompleta o LRO requerido. Usando fallback...`);
+            let opName = operation.name;
+            if (!opName) {
+                console.warn(`[MediaWorker] ⚠️ Respuesta de Veo sin operación. Usando fallback...`);
+                throw new Error("No operation name returned");
+            }
+            
+            console.log(`[MediaWorker] ⏳ Esperando generación de video Veo: ${opName}...`);
+            
+            // Poll the LRO endpoint
+            while (true) {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1alpha/${opName}?key=${process.env.GEMINI_API_KEY}`);
+                const data = await res.json();
+                
+                if (data.done) {
+                    if (data.error) {
+                        throw new Error(`Error en operación Veo: ${data.error.message}`);
+                    }
+                    if (data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri) {
+                        const videoUri = data.response.generateVideoResponse.generatedSamples[0].video.uri;
+                        const authUri = videoUri + (videoUri.includes('?') ? '&' : '?') + 'key=' + process.env.GEMINI_API_KEY;
+                        const downloadRes = await fetch(authUri);
+                        const buffer = await downloadRes.arrayBuffer();
+                        fs.writeFileSync(outputPath, Buffer.from(buffer));
+                        console.log(`[MediaWorker] ✅ Video Veo descargado y guardado correctamente.`);
+                        return outputPath;
+                    } else {
+                        throw new Error("La operación terminó pero no se encontró la URI del video.");
+                    }
+                }
+                
+                await new Promise(r => setTimeout(r, 5000));
             }
         } catch (e) {
             console.warn(`[MediaWorker] ⚠️ Google Veo falló (${e.message}). Usando Fallback cinemático...`);
@@ -136,11 +158,10 @@ async function generateVeoVideo(prompt, outputPath) {
         console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada para Veo.`);
     }
 
-    // Fallback de alta calidad (Si Veo falla, no usamos imágenes feas, usamos un video cinemático limpio)
-    console.log(`[MediaWorker] 🔄 Usando video de stock Faceless de alta calidad como respaldo.`);
+    // Fallback de alta calidad (Si Veo falla, usamos un video cinemático limpio)
+    console.log(`[MediaWorker] 🎬 Usando video de stock Faceless de alta calidad como respaldo.`);
     const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
-    // As it is a URL or Local path. In our current implementation, we use a local one for fallback
-    const localStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
+    const localStock = path.resolve(process.cwd(), 'stock_videos', randomStock.split('/').pop() || '853889-hd_1920_1080_25fps.mp4');
     return localStock;
 }
 

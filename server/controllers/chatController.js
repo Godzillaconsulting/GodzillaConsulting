@@ -66,7 +66,7 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)[!¡.,\s]*$/i;
+        const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)([\s!¡.,?¿]*(c[oó]mo\s+est[aá]s|qu[eé]\s+pasa|todo\s+bien))?[!¡.,?¿\s]*$/i;
         const isGreetingOnly = GREETING_REGEX.test(lastMsg.trim());
 
         let waterfallMessages = [{ role: "system", content: systemPrompt }];

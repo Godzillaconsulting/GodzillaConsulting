@@ -131,7 +131,7 @@ ${cacheBuster}`;
             if (!process.env.GEMINI_API_KEY) return res.status(400).json({ error: "Llave GEMINI_API_KEY no configurada." });
 
             const taskId = 'veo_live_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            postProcessJobs.set(taskId, { status: 'working', progress: 5 });
+            await setJobStatus(taskId, { status: 'working', progress: 5 });
             const finalPromptToUse = optimizedPrompt || prompt;
 
             // Cascade de modelos: intenta el solicitado primero, luego el estable
@@ -219,7 +219,7 @@ ${cacheBuster}`;
                         operation = await activeAi.operations.getVideosOperation({ operation });
                         attempts++;
                         const progress = Math.min(5 + attempts * 1.5, 90);
-                        postProcessJobs.set(taskId, { status: 'working', progress });
+                        await setJobStatus(taskId, { status: 'working', progress });
                         console.log(`[VEO] Polling - intento ${attempts}/120 - done: ${operation.done}`);
                     }
 
@@ -230,7 +230,7 @@ ${cacheBuster}`;
 
                     const videoUri = operation.response.generatedVideos[0].video.uri;
                     const proxyUrl = "/api/sora/proxy-veo?uri=" + encodeURIComponent(videoUri);
-                    postProcessJobs.set(taskId, { status: 'done', localUrl: proxyUrl });
+                    await setJobStatus(taskId, { status: 'done', localUrl: proxyUrl });
                     console.log(`[VEO] 🎉 Video de Google Veo listo: ${taskId}`);
 
                 } catch (e) {
@@ -253,7 +253,7 @@ ${cacheBuster}`;
                         const videoName = `${taskId}_fallback.mp4`;
                         const videoPath = path.join(OUTPUT_DIR, videoName);
                         
-                        postProcessJobs.set(taskId, { status: 'working', progress: 50, info: 'Animando fotograma' });
+                        await setJobStatus(taskId, { status: 'working', progress: 50, info: 'Animando fotograma' });
                         
                         await new Promise((resolve, reject) => {
                             ffmpeg().input(imgPath).loop(5).outputOptions([
@@ -263,7 +263,7 @@ ${cacheBuster}`;
                         });
                         
                         if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-                        postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/media/outputs/${videoName}` });
+                        await setJobStatus(taskId, { status: 'done', localUrl: `/api/media/outputs/${videoName}` });
                         console.log(`[VEO] ✅ Video generado con éxito vía Pollinations + FFmpeg.`);
 
                     } catch (pollinationsErr) {
@@ -276,10 +276,10 @@ ${cacheBuster}`;
                                 'https://videos.pexels.com/video-files/2759477/2759477-uhd_3840_2160_30fps.mp4'
                             ];
                             const randomStock = stockVideos[Math.floor(Math.random() * stockVideos.length)];
-                            postProcessJobs.set(taskId, { status: 'done', localUrl: randomStock });
+                            await setJobStatus(taskId, { status: 'done', localUrl: randomStock });
                             console.log(`[VEO] ✅ Video asignado desde Fallback de Stock: ${randomStock}`);
                         } catch (stockErr) {
-                            postProcessJobs.set(taskId, { status: 'failed', error: "Todos los fallbacks fallaron." });
+                            await setJobStatus(taskId, { status: 'failed', error: "Todos los fallbacks fallaron." });
                         }
                     }
                 }
@@ -301,7 +301,7 @@ ${cacheBuster}`;
 
             // Nativamente utilizamos la API Top de Google (Gemini Image Models)
             const taskId = 'googleimg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            postProcessJobs.set(taskId, { status: 'working', progress: 0 });
+            await setJobStatus(taskId, { status: 'working', progress: 0 });
 
             // Proceso asíncrono robusto con SDK nuevo (@google/genai >= 1.0)
             (async () => {
@@ -370,7 +370,7 @@ ${cacheBuster}`;
                         throw new Error(`${modelName}: Respuesta sin datos de imagen. Verifica permisos del modelo en tu cuenta.`);
                     }
 
-                    postProcessJobs.set(taskId, { status: 'done', localUrl: resultUrl });
+                    await setJobStatus(taskId, { status: 'done', localUrl: resultUrl });
                     console.log(`[GOOGLE-VISION] ✅ Imagen generada correctamente. Job: ${taskId}`);
 
                 } catch (e) {
@@ -390,11 +390,11 @@ ${cacheBuster}`;
                         const savePath = path.join(OUTPUT_DIR, fileName);
                         fs.writeFileSync(savePath, buffer);
                         
-                        postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/sora/media/${fileName}` });
+                        await setJobStatus(taskId, { status: 'done', localUrl: `/api/sora/media/${fileName}` });
                         console.log(`[GOOGLE-VISION] ✅ Imagen generada con Pollinations Fallback.`);
                     } catch (localErr) {
                          console.error("[STUDIO] Pollinations Fallback falló también:", localErr.message);
-                         postProcessJobs.set(taskId, { status: 'failed', error: e.message + " | Fallback también falló." });
+                         await setJobStatus(taskId, { status: 'failed', error: e.message + " | Fallback también falló." });
                     }
                 }
             })();
@@ -416,12 +416,12 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
         
         // Manejar Veo Video Jobs guardados en Server RAM
         if (taskId.startsWith("veo_live_")) {
-            const job = postProcessJobs.get(taskId);
+            const job = await getJobStatus(taskId);
             if (!job) {
-                return res.status(400).json({ error: "Job de Video expirado o no existe en RAM" });
+                return res.status(400).json({ error: "Job de Video expirado o no existe en DB" });
             }
             if (job.status === 'done') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({
                     task_id: taskId,
                     status: 'succeed',
@@ -430,7 +430,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                     isVideo: true
                 });
             } else if (job.status === 'failed') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
             } else {
                 return res.status(200).json({
@@ -444,26 +444,26 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
 
         // Manejar Refinados de GotSora guardados Localmente (Disco E:)
         if (taskId.startsWith("refine_")) {
-            const job = postProcessJobs.get(taskId);
-            if (!job) return res.status(400).json({ error: "Job expirado o no existe en RAM" });
+            const job = await getJobStatus(taskId);
+            if (!job) return res.status(400).json({ error: "Job expirado o no existe en DB" });
 
             if (job.status === 'done') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({ task_id: taskId, status: 'succeed', progress: 100, result_url: job.localUrl });
             } else if (job.status === 'failed') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
             }
         }
 
         // Manejar Google Vision Nativos guardados en Server RAM
         if (taskId.startsWith("googleimg_")) {
-            const job = postProcessJobs.get(taskId);
+            const job = await getJobStatus(taskId);
             if (!job) {
-                return res.status(400).json({ error: "Job expirado o no existe en RAM" });
+                return res.status(400).json({ error: "Job expirado o no existe en DB" });
             }
             if (job.status === 'done') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({
                     task_id: taskId,
                     status: 'succeed',
@@ -471,7 +471,7 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                     result_url: job.localUrl
                 });
             } else if (job.status === 'failed') {
-                postProcessJobs.delete(taskId);
+                await deleteJobStatus(taskId);
                 return res.status(200).json({ status: 'failed', error: job.error });
             } else {
                 return res.status(200).json({
@@ -482,6 +482,27 @@ export const checkRenderStatus = async (req, res) => { res.setHeader('Cache-Cont
                 });
             }
         }
+
+        // Manejar Mock de Sora
+        if (taskId.startsWith("sora_mock_")) {
+            const timePassed = Date.now() - parseInt(taskId.split('_')[2] || '0');
+            if (timePassed > 15000) {
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'succeed',
+                    progress: 100,
+                    result_url: 'https://cdn.coverr.co/videos/coverr-walking-in-a-crowded-city-1080p.mp4'
+                });
+            } else {
+                return res.status(200).json({
+                    task_id: taskId,
+                    status: 'processing',
+                    progress: Math.min(90, Math.floor(timePassed / 150)),
+                    result_url: ''
+                });
+            }
+        }
+
         // NOTE: veo_live_ jobs are handled above. No other veo_ prefix is used.
 
         return res.status(400).json({ error: "Tarea inválida o expirada" });
@@ -788,7 +809,7 @@ export const refineRenderJob = async (req, res) => {
 
         const refineTaskId = "refine_ultra_" + Date.now();
         // Respond as done immediately since Gemini returns it sync.
-        postProcessJobs.set(refineTaskId, { status: 'done', localUrl: finalUrl });
+        await setJobStatus(refineTaskId, { status: 'done', localUrl: finalUrl });
 
         return res.status(200).json({ job_id: refineTaskId, status: 'processing', provider: 'Gemini Ultra Refined' });
 
@@ -812,20 +833,20 @@ export const purifyVideo = async (req, res) => {
         const cleanPath = path.join(OUTPUT_DIR, cleanFilename);
         
         // Ejecutamos FFMPEG de forma asíncrona pero devolvemos rápido el Task ID
-        postProcessJobs.set(taskId, { status: 'working' });
+        await setJobStatus(taskId, { status: 'working' });
         
         (async () => {
             try {
-                await removeWatermark(rawPath, cleanPath, (p) => { postProcessJobs.set(taskId, { status: 'working', progress: p }); });
+                await removeWatermark(rawPath, cleanPath, (p) => { await setJobStatus(taskId, { status: 'working', progress: p }); });
                 
                 // Limpiar el crudo suciote
                 if(fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
                 
-                postProcessJobs.set(taskId, { status: 'done', localUrl: `/api/media/videos/${cleanFilename}` });
+                await setJobStatus(taskId, { status: 'done', localUrl: `/api/media/videos/${cleanFilename}` });
                 console.log(`[STUDIO] Purificación manual exitosa.`);
             } catch (err) {
                 console.error("[STUDIO] Fallo purificación manual:", err);
-                postProcessJobs.set(taskId, { status: 'failed' });
+                await setJobStatus(taskId, { status: 'failed' });
             }
         })();
 

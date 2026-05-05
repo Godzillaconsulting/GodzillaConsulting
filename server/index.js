@@ -466,6 +466,9 @@ if (!process.env.VERCEL) {
 
     // ⏰ GODZILLA CRON SCHEDULER — activa nodos "Reloj / Cron" de todos los flujos
     cronScheduler.start(60_000); // revisa cada 60 segundos
+
+    // 🔥 FIX PM2 EPERM: Arrancamos el MediaWorker directamente en el proceso principal
+    import('./workers/mediaWorker.js').catch(err => console.error('[MediaWorker] Error al importar:', err));
 }
 
 // Exportar para Vercel

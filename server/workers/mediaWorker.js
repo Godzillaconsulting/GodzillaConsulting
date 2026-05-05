@@ -63,6 +63,17 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 
 let isProcessing = false;
 
+// Enviar progreso a la API local para actualizar CEO Estudio en tiempo real
+async function sendProgress(taskId, progress, msg) {
+    try {
+        await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/studio/internal-progress/${taskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ progress, msg })
+        });
+    } catch (e) {}
+}
+
 // La lógica de generación de voz fue extraída a server/services/ttsService.js
 
 const STOCK_VIDEOS = [
@@ -158,11 +169,38 @@ async function generateVeoVideo(prompt, outputPath) {
         console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada para Veo.`);
     }
 
-    // Fallback de alta calidad (Si Veo falla, usamos un video cinemático limpio)
-    console.log(`[MediaWorker] 🎬 Usando video de stock Faceless de alta calidad como respaldo.`);
-    const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
-    const localStock = path.resolve(process.cwd(), 'stock_videos', randomStock.split('/').pop() || '853889-hd_1920_1080_25fps.mp4');
-    return localStock;
+    // Fallback intermedio con Pollinations + FFmpeg Zoom
+    console.log(`[MediaWorker] 🎬 Google Veo falló o no está configurado. Fallback a Animación con Pollinations...`);
+    try {
+        const safePrompt = prompt.length > 300 ? prompt.substring(0, 300) : prompt;
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+        const res = await fetch(fallbackUrl);
+        if (!res.ok) throw new Error("Pollinations falló");
+        
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const imgName = `fallback_veo_${Date.now()}_${Math.random().toString(36).substring(2,7)}.jpg`;
+        const imgPath = path.join(OUTPUT_DIR, imgName);
+        fs.writeFileSync(imgPath, buffer);
+        
+        await new Promise((resolve, reject) => {
+            ffmpeg().input(imgPath).loop(5).outputOptions([
+                '-vf zoompan=z=\'min(zoom+0.0015,1.5)\':d=150:x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':s=1080x1920',
+                '-c:v libx264', '-t 5', '-s 1080x1920', '-pix_fmt yuv420p'
+            ]).save(outputPath).on('end', resolve).on('error', reject);
+        });
+        
+        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+        console.log(`[MediaWorker] ✅ Video de Fallback generado con Pollinations + FFmpeg.`);
+        return outputPath;
+    } catch(e) {
+        console.error(`[MediaWorker] ❌ Error en Fallback Animado:`, e.message);
+        // Fallback final de alta calidad
+        console.log(`[MediaWorker] 🎬 Usando video de stock Faceless como respaldo final.`);
+        const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
+        const localStock = path.resolve(process.cwd(), 'stock_videos', randomStock.split('/').pop() || '853889-hd_1920_1080_25fps.mp4');
+        return localStock;
+    }
 }
 
 async function processTask() {
@@ -192,6 +230,7 @@ async function processTask() {
         const task = res.rows[0];
         currentTaskId = task.id;
         console.log(`\n[MediaWorker] 🚀 Iniciando ensamblaje para Tarea #${task.id}: ${task.title}`);
+        await sendProgress(task.id, 5, "Iniciando ensamblaje");
 
         const payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
         
@@ -229,6 +268,8 @@ async function processTask() {
             
             if (!visualPrompt && !videoPrompt && !narration) continue;
 
+            const scenePercent = Math.floor(10 + ((i - 1) / sceneCount) * 80);
+            await sendProgress(task.id, scenePercent, `Procesando Escena ${i} de ${sceneCount}`);
             console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
             const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
             const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_veo.mp4`);
@@ -329,6 +370,7 @@ async function processTask() {
         // Ensamblar con FFmpeg
         const finalOutput = path.join(OUTPUT_DIR, `task_${task.id}_final.mp4`);
         console.log(`[MediaWorker] 🎬 Ensamblando ${clipsPaths.length} escenas en: ${finalOutput}`);
+        await sendProgress(task.id, 90, "Stitch con FFmpeg...");
 
         // Crear archivo de texto para concat de ffmpeg
         // Usamos un complejo de filtros si es necesario, pero para slideshow simple con audio:
@@ -411,6 +453,7 @@ async function processTask() {
             WHERE id = $3
         `, [JSON.stringify([payload]), task.title, task.id]);
         
+        await sendProgress(task.id, 100, "¡Completado!");
         console.log(`[MediaWorker] Tarea #${task.id} marcada como lista para revisión del CEO.`);
 
     } catch (error) {
@@ -418,6 +461,7 @@ async function processTask() {
         if (currentTaskId) {
             try {
                 await pool.query(`UPDATE studio_tasks SET status = 'failed' WHERE id = $1`, [currentTaskId]);
+                await sendProgress(currentTaskId, 0, "Falló la generación");
                 console.log(`[MediaWorker] Tarea #${currentTaskId} marcada como failed.`);
             } catch (dbErr) {
                 console.error(`[MediaWorker] ❌ Error al actualizar tarea a failed:`, dbErr.message);

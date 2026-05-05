@@ -391,6 +391,19 @@ router.get('/tasks/stream', (req, res) => {
     });
 });
 
+// PUT: Progreso interno (Worker a UI)
+router.put('/internal-progress/:id', async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { progress, msg } = req.body;
+        
+        broadcast('TASK_PROGRESS', { id: taskId, progress, msg });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // GET: Recuperar todas las tareas del Studio (con filtros opcionales)
 router.get('/tasks', authenticateToken, async (req, res) => {
     try {
@@ -595,6 +608,18 @@ router.post('/learning', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error POST /learning:', error);
         res.status(500).json({ success: false, message: 'Error al registrar aprendizaje', error: error.message });
+    }
+});
+
+// PUT: Internal progress update para el MediaWorker (Localhost/Worker)
+router.put('/internal-progress/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { progress, msg } = req.body;
+        broadcast('PROGRESS', { taskId: parseInt(id), progress, msg });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 

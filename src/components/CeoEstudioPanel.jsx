@@ -51,14 +51,19 @@ const resolveMedia = (url) => {
     return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
-const RenderProgress = () => {
+const RenderProgress = ({ progress, msg }) => {
+    // Si no hay progreso real, usa un contador falso visual
     const [p, setP] = React.useState(0);
     React.useEffect(() => {
+        if (progress !== undefined) return;
         const int = setInterval(() => {
             setP(old => old >= 99 ? 99 : old + Math.floor(Math.random() * 5) + 1);
         }, 2000);
         return () => clearInterval(int);
-    }, []);
+    }, [progress]);
+    
+    const displayP = progress !== undefined ? progress : p;
+    const displayMsg = msg || "Ensamblando";
     return (
         <div className="w-full flex flex-col items-center justify-center h-full">
             <div className="relative w-48 h-48 flex items-center justify-center mb-6">
@@ -67,8 +72,8 @@ const RenderProgress = () => {
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#f97316" strokeWidth="8" strokeDasharray="283" strokeDashoffset={283 - (283 * p) / 100} className="transition-all duration-1000 ease-out" />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-4xl font-black text-orange-400">{p}%</span>
-                    <span className="text-[10px] text-orange-500/70 uppercase font-bold mt-1 tracking-widest animate-pulse">Ensamblando</span>
+                    <span className="text-4xl font-black text-orange-400">{displayP}%</span>
+                    <span className="text-[10px] text-orange-500/70 uppercase font-bold mt-1 tracking-widest text-center px-2">{displayMsg}</span>
                 </div>
             </div>
             <p className="text-orange-300 font-bold tracking-widest uppercase text-sm mb-2">MediaWorker Produciendo</p>
@@ -162,6 +167,10 @@ export default function CeoEstudioPanel({ adminProfile }) {
                     setTasks(prev => prev.map(x => x.id === t.id
                         ? { ...x, status: t.status, scheduled_for: t.ig_publish_date,
                             media_options: (() => { try { return typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || []); } catch { return []; } })() }
+                        : x));
+                } else if (data.type === 'PROGRESS' && data.task) {
+                    setTasks(prev => prev.map(x => x.id === data.task.taskId 
+                        ? { ...x, renderProgress: data.task.progress, renderMsg: data.task.msg } 
                         : x));
                 } else if (data.type === 'NOTIFICATION') {
                     if (data.task?.message) {
@@ -565,7 +574,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                                     {/* Estado de producción y Guion */}
                                     {isRenderQueued ? (
-                                        <RenderProgress />
+                                        <RenderProgress progress={selected.renderProgress} msg={selected.renderMsg} />
                                     ) : (
                                         <>
                                             {isManualPending && (

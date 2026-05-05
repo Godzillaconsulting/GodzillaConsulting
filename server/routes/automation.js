@@ -375,7 +375,6 @@ router.post('/webhook/:nodeId', async (req, res) => {
         if (!/^[a-zA-Z0-9_-]+$/.test(nodeId)) return res.status(400).json({ success: false, error: 'nodeId inválido' });
         const payload = req.body || {};
 
-        // Fix SQL injection: usar jsonb_path_exists con parámetro tipado
         const result = await pool.query(
             `SELECT id FROM automation_flow WHERE nodes @> $1::jsonb`,
             [JSON.stringify([{ id: nodeId }])]
@@ -383,9 +382,24 @@ router.post('/webhook/:nodeId', async (req, res) => {
 
         if (result.rows.length > 0) {
             const flowId = result.rows[0].id;
-            console.log(`[Webhook] Recibido para nodo ${nodeId} en flujo ${flowId}. Disparando Engine...`);
-            AutomationEngine.triggerNode(nodeId, payload, flowId).catch(err => console.error(err));
-            res.json({ success: true, message: 'Webhook recibido y flujo en ejecución.' });
+            
+            // Persistir Payload (Solución Hueco 4)
+            const runRes = await pool.query(`
+                INSERT INTO flow_runs (flow_id, source, status, log)
+                VALUES ($1, $2, 'running', $3)
+                RETURNING id
+            `, [flowId, `Webhook: ${nodeId}`, JSON.stringify([{ event: 'Webhook Received', payload }])]);
+            const runId = runRes.rows[0].id;
+
+            console.log(`[Webhook] Recibido nodo ${nodeId} en flujo ${flowId}. Run ID: ${runId}`);
+            
+            AutomationEngine.triggerNode(nodeId, payload, flowId)
+                .then(() => pool.query(`UPDATE flow_runs SET status = 'completed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{}))
+                .catch(err => {
+                    console.error(err);
+                    pool.query(`UPDATE flow_runs SET status = 'failed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{});
+                });
+            res.json({ success: true, message: 'Webhook recibido y registrado.', runId });
         } else {
             res.status(404).json({ success: false, error: 'Nodo Webhook no encontrado en ningún flujo.' });
         }
@@ -409,9 +423,24 @@ router.get('/webhook/:nodeId', async (req, res) => {
 
         if (result.rows.length > 0) {
             const flowId = result.rows[0].id;
-            console.log(`[Webhook GET] Recibido para nodo ${nodeId}.`);
-            AutomationEngine.triggerNode(nodeId, payload, flowId).catch(err => console.error(err));
-            res.json({ success: true, message: 'Webhook GET procesado.' });
+            
+            // Persistir Payload (Solución Hueco 4)
+            const runRes = await pool.query(`
+                INSERT INTO flow_runs (flow_id, source, status, log)
+                VALUES ($1, $2, 'running', $3)
+                RETURNING id
+            `, [flowId, `Webhook GET: ${nodeId}`, JSON.stringify([{ event: 'Webhook GET Received', payload }])]);
+            const runId = runRes.rows[0].id;
+
+            console.log(`[Webhook GET] Recibido nodo ${nodeId} en flujo ${flowId}. Run ID: ${runId}`);
+            
+            AutomationEngine.triggerNode(nodeId, payload, flowId)
+                .then(() => pool.query(`UPDATE flow_runs SET status = 'completed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{}))
+                .catch(err => {
+                    console.error(err);
+                    pool.query(`UPDATE flow_runs SET status = 'failed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{});
+                });
+            res.json({ success: true, message: 'Webhook GET procesado.', runId });
         } else {
             res.status(404).json({ success: false, error: 'Nodo Webhook no encontrado.' });
         }

@@ -190,7 +190,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     if (!visualCoverUrl) {
         // Fallback a Pollinations Image
         console.log("📸 Usando Pollinations Image como Fallback para la Portada...");
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("magazine cover " + data.coverPrompt)}?width=1080&height=1920&nologo=true`;
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("Award-winning TIME magazine cover, ultra-realistic, highly detailed, 8k resolution, corporate photography. " + data.coverPrompt)}?width=1080&height=1920&nologo=true&model=flux&enhance=true`;
         visualCoverUrl = fallbackUrl;
     }
 

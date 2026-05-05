@@ -33,7 +33,7 @@ router.post('/execute-tool', async (req, res) => {
             const start = new Date(`${fecha}T${hora}:00`);
             const end   = new Date(start.getTime() + 60 * 60 * 1000);
             const r = await pool.query(
-                `SELECT id FROM appointments WHERE fecha = $1 AND hora = $2 AND status != 'cancelled'`,
+                `SELECT id FROM citas WHERE fecha = $1 AND hora = $2 AND status != 'cancelada'`,
                 [fecha, hora]
             );
             fRes = { disponible: r.rows.length === 0, fecha, hora, mensaje: r.rows.length === 0 ? '✅ Horario disponible.' : '❌ Ese horario ya está ocupado. Sugiere otro.' };
@@ -51,7 +51,7 @@ router.post('/execute-tool', async (req, res) => {
             }
 
             const r = await pool.query(
-                `INSERT INTO appointments (nombre, correo, telefono, servicio, fecha, hora, notas, google_event_id, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmed') RETURNING id`,
+                `INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, google_calendar_id, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmada') RETURNING id`,
                 [nombre, correo, telefono, servicio, fecha, hora, notas || '', calendarId]
             );
 
@@ -66,7 +66,7 @@ router.post('/execute-tool', async (req, res) => {
         } else if (name === 'cancel_appointment') {
             const { telefono } = args;
             const r = await pool.query(
-                `UPDATE appointments SET status='cancelled' WHERE telefono=$1 AND status='confirmed' RETURNING id`,
+                `UPDATE citas SET status='cancelada' WHERE telefono=$1 AND status='confirmada' RETURNING id`,
                 [telefono]
             );
             fRes = r.rows.length > 0
@@ -76,7 +76,7 @@ router.post('/execute-tool', async (req, res) => {
         } else if (name === 'reschedule_appointment') {
             const { telefono, nueva_fecha, nueva_hora } = args;
             const r = await pool.query(
-                `UPDATE appointments SET fecha=$1, hora=$2 WHERE telefono=$3 AND status='confirmed' RETURNING id`,
+                `UPDATE citas SET fecha=$1, hora=$2 WHERE telefono=$3 AND status='confirmada' RETURNING id`,
                 [nueva_fecha, nueva_hora, telefono]
             );
             fRes = r.rows.length > 0

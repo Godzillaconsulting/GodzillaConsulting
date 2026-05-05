@@ -272,7 +272,7 @@ export const initWhatsAppBot = async () => {
         }
     });
 
-        const QR_PORT_BASE = parseInt(process.env.QR_PORT || 3002, 10);
+        const QR_PORT_BASE = parseInt(process.env.QR_PORT || 3010, 10);
     const tryListen = (port) => {
         const server = qrApp.listen(port, () => {
             console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${port}/qr`);

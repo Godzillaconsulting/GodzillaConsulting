@@ -184,5 +184,10 @@
       "Punto de contacto designado que tenga autoridad para tomar decisiones"
     ],
     "warning": "El incumplimiento de estos puntos puede resultar en extensión de los tiempos de entrega originalmente acordados."
+  },
+  "cookieConsent": {
+    "text": "Utilizamos cookies para mejorar tu experiencia en nuestro sitio web. Al continuar navegando, aceptas nuestra ",
+    "link": "política de cookies",
+    "close": "Cerrar aviso de cookies"
   }
 }

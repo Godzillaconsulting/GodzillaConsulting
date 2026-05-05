@@ -22,6 +22,7 @@ import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
 import whatsappIcon from './assets/icons/WhatsApp (white).png';
+import CookieConsent from './components/CookieConsent';
 
 // Lazy loading para optimizar el peso del compilado de Vite
 const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
@@ -265,6 +266,7 @@ function AppLayout() {
           {!hideChrome && <Chatbot />}
           <FloatingWhatsApp />
           {!hideChrome && <Footer />}
+          {!hideChrome && <CookieConsent />}
         </div>
       </div>
     </div>

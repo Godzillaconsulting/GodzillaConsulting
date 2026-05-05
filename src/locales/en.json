@@ -414,5 +414,10 @@
       "Designated point of contact with decision-making authority"
     ],
     "warning": "Failure to comply with these points may result in an extension of the originally agreed delivery times."
+  },
+  "cookieConsent": {
+    "text": "We use cookies to improve your experience on our website. By continuing to browse, you accept our ",
+    "link": "cookie policy",
+    "close": "Close cookie notice"
   }
 }

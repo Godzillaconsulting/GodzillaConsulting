@@ -71,18 +71,15 @@ const FormAbordaje = () => {
     if (step === 1) return formData.empresa.trim() !== '';
     if (step === 2) return formData.servicios.trim() !== '' && formData.metas.trim() !== '' && formData.diferenciadores.trim() !== '' && formData.dbOption !== '';
     if (step === 3) {
-      if (formData.redes.meta) {
-        if (!formData.metaVariant) return false;
-        if ((formData.metaVariant === 'portafolio' || formData.metaVariant === 'pagina') && !formData.metaAccessStatus) return false;
-      }
-      if (formData.redes.google) {
-        if (!formData.googleVariant) return false;
-        if (formData.googleVariant === 'email' && !formData.googleAccessStatus) return false;
-      }
-      if (formData.redes.tiktok) {
-        if (!formData.tiktokVariant) return false;
-        if (formData.tiktokVariant === 'business' && !formData.tiktokAccessStatus) return false;
-      }
+      if (!formData.redes.meta || !formData.metaVariant) return false;
+      if ((formData.metaVariant === 'portafolio' || formData.metaVariant === 'pagina') && !formData.metaAccessStatus) return false;
+
+      if (!formData.redes.google || !formData.googleVariant) return false;
+      if (formData.googleVariant === 'email' && !formData.googleAccessStatus) return false;
+
+      if (!formData.redes.tiktok || !formData.tiktokVariant) return false;
+      if (formData.tiktokVariant === 'business' && !formData.tiktokAccessStatus) return false;
+
       return true;
     }
     if (step === 4) {

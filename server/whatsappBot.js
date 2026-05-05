@@ -430,8 +430,8 @@ export const initWhatsAppBot = async () => {
             // ─── GUARDIA PROGRAMÁTICA ANTI-ALUCINACIÓN ─────────────────────
             // Si el mensaje es un saludo puro, forzamos que el modelo NO pueda
             // invocar herramientas sin importar qué modelo esté activo (Groq/Gemini/Pollinations).
-            const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)([\s!¡.,?¿]*(c[oó]mo\s+est[aá]s|qu[eé]\s+pasa|todo\s+bien))?[!¡.,?¿\s]*$/i;
-            const isGreetingOnly = GREETING_REGEX.test(messageText.trim());
+            const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|lugar|reagendar|cancelar|hora|fecha|mañana|tarde|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|hoy)/i;
+            const hasBookingIntent = BOOKING_INTENT_REGEX.test(messageText);
 
             let botReply = "Lo siento, fallé al entender.";
             let functionCalls = [];
@@ -439,7 +439,7 @@ export const initWhatsAppBot = async () => {
             try {
                 // Si es saludo: no pasamos tools al waterfall (evita alucinaciones de tool_call)
                 // maxTokens calibrado: saludos cortos = 256, conversación = 768, herramientas = 512
-                const waterfallOptions = isGreetingOnly
+                const waterfallOptions = !hasBookingIntent
                     ? { temperature: 0.5, maxTokens: 256, mode: 'gemini_exclusive' }
                     : { tools: groqTools, maxTokens: 768, mode: 'gemini_exclusive' };
                 const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);

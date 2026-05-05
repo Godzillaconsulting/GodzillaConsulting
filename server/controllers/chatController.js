@@ -66,8 +66,8 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        const GREETING_REGEX = /^(hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|buenas|hey|hi|hello|buen\s+d[ií]a|qu[eé]\s+tal|saludos|qué\s+onda|q\s+onda|good\s+morning|good\s+afternoon|good\s+evening|sup|howdy|yo)([\s!¡.,?¿]*(c[oó]mo\s+est[aá]s|qu[eé]\s+pasa|todo\s+bien))?[!¡.,?¿\s]*$/i;
-        const isGreetingOnly = GREETING_REGEX.test(lastMsg.trim());
+        const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|lugar|reagendar|cancelar|hora|fecha|mañana|tarde|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|hoy)/i;
+        const hasBookingIntent = BOOKING_INTENT_REGEX.test(lastMsg);
 
         let waterfallMessages = [{ role: "system", content: systemPrompt }];
         for (const msg of history) {
@@ -79,8 +79,8 @@ export const processChatMessage = async (req, res) => {
         waterfallMessages.push({ role: "user", content: lastMsg });
 
         let waterfallTools = undefined;
-        // Solo inyectar herramientas si no es un simple saludo, igual que en WA
-        if (!isGreetingOnly && tools && tools.length > 0) {
+        // Solo inyectar herramientas si hay intención de agendar (Booking Intent)
+        if (hasBookingIntent && tools && tools.length > 0) {
             waterfallTools = tools.map(t => ({
                 type: "function",
                 function: {
@@ -96,8 +96,8 @@ export const processChatMessage = async (req, res) => {
 
             const aiRes = await executeAiWaterfall(waterfallMessages, {
                 tools: waterfallTools,
-                temperature: isGreetingOnly ? 0.5 : 0.1,
-                maxTokens: isGreetingOnly ? 256 : 768,
+                temperature: hasBookingIntent ? 0.1 : 0.5,
+                maxTokens: hasBookingIntent ? 768 : 256,
                 mode: 'gemini_exclusive'
             });
 

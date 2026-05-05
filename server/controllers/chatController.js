@@ -66,7 +66,7 @@ export const processChatMessage = async (req, res) => {
         const lastMsgRaw = messages[messages.length - 1];
         const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
 
-        const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|lugar|reagendar|cancelar|hora|fecha|mañana|tarde|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|hoy)/i;
+        const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|reagendar|cancelar|reservar|reserva|consulta)/i;
         const hasBookingIntent = BOOKING_INTENT_REGEX.test(lastMsg);
 
         let waterfallMessages = [{ role: "system", content: systemPrompt }];
@@ -134,7 +134,7 @@ export const processChatMessage = async (req, res) => {
                         
                         // Anti-hallucination guard
                         if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
-                            resultMessage = "Error: Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad.";
+                            resultMessage = "SISTEMA: No ejecutes herramientas sin fecha u hora exacta. Dile al usuario: '¿Para qué fecha y hora te gustaría agendar?'";
                         } else {
                             const errorValidacion = validateBusinessHours(fecha, hora);
 
@@ -152,7 +152,7 @@ export const processChatMessage = async (req, res) => {
                         
                         // Anti-hallucination guard
                         if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
-                            resultMessage = "Error: Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes.";
+                            resultMessage = "SISTEMA: Faltan datos obligatorios. Pídele al usuario todos los datos faltantes.";
                         } else {
                             const errorValidacion = validateBusinessHours(fecha, hora);
 

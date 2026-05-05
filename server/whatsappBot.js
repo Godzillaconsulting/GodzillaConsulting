@@ -430,7 +430,7 @@ export const initWhatsAppBot = async () => {
             // ─── GUARDIA PROGRAMÁTICA ANTI-ALUCINACIÓN ─────────────────────
             // Si el mensaje es un saludo puro, forzamos que el modelo NO pueda
             // invocar herramientas sin importar qué modelo esté activo (Groq/Gemini/Pollinations).
-            const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|lugar|reagendar|cancelar|hora|fecha|mañana|tarde|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|hoy)/i;
+            const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|reagendar|cancelar|reservar|reserva|consulta)/i;
             const hasBookingIntent = BOOKING_INTENT_REGEX.test(messageText);
 
             let botReply = "Lo siento, fallé al entender.";
@@ -504,9 +504,9 @@ export const initWhatsAppBot = async () => {
                         const { fecha, hora } = callArgs;
                         
                         // Anti-hallucination guard
-                        if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
-                            fRes = { error: "Faltan parámetros reales. DEBES preguntarle al usuario para qué fecha y hora quiere agendar ANTES de revisar disponibilidad." };
-                        } else {
+                          if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
+                              fRes = { error: "SISTEMA: No ejecutes herramientas sin fecha u hora exacta. Dile al usuario: '¿Para qué fecha y hora te gustaría agendar?'" };
+                          } else {
                             const valErr = validateBusinessHours(fecha, hora);
 
                             if (valErr) {
@@ -524,8 +524,8 @@ export const initWhatsAppBot = async () => {
                             
                             // Anti-hallucination guard
                             if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
-                                fRes = { success: false, error: "Faltan datos obligatorios o son marcadores de posición. Pídele al usuario todos los datos faltantes (Nombre, fecha, hora, etc)." };
-                            } else {
+                              fRes = { error: "SISTEMA: Faltan datos obligatorios. Pídele al usuario todos los datos faltantes." };
+                          } else {
                                 const valErr = validateBusinessHours(fecha, hora);
 
                                 if (valErr) {

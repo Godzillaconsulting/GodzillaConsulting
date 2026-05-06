@@ -97,7 +97,7 @@ async function generateImage(prompt, outputPath) {
 async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
     console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
     try {
-        const r = await ytSearch(keyword + ' no copyright free video');
+        const r = await ytSearch(keyword + ' 4k cinematic broll');
         const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600); // 10s a 10m
         
         if (videos.length === 0) throw new Error("No hay videos para: " + keyword);
@@ -110,15 +110,16 @@ async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
         
         await youtubedl(video.url, {
             output: tempVidPath,
-            format: 'bestvideo[ext=mp4]/best[ext=mp4]/best',
+            format: 'bestvideo[height<=1920]+bestaudio/best',
             noWarnings: true,
             preferFreeFormats: true,
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
-        }, { windowsHide: true });
+        });
 
         console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
         
-        const startSec = Math.floor(Math.random() * Math.max(1, video.seconds - 6)) + 1; 
+        // Saltar los primeros 5 segundos para evitar intros o cuentas regresivas típicas
+        const startSec = Math.floor(Math.random() * Math.max(1, video.seconds - 15)) + 5;
         const tempCroppedPath = outputPath.replace('.mp4', '_cropped.mp4');
 
         await new Promise((resolve, reject) => {
@@ -464,11 +465,11 @@ async function processTask() {
                 // Subtítulos Duales: Inglés (arriba) y Español (abajo)
                 if (clip.srtEn) {
                     const relativeSrtEn = path.relative(process.cwd(), clip.srtEn).replace(/\\/g, '/');
-                    vfStr += `,subtitles='${relativeSrtEn}':force_style='FontName=Arial,FontSize=100,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=4,Shadow=2,Bold=1,Alignment=2,MarginV=1400'`;
+                    vfStr += `,subtitles='${relativeSrtEn}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H00FFFFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=200'`;
                 }
                 if (clip.srtEs) {
                     const relativeSrtEs = path.relative(process.cwd(), clip.srtEs).replace(/\\/g, '/');
-                    vfStr += `,subtitles='${relativeSrtEs}':force_style='FontName=Arial,FontSize=100,PrimaryColour=&H0000FFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=4,Shadow=2,Bold=1,Alignment=2,MarginV=300'`;
+                    vfStr += `,subtitles='${relativeSrtEs}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H0000FFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=30'`;
                 }
 
                 command.input(clip.audio)

@@ -10,13 +10,16 @@ import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
 async function run() {
     console.log("Generando guion del Mundial 2026...");
-    const prompt = `Escribe un guion dinámico para TikTok/Shorts sobre una historia lineal o anécdota curiosa del Mundial.
+    const prompt = `Escribe un guion dinámico para TikTok/Shorts sobre una anécdota o misterio del Mundial.
     REGLAS IMPORTANTES:
-    1. El video DEBE durar menos de 60 segundos (MAXIMO 120 palabras en total).
-    2. Usa comas y puntos frecuentemente para que el narrador tenga un ritmo pausado e interesante.
-    3. NUNCA describas escenas. Cuenta una historia emocionante, lineal y conectada de principio a fin, como si contaras un chisme o un misterio. No sueltes datos al azar.
-    3. Haz 8 escenas en total.
-    4. El formato DEBE ser un JSON con esta estructura exacta:
+    1. Escribe UN SOLO PÁRRAFO fluido y emocionante de 60-80 palabras como si contaras un chisme sin parar.
+    2. Usa comas y puntos frecuentemente para el ritmo.
+    3. NUNCA describas escenas. Cuenta la historia directamente al espectador.
+    4. DIVIDE ESE PÁRRAFO EXACTAMENTE EN 8 PARTES CONTINUAS para las 8 escenas.
+    5. Si juntas todas las partes de "narrationText", DEBE leerse como el párrafo original sin interrupciones raras.
+    6. MUY IMPORTANTE: El "visualPrompt" DEBE ser súper genérico y en INGLÉS (ej. "soccer stadium", "fans cheering", "sad man", "golden trophy"). NUNCA uses nombres propios, equipos o jugadores (NO pongas Messi, NO pongas Argentina) porque el banco de videos no tiene nombres reales.
+    7. Haz 8 escenas en total.
+    8. El formato DEBE ser un JSON con esta estructura exacta:
     {
        "script": "Texto completo",
        "scenes": [

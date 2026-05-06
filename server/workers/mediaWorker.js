@@ -97,7 +97,7 @@ async function generateImage(prompt, outputPath) {
 async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
     console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
     try {
-        const r = await ytSearch(keyword + ' stock video broll no text');
+        const r = await ytSearch(keyword + ' no copyright free video');
         const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600); // 10s a 10m
         
         if (videos.length === 0) throw new Error("No hay videos para: " + keyword);
@@ -340,18 +340,8 @@ async function processTask() {
                 // Limpiamos el prompt para tener mejores resultados (ej. si el prompt es muy largo)
                 const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
                 
-                // Diversificar fuentes de B-Roll priorizando Pexels para calidad limpia
-                const r = Math.random();
-                if (r < 0.5) {
-                    // 50% Pexels (Videos stock ultra HD sin marcas de agua)
-                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
-                } else if (r < 0.8) {
-                    // 30% YouTube Shorts/Videos
-                    promises.push(extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e => extractSocialStock(searchKeyword, sceneVidPath, 'instagram', targetDuration).catch(e2 => null)));
-                } else {
-                    // 20% Instagram Reels
-                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'instagram', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
-                }
+                // Priorizar PEXELS siempre porque tiene videos limpios sin texto ni ads
+                promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
                 usesBRollVideo = true;
             }
             

@@ -760,6 +760,23 @@ export default function AIContentPlanner({ adminProfile }) {
                         {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                         {isGenerating ? 'Generando...' : `Generar ${durationDays} Días`}
                     </button>
+
+                    <button
+                        onClick={() => {
+                            if(window.confirm('¿Estás seguro de borrar toda la planificación actual y limpiar los campos?')) {
+                                setPlan(null);
+                                setPlannerTrends(null);
+                                setNiche('');
+                                setExtra('');
+                                setReviewMode(false);
+                            }
+                        }}
+                        disabled={isGenerating}
+                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all text-[10px] shrink-0 h-[42px] flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]"
+                        title="Borrar todo y limpiar panel"
+                    >
+                        🗑️ Limpiar
+                    </button>
                 </div>
 
                 {/* Columnas del Sheets como referencia */}
@@ -777,10 +794,15 @@ export default function AIContentPlanner({ adminProfile }) {
                     <div className="mt-4 p-4 border border-white/10 bg-black/50 rounded-xl space-y-4">
                         {plannerTrends.hashtags && plannerTrends.hashtags.length > 0 && (
                             <div>
-                                <p className="text-[10px] text-purple-400 font-bold uppercase mb-2">🔥 Trending Hashtags</p>
+                                <p className="text-[10px] text-purple-400 font-bold uppercase mb-2">🔥 Trending Hashtags <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {plannerTrends.hashtags.slice(0, 10).map((h, i) => (
-                                        <span key={i} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-neutral-300">
+                                        <span 
+                                            key={i} 
+                                            onClick={() => setExtra(prev => prev ? `${prev} ${h}` : h)}
+                                            className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-neutral-300 cursor-pointer hover:bg-purple-500/20 hover:border-purple-500/50 hover:text-white transition-colors"
+                                            title="Agregar al Contexto Extra"
+                                        >
                                             {h}
                                         </span>
                                     ))}
@@ -789,10 +811,15 @@ export default function AIContentPlanner({ adminProfile }) {
                         )}
                         {plannerTrends.hooks && plannerTrends.hooks.length > 0 && (
                             <div>
-                                <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2">🎣 Hooks Virales Recomendados</p>
+                                <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2">🎣 Hooks Virales <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
                                 <ul className="space-y-1.5">
                                     {plannerTrends.hooks.slice(0, 3).map((hook, i) => (
-                                        <li key={i} className="text-[11px] text-white flex items-start gap-2 leading-tight">
+                                        <li 
+                                            key={i} 
+                                            onClick={() => setExtra(prev => prev ? `${prev} | ${hook}` : hook)}
+                                            className="text-[11px] text-white flex items-start gap-2 leading-tight cursor-pointer hover:bg-white/5 p-1 -ml-1 rounded transition-colors"
+                                            title="Agregar al Contexto Extra"
+                                        >
                                             <span className="text-cyan-500 shrink-0 mt-0.5">👉</span> {hook}
                                         </li>
                                     ))}

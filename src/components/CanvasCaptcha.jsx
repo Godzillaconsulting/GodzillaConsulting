@@ -125,7 +125,7 @@ const CanvasCaptcha = forwardRef(({ onValidate, height = 50, length = 5 }, ref) 
                     value={inputValue}
                     onChange={handleChange}
                     placeholder="Escribe las letras que ves"
-                    className={`w-full bg-[#111] border ${isValid === false ? 'border-red-500' : isValid === true ? 'border-green-500' : 'border-gray-700'} rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors uppercase font-mono tracking-widest`}
+                    className={`w-full bg-[#111] border ${isValid === false ? 'border-red-500' : isValid === true ? 'border-green-500' : 'border-gray-700'} rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors font-mono tracking-widest`}
                     maxLength={length}
                     autoComplete="off"
                 />

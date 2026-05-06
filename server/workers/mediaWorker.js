@@ -94,16 +94,18 @@ async function generateImage(prompt, outputPath) {
 }
 
 // Scraper de YouTube - Alternativa a Google Veo (Evita costos de 400+ MXN)
-async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
+async function extractYoutubeStock(keyword, outputPath, targetDuration = 4, usedUrls = new Set()) {
     console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
     try {
         const r = await ytSearch(keyword + ' 4k cinematic broll');
-        const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600); // 10s a 10m
+        // Filtrar videos que ya se usaron en este mismo render
+        const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600 && !usedUrls.has(v.url)); // 10s a 10m
         
-        if (videos.length === 0) throw new Error("No hay videos para: " + keyword);
+        if (videos.length === 0) throw new Error("No hay videos nuevos para: " + keyword);
         
         // Elegir uno random de los top 5
         const video = videos[Math.floor(Math.random() * Math.min(5, videos.length))];
+        usedUrls.add(video.url); // Marcarlo como usado
         console.log(`[YoutubeScraper] Seleccionado: ${video.title} (${video.url})`);
 
         const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
@@ -158,7 +160,7 @@ async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
 }
 
 // Scraper Social (TikTok / Instagram) - Plan C
-async function extractSocialStock(keyword, outputPath, platform = 'instagram', targetDuration = 4) {
+async function extractSocialStock(keyword, outputPath, platform = 'instagram', targetDuration = 4, usedUrls = new Set()) {
     console.log(`[SocialScraper] Buscando en ${platform}: "${keyword.substring(0, 40)}..."`);
     try {
         const siteFilter = platform === 'tiktok' ? 'site:tiktok.com/video/ OR site:tiktok.com/@*/video/' : platform === 'pexels' ? 'site:pexels.com/video/' : 'site:instagram.com/reel/';
@@ -175,16 +177,17 @@ async function extractSocialStock(keyword, outputPath, platform = 'instagram', t
                 const match = href.match(/uddg=([^&]+)/);
                 if (match) {
                     const cleanUrl = decodeURIComponent(match[1]);
-                    if (platform === 'tiktok' && cleanUrl.includes('/video/')) urls.push(cleanUrl);
-                    if (platform === 'instagram' && cleanUrl.includes('/reel/')) urls.push(cleanUrl);
-                    if (platform === 'pexels' && cleanUrl.includes('/video/')) urls.push(cleanUrl);
+                    if (platform === 'tiktok' && cleanUrl.includes('/video/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
+                    if (platform === 'instagram' && cleanUrl.includes('/reel/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
+                    if (platform === 'pexels' && cleanUrl.includes('/video/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
                 }
             }
         });
 
-        if (urls.length === 0) throw new Error(`No hay videos de ${platform} para: ` + keyword);
+        if (urls.length === 0) throw new Error(`No hay videos de ${platform} nuevos para: ` + keyword);
         
         const targetUrl = urls[Math.floor(Math.random() * Math.min(3, urls.length))];
+        usedUrls.add(targetUrl);
         console.log(`[SocialScraper] Seleccionado: ${targetUrl}`);
 
         const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
@@ -287,6 +290,7 @@ async function processTask() {
         const clipsPaths = [];
 
         const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || 5);
+        let usedVideoUrls = new Set();
 
         // Generaremos las imágenes + voz por cada escena
         for (let i = 1; i <= sceneCount; i++) {
@@ -329,8 +333,7 @@ async function processTask() {
                                 else resolve(metadata.format.duration);
                             });
                         });
-                        targetDuration = Math.ceil(parseFloat(durStr) * 10) / 10;
-                        if (targetDuration < 3) targetDuration = 3;
+                        targetDuration = Math.ceil(parseFloat(durStr));
                     } catch (e) {
                         console.error("[MediaWorker] Error obteniendo duración de audio:", e.message);
                     }
@@ -343,7 +346,7 @@ async function processTask() {
                 const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
                 
                 // Priorizar PEXELS siempre porque tiene videos limpios sin texto ni ads
-                promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
+                promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration, usedVideoUrls).catch(e2 => null)));
                 usesBRollVideo = true;
             }
             

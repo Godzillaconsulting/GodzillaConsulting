@@ -185,8 +185,8 @@ async function generateVeoVideo(prompt, outputPath) {
         
         await new Promise((resolve, reject) => {
             ffmpeg().input(imgPath).loop(5).outputOptions([
-                '-vf zoompan=z=\'min(zoom+0.0015,1.5)\':d=150:x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':s=1080x1920',
-                '-c:v libx264', '-t 5', '-s 1080x1920', '-pix_fmt yuv420p'
+                '-vf zoompan=z=\'min(zoom+0.0015,1.5)\':d=150:x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':s=1080x1920,fps=30,setsar=1',
+                '-c:v libx264', '-t 5', '-s 1080x1920', '-pix_fmt yuv420p', '-r 30'
             ]).save(outputPath).on('end', resolve).on('error', reject);
         });
         
@@ -195,11 +195,13 @@ async function generateVeoVideo(prompt, outputPath) {
         return outputPath;
     } catch(e) {
         console.error(`[MediaWorker] ❌ Error en Fallback Animado:`, e.message);
-        // Fallback final de alta calidad
         console.log(`[MediaWorker] 🎬 Usando video de stock Faceless como respaldo final.`);
         const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
         const localStock = path.resolve(process.cwd(), 'stock_videos', randomStock.split('/').pop() || '853889-hd_1920_1080_25fps.mp4');
-        return localStock;
+        if (fs.existsSync(localStock)) {
+            fs.copyFileSync(localStock, outputPath);
+        }
+        return outputPath;
     }
 }
 
@@ -292,7 +294,7 @@ async function processTask() {
 
             // Obtener un video de stock aleatorio de la lista en lugar del mismo siempre
             const randomStockName = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)].split('/').pop();
-            const randomStock = path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4'); 
+            const randomStock = path.resolve(process.cwd(), 'stock_videos', randomStockName || '853889-hd_1920_1080_25fps.mp4'); 
             
             let finalImgPath = sceneImgPath;
             let isFaceless = false;
@@ -302,7 +304,7 @@ async function processTask() {
                 finalImgPath = sceneVidPath;
                 isFaceless = true; // Tratamos los MP4 como "faceless" para el renderizado (loop infinito hasta acabar audio)
             } else {
-                finalImgPath = randomStock;
+                finalImgPath = fs.existsSync(randomStock) ? randomStock : path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
                 isFaceless = true;
             }
 
@@ -391,8 +393,8 @@ async function processTask() {
                 }
 
                 const filterBase = clip.isFaceless
-                    ? `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`
-                    : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30`; // Efecto de zoom para imágenes
+                    ? `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1`
+                    : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30,setsar=1`; // Efecto de zoom para imágenes
 
                 let vfStr = filterBase;
                 // Subtítulos dinámicos tipo "Hormozi" integrados (quemados) al video
@@ -410,6 +412,7 @@ async function processTask() {
                         '-c:a aac',
                         '-b:a 192k',
                         '-pix_fmt yuv420p',
+                        '-r 30',
                         '-shortest', // El video dura lo que dura el audio
                         `-vf ${vfStr}`
                     ])

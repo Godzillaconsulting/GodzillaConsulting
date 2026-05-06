@@ -837,7 +837,7 @@ export const purifyVideo = async (req, res) => {
         
         (async () => {
             try {
-                await removeWatermark(rawPath, cleanPath, (p) => { await setJobStatus(taskId, { status: 'working', progress: p }); });
+                await removeWatermark(rawPath, cleanPath, async (p) => { await setJobStatus(taskId, { status: 'working', progress: p }); });
                 
                 // Limpiar el crudo suciote
                 if(fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
@@ -1006,13 +1006,13 @@ ${learningContext}
 ${realTimeTrendsText}
 
 REGLAS ESTRICTAS:
-1. Analiza el nicho: identifica puntos de dolor, dudas frecuentes y ángulos virales.
-2. Cada video dura MÁXIMO 50 segundos, dividido en EXACTAMENTE 5 escenas.
+1. Actúa como un CREADOR DE CONTENIDO EDUCATIVO Y VIRAL. NUNCA asumas que tú vendes el producto/servicio directamente a menos que se te indique explícitamente. Eres un experto que habla SOBRE el tema para aportar valor.
+2. Cada video dura MÁXIMO 50 segundos, dividido en 8 a 12 escenas MUY CORTAS (para retener la atención cada 3 segundos).
 3. ESCENA 1: Hook visual y textual IMPACTANTE que atrape en los primeros 3 segundos.
-4. ESCENA 5 (CTA): Llamada a la acción clara y específica.
-5. Las NARRACIONES deben ser concisas, naturales, pensadas para TTS (Text-to-Speech).
-6. Los VISUAL PROMPTS deben ser ultra-detallados para generación con Midjourney/Kling (estilo, iluminación, composición, mood).
-7. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para Kling AI.
+4. ÚLTIMA ESCENA (CTA): Llamada a la acción clara y específica.
+5. Las NARRACIONES deben ser concisas y rápidas, pensadas para TTS (Text-to-Speech) y cambios rápidos de clip.
+6. Los VISUAL PROMPTS deben ser ultra-detallados para generación de imágenes por IA (estilo, iluminación, composición, mood).
+7. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para herramientas de generación de video con IA.
 
 EJEMPLO DE REFERENCIA (ESTÁNDAR DE CALIDAD VIRAL Y ESTRUCTURA):
 \`\`\`json
@@ -1038,11 +1038,26 @@ EJEMPLO DE REFERENCIA (ESTÁNDAR DE CALIDAD VIRAL Y ESTRUCTURA):
   "AUDIO Y SFX ESCENA 4": "[SFX: Ruido blanco / VHS glitch]",
   "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "A dark silhouette of a person standing before a massive wall of digital static and white noise. The room is hazy with blue light.",
   "VIDEO ESCENA 4 (Prompt Movimiento Detallado)": "The static noise on the wall suddenly transforms into a clear, tranquil liquid surface. The person reaches out to touch it, causing ripples.",
-  "NARRACION ESCENA 5 (CTA)": "¿Quieres mis ganchos? Comenta GANCHO.",
-  "TEXTO EN PANTALLA ESCENA 5": "COMENTA 'GANCHO' 👇",
-  "AUDIO Y SFX ESCENA 5": "[SFX: Campana de notificación 'Ping']",
-  "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "A sleek glass tablet lying on a marble table. A large 3D notification icon in gold is pulsing above the screen. Cinematic lighting, shallow depth of field.",
-  "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "The notification icon glows with increasing intensity. A subtle shadow of a hand passes over the tablet, creating a sense of anticipation."
+  "NARRACION ESCENA 5": "¿El secreto para que no deslicen?",
+  "TEXTO EN PANTALLA ESCENA 5": "EL SECRETO 🤫",
+  "AUDIO Y SFX ESCENA 5": "[SFX: Reloj tic-tac]",
+  "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "A golden pocket watch suspended in mid-air surrounded by floating puzzle pieces. Dark background with dramatic spotlight. Hyper-realistic 8k.",
+  "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "The camera pushes in on the watch while the puzzle pieces slowly rotate around it.",
+  "NARRACION ESCENA 6": "Cambiar el ángulo visual cada 3 segundos exactos.",
+  "TEXTO EN PANTALLA ESCENA 6": "CAMBIA CADA 3 SEG ⏳",
+  "AUDIO Y SFX ESCENA 6": "[SFX: Fast camera shutter clicks]",
+  "VISUAL ESCENA 6 (Prompt Imagen Detallado)": "A rapid collage of three different cinematic camera lenses. Cyberpunk neon lighting, deep depth of field.",
+  "VIDEO ESCENA 6 (Prompt Movimiento Detallado)": "Quick zoom through the lenses in a dizzying infinite loop effect.",
+  "NARRACION ESCENA 7": "Esto resetea el cerebro del espectador.",
+  "TEXTO EN PANTALLA ESCENA 7": "RESETEO MENTAL 🧠",
+  "AUDIO Y SFX ESCENA 7": "[SFX: Electric zap]",
+  "VISUAL ESCENA 7 (Prompt Imagen Detallado)": "A glowing human brain made of neon blue fiber optics inside a sleek transparent glass skull. High contrast, dark studio environment.",
+  "VIDEO ESCENA 7 (Prompt Movimiento Detallado)": "A pulse of light travels through the fiber optics inside the brain, illuminating the glass skull.",
+  "NARRACION ESCENA 8 (CTA)": "¿Quieres mis plantillas? Comenta GANCHO.",
+  "TEXTO EN PANTALLA ESCENA 8": "COMENTA 'GANCHO' 👇",
+  "AUDIO Y SFX ESCENA 8": "[SFX: Campana de notificación 'Ping']",
+  "VISUAL ESCENA 8 (Prompt Imagen Detallado)": "A sleek glass tablet lying on a marble table. A large 3D notification icon in gold is pulsing above the screen. Cinematic lighting, shallow depth of field.",
+  "VIDEO ESCENA 8 (Prompt Movimiento Detallado)": "The notification icon glows with increasing intensity. A subtle shadow of a hand passes over the tablet, creating a sense of anticipation."
 }
 \`\`\`
 
@@ -1065,21 +1080,16 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
       "AUDIO Y SFX ESCENA 2": "Efectos",
       "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "Prompt imagen escena 2",
       "VIDEO ESCENA 2 (Prompt Movimiento Detallado)": "Prompt movimiento escena 2",
-      "NARRACION ESCENA 3": "...",
-      "TEXTO EN PANTALLA ESCENA 3": "...",
-      "AUDIO Y SFX ESCENA 3": "...",
-      "VISUAL ESCENA 3 (Prompt Imagen Detallado)": "...",
-      "VIDEO ESCENA 3 (Prompt Movimiento Detallado)": "...",
-      "NARRACION ESCENA 4": "...",
-      "TEXTO EN PANTALLA ESCENA 4": "...",
-      "AUDIO Y SFX ESCENA 4": "...",
-      "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "...",
-      "VIDEO ESCENA 4 (Prompt Movimiento Detallado)": "...",
-      "NARRACION ESCENA 5 (CTA)": "Texto narrado escena 5 con llamada a la acción",
-      "TEXTO EN PANTALLA ESCENA 5": "Texto CTA",
-      "AUDIO Y SFX ESCENA 5": "SFX final",
-      "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "Prompt imagen escena 5 CTA",
-      "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "Prompt movimiento escena 5 CTA"
+      "NARRACION ESCENA N": "...",
+      "TEXTO EN PANTALLA ESCENA N": "...",
+      "AUDIO Y SFX ESCENA N": "...",
+      "VISUAL ESCENA N (Prompt Imagen Detallado)": "...",
+      "VIDEO ESCENA N (Prompt Movimiento Detallado)": "...",
+      "NARRACION ESCENA FINAL (CTA)": "Texto narrado escena final con llamada a la acción",
+      "TEXTO EN PANTALLA ESCENA FINAL": "Texto CTA",
+      "AUDIO Y SFX ESCENA FINAL": "SFX final",
+      "VISUAL ESCENA FINAL (Prompt Imagen Detallado)": "Prompt imagen escena final",
+      "VIDEO ESCENA FINAL (Prompt Movimiento Detallado)": "Prompt movimiento escena final"
     }
   ]
 }

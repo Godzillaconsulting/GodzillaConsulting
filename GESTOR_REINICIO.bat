@@ -219,9 +219,11 @@ echo  Iniciando servicio GodzillaBackend de forma limpia...
 net start GodzillaBackend
 timeout /t 3 /nobreak >nul
 
-echo  [5/5] Resucitando procesos de PM2 guardados en memoria...
+echo  [5/5] Levantando procesos del ecosistema de PM2...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd resurrect
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start ecosystem.config.cjs
+timeout /t 3 /nobreak >nul
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd save
 timeout /t 3 /nobreak >nul
 
 echo.

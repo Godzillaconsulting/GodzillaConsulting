@@ -14,6 +14,17 @@ ffmpeg.setFfmpegPath(ffmpegPath.path);
 // Cache para manejar los trabajos asincronos de postproduccion de video nativo
 const postProcessJobs = new Map();
 
+const setJobStatus = async (taskId, data) => {
+    const existing = postProcessJobs.get(taskId) || {};
+    postProcessJobs.set(taskId, { ...existing, ...data });
+};
+const getJobStatus = async (taskId) => {
+    return postProcessJobs.get(taskId);
+};
+const deleteJobStatus = async (taskId) => {
+    postProcessJobs.delete(taskId);
+};
+
 // Cache para manejar los trabajos asincronos del Planificador IA
 const plannerJobs = new Map();
 
@@ -110,7 +121,7 @@ ${cacheBuster}`;
                 }
 
                 const directorRes = await aiSDK.models.generateContent({
-                    model: 'gemini-2.0-flash',
+                    model: 'gemini-2.5-flash',
                     contents: [{ role: 'user', parts: directorParts }]
                 });
                 const rawText = directorRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -308,8 +319,7 @@ ${cacheBuster}`;
             (async () => {
                 const finalPromptToUse = optimizedPrompt || prompt;
                 try {
-                    // 🛑 AHORRO DE COSTOS: Lanzamos error directo para forzar fallback a Pollinations
-                    throw new Error("AHORRO DE COSTOS: Generación de Imagen Premium desactivada temporalmente.");
+                    // Se ha reactivado la generacion nativa a peticion del usuario (las fotos son baratas)
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real

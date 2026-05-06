@@ -961,9 +961,11 @@ export const generateMonthlyPlan = async (req, res) => {
             try {
                 console.log(`[MONTHLY-PLAN] Obteniendo tendencias reales de Google Suggest para: ${niche}...`);
                 const MODIFIERS = [
-                    '', 'noticias de', 'novedades de', 'filtraciones de', 'cuándo sale',
-                    'lo nuevo de', 'polémica de', 'por qué es tendencia',
-                    'qué es', 'cómo hacer', 'cómo usar', 'cuál es el mejor', 'tendencias en', 'tips para', 'errores en'
+                    '', 'noticias de', 'filtraciones de', 'cuándo sale',
+                    'polémica de', 'por qué es tendencia',
+                    'datos curiosos de', 'secretos de', 'mitos de', 'easter eggs de',
+                    'cosas que no sabías de', 'la verdad sobre', 'teorías de',
+                    'qué es', 'cómo hacer', 'cuál es el mejor', 'errores en'
                 ];
                 const fetchGoogle = async (query) => {
                     try {

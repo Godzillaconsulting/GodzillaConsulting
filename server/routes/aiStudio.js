@@ -42,11 +42,11 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
 
     // MODIFIERS para simular AnswerThePublic y Google Trends
     const MODIFIERS = [
-        '', 'noticias de', 'novedades de', 'filtraciones de', 'cuándo sale',
-        'lo nuevo de', 'polémica de', 'por qué es tendencia',
-        'qué es', 'cómo hacer', 'cómo usar', 'para qué sirve',
-        'por qué es importante', 'cuál es el mejor', 'cuánto cuesta',
-        'tendencias en', 'herramientas para', 'tips para', 'errores en'
+        '', 'noticias de', 'filtraciones de', 'cuándo sale',
+        'polémica de', 'por qué es tendencia',
+        'datos curiosos de', 'secretos de', 'mitos de', 'easter eggs de',
+        'cosas que no sabías de', 'la verdad sobre', 'teorías de',
+        'qué es', 'cómo hacer', 'cuál es el mejor', 'errores en'
     ];
 
     const fetchGoogle = async (query) => {

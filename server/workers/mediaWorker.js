@@ -15,6 +15,7 @@ import pkgWave from 'wavefile';
 const { WaveFile } = pkgWave;
 import ytSearch from 'yt-search';
 import youtubedl from 'youtube-dl-exec';
+import * as cheerio from 'cheerio';
 
 // Helper: Formato de tiempo para SRT
 function formatSrtTime(seconds) {
@@ -151,6 +152,80 @@ async function extractYoutubeStock(keyword, outputPath) {
     }
 }
 
+// Scraper Social (TikTok / Instagram) - Plan C
+async function extractSocialStock(keyword, outputPath, platform = 'instagram') {
+    console.log(`[SocialScraper] Buscando en ${platform}: "${keyword.substring(0, 40)}..."`);
+    try {
+        const siteFilter = platform === 'tiktok' ? 'site:tiktok.com/video/ OR site:tiktok.com/@*/video/' : 'site:instagram.com/reel/';
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(siteFilter + ' ' + keyword)}`;
+        
+        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
+        const html = await r.text();
+        const $ = cheerio.load(html);
+        
+        let urls = [];
+        $('a.result__url').each((i, el) => {
+            const href = $(el).attr('href');
+            if (href) {
+                const match = href.match(/uddg=([^&]+)/);
+                if (match) {
+                    const cleanUrl = decodeURIComponent(match[1]);
+                    if (platform === 'tiktok' && cleanUrl.includes('/video/')) urls.push(cleanUrl);
+                    if (platform === 'instagram' && cleanUrl.includes('/reel/')) urls.push(cleanUrl);
+                }
+            }
+        });
+
+        if (urls.length === 0) throw new Error(`No hay videos de ${platform} para: ` + keyword);
+        
+        const targetUrl = urls[Math.floor(Math.random() * Math.min(3, urls.length))];
+        console.log(`[SocialScraper] Seleccionado: ${targetUrl}`);
+
+        const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
+        
+        await youtubedl(targetUrl, {
+            output: tempVidPath,
+            format: 'bestvideo[height<=1920]+bestaudio/best',
+            noWarnings: true,
+            preferFreeFormats: true,
+            addHeader: ['referer:google.com', 'user-agent:Mozilla/5.0']
+        });
+
+        console.log(`[SocialScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
+        
+        const startSec = 2; // Cortar el inicio por si hay overlays
+        const tempCroppedPath = outputPath.replace('.mp4', '_cropped.mp4');
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(tempVidPath)
+                .setStartTime(startSec)
+                .setDuration(4)
+                .outputOptions([
+                     '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
+                     '-c:v libx264',
+                     '-pix_fmt yuv420p',
+                     '-an' 
+                ])
+                .save(tempCroppedPath)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        if(fs.existsSync(tempVidPath)) fs.unlinkSync(tempVidPath);
+
+        console.log(`[SocialScraper] Aplicando limpiador algorítmico de marcas de agua...`);
+        await removeWatermark(tempCroppedPath, outputPath);
+        
+        if(fs.existsSync(tempCroppedPath)) fs.unlinkSync(tempCroppedPath);
+
+        console.log(`[SocialScraper] ✅ Clip extraído y limpiado con éxito.`);
+        return outputPath;
+    } catch (e) {
+        console.error(`[SocialScraper] ❌ Error extrayendo ${platform}:`, e.message);
+        throw e;
+    }
+}
+
 // Generación de Video corto con Google Veo (Desactivado temporalmente)
 async function generateVeoVideo(prompt, outputPath) {
     throw new Error(`Generación Veo deshabilitada temporalmente para ahorrar 400+ MXN.`);
@@ -233,11 +308,23 @@ async function processTask() {
             
             let usesVeoVideo = false;
             
-            // ESTRATEGIA YOUTUBE: Descargar b-roll de YouTube para ahorrar costos
+            // ESTRATEGIA SOCIAL: Descargar b-roll para ahorrar costos
             if (videoPrompt || visualPrompt) {
-                // Limpiamos el prompt para tener mejores resultados en YT (ej. si el prompt es muy largo)
+                // Limpiamos el prompt para tener mejores resultados (ej. si el prompt es muy largo)
                 const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
-                promises.push(extractYoutubeStock(searchKeyword, sceneVidPath).catch(e => null));
+                
+                // Diversificar fuentes de B-Roll (Plan C incluido) para evitar rate limits
+                const r = Math.random();
+                if (r < 0.6) {
+                    // 60% YouTube Shorts (Más estable)
+                    promises.push(extractYoutubeStock(searchKeyword, sceneVidPath).catch(e => null));
+                } else if (r < 0.8) {
+                    // 20% TikTok
+                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'tiktok').catch(e => extractYoutubeStock(searchKeyword, sceneVidPath).catch(e2 => null)));
+                } else {
+                    // 20% Instagram Reels (Plan C)
+                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'instagram').catch(e => extractYoutubeStock(searchKeyword, sceneVidPath).catch(e2 => null)));
+                }
                 usesVeoVideo = true;
             }
 

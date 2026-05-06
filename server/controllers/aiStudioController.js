@@ -140,8 +140,8 @@ ${cacheBuster}`;
             console.log(`[VEO] Motor primario: ${primaryModel} | Fallback: ${fallbackModel}`);
 
             (async () => {
-                const aiPrimary = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                const aiFree = new GoogleGenAI({ apiKey: process.env.GEMINI_FREE_KEY || process.env.GEMINI_API_KEY });
+                const aiPrimary = null; // Ahorro de costos
+                const aiFree = null; // Ahorro de costos
                 const validRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
                 const ratio = validRatios.includes(config?.aspect_ratio) ? config.aspect_ratio : '16:9';
 
@@ -195,7 +195,8 @@ ${cacheBuster}`;
 
                     // 1. Intentar con Llave Principal (Modelo Primario)
                     try {
-                        operation = await tryGenerate(aiPrimary, primaryModel, false);
+                        throw new Error("AHORRO DE COSTOS: Generación de Video Veo desactivada para evitar facturación de $400+ MXN.");
+                        // operation = await tryGenerate(aiPrimary, primaryModel, false);
                     } catch (err1) {
                         console.warn(`[VEO] ⚠️ Llave Principal falló: ${err1.message}`);
                         console.log(`[VEO] 🔄 Nivel 2: Usando Llave Personal Gratuita...`);
@@ -307,6 +308,8 @@ ${cacheBuster}`;
             (async () => {
                 const finalPromptToUse = optimizedPrompt || prompt;
                 try {
+                    // 🛑 AHORRO DE COSTOS: Lanzamos error directo para forzar fallback a Pollinations
+                    throw new Error("AHORRO DE COSTOS: Generación de Imagen Premium desactivada temporalmente.");
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
                     // Motor EXACTO mapeado por nombre de UI a modelo real
@@ -990,7 +993,18 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
                      trendsData.hooks = [`Descubre la verdad sobre ${niche}`, `Lo que nadie te dice sobre ${niche}`];
                 }
 
-                realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL DESDE GOOGLE SUGGEST):\nDebes integrar el siguiente contexto viral en tus generaciones:\n- Hashtags que dominan las búsquedas hoy: ${trendsData.hashtags.join(', ')}\n- Búsquedas reales del público: ${allQuestions.slice(0, 5).join(' | ')}\n- Ganchos (Hooks) altamente comprobados para este nicho: ${trendsData.hooks.join(' | ')}\nAplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1.`;
+                const dailyQuestions = allQuestions.slice(0, 30);
+                const mappedQuestionsText = dailyQuestions.length > 0 
+                    ? dailyQuestions.map((q, i) => `Día ${i + 1}: ${q}`).join('\n  ') 
+                    : `Temas variados sobre ${niche}`;
+
+                realTimeTrendsText = `\n\n🎯 ALGORITMO TRENDS (EN TIEMPO REAL DESDE GOOGLE SUGGEST):
+Debes integrar el siguiente contexto viral en tus generaciones:
+- Hashtags que dominan las búsquedas hoy: ${trendsData.hashtags.join(', ')}
+- BÚSQUEDAS REALES DEL PÚBLICO (USA ESTAS PREGUNTAS COMO EL "Tema" PARA LOS VIDEOS DE CADA DÍA):
+  ${mappedQuestionsText}
+- Ganchos (Hooks) altamente comprobados para este nicho: ${trendsData.hooks.join(' | ')}
+Aplica el estilo de estos ganchos para las NARRACIONES de la ESCENA 1. Responde directamente a las preguntas del público.`;
                 console.log(`[MONTHLY-PLAN] ✅ Tendencias obtenidas con éxito de Google Suggest.`);
             } catch (trendErr) {
                 console.log("[MONTHLY-PLAN] ⚠️ Fallo al obtener trends en tiempo real (usando default):", trendErr.message);

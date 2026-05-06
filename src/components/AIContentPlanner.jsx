@@ -337,9 +337,9 @@ export default function AIContentPlanner({ adminProfile }) {
     const fetchPlannerTrends = async () => {
         let currentNiche = niche.trim();
         if (!currentNiche) {
-            currentNiche = window.prompt('¿Qué tema o nicho quieres buscar en los trends estadísticos?');
-            if (!currentNiche) return;
-            setNiche(currentNiche);
+            // Si no hay nicho, en lugar de un prompt invasivo, abrimos el Radar de Contenido visual
+            setShowContentRadar(true);
+            return;
         }
 
         setLoadingTrends(true);
@@ -351,13 +351,8 @@ export default function AIContentPlanner({ adminProfile }) {
             const data = await res.json();
             if (data.success) {
                 setPlannerTrends(data);
-                // Dar tiempo a que renderice la UI y mostrar el confirm
-                setTimeout(() => {
-                    if (window.confirm(`🔥 Trends listos para "${currentNiche}". ¿Quieres generar el contenido del día basado en estas estadísticas?`)) {
-                        setDurationDays(1);
-                        handleGenerate(currentNiche, 1, data);
-                    }
-                }, 100);
+                // Ya no forzamos la generación con un confirm.
+                // El usuario podrá leer los trends y decidir si editar el Nicho o darle a "Generar".
             }
             else setPlannerTrends({ error: data.error || 'Sin datos de trends.' });
         } catch (e) {

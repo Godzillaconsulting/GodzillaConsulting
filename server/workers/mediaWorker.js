@@ -12,6 +12,8 @@ import fs from 'fs';
 import path from 'path';
 import pkgWave from 'wavefile';
 const { WaveFile } = pkgWave;
+import ytSearch from 'yt-search';
+import youtubedl from 'youtube-dl-exec';
 
 // Helper: Formato de tiempo para SRT
 function formatSrtTime(seconds) {
@@ -86,123 +88,63 @@ const STOCK_VIDEOS = [
 
 // Generación de imagen con Imagen 3 + Fallback a Pollinations Libre
 async function generateImage(prompt, outputPath) {
-    console.log(`[MediaWorker] Generando Imagen: "${prompt.substring(0, 30)}..."`);
-    
-    // Opción 1: Google Imagen 3
-    if (process.env.GEMINI_API_KEY) {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            const response = await ai.models.generateImages({
-                model: 'imagen-3.0-generate-001',
-                prompt: prompt,
-                config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: '9:16' }
-            });
-            
-            if (response.generatedImages?.[0]?.image?.imageBytes) {
-                const b64 = response.generatedImages[0].image.imageBytes;
-                const buffer = Buffer.from(b64, 'base64');
-                fs.writeFileSync(outputPath, buffer);
-                console.log(`[MediaWorker] ✅ Imagen generada (Google Imagen 3).`);
-                return outputPath;
-            }
-        } catch (e) {
-            console.warn(`[MediaWorker] ⚠️ Google Imagen 3 falló (${e.message}). Usando Fallback...`);
-        }
-    } else {
-        console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada. Usando Fallback...`);
-    }
-
-    // Si Imagen 3 falla, NO usamos Pollinations porque genera imágenes de muy baja calidad para este estándar.
-    // Lanzamos error para que el Obrero use automáticamente los clips de video de Stock Cinemáticos en su lugar.
-    throw new Error(`Fallback Libre desactivado para mantener calidad.`);
+    throw new Error(`Fallback Libre activado para ahorrar costos de Imagen 3.`);
 }
 
-// Generación de Video corto con Google Veo
-async function generateVeoVideo(prompt, outputPath) {
-    console.log(`[MediaWorker] Generando Video Veo (5-8s): "${prompt.substring(0, 30)}..."`);
-    
-    if (process.env.GEMINI_API_KEY) {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-            // Using the Veo model available in Gemini
-            const operation = await ai.models.generateVideos({
-                model: 'veo-2.0-generate-001',
-                prompt: prompt
-            });
-            
-            let opName = operation.name;
-            if (!opName) {
-                console.warn(`[MediaWorker] ⚠️ Respuesta de Veo sin operación. Usando fallback...`);
-                throw new Error("No operation name returned");
-            }
-            
-            console.log(`[MediaWorker] ⏳ Esperando generación de video Veo: ${opName}...`);
-            
-            // Poll the LRO endpoint
-            while (true) {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1alpha/${opName}?key=${process.env.GEMINI_API_KEY}`);
-                const data = await res.json();
-                
-                if (data.done) {
-                    if (data.error) {
-                        throw new Error(`Error en operación Veo: ${data.error.message}`);
-                    }
-                    if (data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri) {
-                        const videoUri = data.response.generateVideoResponse.generatedSamples[0].video.uri;
-                        const authUri = videoUri + (videoUri.includes('?') ? '&' : '?') + 'key=' + process.env.GEMINI_API_KEY;
-                        const downloadRes = await fetch(authUri);
-                        const buffer = await downloadRes.arrayBuffer();
-                        fs.writeFileSync(outputPath, Buffer.from(buffer));
-                        console.log(`[MediaWorker] ✅ Video Veo descargado y guardado correctamente.`);
-                        return outputPath;
-                    } else {
-                        throw new Error("La operación terminó pero no se encontró la URI del video.");
-                    }
-                }
-                
-                await new Promise(r => setTimeout(r, 5000));
-            }
-        } catch (e) {
-            console.warn(`[MediaWorker] ⚠️ Google Veo falló (${e.message}). Usando Fallback cinemático...`);
-        }
-    } else {
-        console.warn(`[MediaWorker] ⚠️ GEMINI_API_KEY no detectada para Veo.`);
-    }
-
-    // Fallback intermedio con Pollinations + FFmpeg Zoom
-    console.log(`[MediaWorker] 🎬 Google Veo falló o no está configurado. Fallback a Animación con Pollinations...`);
+// Scraper de YouTube - Alternativa a Google Veo (Evita costos de 400+ MXN)
+async function extractYoutubeStock(keyword, outputPath) {
+    console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
     try {
-        const safePrompt = prompt.length > 300 ? prompt.substring(0, 300) : prompt;
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
-        const res = await fetch(fallbackUrl);
-        if (!res.ok) throw new Error("Pollinations falló");
+        const r = await ytSearch(keyword);
+        const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600); // 10s a 10m
         
-        const arrayBuffer = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const imgName = `fallback_veo_${Date.now()}_${Math.random().toString(36).substring(2,7)}.jpg`;
-        const imgPath = path.join(OUTPUT_DIR, imgName);
-        fs.writeFileSync(imgPath, buffer);
+        if (videos.length === 0) throw new Error("No hay videos para: " + keyword);
         
-        await new Promise((resolve, reject) => {
-            ffmpeg().input(imgPath).loop(5).outputOptions([
-                '-vf zoompan=z=\'min(zoom+0.0015,1.5)\':d=150:x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':s=1080x1920,fps=30,setsar=1',
-                '-c:v libx264', '-t 5', '-s 1080x1920', '-pix_fmt yuv420p', '-r 30'
-            ]).save(outputPath).on('end', resolve).on('error', reject);
+        // Elegir uno random de los top 5
+        const video = videos[Math.floor(Math.random() * Math.min(5, videos.length))];
+        console.log(`[YoutubeScraper] Seleccionado: ${video.title} (${video.url})`);
+
+        const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
+        
+        await youtubedl(video.url, {
+            output: tempVidPath,
+            format: 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            noWarnings: true,
+            preferFreeFormats: true,
+            addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
+
+        console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios...`);
         
-        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-        console.log(`[MediaWorker] ✅ Video de Fallback generado con Pollinations + FFmpeg.`);
+        const startSec = Math.floor(Math.random() * Math.max(1, video.seconds - 6)) + 1; 
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(tempVidPath)
+                .setStartTime(startSec)
+                .setDuration(4) // Máx 4 segundos como pidió el CEO
+                .outputOptions([
+                     '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
+                     '-c:v libx264',
+                     '-pix_fmt yuv420p',
+                     '-an' // Sin audio
+                ])
+                .save(outputPath)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        if(fs.existsSync(tempVidPath)) fs.unlinkSync(tempVidPath);
+        console.log(`[YoutubeScraper] ✅ Clip de YouTube extraído con éxito.`);
         return outputPath;
-    } catch(e) {
-        console.error(`[MediaWorker] ❌ Error en Fallback Animado:`, e.message);
-        console.log(`[MediaWorker] 🎬 Usando video de stock Faceless como respaldo final.`);
-        const randomStock = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)];
-        const localStock = path.resolve(process.cwd(), 'stock_videos', randomStock.split('/').pop() || '853889-hd_1920_1080_25fps.mp4');
-        if (fs.existsSync(localStock)) {
-            fs.copyFileSync(localStock, outputPath);
-        }
-        return outputPath;
+    } catch (e) {
+        console.error(`[YoutubeScraper] ❌ Error extrayendo YT:`, e.message);
+        throw e;
     }
+}
+
+// Generación de Video corto con Google Veo (Desactivado temporalmente)
+async function generateVeoVideo(prompt, outputPath) {
+    throw new Error(`Generación Veo deshabilitada temporalmente para ahorrar 400+ MXN.`);
 }
 
 async function processTask() {
@@ -281,10 +223,12 @@ async function processTask() {
             const promises = [];
             
             let usesVeoVideo = false;
-            // ESTRATEGIA DE VIDEO PURO: Generar AI Video (Veo) para TODAS las escenas que lo pidan.
-            // Esto evita que salgan fotos/imágenes estáticas tipo slideshow.
-            if (videoPrompt) {
-                promises.push(generateVeoVideo(videoPrompt, sceneVidPath).catch(e => null));
+            
+            // ESTRATEGIA YOUTUBE: Descargar b-roll de YouTube para ahorrar costos
+            if (videoPrompt || visualPrompt) {
+                // Limpiamos el prompt para tener mejores resultados en YT (ej. si el prompt es muy largo)
+                const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
+                promises.push(extractYoutubeStock(searchKeyword, sceneVidPath).catch(e => null));
                 usesVeoVideo = true;
             }
 
@@ -292,18 +236,18 @@ async function processTask() {
             
             await Promise.all(promises);
 
-            // Obtener un video de stock aleatorio de la lista en lugar del mismo siempre
+            // Resolver qué medio usar como visual (YouTube > Stock Local) - NUNCA fotos estáticas
             const randomStockName = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)].split('/').pop();
             const randomStock = path.resolve(process.cwd(), 'stock_videos', randomStockName || '853889-hd_1920_1080_25fps.mp4'); 
             
             let finalImgPath = sceneImgPath;
             let isFaceless = false;
             
-            // Resolver qué medio usar como visual (Veo Video > Stock) - NUNCA usar fotos estáticas
             if (usesVeoVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
                 finalImgPath = sceneVidPath;
-                isFaceless = true; // Tratamos los MP4 como "faceless" para el renderizado (loop infinito hasta acabar audio)
+                isFaceless = true; 
             } else {
+                // Si Youtube falla, usamos videos de stock
                 finalImgPath = fs.existsSync(randomStock) ? randomStock : path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
                 isFaceless = true;
             }

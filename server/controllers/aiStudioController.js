@@ -978,7 +978,9 @@ export const generateMonthlyPlan = async (req, res) => {
                     } catch { return []; }
                 };
                 const results = await Promise.all(MODIFIERS.map(mod => fetchGoogle(mod ? `${mod} ${niche}` : niche)));
-                const allQuestions = [...new Set(results.flat())].filter(q => q.toLowerCase().includes(niche.toLowerCase().split(' ')[0]));
+                const allQuestions = [...new Set(results.flat())]
+                    .filter(q => typeof q === 'string' && q.toLowerCase().includes(niche.toLowerCase().split(' ')[0]))
+                    .slice(0, 50);
                 
                 const trendPrompt = `Eres un experto estratega de contenido viral en México. Basado en el tema "${niche}" y estas búsquedas reales de Google de hoy: ${allQuestions.slice(0, 30).join(' | ')}
 Genera EXACTAMENTE este JSON sin markdown ni texto extra.

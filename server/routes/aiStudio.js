@@ -40,12 +40,13 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
 
     const keyword = topic.trim();
 
-    // MODIFIERS para simular AnswerThePublic con Autocompletado de Google
+    // MODIFIERS para simular AnswerThePublic y Google Trends
     const MODIFIERS = [
+        '', 'noticias de', 'novedades de', 'filtraciones de', 'cuándo sale',
+        'lo nuevo de', 'polémica de', 'por qué es tendencia',
         'qué es', 'cómo hacer', 'cómo usar', 'para qué sirve',
         'por qué es importante', 'cuál es el mejor', 'cuánto cuesta',
-        'tendencias en', 'herramientas para', 'ventajas de',
-        'ejemplos de', 'tips para', 'errores en', 'guía de'
+        'tendencias en', 'herramientas para', 'tips para', 'errores en'
     ];
 
     const fetchGoogle = async (query) => {
@@ -73,7 +74,8 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
     const structured = {};
     MODIFIERS.forEach((mod, i) => {
         const qs = results[i].filter(q => q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
-        if (qs.length > 0) structured[mod] = qs;
+        const groupName = mod === '' ? '🔥 TOP BÚSQUEDAS' : mod;
+        if (qs.length > 0) structured[groupName] = qs;
     });
 
     // Generar hashtags con IA Gratuita (Groq/Cerebras, costo CERO)

@@ -960,7 +960,11 @@ export const generateMonthlyPlan = async (req, res) => {
         } else {
             try {
                 console.log(`[MONTHLY-PLAN] Obteniendo tendencias reales de Google Suggest para: ${niche}...`);
-                const MODIFIERS = ['qué es', 'cómo hacer', 'cómo usar', 'cuál es el mejor', 'tendencias en', 'tips para', 'errores en'];
+                const MODIFIERS = [
+                    '', 'noticias de', 'novedades de', 'filtraciones de', 'cuándo sale',
+                    'lo nuevo de', 'polémica de', 'por qué es tendencia',
+                    'qué es', 'cómo hacer', 'cómo usar', 'cuál es el mejor', 'tendencias en', 'tips para', 'errores en'
+                ];
                 const fetchGoogle = async (query) => {
                     try {
                         const url = `http://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=es&gl=mx`;

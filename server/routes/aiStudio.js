@@ -33,12 +33,13 @@ router.get('/plan-status/:taskId', authenticateToken, getMonthlyPlanStatus);
 // Radar de Contenido (AnswerThePublic Engine — Costo Cero)
 // ==========================================
 router.get('/content-radar', authenticateToken, async (req, res) => {
-    const { topic } = req.query;
-    if (!topic || topic.trim().length < 2) {
-        return res.status(400).json({ success: false, error: 'Proporciona un tema.' });
-    }
+    try {
+        const { topic } = req.query;
+        if (!topic || topic.trim().length < 2) {
+            return res.status(400).json({ success: false, error: 'Proporciona un tema.' });
+        }
 
-    const keyword = topic.trim();
+        const keyword = topic.trim();
 
     // MODIFIERS para simular AnswerThePublic y Google Trends
     const MODIFIERS = [
@@ -65,18 +66,18 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         MODIFIERS.map(mod => fetchGoogle(mod ? `${mod} ${keyword}` : keyword))
     );
 
-    // Agregamos y deduplicamos
-    const allQuestions = [...new Set(results.flat())].filter(q =>
-        q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
-    );
+        // Agregamos y deduplicamos (asegurando que sean strings) limitando a los 50 más virales globales para la IA
+        const allQuestions = [...new Set(results.flat())].filter(q =>
+            typeof q === 'string' && q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
+        ).slice(0, 50);
 
-    // Agrupar por tipo de modifier
-    const structured = {};
-    MODIFIERS.forEach((mod, i) => {
-        const qs = results[i].filter(q => q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
-        const groupName = mod === '' ? '🔥 TOP BÚSQUEDAS' : mod;
-        if (qs.length > 0) structured[groupName] = qs;
-    });
+        // Agrupar por tipo de modifier (Tomando solo los 10 más buscados por categoría)
+        const structured = {};
+        MODIFIERS.forEach((mod, i) => {
+            const qs = results[i].filter(q => typeof q === 'string' && q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
+            const groupName = mod === '' ? '🔥 TOP BÚSQUEDAS' : mod;
+            if (qs.length > 0) structured[groupName] = qs.slice(0, 10);
+        });
 
     // Generar hashtags con IA Gratuita (Groq/Cerebras, costo CERO)
     let hashtags = [];
@@ -116,16 +117,20 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
         hooks = [`Descubre los secretos de ${keyword}`, `Lo que nadie te dice de ${keyword}`, `La verdad sobre ${keyword}`];
     }
 
-    res.json({
-        success: true,
-        topic: keyword,
-        totalQuestions: allQuestions.length,
-        structured,
-        hashtags,
-        hooks,
-        aiSummary,
-        audiencia
-    });
+        res.json({
+            success: true,
+            topic: keyword,
+            totalQuestions: allQuestions.length,
+            structured,
+            hashtags,
+            hooks,
+            aiSummary,
+            audiencia
+        });
+    } catch (err) {
+        console.error('[ContentRadar] Critical Error:', err);
+        res.status(500).json({ success: false, error: err.message || 'Error interno del servidor' });
+    }
 });
 
 // ==========================================

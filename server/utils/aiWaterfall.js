@@ -113,8 +113,9 @@ export async function executeAiWaterfall(messages, options = {}) {
             reqData.tool_choice = "auto";
         }
 
-        const completion = await groq.chat.completions.create(reqData);
-        const responseMessage = completion.choices[0]?.message;
+        const completion = await groq.chat.completions.create(reqData, { timeout: 15000 });
+        const responseMessage = completion.choices?.[0]?.message;
+        if (!responseMessage) throw new Error("Groq devolvió respuesta vacía");
         console.log(`[WATERFALL] ✅ Éxito con Groq.`);
         return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
     };

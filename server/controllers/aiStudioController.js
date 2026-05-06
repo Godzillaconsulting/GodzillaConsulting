@@ -974,11 +974,15 @@ export const generateMonthlyPlan = async (req, res) => {
                 const results = await Promise.all(MODIFIERS.map(mod => fetchGoogle(`${mod} ${niche}`)));
                 const allQuestions = [...new Set(results.flat())].filter(q => q.toLowerCase().includes(niche.toLowerCase().split(' ')[0]));
                 
-                const trendPrompt = `Eres un experto en marketing de contenidos en México. Basado en el tema "${niche}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 30).join(' | ')}
-Genera EXACTAMENTE este JSON sin markdown ni texto extra:
+                const trendPrompt = `Eres un experto estratega de contenido viral en México. Basado en el tema "${niche}" y estas búsquedas reales de Google de hoy: ${allQuestions.slice(0, 30).join(' | ')}
+Genera EXACTAMENTE este JSON sin markdown ni texto extra.
+REGLAS IMPORTANTES:
+1. NO VENDEMOS PRODUCTOS. El objetivo es crear contenido 100% viral, educativo o de entretenimiento para atraer atención masiva.
+2. Los hashtags deben ir dirigidos a la audiencia que consume este contenido en la vida real.
+
 {
-  "hashtags": ["#hashtag1","#hashtag2",...] (10 hashtags reales y relevantes),
-  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos basados en estas preguntas reales)
+  "hashtags": ["#hashtag1","#hashtag2",...] (10 hashtags reales, virales y enfocados a la audiencia objetivo),
+  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos, controversiales o magnéticos basados en estas preguntas reales)
 }`;
                 const aiRes = await executeAiWaterfall([{ role: 'user', content: trendPrompt }], { mode: 'compression' });
                 let text = aiRes.content || '';

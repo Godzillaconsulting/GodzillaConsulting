@@ -272,7 +272,9 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
 export default function AIContentPlanner({ adminProfile }) {
     const [niche, setNiche]           = useState('');
     const [month, setMonth]           = useState(() => {
-        const d = new Date(); return d.toLocaleString('es', { month: 'long' });
+        const d = new Date(); 
+        const m = d.toLocaleString('es', { month: 'long' });
+        return m.charAt(0).toUpperCase() + m.slice(1);
     });
     const [year, setYear]             = useState(() => new Date().getFullYear());
     const [extraContext, setExtra]    = useState('');

@@ -111,6 +111,7 @@ async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
         await youtubedl(video.url, {
             output: tempVidPath,
             format: 'bestvideo[height<=1920]+bestaudio/best',
+            mergeOutputFormat: 'mp4',
             noWarnings: true,
             preferFreeFormats: true,
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']

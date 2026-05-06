@@ -94,10 +94,10 @@ async function generateImage(prompt, outputPath) {
 }
 
 // Scraper de YouTube - Alternativa a Google Veo (Evita costos de 400+ MXN)
-async function extractYoutubeStock(keyword, outputPath) {
+async function extractYoutubeStock(keyword, outputPath, targetDuration = 4) {
     console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
     try {
-        const r = await ytSearch(keyword);
+        const r = await ytSearch(keyword + ' stock video broll no text');
         const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600); // 10s a 10m
         
         if (videos.length === 0) throw new Error("No hay videos para: " + keyword);
@@ -110,11 +110,11 @@ async function extractYoutubeStock(keyword, outputPath) {
         
         await youtubedl(video.url, {
             output: tempVidPath,
-            format: 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            format: 'bestvideo[ext=mp4]/best[ext=mp4]/best',
             noWarnings: true,
             preferFreeFormats: true,
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
-        });
+        }, { windowsHide: true });
 
         console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
         
@@ -124,10 +124,13 @@ async function extractYoutubeStock(keyword, outputPath) {
         await new Promise((resolve, reject) => {
             ffmpeg(tempVidPath)
                 .setStartTime(startSec)
-                .setDuration(4) // Máx 4 segundos como pidió el CEO
+                .setDuration(targetDuration) // Máx 4 segundos como pidió el CEO
                 .outputOptions([
                      '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
                      '-c:v libx264',
+                     '-preset ultrafast',
+                     '-threads 2',
+                     '-crf 28',
                      '-pix_fmt yuv420p',
                      '-an' // Extrae los videos mudos, el audio se arma en el ensamblaje final
                 ])
@@ -153,10 +156,10 @@ async function extractYoutubeStock(keyword, outputPath) {
 }
 
 // Scraper Social (TikTok / Instagram) - Plan C
-async function extractSocialStock(keyword, outputPath, platform = 'instagram') {
+async function extractSocialStock(keyword, outputPath, platform = 'instagram', targetDuration = 4) {
     console.log(`[SocialScraper] Buscando en ${platform}: "${keyword.substring(0, 40)}..."`);
     try {
-        const siteFilter = platform === 'tiktok' ? 'site:tiktok.com/video/ OR site:tiktok.com/@*/video/' : 'site:instagram.com/reel/';
+        const siteFilter = platform === 'tiktok' ? 'site:tiktok.com/video/ OR site:tiktok.com/@*/video/' : platform === 'pexels' ? 'site:pexels.com/video/' : 'site:instagram.com/reel/';
         const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(siteFilter + ' ' + keyword)}`;
         
         const r = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
@@ -172,6 +175,7 @@ async function extractSocialStock(keyword, outputPath, platform = 'instagram') {
                     const cleanUrl = decodeURIComponent(match[1]);
                     if (platform === 'tiktok' && cleanUrl.includes('/video/')) urls.push(cleanUrl);
                     if (platform === 'instagram' && cleanUrl.includes('/reel/')) urls.push(cleanUrl);
+                    if (platform === 'pexels' && cleanUrl.includes('/video/')) urls.push(cleanUrl);
                 }
             }
         });
@@ -185,11 +189,11 @@ async function extractSocialStock(keyword, outputPath, platform = 'instagram') {
         
         await youtubedl(targetUrl, {
             output: tempVidPath,
-            format: 'bestvideo[height<=1920]+bestaudio/best',
+            format: 'bestvideo[ext=mp4]/best[ext=mp4]/best',
             noWarnings: true,
             preferFreeFormats: true,
             addHeader: ['referer:google.com', 'user-agent:Mozilla/5.0']
-        });
+        }, { windowsHide: true });
 
         console.log(`[SocialScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
         
@@ -199,10 +203,13 @@ async function extractSocialStock(keyword, outputPath, platform = 'instagram') {
         await new Promise((resolve, reject) => {
             ffmpeg(tempVidPath)
                 .setStartTime(startSec)
-                .setDuration(4)
+                .setDuration(targetDuration)
                 .outputOptions([
                      '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
                      '-c:v libx264',
+                     '-preset ultrafast',
+                     '-threads 2',
+                     '-crf 28',
                      '-pix_fmt yuv420p',
                      '-an' 
                 ])
@@ -244,7 +251,7 @@ async function processTask() {
             SET status = 'rendering'
             WHERE id = (
                 SELECT id FROM studio_tasks 
-                WHERE status = 'pending_render' 
+                WHERE status = 'pending_local_test' 
                 ORDER BY created_at ASC LIMIT 1
             )
             RETURNING *;
@@ -300,35 +307,53 @@ async function processTask() {
             await sendProgress(task.id, scenePercent, `Procesando Escena ${i} de ${sceneCount}`);
             console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
             const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
-            const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_veo.mp4`);
+            const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_broll.mp4`);
             const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
             
             // Generar Medios en Paralelo para agilizar
             const promises = [];
             
-            let usesVeoVideo = false;
+            let usesBRollVideo = false;
+            let targetDuration = 4;
             
-            // ESTRATEGIA SOCIAL: Descargar b-roll para ahorrar costos
+            // 1. Generar la voz PRIMERO para saber la duración exacta
+            if (narration) {
+                await generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null);
+                if (fs.existsSync(sceneAudioPath)) {
+                    try {
+                        const durStr = await new Promise((resolve, reject) => {
+                            ffmpeg.ffprobe(sceneAudioPath, (err, metadata) => {
+                                if (err) reject(err);
+                                else resolve(metadata.format.duration);
+                            });
+                        });
+                        targetDuration = Math.ceil(parseFloat(durStr) * 10) / 10;
+                        if (targetDuration < 3) targetDuration = 3;
+                    } catch (e) {
+                        console.error("[MediaWorker] Error obteniendo duración de audio:", e.message);
+                    }
+                }
+            }
+            
+            // 2. Extraer el video con la duración exacta
             if (videoPrompt || visualPrompt) {
                 // Limpiamos el prompt para tener mejores resultados (ej. si el prompt es muy largo)
                 const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
                 
-                // Diversificar fuentes de B-Roll (Plan C incluido) para evitar rate limits
+                // Diversificar fuentes de B-Roll priorizando Pexels para calidad limpia
                 const r = Math.random();
-                if (r < 0.6) {
-                    // 60% YouTube Shorts (Más estable)
-                    promises.push(extractYoutubeStock(searchKeyword, sceneVidPath).catch(e => null));
+                if (r < 0.5) {
+                    // 50% Pexels (Videos stock ultra HD sin marcas de agua)
+                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
                 } else if (r < 0.8) {
-                    // 20% TikTok
-                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'tiktok').catch(e => extractYoutubeStock(searchKeyword, sceneVidPath).catch(e2 => null)));
+                    // 30% YouTube Shorts/Videos
+                    promises.push(extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e => extractSocialStock(searchKeyword, sceneVidPath, 'instagram', targetDuration).catch(e2 => null)));
                 } else {
-                    // 20% Instagram Reels (Plan C)
-                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'instagram').catch(e => extractYoutubeStock(searchKeyword, sceneVidPath).catch(e2 => null)));
+                    // 20% Instagram Reels
+                    promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'instagram', targetDuration).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration).catch(e2 => null)));
                 }
-                usesVeoVideo = true;
+                usesBRollVideo = true;
             }
-
-            if (narration) promises.push(generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null));
             
             await Promise.all(promises);
 
@@ -339,7 +364,7 @@ async function processTask() {
             let finalImgPath = sceneImgPath;
             let isFaceless = false;
             
-            if (usesVeoVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
+            if (usesBRollVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
                 finalImgPath = sceneVidPath;
                 isFaceless = true; 
             } else {
@@ -348,11 +373,12 @@ async function processTask() {
                 isFaceless = true;
             }
 
-            let srtPath = null;
+            let srtPathEs = null;
+            let srtPathEn = null;
             if (fs.existsSync(sceneAudioPath)) {
-                // Generar subtítulos quemados usando Whisper
+                // Generar subtítulos quemados usando Whisper (Doble Pasada: Español e Inglés)
                 try {
-                    console.log(`[MediaWorker] 🎙️ Generando Subtítulos con Whisper para Escena ${i}...`);
+                    console.log(`[MediaWorker] 🎙️ Generando Subtítulos (ES/EN) con Whisper para Escena ${i}...`);
                     const { pipeline, env } = await import('@huggingface/transformers');
                     env.cacheDir = 'E:/Godzilla_Studio_Cache/models';
                     env.backends.onnx.wasm.numThreads = 2;
@@ -376,20 +402,25 @@ async function processTask() {
                     let audioData = wav.getSamples();
                     if (Array.isArray(audioData)) audioData = audioData[0];
 
-                    const output = await transcriber(audioData, { 
-                        chunk_length_s: 30, 
-                        stride_length_s: 5, 
-                        return_timestamps: 'word',
-                        language: 'spanish',
-                        task: 'transcribe'
+                    const outputEs = await transcriber(audioData, { 
+                        chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word',
+                        language: 'spanish', task: 'transcribe'
+                    });
+                    
+                    const outputEn = await transcriber(audioData, { 
+                        chunk_length_s: 30, stride_length_s: 5, return_timestamps: 'word',
+                        language: 'spanish', task: 'translate'
                     });
                     
                     if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
 
-                    if (output.chunks && output.chunks.length > 0) {
-                        const srtContent = chunksToSRT(output.chunks);
-                        srtPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.srt`);
-                        fs.writeFileSync(srtPath, srtContent);
+                    if (outputEs.chunks && outputEs.chunks.length > 0) {
+                        srtPathEs = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_es.srt`);
+                        fs.writeFileSync(srtPathEs, chunksToSRT(outputEs.chunks));
+                    }
+                    if (outputEn.chunks && outputEn.chunks.length > 0) {
+                        srtPathEn = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_en.srt`);
+                        fs.writeFileSync(srtPathEn, chunksToSRT(outputEn.chunks));
                     }
                 } catch (err) {
                     console.error(`[MediaWorker] ⚠️ Error en Whisper para Escena ${i}:`, err.message);
@@ -398,7 +429,8 @@ async function processTask() {
                 clipsPaths.push({ 
                     img: finalImgPath, 
                     audio: sceneAudioPath, 
-                    srt: srtPath,
+                    srtEs: srtPathEs,
+                    srtEn: srtPathEn,
                     id: i,
                     isFaceless 
                 });
@@ -437,18 +469,22 @@ async function processTask() {
                     : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30,setsar=1`; // Efecto de zoom para imágenes
 
                 let vfStr = filterBase;
-                // Subtítulos dinámicos tipo "Hormozi" integrados (quemados) al video
-                if (clip.srt) {
-                    const escapedSrt = clip.srt.replace(/\\/g, '/').replace(':', '\\:');
-                    // Colores BGR: Amarillo es &H0000FFFF&, Blanco es &H00FFFFFF&
-                    // Alignment=2 es Bottom-Center. MarginV=600 lo eleva para que la UI de TikTok no lo tape (no queda a media pantalla).
-                    vfStr += `,subtitles='${escapedSrt}':force_style='FontName=Arial,FontSize=48,PrimaryColour=&H0000FFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=3,Shadow=1,Bold=1,Alignment=2,MarginV=600'`;
+                // Subtítulos Duales: Inglés (arriba) y Español (abajo)
+                if (clip.srtEn) {
+                    const relativeSrtEn = path.relative(process.cwd(), clip.srtEn).replace(/\\/g, '/');
+                    vfStr += `,subtitles='${relativeSrtEn}':force_style='FontName=Arial,FontSize=100,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=4,Shadow=2,Bold=1,Alignment=2,MarginV=1400'`;
+                }
+                if (clip.srtEs) {
+                    const relativeSrtEs = path.relative(process.cwd(), clip.srtEs).replace(/\\/g, '/');
+                    vfStr += `,subtitles='${relativeSrtEs}':force_style='FontName=Arial,FontSize=100,PrimaryColour=&H0000FFFF&,OutlineColour=&H00000000&,BorderStyle=1,Outline=4,Shadow=2,Bold=1,Alignment=2,MarginV=300'`;
                 }
 
                 command.input(clip.audio)
                     .outputOptions([
                         '-c:v libx264',
-                        '-preset fast',
+                        '-preset ultrafast',
+                        '-threads 2',
+                        '-crf 28',
                         '-c:a aac',
                         '-b:a 192k',
                         '-pix_fmt yuv420p',

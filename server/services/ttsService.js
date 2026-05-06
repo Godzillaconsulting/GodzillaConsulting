@@ -196,7 +196,6 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
         }
     }
 
-    // ── 5. EDGE TTS (Siempre disponible — último recurso garantizado) ──
     console.log(`[TTS Service] 🔊 Edge TTS (fallback final)...`);
     const edgeVoiceName = provider === 'edge' ? voiceId : 'es-MX-JorgeNeural';
     const edgeTts = new EdgeTTS({ voice: edgeVoiceName });

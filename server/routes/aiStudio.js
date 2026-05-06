@@ -83,6 +83,7 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
     let hashtags = [];
     let aiSummary = '';
     let hooks = [];
+    let audiencia = '';
     try {
         const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
         const aiRes = await executeAiWaterfall([{
@@ -102,7 +103,6 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
         const raw = aiRes.content || '';
         const startObj = raw.indexOf('{');
         const endObj = raw.lastIndexOf('}');
-        let audiencia = '';
         if (startObj !== -1 && endObj !== -1) {
             const parsed = JSON.parse(raw.substring(startObj, endObj + 1));
             hashtags = parsed.hashtags || [];

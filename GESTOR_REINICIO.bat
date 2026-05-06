@@ -1,4 +1,6 @@
 @echo off
+cd /d C:\Users\GODZILLA.IA\GodzillaConsulting
+title GESTOR MAESTRO - GodzillaConsultingIO GRANULAR
 :: ============================================================
 ::  GODZILLA - GESTOR MAESTRO DE REINICIO GRANULAR
 ::  Elige QUE reiniciar sin tumbar el resto del stack.
@@ -221,7 +223,13 @@ timeout /t 3 /nobreak >nul
 
 echo  [5/5] Levantando procesos del ecosistema de PM2...
 set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start ecosystem.config.cjs
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/index.js --name "godzilla-server"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/whatsappBot.js --name "whatsapp-bot"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/workers/mediaWorker.js --name "ai-core"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/emailWorker.js --name "email-worker"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/trendsBot.js --name "trends-bot"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/tiktok_bypass.js --name "tiktok-bot"
+call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd start server/newsletterBot.js --name "newsletter-bot"
 timeout /t 3 /nobreak >nul
 call C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd save
 timeout /t 3 /nobreak >nul

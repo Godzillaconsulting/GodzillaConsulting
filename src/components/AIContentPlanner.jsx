@@ -352,6 +352,7 @@ export default function AIContentPlanner({ adminProfile }) {
             const data = await res.json();
             if (data.success) {
                 setPlannerTrends(data);
+                if (data.audiencia && !extraContext) setExtra(data.audiencia);
                 // Ya no forzamos la generación con un confirm.
                 // El usuario podrá leer los trends y decidir si editar el Nicho o darle a "Generar".
             }
@@ -798,6 +799,12 @@ export default function AIContentPlanner({ adminProfile }) {
                                 </ul>
                             </div>
                         )}
+                        {plannerTrends.audiencia && (
+                            <div>
+                                <p className="text-[10px] text-emerald-400 font-bold uppercase mb-2">🎯 Audiencia Objetivo Sugerida</p>
+                                <p className="text-[11px] text-emerald-100/80 leading-tight italic">{plannerTrends.audiencia}</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -1055,6 +1062,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                                                 onClick={() => {
                                                                     // Al hacer click en una pregunta, la pone en el prompt del Planificador
                                                                     setNiche(q);
+                                                                    if (radarData.audiencia && !extraContext) setExtra(radarData.audiencia);
                                                                     setShowContentRadar(false);
                                                                 }}
                                                                 title="Click para usar como Nicho/Tema"

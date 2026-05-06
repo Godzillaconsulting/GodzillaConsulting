@@ -84,25 +84,28 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
         const aiRes = await executeAiWaterfall([{
             role: 'user',
-            content: `Eres un experto en marketing de contenidos en México. 
+            content: `Eres un experto estratega de contenido viral en México. NO vendemos productos, creamos contenido magnético.
 Basado en el tema "${keyword}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 30).join(' | ')}
 
 Genera EXACTAMENTE este JSON sin markdown ni texto extra:
 {
-  "hashtags": ["#hashtag1","#hashtag2",...] (15 hashtags relevantes, mezcla español e inglés, ordenados por relevancia),
-  "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido para este tema basado en las búsquedas",
-  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos y virales para iniciar videos cortos basados en estas búsquedas)
+  "hashtags": ["#hashtag1","#hashtag2",...] (15 hashtags reales, virales y enfocados a la audiencia objetivo),
+  "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido viral para este tema basado en las búsquedas",
+  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos, controversiales o magnéticos basados en estas búsquedas reales),
+  "audiencia": "Ejemplo: Jóvenes 18-25 años, gamers, interesados en desarrollo indie, tono dinámico." (Descripción corta y directa de la audiencia objetivo ideal)
 }`
         }], { mode: 'compression', temperature: 0.7 });
 
         const raw = aiRes.content || '';
         const startObj = raw.indexOf('{');
         const endObj = raw.lastIndexOf('}');
+        let audiencia = '';
         if (startObj !== -1 && endObj !== -1) {
             const parsed = JSON.parse(raw.substring(startObj, endObj + 1));
             hashtags = parsed.hashtags || [];
             aiSummary = parsed.summary || '';
             hooks = parsed.hooks || [];
+            audiencia = parsed.audiencia || '';
         }
     } catch (e) {
         console.warn('[ContentRadar] IA fallback:', e.message);
@@ -114,12 +117,12 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
     res.json({
         success: true,
         topic: keyword,
-        questions: allQuestions.slice(0, 80),
+        totalQuestions: allQuestions.length,
         structured,
         hashtags,
         hooks,
         aiSummary,
-        totalQuestions: allQuestions.length
+        audiencia
     });
 });
 

@@ -431,8 +431,10 @@ async function processTask() {
             throw new Error('No se pudo generar ningún clip o audio para las escenas.');
         }
 
-        // Ensamblar con FFmpeg
-        const finalOutput = path.join(OUTPUT_DIR, `task_${task.id}_final.mp4`);
+        // Ensamblar con FFmpeg (Añadimos timestamp para evitar caché del navegador)
+        const timestampId = Date.now();
+        const finalOutputName = `task_${task.id}_final_${timestampId}.mp4`;
+        const finalOutput = path.join(OUTPUT_DIR, finalOutputName);
         console.log(`[MediaWorker] 🎬 Ensamblando ${clipsPaths.length} escenas en: ${finalOutput}`);
         await sendProgress(task.id, 90, "Stitch con FFmpeg...");
 
@@ -482,6 +484,9 @@ async function processTask() {
                         '-shortest', // El video dura lo que dura el audio
                         `-vf ${vfStr}`
                     ])
+                    .on('start', function(commandLine) {
+                        console.log('Spawned Ffmpeg with command: ' + commandLine);
+                    })
                     .save(clipOutput)
                     .on('end', () => {
                         renderedClips.push(clipOutput);
@@ -514,7 +519,7 @@ async function processTask() {
         console.log(`[MediaWorker] ✅ Video Final Completado: ${finalOutput}`);
 
         // Actualizar tarea a 'pending_cm_approval' para que el CEO pueda revisarla
-        payload.url = `/outputs/task_${task.id}_final.mp4`;
+        payload.url = `/outputs/${finalOutputName}`;
         
         await pool.query(`
             UPDATE studio_tasks 

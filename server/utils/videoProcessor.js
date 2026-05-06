@@ -13,34 +13,47 @@ export const removeWatermark = async (inputPath, outputPath, onProgress = () => 
     return new Promise((resolve, reject) => {
         // Usar ffprobe para obtener ancho y alto absoluto y evitar un Crash de sintaxis W/H
         ffmpeg.ffprobe(inputPath, (err, metadata) => {
-            let optionsStr = 'x=10:y=10:w=100:h=60:show=0'; // Fallback
+            let filterChain = [];
             if (!err && metadata && metadata.streams) {
                 const videoStream = metadata.streams.find(s => s.codec_type === 'video');
                 if (videoStream) {
                     const width = videoStream.width || 1280;
                     const height = videoStream.height || 720;
-                    // Marca típica en esquina inferior derecha (e.g. Kling AI)
-                    const bw = 250;
-                    const bh = 80;
-                    // Proteger de coordenadas negativas si el video es de muy baja resolución
-                    const bx = Math.max(0, width - bw - 10);
-                    const by = Math.max(0, height - bh - 10);
-                    // Proteger ancho y altura si son más grandes que el marco real
-                    const fw = Math.min(bw, width);
-                    const fh = Math.min(bh, height);
-                    optionsStr = `x=${bx}:y=${by}:w=${fw}:h=${fh}:show=0`;
+                    
+                    if (height > width) {
+                        // Video Vertical (Reels/Shorts/TikTok)
+                        // TikTok Top-Left, CapCut Top-Right, TikTok/Shorts Bottom-Right
+                        const bw = 350;
+                        const bh = 150;
+                        const fw = Math.min(bw, width);
+                        const fh = Math.min(bh, height);
+                        
+                        // Top Left
+                        const tlX = 10; const tlY = 10;
+                        // Top Right
+                        const trX = Math.max(0, width - fw - 10); const trY = 10;
+                        // Bottom Right
+                        const brX = Math.max(0, width - fw - 10); const brY = Math.max(0, height - fh - 50);
+
+                        filterChain.push(`delogo=x=${tlX}:y=${tlY}:w=${fw}:h=${fh}:show=0`);
+                        filterChain.push(`delogo=x=${trX}:y=${trY}:w=${fw}:h=${fh}:show=0`);
+                        filterChain.push(`delogo=x=${brX}:y=${brY}:w=${fw}:h=${fh}:show=0`);
+                    } else {
+                        // Video Horizontal (Kling AI / Runway)
+                        const bw = 250;
+                        const bh = 80;
+                        const bx = Math.max(0, width - bw - 10);
+                        const by = Math.max(0, height - bh - 10);
+                        const fw = Math.min(bw, width);
+                        const fh = Math.min(bh, height);
+                        filterChain.push(`delogo=x=${bx}:y=${by}:w=${fw}:h=${fh}:show=0`);
+                    }
                 }
-            } else {
-                console.warn("[VIDEO-PROCESSOR] ffprobe no pudo parsear video, usando bounding box seguro.", err);
             }
+            if(filterChain.length === 0) filterChain.push('delogo=x=10:y=10:w=100:h=60:show=0');
 
             ffmpeg(inputPath)
-                .videoFilters([
-                    {
-                        filter: 'delogo',
-                        options: optionsStr
-                    }
-                ])
+                .videoFilters(filterChain)
                 .outputOptions([
                     '-c:v libx264',
                     '-crf 12',       // Calidad Near-Lossless (Casi Cero Pérdida) solicitado por admin

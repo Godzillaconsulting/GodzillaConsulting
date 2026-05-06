@@ -62,7 +62,7 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
 
     // Scraping paralelo (todos los modifiers a la vez para ser rápido)
     const results = await Promise.all(
-        MODIFIERS.map(mod => fetchGoogle(`${mod} ${keyword}`))
+        MODIFIERS.map(mod => fetchGoogle(mod ? `${mod} ${keyword}` : keyword))
     );
 
     // Agregamos y deduplicamos

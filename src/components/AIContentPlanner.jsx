@@ -337,8 +337,7 @@ export default function AIContentPlanner({ adminProfile }) {
     const fetchPlannerTrends = async () => {
         let currentNiche = niche.trim();
         if (!currentNiche) {
-            // Si no hay nicho, en lugar de un prompt invasivo, abrimos el Radar de Contenido visual
-            setShowContentRadar(true);
+            alert('Por favor escribe un nicho primero, o usa "Explorar Radar" para buscar uno.');
             return;
         }
 
@@ -734,18 +733,20 @@ export default function AIContentPlanner({ adminProfile }) {
                     </div>
                     
                     <button
-                        onClick={fetchPlannerTrends}
-                        disabled={loadingTrends}
-                        className="bg-black border border-white/10 hover:border-white/30 text-white font-black uppercase tracking-widest px-6 py-2.5 rounded-xl disabled:opacity-50 flex items-center gap-2 transition-all text-[11px] shrink-0 h-[42px]"
+                        onClick={() => setShowContentRadar(true)}
+                        className="bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl transition-all text-[10px] shrink-0 h-[42px] flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.1)]"
+                        title="Busca y explora temas antes de escribir el nicho"
                     >
-                        {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔥 Ver Trends'}
+                        🔍 Explorar Radar
                     </button>
 
                     <button
-                        onClick={() => setShowContentRadar(true)}
-                        className="bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest px-6 py-2.5 rounded-xl transition-all text-[11px] shrink-0 h-[42px] flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.1)]"
+                        onClick={fetchPlannerTrends}
+                        disabled={loadingTrends || !niche.trim()}
+                        className="bg-black border border-white/10 hover:border-white/30 text-white font-black uppercase tracking-widest px-5 py-2.5 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transition-all text-[10px] shrink-0 h-[42px]"
+                        title="Carga hashtags y ganchos (requiere nicho)"
                     >
-                        🔍 Radar
+                        {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔥 Estadísticas'}
                     </button>
 
                     <button

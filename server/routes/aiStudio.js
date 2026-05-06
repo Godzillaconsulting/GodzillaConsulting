@@ -52,7 +52,9 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         try {
             const url = `http://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=es&gl=mx`;
             const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
-            const d = await r.json();
+            const buffer = await r.arrayBuffer();
+            const text = new TextDecoder('iso-8859-1').decode(buffer);
+            const d = JSON.parse(text);
             return d[1] || [];
         } catch { return []; }
     };

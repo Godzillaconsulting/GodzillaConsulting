@@ -5,6 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import { EdgeTTS } from 'node-edge-tts';
 import fetch from 'node-fetch';
 import { generateVoice } from '../services/ttsService.js';
+import { removeWatermark } from '../utils/videoProcessor.js';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffprobePath from '@ffprobe-installer/ffprobe';
@@ -114,9 +115,10 @@ async function extractYoutubeStock(keyword, outputPath) {
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
 
-        console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios...`);
+        console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
         
         const startSec = Math.floor(Math.random() * Math.max(1, video.seconds - 6)) + 1; 
+        const tempCroppedPath = outputPath.replace('.mp4', '_cropped.mp4');
 
         await new Promise((resolve, reject) => {
             ffmpeg(tempVidPath)
@@ -126,15 +128,22 @@ async function extractYoutubeStock(keyword, outputPath) {
                      '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
                      '-c:v libx264',
                      '-pix_fmt yuv420p',
-                     '-an' // Sin audio
+                     '-an' // Extrae los videos mudos, el audio se arma en el ensamblaje final
                 ])
-                .save(outputPath)
+                .save(tempCroppedPath)
                 .on('end', resolve)
                 .on('error', reject);
         });
 
         if(fs.existsSync(tempVidPath)) fs.unlinkSync(tempVidPath);
-        console.log(`[YoutubeScraper] ✅ Clip de YouTube extraído con éxito.`);
+
+        console.log(`[YoutubeScraper] Aplicando limpiador algorítmico de marcas de agua...`);
+        // Usar la herramienta delogo nativa del estudio para borrar la esquina inferior (común en shorts/tiktok descargados)
+        await removeWatermark(tempCroppedPath, outputPath);
+        
+        if(fs.existsSync(tempCroppedPath)) fs.unlinkSync(tempCroppedPath);
+
+        console.log(`[YoutubeScraper] ✅ Clip de YouTube extraído y limpiado con éxito.`);
         return outputPath;
     } catch (e) {
         console.error(`[YoutubeScraper] ❌ Error extrayendo YT:`, e.message);

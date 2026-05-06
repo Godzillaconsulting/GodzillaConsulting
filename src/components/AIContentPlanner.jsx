@@ -282,7 +282,7 @@ export default function AIContentPlanner({ adminProfile }) {
     const [playingVoice, setPlayingVoice] = useState(null);
     const [isGenerating, setGenerating] = useState(false);
     const [plan, setPlan]             = useState(null);
-    const [durationDays, setDurationDays] = useState(30);
+    const [durationDays, setDurationDays] = useState(1);
     const [generatedNiche, setGNiche] = useState('');
     const [webhookUrl, setWebhookUrl] = useState('');
     const [isSendingWebhook, setIsSendingWebhook] = useState(false);
@@ -717,10 +717,10 @@ export default function AIContentPlanner({ adminProfile }) {
                             disabled={!canEdit || isGenerating}
                             className="w-full bg-black/50 border border-neutral-800 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-purple-500 disabled:opacity-50"
                         >
-                            <option value={1}>1 Día (Prueba)</option>
-                            <option value={7}>1 Semana (7 Días)</option>
-                            <option value={15}>15 Días</option>
-                            <option value={30}>1 Mes (30 Días)</option>
+                            <option value={1}>1 Día (Seguro)</option>
+                            <option value={3}>3 Días</option>
+                            <option value={5}>5 Días</option>
+                            <option value={7}>1 Semana Máx.</option>
                         </select>
                     </div>
                     <div className="flex-1 min-w-[160px]">

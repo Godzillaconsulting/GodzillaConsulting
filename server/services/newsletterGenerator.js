@@ -28,28 +28,61 @@ const cleanJsonStr = (text) => {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const generateWithRetry = async (modelName, options, maxRetries = 5) => {
-    let attempt = 0;
-    while (attempt < maxRetries) {
-        try {
-            await sleep(2000 + Math.random() * 2000); // Base jitter
-            return await ai.models.generateContent({
-                model: modelName,
-                ...options
-            });
-        } catch (e) {
-            attempt++;
-            console.error(`⚠️ Error Gemini (${modelName}) Intento ${attempt}:`, e.message);
-            if (e.message.includes('503') || e.message.includes('429') || e.message.includes('fetch failed')) {
-                const waitTime = 5000 * attempt;
-                console.log(`⏳ [JITTER] Esperando ${waitTime}ms antes del próximo intento...`);
-                await sleep(waitTime);
-            } else {
-                throw e;
+import { executeAiWaterfall } from '../utils/aiWaterfall.js';
+
+const generateWithRetry = async (modelName, options, maxRetries = 3) => {
+    // Capa 1 y Capa 2: Primero el modelo solicitado, luego el fallback ultra-barato de 8b.
+    const modelsToTry = [modelName, 'gemini-1.5-flash-8b'];
+    
+    for (const currentModel of modelsToTry) {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                await sleep(2000 + Math.random() * 2000); // Base jitter
+                return await ai.models.generateContent({
+                    model: currentModel,
+                    ...options
+                });
+            } catch (e) {
+                attempt++;
+                console.error(`⚠️ Error Gemini (${currentModel}) Intento ${attempt}:`, e.message);
+                if (e.message.includes('503') || e.message.includes('429') || e.message.includes('fetch failed')) {
+                    if (attempt >= maxRetries) {
+                        console.log(`❌ ${currentModel} agotó sus intentos por saturación.`);
+                        break; // Sale del while y pasa al siguiente modelo del for
+                    }
+                    const waitTime = 5000 * attempt;
+                    console.log(`⏳ [JITTER] Esperando ${waitTime}ms antes del próximo intento con ${currentModel}...`);
+                    await sleep(waitTime);
+                } else {
+                    if (attempt >= maxRetries) break;
+                }
             }
         }
     }
-    throw new Error(`Max retries reached for ${modelName}`);
+    
+    // Capa 3: Emergencia total fuera de Google
+    console.log(`🚨 Toda la red de Google falló. Activando FALLBACK (Groq / SambaNova / Llama 3.3)...`);
+    const systemPrompt = options.config?.systemInstruction || "Eres un analista experto.";
+    const userPrompt = typeof options.contents === 'string' ? options.contents : JSON.stringify(options.contents);
+    const isJson = options.config?.responseMimeType === "application/json";
+    
+    try {
+        const fallbackRes = await executeAiWaterfall([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ], {
+            mode: 'noTools',
+            jsonMode: isJson,
+            temperature: 0.4
+        });
+        
+        return {
+            text: fallbackRes.content
+        };
+    } catch (fallbackError) {
+        throw new Error(`Todos los fallbacks fallaron. Error final: ${fallbackError.message}`);
+    }
 };
 
 // ==========================================
@@ -190,7 +223,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     if (!visualCoverUrl) {
         // Fallback a Pollinations Image
         console.log("📸 Usando Pollinations Image como Fallback para la Portada...");
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("Award-winning TIME magazine cover, ultra-realistic, highly detailed, 8k resolution, corporate photography. " + data.coverPrompt)}?width=1080&height=1920&nologo=true&model=flux&enhance=true`;
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("Award-winning TIME magazine cover, photorealistic, shot on 35mm lens, authentic corporate documentary style, professional photography, hyper-realistic, natural lighting, highly detailed, no CGI, no 3D render, no cartoon, lifelike texture. " + data.coverPrompt)}?width=1080&height=1920&nologo=true&model=flux-realism&enhance=true`;
         visualCoverUrl = fallbackUrl;
     }
 

@@ -12,6 +12,7 @@ console.log(`[${BOT_NAME}] 🕒 Sincronizando reloj interno para el despliegue a
 
 let hasRunToday = false;
 let hasEnforcedToday = false;
+let lastAttemptMinute = -1;
 
 // Bucle autónomo principal: El bot "sabe" qué día y hora es en cada ciclo.
 setInterval(async () => {
@@ -19,14 +20,15 @@ setInterval(async () => {
     const hora = ahora.getHours();
     const minuto = ahora.getMinutes();
     
-    // 1. Ejecutar Generación a las 8:00 AM y enviar automáticamente
-    if (hora === 8) {
-        if (!hasRunToday) {
-            hasRunToday = true;
-            console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter...`);
+    // 1. Ejecutar Generación entre las 8:00 AM y las 8:59 AM (reintenta cada 10 min si falla)
+    if (hora === 8 && minuto % 10 === 0) {
+        if (!hasRunToday && lastAttemptMinute !== minuto) {
+            lastAttemptMinute = minuto;
+            console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter... (Intento a las 8:${minuto.toString().padStart(2, '0')})`);
             try {
                 const result = await generateAndSendAutoNewsletter();
                 console.log(`[${BOT_NAME}] ✅ Éxito masivo. Newsletter generado:`, result);
+                hasRunToday = true; // Marcar como exitoso para no volver a ejecutar hoy
                 
                 // Forzar auto-despliegue inmediatamente después
                 console.log(`[${BOT_NAME}] 🚀 Iniciando auto-despliegue...`);
@@ -37,6 +39,7 @@ setInterval(async () => {
                 });
             } catch (e) {
                 console.error(`[${BOT_NAME}] ❌ Error en la generación del Newsletter:`, e.message);
+                console.log(`[${BOT_NAME}] ⏳ Falló. Reintentará en 10 minutos (hasta las 8:50).`);
             }
         }
     } 

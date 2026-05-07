@@ -1278,7 +1278,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     
                     {/* Suggested Presets Strip (Higgsfield Style) */}
                     <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2 mb-2 mt-2">
-                        {dynamicFilters.slice(0, 10).map((preset, idx) => (
+                        {Array.isArray(dynamicFilters) && dynamicFilters.slice(0, 10).map((preset, idx) => (
                             <button 
                                 key={idx}
                                 onClick={() => setFinalPrompt(preset.prompt)}
@@ -1389,7 +1389,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                     )}
 
                                     {/* ─ IA Dinámicos ─ */}
-                                    {dynamicFilters.length > 0 && (
+                                    {Array.isArray(dynamicFilters) && dynamicFilters.length > 0 && (
                                         <>
                                             <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 flex items-center justify-between">
                                                 🤖 IA Generativa

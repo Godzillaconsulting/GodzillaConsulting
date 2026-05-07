@@ -183,6 +183,13 @@ router.post('/auto-captions', authenticateToken, upload.single('mediaFile'), asy
         const filePath = req.file?.path;
         if (!filePath) return res.status(400).json({ error: 'No media file provided.' });
 
+        const ffmpeg = (await import('fluent-ffmpeg')).default;
+        const ffmpegPath = (await import('@ffmpeg-installer/ffmpeg')).default;
+        ffmpeg.setFfmpegPath(ffmpegPath.path);
+        
+        const pkgWave = await import('wavefile');
+        const WaveFile = pkgWave.default ? pkgWave.default.WaveFile || pkgWave.WaveFile : pkgWave.WaveFile;
+
         // Cargar Whisper de HuggingFace en Node.js, almacenando el modelo en el disco duro.
         const { pipeline, env } = await import('@huggingface/transformers');
         
@@ -195,14 +202,31 @@ router.post('/auto-captions', authenticateToken, upload.single('mediaFile'), asy
             dtype: 'fp32'
         });
 
-        // Importante: Transformers.js Node API requiere file URL para locales
-        const fileUrl = 'file://' + path.resolve(filePath);
-        const output = await transcriber(fileUrl, {
-            chunk_length_s: 30,
-            stride_length_s: 5,
-            return_timestamps: 'word'
+        const tempWavPath = path.join(os.tmpdir(), `captions_${Date.now()}.wav`);
+        await new Promise((resolve, reject) => {
+            ffmpeg(filePath)
+                .outputOptions(['-ar 16000', '-ac 1'])
+                .save(tempWavPath)
+                .on('end', resolve)
+                .on('error', reject);
         });
 
+        let buffer = fs.readFileSync(tempWavPath);
+        let wav = new WaveFile(buffer);
+        wav.toBitDepth('32f');
+        wav.toSampleRate(16000);
+        let audioData = wav.getSamples();
+        if (Array.isArray(audioData)) audioData = audioData[0];
+
+        const output = await transcriber(audioData, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: 'word',
+            language: 'spanish',
+            task: 'transcribe'
+        });
+
+        if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         
         // Devolvemos los subtítulos con marcas de tiempo, tal como lo esperaba el frontend
@@ -523,7 +547,13 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
         const currentTask = taskRes.rows[0];
 
         // Solo actualizar los campos explícitos, sino mantener los que existen
-        const updatedStatus = status !== undefined ? status : currentTask.status;
+        let updatedStatus = status !== undefined ? status : currentTask.status;
+        
+        // Auto-requeue: Si el usuario rechaza/devuelve el video, lo mandamos a re-renderizar
+        if (updatedStatus === 'rejected') {
+            updatedStatus = 'pending_local_test';
+        }
+        
         const updatedMedia = media_payload !== undefined ? (typeof media_payload === 'string' ? media_payload : JSON.stringify(media_payload)) : JSON.stringify(currentTask.media_payload || []);
         const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : JSON.stringify(currentTask.publish_targets || []);
         const updatedIgDate = ig_publish_date !== undefined ? ig_publish_date : currentTask.ig_publish_date;

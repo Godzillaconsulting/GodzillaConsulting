@@ -60,7 +60,7 @@ function chunksToSRT(chunks) {
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 ffmpeg.setFfprobePath(ffprobePath.path);
 
-const OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || path.join(process.cwd(), 'outputs');
+const OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || 'E:/Godzilla_Studio_Cache/outputs';
 if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
@@ -243,6 +243,30 @@ async function generateVeoVideo(prompt, outputPath) {
     throw new Error(`Generación Veo deshabilitada temporalmente para ahorrar 400+ MXN.`);
 }
 
+async function downloadBackgroundMusic(outputPath) {
+    console.log(`[MusicScraper] Buscando música de fondo libre de derechos...`);
+    try {
+        const queries = ['no copyright lofi chill background', 'NCS release background music', 'upbeat corporate background music no copyright'];
+        const keyword = queries[Math.floor(Math.random() * queries.length)];
+        const r = await ytSearch(keyword);
+        if (r.videos.length === 0) throw new Error("No music found");
+        const video = r.videos[Math.floor(Math.random() * Math.min(3, r.videos.length))];
+        
+        await youtubedl(video.url, {
+            output: outputPath,
+            format: 'bestaudio/best',
+            extractAudio: true,
+            audioFormat: 'mp3',
+            noWarnings: true
+        });
+        console.log(`[MusicScraper] ✅ Música lista: ${outputPath}`);
+        return outputPath;
+    } catch(e) {
+        console.error(`[MusicScraper] Error:`, e.message);
+        return null; // Si falla, que siga sin música
+    }
+}
+
 async function processTask() {
     if (isProcessing) return;
     
@@ -272,7 +296,8 @@ async function processTask() {
         console.log(`\n[MediaWorker] 🚀 Iniciando ensamblaje para Tarea #${task.id}: ${task.title}`);
         await sendProgress(task.id, 5, "Iniciando ensamblaje");
 
-        const payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
+        let payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
+        if (Array.isArray(payload) && payload.length > 0) payload = payload[0];
         
         if (!payload || !payload.scenes) {
             throw new Error('El payload no contiene escenas estructuradas.');
@@ -345,8 +370,15 @@ async function processTask() {
                 // Limpiamos el prompt para tener mejores resultados (ej. si el prompt es muy largo)
                 const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
                 
-                // Priorizar PEXELS siempre porque tiene videos limpios sin texto ni ads
-                promises.push(extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls).catch(e => extractYoutubeStock(searchKeyword, sceneVidPath, targetDuration, usedVideoUrls).catch(e2 => null)));
+                // Priorizar PEXELS siempre porque tiene videos limpios sin texto ni ads. Se elimina YouTube como stock visual por reglas de calidad.
+                promises.push(
+                    extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls)
+                    .catch(e => {
+                        console.log(`[MediaWorker] Falló Pexels con "${searchKeyword}". Reintentando con menos palabras...`);
+                        const shorterKeyword = searchKeyword.split(' ').slice(0, 3).join(' ');
+                        return extractSocialStock(shorterKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls).catch(e2 => null);
+                    })
+                );
                 usesBRollVideo = true;
             }
             
@@ -443,13 +475,25 @@ async function processTask() {
         console.log(`[MediaWorker] 🎬 Ensamblando ${clipsPaths.length} escenas en: ${finalOutput}`);
         await sendProgress(task.id, 90, "Stitch con FFmpeg...");
 
-        // Crear archivo de texto para concat de ffmpeg
-        // Usamos un complejo de filtros si es necesario, pero para slideshow simple con audio:
-        // Por la limitación de fluidez, lo haremos clip por clip, luego concatenamos.
-
+        // Ensamblar escena por escena
         const renderedClips = [];
-        for (const clip of clipsPaths) {
-            const clipOutput = path.join(OUTPUT_DIR, `task_${task.id}_clip_${clip.id}.mp4`);
+        for (let i = 0; i < clipsPaths.length; i++) {
+            const clip = clipsPaths[i];
+            const clipOut = path.join(OUTPUT_DIR, `task_${task.id}_clip_${i+1}.mp4`);
+            renderedClips.push(clipOut);
+            
+            // FFMPEG en Windows tiene un bug conocido al leer rutas absolutas con ":" en el filtro subtitles.
+            // Solución a prueba de balas: copiamos los SRT al CWD temporalmente y usamos rutas relativas puras.
+            let tempSrtEn = null, tempSrtEs = null;
+            if (clip.srtEn) {
+                tempSrtEn = path.join(process.cwd(), path.basename(clip.srtEn));
+                fs.copyFileSync(clip.srtEn, tempSrtEn);
+            }
+            if (clip.srtEs) {
+                tempSrtEs = path.join(process.cwd(), path.basename(clip.srtEs));
+                fs.copyFileSync(clip.srtEs, tempSrtEs);
+            }
+
             await new Promise((resolve, reject) => {
                 const command = ffmpeg();
                 
@@ -466,14 +510,12 @@ async function processTask() {
                     : `scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30,setsar=1`; // Efecto de zoom para imágenes
 
                 let vfStr = filterBase;
-                // Subtítulos Duales: Inglés (arriba) y Español (abajo)
-                if (clip.srtEn) {
-                    const relativeSrtEn = path.relative(process.cwd(), clip.srtEn).replace(/\\/g, '/');
-                    vfStr += `,subtitles='${relativeSrtEn}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H00FFFFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=200'`;
+                // Subtítulos Duales: Inglés (arriba) y Español (abajo) posicionados más altos para evitar UI central
+                if (tempSrtEn) {
+                    vfStr += `,subtitles='${path.basename(tempSrtEn)}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H00FFFFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=1200'`;
                 }
-                if (clip.srtEs) {
-                    const relativeSrtEs = path.relative(process.cwd(), clip.srtEs).replace(/\\/g, '/');
-                    vfStr += `,subtitles='${relativeSrtEs}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H0000FFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=30'`;
+                if (tempSrtEs) {
+                    vfStr += `,subtitles='${path.basename(tempSrtEs)}':force_style='FontName=Arial\\,FontSize=18\\,PrimaryColour=&H0000FFFF&\\,OutlineColour=&H00000000&\\,BorderStyle=1\\,Outline=1\\,Shadow=1\\,Bold=1\\,Alignment=2\\,MarginV=1050'`;
                 }
 
                 command.input(clip.audio)
@@ -494,10 +536,15 @@ async function processTask() {
                     })
                     .save(clipOutput)
                     .on('end', () => {
-                        renderedClips.push(clipOutput);
+                        if (tempSrtEn && fs.existsSync(tempSrtEn)) fs.unlinkSync(tempSrtEn);
+                        if (tempSrtEs && fs.existsSync(tempSrtEs)) fs.unlinkSync(tempSrtEs);
                         resolve();
                     })
-                    .on('error', reject);
+                    .on('error', (err) => {
+                        if (tempSrtEn && fs.existsSync(tempSrtEn)) fs.unlinkSync(tempSrtEn);
+                        if (tempSrtEs && fs.existsSync(tempSrtEs)) fs.unlinkSync(tempSrtEs);
+                        reject(err);
+                    });
             });
         }
 
@@ -506,18 +553,51 @@ async function processTask() {
         const fileContent = renderedClips.map(file => `file '${path.resolve(file).replace(/\\/g, '/')}'`).join('\n');
         fs.writeFileSync(concatTxtPath, fileContent);
 
+        const tempFinalNoMusic = path.join(OUTPUT_DIR, `task_${task.id}_nomusic_${timestampId}.mp4`);
+        await sendProgress(task.id, 92, "Ensamblando clips...");
+
         await new Promise((resolve, reject) => {
             ffmpeg()
                 .input(concatTxtPath)
                 .inputOptions(['-f concat', '-safe 0'])
                 .outputOptions(['-c copy'])
-                .save(finalOutput)
+                .save(tempFinalNoMusic)
                 .on('end', resolve)
                 .on('error', reject);
         });
 
+        await sendProgress(task.id, 95, "Mezclando música de fondo...");
+        const bgMusicPath = path.join(OUTPUT_DIR, `task_${task.id}_bgmusic.mp3`);
+        const hasMusic = await downloadBackgroundMusic(bgMusicPath);
+
+        if (hasMusic && fs.existsSync(bgMusicPath)) {
+            await new Promise((resolve, reject) => {
+                ffmpeg(tempFinalNoMusic)
+                    .input(bgMusicPath)
+                    .complexFilter([
+                        '[0:a]volume=1.0[a1]',
+                        '[1:a]volume=0.1[a2]',
+                        '[a1][a2]amix=inputs=2:duration=first:dropout_transition=2[a]'
+                    ])
+                    .outputOptions([
+                        '-map 0:v',
+                        '-map [a]',
+                        '-c:v copy',
+                        '-c:a aac',
+                        '-b:a 192k',
+                        '-shortest'
+                    ])
+                    .save(finalOutput)
+                    .on('end', resolve)
+                    .on('error', reject);
+            });
+        } else {
+            // Si falló la música, simplemente movemos el video sin música a finalOutput
+            fs.renameSync(tempFinalNoMusic, finalOutput);
+        }
+
         // Limpiar temporales (Evitar borrar el video de stock)
-        [concatTxtPath, ...renderedClips, ...clipsPaths.flatMap(c => [c.img, c.audio])].forEach(f => {
+        [concatTxtPath, tempFinalNoMusic, bgMusicPath, ...renderedClips, ...clipsPaths.flatMap(c => [c.img, c.audio])].forEach(f => {
             if (fs.existsSync(f) && !f.includes('stock_videos')) fs.unlinkSync(f);
         });
 

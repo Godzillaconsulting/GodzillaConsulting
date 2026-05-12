@@ -328,28 +328,28 @@ const callPollinations = async () => {
 let activeWaterfall = [];
 
 if (mode === 'compression') {
-    // Compresión de contexto: rápida y barata
-    console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — usando proveedores gratuitos...`);
-    activeWaterfall = [callCerebras, callSambaNova, callGroq, callOllama];
+    // Compresión de contexto: rápida y barata (Gemini primero, luego los demás)
+    console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — Priorizando Gemini Flash...`);
+    activeWaterfall = [callGemini, callCerebras, callSambaNova, callGroq, callOllama];
 
 } else if (mode === 'gemini_exclusive') {
-    // 💎 BOTS DE CHAT (WA, FB, IG): Usan tu API de PAGA de Google (gemini-2.0-flash)
-    console.log(`[WATERFALL] 💎 Modo CHATBOT — Usando Google de Paga (Flash)...`);
+    // 💎 BOTS DE CHAT (WA, FB, IG): Usan tu API de PAGA de Google (gemini-2.5-flash)
+    console.log(`[WATERFALL] 💎 Modo CHATBOT — Usando Google (Flash)...`);
     activeWaterfall = [callGemini];
 
 } else if (mode === 'premium') {
-    // 🧠 CONTENIDO (Guiones, Newsletters): Cascada Gratuita para ahorrar
-    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Groq/SambaNova...`);
-    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
+    // 🧠 CONTENIDO (Guiones, Newsletters): Priorizando Gemini Flash para ahorrar tokens de Groq
+    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash...`);
+    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else if (mode === 'noTools') {
-    console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Usando proveedores gratuitos...`);
-    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
+    console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Priorizando Gemini Flash...`);
+    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 
 } else {
-    // 🤖 DEFAULT: Cascada gratuita
-    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR — Cascada de Groq/SambaNova...`);
-    activeWaterfall = [callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
+    // 🤖 DEFAULT: Cascada con Gemini Primero
+    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR — Priorizando Gemini Flash...`);
+    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

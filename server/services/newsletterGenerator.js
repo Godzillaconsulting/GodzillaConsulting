@@ -32,7 +32,7 @@ import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
 const generateWithRetry = async (modelName, options, maxRetries = 3) => {
     // Capa 1 y Capa 2: Primero el modelo solicitado, luego el fallback ultra-barato de 8b.
-    const modelsToTry = [modelName, 'gemini-1.5-flash-8b'];
+    const modelsToTry = [modelName, 'gemini-2.5-flash-8b'];
     
     for (const currentModel of modelsToTry) {
         let attempt = 0;
@@ -200,7 +200,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         // TODO: Migrar a Pollinations Image si la disputa persiste.
         try {
             const imgRes = await ai.models.generateImages({
-                model: 'imagen-3.0-generate-001',
+                model: 'imagen-3.0-generate-002',
                 prompt: data.coverPrompt,
                 config: { numberOfImages: 1, outputMimeType: 'image/png' }
             });

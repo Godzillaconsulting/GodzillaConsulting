@@ -437,43 +437,81 @@ export const initWhatsAppBot = async () => {
             let functionCalls = [];
 
             try {
-                // Si es saludo: no pasamos tools al waterfall (evita alucinaciones de tool_call)
-                // maxTokens calibrado: saludos cortos = 256, conversación = 768, herramientas = 512
-                const waterfallOptions = !hasBookingIntent
-                    ? { temperature: 0.5, maxTokens: 256, mode: 'gemini_exclusive' }
-                    : { tools: groqTools, maxTokens: 768, mode: 'gemini_exclusive' };
-                const waterfallResponse = await executeAiWaterfall(groqMessages, waterfallOptions);
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                const config = {
+                    model: "gemini-2.5-flash",
+                    systemInstruction: finalSystemPrompt + systemPromptContexto,
+                    generationConfig: { temperature: 0.5, maxOutputTokens: hasBookingIntent ? 768 : 256 }
+                };
+                if (hasBookingIntent && chatTools && chatTools.length > 0) {
+                    config.tools = [{
+                        functionDeclarations: chatTools.map(t => ({
+                            name: t.name, description: t.description, parameters: t.parameters
+                        }))
+                    }];
+                }
+                const geminiModel = genAI.getGenerativeModel(config);
+                
+                let contents = [];
+                let lastRole = null;
+                groqMessages.filter(m => m.role !== 'system').forEach(m => {
+                    let role = (m.role === 'assistant' || m.role === 'model' || (m.tool_calls && m.tool_calls.length > 0)) ? 'model' : 'user';
+                    let parts = [];
+                    if (m.tool_calls && m.tool_calls.length > 0) {
+                        parts = m.tool_calls.map(tc => {
+                            let args = typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments;
+                            return { functionCall: { name: tc.function.name, args: args } };
+                        });
+                    } else if (m.role === 'tool') {
+                        let resultData = { result: "ok" };
+                        try { resultData = JSON.parse(m.content); } catch(e) { resultData = { result: m.content || "ok" }; }
+                        parts = [{ functionResponse: { name: m.name || 'unknown_tool', response: resultData } }];
+                    } else if (m.content) {
+                        parts = [{ text: m.content }];
+                    }
+                    if (parts.length > 0) {
+                        if (lastRole === role && contents.length > 0) {
+                            contents[contents.length - 1].parts.push(...parts);
+                        } else {
+                            contents.push({ role, parts });
+                        }
+                        lastRole = role;
+                    }
+                });
+                if (contents.length === 0) contents.push({ role: 'user', parts: [{ text: 'Hola' }] });
 
-                // Guard: nunca enviar string vacío a WhatsApp
-                botReply = (waterfallResponse.content && waterfallResponse.content.trim())
-                    ? waterfallResponse.content.trim()
-                    : "Entendido, ¿en qué más te puedo ayudar? 😊";
+                const result = await geminiModel.generateContent({ contents });
+                const responseMessage = result.response;
+                let finalContent = "";
+                try { finalContent = responseMessage.text(); } catch(e) {}
+                const fc = responseMessage.functionCalls();
+                
+                let geminiToolCalls = [];
+                if (fc && fc.length > 0) {
+                    geminiToolCalls = fc.map(c => ({
+                        id: `call_${Math.random().toString(36).substring(2, 9)}`,
+                        type: 'function',
+                        function: { name: c.name, arguments: JSON.stringify(c.args) }
+                    }));
+                }
 
-                if (waterfallResponse.tool_calls && waterfallResponse.tool_calls.length > 0) {
-                    // ⚠️ FIX CRÍTICO: Resetear botReply cuando hay tool_calls.
-                    // Algunos proveedores meten el JSON del tool_call dentro del `content`,
-                    // lo que causaba que se enviara el JSON crudo al usuario si la 2ª llamada falló.
-                    // La respuesta real la pondrá la segunda llamada al waterfall.
+                botReply = finalContent && finalContent.trim() ? finalContent.trim() : "Entendido, ¿en qué más te puedo ayudar? 😊";
+
+                if (geminiToolCalls.length > 0) {
                     botReply = "Un momento, estoy consultando el sistema... ⏳";
-
                     groqMessages.push({
                         role: 'assistant',
-                        content: waterfallResponse.content || null,
-                        tool_calls: waterfallResponse.tool_calls
+                        content: finalContent || null,
+                        tool_calls: geminiToolCalls
                     });
-
-                    functionCalls = waterfallResponse.tool_calls.map(tc => {
+                    functionCalls = geminiToolCalls.map(tc => {
                         let parsedArgs = {};
                         try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
-                        return {
-                            name: tc.function.name,
-                            args: parsedArgs,
-                            id: tc.id
-                        };
+                        return { name: tc.function.name, args: parsedArgs, id: tc.id };
                     });
                 }
             } catch(error) {
-                console.error("❌ Waterfall Error en WA:", error.message);
+                console.error("❌ Error de Gemini directo en WA:", error.message);
                 botReply = "Dame un momento por favor, estoy procesando mucha información... ⏳";
             }
 
@@ -662,10 +700,46 @@ export const initWhatsAppBot = async () => {
                 // SambaNova/Pollinations crashean si reciben ese formato.
                 // Segunda llamada post-tool: respuesta conversacional corta, maxTokens = 512
                 try {
-                    const waterfallResponse2 = await executeAiWaterfall(groqMessages, { tools: groqTools, maxTokens: 512, mode: 'gemini_exclusive' });
-                    botReply = waterfallResponse2.content || 'Reserva procesada.';
+                    const genAI2 = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                    const geminiModel2 = genAI2.getGenerativeModel({
+                        model: "gemini-2.5-flash",
+                        systemInstruction: finalSystemPrompt + systemPromptContexto,
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 512 }
+                    });
+                    
+                    let contents2 = [];
+                    let lastRole2 = null;
+                    groqMessages.filter(m => m.role !== 'system').forEach(m => {
+                        let role = (m.role === 'assistant' || m.role === 'model' || (m.tool_calls && m.tool_calls.length > 0)) ? 'model' : 'user';
+                        let parts = [];
+                        if (m.tool_calls && m.tool_calls.length > 0) {
+                            parts = m.tool_calls.map(tc => {
+                                let args = typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments;
+                                return { functionCall: { name: tc.function.name, args: args } };
+                            });
+                        } else if (m.role === 'tool') {
+                            let resultData = { result: "ok" };
+                            try { resultData = JSON.parse(m.content); } catch(e) { resultData = { result: m.content || "ok" }; }
+                            parts = [{ functionResponse: { name: m.name || 'unknown_tool', response: resultData } }];
+                        } else if (m.content) {
+                            parts = [{ text: m.content }];
+                        }
+                        if (parts.length > 0) {
+                            if (lastRole2 === role && contents2.length > 0) {
+                                contents2[contents2.length - 1].parts.push(...parts);
+                            } else {
+                                contents2.push({ role, parts });
+                            }
+                            lastRole2 = role;
+                        }
+                    });
+
+                    const result2 = await geminiModel2.generateContent({ contents: contents2 });
+                    let text2 = "";
+                    try { text2 = result2.response.text(); } catch(e) {}
+                    botReply = text2 || 'Reserva procesada.';
                 } catch(e) {
-                    console.error("❌ Error en segunda llamada Waterfall (tools):", e.message);
+                    console.error("❌ Error en segunda llamada directa a Gemini:", e.message);
                     botReply = "Procesé tu solicitud pero tuve un problema al redactar la respuesta. ¿Puedes repetirme tu pregunta?";
                 }
             }

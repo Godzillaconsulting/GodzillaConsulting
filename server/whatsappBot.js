@@ -149,7 +149,7 @@ export const initWhatsAppBot = async () => {
 
     // Ruta explícita al Chrome del sistema para evitar crasheos cuando el proceso
     // corre como Windows Service (NSSM/SYSTEM) que no tiene acceso al caché de puppeteer.
-    const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    const CHROME_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
     // Heartbeat global para evitar que Node.js se cierre silenciosamente si falla la inyección de Puppeteer
     setInterval(() => {}, 60000);

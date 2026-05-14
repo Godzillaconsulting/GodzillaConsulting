@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+server/node_modules/
+.pnpm-store/
+
+# Git
+.git/
+.gitignore
+
+# Env
+.env.production
+.env.local
+.env
+
+# Build outputs
+dist/
+build/
+.vercel/
+_vercel_api_backup/
+
+# Caches and Sessions
+.wwebjs_cache/
+.godzilla-sessions/
+server/.puppeteer_ig_profile/
+tiktok_session/
+.pm2/
+backups/
+server/backups/
+server/uploads/
+server/tmp-uploads/
+
+# Large binaries and files
+cloudflared.exe
+nssm.exe
+nssm.zip
+nssm-2.24/
+*.log
+logs/
+*.sqlite
+*.db
+
+# Media
+stock_videos/
+artifacts/
+python_cluster/
+
+# Varios
+.eslint_errors*.txt
+.eslint_errors.json
+*.xlsx

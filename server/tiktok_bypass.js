@@ -548,7 +548,7 @@ export const initTikTokBypass = async (isHeadless = true) => {
 
     browser = await puppeteer.launch({
         headless: 'old',
-        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         userDataDir: sessionDir,
         args: [
             '--no-sandbox',

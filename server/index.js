@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Readable } from 'stream';
@@ -59,7 +60,7 @@ const port = process.env.PORT || 3000;
 // Debe ir ANTES de Helmet y del static middleware.
 // Elimina cross-origin-opener-policy (que Cloudflare puede cachear) y fuerza CORP+CORS correctos.
 app.use((req, res, next) => {
-    if (req.path.startsWith('/media') || req.path.startsWith('/api/media')) {
+    if (req.path.startsWith('/media') || req.path.startsWith('/api/media') || req.path.startsWith('/outputs') || req.path.startsWith('/api/outputs')) {
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -358,13 +359,33 @@ const staticMediaOptions = {
 app.use('/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
 app.use('/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
 app.use('/api/api/media', express.static(path.join(__dirname, 'uploads'), staticMediaOptions));
+// Servir los videos generados por MediaWorker desde el directorio de caché de render
+const RENDER_OUTPUT_DIR = process.env.RENDER_OUTPUT_DIR || 'E:/Godzilla_Studio_Cache/outputs';
+app.use('/outputs', express.static(RENDER_OUTPUT_DIR, { ...staticMediaOptions, maxAge: '1h' }));
+app.use('/api/outputs', express.static(RENDER_OUTPUT_DIR, { ...staticMediaOptions, maxAge: '1h' }));
+// Fallback al directorio local del proyecto por compatibilidad
 app.use('/outputs', express.static(path.join(__dirname, '..', 'outputs'), staticMediaOptions));
 app.use('/api/outputs', express.static(path.join(__dirname, '..', 'outputs'), staticMediaOptions));
 
 // Configuración para servir el Front-End compilado (React/Vite)
 // Esto independiza totalmente a Godzilla de Vercel (Host Autónomo)
 const distPath = path.join(__dirname, '..', 'dist');
-app.use(express.static(distPath));
+
+// Habilitar compresión Gzip/Brotli globalmente para reducir tamaño de payloads
+app.use(compression());
+
+// Servir la carpeta dist con caché súper agresivo para assets de React (Vite usa hashes)
+app.use(express.static(distPath, {
+    setHeaders: (res, reqPath) => {
+        if (reqPath.includes('/assets/')) {
+            // Assets cacheados por 1 año en el navegador del cliente
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (reqPath.endsWith('.html')) {
+            // El index.html NUNCA debe cachearse para que los despliegues impacten de inmediato
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        }
+    }
+}));
 
 // Endpoint de prueba para estado backend
 app.get('/api', (req, res) => res.send('Godzilla API Activa 🦖'));
@@ -427,7 +448,7 @@ app.get('/api/test-calendar', async (req, res) => {
 // será redirigido al Front-End sin pedirselo a Vercel.
 app.get('*', (req, res) => {
     // Excluir errores de rutas API internas que no existan para que no rompa JSON apps
-    if (req.path.startsWith('/api') || req.path.startsWith('/media')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/media') || req.path.startsWith('/outputs')) {
         return res.status(404).json({ error: 'Endpoint no encontrado' });
     }
     // Servir la vista de Diseño / Admin Panels / Landing Pages desde el PC!

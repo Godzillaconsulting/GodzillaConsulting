@@ -29,10 +29,10 @@ export default async function handler(req, res) {
         };
         if (req.headers.authorization) forwardHeaders['Authorization'] = req.headers.authorization;
 
-        // Body: solo para métodos que lo admiten
+        // Body: solo para métodos que lo admiten. Pasamos el stream crudo directo
         let body = undefined;
         if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-            body = JSON.stringify(req.body);
+            body = req;
         }
 
         const backendRes = await fetch(finalUrl, {
@@ -59,10 +59,10 @@ export default async function handler(req, res) {
     }
 }
 
-// Configuración de Vercel para deshabilitar el body parser automático (lo hacemos manualmente)
+// Configuración de Vercel para deshabilitar el body parser automático y permitir forwarding de streams (como subidas de archivos)
 export const config = {
     api: {
-        bodyParser: true,
+        bodyParser: false,
         externalResolver: true,
     },
 };

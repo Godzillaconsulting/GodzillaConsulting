@@ -93,7 +93,9 @@ export const runTrendsScraper = async () => {
         const systemPrompt = `Eres el Director Creativo de Godzilla Consulting. Tu misión es crear un guion de 5 escenas para TikTok basado en estas tendencias: ${baseContext}
 REGLAS:
 1. Crea un guion sobre la tendencia más interesante.
-2. Responde ÚNICAMENTE con un JSON válido con este formato:
+2. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026 que comenzará el próximo mes en México, Estados Unidos y Canadá. Usa esta actualidad si es relevante para enriquecer el contexto del video.
+3. PROHIBICIÓN DE SITIO WEB EN CTA: En la escena 5 (CTA), NUNCA menciones nombres de páginas web, URLs o dominios (ej. "visita Godzilla Consulting punto IA", ".ia", etc.). Usa llamados a la acción interactivos o sociales en su lugar.
+4. Responde ÚNICAMENTE con un JSON válido con este formato:
 {
   "title": "título corto del video",
   "scenes": [

@@ -709,6 +709,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const nodeMap = useMemo(() => { const m = new Map(); nodes.forEach(n => m.set(n.id, n)); return m; }, [nodes]);
   const selectedNode = nodeMap.get(selectedNodeId);
+  const selectedNodePreset = selectedNode ? (selectedNode.presetName || selectedNode.title) : '';
   const NODE_PRESETS = [
     // ── NÚCLEO GODZILLA ──────────────────────────────────────────────────────
     { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process: 'ai-core',       group:'🧠 Núcleo' },
@@ -909,13 +910,13 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const addPreset = (p) => {
     const id=crypto.randomUUID(), vx=(canvasRef.current?.scrollLeft||0)+300, vy=(canvasRef.current?.scrollTop||0)+200;
-    setNodes(n=>[...n,{id,type:p.title==='Planificador IA'?'trigger':'action',title:p.title,subtitle:p.subtitle,icon:p.icon,x:vx+50,y:vy+50,color:p.color,pm2_process:p.pm2_process}]);
+    setNodes(n=>[...n,{id,type:p.title==='Planificador IA'?'trigger':'action',title:p.title,presetName:p.title,subtitle:p.subtitle,icon:p.icon,x:vx+50,y:vy+50,color:p.color,pm2_process:p.pm2_process}]);
     setSelectedNodeId(id); setShowNodeMenu(false);
   };
   const loadTemplate = (t) => {
     if(nodes.length>0 && !window.confirm('Esto reemplazará el canvas actual. ¿Continuar?')) return;
     const idMap={};
-    const nn=t.nodes.map(n=>{ const nid=`n_${Math.random().toString(36).substr(2,8)}`; idMap[n.id]=nid; return{...n,id:nid}; });
+    const nn=t.nodes.map(n=>{ const nid=`n_${Math.random().toString(36).substr(2,8)}`; idMap[n.id]=nid; return{...n,id:nid,presetName:n.presetName||n.title}; });
     const ne=t.edges.map(e=>({...e,id:`e_${Math.random().toString(36).substr(2,8)}`,source:idMap[e.source],target:idMap[e.target]}));
     setNodes(nn); setEdges(ne); setSelectedNodeId(null); setShowTemplateMenu(false);
   };
@@ -974,29 +975,30 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
 
   const flowHealth = (() => {
     if (nodes.length === 0) return { status: 'empty', msg: 'Arrastra un nodo desde Añadir para comenzar a construir tu neurona.' };
-    const hasTrigger = nodes.some(n => n.type === 'trigger' || ['Webhook Entrada', 'Reloj / Cron', 'Zilla Bot', 'Goyi Bot', 'WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'GoDaddy', 'Vercel'].includes(n.title));
-    const hasAction = nodes.some(n => n.type === 'action' || ['Cerebro Central AI', 'Memoria a Largo Plazo', 'Godzilla CM', 'Calendario Global', 'Bot Newsletter', 'Trends Bot', 'Brevo', 'Stripe', 'Neon DB'].includes(n.title));
+    const hasTrigger = nodes.some(n => n.type === 'trigger' || ['Webhook Entrada', 'Reloj / Cron', 'Zilla Bot', 'Goyi Bot', 'WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'GoDaddy', 'Vercel'].includes(n.presetName || n.title));
+    const hasAction = nodes.some(n => n.type === 'action' || ['Cerebro Central AI', 'Memoria a Largo Plazo', 'Godzilla CM', 'Calendario Global', 'Bot Newsletter', 'Trends Bot', 'Brevo', 'Stripe', 'Neon DB'].includes(n.presetName || n.title));
     
     // Check missing configs
     const missing = nodes.find(n => {
+      const preset = n.presetName || n.title;
       // ⚙️ Sistema / Webhooks
-      if (n.title === 'Webhook Entrada' && (!n.config?.method || !n.config?.url)) return true;
-      if (['Make (Integromat)', 'Zapier Webhook'].includes(n.title) && !n.config?.webhookUrl) return true;
-      if (n.title === 'Reloj / Cron' && !n.config?.cron) return true;
+      if (preset === 'Webhook Entrada' && (!n.config?.method || !n.config?.url)) return true;
+      if (['Make (Integromat)', 'Zapier Webhook'].includes(preset) && !n.config?.webhookUrl) return true;
+      if (preset === 'Reloj / Cron' && !n.config?.cron) return true;
       
       // 🤖 IA
-      if (['Cerebro Central AI', 'Anthropic Claude', 'OpenAI / ChatGPT', 'DeepSeek API', 'Gemini API'].includes(n.title) && !n.config?.prompt) return true;
-      if (n.title === 'ElevenLabs' && (!n.config?.voiceId || !n.config?.text)) return true;
+      if (['Cerebro Central AI', 'Anthropic Claude', 'OpenAI / ChatGPT', 'DeepSeek API', 'Gemini API'].includes(preset) && !n.config?.prompt) return true;
+      if (preset === 'ElevenLabs' && (!n.config?.voiceId || !n.config?.text)) return true;
       
       // 📱 Social / Bots
-      if (['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(n.title) && !n.config?.fallback && !n.config?.message) return true;
-      if (['Twitter / X Bot', 'LinkedIn Bot'].includes(n.title) && !n.config?.text) return true;
-      if (n.title === 'Bot Newsletter' && !n.config?.body) return true;
+      if (['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot'].includes(preset) && !n.config?.fallback && !n.config?.message) return true;
+      if (['Twitter / X Bot', 'LinkedIn Bot'].includes(preset) && !n.config?.text) return true;
+      if (preset === 'Bot Newsletter' && !n.config?.body) return true;
 
       // 🗄 Bases de Datos / Productividad
-      if (n.title === 'Calendario Global' && !n.config?.action) return true;
-      if (n.title === 'Notion' && !n.config?.databaseId) return true;
-      if (['Airtable', 'Supabase'].includes(n.title) && !n.config?.table) return true;
+      if (preset === 'Calendario Global' && !n.config?.action) return true;
+      if (preset === 'Notion' && !n.config?.databaseId) return true;
+      if (['Airtable', 'Supabase'].includes(preset) && !n.config?.table) return true;
 
       return false;
     });
@@ -1231,7 +1233,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
             const isSelected=selectedNodeId===n.id;
             const isRunning=executingNodes.has(n.id);
             const isTrigger=n.type==='trigger';
-            const isCoreNode=n.title==='Cerebro Central AI'||n.title==='Memoria a Largo Plazo';
+            const isCoreNode=(n.presetName || n.title)==='Cerebro Central AI'||(n.presetName || n.title)==='Memoria a Largo Plazo';
             return (
               <div key={n.id} id={`node-${n.id}`} data-id={n.id}
                 className={`node-container absolute select-none ${isSelected?'z-30':'z-20'}`}
@@ -1333,7 +1335,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                   </div>
                 </div>
               )}
-              {selectedNode.title === 'Planificador IA' && (
+              {selectedNodePreset === 'Planificador IA' && (
                 <div className="space-y-3">
                   {/* Periodo */}
                   <div>
@@ -1405,7 +1407,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Trends Bot' && (
+              {selectedNodePreset === 'Trends Bot' && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho a Analizar</label>
@@ -1424,7 +1426,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Paquete de Contenido Social' && (
+              {selectedNodePreset === 'Paquete de Contenido Social' && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">🧠 Tema (Opcional)</label>
@@ -1452,7 +1454,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Webhook Entrada' && (
+              {selectedNodePreset === 'Webhook Entrada' && (
                 <div className="space-y-2">
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">
                     <p className="text-[10px] font-bold text-cyan-400 mb-1">Tu Webhook URL</p>
@@ -1469,7 +1471,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'HTTP Request' && (
+              {selectedNodePreset === 'HTTP Request' && (
                 <div className="space-y-2">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Método HTTP</label>
@@ -1491,7 +1493,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Cerebro Central AI' && (
+              {selectedNodePreset === 'Cerebro Central AI' && (
                 <div className="space-y-2">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Modelo LLM</label>
@@ -1507,7 +1509,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Reloj / Cron' && (
+              {selectedNodePreset === 'Reloj / Cron' && (
                 <div className="space-y-2">
                   <label className="text-[10px] text-neutral-400 mb-1 block">¿Cuándo se activa?</label>
                   <select
@@ -1545,7 +1547,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
               )}
 
 
-              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNode.title) && (
+              {['WhatsApp Bot', 'TikTok Bot', 'IG / Messenger Bot', 'Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNodePreset) && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] font-bold text-neutral-300 mb-1.5 block uppercase tracking-widest">⚡ Acción del Bot</label>
@@ -1553,17 +1555,17 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                       <option value="trigger_flow">🔗 Disparar Flujo (al recibir msg/evento)</option>
                       <option value="send_message">📤 Enviar Mensaje / Post</option>
                       <option value="schedule_message">⏰ Agendar Mensaje / Post</option>
-                      {selectedNode.title === 'TikTok Bot' && <option value="post_content">🎬 Publicar Contenido TikTok</option>}
-                      {selectedNode.title === 'TikTok Bot' && <option value="reply_comment">💬 Responder Comentario</option>}
-                      {selectedNode.title === 'IG / Messenger Bot' && <option value="post_story">📸 Publicar Story IG</option>}
-                      {selectedNode.title === 'IG / Messenger Bot' && <option value="post_feed">🖼️ Publicar en Feed IG</option>}
-                      {selectedNode.title === 'Twitter / X Bot' && <option value="post_thread">🧵 Publicar Hilo (Thread)</option>}
-                      {selectedNode.title === 'LinkedIn Bot' && <option value="post_article">📝 Publicar Artículo B2B</option>}
-                      {selectedNode.title === 'Telegram Bot' && <option value="send_broadcast">📢 Enviar Difusión (Broadcast)</option>}
+                      {selectedNodePreset === 'TikTok Bot' && <option value="post_content">🎬 Publicar Contenido TikTok</option>}
+                      {selectedNodePreset === 'TikTok Bot' && <option value="reply_comment">💬 Responder Comentario</option>}
+                      {selectedNodePreset === 'IG / Messenger Bot' && <option value="post_story">📸 Publicar Story IG</option>}
+                      {selectedNodePreset === 'IG / Messenger Bot' && <option value="post_feed">🖼️ Publicar en Feed IG</option>}
+                      {selectedNodePreset === 'Twitter / X Bot' && <option value="post_thread">🧵 Publicar Hilo (Thread)</option>}
+                      {selectedNodePreset === 'LinkedIn Bot' && <option value="post_article">📝 Publicar Artículo B2B</option>}
+                      {selectedNodePreset === 'Telegram Bot' && <option value="send_broadcast">📢 Enviar Difusión (Broadcast)</option>}
                     </select>
                   </div>
                   
-                  {['Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNode.title) && (
+                  {['Twitter / X Bot', 'LinkedIn Bot', 'Telegram Bot'].includes(selectedNodePreset) && (
                     <div className="space-y-2 pt-2 border-t border-neutral-800/60">
                       <div><label className="text-[10px] text-neutral-400 mb-1 block flex items-center gap-1">🔑 API Key / Access Token</label>
                       <input type="password" value={selectedNode.config?.apiKey||''} onChange={e=>updateNode({config:{...selectedNode.config, apiKey:e.target.value}})} placeholder="Token de autenticación..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition focus:border-purple-500"/></div>
@@ -1598,7 +1600,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Email Worker' && (
+              {selectedNodePreset === 'Email Worker' && (
                 <div className="space-y-2">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Para (Destinatario)</label>
@@ -1615,26 +1617,26 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {['Base de Datos', 'Neon DB'].includes(selectedNode.title) && (
+              {['Base de Datos', 'Neon DB'].includes(selectedNodePreset) && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Query SQL</label><textarea value={selectedNode.config?.query||''} onChange={e=>updateNode({config:{...selectedNode.config, query:e.target.value}})} placeholder="SELECT * FROM users WHERE email = $1" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition font-mono text-[10px]"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Parámetros (JSON Array)</label><input value={selectedNode.config?.params||''} onChange={e=>updateNode({config:{...selectedNode.config, params:e.target.value}})} placeholder='["{{ $json.email }}"]' className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition font-mono text-[10px]"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Monitor Servidor' && (
+              {selectedNodePreset === 'Monitor Servidor' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">URL a monitorear</label><input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://api.miproyecto.com/health" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Transformador JSON' && (
+              {selectedNodePreset === 'Transformador JSON' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Reglas de Mapeo (JSON)</label><textarea value={selectedNode.config?.mapping||''} onChange={e=>updateNode({config:{...selectedNode.config, mapping:e.target.value}})} placeholder='{ "nuevo_campo": "{{ $json.viejo_campo }}" }' rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition font-mono text-[10px]"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Merge / Combinar' && (
+              {selectedNodePreset === 'Merge / Combinar' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Estrategia</label>
                     <select value={selectedNode.config?.strategy||'append'} onChange={e=>updateNode({config:{...selectedNode.config, strategy:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1646,32 +1648,32 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Bot Newsletter' && (
+              {selectedNodePreset === 'Bot Newsletter' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Tema de la Newsletter</label><input value={selectedNode.config?.topic||''} onChange={e=>updateNode({config:{...selectedNode.config, topic:e.target.value}})} placeholder="Noticias de IA y Tech" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Instrucciones extra</label><textarea value={selectedNode.config?.instructions||''} onChange={e=>updateNode({config:{...selectedNode.config, instructions:e.target.value}})} placeholder="Enfócate en lanzamientos recientes..." rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Trends Bot' && (
+              {selectedNodePreset === 'Trends Bot' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Nicho a analizar</label><input value={selectedNode.config?.niche||''} onChange={e=>updateNode({config:{...selectedNode.config, niche:e.target.value}})} placeholder="Marketing digital, SaaS, AI..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'RSS Feed' && (
+              {selectedNodePreset === 'RSS Feed' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">URL del Feed RSS</label><input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://news.ycombinator.com/rss" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'PDF Generator' && (
+              {selectedNodePreset === 'PDF Generator' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Template HTML</label><textarea value={selectedNode.config?.html||''} onChange={e=>updateNode({config:{...selectedNode.config, html:e.target.value}})} placeholder="<h1>Reporte para {{ $json.cliente }}</h1>" rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition font-mono text-[10px]"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Brevo' && (
+              {selectedNodePreset === 'Brevo' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Destinatario</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="correo@ejemplo.com" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Asunto</label><input value={selectedNode.config?.subject||''} onChange={e=>updateNode({config:{...selectedNode.config, subject:e.target.value}})} placeholder="Notificación" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1679,7 +1681,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Paquete de Contenido Social' && (
+              {selectedNodePreset === 'Paquete de Contenido Social' && (
                 <div className="space-y-3">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">📦 Tema / Producto</label><input value={selectedNode.config?.topic||''} onChange={e=>updateNode({config:{...selectedNode.config, topic:e.target.value}})} placeholder="Ej: Tu producto / {{ $json.tema }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho</label><input value={selectedNode.config?.niche||''} onChange={e=>updateNode({config:{...selectedNode.config, niche:e.target.value}})} placeholder="Marketing Digital, Consultoría..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition"/></div>
@@ -1691,14 +1693,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {['Generador Visual', 'Generador Video', 'Tarea de Studio'].includes(selectedNode.title) && (
+              {['Generador Visual', 'Generador Video', 'Tarea de Studio'].includes(selectedNodePreset) && (
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 mt-2">
                   <p className="text-[10px] font-bold text-purple-400 mb-1">🤖 Nodo Automático</p>
                   <p className="text-[9px] text-purple-500/70 leading-tight">Este nodo no requiere configuración manual. Lee el plan estratégico del contexto de la rama actual y ejecuta su tarea en segundo plano.</p>
                 </div>
               )}
 
-              {selectedNode.title === 'Calendario Global' && (
+              {selectedNodePreset === 'Calendario Global' && (
                 <div className="space-y-2">
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Acción de Calendario</label>
@@ -1715,7 +1717,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Telegram Bot' && (
+              {selectedNodePreset === 'Telegram Bot' && (
                 <div className="space-y-2">
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2"><p className="text-[9px] text-blue-400 font-bold">💡 Obtén tu token gratis en @BotFather en Telegram</p></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Bot Token</label><input type="password" value={selectedNode.config?.botToken||''} onChange={e=>updateNode({config:{...selectedNode.config, botToken:e.target.value}})} placeholder="O usa .env: TELEGRAM_BOT_TOKEN" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 transition"/></div>
@@ -1724,14 +1726,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {['Discord Webhook','Slack Webhook'].includes(selectedNode.title) && (
+              {['Discord Webhook','Slack Webhook'].includes(selectedNodePreset) && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Webhook URL</label><input value={selectedNode.config?.webhookUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, webhookUrl:e.target.value}})} placeholder="https://discord.com/api/webhooks/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-indigo-500 transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="✅ {{ $json.title }} completado" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Twilio SMS' && (
+              {selectedNodePreset === 'Twilio SMS' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Teléfono Destino</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="+521656XXXXXXX o {{ $json.phone }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje SMS</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="Hola {{ $json.nombre }}, tu cita es el {{ $json.fecha }}" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
@@ -1739,7 +1741,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Resend' && (
+              {selectedNodePreset === 'Resend' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Para (email)</label><input value={selectedNode.config?.to||''} onChange={e=>updateNode({config:{...selectedNode.config, to:e.target.value}})} placeholder="{{ $json.email }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Asunto</label><input value={selectedNode.config?.subject||''} onChange={e=>updateNode({config:{...selectedNode.config, subject:e.target.value}})} placeholder="Tu plan está listo 🤖" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1748,7 +1750,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'OpenAI / ChatGPT' && (
+              {selectedNodePreset === 'OpenAI / ChatGPT' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
                     <select value={selectedNode.config?.model||'gpt-4o-mini'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1762,7 +1764,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Anthropic Claude' && (
+              {selectedNodePreset === 'Anthropic Claude' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
                     <select value={selectedNode.config?.model||'claude-3-haiku-20240307'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1776,7 +1778,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'DeepSeek API' && (
+              {selectedNodePreset === 'DeepSeek API' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
                     <select value={selectedNode.config?.model||'deepseek-chat'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1789,7 +1791,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'ElevenLabs' && (
+              {selectedNodePreset === 'ElevenLabs' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Voice ID</label><input value={selectedNode.config?.voiceId||''} onChange={e=>updateNode({config:{...selectedNode.config, voiceId:e.target.value}})} placeholder="ID de la voz clonada o predefinida" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Texto a Voz</label><textarea value={selectedNode.config?.text||''} onChange={e=>updateNode({config:{...selectedNode.config, text:e.target.value}})} placeholder="Hola, esto es una prueba de audio generada por {{ $json.autor }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
@@ -1797,21 +1799,21 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {['Make (Integromat)', 'Zapier Webhook'].includes(selectedNode.title) && (
+              {['Make (Integromat)', 'Zapier Webhook'].includes(selectedNodePreset) && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Webhook URL</label><input value={selectedNode.config?.webhookUrl||''} onChange={e=>updateNode({config:{...selectedNode.config, webhookUrl:e.target.value}})} placeholder="https://hook.make.com/... o hooks.zapier.com/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Payload (JSON)</label><textarea value={selectedNode.config?.payload||''} onChange={e=>updateNode({config:{...selectedNode.config, payload:e.target.value}})} placeholder='{ "dato": "{{ $json.variable }}" }' rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition font-mono text-xs"/></div>
                 </div>
               )}
 
-              {['Twitter / X Bot', 'LinkedIn Bot'].includes(selectedNode.title) && (
+              {['Twitter / X Bot', 'LinkedIn Bot'].includes(selectedNodePreset) && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Contenido del Post</label><textarea value={selectedNode.config?.text||''} onChange={e=>updateNode({config:{...selectedNode.config, text:e.target.value}})} placeholder="Publicando sobre {{ $json.tema }} #Tendencias" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">Requiere configuración de API Keys en el backend (OAuth 2.0)</p></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Airtable' && (
+              {selectedNodePreset === 'Airtable' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
                     <select value={selectedNode.config?.action||'write'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1824,7 +1826,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Supabase' && (
+              {selectedNodePreset === 'Supabase' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
                     <select value={selectedNode.config?.action||'insert'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1836,7 +1838,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Notion' && (
+              {selectedNodePreset === 'Notion' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Database ID</label><input value={selectedNode.config?.databaseId||''} onChange={e=>updateNode({config:{...selectedNode.config, databaseId:e.target.value}})} placeholder="ID de la base de datos de Notion" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Título de la página</label><input value={selectedNode.config?.title||''} onChange={e=>updateNode({config:{...selectedNode.config, title:e.target.value}})} placeholder="{{ $json.tema }} - {{ $json.fecha }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1844,7 +1846,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Google Sheets' && (
+              {selectedNodePreset === 'Google Sheets' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label>
                     <select value={selectedNode.config?.action||'append'} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1856,7 +1858,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Cal.com' && (
+              {selectedNodePreset === 'Cal.com' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Endpoint</label>
                     <select value={selectedNode.config?.endpoint||'bookings'} onChange={e=>updateNode({config:{...selectedNode.config, endpoint:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1867,7 +1869,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Pinterest API' && (
+              {selectedNodePreset === 'Pinterest API' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Board ID</label><input value={selectedNode.config?.boardId||''} onChange={e=>updateNode({config:{...selectedNode.config, boardId:e.target.value}})} placeholder="ID del tablero de Pinterest" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Título del Pin</label><input value={selectedNode.config?.title||''} onChange={e=>updateNode({config:{...selectedNode.config, title:e.target.value}})} placeholder="{{ $json.tema }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1876,7 +1878,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Delay / Espera' && (
+              {selectedNodePreset === 'Delay / Espera' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Minutos</label><input type="number" min="0" max="5" value={selectedNode.config?.minutes||0} onChange={e=>updateNode({config:{...selectedNode.config, minutes:parseInt(e.target.value)||0}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Segundos adicionales</label><input type="number" min="0" max="59" value={selectedNode.config?.seconds||0} onChange={e=>updateNode({config:{...selectedNode.config, seconds:parseInt(e.target.value)||0}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1884,21 +1886,21 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Loop / Iterador' && (
+              {selectedNodePreset === 'Loop / Iterador' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Campo del array a iterar</label><input value={selectedNode.config?.arrayField||'plan'} onChange={e=>updateNode({config:{...selectedNode.config, arrayField:e.target.value}})} placeholder="plan, items, results..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">El loop expone _loopItems y _loopCount al siguiente nodo</p></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Set Variables' && (
+              {selectedNodePreset === 'Set Variables' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Variables (JSON)</label><textarea value={selectedNode.config?.variablesRaw||''} onChange={e=>updateNode({config:{...selectedNode.config, variablesRaw:e.target.value, variables: (() => { try { return JSON.parse(e.target.value); } catch{ return {}; } })()}})} placeholder={'{ "clienteNombre": "{{ $json.nombre }}", "total": 0 }'} rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none resize-none transition"/></div>
                   <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Estas variables estarán disponibles en todos los nodos siguientes vía {'{{ $json.varName }}'}</p></div>
                 </div>
               )}
 
-              {selectedNode.title === 'PDF Generator' && (
+              {selectedNodePreset === 'PDF Generator' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Nombre del archivo</label><input value={selectedNode.config?.filename||''} onChange={e=>updateNode({config:{...selectedNode.config, filename:e.target.value}})} placeholder="contrato-{{ $json.nombre }}.pdf" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">HTML del documento</label><textarea value={selectedNode.config?.htmlTemplate||''} onChange={e=>updateNode({config:{...selectedNode.config, htmlTemplate:e.target.value}})} placeholder="<h1>Contrato para {{ $json.nombre }}</h1>..." rows={4} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none resize-none transition"/></div>
@@ -1906,7 +1908,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'RSS Feed' && (
+              {selectedNodePreset === 'RSS Feed' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">URL del Feed RSS</label><input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://feeds.ejemplo.com/rss" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Máximo artículos</label><input type="number" min="1" max="20" value={selectedNode.config?.limit||5} onChange={e=>updateNode({config:{...selectedNode.config, limit:parseInt(e.target.value)||5}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
@@ -1914,14 +1916,14 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {selectedNode.title === 'Google Analytics' && (
+              {selectedNodePreset === 'Google Analytics' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Nombre del Evento</label><input value={selectedNode.config?.eventName||'automation_triggered'} onChange={e=>updateNode({config:{...selectedNode.config, eventName:e.target.value}})} placeholder="lead_generated, sale_completed..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credenciales en .env: GA_MEASUREMENT_ID, GA_API_SECRET</p></div>
                 </div>
               )}
 
-              {selectedNode.title === 'Stripe Webhook' && (
+              {selectedNodePreset === 'Stripe Webhook' && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Evento a escuchar</label>
                     <select value={selectedNode.config?.event||'payment_intent.succeeded'} onChange={e=>updateNode({config:{...selectedNode.config, event:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
@@ -1935,21 +1937,21 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 </div>
               )}
 
-              {['YouTube Data API', 'Facebook Ads API', 'Google Calendar API'].includes(selectedNode.title) && (
+              {['YouTube Data API', 'Facebook Ads API', 'Google Calendar API'].includes(selectedNodePreset) && (
                 <div className="space-y-2">
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Acción</label><input value={selectedNode.config?.action||''} onChange={e=>updateNode({config:{...selectedNode.config, action:e.target.value}})} placeholder="create, read, update, delete..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">⚠️ Requiere OAuth — configura en Google Cloud Console / Meta Developers</p></div>
                 </div>
               )}
 
-              {['Brevo', 'GoDaddy'].includes(selectedNode.title) && (
+              {['Brevo', 'GoDaddy'].includes(selectedNodePreset) && (
                 <div>
                   <label className="text-[10px] text-neutral-400 mb-1 block">API Key / Token (Oculto)</label>
                   <input type="password" value={selectedNode.config?.apiKey||''} onChange={e=>updateNode({config:{...selectedNode.config, apiKey:e.target.value}})} placeholder="••••••••••••••••" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-rose-500 transition"/>
                 </div>
               )}
 
-              {['Gemini API', 'Stripe', 'Neon DB', 'Cloudflare Workers', 'Vercel'].includes(selectedNode.title) && (
+              {['Gemini API', 'Stripe', 'Neon DB', 'Cloudflare Workers', 'Vercel'].includes(selectedNodePreset) && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 mt-2">
                   <p className="text-[10px] font-bold text-emerald-400 mb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/> Credenciales Nativas Seguras</p>
                   <p className="text-[8.5px] text-emerald-500/70 leading-tight">API administrada desde las variables de entorno locales (<code>.env</code>). Todo el tráfico entrante/saliente está monitoreado activamente por el WAF.</p>

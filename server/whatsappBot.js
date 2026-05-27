@@ -1,4 +1,4 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadContentFromMessage } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import qrcodeLib from 'qrcode';
@@ -9,7 +9,7 @@ import pool from './config/db.js';
 import { agendarEnGoogleCalendar, cancelarEnGoogleCalendar, actualizarEnGoogleCalendar } from './services/calendarService.js';
 import { validateBusinessHours } from './utils/businessHours.js';
 import { sendCitaConfirmationEmail } from './services/emailService.js';
-import { SYSTEM_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
+import { SYSTEM_PROMPT, BOOKING_PROMPT, chatTools, withTimeout } from './config/zilla-prompt.js';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -26,6 +26,24 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const activeSessionsCache = new Map();
 const userMessageQueues = new Map();
+
+// --- ZILLA RAM CLEANUP SKILL ---
+// Limpiador automático para evitar Memory Leaks (Fuga de Memoria)
+setInterval(() => {
+    const now = Date.now();
+    let eliminados = 0;
+    for (const [senderId, session] of activeSessionsCache.entries()) {
+        // Si han pasado más de 1 hora (3600000 ms) sin interactuar, lo borramos de RAM
+        if (now - (session.lastAccessed || 0) > 3600000) {
+            activeSessionsCache.delete(senderId);
+            eliminados++;
+        }
+    }
+    if (eliminados > 0) {
+        console.log(`🧹 [RAM Cleanup] Se liberaron ${eliminados} sesiones inactivas de WhatsApp de la memoria RAM.`);
+    }
+}, 15 * 60 * 1000); // Se ejecuta cada 15 minutos
+// -------------------------------
 
 class Mutex {
     constructor() { this.queue = []; this.locked = false; }
@@ -57,6 +75,7 @@ async function appendMessageToSession(senderId, role, content, plataforma = 'wha
     }
     
     session.historial_mensajes.push({ role, contenido: content });
+    session.lastAccessed = Date.now();
     activeSessionsCache.set(senderId, session);
 
     const newMsg = JSON.stringify([{ role, contenido: content }]);
@@ -156,7 +175,7 @@ export const initWhatsAppBot = async () => {
 
     // Ruta persistente segura fuera del despliegue para evitar que el Watcher de PM2
     // se vuelva loco y reinicie el bot cientos de veces cuando WhatsApp descarga la sesión.
-    const sessionPath = 'C:\\Users\\GODZILLA.IA\\.godzilla-sessions\\baileys';
+    const sessionPath = path.join(os.homedir(), '.godzilla-sessions', 'baileys');
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const { version, isLatest } = await fetchLatestBaileysVersion();
@@ -180,8 +199,25 @@ export const initWhatsAppBot = async () => {
             currentQR = qr;
             console.log('\n======================================================');
             console.log('📱 CÓDIGO QR GENERADO (BAILEYS). DISPONIBLE EN LA URL WEB Y TERMINAL 📱');
+            console.log('RAW_QR_STRING_IS:' + qr);
             console.log('======================================================');
             qrcode.generate(qr, { small: true });
+            
+            // Guardar en un archivo HTML accesible desde Windows
+            try {
+                qrcodeLib.toDataURL(qr).then(qrImageURL => {
+                    const htmlContent = `
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background: #111; color: white;">
+                            <h1 style="color: #ff0000;">Escanea con WhatsApp</h1>
+                            <p>Abre WhatsApp en tu celular > Dispositivos Vinculados > Vincular un dispositivo</p>
+                            <img src="${qrImageURL}" style="width: 350px; height: 350px; border-radius: 10px; padding: 20px; background: white;" />
+                            <p style="margin-top: 20px; opacity: 0.6;">Godzilla Consulting - Bot Authentication</p>
+                        </div>
+                    `;
+                    fs.writeFileSync(path.join(__dirname, 'uploads', 'qr.html'), htmlContent);
+                    console.log('✅ Archivo QR HTML guardado en server/uploads/qr.html');
+                }).catch(e => console.error(e));
+            } catch(e) { console.error('Error guardando QR HTML:', e); }
         }
 
         if (connection === 'close') {
@@ -272,7 +308,7 @@ export const initWhatsAppBot = async () => {
         }
     });
 
-        const QR_PORT_BASE = parseInt(process.env.QR_PORT || 3010, 10);
+        const QR_PORT_BASE = parseInt(process.env.QR_PORT || 4010, 10);
     const tryListen = (port) => {
         const server = qrApp.listen(port, () => {
             console.log(`🌐 [Enlace de Escaneo Remoto] Envía esto a tu cliente: http://localhost:${port}/qr`);
@@ -326,9 +362,89 @@ export const initWhatsAppBot = async () => {
         // Marcar el mensaje como leído (Palomitas Azules / Visto)
         try { await client.readMessages([message.key]); } catch (e) { console.error("Error al marcar como leído:", e.message); }
 
-        const rawMessageText = message.message.conversation || message.message.extendedTextMessage?.text;
+        let rawMessageText = message.message.conversation || message.message.extendedTextMessage?.text;
+        let attachmentUrl = null;
+        let attachmentType = null;
+
+        // --- DETECT AND DOWNLOAD MEDIA ATTACHMENTS (IMAGE OR VIDEO) ---
+        const imageMessage = message.message.imageMessage;
+        const videoMessage = message.message.videoMessage;
+
+        if (imageMessage || videoMessage) {
+            try {
+                const mediaType = imageMessage ? 'image' : 'video';
+                const messageMedia = imageMessage || videoMessage;
+                rawMessageText = messageMedia.caption || rawMessageText || '';
+                
+                console.log(`[DEBUG WA] Downloading media attachment of type ${mediaType}...`);
+                const stream = await downloadContentFromMessage(messageMedia, mediaType);
+                let buffer = Buffer.alloc(0);
+                for await (const chunk of stream) {
+                    buffer = Buffer.concat([buffer, chunk]);
+                }
+
+                if (mediaType === 'video') {
+                    const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e6)}.mp4`;
+                    const destPath = path.join('E:/assets', uniqueFilename);
+                    fs.writeFileSync(destPath, buffer);
+                    attachmentUrl = `/api/media/assets/${uniqueFilename}`;
+                    attachmentType = 'video/mp4';
+                    console.log(`[DEBUG WA] Video attachment saved locally to: ${attachmentUrl}`);
+                } else {
+                    const mimetype = imageMessage.mimetype || 'image/jpeg';
+                    const filename = imageMessage.filename || `${Date.now()}.jpg`;
+                    const dbRes = await pool.query(
+                        `INSERT INTO media_storage (filename, mimetype, size, file_data) 
+                         VALUES ($1, $2, $3, $4) RETURNING id`,
+                        [filename, mimetype, buffer.length, buffer]
+                    );
+                    const fileId = dbRes.rows[0].id;
+                    attachmentUrl = `/api/media/file/${fileId}`;
+                    attachmentType = mimetype;
+                    console.log(`[DEBUG WA] Image attachment saved in DB: ${attachmentUrl}`);
+                }
+            } catch (mediaErr) {
+                console.error(`[DEBUG WA] Failed to download/save attachment:`, mediaErr.message);
+            }
+        }
+
+        // --- AUTO RE-RENDER FROM WHATSAPP ---
+        // If an attachment is present and text contains keywords to recreate or edit
+        if (attachmentUrl && rawMessageText && rawMessageText.toLowerCase().match(/(rehacer|corregir|hazlo|rehaz|video|campeon|azul|pumas)/i)) {
+            try {
+                console.log(`[DEBUG WA] Correction keywords matched. Resolving task to recreate...`);
+                // Get the last task that is pending approval, manual studio, or backlog to apply correction
+                const tasksRes = await pool.query(
+                    "SELECT * FROM studio_tasks WHERE status IN ('pending_cm_approval', 'manual_studio', 'backlog', 'rejected') ORDER BY id DESC LIMIT 1"
+                );
+                if (tasksRes.rows.length > 0) {
+                    const taskToRebuild = tasksRes.rows[0];
+                    let payload = typeof taskToRebuild.media_payload === 'string' ? JSON.parse(taskToRebuild.media_payload) : taskToRebuild.media_payload;
+                    if (Array.isArray(payload) && payload.length > 0) payload = payload[0];
+
+                    payload.refImage = attachmentUrl;
+
+                    await pool.query(
+                        `UPDATE studio_tasks 
+                         SET status = 'pending_render_docker', 
+                             feedback_notes = $1, 
+                             media_payload = $2,
+                             updated_at = CURRENT_TIMESTAMP
+                         WHERE id = $3`,
+                        [rawMessageText || 'Rehacer con referencia desde WhatsApp', JSON.stringify(payload), taskToRebuild.id]
+                    );
+
+                    console.log(`[DEBUG WA] Task #${taskToRebuild.id} updated to pending_render_docker using reference: ${attachmentUrl}`);
+                    await client.sendMessage(senderId, { text: `¡Entendido! Recibí la referencia visual y la nota: "${rawMessageText}". Estoy rehaciendo el video ahora mismo... ⚙️` });
+                    return;
+                }
+            } catch (rebuildErr) {
+                console.error(`[DEBUG WA] Failed to trigger auto-rebuild from WhatsApp:`, rebuildErr.message);
+            }
+        }
+
         if (!rawMessageText) {
-            console.log(`[DEBUG WA] Ignorado: No hay texto plano (posible imagen/audio sin caption).`);
+            console.log(`[DEBUG WA] Ignorado: No hay texto plano.`);
             return;
         }
 
@@ -432,6 +548,10 @@ export const initWhatsAppBot = async () => {
             // invocar herramientas sin importar qué modelo esté activo (Groq/Gemini/Pollinations).
             const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|reagendar|cancelar|reservar|reserva|consulta)/i;
             const hasBookingIntent = BOOKING_INTENT_REGEX.test(messageText);
+
+            if (hasBookingIntent) {
+                finalSystemPrompt += `\n\n${BOOKING_PROMPT}`;
+            }
 
             let botReply = "Lo siento, fallé al entender.";
             let functionCalls = [];

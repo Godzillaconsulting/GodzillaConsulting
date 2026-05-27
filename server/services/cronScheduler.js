@@ -87,7 +87,8 @@ class CronScheduler {
                 const nodes = Array.isArray(flow.nodes) ? flow.nodes : [];
 
                 for (const node of nodes) {
-                    if (node.title !== 'Reloj / Cron') continue;
+                    const nodePreset = node.presetName || node.title;
+                    if (nodePreset !== 'Reloj / Cron') continue;
 
                     const cronExpr = node.config?.cron;
                     if (!cronExpr) continue;

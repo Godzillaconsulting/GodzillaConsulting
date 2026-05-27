@@ -116,10 +116,16 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const [editorData, setEditorData] = useState([]);
     const [actionLoading, setActionLoading] = useState(false);
     const [videoError, setVideoError] = useState(false);
+    const [refFileUrl, setRefFileUrl]   = useState('');
+    const [refFileType, setRefFileType] = useState('');
+    const [uploadingRef, setUploadingRef] = useState(false);
     const evtRef = useRef(null);
 
     useEffect(() => {
         setVideoError(false);
+        setRefFileUrl('');
+        setRefFileType('');
+        setUploadingRef(false);
     }, [selected]);
 
     const username  = adminProfile?.username?.toLowerCase() || '';
@@ -219,8 +225,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
         if (!selected) return;
         if (actionLoading) return;
         const currentFeedback = customFeedback || feedback;
-        if (action === 'reject' && !currentFeedback.trim()) {
-            alert('Debes escribir notas de corrección para devolver la pieza.');
+        if ((action === 'reject' || action === 'auto_regenerate') && !currentFeedback.trim() && !refFileUrl) {
+            alert('Debes escribir notas de corrección o adjuntar un archivo de referencia.');
             return;
         }
 
@@ -240,7 +246,17 @@ export default function CeoEstudioPanel({ adminProfile }) {
             finalTitle = nota.trim();
         }
 
-        const newStatus = action === 'approve' ? 'approved' : 'rejected';
+        let newStatus = 'rejected';
+        if (action === 'approve') newStatus = 'approved';
+        else if (action === 'auto_regenerate') newStatus = 'pending_render_docker';
+
+        let updatedMediaPayload = selected.media_options;
+        if (refFileUrl) {
+            updatedMediaPayload = Array.isArray(selected.media_options)
+                ? selected.media_options.map((m, idx) => idx === 0 ? { ...m, refImage: refFileUrl } : m)
+                : { ...selected.media_options, refImage: refFileUrl };
+        }
+
         setActionLoading(true);
         try {
             const res = await fetch(`/api/studio/tasks/${selected.id}`, {
@@ -249,14 +265,17 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 body: JSON.stringify({ 
                     status: newStatus, 
                     title: finalTitle,
-                    feedback_notes: currentFeedback.trim() || undefined 
+                    feedback_notes: currentFeedback.trim() || (refFileUrl ? 'Rehacer con referencia visual' : undefined),
+                    media_payload: updatedMediaPayload
                 })
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.message || data.error || 'Error del servidor');
-            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus, caption: finalTitle } : t));
+            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus, caption: finalTitle, media_options: updatedMediaPayload } : t));
             setSelected(null);
             setFeedback('');
+            setRefFileUrl('');
+            setRefFileType('');
         } catch (e) { 
             console.error('[CEO] handleAction error:', e);
             alert('Error al procesar: ' + e.message); 
@@ -741,27 +760,97 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         Notas (obligatorio si se devuelve):
                                     </label>
                                     <textarea value={feedback} onChange={e => setFeedback(e.target.value)}
-                                        className="w-full h-28 bg-neutral-900 border border-neutral-700 rounded-xl p-3 text-white text-sm focus:border-[#d946ef] outline-none resize-none mb-4"
+                                        className="w-full h-20 bg-neutral-900 border border-neutral-700 rounded-xl p-3 text-white text-sm focus:border-[#d946ef] outline-none resize-none mb-3"
                                         placeholder="Escribe qué debe corregir Alex o el editor..." />
+
+                                    {/* --- SUBIR ARCHIVO DE REFERENCIA --- */}
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">📁 Archivo de Referencia Visual (Opcional)</p>
+                                        {refFileUrl ? (
+                                            <div className="relative group rounded-xl overflow-hidden border border-[#d946ef]/60 bg-neutral-950 p-2 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    {refFileType.startsWith('video/') ? (
+                                                        <div className="w-10 h-10 rounded bg-[#d946ef]/10 border border-[#d946ef]/30 flex items-center justify-center text-xs">🎥</div>
+                                                    ) : (
+                                                        <img src={refFileUrl} className="w-10 h-10 rounded object-cover border border-neutral-800" alt="Ref" />
+                                                    )}
+                                                    <span className="text-[10px] text-neutral-400 font-bold truncate max-w-[150px]">Referencia cargada</span>
+                                                </div>
+                                                <button onClick={() => { setRefFileUrl(''); setRefFileType(''); }} className="text-neutral-500 hover:text-red-500 text-xs font-black px-2">Quitar</button>
+                                            </div>
+                                        ) : (
+                                            <div className="border border-dashed border-neutral-800 rounded-xl p-3 text-center relative hover:border-[#d946ef]/60 transition-colors cursor-pointer bg-neutral-900/50 flex flex-col items-center justify-center min-h-[64px]">
+                                                {uploadingRef ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-3.5 h-3.5 border-2 border-[#d946ef]/30 border-t-[#d946ef] rounded-full animate-spin" />
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Subiendo...</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-sm">📎</span>
+                                                        <span className="text-[9px] font-black uppercase text-neutral-500 tracking-widest mt-1">Subir Imagen o Video de Referencia</span>
+                                                    </>
+                                                )}
+                                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,video/*" disabled={uploadingRef} onChange={async (e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        const file = e.target.files[0];
+                                                        setUploadingRef(true);
+                                                        try {
+                                                            const formData = new FormData();
+                                                            formData.append('file', file);
+                                                            const uploadEndpoint = file.type.startsWith('video/') ? '/api/media/upload-video' : '/api/media/upload';
+                                                            const uRes = await fetch(uploadEndpoint, {
+                                                                method: 'POST',
+                                                                headers: { 'Authorization': `Bearer ${token}` },
+                                                                body: formData
+                                                            });
+                                                            const uData = await uRes.json();
+                                                            if (uData.success) {
+                                                                setRefFileUrl(uData.url);
+                                                                setRefFileType(file.type);
+                                                            } else {
+                                                                alert('Error al subir: ' + (uData.error || 'Intenta de nuevo'));
+                                                            }
+                                                        } catch(err) {
+                                                            alert('Error al subir archivo: ' + err.message);
+                                                        } finally {
+                                                            setUploadingRef(false);
+                                                        }
+                                                    }
+                                                }} />
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="mt-auto space-y-2">
                                         <button 
                                             onClick={() => handleAction('approve')}
-                                            disabled={actionLoading}
-                                            className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2"
+                                            disabled={actionLoading || uploadingRef}
+                                            className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-2.5 rounded-xl text-base shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2"
                                         >
                                             {actionLoading ? <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</> : '✅ APROBAR'}
                                         </button>
+
+                                        {/* --- BOTON AUTOMATICO DE RE-GENERAR CON ESTA REFERENCIA --- */}
+                                        <button 
+                                            onClick={() => handleAction('auto_regenerate')}
+                                            disabled={actionLoading || uploadingRef}
+                                            className="w-full bg-gradient-to-r from-[#d946ef] to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black py-2.5 rounded-xl text-sm shadow-[0_0_15px_rgba(217,70,239,0.3)] transition-all transform hover:scale-105 disabled:opacity-60 flex items-center justify-center gap-2"
+                                        >
+                                            ✨ AUTO-REGENERAR CON REFERENCIA
+                                        </button>
+
                                         <button 
                                             onClick={() => handleAction('reject', 'Rehacer video completo')}
-                                            disabled={actionLoading}
-                                            className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all disabled:opacity-60"
+                                            disabled={actionLoading || uploadingRef}
+                                            className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all disabled:opacity-60"
                                         >
                                             🔙 DEVOLVER (Rehacer Todo)
                                         </button>
                                         <button 
                                             onClick={() => handleAction('reject', 'Cambiar fondo y visuales')}
-                                            disabled={actionLoading}
-                                            className="w-full bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all disabled:opacity-60"
+                                            disabled={actionLoading || uploadingRef}
+                                            className="w-full bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all disabled:opacity-60"
                                         >
                                             🖼️ DEVOLVER (Cambiar Visuales)
                                         </button>
@@ -770,8 +859,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                                 setEditorData([selected]);
                                                 setShowEditor(true);
                                             }}
-                                            disabled={actionLoading}
-                                            className="w-full bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                                            disabled={actionLoading || uploadingRef}
+                                            className="w-full bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                                         >
                                             ✂️ EDICIÓN MANUAL (Estudio Pro)
                                         </button>

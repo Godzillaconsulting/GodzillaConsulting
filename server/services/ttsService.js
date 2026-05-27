@@ -176,7 +176,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
     // ── 4. ELEVENLABS (si está configurado) ────────────────────────────
     if (process.env.ELEVENLABS_API_KEY) {
         try {
-            const elVoiceId = provider === 'elevenlabs' ? voiceId : 'pNInz6obbfIdGwnf8p5A';
+            const elVoiceId = provider === 'elevenlabs' ? voiceId : 'ODO4sbmD3pTjhgRVVRP6';
             const response = await fetch(
                 `https://api.elevenlabs.io/v1/text-to-speech/${elVoiceId}?output_format=mp3_44100_128`,
                 {
@@ -198,7 +198,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
 
     console.log(`[TTS Service] 🔊 Edge TTS (fallback final)...`);
     const edgeVoiceName = provider === 'edge' ? voiceId : 'es-MX-JorgeNeural';
-    const edgeTts = new EdgeTTS({ voice: edgeVoiceName });
+    const edgeTts = new EdgeTTS({ voice: edgeVoiceName, saveSubtitles: true });
     await edgeTts.ttsPromise(text, outputPath);
     console.log(`[TTS Service] ✅ Edge TTS listo (${edgeVoiceName}).`);
     return outputPath;

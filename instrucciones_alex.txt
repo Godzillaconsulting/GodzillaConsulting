@@ -1,0 +1,53 @@
+================================================================================
+🦖 INSTRUCCIONES DE RE-RENDERIZADO CON REFERENCIAS (ALEX) 🦖
+================================================================================
+
+Hemos añadido soporte para que el MediaWorker de IA pueda tomar una imagen o
+video de referencia y usarla para rediseñar y renderizar el video de forma
+automatizada. Tienes dos maneras de usar esta opción:
+
+--------------------------------------------------------------------------------
+MÉTODO 1: DESDE TU COMPUTADORA (LÍNEA DE COMANDOS CLI)
+--------------------------------------------------------------------------------
+Si tienes un archivo local (imagen o video) en tu computadora y quieres
+re-generar el video:
+
+1. Abre tu terminal (CMD o PowerShell) en la carpeta del proyecto.
+2. Ejecuta el script de ayuda indicando:
+   - El ID del Activo/Tarea (ej. 27).
+   - La ruta completa a tu archivo de referencia.
+   - Las notas de corrección (feedback) que quieres que aplique la IA.
+
+Ejemplo de Comando:
+> node scripts/rebuild_with_ref.js --task 27 --image "C:\Users\Alex\Downloads\cruz_azul.jpg" --feedback "Quiero que las imagenes se parezcan a esta referencia con colores reales de Cruz Azul y fuegos artificiales de fondo"
+
+¿Qué hace el script?
+- Sube y registra el archivo de referencia en la base de datos o carpeta local.
+- Traduce y actualiza el payload de la tarea.
+- Cambia el estado a 'pending_render_docker'.
+- El MediaWorker en segundo plano lo detectará automáticamente y reconstruirá
+  el video en 1-2 minutos con la nueva referencia.
+
+--------------------------------------------------------------------------------
+MÉTODO 2: DIRECTAMENTE DESDE TU CELULAR CON WHATSAPP (BOT ZILLABOT)
+--------------------------------------------------------------------------------
+Si estás en la calle o quieres probarlo rápido desde tu celular:
+
+1. Abre el chat de WhatsApp con el Bot de Godzilla (ZillaBot).
+2. Adjunta una FOTO o un VIDEO y escribe en el comentario (caption) del archivo
+   las correcciones que deseas realizar.
+   - IMPORTANTE: El texto del comentario debe incluir palabras clave de acción,
+     como: "corregir", "rehacer", "rehaz", "video", "campeon", etc.
+
+Ejemplo de comentario en WhatsApp:
+"corregir este video usando esta foto de referencia, ponle mas emocion al narrador"
+
+¿Qué hace el bot?
+- Detecta que le adjuntaste una foto o video y lo descarga automáticamente.
+- Busca la última tarea de video pendiente de aprobación.
+- Inserta el archivo y las correcciones en el payload de la tarea.
+- Cambia la tarea a estado de renderizado automático.
+- ¡Te responde por WhatsApp confirmando que ya está rehaciendo el video!
+
+Cualquier duda o ajuste, coméntamelo por este chat. ¡A darle!
+================================================================================

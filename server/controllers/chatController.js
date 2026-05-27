@@ -1,4 +1,4 @@
-import { chatTools, SYSTEM_PROMPT, withTimeout } from '../config/zilla-prompt.js';
+import { chatTools, SYSTEM_PROMPT, BOOKING_PROMPT, withTimeout } from '../config/zilla-prompt.js';
 import { GOYI_SYSTEM_PROMPT, goyiChatTools } from '../config/goyi-prompt.js';
 import pool from '../config/db.js';
 import pkg from 'jsonwebtoken';
@@ -33,7 +33,18 @@ export const processChatMessage = async (req, res) => {
         
         const hoyStr = new Date().toLocaleString('es-MX', {timeZone: 'America/Denver'});
         const systemPromptContexto = `\n\n[CONTEXTO TEMPORAL CRÍTICO]: HOY ES ${hoyStr}. NO USES JAMÁS FECHAS DEL PASADO.`;
-        const basePrompt = (isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT) + systemPromptContexto;
+        
+        const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|reagendar|cancelar|reservar|reserva|consulta)/i;
+        const lastMsgRaw = messages[messages.length - 1];
+        const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
+        const hasBookingIntent = BOOKING_INTENT_REGEX.test(lastMsg);
+
+        let basePrompt = isGoyi ? finalGoyiPrompt : SYSTEM_PROMPT;
+        if (hasBookingIntent && !isGoyi) {
+            basePrompt += `\n\n${BOOKING_PROMPT}`;
+        }
+        basePrompt += systemPromptContexto;
+        
         const systemPrompt = basePrompt + langInstruction;
         const tools = isGoyi ? goyiChatTools : chatTools;
 
@@ -63,11 +74,7 @@ export const processChatMessage = async (req, res) => {
             }
         }
 
-        const lastMsgRaw = messages[messages.length - 1];
-        const lastMsg = lastMsgRaw.content || lastMsgRaw.text ? String(lastMsgRaw.content || lastMsgRaw.text) : "Hola";
-
-        const BOOKING_INTENT_REGEX = /(cita|agendar|horario|disponible|disponibilidad|espacio|reagendar|cancelar|reservar|reserva|consulta)/i;
-        const hasBookingIntent = BOOKING_INTENT_REGEX.test(lastMsg);
+        // hasBookingIntent evaluated earlier
 
         let waterfallMessages = [{ role: "system", content: systemPrompt }];
         for (const msg of history) {

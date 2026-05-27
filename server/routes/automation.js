@@ -6,6 +6,8 @@ import util from 'util';
 import AutomationEngine from '../services/automationEngine.js';
 import bcrypt from 'bcryptjs';
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
+import fs from 'fs';
+import path from 'path';
 
 const execPromise = util.promisify(exec);
 const router = express.Router();
@@ -311,16 +313,37 @@ router.post('/change-requests/:id/reject', verifyAdminToken, async (req, res) =>
 // ─── GET /api/automation/status ─ Estado PM2 ─────────────────────────────────
 router.get('/status', verifyAdminToken, async (req, res) => {
     try {
-        const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
+        const { stdout } = await execPromise('npx pm2 jlist', { windowsHide: true });
         
-        // Extract JSON portion safely to avoid PM2 warnings breaking the parser
-        const match = stdout.match(/\[.*\]/s);
-        const jsonStr = match ? match[0] : '[]';
+        // For debugging, log raw stdout to logs/pm2_raw.log
+        try {
+            fs.mkdirSync('logs', { recursive: true });
+            fs.writeFileSync('logs/pm2_raw.log', stdout);
+        } catch (logErr) {
+            console.error('Error logging raw pm2 output:', logErr.message);
+        }
+
+        // Filter out lines starting with [PM2] to avoid breaking the JSON parser
+        const cleanLines = stdout.split('\n').filter(line => !line.trim().startsWith('[PM2]'));
+        const cleanStdout = cleanLines.join('\n');
+        
+        // Extract JSON array robustly by finding the first '[' followed by whitespace/object-start, and last ']'
+        const match = cleanStdout.match(/\[\s*\{/);
+        let jsonStr = '[]';
+        if (match) {
+            const jsonStart = match.index;
+            const jsonEnd = cleanStdout.lastIndexOf(']');
+            if (jsonEnd !== -1 && jsonEnd > jsonStart) {
+                jsonStr = cleanStdout.substring(jsonStart, jsonEnd + 1);
+            }
+        } else if (cleanStdout.includes('[]')) {
+            jsonStr = '[]';
+        }
         
         const processes = JSON.parse(jsonStr);
         const activeProcesses = processes.map(p => ({
             name: p.name,
-            status: p.pm2_env.status,
+            status: p.pm2_env ? p.pm2_env.status : 'unknown',
             memory: p.monit ? p.monit.memory : 0,
             cpu: p.monit ? p.monit.cpu : 0
         }));
@@ -330,13 +353,35 @@ router.get('/status', verifyAdminToken, async (req, res) => {
     }
 });
 
+// ─── POST /api/automation/emergency-cleanup ──────────────────────────────────
+router.post('/emergency-cleanup', verifyAdminToken, async (req, res) => {
+    try {
+        console.log('[Emergency Cleanup] Killing zombie processes under service context...');
+        const ffmpegKill = await execPromise('taskkill /F /IM ffmpeg.exe /T', { windowsHide: true }).catch(e => ({ stdout: e.message }));
+        const ytdlpKill = await execPromise('taskkill /F /IM yt-dlp.exe /T', { windowsHide: true }).catch(e => ({ stdout: e.message }));
+        const nodeZombies = await execPromise('taskkill /F /IM node.exe /FI "STATUS eq NOT RESPONDING" /T', { windowsHide: true }).catch(e => ({ stdout: e.message }));
+        
+        res.json({
+            success: true,
+            message: 'Emergency cleanup commands executed.',
+            details: {
+                ffmpeg: ffmpegKill.stdout,
+                ytdlp: ytdlpKill.stdout,
+                node: nodeZombies.stdout
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Fallo al ejecutar limpieza', details: err.message });
+    }
+});
+
 // ─── POST /api/automation/restart-process ─ Reiniciar PM2 ───────────────────
 router.post('/restart-process', verifyAdminToken, async (req, res) => {
     try {
         const { processName } = req.body;
         if (!processName) return res.status(400).json({ success: false, error: 'processName requerido' });
         
-        await execPromise(`pm2 restart ${processName}`, { windowsHide: true });
+        await execPromise(`npx pm2 restart ${processName}`, { windowsHide: true });
         res.json({ success: true, message: `Proceso ${processName} reiniciado exitosamente.` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Fallo al reiniciar proceso', details: err.message });
@@ -368,7 +413,7 @@ router.get('/runs', verifyAdminToken, async (req, res) => {
     }
 });
 
-// ─── POST /api/automation/restart ─────────────// ─── POST /api/automation/webhook/:nodeId ─ Webhook Universal Dinámico ─────────
+// ─── POST /api/automation/webhook/:nodeId ─ Webhook Universal Dinámico ─────────
 router.post('/webhook/:nodeId', async (req, res) => {
     try {
         const { nodeId } = req.params;
@@ -393,11 +438,9 @@ router.post('/webhook/:nodeId', async (req, res) => {
 
             console.log(`[Webhook] Recibido nodo ${nodeId} en flujo ${flowId}. Run ID: ${runId}`);
             
-            AutomationEngine.triggerNode(nodeId, payload, flowId)
-                .then(() => pool.query(`UPDATE flow_runs SET status = 'completed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{}))
+            AutomationEngine.triggerNode(nodeId, payload, flowId, runId)
                 .catch(err => {
-                    console.error(err);
-                    pool.query(`UPDATE flow_runs SET status = 'failed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{});
+                    console.error('[Webhook Trigger Error]:', err);
                 });
             res.json({ success: true, message: 'Webhook recibido y registrado.', runId });
         } else {
@@ -434,11 +477,9 @@ router.get('/webhook/:nodeId', async (req, res) => {
 
             console.log(`[Webhook GET] Recibido nodo ${nodeId} en flujo ${flowId}. Run ID: ${runId}`);
             
-            AutomationEngine.triggerNode(nodeId, payload, flowId)
-                .then(() => pool.query(`UPDATE flow_runs SET status = 'completed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{}))
+            AutomationEngine.triggerNode(nodeId, payload, flowId, runId)
                 .catch(err => {
-                    console.error(err);
-                    pool.query(`UPDATE flow_runs SET status = 'failed', finished_at = NOW() WHERE id = $1`, [runId]).catch(e=>{});
+                    console.error('[Webhook GET Trigger Error]:', err);
                 });
             res.json({ success: true, message: 'Webhook GET procesado.', runId });
         } else {

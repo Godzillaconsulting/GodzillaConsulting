@@ -549,11 +549,6 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
         // Solo actualizar los campos explícitos, sino mantener los que existen
         let updatedStatus = status !== undefined ? status : currentTask.status;
         
-        // Auto-requeue: Si el usuario rechaza/devuelve el video, lo mandamos a re-renderizar
-        if (updatedStatus === 'rejected') {
-            updatedStatus = 'pending_local_test';
-        }
-        
         const updatedMedia = media_payload !== undefined ? (typeof media_payload === 'string' ? media_payload : JSON.stringify(media_payload)) : JSON.stringify(currentTask.media_payload || []);
         const updatedTargets = publish_targets !== undefined ? JSON.stringify(publish_targets) : JSON.stringify(currentTask.publish_targets || []);
         const updatedIgDate = ig_publish_date !== undefined ? ig_publish_date : currentTask.ig_publish_date;

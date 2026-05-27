@@ -13,9 +13,11 @@ const COL = (n) => ({
 });
 
 const ELEVENLABS_VOICES = [
-    { id: 'elevenlabs:pNInz6obbfIdGwnf8p5A', name: 'Adam (Joven, Profesional)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/pNInz6obbfIdGwnf8p5A/df6788f9-5c96-470d-8312-eadaf3733776.mp3' },
-    { id: 'elevenlabs:ErXwobaYiN019PkySvjV', name: 'Antoni (Maduro, Reasegurador)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/ErXwobaYiN019PkySvjV/01a3e33c-6e99-4ee7-8543-ff2216a32186.mp3' },
-    { id: 'elevenlabs:TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Dinámico, Narrador)', preview: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/TxGEqnHWrfWFTfGW9XjX/102de6f2-22ed-43e0-a1f1-111fa75c5481.mp3' }
+    { id: 'elevenlabs:ODO4sbmD3pTjhgRVVRP6', name: 'Sara (Cálida y Narradora)', preview: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/b4826acc45e3461bbb2bf80dbcd5a125/voices/ODO4sbmD3pTjhgRVVRP6/DkAbS58XmW8lYza30cB3.mp3' },
+    { id: 'elevenlabs:tTQzD8U9VSnJgfwC6HbY', name: 'Nathalia (Dulce y Amistosa)', preview: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/3132161831d747b6b062491689ffb1fd/voices/tTQzD8U9VSnJgfwC6HbY/BwOSM6Ja6WIaCuQZzL8Y.mp3' },
+    { id: 'elevenlabs:J4vZAFDEcpenkMp3f3R9', name: 'Valentina (Conversacional)', preview: 'https://storage.googleapis.com/eleven-public-prod/database/user/Yb0B8bJu9XhmTzORxR23RpxsDAb2/voices/J4vZAFDEcpenkMp3f3R9/w6dSSPdIpQ00o4yFIzlz.mp3' },
+    { id: 'elevenlabs:9Godp7dNohUvXk6qp0gS', name: 'Regina (Contact Center)', preview: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/3ec0f756a64949d7971677b1e7afc31e/voices/9Godp7dNohUvXk6qp0gS/af31797a-9f1e-4e8e-a53b-2e6f18c9c9cb.mp3' },
+    { id: 'elevenlabs:9y2QVHqoZ9f198GJJ99i', name: 'Tijuana La Iguana (Clonada)', preview: 'https://storage.googleapis.com/eleven-public-prod/database/workspace/6419f23ed95a48e893bf771e6824a61b/voices/9y2QVHqoZ9f198GJJ99i/2de21a7d-397d-4056-9688-7f82e949f605.mp3' }
 ];
 
 const exportToCSV = (plan, niche) => {
@@ -198,7 +200,7 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={(e) => { e.stopPropagation(); onSendToCalendar(day); }}
+                        onClick={(e) => { e.stopPropagation(); onSendToCalendar(day, idx); }}
                         disabled={!canEdit}
                         className="opacity-0 group-hover:opacity-100 text-[10px] bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded flex items-center gap-1 transition-all disabled:opacity-30 shrink-0"
                     >
@@ -278,7 +280,7 @@ export default function AIContentPlanner({ adminProfile }) {
     });
     const [year, setYear]             = useState(() => new Date().getFullYear());
     const [extraContext, setExtra]    = useState('');
-    const [selectedVoice, setSelectedVoice] = useState(ELEVENLABS_VOICES[0].id);
+    const [selectedVoice, setSelectedVoice] = useState('Automático');
     const [playingVoice, setPlayingVoice] = useState(null);
     const [isGenerating, setGenerating] = useState(false);
     const [plan, setPlan]             = useState(null);
@@ -550,6 +552,7 @@ export default function AIContentPlanner({ adminProfile }) {
 
     const handleBulkSend = () => {
         if (!plan) return;
+        setAutoVoice(selectedVoice);
         setShowVoiceModal(true);
     };
 
@@ -721,6 +724,27 @@ export default function AIContentPlanner({ adminProfile }) {
                             <option value={3}>3 Días</option>
                             <option value={5}>5 Días</option>
                             <option value={7}>1 Semana Máx.</option>
+                        </select>
+                    </div>
+                    <div className="w-48">
+                        <label className="text-[9px] text-purple-400 font-bold uppercase tracking-widest block mb-1.5">Voz Narrador</label>
+                        <select
+                            value={selectedVoice}
+                            onChange={e => setSelectedVoice(e.target.value)}
+                            disabled={!canEdit || isGenerating}
+                            className="w-full bg-black/50 border border-neutral-800 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-purple-500 disabled:opacity-50"
+                        >
+                            <option value="Automático">Automático (Inteligente)</option>
+                            <option value="elevenlabs:ODO4sbmD3pTjhgRVVRP6">Sara - Voz Cálida (ElevenLabs)</option>
+                            <option value="elevenlabs:tTQzD8U9VSnJgfwC6HbY">Nathalia - Voz Dulce (ElevenLabs)</option>
+                            <option value="elevenlabs:J4vZAFDEcpenkMp3f3R9">Valentina - Voz Conversacional (ElevenLabs)</option>
+                            <option value="elevenlabs:9Godp7dNohUvXk6qp0gS">Regina - Contact Center (ElevenLabs)</option>
+                            <option value="elevenlabs:9y2QVHqoZ9f198GJJ99i">Tijuana La Iguana (Clonada)</option>
+                            <option value="edge:es-MX-JorgeNeural">Jorge (Edge es-MX Local)</option>
+                            <option value="edge:es-MX-DaliaNeural">Dalia (Edge es-MX Local)</option>
+                            <option value="edge:es-ES-AlvaroNeural">Alvaro (Edge es-ES Local)</option>
+                            <option value="edge:es-ES-ElviraNeural">Elvira (Edge es-ES Local)</option>
+                            <option value="edge:es-AR-TomasNeural">Tomas (Edge es-AR Local)</option>
                         </select>
                     </div>
                     <div className="flex-1 min-w-[160px]">

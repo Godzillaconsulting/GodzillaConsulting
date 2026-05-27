@@ -37,39 +37,36 @@ class AutomationEngine {
                 const blockSize = 5;
                 const blocks = Math.ceil(totalDays / blockSize);
                 const fullPlan = [];
-                const maxTokens = 3500;
-
-                const baseSystemPrompt = `
-                    Actúa como un estratega de contenido experto en redes sociales.
-                    Nicho de la empresa: "${ctx.niche || 'General'}".
-                    ${ctx.topic ? `\nATENCIÓN: Se solicitó específicamente crear contenido enfocado ÚNICA Y EXCLUSIVAMENTE en el siguiente tema/idea: "${ctx.topic}".` : ''}
-                    ${cfg.extraContext ? `\nContexto extra a considerar: "${cfg.extraContext}".` : ''}
-                    Vas a generar contenido para ${blockSize} días consecutivos.
-                    El año es ${ctx.year || new Date().getFullYear()} y el mes objetivo es ${ctx.month || 'actual'}.
-                    
-                    INSTRUCCIONES ESTRICTAS:
-                    - Devuelve ÚNICAMENTE un array JSON válido, nada de markdown ni texto extra.
-                    - Cada objeto del array representa un día y debe tener esta estructura exacta:
-                      {
-                        "Tema": "Título del video/post",
-                        "NARRACION ESCENA 1": "Texto para TTS de la escena 1",
-                        "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Prompt visual detallado en inglés para generar imagen",
-                        "NARRACION ESCENA 2": "...",
-                        "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "...",
-                        "NARRACION ESCENA 3": "...",
-                        "VISUAL ESCENA 3 (Prompt Imagen Detallado)": "...",
-                        "NARRACION ESCENA 4": "...",
-                        "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "...",
-                        "NARRACION ESCENA 5 (CTA)": "Call to action final",
-                        "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "Prompt visual de cierre"
-                      }
-                    - Genera contenido vibrante, para videos verticales rápidos (TikTok/Reels).
-                `;
 
                 const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
 
-                const fetchBlock = async (blockIndex) => {
-                    const blockPrompt = baseSystemPrompt + `\n\nGenera el bloque de contenido (Días ${blockIndex * blockSize + 1} al ${Math.min((blockIndex + 1) * blockSize, totalDays)}). RESPUESTA SOLO JSON.`;
+                const fetchBlock = async (blockIndex, currentBlockSize) => {
+                    const blockPrompt = `
+                        Actúa como un estratega de contenido experto en redes sociales.
+                        Nicho de la empresa: "${ctx.niche || 'General'}".
+                        ${ctx.topic ? `\nATENCIÓN: Se solicitó específicamente crear contenido enfocado ÚNICA Y EXCLUSIVAMENTE en el siguiente tema/idea: "${ctx.topic}".` : ''}
+                        ${cfg.extraContext ? `\nContexto extra a considerar: "${cfg.extraContext}".` : ''}
+                        Vas a generar contenido para ${currentBlockSize} días consecutivos.
+                        El año es ${ctx.year || new Date().getFullYear()} y el mes objetivo es ${ctx.month || 'actual'}.
+                        
+                        INSTRUCCIONES ESTRICTAS:
+                        - Devuelve ÚNICAMENTE un array JSON válido, nada de markdown ni texto extra.
+                        - Cada objeto del array representa un día y debe tener esta estructura exacta:
+                          {
+                            "Tema": "Título del video/post",
+                            "NARRACION ESCENA 1": "Texto para TTS de la escena 1",
+                            "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Prompt visual detallado en inglés para generar imagen",
+                            "NARRACION ESCENA 2": "...",
+                            "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "...",
+                            "NARRACION ESCENA 3": "...",
+                            "VISUAL ESCENA 3 (Prompt Imagen Detallado)": "...",
+                            "NARRACION ESCENA 4": "...",
+                            "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "...",
+                            "NARRACION ESCENA 5 (CTA)": "Call to action final",
+                            "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "Prompt visual de cierre"
+                          }
+                        - Genera contenido vibrante, para videos verticales rápidos (TikTok/Reels).
+                    ` + `\n\nGenera el bloque de contenido (Días ${blockIndex * blockSize + 1} al ${Math.min((blockIndex + 1) * blockSize, totalDays)}). RESPUESTA SOLO JSON.`;
                     
                     const waterfallRes = await executeAiWaterfall([
                         { role: "system", content: "Eres un estratega de contenido experto en redes sociales. DEBES responder estrictamente con un array JSON válido y nada de markdown." },
@@ -84,9 +81,13 @@ class AutomationEngine {
                 console.log(`[Engine] 🧠 Planificador IA — ${period} → ${blocks} bloque(s) de ~${blockSize} días`);
                 for (let b = 0; b < blocks; b++) {
                     console.log(`[Engine] Generando bloque ${b+1}/${blocks}...`);
+                    const startDay = b * blockSize + 1;
+                    const endDay = Math.min((b + 1) * blockSize, totalDays);
+                    const currentBlockSize = endDay - startDay + 1;
+
                     for (let attempt = 1; attempt <= 3; attempt++) {
                         try {
-                            const blockData = await fetchBlock(b);
+                            const blockData = await fetchBlock(b, currentBlockSize);
                             fullPlan.push(...blockData);
                             break;
                         } catch (e) {
@@ -958,8 +959,8 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
             try {
                 // Soportar aliases por si cambian de nombre en el UI
-                const nodeTitle = node.title || (node.data && node.data.label) || 'Desconocido';
-                const actionName = nodeTitle === 'Router (Condición)' ? 'Router / Switch' : nodeTitle;
+                const nodePreset = node.presetName || node.title || (node.data && node.data.label) || 'Desconocido';
+                const actionName = nodePreset === 'Router (Condición)' ? 'Router / Switch' : nodePreset;
                 const action = this.NODE_ACTIONS[actionName] || this.NODE_ACTIONS['_default'];
                 
                 newCtx = await action(node, ctx);
@@ -976,6 +977,9 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                 }
                 
                 newCtx[node.title] = { salida: outputData };
+                if (node.presetName && node.presetName !== node.title) {
+                    newCtx[node.presetName] = { salida: outputData };
+                }
                 
                 runLog.push({ node: node.title, status: 'success', ms: Date.now() - t0 });
                 console.log(`[Engine] ✅ ${node.title} — ${Date.now() - t0}ms`);
@@ -1010,7 +1014,10 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                 rows = r.rows;
             } else {
                 const r = await pool.query('SELECT id, nodes, edges FROM automation_flow WHERE jsonb_array_length(nodes) > 0');
-                rows = r.rows.filter(row => (row.nodes || []).some(n => (n.title || (n.data && n.data.label)) === sourceTitle));
+                rows = r.rows.filter(row => (row.nodes || []).some(n => {
+                    const nodePreset = n.presetName || n.title || (n.data && n.data.label);
+                    return nodePreset === sourceTitle || n.title === sourceTitle;
+                }));
             }
 
             if (!rows.length) {
@@ -1020,7 +1027,10 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
             for (const { id: fId, nodes, edges } of rows) {
                 const runLog = [];
-                const sourceNodes = nodes.filter(n => (n.title || (n.data && n.data.label)) === sourceTitle);
+                const sourceNodes = nodes.filter(n => {
+                    const nodePreset = n.presetName || n.title || (n.data && n.data.label);
+                    return nodePreset === sourceTitle || n.title === sourceTitle;
+                });
                 if (!sourceNodes.length) continue;
 
                 const { rows: [{ id }] } = await pool.query(
@@ -1051,7 +1061,7 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
         }
     }
 
-    static async triggerNode(nodeId, inputPayload = {}, flowId = 1) {
+    static async triggerNode(nodeId, inputPayload = {}, flowId = 1, runIdParam = null) {
         const t0 = Date.now();
         const runLog = [];
         let runId = null;
@@ -1070,27 +1080,45 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
 
             const nodeTitle = sourceNode.title || (sourceNode.data && sourceNode.data.label) || 'Desconocido';
 
-            const { rows: [{ id }] } = await pool.query(
-                `INSERT INTO flow_runs (flow_id, status, source) VALUES ($1,'running',$2) RETURNING id`,
-                [fId, nodeTitle]
-            );
-            runId = id;
+            if (runIdParam) {
+                runId = runIdParam;
+            } else {
+                const { rows: [{ id }] } = await pool.query(
+                    `INSERT INTO flow_runs (flow_id, status, source) VALUES ($1,'running',$2) RETURNING id`,
+                    [fId, nodeTitle]
+                );
+                runId = id;
+            }
 
             await this._executeNodePath(nodes, edges, sourceNode.id, inputPayload, runId, runLog);
 
-            await pool.query(
-                `UPDATE flow_runs SET status='success', finished_at=NOW(), duration_ms=$1, log=$2 WHERE id=$3`,
-                [Date.now() - t0, JSON.stringify(runLog), runId]
-            );
+            if (runIdParam) {
+                await pool.query(
+                    `UPDATE flow_runs SET status='success', finished_at=NOW(), duration_ms=$1, log=COALESCE(log, '[]'::jsonb) || $2::jsonb WHERE id=$3`,
+                    [Date.now() - t0, JSON.stringify(runLog), runId]
+                );
+            } else {
+                await pool.query(
+                    `UPDATE flow_runs SET status='success', finished_at=NOW(), duration_ms=$1, log=$2 WHERE id=$3`,
+                    [Date.now() - t0, JSON.stringify(runLog), runId]
+                );
+            }
             console.log(`[Engine] ════ FLUJO COMPLETADO en ${Date.now() - t0}ms ════\n`);
 
         } catch (err) {
             console.error('[Engine] Error en triggerNode:', err.message);
             if (runId) {
-                await pool.query(
-                    `UPDATE flow_runs SET status='error', finished_at=NOW(), log=$1 WHERE id=$2`,
-                    [JSON.stringify([...runLog, { node:'engine', status:'error', error: err.message }]), runId]
-                );
+                if (runIdParam) {
+                    await pool.query(
+                        `UPDATE flow_runs SET status='error', finished_at=NOW(), log=COALESCE(log, '[]'::jsonb) || $1::jsonb WHERE id=$2`,
+                        [JSON.stringify([...runLog, { node:'engine', status:'error', error: err.message }]), runId]
+                    );
+                } else {
+                    await pool.query(
+                        `UPDATE flow_runs SET status='error', finished_at=NOW(), log=$1 WHERE id=$2`,
+                        [JSON.stringify([...runLog, { node:'engine', status:'error', error: err.message }]), runId]
+                    );
+                }
             }
         }
     }

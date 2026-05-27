@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import es from 'date-fns/locale/es';
+import { format } from 'date-fns';
+import { parse } from 'date-fns';
+import { startOfWeek } from 'date-fns';
+import { getDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,19 +37,30 @@ export const getYouTubeId = (url) => {
     return (match && match[2].length === 11) ? match[2] : null;
 };
 
-export const API_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://bot.godzillaconsulting.ai';
+export const getBackendUrl = () => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+    }
+    return 'https://bot.godzillaconsulting.ai';
+};
+
+export const API_URL = getBackendUrl();
 const getAPI = () => API_URL;
 
 export const resolveMedia = (url) => {
     if (!url) return '';
-    // Reemplaza localhost/127.0.0.1 por API_URL (común si se generó en ambiente dev)
-    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
-        try {
-            const urlObj = new URL(url);
-            return `${API_URL}${urlObj.pathname}${urlObj.search}`;
-        } catch(e) { /* ignore */ }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+            try {
+                const urlObj = new URL(url);
+                return `${API_URL}${urlObj.pathname}${urlObj.search}`;
+            } catch(e) { /* ignore */ }
+        }
+        return url;
     }
-    if (url.startsWith('http')) return url;
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+        return url;
+    }
     return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 

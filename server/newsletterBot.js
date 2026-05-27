@@ -2,6 +2,7 @@ import { generateAndSendAutoNewsletter } from './services/newsletterGenerator.js
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pool from './config/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +26,21 @@ setInterval(async () => {
         if (!hasRunToday && lastAttemptMinute !== minuto) {
             lastAttemptMinute = minuto;
             console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter... (Intento a las 8:${minuto.toString().padStart(2, '0')})`);
+            
+            try {
+                // Revisar si ya se envió hoy en la base de datos para evitar duplicados si PM2 reinicia el bot
+                const res = await pool.query(
+                    `SELECT id FROM newsletters WHERE DATE(created_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
+                );
+                if (res.rows.length > 0) {
+                    console.log(`[${BOT_NAME}] ⏭️ El newsletter de hoy ya fue generado en la DB. Evitando duplicado.`);
+                    hasRunToday = true;
+                    return;
+                }
+            } catch (dbErr) {
+                console.error(`[${BOT_NAME}] ⚠️ Error verificando DB para duplicados:`, dbErr.message);
+            }
+
             try {
                 const result = await generateAndSendAutoNewsletter();
                 console.log(`[${BOT_NAME}] ✅ Éxito masivo. Newsletter generado:`, result);

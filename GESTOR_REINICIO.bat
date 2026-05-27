@@ -71,9 +71,9 @@ echo  Reiniciando SOLO whatsapp-bot...
 docker exec godzilla_ecosystem pm2 restart whatsapp-bot --update-env
 echo  Esperando 20s para que Chrome cargue...
 timeout /t 20 /nobreak >nul
-powershell -Command "Get-Content -Tail 8 'C:\Users\GODZILLA.IA\.pm2\logs\whatsapp-bot-out.log'"
+powershell -Command "Get-Content -Tail 45 'C:\Users\GODZILLA.IA\.pm2\logs\whatsapp-bot-out.log'"
 echo.
-echo  Si necesita QR: http://localhost:3002/qr
+echo  Si necesita QR: http://localhost:4010/qr
 echo.
 pause
 goto MENU
@@ -210,7 +210,7 @@ timeout /t 5 /nobreak >nul
 docker compose ps
 
 echo.
-echo  [!] Listo. Si tenias sesion pendiente de WhatsApp, escanea en http://localhost:3002/qr
+echo  [!] Listo. Si tenias sesion pendiente de WhatsApp, escanea en http://localhost:4010/qr
 echo.
 pause
 goto MENU
@@ -256,7 +256,7 @@ docker exec godzilla_ecosystem pm2 restart whatsapp-bot --update-env
 echo.
 echo ========================================================
 echo PROCESO COMPLETADO. 
-echo Ahora ve a http://localhost:3002/qr , escanealo por ultima vez
+echo Ahora ve a http://localhost:4010/qr , escanealo por ultima vez
 echo y mandale el mensaje de prueba.
 echo ========================================================
 pause

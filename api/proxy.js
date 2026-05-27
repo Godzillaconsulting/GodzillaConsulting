@@ -39,6 +39,7 @@ export default async function handler(req, res) {
             method: req.method,
             headers: forwardHeaders,
             body,
+            duplex: 'half',
             signal: AbortSignal.timeout(55000), // 55s < 60s maxDuration
         });
 

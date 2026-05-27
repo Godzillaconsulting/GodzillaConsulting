@@ -322,33 +322,16 @@ const STOCK_VIDEOS = [
 
 let googleQuotaExceeded = false;
 
-// Generación de imagen con Google Imagen 3 (SDK nuevo) o Fallback a Gemini / Pollinations
+// Generación de imagen con Google Imagen 4 (SDK nuevo) o Fallback a Gemini 2.5 Flash (solo APIs de Google)
 async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
     if (!process.env.GEMINI_API_KEY) {
         throw new Error("GEMINI_API_KEY not configured.");
     }
 
-    if (googleQuotaExceeded) {
-        try {
-            const safePrompt = prompt.length > 200 ? prompt.substring(0, 200) : prompt;
-            const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
-            const res = await fetch(fallbackUrl);
-            if (!res.ok) throw new Error(`HTTP ${res.status} from Pollinations`);
-            const arrayBuffer = await res.arrayBuffer();
-            fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
-            console.log(`[GoogleImageGen] ✅ Imagen generada vía Pollinations (Bypass de cuota Google).`);
-            return outputPath;
-        } catch (e) {
-            console.warn(`[GoogleImageGen] ⚠️ Pollinations falló en bypass, usando copia de test_turbo.jpg: ${e.message}`);
-            fs.copyFileSync(path.resolve(process.cwd(), 'test_turbo.jpg'), outputPath);
-            return outputPath;
-        }
-    }
-
     console.log(`[GoogleImageGen] Generando imagen para prompt: "${prompt.substring(0, 50)}..."`);
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
-    // 1. Intentar con Imagen 3.0
+    // 1. Intentar con Imagen 4.0
     try {
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -362,14 +345,11 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
         if (response.generatedImages?.[0]?.image?.imageBytes) {
             const b64 = response.generatedImages[0].image.imageBytes;
             fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'));
-            console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Imagen 3.`);
+            console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Imagen 4.`);
             return outputPath;
         }
     } catch (err) {
-        console.warn(`[GoogleImageGen] ⚠️ Imagen 3.0 falló: ${err.message}. Probando con Gemini Flash Image...`);
-        if (err.message.includes('spending cap') || err.message.includes('RESOURCE_EXHAUSTED') || err.message.includes('quota') || err.message.includes('spending limit')) {
-            googleQuotaExceeded = true;
-        }
+        console.warn(`[GoogleImageGen] ⚠️ Imagen 4.0 falló: ${err.message}. Probando con Gemini Flash Image...`);
     }
 
     // 2. Intentar con Gemini 2.5 Flash Image output
@@ -389,24 +369,14 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
             }
         }
     } catch (err) {
-        console.warn(`[GoogleImageGen] ⚠️ Gemini Flash Image falló: ${err.message}. Usando Fallback de Pollinations...`);
+        console.warn(`[GoogleImageGen] ⚠️ Gemini Flash Image falló: ${err.message}.`);
     }
 
-    // 3. Fallback a Pollinations AI (Libre y Estable)
-    try {
-        const safePrompt = prompt.length > 200 ? prompt.substring(0, 200) : prompt;
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
-        const res = await fetch(fallbackUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status} from Pollinations`);
-        const arrayBuffer = await res.arrayBuffer();
-        fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
-        console.log(`[GoogleImageGen] ✅ Imagen generada vía Pollinations Fallback.`);
-        return outputPath;
-    } catch (err) {
-        console.warn(`[GoogleImageGen] ⚠️ Pollinations falló, usando copia de test_turbo.jpg: ${err.message}`);
-        fs.copyFileSync(path.resolve(process.cwd(), 'test_turbo.jpg'), outputPath);
-        return outputPath;
-    }
+    // Fallback final a imagen de test local si todo lo de Google falla
+    console.warn(`[GoogleImageGen] ❌ Todas las APIs de Google fallaron. Usando copia de test_turbo.jpg.`);
+    fs.copyFileSync(path.resolve(process.cwd(), 'test_turbo.jpg'), outputPath);
+    return outputPath;
+}
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1075,12 +1045,24 @@ Instructions:
                         imagePaths.push(tempImgPath);
                         const seed = Math.floor(Math.random() * 1000000);
                         let themeSuffix = ', highly realistic professional photography, lifelike details, sharp focus, vibrant colors, no watermark, no text overlays, clean image, high-fidelity photo';
-                        if (imgPrompt.toLowerCase().includes('cruz azul') || imgPrompt.toLowerCase().includes('soccer') || imgPrompt.toLowerCase().includes('futbol') || imgPrompt.toLowerCase().includes('football') || imgPrompt.toLowerCase().includes('liga mx') || imgPrompt.toLowerCase().includes('pumas')) {
+                        
+                        let sportsAdditions = '';
+                        const lowerPrompt = imgPrompt.toLowerCase();
+                        if (lowerPrompt.includes('cruz azul') || lowerPrompt.includes('soccer') || lowerPrompt.includes('futbol') || lowerPrompt.includes('football') || lowerPrompt.includes('liga mx') || lowerPrompt.includes('pumas')) {
                             themeSuffix = ', highly realistic professional sports photography, action shot, lifelike details, vivid team colors, stadium lights, no watermark, no text overlays, clean image, high-fidelity sports photo';
+                            
+                            // Inyección de precisión para uniformes y escudos reales
+                            if (lowerPrompt.includes('cruz azul')) {
+                                sportsAdditions = ' The players must wear the official Cruz Azul home kit: a royal blue jersey, white shorts, and blue socks. The jersey must feature the Cruz Azul crest: a blue cross inside a white circle, set against a red square. The stadium has intense blue and white crowd flags.';
+                            }
+                            if (lowerPrompt.includes('pumas') || lowerPrompt.includes('unam')) {
+                                sportsAdditions = ' The players must wear the official Pumas UNAM kit: a dark blue and gold jersey, with the famous large stylized golden puma face emblem displayed prominently on the front of the shirt. The background is Estadio Olímpico Universitario.';
+                            }
                         }
-                        let varPrompt = `${imgPrompt}${themeSuffix}`;
+                        
+                        let varPrompt = `${imgPrompt}${sportsAdditions}${themeSuffix}`;
                         if (extractedStylePrompt) {
-                            varPrompt = `${imgPrompt}. In the exact artistic style of: ${extractedStylePrompt}. ${themeSuffix}`;
+                            varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}. ${themeSuffix}`;
                         }
                         varPrompt = `${varPrompt}, angle variation ${j + 1}, seed ${seed}`;
                         

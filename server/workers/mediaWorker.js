@@ -377,7 +377,6 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
     fs.copyFileSync(path.resolve(process.cwd(), 'test_turbo.jpg'), outputPath);
     return outputPath;
 }
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SISTEMA MULTI-FUENTE DE STOCK MEDIA — 100% GRATIS, CERO REGISTRO

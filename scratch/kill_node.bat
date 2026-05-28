@@ -1,0 +1,9 @@
+@echo off
+echo Stopping GodzillaBackend Service...
+net stop GodzillaBackend
+echo Forcefully killing all node processes...
+taskkill /F /IM node.exe
+echo Starting GodzillaBackend Service...
+net start GodzillaBackend
+echo Done!
+timeout /t 5

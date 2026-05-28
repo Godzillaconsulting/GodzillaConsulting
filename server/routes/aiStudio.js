@@ -1,4 +1,5 @@
 import express from 'express';
+import * as cheerio from 'cheerio';
 import multer from 'multer';
 import os from 'os';
 import path from 'path';
@@ -28,6 +29,130 @@ router.get('/inspiration', authenticateToken, getInspirationGallery);
 router.get('/dynamic-filters', authenticateToken, getDynamicFilters);
 router.post('/generate-monthly-plan', authenticateToken, generateMonthlyPlan);
 router.get('/plan-status/:taskId', authenticateToken, getMonthlyPlanStatus);
+
+// Cache en memoria para tendencias diarias (4 horas)
+let dailyTrendsCache = {
+    data: null,
+    timestamp: 0
+};
+const CACHE_DURATION_MS = 4 * 60 * 60 * 1000;
+
+router.get('/daily-trends', authenticateToken, async (req, res) => {
+    try {
+        const now = Date.now();
+        if (dailyTrendsCache.data && (now - dailyTrendsCache.timestamp < CACHE_DURATION_MS)) {
+            console.log('[DailyTrends] Retornando tendencias diarias desde caché.');
+            return res.json({ success: true, data: dailyTrendsCache.data });
+        }
+
+        console.log('[DailyTrends] Consultando Google Trends RSS (MX)...');
+        const rssUrl = 'https://trends.google.com/trending/rss?geo=MX';
+        const response = await fetch(rssUrl, { signal: AbortSignal.timeout(6000) });
+        if (!response.ok) {
+            throw new Error(`Google Trends RSS respondió con status: ${response.status}`);
+        }
+        const xmlText = await response.text();
+        const $ = cheerio.load(xmlText, { xmlMode: true });
+        const rawTrends = [];
+        
+        $('item').each((i, el) => {
+            if (i >= 15) return;
+            const title = $(el).find('title').text();
+            let traffic = $(el).find('ht\\:approx_traffic').text() || $(el).find('approx_traffic').text() || '50K+';
+            let picture = $(el).find('ht\\:picture').text() || $(el).find('picture').text() || '';
+            const description = $(el).find('description').text() || '';
+            
+            rawTrends.push({ title, traffic, picture, description });
+        });
+
+        if (rawTrends.length === 0) {
+            throw new Error('No se pudieron extraer tendencias del XML.');
+        }
+
+        console.log(`[DailyTrends] Extraídas ${rawTrends.length} tendencias de RSS. Clasificando con IA...`);
+        const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+        const prompt = `Eres un estratega digital de élite. Analiza estas búsquedas en tendencia hoy en México y LatAm:
+${JSON.stringify(rawTrends)}
+
+Tu tarea es categorizarlas, generar una idea de video viral para cada una, y estimar métricas de interacción para que el usuario pueda elegir el mejor tema para planificar su video.
+
+Divide las tendencias en categorías lógicas y atractivas como: "Tecnología e IA", "Negocios y Finanzas", "Deportes y Entretenimiento", "Moda y Estilo de Vida", "Cultura Pop y General".
+
+Genera EXACTAMENTE este formato JSON sin markdown, código o texto extra:
+{
+  "trends": [
+    {
+      "topic": "Nombre del tema o búsqueda",
+      "category": "Categoría (ej: Deportes y Entretenimiento)",
+      "traffic": "Tráfico aproximado (ej: 200K+ búsquedas)",
+      "views": "1.2M vistas est.",
+      "reactions": "92K reacciones est.",
+      "shares": "34K compartidos est.",
+      "hook": "Un gancho viral y provocador (máx 15 palabras) para iniciar el video",
+      "idea": "Idea corta de contenido de video para este tema"
+    }
+  ]
+}`;
+
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: prompt }
+        ], { mode: 'premium', temperature: 0.7, maxTokens: 8192 });
+
+        let responseText = aiRes.content || '';
+        if (responseText.startsWith('```json')) {
+            responseText = responseText.replace(/```json\n?/, '').replace(/```$/, '');
+        } else if (responseText.startsWith('```')) {
+            responseText = responseText.replace(/```\n?/, '').replace(/```$/, '');
+        }
+
+        const data = JSON.parse(responseText.trim());
+        
+        dailyTrendsCache = {
+            data: data.trends || [],
+            timestamp: now
+        };
+
+        res.json({ success: true, data: dailyTrendsCache.data });
+
+    } catch (err) {
+        console.error('[DailyTrends] Error generando tendencias diarias:', err);
+        
+        // Fallback en caso de error
+        const fallbackTrends = [
+            {
+                topic: "Inteligencia Artificial",
+                category: "Tecnología e IA",
+                traffic: "50K+ búsquedas",
+                views: "950K vistas est.",
+                reactions: "78K reacciones est.",
+                shares: "22K compartidos est.",
+                hook: "¡Las 3 nuevas herramientas de IA que cambiarán tu trabajo hoy!",
+                idea: "Muestra y explica 3 herramientas de IA gratuitas y útiles en un video de 45 segundos."
+            },
+            {
+                topic: "Finanzas Personales",
+                category: "Negocios y Finanzas",
+                traffic: "30K+ búsquedas",
+                views: "800K vistas est.",
+                reactions: "65K reacciones est.",
+                shares: "18K compartidos est.",
+                hook: "¡El error de dinero que cometes cada mes sin darte cuenta!",
+                idea: "Explica el concepto del gasto hormiga o cómo empezar a ahorrar de forma automatizada."
+            },
+            {
+                topic: "Marketing Digital",
+                category: "Negocios y Finanzas",
+                traffic: "20K+ búsquedas",
+                views: "700K vistas est.",
+                reactions: "54K reacciones est.",
+                shares: "15K compartidos est.",
+                hook: "¡Cómo conseguir clientes con este gancho en tus videos!",
+                idea: "Da ejemplos reales de ganchos virales para negocios de servicios o infoproductos."
+            }
+        ];
+        res.json({ success: true, data: fallbackTrends, isFallback: true });
+    }
+});
 
 // ==========================================
 // Radar de Contenido (AnswerThePublic Engine — Costo Cero)
@@ -505,9 +630,9 @@ router.post('/tasks', authenticateToken, async (req, res) => {
         if (media_payload) {
             broadcast('NOTIFICATION', {
                 type: 'REVIEW_REQUESTED',
-                message: `🔔 ${uploader} envió un activo a revisión. Nota: "${title || 'Sin nota'}". Revísalo en CEO Estudio → Pendientes.`,
+                message: `🔔 ${uploaderName} envió un activo a revisión. Nota: "${title || 'Sin nota'}". Revísalo en CEO Estudio → Pendientes.`,
                 taskId: newTask.id,
-                uploader,
+                uploader: uploaderName,
                 reason: title || 'Sin nota'
             });
         }

@@ -224,7 +224,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
     const handleAction = async (action, customFeedback = null) => {
         if (!selected) return;
         if (actionLoading) return;
-        const currentFeedback = customFeedback || feedback;
+        
+        // Priorizar el texto personalizado del usuario en el textarea (feedback).
+        // Si el textarea está vacío, usar el customFeedback del botón como fallback.
+        const currentFeedback = feedback.trim() 
+            ? (feedback.trim() + (customFeedback ? ` (${customFeedback})` : ''))
+            : (customFeedback || '');
+            
         if ((action === 'reject' || action === 'auto_regenerate') && !currentFeedback.trim() && !refFileUrl) {
             alert('Debes escribir notas de corrección o adjuntar un archivo de referencia.');
             return;
@@ -257,6 +263,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 : { ...selected.media_options, refImage: refFileUrl };
         }
 
+        const savedFeedback = currentFeedback.trim() || (refFileUrl ? 'Rehacer con referencia visual' : '');
+
         setActionLoading(true);
         try {
             const res = await fetch(`/api/studio/tasks/${selected.id}`, {
@@ -265,13 +273,19 @@ export default function CeoEstudioPanel({ adminProfile }) {
                 body: JSON.stringify({ 
                     status: newStatus, 
                     title: finalTitle,
-                    feedback_notes: currentFeedback.trim() || (refFileUrl ? 'Rehacer con referencia visual' : undefined),
+                    feedback_notes: savedFeedback,
                     media_payload: updatedMediaPayload
                 })
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.message || data.error || 'Error del servidor');
-            setTasks(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus, caption: finalTitle, media_options: updatedMediaPayload } : t));
+            setTasks(prev => prev.map(t => t.id === selected.id ? { 
+                ...t, 
+                status: newStatus, 
+                caption: finalTitle, 
+                media_options: updatedMediaPayload,
+                feedback: savedFeedback
+            } : t));
             setSelected(null);
             setFeedback('');
             setRefFileUrl('');

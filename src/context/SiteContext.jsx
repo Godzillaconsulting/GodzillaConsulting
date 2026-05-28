@@ -63,7 +63,7 @@ export function SiteProvider({ children }) {
 
   // Devuelve datos del nodo. Si hay un previewOverride activo para ese ID,
   // devuelve el draft (en tiempo real) en lugar del published_data.
-  const getNodeData = (id) => {
+  const getNodeData = useCallback((id) => {
     if (previewOverride && previewOverride.nodeId === id) {
       return previewOverride.data;
     }
@@ -71,15 +71,23 @@ export function SiteProvider({ children }) {
     const node = nodesArray.find(n => n.id === id);
     if (!node || !node.published_data) return null;
     return injectSectionDefaults(id, node.published_data);
-  };
+  }, [nodes, previewOverride]);
 
   // Llamado por AdminStudio al seleccionar un nodo y editar el draft
-  const setPreviewOverride = (nodeId, data) => {
+  const setPreviewOverride = useCallback((nodeId, data) => {
     setPreviewOverrideState(nodeId && data ? { nodeId, data } : null);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    nodes,
+    loading,
+    getNodeData,
+    fetchNodes,
+    setPreviewOverride
+  }), [nodes, loading, getNodeData, fetchNodes, setPreviewOverride]);
 
   return (
-    <SiteContext.Provider value={{ nodes, loading, getNodeData, fetchNodes, setPreviewOverride }}>
+    <SiteContext.Provider value={contextValue}>
       {children}
     </SiteContext.Provider>
   );

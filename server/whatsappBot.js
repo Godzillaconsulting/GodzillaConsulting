@@ -385,7 +385,7 @@ export const initWhatsAppBot = async () => {
 
                 if (mediaType === 'video') {
                     const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e6)}.mp4`;
-                    const destPath = path.join('E:/assets', uniqueFilename);
+                    const destPath = path.join(process.env.ARCHIVOS_PESADOS_DIR || 'E:/assets', uniqueFilename);
                     fs.writeFileSync(destPath, buffer);
                     attachmentUrl = `/api/media/assets/${uniqueFilename}`;
                     attachmentType = 'video/mp4';

@@ -562,7 +562,13 @@ export const getElitePrompts = async (req, res) => {
         res.status(200).json({ success: true, prompts: elitePrompts });
     } catch (error) {
         console.error("Error getElitePrompts:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(200).json({ 
+            success: true, 
+            prompts: [
+                "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight...",
+                "Extreme macro close-up of a glowing server rack cable snapping, sparks flying in explosive super slow motion..."
+            ] 
+        });
     }
 };
 
@@ -627,7 +633,29 @@ export const getInspirationGallery = async (req, res) => {
         res.status(200).json({ success: true, gallery: finalGallery });
     } catch (error) {
         console.error("Error getInspirationGallery:", error);
-        res.status(500).json({ success: false, error: error.message });
+        
+        const fallbackPrompts = [
+            { prompt: 'Vaporwave marble statue with pink and cyan grid, palm trees, 80s aesthetic', tag: 'Vaporwave', model: 'Gemini 3.1 Flash' },
+            { prompt: 'A glowing crystal cave with underground river, bioluminescent blue water, fantasy art', tag: 'Crystal Cave', model: 'Sora LCM' },
+            { prompt: 'Close up of a DJ turntable with neon soundwaves bursting out, energetic club vibe', tag: 'Neon DJ', model: 'Imagen 4 Ultra' },
+            { prompt: 'A cute robot dog playing with a glowing ball, futuristic living room, pixar style 3d render', tag: 'Robo Dog', model: 'Gemini 3 Pro' },
+            { prompt: 'Dark fantasy knight in black armor with a glowing red sword, ash falling, cinematic', tag: 'Dark Knight', model: 'Imagen 3 Ultra' },
+            { prompt: 'A floating island made of glowing geometric crystals, low poly art style, vibrant colors', tag: 'Low Poly Island', model: 'Imagen 4 Ultra' },
+            { prompt: 'Macro of a frozen soap bubble with ice crystals forming, winter magic, 8k resolution', tag: 'Frozen Bubble', model: 'Sora LCM' },
+            { prompt: 'A futuristic bullet train speeding through a neon megacity, motion blur, cyberpunk', tag: 'Bullet Train', model: 'Gemini 3.1 Flash' },
+            { prompt: 'An astronaut floating in deep space holding a glowing galaxy orb, cinematic lighting', tag: 'Astro Orb', model: 'Imagen 4 Ultra' }
+        ];
+
+        const finalGallery = fallbackPrompts.map(item => {
+            return {
+                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
+                prompt: item.prompt,
+                tag: item.tag,
+                model: item.model
+            };
+        });
+
+        res.status(200).json({ success: true, gallery: finalGallery });
     }
 };
 
@@ -675,8 +703,25 @@ export const getDynamicFilters = async (req, res) => {
         res.status(200).json({ success: true, filters: filtersList });
     } catch (error) {
         console.error("Error getDynamicFilters:", error);
-        // Fallback a unos muy creativos por si falla
-        res.status(500).json({ success: false, error: error.message });
+        
+        const fallbackFilters = [
+            { id: "neon_gothic", label: "👽 Neón Gótico", prompt: "Neon gothic cyberpunk style, highly detailed, dramatic shadows, vibrant magenta and toxic green highlights, sharp focus" },
+            { id: "retro_vhs", label: "📼 VHS Roto", prompt: "Old VHS tape aesthetic, tracking errors, scanlines, chromatic aberration, retro 90s color grading, film grain" },
+            { id: "analog_glow", label: "🕯️ Brillo Analógico", prompt: "Warm candlelit glow, cinematic analog photography style, soft focus, high dynamic range, warm golden tones" },
+            { id: "cyber_neon", label: "🌌 Cyber Neon", prompt: "Futuristic city glow, dark street background, strong blue and red neon lights reflections, hyper-detailed" },
+            { id: "alien_light", label: "🛸 Luz Alienígena", prompt: "Sci-fi extraterrestrial light source, eerie green and violet color palette, mysterious lens flares, unreal engine 5 render" },
+            { id: "molten_plastic", label: "🧴 Plástico Fundido", prompt: "Abstract macro photography of glossy colorful melted plastics, liquid-like reflections, abstract textures" },
+            { id: "golden_hour", label: "🌅 Atardecer Dorado", prompt: "Golden hour sunset lighting, long dramatic shadows, warm orange sunrays, professional color grading, Kodak Portra 400 film style" },
+            { id: "editorial_fashion", label: "👗 Editorial de Moda", prompt: "High-end fashion editorial shoot style, soft shadow, elegant styling, high contrast, crisp details, medium format camera" },
+            { id: "macro_product", label: "🔍 Macro de Producto", prompt: "Extreme macro photography focusing on product details, water droplets, elegant textures, clean studio lighting" },
+            { id: "drone_shot", label: "🦅 Vista de Pájaro", prompt: "Cinematic drone aerial photography, high altitude view, wide-angle lens, stunning landscape perspective" },
+            { id: "unreal_engine", label: "🎮 Motor Unreal 5", prompt: "Stunning Unreal Engine 5 video game graphics, volumetric lighting, Ray Tracing, detailed texture, fantasy art" },
+            { id: "cyberpunk_calles", label: "☔ Cyberpunk Calles", prompt: "Rainy cyberpunk street at night, neon reflections on wet asphalt, blade runner aesthetic, cinematic lighting" },
+            { id: "bio_terror", label: "☣️ Bio-Terror", prompt: "Dark sci-fi horror atmosphere, toxic waste green glow, fog, industrial metal textures, dramatic shadows" },
+            { id: "dreamy_fantasy", label: "🧚 Sueño Fantaseoso", prompt: "Dreamy fantasy background, soft pastel colors, ethereal glow, magical sparkle particles, whimsical atmosphere" },
+            { id: "industrial_rust", label: "⛓️ Cobre Oxidado", prompt: "Grungy industrial style, rusted metal texture, harsh direct light, high contrast, dramatic shadows" }
+        ];
+        res.status(200).json({ success: true, filters: fallbackFilters });
     }
 };
 

@@ -1,0 +1,695 @@
+﻿diff --git a/server/workers/mediaWorker.js b/server/workers/mediaWorker.js
+index 34e0cc8..b065bec 100644
+--- a/server/workers/mediaWorker.js
++++ b/server/workers/mediaWorker.js
+@@ -88,154 +88,303 @@ const STOCK_VIDEOS = [
+   'https://cdn.coverr.co/videos/coverr-crypto-trading-1080p.mp4'
+ ];
+ 
+-// Generación de imagen con Imagen 3 + Fallback a Pollinations Libre
+-async function generateImage(prompt, outputPath) {
+-    throw new Error(`Fallback Libre activado para ahorrar costos de Imagen 3.`);
+-}
+-
+-// Scraper de YouTube - Alternativa a Google Veo (Evita costos de 400+ MXN)
+-async function extractYoutubeStock(keyword, outputPath, targetDuration = 4, usedUrls = new Set()) {
+-    console.log(`[YoutubeScraper] Buscando en YT: "${keyword.substring(0, 40)}..."`);
++// Generación de imagen con Google Imagen 3 (SDK nuevo) o Fallback a Gemini / Pollinations
++async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
++    if (!process.env.GEMINI_API_KEY) {
++        throw new Error("GEMINI_API_KEY not configured.");
++    }
++    console.log(`[GoogleImageGen] Generando imagen para prompt: "${prompt.substring(0, 50)}..."`);
++    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++    
++    // 1. Intentar con Imagen 3.0
+     try {
+-        const r = await ytSearch(keyword + ' 4k cinematic broll');
+-        // Filtrar videos que ya se usaron en este mismo render
+-        const videos = r.videos.filter(v => v.seconds > 10 && v.seconds < 600 && !usedUrls.has(v.url)); // 10s a 10m
+-        
+-        if (videos.length === 0) throw new Error("No hay videos nuevos para: " + keyword);
+-        
+-        // Elegir uno random de los top 5
+-        const video = videos[Math.floor(Math.random() * Math.min(5, videos.length))];
+-        usedUrls.add(video.url); // Marcarlo como usado
+-        console.log(`[YoutubeScraper] Seleccionado: ${video.title} (${video.url})`);
++        const response = await ai.models.generateImages({
++            model: 'imagen-4.0-generate-001',
++            prompt: prompt,
++            config: {
++                numberOfImages: 1,
++                outputMimeType: 'image/jpeg',
++                aspectRatio: aspect_ratio === '9:16' ? '9:16' : '1:1'
++            }
++        });
++        if (response.generatedImages?.[0]?.image?.imageBytes) {
++            const b64 = response.generatedImages[0].image.imageBytes;
++            fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'));
++            console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Imagen 3.`);
++            return outputPath;
++        }
++    } catch (err) {
++        console.warn(`[GoogleImageGen] ⚠️ Imagen 3.0 falló: ${err.message}. Probando con Gemini Flash Image...`);
++    }
+ 
+-        const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
+-        
+-        await youtubedl(video.url, {
+-            output: tempVidPath,
+-            format: 'bestvideo[height<=1920]+bestaudio/best',
+-            mergeOutputFormat: 'mp4',
+-            noWarnings: true,
+-            preferFreeFormats: true,
+-            addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
++    // 2. Intentar con Gemini 2.5 Flash Image output
++    try {
++        const promptWithAr = prompt + `\n\n[CRITICAL: Frame the image strictly in ${aspect_ratio} aspect ratio orientation.]`;
++        const response = await ai.models.generateContent({
++            model: 'gemini-2.5-flash',
++            contents: [{ role: 'user', parts: [{ text: promptWithAr }] }],
++            config: { responseModalities: ['IMAGE'] }
+         });
++        for (const part of (response.candidates?.[0]?.content?.parts || [])) {
++            if (part.inlineData?.data) {
++                const buffer = Buffer.from(part.inlineData.data, 'base64');
++                fs.writeFileSync(outputPath, buffer);
++                console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Gemini 2.5 Flash.`);
++                return outputPath;
++            }
++        }
++    } catch (err) {
++        console.warn(`[GoogleImageGen] ⚠️ Gemini Flash Image falló: ${err.message}. Usando Fallback de Pollinations...`);
++    }
+ 
+-        console.log(`[YoutubeScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
+-        
+-        // Saltar los primeros 5 segundos para evitar intros o cuentas regresivas típicas
+-        const startSec = Math.floor(Math.random() * Math.max(1, video.seconds - 15)) + 5;
+-        const tempCroppedPath = outputPath.replace('.mp4', '_cropped.mp4');
++    // 3. Fallback a Pollinations AI (Libre y Estable)
++    const safePrompt = prompt.length > 200 ? prompt.substring(0, 200) : prompt;
++    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
++    const res = await fetch(fallbackUrl);
++    if (!res.ok) throw new Error("Todos los generadores de imágenes fallaron, incluido Pollinations.");
++    const arrayBuffer = await res.arrayBuffer();
++    fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
++    console.log(`[GoogleImageGen] ✅ Imagen generada vía Pollinations Fallback.`);
++    return outputPath;
++}
+ 
+-        await new Promise((resolve, reject) => {
+-            ffmpeg(tempVidPath)
+-                .setStartTime(startSec)
+-                .setDuration(targetDuration) // Máx 4 segundos como pidió el CEO
+-                .outputOptions([
+-                     '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
+-                     '-c:v libx264',
+-                     '-preset ultrafast',
+-                     '-threads 2',
+-                     '-crf 28',
+-                     '-pix_fmt yuv420p',
+-                     '-an' // Extrae los videos mudos, el audio se arma en el ensamblaje final
+-                ])
+-                .save(tempCroppedPath)
+-                .on('end', resolve)
+-                .on('error', reject);
+-        });
+ 
+-        if(fs.existsSync(tempVidPath)) fs.unlinkSync(tempVidPath);
++// ══════════════════════════════════════════════════════════════════════════════
++// SISTEMA MULTI-FUENTE DE STOCK MEDIA — 100% GRATIS, CERO REGISTRO
++// Prioridad: Coverr.co Video → Openverse Fotos → Wikimedia Fotos → Loremflickr
++//            [Pexels/Pixabay si el usuario tiene keys] → Google Imagen AI
++// ══════════════════════════════════════════════════════════════════════════════
++
++// ── Descargador genérico de video (MP4 URL directa) con FFmpeg ─────────────
++async function downloadAndTrimVideo(videoUrl, outputPath, targetDuration) {
++    const tempPath = outputPath.replace('.mp4', '_raw.mp4');
++    // Descargar el archivo
++    const res = await fetch(videoUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
++    if (!res.ok) throw new Error(`HTTP ${res.status} descargando video: ${videoUrl}`);
++    const arrayBuffer = await res.arrayBuffer();
++    fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
++    
++    // Cortar y escalar a 1080x1920 con FFmpeg
++    const tempCropped = outputPath.replace('.mp4', '_cropped.mp4');
++    await new Promise((resolve, reject) => {
++        ffmpeg(tempPath)
++            .setDuration(targetDuration)
++            .outputOptions([
++                '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
++                '-c:v libx264', '-preset ultrafast', '-threads 2', '-crf 26', '-pix_fmt yuv420p', '-an'
++            ])
++            .save(tempCropped)
++            .on('end', resolve).on('error', reject);
++    });
++    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
++    fs.renameSync(tempCropped, outputPath);
++    return outputPath;
++}
+ 
+-        console.log(`[YoutubeScraper] Aplicando limpiador algorítmico de marcas de agua...`);
+-        // Usar la herramienta delogo nativa del estudio para borrar la esquina inferior (común en shorts/tiktok descargados)
+-        await removeWatermark(tempCroppedPath, outputPath);
+-        
+-        if(fs.existsSync(tempCroppedPath)) fs.unlinkSync(tempCroppedPath);
++// ── Descargador genérico de foto directa ─────────────────────────────────────
++async function downloadPhoto(photoUrl, outputPath) {
++    const res = await fetch(photoUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
++    if (!res.ok) throw new Error(`HTTP ${res.status} descargando foto`);
++    const buffer = await res.arrayBuffer();
++    fs.writeFileSync(outputPath, Buffer.from(buffer));
++    return outputPath;
++}
+ 
+-        console.log(`[YoutubeScraper] ✅ Clip de YouTube extraído y limpiado con éxito.`);
+-        return outputPath;
+-    } catch (e) {
+-        console.error(`[YoutubeScraper] ❌ Error extrayendo YT:`, e.message);
+-        throw e;
++// ── 1. COVERR.CO — Videos HD GRATIS sin watermark, sin registro ──────────────
++// API pública JSON → Mux CDN para descarga directa MP4
++async function searchCoverrVideo(keyword, outputPath, targetDuration, usedUrls = new Set()) {
++    console.log(`[Coverr] 🎬 Buscando: "${keyword}"`);
++    const res = await fetch(
++        `https://coverr.co/api/videos/?q=${encodeURIComponent(keyword)}&per_page=20&page=0`,
++        { headers: { 'User-Agent': 'Mozilla/5.0' } }
++    );
++    if (!res.ok) throw new Error(`Coverr API error: ${res.status}`);
++    const data = await res.json();
++    const hits = (data.hits || []).filter(v =>
++        !v.is_premium && v.playback_id && parseFloat(v.duration) > 5 && !usedUrls.has(v.id)
++    );
++    if (hits.length === 0) throw new Error(`Coverr: sin resultados para "${keyword}"`);
++    const picked = hits[Math.floor(Math.random() * Math.min(6, hits.length))];
++    usedUrls.add(picked.id);
++    console.log(`[Coverr] ✅ "${picked.title}" | ${picked.duration}s`);
++    for (const q of ['medium', 'high', 'low']) {
++        try { return await downloadAndTrimVideo(`https://stream.mux.com/${picked.playback_id}/${q}.mp4`, outputPath, targetDuration); }
++        catch(e) { console.log(`[Coverr] Quality ${q} falló: ${e.message}`); }
+     }
++    throw new Error(`Coverr: no se pudo descargar "${picked.title}"`);
+ }
+ 
+-// Scraper Social (TikTok / Instagram) - Plan C
+-async function extractSocialStock(keyword, outputPath, platform = 'instagram', targetDuration = 4, usedUrls = new Set()) {
+-    console.log(`[SocialScraper] Buscando en ${platform}: "${keyword.substring(0, 40)}..."`);
+-    try {
+-        const siteFilter = platform === 'tiktok' ? 'site:tiktok.com/video/ OR site:tiktok.com/@*/video/' : platform === 'pexels' ? 'site:pexels.com/video/' : 'site:instagram.com/reel/';
+-        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(siteFilter + ' ' + keyword)}`;
+-        
+-        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
+-        const html = await r.text();
+-        const $ = cheerio.load(html);
+-        
+-        let urls = [];
+-        $('a.result__url').each((i, el) => {
+-            const href = $(el).attr('href');
+-            if (href) {
+-                const match = href.match(/uddg=([^&]+)/);
+-                if (match) {
+-                    const cleanUrl = decodeURIComponent(match[1]);
+-                    if (platform === 'tiktok' && cleanUrl.includes('/video/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
+-                    if (platform === 'instagram' && cleanUrl.includes('/reel/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
+-                    if (platform === 'pexels' && cleanUrl.includes('/video/') && !usedUrls.has(cleanUrl)) urls.push(cleanUrl);
+-                }
+-            }
+-        });
++// ── 2. OPENVERSE — Fotos CC 100% gratis, sin registro (20 req/min) ────────────
++// WordPress Foundation / Creative Commons
++async function searchOpenversePhoto(keyword, outputPath, usedUrls = new Set()) {
++    console.log(`[Openverse] 🖼️ Buscando: "${keyword}"`);
++    const res = await fetch(
++        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(keyword)}&page_size=20&license_type=commercial`,
++        { headers: { 'User-Agent': 'GodzillaStudio/1.0 (contact@godzillaconsulting.ai)' } }
++    );
++    if (!res.ok) throw new Error(`Openverse API error: ${res.status}`);
++    const data = await res.json();
++    const results = (data.results || []).filter(p =>
++        p.url && !usedUrls.has(p.id) &&
++        (p.filetype === 'jpg' || p.filetype === 'jpeg' || p.filetype === 'png' || !p.filetype)
++    );
++    if (results.length === 0) throw new Error(`Openverse: sin fotos para "${keyword}"`);
++    const picked = results[Math.floor(Math.random() * Math.min(8, results.length))];
++    usedUrls.add(picked.id);
++    console.log(`[Openverse] ✅ "${picked.title || picked.id}"`);
++    return await downloadPhoto(picked.url, outputPath);
++}
+ 
+-        if (urls.length === 0) throw new Error(`No hay videos de ${platform} nuevos para: ` + keyword);
+-        
+-        const targetUrl = urls[Math.floor(Math.random() * Math.min(3, urls.length))];
+-        usedUrls.add(targetUrl);
+-        console.log(`[SocialScraper] Seleccionado: ${targetUrl}`);
++// ── 3. WIKIMEDIA COMMONS — Fotos dominio público, sin registro ────────────────
++async function searchWikimediaPhoto(keyword, outputPath, usedUrls = new Set()) {
++    console.log(`[Wikimedia] 🖼️ Buscando: "${keyword}"`);
++    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(keyword)}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=1080&format=json&gsrlimit=15`;
++    const res = await fetch(apiUrl, { headers: { 'User-Agent': 'GodzillaStudio/1.0 (contact@godzillaconsulting.ai)' } });
++    if (!res.ok) throw new Error(`Wikimedia API error: ${res.status}`);
++    const data = await res.json();
++    const pages = Object.values(data.query?.pages || {});
++    const valid = pages.filter(p => {
++        const info = p.imageinfo?.[0];
++        if (!info?.url) return false;
++        const u = info.url.toLowerCase();
++        return (u.includes('.jpg') || u.includes('.jpeg') || u.includes('.png')) && !usedUrls.has(p.pageid);
++    });
++    if (valid.length === 0) throw new Error(`Wikimedia: sin fotos para "${keyword}"`);
++    const picked = valid[Math.floor(Math.random() * Math.min(8, valid.length))];
++    usedUrls.add(picked.pageid);
++    const info = picked.imageinfo[0];
++    console.log(`[Wikimedia] ✅ ${picked.title}`);
++    return await downloadPhoto(info.thumburl || info.url, outputPath);
++}
+ 
+-        const tempVidPath = outputPath.replace('.mp4', '_temp.mp4');
+-        
+-        await youtubedl(targetUrl, {
+-            output: tempVidPath,
+-            format: 'bestvideo[ext=mp4]/best[ext=mp4]/best',
+-            noWarnings: true,
+-            preferFreeFormats: true,
+-            addHeader: ['referer:google.com', 'user-agent:Mozilla/5.0']
+-        }, { windowsHide: true });
++// ── 4. LOREMFLICKR — Fotos CC Flickr, sin registro ────────────────────────────
++async function searchLoremflickrPhoto(keyword, outputPath, usedUrls = new Set()) {
++    const safeKw = keyword.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(' ').slice(0, 3).join(',');
++    const seed = Math.floor(Math.random() * 10000);
++    const imgUrl = `https://loremflickr.com/1080/1920/${encodeURIComponent(safeKw)}?lock=${seed}`;
++    console.log(`[Loremflickr] 🖼️ ${imgUrl}`);
++    return await downloadPhoto(imgUrl, outputPath);
++}
+ 
+-        console.log(`[SocialScraper] Descargado. Cortando 4 segundos aleatorios y limpiando marcas de agua...`);
+-        
+-        const startSec = 2; // Cortar el inicio por si hay overlays
+-        const tempCroppedPath = outputPath.replace('.mp4', '_cropped.mp4');
++// ── 5. PEXELS VIDEO (solo si el usuario configura su key) ─────────────────────
++async function searchPexelsVideo(keyword, outputPath, targetDuration, usedUrls = new Set()) {
++    const apiKey = process.env.PEXELS_API_KEY;
++    if (!apiKey) throw new Error('PEXELS_API_KEY no configurada');
++    const res = await fetch(
++        `https://api.pexels.com/videos/search?query=${encodeURIComponent(keyword)}&orientation=portrait&size=medium&per_page=15`,
++        { headers: { Authorization: apiKey } }
++    );
++    if (!res.ok) throw new Error(`Pexels Video API: ${res.status}`);
++    const data = await res.json();
++    const videos = (data.videos || []).filter(v => v.duration > 5 && v.duration < 120 && !usedUrls.has(v.url));
++    if (videos.length === 0) throw new Error('Sin resultados Pexels Video');
++    const picked = videos[Math.floor(Math.random() * Math.min(5, videos.length))];
++    usedUrls.add(picked.url);
++    const files = picked.video_files || [];
++    const portrait = files.filter(f => f.width < f.height).sort((a, b) => b.width - a.width);
++    const best = (portrait.length > 0 ? portrait : files.sort((a, b) => b.width - a.width))[0];
++    if (!best?.link) throw new Error('Sin URL de video Pexels');
++    console.log(`[Pexels Video] ✅ ${picked.id} | ${best.width}x${best.height}`);
++    return await downloadAndTrimVideo(best.link, outputPath, targetDuration);
++}
+ 
+-        await new Promise((resolve, reject) => {
+-            ffmpeg(tempVidPath)
+-                .setStartTime(startSec)
+-                .setDuration(targetDuration)
+-                .outputOptions([
+-                     '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
+-                     '-c:v libx264',
+-                     '-preset ultrafast',
+-                     '-threads 2',
+-                     '-crf 28',
+-                     '-pix_fmt yuv420p',
+-                     '-an' 
+-                ])
+-                .save(tempCroppedPath)
+-                .on('end', resolve)
+-                .on('error', reject);
+-        });
++// ── 6. PIXABAY VIDEO (solo si el usuario configura su key) ───────────────────
++async function searchPixabayVideo(keyword, outputPath, targetDuration, usedUrls = new Set()) {
++    const apiKey = process.env.PIXABAY_API_KEY;
++    if (!apiKey) throw new Error('PIXABAY_API_KEY no configurada');
++    const res = await fetch(`https://pixabay.com/api/videos/?key=${apiKey}&q=${encodeURIComponent(keyword)}&video_type=film&per_page=15`);
++    if (!res.ok) throw new Error(`Pixabay Video API: ${res.status}`);
++    const data = await res.json();
++    const videos = (data.hits || []).filter(v => v.duration > 5 && v.duration < 120 && !usedUrls.has(v.pageURL));
++    if (videos.length === 0) throw new Error('Sin resultados Pixabay Video');
++    const picked = videos[Math.floor(Math.random() * Math.min(5, videos.length))];
++    usedUrls.add(picked.pageURL);
++    const vs = picked.videos;
++    const videoUrl = vs?.large?.url || vs?.medium?.url || vs?.small?.url;
++    if (!videoUrl) throw new Error('Sin URL Pixabay Video');
++    console.log(`[Pixabay Video] ✅ ${picked.id} | ${picked.duration}s`);
++    return await downloadAndTrimVideo(videoUrl, outputPath, targetDuration);
++}
+ 
+-        if(fs.existsSync(tempVidPath)) fs.unlinkSync(tempVidPath);
++// ── 7. PEXELS FOTO (solo si el usuario configura su key) ─────────────────────
++async function searchPexelsPhoto(keyword, outputPath, usedUrls = new Set()) {
++    const apiKey = process.env.PEXELS_API_KEY;
++    if (!apiKey) throw new Error('PEXELS_API_KEY no configurada');
++    const res = await fetch(
++        `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&orientation=portrait&size=large&per_page=15`,
++        { headers: { Authorization: apiKey } }
++    );
++    if (!res.ok) throw new Error(`Pexels Photo API: ${res.status}`);
++    const data = await res.json();
++    const photos = (data.photos || []).filter(p => !usedUrls.has(p.url));
++    if (photos.length === 0) throw new Error('Sin resultados Pexels Foto');
++    const picked = photos[Math.floor(Math.random() * Math.min(8, photos.length))];
++    usedUrls.add(picked.url);
++    const imgUrl = picked.src?.portrait || picked.src?.large;
++    if (!imgUrl) throw new Error('Sin URL de foto Pexels');
++    console.log(`[Pexels Foto] ✅ ${picked.id}`);
++    return await downloadPhoto(imgUrl, outputPath);
++}
+ 
+-        console.log(`[SocialScraper] Aplicando limpiador algorítmico de marcas de agua...`);
+-        await removeWatermark(tempCroppedPath, outputPath);
+-        
+-        if(fs.existsSync(tempCroppedPath)) fs.unlinkSync(tempCroppedPath);
++// ── FUNCIÓN PRINCIPAL: Cascada multi-fuente ────────────────────────────────────
++// Gratis: Coverr → Openverse → Wikimedia → Loremflickr
++// Con key: Pexels/Pixabay Video/Foto
++// Fallback final: Google Imagen AI
++async function fetchStockMedia(keyword, outputVideoPath, targetDuration, usedUrls = new Set()) {
++    const short = keyword.split(' ').slice(0, 4).join(' ');
++    const photoOut = outputVideoPath.replace('.mp4', '_photo.jpg');
++
++    // ── NIVEL 1: VIDEOS GRATIS ─────────────────────────────────────────────────
++    for (const kw of [keyword, short]) {
++        try { return { path: await searchCoverrVideo(kw, outputVideoPath, targetDuration, usedUrls), type: 'video' }; }
++        catch(e) { console.log(`[Stock] Coverr falló ("${kw}"): ${e.message}`); }
++    }
++    if (process.env.PEXELS_API_KEY) {
++        for (const kw of [keyword, short]) {
++            try { return { path: await searchPexelsVideo(kw, outputVideoPath, targetDuration, usedUrls), type: 'video' }; }
++            catch(e) { console.log(`[Stock] Pexels Video falló ("${kw}"): ${e.message}`); }
++        }
++    }
++    if (process.env.PIXABAY_API_KEY) {
++        for (const kw of [keyword, short]) {
++            try { return { path: await searchPixabayVideo(kw, outputVideoPath, targetDuration, usedUrls), type: 'video' }; }
++            catch(e) { console.log(`[Stock] Pixabay Video falló ("${kw}"): ${e.message}`); }
++        }
++    }
+ 
+-        console.log(`[SocialScraper] ✅ Clip extraído y limpiado con éxito.`);
+-        return outputPath;
+-    } catch (e) {
+-        console.error(`[SocialScraper] ❌ Error extrayendo ${platform}:`, e.message);
+-        throw e;
++    // ── NIVEL 2: FOTOS GRATIS → Ken Burns slideshow ────────────────────────────
++    console.log(`[Stock] Sin video. Buscando fotos para Ken Burns slideshow...`);
++    for (const kw of [keyword, short]) {
++        try { return { path: await searchOpenversePhoto(kw, photoOut, usedUrls), type: 'photo' }; }
++        catch(e) { console.log(`[Stock] Openverse falló ("${kw}"): ${e.message}`); }
++    }
++    for (const kw of [keyword, short]) {
++        try { return { path: await searchWikimediaPhoto(kw, photoOut, usedUrls), type: 'photo' }; }
++        catch(e) { console.log(`[Stock] Wikimedia falló ("${kw}"): ${e.message}`); }
+     }
++    if (process.env.PEXELS_API_KEY) {
++        for (const kw of [keyword, short]) {
++            try { return { path: await searchPexelsPhoto(kw, photoOut, usedUrls), type: 'photo' }; }
++            catch(e) { console.log(`[Stock] Pexels Foto falló ("${kw}"): ${e.message}`); }
++        }
++    }
++    for (const kw of [keyword, short]) {
++        try { return { path: await searchLoremflickrPhoto(kw, photoOut, usedUrls), type: 'photo' }; }
++        catch(e) { console.log(`[Stock] Loremflickr falló ("${kw}"): ${e.message}`); }
++    }
++
++    // ── NIVEL 3: Google Imagen AI (fallback final) ─────────────────────────────
++    console.log(`[Stock] ⚠️ Todas las fuentes fallaron. Usando Google Imagen IA...`);
++    throw new Error('NO_STOCK_FOUND');
++}
++
++// Mantener compatibilidad
++
++async function extractYoutubeStock(keyword, outputPath, targetDuration = 4, usedUrls = new Set()) {
++    throw new Error('YouTube scraping deshabilitado. Use fetchStockMedia() en su lugar.');
++}
++async function extractSocialStock(keyword, outputPath, platform = 'pexels', targetDuration = 4, usedUrls = new Set()) {
++    throw new Error('DuckDuckGo scraping deshabilitado. Use fetchStockMedia() en su lugar.');
+ }
+ 
+ // Generación de Video corto con Google Veo (Desactivado temporalmente)
+@@ -243,6 +392,18 @@ async function generateVeoVideo(prompt, outputPath) {
+     throw new Error(`Generación Veo deshabilitada temporalmente para ahorrar 400+ MXN.`);
+ }
+ 
++function timestampToSeconds(timestamp) {
++    if (!timestamp) return 0;
++    const parts = timestamp.split(':').map(Number);
++    if (parts.some(isNaN)) return 0;
++    if (parts.length === 2) {
++        return parts[0] * 60 + parts[1];
++    } else if (parts.length === 3) {
++        return parts[0] * 3600 + parts[1] * 60 + parts[2];
++    }
++    return 0;
++}
++
+ async function downloadBackgroundMusic(outputPath) {
+     console.log(`[MusicScraper] Buscando música de fondo libre de derechos...`);
+     try {
+@@ -250,14 +411,47 @@ async function downloadBackgroundMusic(outputPath) {
+         const keyword = queries[Math.floor(Math.random() * queries.length)];
+         const r = await ytSearch(keyword);
+         if (r.videos.length === 0) throw new Error("No music found");
+-        const video = r.videos[Math.floor(Math.random() * Math.min(3, r.videos.length))];
+         
++        // Filter videos to be less than 10 minutes (600 seconds) and more than 30 seconds to avoid giant loop compilations
++        const getDuration = (v) => {
++            return v.seconds || (v.duration && v.duration.seconds) || timestampToSeconds(v.duration && v.duration.timestamp) || timestampToSeconds(v.timestamp) || 0;
++        };
++
++        const shortVideos = r.videos.filter(v => {
++            const sec = getDuration(v);
++            return sec > 30 && sec < 600;
++        });
++
++        let videosToChoose = shortVideos;
++        if (videosToChoose.length === 0) {
++            // Sort by duration ascending to get the shortest available videos
++            const sorted = [...r.videos].sort((a, b) => getDuration(a) - getDuration(b));
++            videosToChoose = sorted.filter(v => {
++                const sec = getDuration(v);
++                return sec > 10 && sec < 900; // strictly less than 15 minutes
++            });
++            if (videosToChoose.length === 0 && sorted.length > 0) {
++                const shortestSec = getDuration(sorted[0]);
++                if (shortestSec < 1200) { // under 20 minutes limit
++                    videosToChoose = [sorted[0]];
++                }
++            }
++        }
++
++        if (videosToChoose.length === 0) {
++            throw new Error("No suitable short background music videos found (all are too long)");
++        }
++
++        const video = videosToChoose[Math.floor(Math.random() * Math.min(3, videosToChoose.length))];
++        
++        console.log(`[MusicScraper] Seleccionada música: ${video.title} (${(video.duration && video.duration.timestamp) || video.timestamp || 'unknown'}, ${video.url})`);
+         await youtubedl(video.url, {
+             output: outputPath,
+             format: 'bestaudio/best',
+             extractAudio: true,
+             audioFormat: 'mp3',
+-            noWarnings: true
++            noWarnings: true,
++            ffmpegLocation: path.dirname(ffmpegPath.path)
+         });
+         console.log(`[MusicScraper] ✅ Música lista: ${outputPath}`);
+         return outputPath;
+@@ -280,7 +474,7 @@ async function processTask() {
+             SET status = 'rendering'
+             WHERE id = (
+                 SELECT id FROM studio_tasks 
+-                WHERE status = 'pending_local_test' 
++                WHERE status IN ('pending_local_test', 'pending_render') 
+                 ORDER BY created_at ASC LIMIT 1
+             )
+             RETURNING *;
+@@ -311,93 +505,72 @@ async function processTask() {
+             ? ['elevenlabs:pNInz6obbfIdGwnf8p5A', 'elevenlabs:ErXwobaYiN019PkySvjV', 'elevenlabs:TxGEqnHWrfWFTfGW9XjX'] 
+             : ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
+         
+-        const selectedVoice = payload.voice || fallbackVoices[task.id % fallbackVoices.length];
++        let selectedVoice = payload.voice || fallbackVoices[task.id % fallbackVoices.length];
++        
++        // Si ElevenLabs está disponible y la voz actual no es ElevenLabs, forzar el uso de ElevenLabs
++        if (process.env.ELEVENLABS_API_KEY && !selectedVoice.startsWith('elevenlabs:')) {
++            const elevenVoices = ['elevenlabs:pNInz6obbfIdGwnf8p5A', 'elevenlabs:ErXwobaYiN019PkySvjV', 'elevenlabs:TxGEqnHWrfWFTfGW9XjX'];
++            selectedVoice = elevenVoices[task.id % elevenVoices.length];
++            console.log(`[MediaWorker] 🎙️ ElevenLabs disponible. Sobrescribiendo voz a: ${selectedVoice}`);
++        }
++
+         const clipsPaths = [];
+ 
+         const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || 5);
+         let usedVideoUrls = new Set();
+ 
+-        // Generaremos las imágenes + voz por cada escena
+-        for (let i = 1; i <= sceneCount; i++) {
+-            let visualPrompt, videoPrompt, narration;
+-            
+-            if (isArrayFormat) {
+-                const scene = dayData[i - 1];
+-                visualPrompt = scene.visual || scene.visual_prompt;
+-                videoPrompt = scene.video || scene.video_prompt;
+-                narration = scene.narration;
+-            } else {
+-                visualPrompt = dayData[`VISUAL ESCENA ${i} (Prompt Imagen Detallado)`] || dayData[`VISUAL ESCENA ${i}`];
+-                videoPrompt = dayData[`VIDEO ESCENA ${i} (Prompt Movimiento Detallado)`] || dayData[`VIDEO ESCENA ${i}`];
+-                narration = dayData[`NARRACION ESCENA ${i} (CTA)`] || dayData[`NARRACION ESCENA ${i}`];
+-            }
+-            
+-            if (!visualPrompt && !videoPrompt && !narration) continue;
+-
+-            const scenePercent = Math.floor(10 + ((i - 1) / sceneCount) * 80);
+-            await sendProgress(task.id, scenePercent, `Procesando Escena ${i} de ${sceneCount}`);
+-            console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
+-            const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
+-            const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_broll.mp4`);
+-            const sceneAudioPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.mp3`);
+-            
+-            // Generar Medios en Paralelo para agilizar
+-            const promises = [];
+-            
+-            let usesBRollVideo = false;
+-            let targetDuration = 4;
+-            
+-            // 1. Generar la voz PRIMERO para saber la duración exacta
+-            if (narration) {
+-                await generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null);
+-                if (fs.existsSync(sceneAudioPath)) {
++        // === TARGET: video total de 45-60 segundos ===
++        // Con sceneCount escenas, cada escena debe durar en promedio al menos 10s
++        const MIN_SCENE_DURATION = Math.max(8, Math.ceil(50 / sceneCount)); // segundos mínimos por escena
++        const CROSSFADE_DURATION = 0.5; // segundos de crossfade entre imágenes
++
++        // Helper: Ken Burns effect aleatorio para cada imagen (zoom in/out desde esquinas o centro)
++        function buildKenBurnsFilter(imgPath, duration, fps = 30) {
++            const frames = Math.ceil(duration * fps);
++            // Direcciones de zoom+pan aleatorias
++            const directions = [
++                // Zoom in desde el centro
++                `zoompan=z='min(zoom+0.0012,1.4)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1920:fps=${fps}`,
++                // Zoom in esquina superior izquierda → centro
++                `zoompan=z='min(zoom+0.0015,1.5)':x='if(lte(zoom\,1)\,0\,x)':y='if(lte(zoom\,1)\,0\,y)':d=${frames}:s=1080x1920:fps=${fps}`,
++                // Zoom in esquina inferior derecha → centro
++                `zoompan=z='min(zoom+0.0012,1.45)':x='if(lte(zoom\,1)\,iw\,x-2)':y='if(lte(zoom\,1)\,ih\,y-2)':d=${frames}:s=1080x1920:fps=${fps}`,
++                        const seed = Math.floor(Math.random() * 1000000);
++                        const varPrompt = `${imgPrompt}, cinematic composition, angle variation ${j + 1}, seed ${seed}`;
++                        imagePromises.push(
++                            generateGoogleImage(varPrompt, tempImgPath, '9:16').catch(err => {
++                                console.error(`[MediaWorker] Falló Google Imagen ${j}:`, err.message);
++                                return null;
++                            })
++                        );
++                    }
++                    await Promise.all(imagePromises);
++                }
++                
++                // Filtrar fotos que existen y armar el slideshow con Ken Burns
++                const existingImgPaths = imagePaths.filter(p => fs.existsSync(p));
++                if (existingImgPaths.length > 0) {
+                     try {
+-                        const durStr = await new Promise((resolve, reject) => {
+-                            ffmpeg.ffprobe(sceneAudioPath, (err, metadata) => {
+-                                if (err) reject(err);
+-                                else resolve(metadata.format.duration);
+-                            });
+-                        });
+-                        targetDuration = Math.ceil(parseFloat(durStr));
+-                    } catch (e) {
+-                        console.error("[MediaWorker] Error obteniendo duración de audio:", e.message);
++                        console.log(`[MediaWorker] Armando slideshow con ${existingImgPaths.length} fotos + Ken Burns + xfade...`);
++                        await buildSlideshowWithTransitions(existingImgPaths, targetDuration, slideshowPath);
++                        existingImgPaths.forEach(p => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch(e){} });
++                        if (fs.existsSync(slideshowPath) && fs.statSync(slideshowPath).size > 5000) {
++                            finalImgPath = slideshowPath;
++                            isFaceless = true;
++                            console.log(`[MediaWorker] ✅ Slideshow listo: ${slideshowPath}`);
++                        }
++                    } catch (slideshowErr) {
++                        console.error(`[MediaWorker] ❌ Slideshow falló:`, slideshowErr.message);
++                        existingImgPaths.forEach(p => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch(e){} });
+                     }
+                 }
+-            }
+-            
+-            // 2. Extraer el video con la duración exacta
+-            if (videoPrompt || visualPrompt) {
+-                // Limpiamos el prompt para tener mejores resultados (ej. si el prompt es muy largo)
+-                const searchKeyword = (videoPrompt || visualPrompt).substring(0, 60).replace(/[^a-zA-Z0-9 áéíóúñ]/ig, ' ');
+                 
+-                // Priorizar PEXELS siempre porque tiene videos limpios sin texto ni ads. Se elimina YouTube como stock visual por reglas de calidad.
+-                promises.push(
+-                    extractSocialStock(searchKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls)
+-                    .catch(e => {
+-                        console.log(`[MediaWorker] Falló Pexels con "${searchKeyword}". Reintentando con menos palabras...`);
+-                        const shorterKeyword = searchKeyword.split(' ').slice(0, 3).join(' ');
+-                        return extractSocialStock(shorterKeyword, sceneVidPath, 'pexels', targetDuration, usedVideoUrls).catch(e2 => null);
+-                    })
+-                );
+-                usesBRollVideo = true;
+-            }
+-            
+-            await Promise.all(promises);
+-
+-            // Resolver qué medio usar como visual (YouTube > Stock Local) - NUNCA fotos estáticas
+-            const randomStockName = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)].split('/').pop();
+-            const randomStock = path.resolve(process.cwd(), 'stock_videos', randomStockName || '853889-hd_1920_1080_25fps.mp4'); 
+-            
+-            let finalImgPath = sceneImgPath;
+-            let isFaceless = false;
+-            
+-            if (usesBRollVideo && fs.existsSync(sceneVidPath) && fs.statSync(sceneVidPath).size > 1000) {
+-                finalImgPath = sceneVidPath;
+-                isFaceless = true; 
+-            } else {
+-                // Si Youtube falla, usamos videos de stock
+-                finalImgPath = fs.existsSync(randomStock) ? randomStock : path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
+-                isFaceless = true;
++                // Fallback final
++                if (!isFaceless || !fs.existsSync(finalImgPath)) {
++                    console.log(`[MediaWorker] 🔄 Fallback a video de stock local...`);
++                    finalImgPath = fs.existsSync(randomStock) ? randomStock : path.resolve(process.cwd(), 'stock_videos', '853889-hd_1920_1080_25fps.mp4');
++                    isFaceless = true;
++                }
+             }
+ 
+             let srtPathEs = null;
+@@ -497,11 +670,16 @@ async function processTask() {
+             await new Promise((resolve, reject) => {
+                 const command = ffmpeg();
+                 
+-                if (clip.isFaceless || clip.img.endsWith('.mp4')) {
+-                    // Si es faceless, repetimos el video de stock infinitamente hasta que acabe el audio
++                const isPreBuiltSlideshow = clip.img.includes('_slideshow.mp4') || clip.img.includes('_broll.mp4');
++                
++                if (isPreBuiltSlideshow) {
++                    // Slideshow/broll ya tiene la duración exacta — NO hacer loop, se recorta con -shortest
++                    command.input(clip.img);
++                } else if (clip.isFaceless || clip.img.endsWith('.mp4')) {
++                    // Video de stock: hacer loop hasta que el audio acabe
+                     command.input(clip.img).inputOptions(['-stream_loop', '-1']);
+                 } else {
+-                    // Para imágenes, necesitamos loop como input option
++                    // Imagen estática: loop
+                     command.input(clip.img).inputOptions(['-loop', '1', '-framerate', '30']);
+                 }
+ 
+@@ -534,7 +712,7 @@ async function processTask() {
+                     .on('start', function(commandLine) {
+                         console.log('Spawned Ffmpeg with command: ' + commandLine);
+                     })
+-                    .save(clipOutput)
++                    .save(clipOut)
+                     .on('end', () => {
+                         if (tempSrtEn && fs.existsSync(tempSrtEn)) fs.unlinkSync(tempSrtEn);
+                         if (tempSrtEs && fs.existsSync(tempSrtEs)) fs.unlinkSync(tempSrtEs);

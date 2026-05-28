@@ -227,7 +227,7 @@ function ScaledSection({ nodeId }) {
  );
 
  return (
- <div ref={wrapperRef} className="w-full h-full overflow-y-auto relative">
+ <div ref={wrapperRef} className="w-full h-full overflow-y-auto relative" style={{ scrollbarGutter: 'stable' }}>
  {/* Overlay interacción bloqueada */}
  <div className="absolute inset-0 z-10 pointer-events-none" title="Vista previa — solo lectura" />
  <div

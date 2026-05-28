@@ -58,6 +58,38 @@ export const wafMiddleware = (req, res, next) => {
     // Obtener IP real detrás de Cloudflare/Vercel
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'Unknown IP';
     
+    // 1. Whitelist local / loopback / private IPs
+    const isLocal = ip === '127.0.0.1' || 
+                    ip === '::1' || 
+                    ip === '::ffff:127.0.0.1' || 
+                    ip === 'localhost' || 
+                    ip.startsWith('10.') || 
+                    ip.startsWith('192.168.') || 
+                    ip.startsWith('172.16.') || 
+                    ip.startsWith('172.17.') ||
+                    ip.startsWith('172.18.') ||
+                    ip.startsWith('172.19.') ||
+                    ip.startsWith('172.2') ||
+                    ip.startsWith('172.3') ||
+                    ip.startsWith('::ffff:192.168.') ||
+                    ip.startsWith('::ffff:10.') ||
+                    ip.startsWith('::ffff:172.');
+                    
+    if (isLocal) {
+        return next();
+    }
+
+    // 2. Whitelist Vercel Proxy with correct secret
+    const PROXY_SECRET = process.env.PROXY_SECRET || 'Zilla-5uper-S3cr3t-2026';
+    if (req.headers['x-vercel-proxy'] === '1' && req.headers['x-vercel-proxy-secret'] === PROXY_SECRET) {
+        return next();
+    }
+
+    // 3. Whitelist requests for outputs and static media
+    if (req.path.includes('/outputs/') || req.path.includes('/media/')) {
+        return next();
+    }
+
     // Si la IP está en la cárcel, bloquear directamente
     if (blockedIPs.has(ip)) {
         const banData = blockedIPs.get(ip);

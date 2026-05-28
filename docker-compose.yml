@@ -1,16 +1,24 @@
-# services:
-#   godzilla-ecosystem:
-#     build: .
-#     container_name: godzilla_ecosystem
-#     restart: unless-stopped
-#     network_mode: "host" # Mantiene compatibilidad de IPs internas y puertos web
-#     environment:
-#       - NODE_ENV=production
-#     volumes:
-#       - ./server/backups:/app/server/backups
-#       - ./server/uploads:/app/server/uploads
-#       - ./server/tmp-uploads:/app/server/tmp-uploads
-#       # Guardar las sesiones de WhatsApp fuera del contenedor para no perderlas al reiniciar
-#       - C:\Users\GODZILLA.IA\.godzilla-sessions:/root/.godzilla-sessions
-#       - ./logs:/app/logs
-#       - C:\Users\GODZILLA.IA\.pm2:/root/.pm2
+services:
+  godzilla-ecosystem:
+    build: .
+    container_name: godzilla_ecosystem
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "4010:4010"
+      - "3003:3003"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - NODE_ENV=production
+      - ARCHIVOS_PESADOS_DIR=/app/assets
+    volumes:
+      - ./server/backups:/app/server/backups
+      - ./server/uploads:/app/server/uploads
+      - ./server/tmp-uploads:/app/server/tmp-uploads
+      # Guardar las sesiones de WhatsApp fuera del contenedor para no perderlas al reiniciar
+      - C:\Users\GODZILLA.IA\.godzilla-sessions:/root/.godzilla-sessions
+      - ./logs:/app/logs
+      - C:\Users\GODZILLA.IA\.pm2:/root/.pm2
+      - ./outputs:/app/outputs
+      - E:\assets:/app/assets

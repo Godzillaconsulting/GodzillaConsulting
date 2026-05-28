@@ -1,0 +1,618 @@
+diff --git a/server/workers/mediaWorker.js b/server/workers/mediaWorker.js
+index 232d027..4a6838d 100644
+--- a/server/workers/mediaWorker.js
++++ b/server/workers/mediaWorker.js
+@@ -22,6 +22,19 @@ import ytSearch from 'yt-search';
+ import youtubedl from 'youtube-dl-exec';
+ import * as cheerio from 'cheerio';
+ 
++// Helper: Traduce rutas de Windows a la estructura de directorios del contenedor Linux en Docker
++function translatePathToContainer(filePath) {
++    if (!filePath) return filePath;
++    let cleanPath = filePath.replace(/\\/g, '/');
++    if (process.platform === 'linux' && cleanPath.toLowerCase().includes('godzillaconsulting/')) {
++        const parts = cleanPath.split(/godzillaconsulting\//i);
++        if (parts.length > 1) {
++            return path.join('/app', parts[1]);
++        }
++    }
++    return filePath;
++}
++
+ // Helper: Formato de tiempo para SRT
+ function formatSrtTime(seconds) {
+     const date = new Date(seconds * 1000);
+@@ -70,14 +83,24 @@ async function translateTextToEnglish(text) {
+     }
+ }
+ 
+-// Construye cues de subtítulos con tiempos reales del JSON de Edge TTS
+-function buildSrtFromEdgeTtsJson(jsonPath, maxWords = 3, maxDurationMs = 1500) {
++// Construye cues de subtítulos con tiempos reales del JSON de Edge TTS y los escala a la duración real
++function buildSrtFromEdgeTtsJson(jsonPath, targetDurationSec, maxWords = 3, maxDurationMs = 1500) {
+     if (!fs.existsSync(jsonPath)) return null;
+     try {
+         const raw = fs.readFileSync(jsonPath, 'utf8');
+         const data = JSON.parse(raw);
+         if (!Array.isArray(data) || data.length === 0) return null;
+ 
++        // Calculate scaling factor to match target duration (e.g., ElevenLabs audio duration)
++        let scale = 1.0;
++        if (targetDurationSec) {
++            const edgeDurationMs = data[data.length - 1].end;
++            if (edgeDurationMs > 0) {
++                scale = (targetDurationSec * 1000) / edgeDurationMs;
++                console.log(`[SRT] Scaling EdgeTTS timings by factor: ${scale.toFixed(4)} (Edge: ${(edgeDurationMs/1000).toFixed(2)}s -> Target: ${targetDurationSec.toFixed(2)}s)`);
++            }
++        }
++
+         const cues = [];
+         let currentWords = [];
+         let currentStart = null;
+@@ -89,10 +112,10 @@ function buildSrtFromEdgeTtsJson(jsonPath, maxWords = 3, maxDurationMs = 1500) {
+             if (!text) continue;
+ 
+             if (currentWords.length === 0) {
+-                currentStart = word.start;
++                currentStart = word.start * scale;
+             }
+             currentWords.push(text);
+-            currentEnd = word.end;
++            currentEnd = word.end * scale;
+ 
+             // Cortar si hay signos de puntuación fuertes o si alcanzamos límites
+             const isPunctuation = text.endsWith('.') || text.endsWith('!') || text.endsWith('?') || text.endsWith(',');
+@@ -322,58 +345,144 @@ const STOCK_VIDEOS = [
+ 
+ let googleQuotaExceeded = false;
+ 
+-// Generación de imagen con Google Imagen 4 (SDK nuevo) o Fallback a Gemini 2.5 Flash (solo APIs de Google)
+-async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16') {
++// Analiza la imagen de referencia y genera múltiples prompts distintos utilizando Gemini 2.5 Flash
++async function generateMultiplePromptsFromRef(refImageBytes, refMimeType, count, defaultPrompt) {
++    if (!process.env.GEMINI_API_KEY) {
++        return Array(count).fill(defaultPrompt);
++    }
++    try {
++        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++        console.log(`[GoogleImageGen] 🤖 Analizando imagen de referencia con Gemini para generar ${count} prompts distintos...`);
++        
++        const userMessage = `Analyze this reference image of a real soccer scene. Generate a JSON list containing exactly ${count} distinct and highly detailed prompt descriptions in English to be used by a text-to-image generator (like Imagen 4) to recreate different angles, moments, close-ups, or perspectives related to this scene.
++        The prompts must be designed to generate images in a beautiful, premium, cinematic 3D cartoon animation style (similar to Pixar, DreamWorks, or Spider-Verse style, with clean shapes, highly expressive stylized character designs, vibrant team colors, and dramatic cinematic lighting).
++        Focus on:
++        1. Team uniforms (colors, shirts, shorts, specific circular crests or logos on the chest, stylized for animation).
++        2. Stadium layout, colors of the concrete stands, and crowd flags, stylized in a clean cartoon style.
++        3. Player physical descriptions (hair color, skin tone, expressive animated facial expressions, stylized body types) and action/composition.
++        4. Cinematic animation lighting and camera details.
++        
++        Rules:
++        - Do not name specific active soccer players directly to avoid safety blocks.
++        - Do not include trademarked brand names, sponsor names, or specific text on the jerseys (such as 'DHL', 'Cemento Cruz Azul', 'novibet', 'Nike', etc.) to avoid safety blocks. Describe them conceptually (e.g. 'circular team crest', 'golden cat head emblem', 'brand logo').
++        - Explicitly describe the scene as a "cinematic 3D cartoon illustration" or "vibrant animated sports scene" with clean lines.
++        - Each prompt must be a standalone descriptive paragraph of 50-100 words.
++        - Return ONLY a valid JSON array of strings. Do not include markdown code fences (like \`\`\`json), headers, or extra text.`;
++
++        const response = await ai.models.generateContent({
++            model: 'gemini-2.5-flash',
++            contents: [
++                {
++                    role: 'user',
++                    parts: [
++                        { text: userMessage },
++                        { inlineData: { mimeType: refMimeType, data: refImageBytes } }
++                    ]
++                }
++            ]
++        });
++        
++        const rawText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
++        const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
++        let prompts = null;
++        try {
++            prompts = JSON.parse(cleanJson);
++        } catch (parseErr) {
++            console.warn(`[GoogleImageGen] JSON parsing failed. Attempting regex extraction...`);
++            const matches = [...cleanJson.matchAll(/"([^"]+)"/g)];
++            if (matches.length > 0) {
++                prompts = matches.map(m => m[1]);
++            }
++        }
++        if (Array.isArray(prompts) && prompts.length > 0) {
++            const result = [];
++            for (let i = 0; i < count; i++) {
++                result.push(prompts[i % prompts.length] || defaultPrompt);
++            }
++            console.log(`[GoogleImageGen] ✅ Generados ${result.length} prompts distintos con éxito.`);
++            return result;
++        }
++    } catch (err) {
++        console.warn(`[GoogleImageGen] ⚠️ Error generating multiple prompts from reference: ${err.message}. Using default prompts.`);
++    }
++    return Array(count).fill(defaultPrompt);
++}
++
++// Generación de imagen con Google Imagen 4 o Fallback a modelos Imagen 3.0 / 3.0 Fast con análisis multimodal previo si hay imagen de referencia.
++async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16', refImageBytes = null, refMimeType = 'image/jpeg') {
+     if (!process.env.GEMINI_API_KEY) {
+         throw new Error("GEMINI_API_KEY not configured.");
+     }
+ 
+-    console.log(`[GoogleImageGen] Generando imagen para prompt: "${prompt.substring(0, 50)}..."`);
+     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+-    
+-    // 1. Intentar con Imagen 4.0
+-    try {
+-        const response = await ai.models.generateImages({
+-            model: 'imagen-4.0-generate-001',
+-            prompt: prompt,
+-            config: {
+-                numberOfImages: 1,
+-                outputMimeType: 'image/jpeg',
+-                aspectRatio: aspect_ratio === '9:16' ? '9:16' : '1:1'
++    let activePrompt = prompt;
++
++    // Si hay una imagen de referencia, la analizamos con Gemini 2.5 Flash para extraer un prompt visual hiperdetallado
++    if (refImageBytes) {
++        try {
++            console.log(`[GoogleImageGen] 🤖 Analizando imagen de referencia con Gemini 2.5 Flash para recreación exacta...`);
++            const analysisRes = await ai.models.generateContent({
++                model: 'gemini-2.5-flash',
++                contents: [
++                    {
++                        role: 'user',
++                        parts: [
++                            { text: "Analyze this reference image of a real soccer scene. Describe it in extreme detail for a text-to-image generator (like Imagen 4) to recreate it as accurately as possible. Focus on: 1. The exact team uniforms (colors, shirts, shorts, specific circular crests or logos on the chest). 2. Stadium layout, colors of the concrete stands, and crowd flags. 3. Player physical descriptions (hair color, skin tone, general age, facial expression) and general action/composition. 4. Lighting and camera details. Do not name specific active soccer players directly to avoid safety blocks. Do not include any trademarked brand names, sponsor names, or specific text on the jerseys (such as 'DHL', 'Cemento Cruz Azul', 'novibet', 'Nike', etc.) to avoid safety blocks. Instead, describe them conceptually (e.g. 'a stylized cat emblem', 'a circular team crest', 'a brand logo'). Keep the description under 150 words and respond only with the descriptive English prompt text, no headers or extra commentary." },
++                            { inlineData: { mimeType: refMimeType, data: refImageBytes } }
++                        ]
++                    }
++                ]
++            });
++            const analyzedPrompt = analysisRes.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
++            if (analyzedPrompt.length > 20) {
++                activePrompt = analyzedPrompt;
++                console.log(`[GoogleImageGen] 📝 Prompt descriptivo generado por Gemini:\n"${activePrompt}"`);
+             }
+-        });
+-        if (response.generatedImages?.[0]?.image?.imageBytes) {
+-            const b64 = response.generatedImages[0].image.imageBytes;
+-            fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'));
+-            console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Imagen 4.`);
+-            return outputPath;
++        } catch (analysisErr) {
++            console.warn(`[GoogleImageGen] ⚠️ Análisis de imagen de referencia falló: ${analysisErr.message}. Usando prompt original.`);
+         }
+-    } catch (err) {
+-        console.warn(`[GoogleImageGen] ⚠️ Imagen 4.0 falló: ${err.message}. Probando con Gemini Flash Image...`);
+     }
+ 
+-    // 2. Intentar con Gemini 2.5 Flash Image output
+-    try {
+-        const promptWithAr = prompt + `\n\n[CRITICAL: Frame the image strictly in ${aspect_ratio} aspect ratio orientation.]`;
+-        const response = await ai.models.generateContent({
+-            model: 'gemini-2.5-flash',
+-            contents: [{ role: 'user', parts: [{ text: promptWithAr }] }],
+-            config: { responseModalities: ['IMAGE'] }
+-        });
+-        for (const part of (response.candidates?.[0]?.content?.parts || [])) {
+-            if (part.inlineData?.data) {
+-                const buffer = Buffer.from(part.inlineData.data, 'base64');
+-                fs.writeFileSync(outputPath, buffer);
+-                console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando Gemini 2.5 Flash.`);
+-                return outputPath;
++    console.log(`[GoogleImageGen] Generando imagen para prompt: "${activePrompt.substring(0, 70)}..."`);
++
++    // Intentamos en cascada sobre los modelos de Imagen soportados para lidiar con límites de cuota/429
++    const models = ['imagen-4.0-generate-001', 'imagen-3.0-generate-002', 'imagen-3.0-fast-generate-001'];
++    let imageBytes = null;
++
++    for (const model of models) {
++        try {
++            console.log(`[GoogleImageGen] Intentando generar imagen con modelo: ${model}...`);
++            const response = await ai.models.generateImages({
++                model: model,
++                prompt: activePrompt,
++                config: {
++                    numberOfImages: 1,
++                    outputMimeType: 'image/jpeg',
++                    aspectRatio: aspect_ratio === '9:16' ? '9:16' : '1:1'
++                }
++            });
++            if (response.generatedImages?.[0]?.image?.imageBytes) {
++                imageBytes = response.generatedImages[0].image.imageBytes;
++                console.log(`[GoogleImageGen] ✅ Imagen generada con éxito usando ${model}.`);
++                break;
++            }
++        } catch (err) {
++            console.warn(`[GoogleImageGen] ⚠️ El modelo ${model} falló: ${err.message}`);
++            // Si es un error de cuota/429, esperamos un momento antes de reintentar
++            if (err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED')) {
++                console.log(`[GoogleImageGen] Esperando 2 segundos debido a límite de cuota...`);
++                await new Promise(resolve => setTimeout(resolve, 2000));
+             }
+         }
+-    } catch (err) {
+-        console.warn(`[GoogleImageGen] ⚠️ Gemini Flash Image falló: ${err.message}.`);
++    }
++
++    if (imageBytes) {
++        fs.writeFileSync(outputPath, Buffer.from(imageBytes, 'base64'));
++        return outputPath;
+     }
+ 
+     // Fallback final a imagen de test local si todo lo de Google falla
+-    console.warn(`[GoogleImageGen] ❌ Todas las APIs de Google fallaron. Usando copia de test_turbo.jpg.`);
++    console.warn(`[GoogleImageGen] ❌ Todas las APIs de Google Imagen fallaron. Usando copia de test_turbo.jpg.`);
+     fs.copyFileSync(path.resolve(process.cwd(), 'test_turbo.jpg'), outputPath);
+     return outputPath;
+ }
+@@ -398,7 +507,7 @@ async function downloadAndTrimVideo(videoUrl, outputPath, targetDuration) {
+             .setDuration(targetDuration)
+             .outputOptions([
+                 '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1',
+-                '-c:v libx264', '-preset ultrafast', '-threads 2', '-crf 26', '-pix_fmt yuv420p', '-an'
++                '-c:v libx264', '-preset veryfast', '-threads 2', '-crf 30', '-pix_fmt yuv420p', '-an'
+             ])
+             .save(tempCropped)
+             .on('end', resolve).on('error', reject);
+@@ -644,7 +753,8 @@ async function imageToKenBurnsVideo(imgPath, duration, outputPath) {
+                 `-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,${filter},setsar=1`,
+                 `-t ${duration}`,
+                 '-c:v libx264',
+-                '-preset ultrafast',
++                '-preset veryfast',
++                '-crf 30',
+                 '-pix_fmt yuv420p',
+                 '-r 30',
+                 '-an'
+@@ -769,6 +879,60 @@ async function downloadBackgroundMusic(outputPath) {
+     }
+ }
+ 
++// DuckDuckGo HTML Search Scraper for Web Context Investigation
++async function searchWebContext(query) {
++    // Clean query: remove emojis, special symbols, keeping alphanumeric and spaces
++    const cleanQuery = query.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ,-]/g, ' ').replace(/\s+/g, ' ').trim();
++    console.log(`[Investigation] Searching Web Context for: "${cleanQuery}" (original: "${query}")`);
++    
++    let attempts = 0;
++    const maxAttempts = 3;
++    while (attempts < maxAttempts) {
++        attempts++;
++        try {
++            const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(cleanQuery)}`;
++            const res = await fetch(searchUrl, {
++                headers: {
++                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
++                },
++                signal: AbortSignal.timeout(6000)
++            });
++            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
++            const html = await res.text();
++            const $ = cheerio.load(html);
++            const snippets = [];
++            $('.result__snippet').each((i, el) => {
++                const text = $(el).text().trim();
++                if (text && snippets.length < 5) {
++                    snippets.push(text);
++                }
++            });
++            const titles = [];
++            $('.result__title').each((i, el) => {
++                const text = $(el).text().trim();
++                if (text && titles.length < 5) {
++                    titles.push(text);
++                }
++            });
++            
++            let contextText = "";
++            for (let i = 0; i < snippets.length; i++) {
++                contextText += `[Source ${i+1}] Title: ${titles[i] || 'N/A'}\nSnippet: ${snippets[i]}\n\n`;
++            }
++            if (contextText) {
++                return contextText;
++            }
++            throw new Error("Empty search results.");
++        } catch (err) {
++            console.error(`[Investigation] Attempt ${attempts}/${maxAttempts} failed:`, err.message);
++            if (attempts >= maxAttempts) {
++                return `Search failed: ${err.message}`;
++            }
++            await new Promise(resolve => setTimeout(resolve, 1500));
++        }
++    }
++}
++
+ async function processTask() {
+     if (isProcessing) return;
+     
+@@ -812,9 +976,10 @@ async function processTask() {
+ 
+         if (payload.refImage && typeof payload.refImage === 'string') {
+             try {
+-                console.log(`[MediaWorker] 🔍 Reference file detected: ${payload.refImage}. Processing bytes...`);
++                const resolvedRefImagePath = translatePathToContainer(payload.refImage);
++                console.log(`[MediaWorker] 🔍 Reference file detected: ${payload.refImage} (resolved: ${resolvedRefImagePath}). Processing bytes...`);
+                 // 1. Check if it's a database file
+-                const match = payload.refImage.match(/\/file\/(\d+)/);
++                const match = resolvedRefImagePath.match(/\/file\/(\d+)/);
+                 if (match) {
+                     const fileId = match[1];
+                     const dbRes = await pool.query('SELECT file_data, mimetype FROM media_storage WHERE id = $1', [fileId]);
+@@ -824,10 +989,10 @@ async function processTask() {
+                     }
+                 } 
+                 // 2. Check if it's a local video asset
+-                else if (payload.refImage.match(/\/assets\/(.+)/)) {
+-                    const filename = payload.refImage.match(/\/assets\/(.+)/)[1];
++                else if (resolvedRefImagePath.match(/\/assets\/(.+)/)) {
++                    const filename = resolvedRefImagePath.match(/\/assets\/(.+)/)[1];
+                     const cleanFilename = filename.split('?')[0];
+-                    const localPath = path.join('E:/assets', cleanFilename);
++                    const localPath = path.join(process.env.ARCHIVOS_PESADOS_DIR || 'E:/assets', cleanFilename);
+                     if (fs.existsSync(localPath)) {
+                         console.log(`[MediaWorker] 🎥 Extracting middle frame from reference video: ${localPath}`);
+                         const tempFramePath = path.join(os.tmpdir(), `task_${task.id}_ref_frame.jpg`);
+@@ -851,15 +1016,73 @@ async function processTask() {
+                     }
+                 }
+                 // 3. Check if it's base64 inline data
+-                else if (payload.refImage.startsWith('data:')) {
+-                    refMimeType = payload.refImage.split(';')[0].split(':')[1];
+-                    refImageBytes = payload.refImage.split(',')[1];
++                else if (resolvedRefImagePath.startsWith('data:')) {
++                    refMimeType = resolvedRefImagePath.split(';')[0].split(':')[1];
++                    refImageBytes = resolvedRefImagePath.split(',')[1];
+                 }
+             } catch (err) {
+                 console.warn(`[MediaWorker] ⚠️ Failed to extract reference file bytes:`, err.message);
+             }
+         }
+ 
++        // --- 0. PRIOR WEB INVESTIGATION STAGE ---
++        if (!payload.investigated) {
++            try {
++                console.log(`[MediaWorker] 🌐 Starting Prior Web Investigation for Task #${task.id}: "${task.title}"`);
++                await sendProgress(task.id, 7, "Investigando contexto real");
++                
++                // Fetch search queries related to the title and prompt
++                const searchQuery = `${task.title} ${payload.niche || ''}`.trim();
++                const searchContext = await searchWebContext(searchQuery);
++                console.log(`[MediaWorker] 🔎 Search context retrieved (${searchContext.length} chars). Enriching script...`);
++                
++                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
++                
++                const systemPrompt = `You are a professional AI video editor and research director.
++We are creating a highly engaging social media video.
++Your task is to enrich the current video script payload (narration scenes and visual prompts) using the provided web search context.
++
++Current Script Payload:
++${JSON.stringify(payload.scenes, null, 2)}
++
++Web Search Context (Real-world facts, names, teams, colors, logos, stadiums, etc.):
++${searchContext}
++
++Instructions:
++1. Research & Enrich: Rewrite the narration text and visual prompts to reflect real-world facts, names, stadiums, team colors, crest descriptions, and official team aesthetics from the search context. For example, if the script is about "Cruz Azul vs Pumas final", make sure it names actual stadiums (like Estadio Ciudad de los Deportes, Estadio Olímpico Universitario), correct colors (royal blue for Cruz Azul, navy/gold for Pumas), correct crest descriptions, etc.
++2. Safety & Policy Compliance: Avoid naming specific real active football players/coaches directly in the visual prompts (instead of "Lionel Messi" or "Charly Rodríguez", describe "an athletic professional soccer player wearing a royal blue jersey with a circular red and white crest on the chest"). This avoids safety/policy blocks from Google Imagen. You may use real names of teams, stadiums, historical coaches, and general terms.
++3. Quality: Keep the tone epic, viral, educational, and engaging.
++4. Structure: Keep the JSON structure exactly identical to the original script (either a dictionary of keys like {"NARRACION ESCENA 1": "...", "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "..."} or an array of scenes).
++5. Respond ONLY with the valid JSON object representing the updated script. Do not include markdown code block formatting (like \`\`\`json), just the raw JSON text.`;
++
++                const rewriteRes = await ai.models.generateContent({
++                    model: 'gemini-2.5-flash',
++                    contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
++                });
++                
++                let rawText = rewriteRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
++                rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
++                
++                if (rawText.startsWith('{') || rawText.startsWith('[')) {
++                    const newScenes = JSON.parse(rawText);
++                    payload.scenes = newScenes;
++                    payload.investigated = true;
++                    payload.investigationContext = searchContext;
++                    console.log(`[MediaWorker] ✅ Script successfully enriched with real-world facts!`);
++                    
++                    // Save updated scenes back to the database in media_payload
++                    await pool.query(
++                        `UPDATE studio_tasks SET media_payload = $1 WHERE id = $2`,
++                        [JSON.stringify([payload]), task.id]
++                    );
++                } else {
++                    console.warn(`[MediaWorker] ⚠️ Gemini response for enrichment was not valid JSON:\n${rawText}`);
++                }
++            } catch (err) {
++                console.error(`[MediaWorker] ❌ Failed prior web investigation:`, err.message);
++            }
++        }
++
+         // --- 1. DYNAMIC FEEDBACK NOTES CORRECTIONS VIA GEMINI ---
+         if (task.feedback_notes && task.feedback_notes.trim().length > 0) {
+             try {
+@@ -1020,6 +1243,43 @@ Instructions:
+             const randomStockName = STOCK_VIDEOS[Math.floor(Math.random() * STOCK_VIDEOS.length)].split('/').pop();
+             const randomStock = path.resolve(process.cwd(), 'stock_videos', randomStockName || '853889-hd_1920_1080_25fps.mp4'); 
+             
++            let sceneRefImage = null;
++            if (isArrayFormat) {
++                const scene = dayData[i - 1];
++                sceneRefImage = scene.refImage || scene.ref_image || scene.reference_image;
++            } else {
++                sceneRefImage = dayData[`REF_IMAGE ESCENA ${i}`] || dayData[`REFERENCE ESCENA ${i}`];
++            }
++
++            // Extraer bytes de imagen de referencia por escena si existe
++            let sceneRefBytes = null;
++            let sceneRefMime = 'image/jpeg';
++            if (sceneRefImage && typeof sceneRefImage === 'string') {
++                try {
++                    const resolvedRefImagePath = translatePathToContainer(sceneRefImage);
++                    console.log(`[MediaWorker] 🔍 Scene reference file detected: ${sceneRefImage} (resolved: ${resolvedRefImagePath}). Processing...`);
++                    const match = resolvedRefImagePath.match(/\/file\/(\d+)/);
++                    if (match) {
++                        const fileId = match[1];
++                        const dbRes = await pool.query('SELECT file_data, mimetype FROM media_storage WHERE id = $1', [fileId]);
++                        if (dbRes.rows.length > 0) {
++                            sceneRefBytes = dbRes.rows[0].file_data.toString('base64');
++                            sceneRefMime = dbRes.rows[0].mimetype;
++                        }
++                    } 
++                    else if (fs.existsSync(resolvedRefImagePath)) {
++                        sceneRefBytes = fs.readFileSync(resolvedRefImagePath).toString('base64');
++                        sceneRefMime = resolvedRefImagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
++                    }
++                    else if (resolvedRefImagePath.startsWith('data:')) {
++                        sceneRefMime = resolvedRefImagePath.split(';')[0].split(':')[1];
++                        sceneRefBytes = resolvedRefImagePath.split(',')[1];
++                    }
++                } catch (err) {
++                    console.warn(`[MediaWorker] ⚠️ Failed to extract scene reference bytes:`, err.message);
++                }
++            }
++
+             let finalImgPath = sceneImgPath;
+             let isFaceless = false;
+ 
+@@ -1030,70 +1290,71 @@ Instructions:
+                 isFaceless = true;
+             } else if (videoPrompt || visualPrompt) {
+                 try {
+-                    const googleImgPath = sceneImgPath;
+                     const imgPrompt = (videoPrompt || visualPrompt || task.title).substring(0, 300);
+                     
+-                    console.log(`[MediaWorker] Generando imágenes directamente vía Google Imagen AI con prompt: "${imgPrompt}" (duración target: ${targetDuration}s)`);
++                    let themeSuffix = ', premium 3D cartoon illustration style, Pixar animation aesthetic, vibrant colors, highly detailed character designs, clean shapes, cinematic lighting, no watermark, no text';
++                    let sportsAdditions = '';
++                    const lowerPrompt = imgPrompt.toLowerCase();
++                    if (lowerPrompt.includes('cruz azul') || lowerPrompt.includes('soccer') || lowerPrompt.includes('futbol') || lowerPrompt.includes('football') || lowerPrompt.includes('liga mx') || lowerPrompt.includes('pumas')) {
++                        themeSuffix = ', cinematic 3D cartoon animation style, Pixar and Spider-Verse aesthetic, vibrant team colors, clean shapes, highly detailed character designs, cinematic lighting, no watermark, no text';
++                        
++                        // Inyección de precisión para uniformes y escudos reales
++                        if (lowerPrompt.includes('cruz azul')) {
++                            sportsAdditions = ' The animated players must wear the official Cruz Azul home kit: a royal blue jersey, white shorts, and blue socks. The jersey must feature the Cruz Azul crest: a blue cross inside a white circle, set against a red square. The stadium has intense cartoonish blue and white crowd flags.';
++                        }
++                        if (lowerPrompt.includes('pumas') || lowerPrompt.includes('unam')) {
++                            sportsAdditions = ' The animated players must wear the official Pumas UNAM kit: a dark blue and gold jersey, with the famous large stylized golden puma face emblem displayed prominently on the front of the shirt. The background is a cartoonish Estadio Olímpico Universitario.';
++                        }
++                    }
+                     
++                    let varPrompt = `${imgPrompt}${sportsAdditions}${themeSuffix}`;
++                    if (extractedStylePrompt) {
++                        varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}. ${themeSuffix}`;
++                    }
++
+                     const durationPerImg = 3.0;
+                     const numImages = Math.max(1, Math.ceil(targetDuration / durationPerImg));
++                    console.log(`[MediaWorker] Generando ${numImages} imágenes para slideshow de la Escena ${i} (duración target: ${targetDuration}s)`);
++
++                    let prompts = [];
++                    if (sceneRefBytes) {
++                        prompts = await generateMultiplePromptsFromRef(sceneRefBytes, sceneRefMime, numImages, varPrompt);
++                    } else {
++                        for (let j = 0; j < numImages; j++) {
++                            const seed = Math.floor(Math.random() * 1000000);
++                            prompts.push(`${varPrompt}, angle variation ${j + 1}, seed ${seed}`);
++                        }
++                    }
++
+                     const imagePaths = [];
+-                    
+                     for (let j = 0; j < numImages; j++) {
+                         const tempImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_temp_${j}.jpg`);
+-                        imagePaths.push(tempImgPath);
+-                        const seed = Math.floor(Math.random() * 1000000);
+-                        let themeSuffix = ', highly realistic professional photography, lifelike details, sharp focus, vibrant colors, no watermark, no text overlays, clean image, high-fidelity photo';
+-                        
+-                        let sportsAdditions = '';
+-                        const lowerPrompt = imgPrompt.toLowerCase();
+-                        if (lowerPrompt.includes('cruz azul') || lowerPrompt.includes('soccer') || lowerPrompt.includes('futbol') || lowerPrompt.includes('football') || lowerPrompt.includes('liga mx') || lowerPrompt.includes('pumas')) {
+-                            themeSuffix = ', highly realistic professional sports photography, action shot, lifelike details, vivid team colors, stadium lights, no watermark, no text overlays, clean image, high-fidelity sports photo';
+-                            
+-                            // Inyección de precisión para uniformes y escudos reales
+-                            if (lowerPrompt.includes('cruz azul')) {
+-                                sportsAdditions = ' The players must wear the official Cruz Azul home kit: a royal blue jersey, white shorts, and blue socks. The jersey must feature the Cruz Azul crest: a blue cross inside a white circle, set against a red square. The stadium has intense blue and white crowd flags.';
+-                            }
+-                            if (lowerPrompt.includes('pumas') || lowerPrompt.includes('unam')) {
+-                                sportsAdditions = ' The players must wear the official Pumas UNAM kit: a dark blue and gold jersey, with the famous large stylized golden puma face emblem displayed prominently on the front of the shirt. The background is Estadio Olímpico Universitario.';
+-                            }
+-                        }
+-                        
+-                        let varPrompt = `${imgPrompt}${sportsAdditions}${themeSuffix}`;
+-                        if (extractedStylePrompt) {
+-                            varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}. ${themeSuffix}`;
+-                        }
+-                        varPrompt = `${varPrompt}, angle variation ${j + 1}, seed ${seed}`;
+-                        
+-                        // Esperar 1500ms entre llamadas de Google Imagen para evitar errores 429
+-                        if (j > 0) {
+-                            console.log(`[MediaWorker] Esperando 1500ms antes de llamar a Google Imagen...`);
+-                            await new Promise(resolve => setTimeout(resolve, 1500));
+-                        }
+-                        
+-                        try {
+-                            await generateGoogleImage(varPrompt, tempImgPath, '9:16');
+-                        } catch (err) {
+-                            console.error(`[MediaWorker] Falló Google Imagen ${j}:`, err.message);
++                        console.log(`[MediaWorker] Generando imagen ${j+1}/${numImages} para Escena ${i}...`);
++                        await generateGoogleImage(prompts[j], tempImgPath, '9:16');
++                        if (fs.existsSync(tempImgPath)) {
++                            imagePaths.push(tempImgPath);
+                         }
++                        // Esperar 1 segundo para evitar saturar el límite de cuota
++                        await new Promise(resolve => setTimeout(resolve, 1000));
+                     }
+-                    
+-                    const existingImgPaths = imagePaths.filter(p => fs.existsSync(p));
+-                    if (existingImgPaths.length > 0) {
+-                        console.log(`[MediaWorker] Armando slideshow con ${existingImgPaths.length} fotos generadas por IA...`);
+-                        await buildSlideshowWithTransitions(existingImgPaths, targetDuration, slideshowPath);
+-                        existingImgPaths.forEach(p => {
+-                            if (fs.existsSync(p)) try { fs.unlinkSync(p); } catch(err){}
+-                        });
++
++                    if (imagePaths.length > 0) {
++                        console.log(`[MediaWorker] Armando slideshow Ken Burns con ${imagePaths.length} imágenes...`);
++                        await buildSlideshowWithTransitions(imagePaths, targetDuration, slideshowPath);
+                         
++                        // Eliminar las imágenes temporales
++                        imagePaths.forEach(p => {
++                            try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch(e){}
++                        });
++
+                         if (fs.existsSync(slideshowPath) && fs.statSync(slideshowPath).size > 5000) {
+                             finalImgPath = slideshowPath;
+                             isFaceless = true;
+-                            console.log(`[MediaWorker] ✅ Slideshow de Google Imagen listo: ${slideshowPath}`);
++                            console.log(`[MediaWorker] ✅ Slideshow de video listo: ${slideshowPath}`);
+                         }
+                     }
+                 } catch (googleErr) {
+-                    console.error(`[MediaWorker] Falló la generación del slideshow de Google Imagen:`, googleErr.message);
++                    console.error(`[MediaWorker] Falló la generación de la imagen de Google:`, googleErr.message);
+                 }
+             }
+ 
+@@ -1107,7 +1368,7 @@ Instructions:
+ 
+             if (fs.existsSync(sceneAudioPath)) {
+                 const jsonPath = sceneAudioPath + '.json';
+-                let cuesEs = buildSrtFromEdgeTtsJson(jsonPath);
++                let cuesEs = buildSrtFromEdgeTtsJson(jsonPath, targetDuration);
+                 let cuesEn = [];
+ 
+                 if (cuesEs && cuesEs.length > 0) {
+@@ -1190,11 +1451,11 @@ Instructions:
+                     .videoFilters(vfStr)
+                     .outputOptions([
+                         '-c:v libx264',
+-                        '-preset ultrafast',
++                        '-preset veryfast',
+                         '-threads 2',
+-                        '-crf 28',
++                        '-crf 30',
+                         '-c:a aac',
+-                        '-b:a 192k',
++                        '-b:a 128k',
+                         '-pix_fmt yuv420p',
+                         '-r 30',
+                         '-shortest'

@@ -3,7 +3,7 @@ import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), 'server', '.env') });
 import pool from './server/config/db.js';
 
-pool.query("SELECT id, status, media_payload FROM studio_tasks ORDER BY id DESC LIMIT 5").then(res => {
-    console.log(JSON.stringify(res.rows, null, 2));
+pool.query("UPDATE studio_tasks SET status = 'pending_render' WHERE id = 29 RETURNING id, status").then(res => {
+    console.log("Updated task 29 status:", JSON.stringify(res.rows, null, 2));
     process.exit(0);
 }).catch(console.error);

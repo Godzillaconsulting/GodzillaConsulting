@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Forza la subida a un disco/partición específica y garantizada
-export let ARCHIVOS_PESADOS_DIR = 'E:/assets';
+export let ARCHIVOS_PESADOS_DIR = process.env.ARCHIVOS_PESADOS_DIR || 'E:/assets';
 try {
     if (!fs.existsSync(ARCHIVOS_PESADOS_DIR)) {
         fs.mkdirSync(ARCHIVOS_PESADOS_DIR, { recursive: true });

@@ -35,6 +35,25 @@ export async function lookupFakeYouToken(searchName) {
     } catch { return null; }
 }
 
+async function generateEdgeTtsSubtitlesOnly(text, outputPath) {
+    try {
+        const tempSubPath = outputPath + '_temp_edge.mp3';
+        const edgeTts = new EdgeTTS({ voice: 'es-MX-JorgeNeural', saveSubtitles: true });
+        await edgeTts.ttsPromise(text, tempSubPath);
+        const tempJsonPath = tempSubPath + '.json';
+        if (fs.existsSync(tempJsonPath)) {
+            fs.copyFileSync(tempJsonPath, outputPath + '.json');
+            fs.unlinkSync(tempJsonPath);
+        }
+        if (fs.existsSync(tempSubPath)) {
+            fs.unlinkSync(tempSubPath);
+        }
+        console.log(`[TTS Service] 📝 Subtitle timings generated via Edge TTS for non-edge voice.`);
+    } catch (subErr) {
+        console.warn(`[TTS Service] ⚠️ Subtitle timings generation failed:`, subErr.message);
+    }
+}
+
 // ────────────────────────────────────────────────────────────────────
 // GENERADOR DE VOZ — CASCADA
 // voice formato: 'fakeyou:key' | 'piper:model' | 'bark:model' | 'xtts:model' | 'edge:voice'
@@ -81,6 +100,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             if (!audioRes.ok) throw new Error('No se pudo descargar audio de FakeYou');
             fs.writeFileSync(outputPath, Buffer.from(await audioRes.arrayBuffer()));
             console.log(`[TTS Service] ✅ FakeYou TTS listo.`);
+            await generateEdgeTtsSubtitlesOnly(text, outputPath);
             return outputPath;
         } catch (e) {
             console.warn(`[TTS Service] ⚠️ FakeYou falló (${e.message}). Pasando a siguiente...`);
@@ -108,6 +128,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             
             await execPromise(cmd);
             console.log(`[TTS Service] ✅ Piper TTS listo (${modelName}).`);
+            await generateEdgeTtsSubtitlesOnly(text, outputPath);
             return outputPath;
         } catch (e) {
             console.warn(`[TTS Service] ⚠️ Piper falló (${e.message}). Pasando a siguiente...`);
@@ -138,6 +159,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             const audioBuffer = await barkRes.arrayBuffer();
             fs.writeFileSync(outputPath, Buffer.from(audioBuffer));
             console.log(`[TTS Service] ✅ Bark TTS listo.`);
+            await generateEdgeTtsSubtitlesOnly(text, outputPath);
             return outputPath;
         } catch (e) {
             console.warn(`[TTS Service] ⚠️ Bark falló (${e.message}). Pasando a siguiente...`);
@@ -167,6 +189,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             const audioBuffer = await xttsRes.arrayBuffer();
             fs.writeFileSync(outputPath, Buffer.from(audioBuffer));
             console.log(`[TTS Service] ✅ XTTS-v2 TTS listo.`);
+            await generateEdgeTtsSubtitlesOnly(text, outputPath);
             return outputPath;
         } catch (e) {
             console.warn(`[TTS Service] ⚠️ XTTS falló (${e.message}). Pasando a siguiente...`);
@@ -188,6 +211,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             if (response.ok) {
                 fs.writeFileSync(outputPath, Buffer.from(await response.arrayBuffer()));
                 console.log(`[TTS Service] ✅ ElevenLabs TTS listo.`);
+                await generateEdgeTtsSubtitlesOnly(text, outputPath);
                 return outputPath;
             }
             console.warn(`[TTS Service] ⚠️ ElevenLabs HTTP ${response.status}.`);

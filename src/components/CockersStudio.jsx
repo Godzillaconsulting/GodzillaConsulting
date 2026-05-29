@@ -711,7 +711,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         scheduled_for: incomingTask.ig_publish_date,
                         caption: incomingTask.title,
                         visual_prompt: incomingTask.prompt,
-                        media_options: typeof incomingTask.media_payload === 'string' ? JSON.parse(incomingTask.media_payload) : (incomingTask.media_payload || [])
+                        media_options: typeof incomingTask.media_payload === 'string' ? JSON.parse(incomingTask.media_payload) : (incomingTask.media_payload || []),
+                        feedback_notes: incomingTask.feedback_notes
                     };
 
                     setQueue(prevQueue => {
@@ -793,7 +794,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                     scheduled_for: t.ig_publish_date,
                     caption: t.title,
                     visual_prompt: t.prompt,
-                    media_options: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || [])
+                    media_options: typeof t.media_payload === 'string' ? JSON.parse(t.media_payload) : (t.media_payload || []),
+                    feedback_notes: t.feedback_notes
                 }));
                 setQueue(mapped);
             }
@@ -1679,6 +1681,13 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                 
                                                 <p className="text-xs text-neutral-300 line-clamp-2">{task.caption || task.visual_prompt}</p>
                                                 
+                                                {task.status === 'rejected' && task.feedback_notes && (
+                                                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] text-red-200 mt-1 leading-relaxed">
+                                                        <span className="font-black text-red-400 block mb-0.5 text-[9px] uppercase tracking-wider">Notas de Devolución:</span>
+                                                        {task.feedback_notes}
+                                                    </div>
+                                                )}
+                                                
                                                 <div className="flex justify-end gap-2 mt-auto pt-2 border-t border-neutral-800/50">
                                                     {task.status === 'pending_cm_approval' && (
                                                         <button 
@@ -2193,6 +2202,17 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                 </div>
                             </div>
                             
+                            {selectedDraft.feedback_notes && (
+                                <div className="mt-8 bg-red-950/20 border border-red-500/30 rounded-3xl p-6 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                                    <h4 className="text-xs font-bold text-red-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <span>⚠️</span> NOTAS DE CORRECCIÓN (CEO)
+                                    </h4>
+                                    <p className="text-sm font-semibold text-white whitespace-pre-wrap leading-relaxed">
+                                        {selectedDraft.feedback_notes}
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Copywriting / Info del Draft Ligado */}
                             {selectedDraft.caption && (
                                 <div className="mt-10 bg-[#111] border border-neutral-800 rounded-3xl p-6">

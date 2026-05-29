@@ -3,13 +3,15 @@ import { createPortal } from 'react-dom';
 import VideoEditorModal from './VideoEditorModal';
 
 const STATUS_MAP = {
-    pending_cm_approval: { label: '⏳ En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
-    rejected:            { label: '🔙 Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
-    approved:            { label: '✅ Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
-    published:           { label: '🚀 Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-    manual_studio:       { label: '🎬 En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
-    pending_render:      { label: '⚙️ Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
-    rendering:           { label: '🔄 Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    pending_cm_approval:   { label: '⏳ En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
+    rejected:              { label: '🔙 Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+    approved:              { label: '✅ Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
+    published:             { label: '🚀 Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+    manual_studio:         { label: '🎬 En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+    pending_render:        { label: '⚙️ Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+    pending_render_docker: { label: '⚙️ Encolado (Worker)',tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+    rendering:             { label: '🔄 Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    rendering_docker:      { label: '🔄 Renderizando (Worker)', tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
 };
 
 // Extrae escenas legibles de cualquier formato de payload
@@ -391,7 +393,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {
         pendientes:    ['pending_cm_approval'],
-        manual_studio: ['manual_studio', 'pending_render', 'rendering'],
+        manual_studio: ['manual_studio', 'pending_render', 'rendering', 'pending_render_docker', 'rendering_docker'],
         ia_backlog:    ['backlog'],
         devueltas:     ['rejected'],
         aprobadas:     ['approved', 'published'],
@@ -401,7 +403,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Counts ────────────────────────────────────────────────
     const counts = {
         pendientes:    tasks.filter(t => t.status === 'pending_cm_approval').length,
-        manual_studio: tasks.filter(t => ['manual_studio','pending_render','rendering'].includes(t.status)).length,
+        manual_studio: tasks.filter(t => ['manual_studio','pending_render','rendering','pending_render_docker','rendering_docker'].includes(t.status)).length,
         ia_backlog:    tasks.filter(t => t.status === 'backlog').length,
         devueltas:     tasks.filter(t => t.status === 'rejected').length,
         aprobadas:     tasks.filter(t => ['approved','published'].includes(t.status)).length,
@@ -628,7 +630,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 ) : isAutoVideo ? (() => {
                                     // Detectar si está en espera manual (manual_studio) o ya renderizando
                                     const isManualPending = selected.status === 'manual_studio';
-                                    const isRenderQueued  = ['pending_render', 'rendering'].includes(selected.status);
+                                    const isRenderQueued  = ['pending_render', 'rendering', 'pending_render_docker', 'rendering_docker'].includes(selected.status);
                                     const readableScenes  = extractReadableScenes(selected.media_options);
                                     const sourceLabel     = selected.media_options?.source === 'manual_cockers' ? '🎬 Video Manual (Cockers Studio)'
                                                           : selected.media_options?.source === 'manual_planner' ? '📅 Video del Planificador'
@@ -931,12 +933,12 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             )}
 
                             {/* EN COLA / RENDERIZANDO → Estado de progreso */}
-                            {['pending_render', 'rendering'].includes(selected.status) && (
+                            {['pending_render', 'rendering', 'pending_render_docker', 'rendering_docker'].includes(selected.status) && (
                                 <div className="flex-1 flex flex-col gap-3">
                                     <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 text-center">
                                         <div className="w-8 h-8 border-4 border-orange-500/20 border-t-orange-400 rounded-full animate-spin mx-auto mb-3" />
                                         <p className="text-sm font-black text-orange-400 uppercase tracking-widest">
-                                            {selected.status === 'rendering' ? '🔄 Renderizando...' : '⚙️ En Cola del MediaWorker'}
+                                            {['rendering', 'rendering_docker'].includes(selected.status) ? '🔄 Renderizando...' : '⚙️ En Cola del MediaWorker'}
                                         </p>
                                         <p className="text-xs text-neutral-500 mt-2">Generando voz + imágenes IA + subtítulos + ensamble FFmpeg. El resultado aparecerá en "Pendientes por Revisar" al terminar.</p>
                                     </div>

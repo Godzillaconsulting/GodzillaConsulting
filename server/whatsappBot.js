@@ -27,6 +27,51 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const activeSessionsCache = new Map();
 const userMessageQueues = new Map();
 
+/**
+ * 🛡️ FILTRO ANTI-SPAM — Detecta mensajes de bots, cupones y publicidad masiva.
+ * Retorna true si el mensaje es spam y debe ignorarse silenciosamente.
+ */
+function checkIsSpamMessage(text) {
+    if (!text || typeof text !== 'string') return false;
+    const t = text.toLowerCase();
+
+    // Links de acortadores/spam típicos de bots de cupones
+    const spamLinks = [
+        'rappi.sng.link', 'rappisng.link', 'bit.ly', 'tinyurl.com',
+        'cutt.ly', 'short.gy', 'ow.ly', 'rb.gy', 't.co',
+        'wa.me/message', 'wame.in', 'linktr.ee'
+    ];
+    if (spamLinks.some(link => t.includes(link))) return true;
+
+    // Patrones de texto de spam
+    const spamPatterns = [
+        /\d+%\s*off/i,
+        /cup[oó]n\s*:\s*\w+/i,
+        /c[oó]digo\s*:\s*\w+/i,
+        /promocion\s+exclusiva/i,
+        /oferta\s+por\s+tiempo\s+limitado/i,
+        /gratis\s+por\s+\d+\s+d[ií]as/i,
+        /solo\s+\d+\s+redenciones/i,
+        /descuento\s+del\s+\d+%/i,
+        /precio\s+especial\s+hoy/i,
+        /\*\d+%\s*off\*/i,
+    ];
+    if (spamPatterns.some(p => p.test(text))) return true;
+
+    // Broadcast keywords genéricos de bots masivos
+    const broadcastKeywords = [
+        'hola, me interesa recibir',
+        'aplica términos y condiciones',
+        'aplica terminos y condiciones',
+        'válido hasta agotar existencias',
+        'valido hasta agotar existencias',
+        'consulta términos y condiciones',
+    ];
+    if (broadcastKeywords.some(kw => t.includes(kw))) return true;
+
+    return false;
+}
+
 // --- ZILLA RAM CLEANUP SKILL ---
 // Limpiador automático para evitar Memory Leaks (Fuga de Memoria)
 setInterval(() => {
@@ -45,18 +90,9 @@ setInterval(() => {
 }, 15 * 60 * 1000); // Se ejecuta cada 15 minutos
 // -------------------------------
 
-class Mutex {
-    constructor() { this.queue = []; this.locked = false; }
-    async lock() {
-        if (!this.locked) { this.locked = true; return; }
-        return new Promise(resolve => this.queue.push(resolve));
-    }
-    release() {
-        if (this.queue.length > 0) { const next = this.queue.shift(); next(); }
-        else { this.locked = false; }
-    }
-}
-const waMutex = new Mutex();
+// Cola de procesamiento GLOBAL secuencial — un mensaje a la vez, igual que Terapias y Ventas.
+// La info de cada cliente sigue aislada en su propia sesión (PostgreSQL + RAM cache).
+let globalBotQueue = Promise.resolve();
 
 async function appendMessageToSession(senderId, role, content, plataforma = 'whatsapp_web') {
     let session = activeSessionsCache.get(senderId);
@@ -448,6 +484,14 @@ export const initWhatsAppBot = async () => {
             return;
         }
 
+        // 🛡️ FILTRO ANTI-SPAM — Ignorar mensajes de bots/cupones silenciosamente
+        if (checkIsSpamMessage(rawMessageText)) {
+            console.log(`🛡️ [WA Spam] Mensaje de spam/cupón ignorado de ${senderId.substring(0, 8)}***: "${rawMessageText.substring(0, 80)}"`);
+            return;
+        }
+
+
+
         const maskedSender = senderId.substring(0, 4) + "****" + senderId.substring(senderId.length - 4);
         console.log(`📩 WA Msg recibido [${maskedSender}]: [ENTRANDO A COLA DE ESPERA]`);
 
@@ -475,8 +519,23 @@ export const initWhatsAppBot = async () => {
             userMessageQueues.delete(senderId); // Limpia timer + buffer del mapa
             console.log(`🚀 WA Procesando batch para [${maskedSender}] (${messageText.split('\n').length} msg, Jitter: ${jitter}ms)`);
 
-        try {
-            await waMutex.lock(); // Restaurado: Evita procesamiento paralelo que causaba respuestas dobles
+        // ── COLA GLOBAL SECUENCIAL — Un mensaje a la vez (comportamiento humano) ──
+        // Igual que Terapias y Ventas. La sesión de cada cliente sigue aislada.
+        globalBotQueue = globalBotQueue.then(async () => { try {
+            // Generar retraso total humano aleatorio entre 6 y 15 segundos
+            const totalDelay = Math.floor(Math.random() * 9000) + 6000;
+            const thinkingDelay = Math.floor(totalDelay * 0.6);
+            const typingDelay = totalDelay - thinkingDelay;
+
+            // Esperar el thinkingDelay antes de abrir el mensaje y mostrar actividad
+            await new Promise(r => setTimeout(r, thinkingDelay));
+
+            // Iniciar presencia escribiendo ("composing")
+            try {
+                await client.sendPresenceUpdate('composing', senderId);
+            } catch(e) {}
+
+            const startTime = Date.now();
 
             // ── DISPARO DE MOTOR VISUAL (Automation Engine) ──
             AutomationEngine.triggerFlow('WhatsApp Bot', {
@@ -881,10 +940,10 @@ export const initWhatsAppBot = async () => {
                 } catch(e) { /* No es JSON válido, es texto normal con llaves */ }
             }
             
-            // Opcional: Enviar estado de "escribiendo..." si la librería lo soporta (si no, solo espera)
-            try {
-                await client.sendPresenceUpdate('composing', senderId);
-            } catch (e) {}
+            // Esperar la duración de escritura restante descontando el tiempo transcurrido desde startTime
+            const elapsed = Date.now() - startTime;
+            const remainingTyping = Math.max(typingDelay - elapsed, 1500); // al menos 1.5s
+            await new Promise(r => setTimeout(r, remainingTyping));
 
             try {
                 await client.sendPresenceUpdate('paused', senderId);
@@ -906,10 +965,10 @@ export const initWhatsAppBot = async () => {
         } catch (error) {
             console.error("❌ Error interno procesando WA message:", error);
         } finally {
-            // Jitter for Global Queue: Prevent slamming APIs back-to-back
+            // Jitter entre respuestas para parecer humano (1s - 2s)
             await new Promise(r => setTimeout(r, Math.floor(Math.random() * 1000) + 1000));
-            waMutex.release();
         }
+        }).catch(e => { console.error('❌ [globalBotQueue] Error:', e.message); });
         }, 5000 + jitter); // Ventana de 5 segundos de agrupación de mensajes + Jitter
     });
     const emergencyShutdown = async (err, origin) => {

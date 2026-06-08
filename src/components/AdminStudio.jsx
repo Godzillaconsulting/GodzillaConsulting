@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Bot, Video, Zap, Calendar, Mail, 
   BarChart2, Bug, LogOut, LayoutDashboard, 
-  Crown, PenTool, Database, Lightbulb, Flame, MessageSquare
+  Crown, PenTool, Database, Lightbulb, Flame, MessageSquare, UserCircle
 } from 'lucide-react';
 
 function EditorField({ fieldKey, onHover, children }) {

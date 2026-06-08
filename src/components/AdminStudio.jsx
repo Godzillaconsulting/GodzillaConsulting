@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Bot, Video, Zap, Calendar, Mail, 
   BarChart2, Bug, LogOut, LayoutDashboard, 
-  Crown, PenTool, Database, Lightbulb, Flame, MessageSquare, UserCircle
+  Crown, PenTool, Database, Lightbulb, Flame, MessageSquare, UserCircle, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 
 function EditorField({ fieldKey, onHover, children }) {
@@ -605,7 +605,7 @@ export default function AdminStudio() {
   )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
- <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-white/5 bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.2)] ${isSidebarOpen ? 'w-[260px] min-w-[260px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
+ <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-white/5 bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.2)] ${isSidebarOpen ? 'w-[280px] md:w-[240px] min-w-[280px] md:min-w-[240px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   
   {/* Perfil del Usuario / Top Bar del Sidebar */}
   <div className="px-4 py-4 border-b border-white/5 flex flex-col gap-3 shrink-0">
@@ -619,6 +619,8 @@ export default function AdminStudio() {
             <h1 className="text-sm font-black tracking-tight text-white/90">Godzilla OS</h1>
             <p className="text-[10px] font-medium text-white/40 uppercase tracking-widest">Admin Workspace</p>
         </div>
+        {/* Mobile close button */}
+        <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1.5 text-white/40 hover:text-white rounded-md hover:bg-white/10">✕</button>
     </div>
     
     <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
@@ -792,13 +794,17 @@ export default function AdminStudio() {
   </div>
  </div>
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
-  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
-      <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
-  </button>
+  
+  {/* Botón Flotante Toggle Menu (Estilo Apple) */}
+  <div className="absolute top-3 left-3 z-[60]">
+      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-1.5 rounded-md bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-md ${isSidebarOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`}>
+          {isSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+      </button>
+  </div>
   
   {/* Header Tabs para Laboratorio IA */}
   {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && !isAnalyticsMode && (
-      <div className="flex items-center gap-2 px-6 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
+      <div className="flex items-center gap-2 px-6 md:pl-14 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
           {[
               { id: 'social_studio', label: '🤖 Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
               { id: 'video_editor', label: '🎬 Editor Pro', path: '/admin/laboratorio/editor', color: 'text-blue-400', border: 'border-blue-500' },

@@ -19,6 +19,11 @@ import ITStudioPanel from './ITStudioPanel';
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields, MEDIA_PATTERNS } from '../utils/editorParser';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Bot, Video, Zap, Calendar, Mail, 
+  BarChart2, Bug, LogOut, LayoutDashboard, 
+  Crown, PenTool, Database, Lightbulb, Flame, MessageSquare
+} from 'lucide-react';
 
 function EditorField({ fieldKey, onHover, children }) {
  return (
@@ -506,34 +511,7 @@ export default function AdminStudio() {
    <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#CC0000]/10 rounded-full blur-[120px] pointer-events-none"></div>
    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/50 rounded-full blur-[100px] pointer-events-none"></div>
 
-   {/* Botón Flotante Búsquedas Virales tipo Gemini */}
-   <div className="fixed bottom-6 right-6 z-[120] group">
-       <button className="w-14 h-14 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.4)] flex items-center justify-center text-white hover:scale-110 transition-transform peer border border-orange-300/30">
-           <span className="text-2xl drop-shadow-md">🔥</span>
-       </button>
-       <div className="absolute bottom-[calc(100%+16px)] right-0 w-[320px] bg-[#0a0a0a] border border-orange-500/30 rounded-2xl shadow-[0_0_40px_rgba(249,115,22,0.3)] z-[120] hidden hover:block peer-hover:block p-5 transform origin-bottom-right transition-all">
-           {/* bridge para el hover */}
-           <div className="absolute -bottom-4 right-0 w-14 h-6 bg-transparent"></div>
-           <h4 className="text-white text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-               <span className="text-orange-500 text-xl">🔥</span> Analítica Viral Global
-           </h4>
-           <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">Busca oportunidades de contenido o revisa el catálogo global extraído por Godzilla Trends Bot.</p>
-           
-           <div className="flex flex-col gap-3 mb-4">
-                <input value={trendsSearchQuery} onChange={e => setTrendsSearchQuery(e.target.value)} type="text" placeholder="Buscar tema (ej. SaaS)..." className="w-full bg-black/60 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors" />
-                <button onClick={handleDeepSearch} className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    Buscar Tema
-                </button>
-           </div>
-           
-           <div className="border-t border-white/10 pt-4">
-               <button onClick={openTrendsModal} className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-3 text-xs font-bold transition-colors flex items-center justify-center gap-2">
-                   Ver Catálogo de Tendencias
-               </button>
-           </div>
-       </div>
-   </div>
+   {/* El botón flotante de búsquedas virales ha sido movido al sidebar de Operaciones */}
 
 
   {showPublishModal && (
@@ -617,154 +595,194 @@ export default function AdminStudio() {
   )}
 
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
- <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-red-900/30 bg-[#050505] md:bg-[#CC0000]/5 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-[240px] md:w-[200px] min-w-[240px] md:min-w-[200px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
-  <div className="px-3 pt-5 pb-3 border-b border-[#CC0000]/40 flex items-center justify-between">
-  <div className="flex items-center gap-2.5">
-  <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer hover:scale-110 transition-transform">
-    <img src="/favicon.png" alt="Godzilla Logo" className="w-8 h-8 drop-shadow-[0_2px_8px_rgba(204,0,0,0.6)]" />
-  </a>
-  </div>
-  <button onClick={() => setIsAnalyticsMode(true)} className={`px-2 py-1.5 flex items-center gap-1.5 rounded-lg font-bold text-[10px] transition-all duration-300 border ${
-  isAnalyticsMode ? 'bg-[#CC0000] border-[#CC0000] text-white shadow-[0_0_12px_rgba(204,0,0,0.5)]' : 'bg-black/40 text-neutral-300 border-red-900/30 hover:bg-[#CC0000]/10 hover:border-[#CC0000]/50 hover:text-white shadow-sm'
-  }`}>
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"></line>
-      <line x1="12" y1="20" x2="12" y2="4"></line>
-      <line x1="6" y1="20" x2="6" y2="14"></line>
-    </svg>
-    Analytics
-  </button>
-  </div>
-
-  <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
-     <div className="py-4 px-2 space-y-6 shrink-0">
-   {[
-     {
-       title: "Sitio Principal",
-       filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag)
-     },
-     {
-       title: "Paquetes",
-       filter: (n, tag) => n.id.startsWith('paquete-')
-     },
-     {
-       title: "Servicios",
-       filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-')
-     },
-     {
-       title: "Recursos",
-       filter: (n, tag) => n.id.startsWith('landing-recurso')
-     }
-   ].map((group, gIdx) => {
-     const groupNodes = sortedNodes.filter(n => {
-        const meta = PAGE_SECTIONS.find(s => s.id === n.id);
-        return group.filter(n, meta?.tag);
-     });
-     
-     if (groupNodes.length === 0) return null;
-
-     return (
-       <div key={gIdx} className="space-y-1 mb-4">
-         <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest mb-2 drop-shadow-sm flex items-center justify-between cursor-pointer border transition-all group ${
-              !collapsedGroups[gIdx] ? 'bg-white text-[#CC0000] border-white/20 shadow-md' : 'border-transparent text-white/80 hover:bg-white hover:text-[#CC0000] hover:border-white/20'
-            }`}>
-             <span>{group.title}</span>
-             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
-                  className={`transition-transform duration-300 ${!collapsedGroups[gIdx] ? 'text-[#CC0000] -rotate-180' : 'text-white/40 group-hover:text-[#CC0000] rotate-0'}`}>
-               <polyline points="6 9 12 15 18 9"></polyline>
-             </svg>
-         </p>
-         
-         {!collapsedGroups[gIdx] && (
-           <div className="space-y-0.5 relative animate-in fade-in slide-in-from-top-2 duration-300">
-             {groupNodes.map((node) => {
-                const meta = PAGE_SECTIONS.find(s => s.id === node.id);
-                const isSelected = selectedNodeId === node.id;
-                const globalIdx = PAGE_SECTIONS.findIndex(s => s.id === node.id) + 1;
-                return (
-                <button key={node.id} onClick={() => handleSelectSection(node)}
-                className={`group/btn w-full text-left px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border ${
-                isSelected ? 'bg-gradient-to-r from-[#CC0000]/20 to-transparent border-[#CC0000]/30 shadow-[inset_2px_0_15px_rgba(204,0,0,0.15)]' : 'border-transparent hover:bg-[#CC0000]/10 hover:border-[#CC0000]/20 hover:translate-x-1'
-                }`}
-                >
-                <div className="min-w-0 flex-1">
-                <span className={`block text-xs font-black truncate drop-shadow-sm transition-colors duration-300 ${isSelected ? 'text-[#ff4444]' : 'text-white/70 group-hover/btn:text-white'}`}>
-                {meta?.label || node.id}
-                </span>
-                <span className={`text-[9px] font-black transition-colors duration-300 ${isSelected ? 'text-[#CC0000]/80' : 'text-white/30 group-hover/btn:text-white/50'}`}>
-                §{globalIdx} · {meta?.tag || node.id.toUpperCase()}
-                </span>
-                </div>
-                </button>
-                );
-             })}
-           </div>
-         )}
-       </div>
-     );
-   })}
-  </div>
-
-   <div className="mt-8 px-2 pb-16 space-y-1 shrink-0 border-t border-[#CC0000]/20 pt-4">
-   <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
-  className={`w-full text-[10px] py-2 rounded-xl transition-all font-black shadow-sm border border-transparent ${ activeSection ==='newsletter' ?'bg-[#CC0000] text-white border-sky-400 shadow-[0_4px_15px_rgba(14,165,233,0.4)]' :'text-neutral-300 hover:text-white hover:bg-black/50 hover:border-red-900/30' }`}>
-  📧 Newsletter Generador
-  </button>
-
-   <button onClick={() => { window.open('/socios', '_blank'); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border text-yellow-500 border-transparent hover:border-yellow-500/40 hover:bg-yellow-500/5 hover:text-yellow-400`}>
-   <span className="text-xs mr-2 drop-shadow-sm">💎</span> Landing / Socios VIP
-   </button>
+ <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-white/5 bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.2)] ${isSidebarOpen ? 'w-[260px] min-w-[260px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); }}
-   className={`w-full text-[10px] py-3 shadow-md rounded-xl transition-all font-black uppercase tracking-widest flex items-center justify-center border ${ ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ?'bg-gradient-to-r from-[#CC0000] to-[#880000] text-white border-red-900/30 shadow-[0_8px_20px_rgba(52,211,153,0.5)]' :'text-neutral-300 border-transparent hover:border-red-900/30 hover:bg-black/40 hover:text-white' }`}>
-   <span className="text-sm mr-2 drop-shadow-sm">🤖</span> Laboratorio IA
-   </button>
+  {/* Perfil del Usuario / Top Bar del Sidebar */}
+  <div className="px-4 py-4 border-b border-white/5 flex flex-col gap-3 shrink-0">
+    <div className="flex items-center gap-3">
+        <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#CC0000] to-[#880000] flex items-center justify-center shadow-[0_2px_8px_rgba(204,0,0,0.4)]">
+                <img src="/favicon.png" alt="Godzilla Logo" className="w-5 h-5 drop-shadow-md" />
+            </div>
+        </a>
+        <div className="flex-1">
+            <h1 className="text-sm font-black tracking-tight text-white/90">Godzilla OS</h1>
+            <p className="text-[10px] font-medium text-white/40 uppercase tracking-widest">Admin Workspace</p>
+        </div>
+    </div>
+    
+    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
+    className={`w-full p-2 flex items-center gap-3 transition-colors rounded-lg border border-transparent ${ activeSection ==='profile' ?'bg-white/10 border-white/10 shadow-sm' :'hover:bg-white/5' }`}>
+        <div className="w-7 h-7 rounded-full bg-black overflow-hidden shrink-0 border border-white/10">
+            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-[10px] flex items-center justify-center w-full h-full text-white/50"><UserCircle className="w-4 h-4" /></span>}
+        </div>
+        <div className="flex-1 text-left min-w-0">
+            <p className={`text-xs font-bold truncate transition-colors ${ activeSection ==='profile' ?'text-white' :'text-white/80' }`}>{adminProfile?.username || 'Usuario'}</p>
+            <p className="text-[10px] font-medium text-white/40 truncate capitalize">{adminProfile?.role || 'Staff'}</p>
+        </div>
+    </button>
+  </div>
 
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-   className={`w-full text-[10px] py-2 shadow-sm rounded-xl transition-all font-black uppercase flex items-center justify-center border ${ activeSection ==='it_studio' ?'bg-neutral-900 text-purple-400 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]' :'text-neutral-300 border-transparent hover:border-purple-500/40 hover:bg-purple-500/5 hover:text-white' }`}>
-   <span className="text-xs mr-2 drop-shadow-sm">⚙️</span> Centro Técnico IT
-   </button>
-   
-   <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
-   className={`w-full p-2 flex items-center gap-3 transition-colors rounded-xl shadow-sm border border-transparent ${ activeSection ==='profile' ?'bg-white/70 border-[#CC0000]/50 shadow-[0_4px_15px_rgba(255,255,255,0.8)]' :'hover:bg-black/40 hover:border-[#CC0000]/20' }`}>
-       <div className="w-6 h-6 rounded-full bg-black/60 overflow-hidden shrink-0 border border-[#CC0000]/50">
-           {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-xs flex items-center justify-center w-full h-full drop-shadow">🦖</span>}
-       </div>
-       <div className="flex-1 text-left min-w-0">
-           <p className={`text-xs font-black truncate drop-shadow-sm transition-colors ${ activeSection ==='profile' ?'text-[#CC0000]' :'text-white' }`}>{adminProfile?.username || 'Usuario'}</p>
-           <p className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${ activeSection ==='profile' ?'text-black/60' :'text-neutral-500' }`}>
-               <span className="w-1.5 h-1.5 rounded-full bg-[#CC0000] border border-[#CC0000] shadow-[0_0_5px_rgba(204,0,0,0.8)] animate-pulse"></span> Activo
-           </p>
-       </div>
-   </button>
-   
-  <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
- className="w-full flex items-center justify-center gap-1.5 text-[10px] text-red-500 font-bold hover:text-white hover:bg-[#CC0000]/10 border border-red-900/40 hover:border-[#CC0000]/60 py-2 rounded-xl transition-all shadow-sm">
- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-    <polyline points="16 17 21 12 16 7"></polyline>
-    <line x1="21" y1="12" x2="9" y2="12"></line>
- </svg>
- Cerrar sesión
- </button>
-  <button onClick={() => {
-      const isIT = ['jareg', 'godzilla_admin', 'dani', 'oscar'].includes(adminProfile?.username?.toLowerCase());
-      if (isIT) {
-          setIsAnalyticsMode(false);
-          navigate('/admin/bugs');
-          setSelectedNodeId(null);
-      } else {
-          setShowFeedbackModal(true);
-      }
-  }}
-  className={`w-full text-[10px] py-2 rounded-xl transition-all shadow-sm font-bold border ${activeSection === 'bugs' ? 'bg-yellow-500 text-black border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 'text-yellow-500 hover:text-white hover:bg-yellow-500/10 border-transparent hover:border-yellow-900/50'}`}>
-  {activeSection === 'bugs' ? '💡 Monitoreo IT' : '💡 Sugerencias / Bugs'}
-  </button>
+  <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar px-3 py-4 space-y-6">
+    
+    {/* GRUPO 1: SITIO WEB */}
+    <div className="space-y-1">
+        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Sitio Web</p>
+        {[
+            { title: "Sitio Principal", filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag) },
+            { title: "Paquetes", filter: (n, tag) => n.id.startsWith('paquete-') },
+            { title: "Servicios", filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-') },
+            { title: "Recursos", filter: (n, tag) => n.id.startsWith('landing-recurso') }
+        ].map((group, gIdx) => {
+            const groupNodes = sortedNodes.filter(n => {
+                const meta = PAGE_SECTIONS.find(s => s.id === n.id);
+                return group.filter(n, meta?.tag);
+            });
+            if (groupNodes.length === 0) return null;
+            return (
+                <div key={gIdx} className="space-y-0.5 mb-3">
+                    <p onClick={() => setCollapsedGroups(p => ({ ...p, [gIdx]: !p[gIdx] }))}
+                        className="px-2 py-1 text-[11px] font-bold text-white/60 hover:text-white cursor-pointer flex items-center justify-between group transition-colors">
+                        <span>{group.title}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
+                            className={`transition-transform duration-200 ${!collapsedGroups[gIdx] ? 'text-white/40 rotate-180' : 'text-white/20 group-hover:text-white/40 rotate-0'}`}>
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </p>
+                    
+                    {!collapsedGroups[gIdx] && (
+                        <div className="space-y-0.5 animate-in fade-in duration-200 ml-1 border-l border-white/10 pl-1">
+                            {groupNodes.map((node) => {
+                                const meta = PAGE_SECTIONS.find(s => s.id === node.id);
+                                const isSelected = selectedNodeId === node.id;
+                                return (
+                                <button key={node.id} onClick={() => handleSelectSection(node)}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-md transition-all duration-200 flex items-center gap-2 relative ${
+                                isSelected ? 'bg-[#CC0000]/10 text-[#CC0000]' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                }`}>
+                                {isSelected && <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[#CC0000] rounded-r-full" />}
+                                <span className={`text-[11px] font-medium truncate ${isSelected ? 'font-bold' : ''}`}>
+                                {meta?.label || node.id}
+                                </span>
+                                </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+        })}
+    </div>
+
+    {/* GRUPO 2: LABORATORIO IA */}
+    <div className="space-y-0.5">
+        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Laboratorio IA</p>
+        
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'bg-white/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-white/50 rounded-r-full" />}
+            <Bot className={`w-4 h-4 ${['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'text-white' : 'text-white/40'}`} />
+            <span className="text-xs">Laboratorio Suite</span>
+        </button>
+    </div>
+
+    {/* GRUPO 3: OPERACIONES */}
+    <div className="space-y-0.5">
+        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Operaciones</p>
+
+        <button onClick={() => setIsAnalyticsMode(true)} 
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ isAnalyticsMode ? 'bg-[#CC0000]/10 text-[#CC0000] font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {isAnalyticsMode && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
+            <BarChart2 className={`w-4 h-4 ${isAnalyticsMode ? 'text-[#CC0000]' : 'text-white/40'}`} />
+            <span className="text-xs">Analytics</span>
+        </button>
+
+        <button onClick={() => openTrendsModal()} 
+        className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
+            <Flame className="w-4 h-4 text-orange-500/70" />
+            <span className="text-xs">Analítica Viral</span>
+        </button>
+
+        <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='newsletter' ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'newsletter' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-sky-400 rounded-r-full" />}
+            <Mail className={`w-4 h-4 ${activeSection === 'newsletter' ? 'text-sky-400' : 'text-white/40'}`} />
+            <span className="text-xs">Newsletter</span>
+        </button>
+
+        <button onClick={() => { window.open('/socios', '_blank'); }}
+        className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
+            <Crown className="w-4 h-4 text-yellow-500/70" />
+            <span className="text-xs">Landing Socios VIP</span>
+        </button>
+
+        {/* SECCIÓN CRM COLAPSABLE */}
+        <div className="space-y-0.5 pt-1">
+            <p onClick={() => setCollapsedGroups(p => ({ ...p, crm: !p.crm }))}
+                className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center justify-between text-white/60 hover:bg-white/5 hover:text-white font-medium cursor-pointer group">
+                <span className="flex items-center gap-2.5">
+                    <Database className="w-4 h-4 text-emerald-500/70" />
+                    <span className="text-xs">CRM Negocios</span>
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
+                    className={`transition-transform duration-200 ${!collapsedGroups.crm ? 'text-white/40 rotate-180' : 'text-white/20 group-hover:text-white/40 rotate-0'}`}>
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </p>
+            
+            {!collapsedGroups.crm && (
+                <div className="space-y-0.5 animate-in fade-in duration-200 ml-6 border-l border-white/10 pl-2 mt-1">
+                    {[
+                        { name: "Clínica Q8", url: "https://crm.clinicaq8.com" },
+                        { name: "Don Elote", url: "https://crm.donelote.com" },
+                        { name: "Grupo MRG", url: "https://crm.mrg.com" },
+                        { name: "CEO Cuts", url: "https://crm.ceocuts.com" },
+                    ].map((crm, idx) => (
+                        <button key={idx} onClick={() => window.open(crm.url, '_blank')}
+                        className="w-full text-left px-2 py-1.5 rounded-md transition-all duration-200 flex items-center gap-2 text-white/50 hover:bg-white/5 hover:text-white text-[11px] font-medium">
+                            {crm.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+
+        {canSeeITStudio && (
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='it_studio' ? 'bg-purple-500/10 text-purple-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-purple-400 rounded-r-full" />}
+                <Database className={`w-4 h-4 ${activeSection === 'it_studio' ? 'text-purple-400' : 'text-white/40'}`} />
+                <span className="text-xs">Centro Técnico IT</span>
+            </button>
+        )}
+    </div>
+
   </div>
+
+  <div className="p-3 border-t border-white/5 space-y-1 shrink-0 bg-[#0a0a0a]/50">
+    <button onClick={() => {
+        const isIT = ['jareg', 'godzilla_admin', 'dani', 'oscar'].includes(adminProfile?.username?.toLowerCase());
+        if (isIT) {
+            setIsAnalyticsMode(false);
+            navigate('/admin/bugs');
+            setSelectedNodeId(null);
+        } else {
+            setShowFeedbackModal(true);
+        }
+    }}
+    className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${activeSection === 'bugs' ? 'bg-yellow-500/10 text-yellow-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium'}`}>
+        {activeSection === 'bugs' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
+        {activeSection === 'bugs' ? <Bug className="w-4 h-4 text-yellow-400" /> : <Lightbulb className="w-4 h-4 text-white/40" />}
+        <span className="text-xs">{activeSection === 'bugs' ? 'Monitoreo IT' : 'Sugerencias / Bugs'}</span>
+    </button>
+    
+    <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
+    className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-red-500/70 hover:bg-red-500/10 hover:text-red-400 font-medium">
+        <LogOut className="w-4 h-4" />
+        <span className="text-xs">Cerrar sesión</span>
+    </button>
   </div>
-  </div>
+ </div>
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
   <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="absolute top-16 left-0 z-50 w-4 h-12 bg-[#CC0000] text-white flex items-center justify-center rounded-r-md shadow-lg hover:bg-red-600 border border-t-[#CC0000] border-b-[#CC0000] border-r-[#CC0000] border-l-transparent transition-all">
       <span className="text-[10px] font-bold">{isSidebarOpen ? '❮' : '❯'}</span>
@@ -826,7 +844,7 @@ export default function AdminStudio() {
   ) : (<>
 
  {/* Barra superior del editor */}
- <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
 
  {selectedNodeId ? (
  <div className="flex items-center gap-3">
@@ -852,7 +870,7 @@ export default function AdminStudio() {
   </div>
  )}
 
- <div className="flex items-center gap-3">
+ <div className="flex items-center flex-wrap gap-2 sm:gap-3 justify-end w-full sm:w-auto">
  <button onClick={() => setShowPreview(p => !p)}
  className={`px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
  showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
@@ -885,11 +903,12 @@ export default function AdminStudio() {
  </div>
 
  {/* Cuerpo */}
- <div className="flex-1 flex overflow-hidden p-4 gap-4">
+ <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
 
  {/* ─ PANEL EDITOR ─ */}
- <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300"
- style={{ width: (showPreview && activeTab !== 'correos') ?'45%' :'100%' }}>
+ {(!isMobile || !showPreview) && (
+ <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 w-full"
+ style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '45%' : '100%') }}>
 
  {selectedNodeId && draftData ? (
  <>
@@ -1491,10 +1510,11 @@ export default function AdminStudio() {
  </div>
  )}
  </div>
+ )}
 
  {/* ─ PANEL PREVIEW ─ */}
-  {(showPreview && activeTab !== 'correos') && (
- <div className="flex-1 overflow-hidden border-l border-neutral-800">
+  {(!isMobile || showPreview) && (showPreview && activeTab !== 'correos') && (
+  <div className="flex-1 overflow-hidden border-l border-neutral-800 w-full">
  <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
  </div>
  )}

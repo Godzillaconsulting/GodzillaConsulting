@@ -147,7 +147,7 @@ export default function AdminStudio() {
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
  const [bugReporterPos, setBugReporterPos] = useState(null);
- const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
  useEffect(() => {
@@ -623,10 +623,10 @@ export default function AdminStudio() {
         <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1.5 text-white/40 hover:text-white rounded-md hover:bg-white/10">✕</button>
     </div>
     
-    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); }}
+    <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
     className={`w-full p-2 flex items-center gap-3 transition-colors rounded-lg border border-transparent ${ activeSection ==='profile' ?'bg-white/10 border-white/10 shadow-sm' :'hover:bg-white/5' }`}>
         <div className="w-7 h-7 rounded-full bg-black overflow-hidden shrink-0 border border-white/10">
-            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-[10px] flex items-center justify-center w-full h-full text-white/50"><UserCircle className="w-4 h-4" /></span>}
+            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-[10px] flex items-center justify-center w-full h-full text-white/50"><span className={"w-4 h-4"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>account_circle</span></span>}
         </div>
         <div className="flex-1 text-left min-w-0">
             <p className={`text-xs font-bold truncate transition-colors ${ activeSection ==='profile' ?'text-white' :'text-white/80' }`}>{adminProfile?.username || 'Usuario'}</p>
@@ -690,10 +690,10 @@ export default function AdminStudio() {
     <div className="space-y-0.5">
         <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Laboratorio IA</p>
         
-        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); }}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
         className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'bg-white/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-white/50 rounded-r-full" />}
-            <Bot className={`w-4 h-4 ${['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'text-white' : 'text-white/40'}`} />
+            <span className={`w-4 h-4 ${['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'text-white' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>smart_toy</span>
             <span className="text-xs">Laboratorio Suite</span>
         </button>
     </div>
@@ -705,26 +705,26 @@ export default function AdminStudio() {
         <button onClick={() => setIsAnalyticsMode(true)} 
         className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ isAnalyticsMode ? 'bg-[#CC0000]/10 text-[#CC0000] font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {isAnalyticsMode && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
-            <BarChart2 className={`w-4 h-4 ${isAnalyticsMode ? 'text-[#CC0000]' : 'text-white/40'}`} />
+            <span className={`w-4 h-4 ${isAnalyticsMode ? 'text-[#CC0000]' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>bar_chart</span>
             <span className="text-xs">Analytics</span>
         </button>
 
         <button onClick={() => openTrendsModal()} 
         className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
-            <Flame className="w-4 h-4 text-orange-500/70" />
+            <span className={"w-4 h-4 text-orange-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>local_fire_department</span>
             <span className="text-xs">Analítica Viral</span>
         </button>
 
         <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
         className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='newsletter' ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {activeSection === 'newsletter' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-sky-400 rounded-r-full" />}
-            <Mail className={`w-4 h-4 ${activeSection === 'newsletter' ? 'text-sky-400' : 'text-white/40'}`} />
+            <span className={`w-4 h-4 ${activeSection === 'newsletter' ? 'text-sky-400' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>mail</span>
             <span className="text-xs">Newsletter</span>
         </button>
 
         <button onClick={() => { window.open('/socios', '_blank'); }}
         className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
-            <Crown className="w-4 h-4 text-yellow-500/70" />
+            <span className={"w-4 h-4 text-yellow-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>workspace_premium</span>
             <span className="text-xs">Landing Socios VIP</span>
         </button>
 
@@ -733,7 +733,7 @@ export default function AdminStudio() {
             <p onClick={() => setCollapsedGroups(p => ({ ...p, crm: !p.crm }))}
                 className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center justify-between text-white/60 hover:bg-white/5 hover:text-white font-medium cursor-pointer group">
                 <span className="flex items-center gap-2.5">
-                    <Database className="w-4 h-4 text-emerald-500/70" />
+                    <span className={"w-4 h-4 text-emerald-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>database</span>
                     <span className="text-xs">CRM Negocios</span>
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
@@ -758,10 +758,10 @@ export default function AdminStudio() {
         </div>
 
         {canSeeITStudio && (
-            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
             className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='it_studio' ? 'bg-purple-500/10 text-purple-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
                 {activeSection === 'it_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-purple-400 rounded-r-full" />}
-                <Database className={`w-4 h-4 ${activeSection === 'it_studio' ? 'text-purple-400' : 'text-white/40'}`} />
+                <span className={`w-4 h-4 ${activeSection === 'it_studio' ? 'text-purple-400' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>database</span>
                 <span className="text-xs">Centro Técnico IT</span>
             </button>
         )}
@@ -782,13 +782,13 @@ export default function AdminStudio() {
     }}
     className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${activeSection === 'bugs' ? 'bg-yellow-500/10 text-yellow-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium'}`}>
         {activeSection === 'bugs' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
-        {activeSection === 'bugs' ? <Bug className="w-4 h-4 text-yellow-400" /> : <Lightbulb className="w-4 h-4 text-white/40" />}
+        {activeSection === 'bugs' ? <span className={"w-4 h-4 text-yellow-400"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>bug_report</span> : <span className={"w-4 h-4 text-white/40"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>lightbulb</span>}
         <span className="text-xs">{activeSection === 'bugs' ? 'Monitoreo IT' : 'Sugerencias / Bugs'}</span>
     </button>
     
     <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
     className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-red-500/70 hover:bg-red-500/10 hover:text-red-400 font-medium">
-        <LogOut className="w-4 h-4" />
+        <span className={"w-4 h-4"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>logout</span>
         <span className="text-xs">Cerrar sesión</span>
     </button>
   </div>
@@ -798,7 +798,7 @@ export default function AdminStudio() {
   {/* Botón Flotante Toggle Menu (Estilo Apple) */}
   <div className="absolute top-3 left-3 z-[60]">
       <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-1.5 rounded-md bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-md ${isSidebarOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`}>
-          {isSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+          {isSidebarOpen ? <span className={"w-5 h-5"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>menu_open</span> : <span className={"w-5 h-5"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>menu</span>}
       </button>
   </div>
   
@@ -806,22 +806,22 @@ export default function AdminStudio() {
   {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && !isAnalyticsMode && (
       <div className="flex items-center gap-2 px-6 md:pl-14 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
           {[
-              { id: 'social_studio', label: '🤖 Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
-              { id: 'video_editor', label: '🎬 Editor Pro', path: '/admin/laboratorio/editor', color: 'text-blue-400', border: 'border-blue-500' },
-              { id: 'automation-flow', label: '⚡ Flujo Automático', path: '/admin/laboratorio/flujo', color: 'text-emerald-400', border: 'border-emerald-500' },
-              { id: 'ai-planner', label: '🤖 Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' },
-              { id: 'social', label: '📅 Calendario Global', path: '/admin/laboratorio/calendario', color: 'text-yellow-400', border: 'border-yellow-500' }
+              { id: 'social_studio', icon: 'smart_toy', label: 'Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
+              { id: 'video_editor', icon: 'movie_edit', label: 'Editor Pro', path: '/admin/laboratorio/editor', color: 'text-blue-400', border: 'border-blue-500' },
+              { id: 'automation-flow', icon: 'bolt', label: 'Flujo Automático', path: '/admin/laboratorio/flujo', color: 'text-emerald-400', border: 'border-emerald-500' },
+              { id: 'ai-planner', icon: 'robot', label: 'Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' },
+              { id: 'social', icon: 'calendar_month', label: 'Calendario Global', path: '/admin/laboratorio/calendario', color: 'text-yellow-400', border: 'border-yellow-500' }
           ].map(tab => (
               <button 
                   key={tab.id}
                   onClick={() => navigate(tab.path)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all shadow-sm border ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all shadow-sm border ${
                       activeSection === tab.id 
                           ? `bg-neutral-900 ${tab.color} ${tab.border}/50 shadow-[0_0_15px_rgba(255,255,255,0.05)]` 
                           : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800 border-transparent'
                   }`}
               >
-                  {tab.label}
+                  <><span className="material-symbols-outlined text-[14px]">{tab.icon}</span>{tab.label}</>
               </button>
           ))}
       </div>
@@ -886,7 +886,7 @@ export default function AdminStudio() {
 
  <div className="flex items-center flex-wrap gap-2 sm:gap-3 justify-end w-full sm:w-auto">
  <button onClick={() => setShowPreview(p => !p)}
- className={`px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
+ className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
  showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
@@ -931,10 +931,10 @@ export default function AdminStudio() {
  {tabs.map(tab => (
  <button key={tab.id}
  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
- className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap border border-transparent shadow-sm transition-all ${
+ className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap border border-transparent shadow-sm transition-all ${
   activeTab === tab.id ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-neutral-400 hover:text-white hover:bg-[#CC0000]/20 hover:border-[#CC0000]/40'
   }`}>
- {tab.label}
+ <><span className="material-symbols-outlined text-[14px]">{tab.icon}</span>{tab.label}</>
  </button>
  ))}
  </div>

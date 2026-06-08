@@ -743,10 +743,8 @@ export default function AdminStudio() {
             {!collapsedGroups.crm && (
                 <div className="space-y-0.5 animate-in fade-in duration-200 ml-6 border-l border-white/10 pl-2 mt-1">
                     {[
-                        { name: "Clínica Q8", url: "https://crm.clinicaq8.com" },
-                        { name: "Don Elote", url: "https://crm.donelote.com" },
-                        { name: "Grupo MRG", url: "https://crm.mrg.com" },
-                        { name: "CEO Cuts", url: "https://crm.ceocuts.com" },
+                        { name: "CRM Ventas", url: "https://ventas.godzillaconsulting.ai/" },
+                        { name: "CRM Terapia", url: "https://terapia.godzillaconsulting.ai/" }
                     ].map((crm, idx) => (
                         <button key={idx} onClick={() => window.open(crm.url, '_blank')}
                         className="w-full text-left px-2 py-1.5 rounded-md transition-all duration-200 flex items-center gap-2 text-white/50 hover:bg-white/5 hover:text-white text-[11px] font-medium">

@@ -147,7 +147,17 @@ export default function AdminStudio() {
  const [isLandingMenuOpen, setIsLandingMenuOpen] = useState(false);
  const [isOpsMenuOpen, setIsOpsMenuOpen] = useState(false);
  const [bugReporterPos, setBugReporterPos] = useState(null);
- const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+ const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+ const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+ useEffect(() => {
+     const handleResize = () => {
+         setIsMobile(window.innerWidth < 768);
+         if (window.innerWidth < 768) setIsSidebarOpen(false);
+     };
+     window.addEventListener('resize', handleResize);
+     return () => window.removeEventListener('resize', handleResize);
+ }, []);
 
  
  const [showFeedbackModal, setShowFeedbackModal] = useState(false);

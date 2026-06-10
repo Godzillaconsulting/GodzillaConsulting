@@ -92,7 +92,7 @@ export default React.memo(function GoyiAdmin() {
 
             {/* Modal/Ventana de Chat */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 z-[999999] w-[380px] h-[550px] max-h-[75vh] shadow-[0_0_50px_rgba(234,179,8,0.15)] flex flex-col bg-[#111111] border rounded-2xl border-yellow-600/30 overflow-hidden font-sans pointer-events-auto">
+                <div className="fixed bottom-24 right-4 sm:right-6 z-[999999] w-[calc(100vw-2rem)] sm:w-[380px] h-[550px] max-h-[75vh] shadow-[0_0_50px_rgba(234,179,8,0.15)] flex flex-col bg-[#111111] border rounded-2xl border-yellow-600/30 overflow-hidden font-sans pointer-events-auto">
                     
                     {/* Header Clickable */}
                     <div 

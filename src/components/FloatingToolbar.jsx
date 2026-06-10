@@ -20,7 +20,7 @@ export default function FloatingToolbar({ selectedClip, editor, engine }) {
 
   if (!selectedClip) {
     return (
-      <div className="w-80 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col items-center justify-center text-center p-6">
+      <div className="w-full md:w-80 bg-[#18181b] border-t md:border-t-0 md:border-l border-[#27272a] h-auto md:h-full shrink-0 flex flex-col items-center justify-center text-center p-6">
         <Activity className="w-10 h-10 text-neutral-600 mb-4" />
         <h3 className="text-neutral-400 font-medium text-sm mb-2">Sin selección</h3>
         <p className="text-xs text-neutral-600">Selecciona un clip de video, audio o texto en la línea de tiempo para ver sus propiedades avanzadas.</p>
@@ -29,7 +29,7 @@ export default function FloatingToolbar({ selectedClip, editor, engine }) {
   }
 
   return (
-    <div className="w-80 sm:w-96 bg-[#18181b] border-l border-[#27272a] h-full shrink-0 flex flex-col">
+    <div className="w-full md:w-80 md:sm:w-96 bg-[#18181b] border-t md:border-t-0 md:border-l border-[#27272a] h-auto md:h-full shrink-0 flex flex-col">
       <div className="h-14 flex items-center px-4 border-b border-[#27272a] bg-[#121212] shrink-0">
         <h3 className="text-white font-bold text-sm tracking-wide flex items-center gap-2">
           Propiedades: {type === 'video' ? 'Video' : type === 'audio' ? 'Audio' : 'Texto'}

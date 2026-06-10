@@ -223,7 +223,7 @@ const Paquetes = () => {
  >
  {packages.map((pkg, index) => {
  return (
- <div key={pkg._id || pkg.id} className="relative flex-none w-[320px] md:w-[380px] snap-center group/card">
+ <div key={pkg._id || pkg.id} className="relative flex-none w-[280px] sm:w-[320px] md:w-[380px] snap-center group/card">
  {/* Red Glow Background (Casos Exito Style) */}
  <div className="absolute -inset-1 bg-[#CC0000] rounded-[2rem] opacity-0 group-hover/card:opacity-100 transition-all duration-500 blur-[8px] z-0"></div>
 

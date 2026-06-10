@@ -286,7 +286,7 @@ const ContactForm = ({ showNewsletter = true }) => {
  </div>
 
  {/* Fecha y Hora */}
- <div className="grid grid-cols-2 gap-6 pt-2">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
  <div>
  <label className="flex items-center text-sm font-bold mb-2">
  {t('contact.dateLabel')} <span className="text-[#CC0000] mx-1">*</span>

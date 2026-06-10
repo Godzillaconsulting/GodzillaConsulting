@@ -187,7 +187,7 @@ const Servicios = () => {
                     <span className="text-[#CC0000] font-bold tracking-[0.2em] uppercase mb-4 text-sm md:text-base drop-shadow-lg">
                         {isSpanish ? (nodeData.overline || "Soluciones de Alto Impacto") : (engTrans.overline || t('services.overline'))}
                     </span>
-                    <h2 className="text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl inline-block animate-blink-cursor">
+                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-center text-white tracking-tighter drop-shadow-2xl inline-block animate-blink-cursor">
                         {typedTitle}
                     </h2>
                     {(isSpanish ? nodeData.subtitle : (engTrans.subtitle || nodeData.subtitle)) && (

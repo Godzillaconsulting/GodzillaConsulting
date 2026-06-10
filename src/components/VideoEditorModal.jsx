@@ -864,10 +864,10 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       </div>
 
       {/* Main Workspace */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* LEFT PANEL: Library (Media, Text, Audio) */}
-        <div className="w-72 sm:w-80 flex flex-col border-r border-[#27272a] bg-[#18181b] shrink-0">
+        <div className="w-full md:w-80 h-[250px] md:h-auto flex flex-col border-b md:border-b-0 md:border-r border-[#27272a] bg-[#18181b] shrink-0">
           {/* Tabs */}
           <div className="flex p-2 gap-1 border-b border-[#27272a] overflow-x-auto custom-scrollbar">
             {[
@@ -1170,7 +1170,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
         </div>
 
         {/* CENTER PANEL: Player Preview */}
-        <div className="flex-1 flex flex-col bg-[#080808] relative min-w-0">
+        <div className="flex-1 flex flex-col bg-[#080808] relative min-w-0 h-[300px] md:h-auto">
 
           <div className="flex-1 flex items-center justify-center p-4 min-h-0 relative">
             {/* Player Container */}
@@ -1291,7 +1291,7 @@ export default function IntegratedVideoEditor({ queue = [], onClose }) {
       {/* BOTTOM WORKSPACE: Timeline */}
       <div className="h-[280px] bg-[#18181b] border-t border-[#27272a] shrink-0 flex flex-col relative z-20">
         {/* Timeline Toolbar */}
-        <div className="h-10 bg-[#121212] flex items-center px-4 justify-between border-b border-[#27272a] shrink-0">
+        <div className="min-h-10 py-1.5 bg-[#121212] flex flex-wrap items-center px-4 justify-between gap-2 border-b border-[#27272a] shrink-0">
           <div className="flex items-center gap-2">
             <button onClick={handleSplit} disabled={!selectedClipId}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#27272a] hover:bg-[#3f3f46] disabled:opacity-30 disabled:hover:bg-[#27272a] text-neutral-300 text-xs font-medium rounded border border-[#3f3f46] transition-colors">

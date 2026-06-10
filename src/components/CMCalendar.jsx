@@ -1292,7 +1292,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center flex-wrap gap-2 sm:gap-3 justify-end w-full sm:w-auto">
                             {/* Notificaciones */}
                             <div className="relative" data-dropdown="notifications">
                                 <button onClick={() => { setShowNotifications(!showNotifications); setNotifications(prev => prev.map(n => n.to?.toLowerCase() === currentUser.toLowerCase() ? { ...n, read: true } : n)); }}
@@ -1352,7 +1352,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden shrink-0 pb-1">
                         {[
                             { id: 'contenido', label: '📣 Contenido', count: events.length },
                             { id: 'contenido_ia', label: '🤖 Contenido IA', count: tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).length },
@@ -1492,9 +1492,9 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* TAB: PENDIENTES */}
                             {calendarTab === 'pendientes' ? (
-                                <div className="flex bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex-1 m-4 font-sans shadow-2xl">
+                                <div className="flex flex-col md:flex-row bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex-1 m-4 font-sans shadow-2xl">
                                     {/* Left Pane */}
-                                    <div className="w-1/2 md:w-5/12 border-r border-neutral-800 flex flex-col bg-[#050505] text-white">
+                                    <div className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col bg-[#050505] text-white min-h-[300px] md:min-h-0">
                                         <div className="flex items-center px-4 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a] relative" data-dropdown="templates">
                                             <button onClick={() => setShowTemplateDropdown(!showTemplateDropdown)} className="bg-[#CC0000] hover:bg-red-800 text-white rounded-lg px-4 py-1.5 text-xs font-black uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(204,0,0,0.3)] transition-all relative z-10">
                                                 <span className="mr-2 text-sm">+</span> Add Task <span className="ml-2 text-[10px]">▼</span>
@@ -1545,7 +1545,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                     </div>
 
                                     {/* Right Pane */}
-                                    <div className="w-1/2 md:w-7/12 flex flex-col bg-[#080808] text-white">
+                                    <div className="w-full md:w-7/12 flex flex-col bg-[#080808] text-white">
                                         {selectedTaskBoard ? (
                                             <div className="flex-1 flex flex-col overflow-hidden">
                                                 <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]">

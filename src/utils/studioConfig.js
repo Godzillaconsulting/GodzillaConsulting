@@ -38,6 +38,7 @@ export const PAGE_SECTIONS = [
  { id: 'landing-recurso-prompts', label: 'L. Protocolo Lázaro', emoji: '🔗', tag: 'LANDING' },
  { id: 'landing-recurso-boveda-scripts', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
  { id: 'landing-recurso-crm', label: 'L. Tablero Control', emoji: '🔗', tag: 'LANDING' },
+ { id: 'socio-godzilla', label: 'Socios VIP', emoji: '👑', tag: 'LANDING' },
  { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
 ];
 

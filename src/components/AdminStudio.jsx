@@ -14,7 +14,11 @@ import AIContentPlanner from './AIContentPlanner';
 import IntegratedVideoEditor from './VideoEditorModal';
 import BugReporterModal from './BugReporterModal';
 import BugTrackerUI from './BugTrackerUI';
-import ITStudioPanel from './ITStudioPanel';
+import DBStudioPanel from './DBStudioPanel';
+import AbordajeLeadsPanel from './AbordajeLeadsPanel';
+import CeoEstudioPanel from './CeoEstudioPanel';
+import SqlAtaquesPanel from './SqlAtaquesPanel';
+import PanelMaestroPanel from './PanelMaestroPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields, MEDIA_PATTERNS } from '../utils/editorParser';
@@ -104,23 +108,21 @@ export default function AdminStudio() {
   const location = useLocation();
   const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true });
+  const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true, 4: true, crm: true });
   
   const activeSection = useMemo(() => {
-    if (location.pathname.includes('/calendar')) return 'social';
-    if (location.pathname.includes('/studio')) return 'social_studio';
-    if (location.pathname.includes('/video-editor')) return 'video_editor';
+    if (location.pathname.includes('/admin/creativo/estudio') || location.pathname.includes('/laboratorio/estudio') || location.pathname.includes('/studio')) return 'social_studio';
+    if (location.pathname.includes('/admin/creativo/planificador') || location.pathname.includes('/laboratorio/planificador') || location.pathname.includes('/ai-planner')) return 'ai-planner';
+    if (location.pathname.includes('/admin/creativo/calendario') || location.pathname.includes('/laboratorio/calendario') || location.pathname.includes('/calendar')) return 'social';
+    if (location.pathname.includes('/admin/operaciones/ceo-studio') || location.pathname.includes('/admin/it/ceo')) return 'ceo_studio';
+    if (location.pathname.includes('/admin/operaciones/leads') || location.pathname.includes('/admin/it/leads')) return 'leads';
+    if (location.pathname.includes('/admin/operaciones/newsletter') || location.pathname.includes('/newsletter')) return 'newsletter';
+    if (location.pathname.includes('/admin/it/db')) return 'it_db';
+    if (location.pathname.includes('/admin/it/flow') || location.pathname.includes('/laboratorio/flujo') || location.pathname.includes('/automation-flow')) return 'it_flow';
+    if (location.pathname.includes('/admin/it/maestro')) return 'it_maestro';
+    if (location.pathname.includes('/admin/it/waf') || location.pathname.includes('/admin/it/sql')) return 'it_waf';
+    if (location.pathname.includes('/admin/it/bugs') || location.pathname.includes('/bugs')) return 'it_bugs';
     if (location.pathname.includes('/profile')) return 'profile';
-    if (location.pathname.includes('/bugs')) return 'bugs';
-    if (location.pathname.includes('/newsletter')) return 'newsletter';
-    if (location.pathname.includes('/ai-planner')) return 'ai-planner';
-    if (location.pathname.includes('/automation-flow')) return 'automation-flow';
-    if (location.pathname.includes('/laboratorio/estudio')) return 'social_studio';
-    if (location.pathname.includes('/laboratorio/editor')) return 'video_editor';
-    if (location.pathname.includes('/laboratorio/flujo')) return 'automation-flow';
-    if (location.pathname.includes('/laboratorio/planificador')) return 'ai-planner';
-    if (location.pathname.includes('/laboratorio/calendario')) return 'social';
-    if (location.pathname.includes('/admin/it')) return 'it_studio';
     return 'editor';
   }, [location.pathname]);
 
@@ -323,18 +325,19 @@ export default function AdminStudio() {
  const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
  const handleSelectSection = (node) => {
- setIsAnalyticsMode(false);
- setSelectedNodeId(node.id);
- setActiveTab('textos');
- setSelectedElementIndex(null);
- setSelectedFeatureIndex(null);
- navigate('/admin');
- 
-  let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
-  combinedData = injectSectionDefaults(node.id, combinedData);
+  setIsAnalyticsMode(false);
+  setSelectedNodeId(node.id);
+  setActiveTab('textos');
+  setSelectedElementIndex(null);
+  setSelectedFeatureIndex(null);
+  navigate('/admin');
+  if (isMobile) setIsSidebarOpen(false);
+  
+   let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
+   combinedData = injectSectionDefaults(node.id, combinedData);
 
- setDraftData(combinedData);
- };
+  setDraftData(combinedData);
+  };
 
  const change = (key, val) => {
    setDraftData(p => ({ ...p, [key]: val }));
@@ -604,6 +607,13 @@ export default function AdminStudio() {
     </div>
   )}
 
+ {isSidebarOpen && isMobile && (
+   <div 
+     className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
+     onClick={() => setIsSidebarOpen(false)}
+   />
+ )}
+
  {/* ██ COL 1: SECCIONES ████████████████████████████████████████████████ */}
  <div className={`absolute md:relative z-40 h-full transition-all duration-300 flex flex-col border-r border-white/5 bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.2)] ${isSidebarOpen ? 'w-[280px] md:w-[240px] min-w-[280px] md:min-w-[240px]' : 'w-0 min-w-0 overflow-hidden opacity-0 pointer-events-none'}`}>
   
@@ -626,7 +636,7 @@ export default function AdminStudio() {
     <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/profile'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
     className={`w-full p-2 flex items-center gap-3 transition-colors rounded-lg border border-transparent ${ activeSection ==='profile' ?'bg-white/10 border-white/10 shadow-sm' :'hover:bg-white/5' }`}>
         <div className="w-7 h-7 rounded-full bg-black overflow-hidden shrink-0 border border-white/10">
-            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-[10px] flex items-center justify-center w-full h-full text-white/50"><span className={"w-4 h-4"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>account_circle</span></span>}
+            {adminProfile?.photo_url ? <img src={adminProfile.photo_url} className="w-full h-full object-cover"/> : <span className="text-[10px] flex items-center justify-center w-full h-full text-white/50"><span className="w-4 h-4 material-symbols-outlined text-[16px] flex items-center justify-center">account_circle</span></span>}
         </div>
         <div className="flex-1 text-left min-w-0">
             <p className={`text-xs font-bold truncate transition-colors ${ activeSection ==='profile' ?'text-white' :'text-white/80' }`}>{adminProfile?.username || 'Usuario'}</p>
@@ -644,7 +654,8 @@ export default function AdminStudio() {
             { title: "Sitio Principal", filter: (n, tag) => ['INICIO', 'SERVICIOS', 'CULTURA', 'PORTAFOLIO', 'RECURSOS', 'PAQUETES', 'PIE'].includes(tag) },
             { title: "Paquetes", filter: (n, tag) => n.id.startsWith('paquete-') },
             { title: "Servicios", filter: (n, tag) => tag === 'SERVICIO' || n.id.startsWith('servicio-') },
-            { title: "Recursos", filter: (n, tag) => n.id.startsWith('landing-recurso') }
+            { title: "Recursos", filter: (n, tag) => n.id.startsWith('landing-recurso') },
+            { title: "Landing Socios", filter: (n, tag) => n.id === 'socio-godzilla' }
         ].map((group, gIdx) => {
             const groupNodes = sortedNodes.filter(n => {
                 const meta = PAGE_SECTIONS.find(s => s.id === n.id);
@@ -686,45 +697,82 @@ export default function AdminStudio() {
         })}
     </div>
 
-    {/* GRUPO 2: LABORATORIO IA */}
+    {/* GRUPO 2: ESTUDIO CREATIVO & IA */}
     <div className="space-y-0.5">
-        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Laboratorio IA</p>
+        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Estudio Creativo & IA</p>
         
-        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/laboratorio/estudio'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
-        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'bg-white/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
-            {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-white/50 rounded-r-full" />}
-            <span className={`w-4 h-4 ${['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? 'text-white' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>smart_toy</span>
-            <span className="text-xs">Laboratorio Suite</span>
+        {/* Estudio IA */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/creativo/estudio'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'social_studio' ? 'bg-[#CC0000]/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'social_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
+            <span className={`w-4 h-4 ${activeSection === 'social_studio' ? 'text-[#CC0000]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>smart_toy</span>
+            <span className="text-xs">Estudio IA</span>
+        </button>
+
+        {/* Planificador IA */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/creativo/planificador'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'ai-planner' ? 'bg-purple-500/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'ai-planner' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-purple-400 rounded-r-full" />}
+            <span className={`w-4 h-4 ${activeSection === 'ai-planner' ? 'text-purple-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>robot</span>
+            <span className="text-xs">Planificador IA</span>
+        </button>
+
+        {/* Calendario Global */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/creativo/calendario'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'social' ? 'bg-yellow-500/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'social' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
+            <span className={`w-4 h-4 ${activeSection === 'social' ? 'text-yellow-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>calendar_month</span>
+            <span className="text-xs">Calendario Global</span>
         </button>
     </div>
 
-    {/* GRUPO 3: OPERACIONES */}
+    {/* GRUPO 3: OPERACIONES & NEGOCIO */}
     <div className="space-y-0.5">
-        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Operaciones</p>
+        <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Operaciones & Negocio</p>
 
-        <button onClick={() => setIsAnalyticsMode(true)} 
-        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ isAnalyticsMode ? 'bg-[#CC0000]/10 text-[#CC0000] font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+        {/* Analytics */}
+        <button onClick={() => { setIsAnalyticsMode(true); setSelectedNodeId(null); if (isMobile) setIsSidebarOpen(false); }} 
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ isAnalyticsMode ? 'bg-[#CC0000]/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {isAnalyticsMode && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
-            <span className={`w-4 h-4 ${isAnalyticsMode ? 'text-[#CC0000]' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>bar_chart</span>
+            <span className={`w-4 h-4 ${isAnalyticsMode ? 'text-[#CC0000]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>bar_chart</span>
             <span className="text-xs">Analytics</span>
         </button>
 
-        <button onClick={() => openTrendsModal()} 
+        {/* Analítica Viral */}
+        <button onClick={() => { openTrendsModal(); if (isMobile) setIsSidebarOpen(false); }} 
         className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
-            <span className={"w-4 h-4 text-orange-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>local_fire_department</span>
+            <span className={"w-4 h-4 text-orange-500/70" + " material-symbols-outlined text-[16px] flex items-center justify-center"}>local_fire_department</span>
             <span className="text-xs">Analítica Viral</span>
         </button>
 
-        <button onClick={() => { setIsAnalyticsMode(false); if(activeSection === 'newsletter') { navigate('/admin'); } else { navigate('/admin/newsletter'); } setSelectedNodeId(null); }}
-        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='newsletter' ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+        {/* CEO Studio: Aprobaciones */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/operaciones/ceo-studio'); setSelectedNodeId(null); if (isMobile) setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'ceo_studio' ? 'bg-fuchsia-500/10 text-fuchsia-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'ceo_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-fuchsia-400 rounded-r-full" />}
+            <span className={`w-4 h-4 ${activeSection === 'ceo_studio' ? 'text-fuchsia-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>gavel</span>
+            <span className="text-xs">CEO Studio</span>
+        </button>
+
+        {/* Clientes / Leads Abordaje */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/operaciones/leads'); setSelectedNodeId(null); if (isMobile) setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'leads' ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+            {activeSection === 'leads' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-emerald-400 rounded-r-full" />}
+            <span className={`w-4 h-4 ${activeSection === 'leads' ? 'text-emerald-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>group</span>
+            <span className="text-xs">Leads Abordaje</span>
+        </button>
+
+        {/* Newsletter */}
+        <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/operaciones/newsletter'); setSelectedNodeId(null); if (isMobile) setIsSidebarOpen(false); }}
+        className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'newsletter' ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {activeSection === 'newsletter' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-sky-400 rounded-r-full" />}
-            <span className={`w-4 h-4 ${activeSection === 'newsletter' ? 'text-sky-400' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>mail</span>
+            <span className={`w-4 h-4 ${activeSection === 'newsletter' ? 'text-sky-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>mail</span>
             <span className="text-xs">Newsletter</span>
         </button>
 
+        {/* Landing Socios VIP */}
         <button onClick={() => { window.open('/socios', '_blank'); }}
         className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
-            <span className={"w-4 h-4 text-yellow-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>workspace_premium</span>
+            <span className={"w-4 h-4 text-yellow-500/70" + " material-symbols-outlined text-[16px] flex items-center justify-center"}>workspace_premium</span>
             <span className="text-xs">Landing Socios VIP</span>
         </button>
 
@@ -733,7 +781,7 @@ export default function AdminStudio() {
             <p onClick={() => setCollapsedGroups(p => ({ ...p, crm: !p.crm }))}
                 className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center justify-between text-white/60 hover:bg-white/5 hover:text-white font-medium cursor-pointer group">
                 <span className="flex items-center gap-2.5">
-                    <span className={"w-4 h-4 text-emerald-500/70"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>database</span>
+                    <span className={"w-4 h-4 text-emerald-500/70" + " material-symbols-outlined text-[16px] flex items-center justify-center"}>database</span>
                     <span className="text-xs">CRM Negocios</span>
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
@@ -756,34 +804,71 @@ export default function AdminStudio() {
                 </div>
             )}
         </div>
-
-        {canSeeITStudio && (
-            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
-            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection ==='it_studio' ? 'bg-purple-500/10 text-purple-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
-                {activeSection === 'it_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-purple-400 rounded-r-full" />}
-                <span className={`w-4 h-4 ${activeSection === 'it_studio' ? 'text-purple-400' : 'text-white/40'}  material-symbols-outlined text-[16px] flex items-center justify-center`}>database</span>
-                <span className="text-xs">Centro Técnico IT</span>
-            </button>
-        )}
     </div>
 
+    {/* GRUPO 4: DESARROLLO & TI */}
+    {isTechAdmin && (
+        <div className="space-y-0.5">
+            <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Desarrollo & TI</p>
+
+            {/* DB Studio */}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_db' ? 'bg-[#00ff88]/10 text-[#00ff88] font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_db' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#00ff88] rounded-r-full" />}
+                <span className={`w-4 h-4 ${activeSection === 'it_db' ? 'text-[#00ff88]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>database</span>
+                <span className="text-xs">DB Studio</span>
+            </button>
+
+            {/* Flujo de Bots */}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/flow'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_flow' ? 'bg-[#CC0000]/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_flow' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
+                <span className={`w-4 h-4 ${activeSection === 'it_flow' ? 'text-[#CC0000]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>hub</span>
+                <span className="text-xs">Flujo de Bots</span>
+            </button>
+
+            {/* Panel Maestro */}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/maestro'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_maestro' ? 'bg-yellow-500/10 text-yellow-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_maestro' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
+                <span className={`w-4 h-4 ${activeSection === 'it_maestro' ? 'text-yellow-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>settings_applications</span>
+                <span className="text-xs">Panel Maestro</span>
+            </button>
+
+            {/* Firewall WAF */}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/waf'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_waf' ? 'bg-red-500/10 text-red-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_waf' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-red-400 rounded-r-full" />}
+                <span className={`w-4 h-4 ${activeSection === 'it_waf' ? 'text-red-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>security</span>
+                <span className="text-xs">Firewall WAF</span>
+            </button>
+
+            {/* Bug Tracker Admin */}
+            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/bugs'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
+            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_bugs' ? 'bg-orange-500/10 text-orange-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
+                {activeSection === 'it_bugs' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-orange-400 rounded-r-full" />}
+                <span className={`w-4 h-4 ${activeSection === 'it_bugs' ? 'text-orange-400' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>bug_report</span>
+                <span className="text-xs">Bug Tracker TI</span>
+            </button>
+        </div>
+    )}
   </div>
 
   <div className="p-3 border-t border-white/5 space-y-1 shrink-0 bg-[#0a0a0a]/50">
     <button onClick={() => {
-        const isIT = ['jareg', 'godzilla_admin', 'dani', 'oscar'].includes(adminProfile?.username?.toLowerCase());
-        if (isIT) {
+        if (isTechAdmin) {
             setIsAnalyticsMode(false);
-            navigate('/admin/bugs');
+            navigate('/admin/it/bugs');
             setSelectedNodeId(null);
         } else {
             setShowFeedbackModal(true);
         }
+        if (isMobile) setIsSidebarOpen(false);
     }}
-    className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${activeSection === 'bugs' ? 'bg-yellow-500/10 text-yellow-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium'}`}>
-        {activeSection === 'bugs' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
-        {activeSection === 'bugs' ? <span className={"w-4 h-4 text-yellow-400"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>bug_report</span> : <span className={"w-4 h-4 text-white/40"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>lightbulb</span>}
-        <span className="text-xs">{activeSection === 'bugs' ? 'Monitoreo IT' : 'Sugerencias / Bugs'}</span>
+    className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${activeSection === 'it_bugs' ? 'bg-yellow-500/10 text-yellow-400 font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium'}`}>
+        {activeSection === 'it_bugs' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-yellow-400 rounded-r-full" />}
+        {activeSection === 'it_bugs' ? <span className="w-4 h-4 text-yellow-400 material-symbols-outlined text-[16px] flex items-center justify-center">bug_report</span> : <span className="w-4 h-4 text-white/40 material-symbols-outlined text-[16px] flex items-center justify-center">lightbulb</span>}
+        <span className="text-xs">{isTechAdmin ? 'Bug Tracker TI' : 'Sugerencias / Bugs'}</span>
     </button>
     
     <button onClick={() => { localStorage.clear(); window.location.href ='/login'; }}
@@ -802,38 +887,15 @@ export default function AdminStudio() {
       </button>
   </div>
   
-  {/* Header Tabs para Laboratorio IA */}
-  {['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) && !isAnalyticsMode && (
-      <div className="flex items-center gap-2 px-6 md:pl-14 py-3 border-b border-white/10 shrink-0 overflow-x-auto bg-[#050505]">
-          {[
-              { id: 'social_studio', icon: 'smart_toy', label: 'Estudio IA', path: '/admin/laboratorio/estudio', color: 'text-[#CC0000]', border: 'border-[#CC0000]' },
-              { id: 'video_editor', icon: 'movie_edit', label: 'Editor Pro', path: '/admin/laboratorio/editor', color: 'text-blue-400', border: 'border-blue-500' },
-              { id: 'automation-flow', icon: 'bolt', label: 'Flujo Automático', path: '/admin/laboratorio/flujo', color: 'text-emerald-400', border: 'border-emerald-500' },
-              { id: 'ai-planner', icon: 'robot', label: 'Planificador IA', path: '/admin/laboratorio/planificador', color: 'text-purple-400', border: 'border-purple-500' },
-              { id: 'social', icon: 'calendar_month', label: 'Calendario Global', path: '/admin/laboratorio/calendario', color: 'text-yellow-400', border: 'border-yellow-500' }
-          ].map(tab => (
-              <button 
-                  key={tab.id}
-                  onClick={() => navigate(tab.path)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all shadow-sm border ${
-                      activeSection === tab.id 
-                          ? `bg-neutral-900 ${tab.color} ${tab.border}/50 shadow-[0_0_15px_rgba(255,255,255,0.05)]` 
-                          : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800 border-transparent'
-                  }`}
-              >
-                  <><span className="material-symbols-outlined text-[14px]">{tab.icon}</span>{tab.label}</>
-              </button>
-          ))}
-      </div>
-  )}
-
   <div style={{ display: (!isAnalyticsMode && activeSection === 'social_studio') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <CockersStudio adminProfile={adminProfile} forceOpenEditor={false} />
   </div>
+  {/* 
   <div style={{ display: (!isAnalyticsMode && activeSection === 'video_editor') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <IntegratedVideoEditor />
   </div>
-  <div style={{ display: (!isAnalyticsMode && activeSection === 'automation-flow') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
+  */}
+  <div style={{ display: (!isAnalyticsMode && activeSection === 'it_flow') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <AutomationFlow />
   </div>
   <div style={{ display: (!isAnalyticsMode && activeSection === 'ai-planner') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
@@ -843,22 +905,30 @@ export default function AdminStudio() {
       <CMCalendar adminProfile={adminProfile} />
   </div>
 
- {isAnalyticsMode ? (
- <AnalyticsDashboard />
- ) : activeSection ==='profile' ? (
- <AdminProfile profile={adminProfile} onProfileUpdate={setAdminProfile} />
- ) : activeSection ==='newsletter' ? (
+  {isAnalyticsMode ? (
+  <AnalyticsDashboard />
+  ) : activeSection === 'profile' ? (
+  <AdminProfile profile={adminProfile} onProfileUpdate={setAdminProfile} />
+  ) : activeSection === 'newsletter' ? (
   <NewsletterPanel />
-) : ['social_studio', 'video_editor', 'automation-flow', 'ai-planner', 'social'].includes(activeSection) ? (
+  ) : activeSection === 'ceo_studio' ? (
+  <CeoEstudioPanel adminProfile={adminProfile} />
+  ) : activeSection === 'leads' ? (
+  <AbordajeLeadsPanel adminProfile={adminProfile} />
+  ) : activeSection === 'it_db' ? (
+  <DBStudioPanel adminProfile={adminProfile} />
+  ) : activeSection === 'it_maestro' ? (
+  <PanelMaestroPanel adminProfile={adminProfile} />
+  ) : activeSection === 'it_waf' ? (
+  <SqlAtaquesPanel adminProfile={adminProfile} />
+  ) : activeSection === 'it_bugs' ? (
+  <BugTrackerUI />
+  ) : ['social_studio', 'video_editor', 'it_flow', 'ai-planner', 'social'].includes(activeSection) ? (
       null /* Renderizado persistentemente arriba para evitar pérdida de estado */
-  ) : activeSection === 'it_studio' ? (
-      <ITStudioPanel adminProfile={adminProfile} />
-  ) : activeSection === 'bugs' ? (
-      <BugTrackerUI />
   ) : (<>
 
- {/* Barra superior del editor */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
+  {/* Barra superior del editor */}
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-14 pr-4 sm:px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
 
  {selectedNodeId ? (
  <div className="flex items-center gap-3">
@@ -886,7 +956,7 @@ export default function AdminStudio() {
 
  <div className="flex items-center flex-wrap gap-2 sm:gap-3 justify-end w-full sm:w-auto">
  <button onClick={() => setShowPreview(p => !p)}
- className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
+ className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
  showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
  }`}>
  {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
@@ -919,8 +989,26 @@ export default function AdminStudio() {
  {/* Cuerpo */}
  <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
 
+   {isMobile && selectedNodeId && (
+     <div className="flex p-1 bg-black/60 border border-white/10 rounded-2xl shrink-0 gap-1 mb-2">
+       <button 
+         onClick={() => setShowPreview(false)}
+         className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+       >
+         📝 Editar
+       </button>
+       <button 
+         onClick={() => setShowPreview(true)}
+         disabled={activeTab === 'correos'}
+         className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
+       >
+         👁️ Vista Previa
+       </button>
+     </div>
+   )}
+
  {/* ─ PANEL EDITOR ─ */}
- {(!isMobile || !showPreview) && (
+ {(!isMobile || !showPreview || activeTab === 'correos') && (
  <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 w-full"
  style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '45%' : '100%') }}>
 
@@ -1411,10 +1499,10 @@ export default function AdminStudio() {
 
  {/* ══ TAB ELEMENTOS ══ */}
  {activeTab ==='elementos' && (
- <div className="flex gap-3 h-full min-h-0">
+  <div className="flex flex-col sm:flex-row gap-3 h-full min-h-0">
 
- {/* Lista */}
- <div className="w-40 shrink-0 space-y-1 overflow-y-auto">
+  {/* Lista */}
+  <div className="w-full sm:w-40 shrink-0 space-y-1 overflow-y-auto max-h-32 sm:max-h-none border-b sm:border-b-0 sm:border-r border-white/5 pb-2 sm:pb-0">
  {hasElements && <>
  <p className="text-[10px] text-neutral-500 font-bold mb-2">Tarjetas / Items</p>
  {draftData.elements.map((el, idx) => (
@@ -1554,13 +1642,43 @@ export default function AdminStudio() {
          </span>
          <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingFeedbackMedia} onChange={handleUploadFeedbackImage} />
      </label>
-     <button onClick={() => {
-         alert('🚀 Tu reporte fue enviado a la central de JareG y Dani. ¡Gracias!');
-         setShowFeedbackModal(false);
-         setFeedbackText('');
-     }} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-white hover:to-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white border border-yellow-900/50">
-       Enviar Reporte ✔️
-     </button>
+
+     <button onClick={async () => {
+          if (!feedbackText.trim()) {
+              alert('Añade una descripción para tu sugerencia o reporte.');
+              return;
+          }
+          try {
+              const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+              const token = localStorage.getItem('adminToken');
+              const res = await fetch(`${API}/api/bugs`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                      description: feedbackText,
+                      priority: 'media',
+                      screenshot_url: '',
+                      path_url: window.location.pathname
+                  })
+              });
+              const data = await res.json();
+              if (data.success) {
+                  alert('🚀 Tu reporte fue enviado a la central de JareG y Dani. ¡Gracias!');
+                  setShowFeedbackModal(false);
+                  setFeedbackText('');
+              } else {
+                  alert('Error al enviar: ' + (data.error || 'error desconocido'));
+              }
+          } catch (e) {
+              alert('Error de red al enviar reporte: ' + e.message);
+          }
+      }} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-white hover:to-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white border border-yellow-900/50">
+        Enviar Reporte ✔️
+      </button>
+
    </div>
  </div>
  )}

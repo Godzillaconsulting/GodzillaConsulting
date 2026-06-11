@@ -12,7 +12,7 @@ const authHeaders = () => ({
 });
 
 export default function NewsletterPanel() {
-    const [tab, setTab] = useState('compose'); //'compose' | 'subscribers' | 'history' | 'socios'
+    const [tab, setTab] = useState('compose'); //'compose' | 'subscribers' | 'history'
     const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
 
     // Compose state
@@ -33,11 +33,6 @@ export default function NewsletterPanel() {
     // History
     const [history, setHistory] = useState([]);
     const [loadingHist, setLoadingHist] = useState(false);
-
-    // Socios Landing Editor
-    const [sociosDraft, setSociosDraft] = useState({});
-    const [savingSocios, setSavingSocios] = useState(false);
-    const [sociosHasChanges, setSociosHasChanges] = useState(false);
 
     const fetchSubscribers = async () => {
         setLoadingSubs(true);
@@ -75,50 +70,9 @@ export default function NewsletterPanel() {
     useEffect(() => {
         if (tab === 'subscribers') fetchSubscribers();
         if (tab === 'history') fetchHistory();
-        if (tab === 'socios') {
-            const node = nodes.find(n => n.id === 'socio-godzilla');
-            let data = node ? { ...(node.published_data || {}), ...(node.draft_data || {}) } : {};
-            data = injectSectionDefaults('socio-godzilla', data);
-            setSociosDraft(data);
-            setSociosHasChanges(false);
-        } else {
-            setPreviewOverride(null, null); // Clear preview when leaving tab
-        }
+        setPreviewOverride(null, null); // Clear preview when leaving tab
     }, [tab, nodes]);
 
-    // Live preview sync for Socios Landing
-    useEffect(() => {
-        if (tab === 'socios' && sociosDraft) {
-            setPreviewOverride('socio-godzilla', sociosDraft);
-        }
-    }, [sociosDraft, tab]);
-
-    const handleSaveSocios = async () => {
-        setSavingSocios(true);
-        try {
-            const r = await fetch(`${API_BASE}/api/nodes/socio-godzilla/draft`, {
-                method: 'PUT',
-                headers: authHeaders(),
-                body: JSON.stringify({ draft_data: sociosDraft }),
-            });
-            if (!r.ok) throw new Error("Error guardando borrador");
-            
-            // Publish also as requested immediately
-            const p = await fetch(`${API_BASE}/api/nodes/socio-godzilla/publish`, {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify({}),
-            });
-            if (!p.ok) throw new Error("Error publicando cambios");
-            
-            await fetchNodes(3, true);
-            setSociosHasChanges(false);
-            alert("✅ Cambios de Socio Godzilla guardados y publicados.");
-        } catch (err) {
-            alert(err.message);
-        }
-        setSavingSocios(false);
-    };
 
     const handleSend = async () => {
         if (!subject.trim() || !bodyHtml.trim()) return;
@@ -265,7 +219,6 @@ export default function NewsletterPanel() {
                     { id: 'compose', label: '📝 Redactar' },
                     { id: 'subscribers', label: '👥 Suscriptores' },
                     { id: 'history', label: '📜 Historial' },
-                    { id: 'socios', label: '💎 Landing Socios' },
                 ].map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -496,42 +449,6 @@ export default function NewsletterPanel() {
                     </div>
                 )}
 
-                {/* ─ SOCIOS LANDING EDITOR ─ */}
-                {tab === 'socios' && (
-                    <div className="space-y-4 flex flex-col h-full overflow-hidden">
-                        <div className="flex items-center justify-between shrink-0">
-                            <p className="text-xs font-bold text-neutral-500 tracking-widest">Editor del Portal Executive</p>
-                            <button onClick={handleSaveSocios} disabled={savingSocios || !sociosHasChanges} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${sociosHasChanges ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 'bg-neutral-800 text-neutral-500'}`}>
-                                {savingSocios ? 'Guardando...' : 'Guardar y Publicar'}
-                            </button>
-                        </div>
-                        
-                        <div className="flex flex-col lg:flex-row gap-4 flex-1 h-full min-h-[500px]">
-                            {/* Editor Form */}
-                            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                                {Object.entries(sociosDraft).map(([key, val]) => (
-                                    <div key={key} className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
-                                        {val && val.length > 60 ? (
-                                             <textarea rows={3} value={val} onChange={e => { setSociosDraft({...sociosDraft, [key]: e.target.value}); setSociosHasChanges(true); }} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-xs focus:border-yellow-500 outline-none resize-none" />
-                                        ) : (
-                                             <input type="text" value={val} onChange={e => { setSociosDraft({...sociosDraft, [key]: e.target.value}); setSociosHasChanges(true); }} className="w-full p-2.5 bg-black border border-neutral-700 rounded-lg text-white text-xs focus:border-yellow-500 outline-none" />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* Live Preview */}
-                            <div className="flex-1 bg-black rounded-xl border border-neutral-800 flex flex-col">
-                                <div className="p-2 border-b border-neutral-800 text-[10px] text-neutral-500 flex justify-between">
-                                    <span>Vista Previa en Vivo</span>
-                                    <a href="/socios" target="_blank" rel="noopener noreferrer" className="hover:text-white">Abrir en Pestaña</a>
-                                </div>
-                                <iframe src="/socios?preview=true" className="w-full flex-1 rounded-b-xl" />
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

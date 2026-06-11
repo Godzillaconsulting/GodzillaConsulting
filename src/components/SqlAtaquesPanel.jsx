@@ -34,7 +34,7 @@ export default function SqlAtaquesPanel({ adminProfile }) {
       <div className="mb-6 flex justify-between items-end border-b border-red-900/50 pb-4">
         <div>
           <h2 className="text-2xl font-black tracking-widest text-[#ef4444] drop-shadow-[0_0_15px_rgba(239,68,68,0.8)] flex items-center gap-2">
-            <span className="animate-pulse">🛡️</span> CENTRO DE MONITOREO WAF
+            <span className="material-symbols-outlined text-[#ef4444] text-[28px] select-none flex items-center justify-center animate-pulse">security</span> CENTRO DE MONITOREO WAF
           </h2>
           <p className="text-xs text-red-400 mt-1 uppercase tracking-widest">Ataques SQL y Prevención de Intrusiones</p>
         </div>
@@ -61,7 +61,7 @@ export default function SqlAtaquesPanel({ adminProfile }) {
       <div className="flex-1 bg-black/60 border border-red-900/30 rounded-xl overflow-hidden flex flex-col relative">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20"></div>
         <div className="p-3 border-b border-red-900/50 bg-red-900/10">
-          <p className="text-xs font-bold">📡 REGISTRO EN TIEMPO REAL</p>
+          <p className="text-xs font-bold flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] animate-pulse">sensors</span> REGISTRO EN TIEMPO REAL</p>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
           {logs.map(log => (

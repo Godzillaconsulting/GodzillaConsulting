@@ -160,7 +160,7 @@ export default function PanelMaestroPanel({ adminProfile }) {
         return (
             <div className="flex-1 flex items-center justify-center p-6 bg-[#050505] text-white">
                 <div className="text-center space-y-4 max-w-md">
-                    <span className="text-6xl mx-auto block mb-6">⛔</span>
+                    <span className="material-symbols-outlined text-rose-500 text-[64px] mx-auto block mb-6 select-none">block</span>
                     <h2 className="text-2xl font-black text-rose-500 uppercase tracking-widest">Acceso Restringido</h2>
                     <p className="text-neutral-400 font-bold text-sm">No posees la jerarquía necesaria para visualizar el Panel Maestro y auditar al equipo.</p>
                 </div>
@@ -176,7 +176,7 @@ export default function PanelMaestroPanel({ adminProfile }) {
             <div className="mb-8 border-b border-amber-500/30 pb-6 flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-black tracking-widest text-[#fbbf24] drop-shadow-[0_0_15px_rgba(251,191,36,0.5)] flex items-center gap-3">
-                        <span>👑</span> PANEL MAESTRO DE EQUIPO
+                        <span className="material-symbols-outlined text-[#fbbf24] text-[28px] select-none flex items-center justify-center">admin_panel_settings</span> PANEL MAESTRO DE EQUIPO
                     </h2>
                     <p className="text-sm text-amber-200/50 mt-2 tracking-wide">Visión General Ejecutiva y Control de Operaciones.</p>
                 </div>
@@ -184,21 +184,21 @@ export default function PanelMaestroPanel({ adminProfile }) {
                     onClick={() => setShowCreate(!showCreate)}
                     className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2.5 rounded-full font-black text-xs transition shadow-[0_4px_15px_rgba(245,158,11,0.3)] hidden md:block"
                 >
-                    {showCreate ? 'Cancelar Edición' : '➕ Añadir Nuevo Usuario'}
+                    {showCreate ? 'Cancelar Edición' : 'Añadir Nuevo Usuario'}
                 </button>
             </div>
 
             {/* Métricas Reales Dinámicas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 {[
-                    { label: 'Cuentas Activas', value: users.length, icon: '👥' },
-                    { label: 'Super Administradores', value: superAdminsCount, icon: '👑' },
-                    { label: 'Community Managers', value: cmsCount, icon: '📱' },
-                    { label: 'Acciones Auditadas', value: logs.length, icon: '👁️' },
+                    { label: 'Cuentas Activas', value: users.length, icon: 'group' },
+                    { label: 'Super Administradores', value: superAdminsCount, icon: 'admin_panel_settings' },
+                    { label: 'Community Managers', value: cmsCount, icon: 'smartphone' },
+                    { label: 'Acciones Auditadas', value: logs.length, icon: 'visibility' },
                 ].map(stat => (
                     <div key={stat.label} className="bg-neutral-900/50 backdrop-blur-md border border-amber-500/20 p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-amber-500/50 transition-colors">
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-2xl">{stat.icon}</span>
+                            <span className="material-symbols-outlined text-amber-500 text-[24px] select-none">{stat.icon}</span>
                         </div>
                         <p className="text-[10px] text-amber-100/60 font-bold uppercase tracking-widest">{stat.label}</p>
                         <p className="text-3xl font-black mt-1 text-white">{loadingTeam ? '-' : stat.value}</p>
@@ -216,13 +216,16 @@ export default function PanelMaestroPanel({ adminProfile }) {
                         onClick={() => setShowCreate(!showCreate)}
                         className="w-full mb-4 bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-xl font-black text-xs transition shadow-[0_4px_15px_rgba(245,158,11,0.3)] md:hidden"
                     >
-                        {showCreate ? 'Cerrar Panel' : '➕ Añadir Nuevo Usuario'}
+                        {showCreate ? 'Cerrar Panel' : 'Añadir Nuevo Usuario'}
                     </button>
 
                     {showCreate && (
                         <form onSubmit={handleCreateUser} className="bg-neutral-900/80 backdrop-blur-xl border border-amber-500/40 rounded-2xl p-6 relative overflow-hidden animate-in fade-in slide-in-from-top-4 shadow-2xl">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                            <h3 className="text-sm font-black text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2"><span>🛡️</span> Registrar Operario</h3>
+                            <h3 className="text-sm font-black text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px]">person_add</span> 
+                                Registrar Operario
+                            </h3>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                 <div className="space-y-1">
@@ -236,9 +239,9 @@ export default function PanelMaestroPanel({ adminProfile }) {
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-neutral-400 uppercase">Jerarquía Autorizada</label>
                                     <select value={newRole} onChange={e=>setNewRole(e.target.value)} className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:border-amber-500 appearance-none cursor-pointer shadow-inner">
-                                        <option value="superadmin">👑 SuperAdmin</option>
-                                        <option value="admin">📝 Editor/Admin</option>
-                                        <option value="cm">📱 Community Manager</option>
+                                        <option value="superadmin">SuperAdmin</option>
+                                        <option value="admin">Editor/Admin</option>
+                                        <option value="cm">Community Manager</option>
                                     </select>
                                 </div>
                             </div>
@@ -273,8 +276,12 @@ export default function PanelMaestroPanel({ adminProfile }) {
                                         {users.map(u => (
                                             <tr key={u.id} className="hover:bg-neutral-800/20 transition-colors group">
                                                 <td className="px-6 py-4 flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-black border border-neutral-800 overflow-hidden shrink-0 shadow-inner">
-                                                        {u.photo_url ? <img src={u.photo_url} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex justify-center items-center text-sm bg-neutral-900">🦖</div>}
+                                                    <div className="w-10 h-10 rounded-full bg-black border border-neutral-800 overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
+                                                        {u.photo_url ? (
+                                                            <img src={u.photo_url} alt="" className="w-full h-full object-cover"/>
+                                                        ) : (
+                                                            <span className="material-symbols-outlined text-neutral-500 text-[20px] select-none">account_circle</span>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <span className="font-black text-white block text-sm">{u.username}</span>
@@ -283,7 +290,7 @@ export default function PanelMaestroPanel({ adminProfile }) {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {u.username === 'JareG' && adminProfile?.id !== 2 ? (
-                                                        <span className="text-amber-500 font-bold bg-amber-500/10 px-3 py-1.5 rounded text-[10px] uppercase w-[120px] inline-flex items-center justify-center shrink-0 border border-amber-500/30"><span className="text-xs mr-1 leading-none">👑</span> Fundador</span>
+                                                        <span className="text-amber-500 font-bold bg-amber-500/10 px-3 py-1.5 rounded text-[10px] uppercase w-[120px] inline-flex items-center justify-center shrink-0 border border-amber-500/30"><span className="material-symbols-outlined text-[14px] mr-1">workspace_premium</span> Fundador</span>
                                                     ) : (
                                                         <select 
                                                             value={u.role || (u.is_superadmin ? 'superadmin' : 'admin')}
@@ -291,9 +298,9 @@ export default function PanelMaestroPanel({ adminProfile }) {
                                                             disabled={u.id === adminProfile?.id || (u.username === 'JareG' && adminProfile?.id !== 2)}
                                                             className={`text-[10px] font-bold px-2.5 py-1.5 rounded uppercase outline-none cursor-pointer border transition shadow-sm ${u.role === 'superadmin' || u.is_superadmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 focus:border-amber-400' : (u.role === 'cm' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30 focus:border-sky-400' : 'bg-black text-gray-300 border-neutral-700 hover:border-neutral-500 focus:border-neutral-500')}`}
                                                         >
-                                                            <option value="superadmin">👑 SuperAdmin</option>
-                                                            <option value="admin">📝 Editor Admin</option>
-                                                            <option value="cm">📱 CM</option>
+                                                            <option value="superadmin">SuperAdmin</option>
+                                                            <option value="admin">Editor Admin</option>
+                                                            <option value="cm">CM</option>
                                                         </select>
                                                     )}
                                                 </td>
@@ -320,7 +327,10 @@ export default function PanelMaestroPanel({ adminProfile }) {
                 {/* Logs de Auditoría */}
                 <div className="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800 rounded-2xl overflow-hidden flex flex-col h-[600px] shadow-2xl">
                     <div className="px-6 py-5 border-b border-neutral-800 bg-[#0d0d0d] flex items-center justify-between sticky top-0 shrink-0">
-                        <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><span>🛡️</span> Radar de Auditoría</h3>
+                        <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[18px]">visibility</span> 
+                            Radar de Auditoría
+                        </h3>
                         <div className="px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded text-[10px] font-black">{logs.length} Eventos</div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">

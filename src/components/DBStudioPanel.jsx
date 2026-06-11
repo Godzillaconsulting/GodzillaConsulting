@@ -106,7 +106,7 @@ export default function DBStudioPanel({ adminProfile }) {
             {/* PANEL LATERAL: Explorador de Tablas (Neon Style) */}
             <div className="w-64 flex flex-col bg-black border-r border-red-900/40 shrink-0">
                 <div className="p-4 border-b border-red-900/40 bg-[#CC0000]/10 flex items-center gap-2">
-                    <span className="text-xl">🗄️</span>
+                    <span className="material-symbols-outlined text-white text-[20px] select-none flex items-center justify-center">database</span>
                     <h2 className="font-sans font-black text-white tracking-widest uppercase">Godzilla DB</h2>
                 </div>
                 
@@ -145,7 +145,7 @@ export default function DBStudioPanel({ adminProfile }) {
                 {queryMode && isJareg && (
                     <div className="flex flex-col border-b border-red-900/30 p-4 bg-neutral-900/50 backdrop-blur shrink-0 z-10 transition-all shadow-md">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-neutral-400">⚡ Consola SQL Directa (Bypass)</span>
+                            <span className="text-xs font-bold text-neutral-400 flex items-center gap-1.5"><span className="material-symbols-outlined text-amber-500 text-[14px]">bolt</span> Consola SQL Directa (Bypass)</span>
                             <div className="flex gap-2">
                                 {Object.entries(predefinedQueries).map(([name, sql]) => (
                                     <button 
@@ -210,13 +210,13 @@ export default function DBStudioPanel({ adminProfile }) {
                         
                         {error && (
                             <div className="p-4 bg-red-900/20 border border-[#CC0000]/50 rounded-xl text-red-400 mb-4 font-mono text-sm whitespace-pre-wrap">
-                                ❌ {error}
+                                <span className="material-symbols-outlined text-red-500 text-[18px] align-middle mr-1.5 inline-block select-none">error</span> {error}
                             </div>
                         )}
 
                         {!error && data.command && data.command !== 'SELECT' && (
                             <div className="p-4 bg-green-900/10 border border-green-500/30 rounded-xl text-green-400 text-center font-bold">
-                                ✅ Operación {data.command} ejecutada exitosamente. ({data.rowCount} filas afectadas)
+                                <span className="material-symbols-outlined text-green-500 text-[18px] align-middle mr-1.5 inline-block select-none">check_circle</span> Operación {data.command} ejecutada exitosamente. ({data.rowCount} filas afectadas)
                             </div>
                         )}
 

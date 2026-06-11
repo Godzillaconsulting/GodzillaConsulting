@@ -227,6 +227,7 @@ export const initWhatsAppBot = async () => {
     client.ev.on('creds.update', saveCreds);
 
     let currentQR = null;
+    let isConnected = false;
 
     client.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -243,12 +244,303 @@ export const initWhatsAppBot = async () => {
             try {
                 qrcodeLib.toDataURL(qr).then(qrImageURL => {
                     const htmlContent = `
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background: #111; color: white;">
-                            <h1 style="color: #ff0000;">Escanea con WhatsApp</h1>
-                            <p>Abre WhatsApp en tu celular > Dispositivos Vinculados > Vincular un dispositivo</p>
-                            <img src="${qrImageURL}" style="width: 350px; height: 350px; border-radius: 10px; padding: 20px; background: white;" />
-                            <p style="margin-top: 20px; opacity: 0.6;">Godzilla Consulting - Bot Authentication</p>
-                        </div>
+                        <!DOCTYPE html>
+                        <html lang="es">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Godzilla Bot - Vinculación WhatsApp</title>
+                            <link rel="preconnect" href="https://fonts.googleapis.com">
+                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+                            <style>
+                                :root {
+                                    --bg-color: #09090b;
+                                    --card-bg: rgba(255, 255, 255, 0.03);
+                                    --border-color: rgba(255, 255, 255, 0.08);
+                                    --text-primary: #f4f4f5;
+                                    --text-secondary: #a1a1aa;
+                                    --accent-green: #10b981;
+                                    --accent-red: #ef4444;
+                                    --accent-blue: #3b82f6;
+                                    --accent-yellow: #f59e0b;
+                                }
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    min-height: 100vh;
+                                    font-family: 'Outfit', sans-serif;
+                                    background: radial-gradient(circle at center, #121026 0%, #050508 100%);
+                                    color: var(--text-primary);
+                                    overflow-x: hidden;
+                                }
+                                .container {
+                                    width: 100%;
+                                    max-width: 450px;
+                                    padding: 20px;
+                                    box-sizing: border-box;
+                                }
+                                .glass-card {
+                                    background: var(--card-bg);
+                                    backdrop-filter: blur(20px);
+                                    -webkit-backdrop-filter: blur(20px);
+                                    border: 1px solid var(--border-color);
+                                    border-radius: 28px;
+                                    padding: 40px 30px;
+                                    text-align: center;
+                                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                                    position: relative;
+                                    overflow: hidden;
+                                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                }
+                                .glass-card:hover {
+                                    border-color: rgba(255, 255, 255, 0.15);
+                                    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+                                }
+                                .glow {
+                                    position: absolute;
+                                    width: 250px;
+                                    height: 250px;
+                                    background: var(--accent-red);
+                                    filter: blur(100px);
+                                    opacity: 0.12;
+                                    top: -50px;
+                                    left: -50px;
+                                    border-radius: 50%;
+                                    pointer-events: none;
+                                    transition: background-color 0.8s ease;
+                                }
+                                .glow.connected {
+                                    background: var(--accent-green);
+                                }
+                                h1 {
+                                    font-size: 28px;
+                                    font-weight: 800;
+                                    margin: 0 0 10px 0;
+                                    background: linear-gradient(135deg, #fff 30%, #a1a1aa 100%);
+                                    -webkit-background-clip: text;
+                                    -webkit-text-fill-color: transparent;
+                                    letter-spacing: -0.02em;
+                                }
+                                .subtitle {
+                                    color: var(--text-secondary);
+                                    font-size: 14px;
+                                    line-height: 1.6;
+                                    margin-bottom: 30px;
+                                    font-weight: 300;
+                                }
+                                .qr-wrapper {
+                                    position: relative;
+                                    width: 280px;
+                                    height: 280px;
+                                    margin: 0 auto 30px auto;
+                                    border-radius: 24px;
+                                    padding: 16px;
+                                    background: white;
+                                    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    box-sizing: border-box;
+                                    transition: all 0.5s ease;
+                                }
+                                .qr-image {
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: contain;
+                                    border-radius: 12px;
+                                    transition: opacity 0.3s ease;
+                                }
+                                .scan-line {
+                                    position: absolute;
+                                    left: 16px;
+                                    right: 16px;
+                                    height: 3px;
+                                    background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+                                    box-shadow: 0 0 8px var(--accent-red);
+                                    border-radius: 50%;
+                                    animation: scan 2.5s linear infinite;
+                                    pointer-events: none;
+                                }
+                                .status-container {
+                                    display: inline-flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                    padding: 8px 16px;
+                                    background: rgba(255, 255, 255, 0.03);
+                                    border: 1px solid var(--border-color);
+                                    border-radius: 99px;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    color: var(--text-secondary);
+                                    margin-bottom: 15px;
+                                    transition: all 0.3s ease;
+                                }
+                                .status-dot {
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background: var(--accent-yellow);
+                                    box-shadow: 0 0 8px var(--accent-yellow);
+                                    animation: pulse 1.8s infinite ease-in-out;
+                                }
+                                .status-dot.connected {
+                                    background: var(--accent-green) !important;
+                                    box-shadow: 0 0 8px var(--accent-green) !important;
+                                }
+                                .status-dot.loading {
+                                    background: var(--accent-yellow);
+                                    box-shadow: 0 0 8px var(--accent-yellow);
+                                }
+                                .spinner {
+                                    width: 60px;
+                                    height: 60px;
+                                    border: 3px solid rgba(255, 255, 255, 0.05);
+                                    border-top-color: var(--accent-red);
+                                    border-radius: 50%;
+                                    animation: spin 1s linear infinite;
+                                }
+                                .success-checkmark {
+                                    width: 100px;
+                                    height: 100px;
+                                    margin: 40px auto;
+                                    display: none;
+                                }
+                                .checkmark-circle {
+                                    stroke-dasharray: 166;
+                                    stroke-dashoffset: 166;
+                                    stroke-width: 2;
+                                    stroke-miterlimit: 10;
+                                    stroke: var(--accent-green);
+                                    fill: none;
+                                    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+                                }
+                                .checkmark-check {
+                                    transform-origin: 50% 50%;
+                                    stroke-dasharray: 48;
+                                    stroke-dashoffset: 48;
+                                    stroke-width: 3;
+                                    stroke: var(--accent-green);
+                                    fill: none;
+                                    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+                                }
+                                @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+                                @keyframes scan {
+                                    0% { top: 16px; }
+                                    50% { top: calc(100% - 19px); }
+                                    100% { top: 16px; }
+                                }
+                                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                                @keyframes pulse {
+                                    0% { transform: scale(0.8); opacity: 0.5; }
+                                    50% { transform: scale(1.2); opacity: 1; }
+                                    100% { transform: scale(0.8); opacity: 0.5; }
+                                }
+                                .brand-footer {
+                                    margin-top: 30px;
+                                    font-size: 11px;
+                                    color: var(--text-secondary);
+                                    opacity: 0.5;
+                                    letter-spacing: 0.05em;
+                                    text-transform: uppercase;
+                                }
+                                .brand-footer span { color: var(--accent-red); font-weight: 700; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="glass-card" id="card">
+                                    <div class="glow" id="glow"></div>
+                                    <div class="status-container">
+                                        <span class="status-dot" id="statusDot"></span>
+                                        <span id="statusText">Iniciando...</span>
+                                    </div>
+                                    <h1 id="title">Vincular Dispositivo</h1>
+                                    <p class="subtitle" id="subtitle">Escanea el código QR desde WhatsApp para conectar la Inteligencia Artificial.</p>
+                                    <div class="qr-wrapper" id="qrWrapper">
+                                        <div class="spinner" id="spinner"></div>
+                                        <img src="${qrImageURL}" class="qr-image" id="qrImage" style="display: block;" alt="Código QR WhatsApp" />
+                                        <div class="scan-line" id="scanLine" style="display: block;"></div>
+                                        <svg class="success-checkmark" id="checkmark" viewBox="0 0 52 52">
+                                            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                                            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                                        </svg>
+                                    </div>
+                                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.8;" id="instructions">
+                                        Abre WhatsApp en tu teléfono celular > ve a <strong>Dispositivos Vinculados</strong> y toca en <strong>Vincular un dispositivo</strong>.
+                                    </p>
+                                    <div class="brand-footer">Godzilla <span>Consulting</span></div>
+                                </div>
+                            </div>
+                            <script>
+                                let currentQRString = '${qrImageURL}';
+                                const qrImage = document.getElementById('qrImage');
+                                const spinner = document.getElementById('spinner');
+                                const scanLine = document.getElementById('scanLine');
+                                const checkmark = document.getElementById('checkmark');
+                                const statusDot = document.getElementById('statusDot');
+                                const statusText = document.getElementById('statusText');
+                                const title = document.getElementById('title');
+                                const subtitle = document.getElementById('subtitle');
+                                const instructions = document.getElementById('instructions');
+                                const glow = document.getElementById('glow');
+                                
+                                async function checkStatus() {
+                                    try {
+                                        // Intentar consultar al servidor local en puerto 4010 o dinámico
+                                        const response = await fetch(window.location.origin + '/qr/status');
+                                        if (!response.ok) throw new Error('Network error');
+                                        const data = await response.json();
+                                        if (data.connected) {
+                                            statusDot.className = 'status-dot connected';
+                                            statusText.innerText = 'CONECTADO';
+                                            glow.className = 'glow connected';
+                                            spinner.style.display = 'none';
+                                            qrImage.style.display = 'none';
+                                            scanLine.style.display = 'none';
+                                            checkmark.style.display = 'block';
+                                            title.innerText = '¡Conexión Exitosa!';
+                                            subtitle.innerText = 'El bot Godzilla ha sido vinculado correctamente y está en línea.';
+                                            instructions.innerHTML = 'Ya puedes cerrar esta pestaña y comenzar a chatear. 🟢';
+                                            clearInterval(pollInterval);
+                                            return;
+                                        }
+                                        if (data.qr) {
+                                            if (currentQRString !== data.qr) {
+                                                currentQRString = data.qr;
+                                                qrImage.style.opacity = 0;
+                                                setTimeout(() => {
+                                                    qrImage.src = data.qr;
+                                                    qrImage.style.display = 'block';
+                                                    spinner.style.display = 'none';
+                                                    scanLine.style.display = 'block';
+                                                    qrImage.style.opacity = 1;
+                                                }, 250);
+                                            }
+                                            statusDot.className = 'status-dot';
+                                            statusText.innerText = 'ESPERANDO ESCANEO';
+                                            title.innerText = 'Vincular Dispositivo';
+                                        } else {
+                                            spinner.style.display = 'block';
+                                            qrImage.style.display = 'none';
+                                            scanLine.style.display = 'none';
+                                            checkmark.style.display = 'none';
+                                            statusDot.className = 'status-dot loading';
+                                            statusText.innerText = 'GENERANDO QR...';
+                                        }
+                                    } catch (error) {
+                                        console.error('Error polling status:', error);
+                                        statusText.innerText = 'DESCONECTADO';
+                                    }
+                                }
+                                const pollInterval = setInterval(checkStatus, 2000);
+                                checkStatus();
+                            </script>
+                        </body>
+                        </html>
                     `;
                     fs.writeFileSync(path.join(__dirname, 'uploads', 'qr.html'), htmlContent);
                     console.log('✅ Archivo QR HTML guardado en server/uploads/qr.html');
@@ -257,6 +549,7 @@ export const initWhatsAppBot = async () => {
         }
 
         if (connection === 'close') {
+            isConnected = false;
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('⚠️ [DISCONNECTED] Cliente cerrado. Razón:', lastDisconnect.error?.message);
             if (shouldReconnect) {
@@ -267,6 +560,7 @@ export const initWhatsAppBot = async () => {
                 currentQR = null;
             }
         } else if (connection === 'open') {
+            isConnected = true;
             currentQR = null;
             console.log('✅ ZillaBot (Baileys Engine) está conectado y listo!');
         }
@@ -321,23 +615,331 @@ export const initWhatsAppBot = async () => {
     // MICRO-SERVIDOR WEB PARA ENVIARLE EL QR AL CLIENTE
     // ===============================================
     const qrApp = express();
-    qrApp.get('/qr', async (req, res) => {
-        if (!currentQR) {
-            return res.send(`
-                <h2 style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-                    ✅ El bot ya está conectado, o el QR aún se está generando (Recarga en 5 segundos).
-                </h2>
-            `);
-        }
+
+    qrApp.use((req, res, next) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        next();
+    });
+
+    qrApp.get('/qr/status', async (req, res) => {
         try {
-            const qrImageURL = await qrcodeLib.toDataURL(currentQR);
+            let qrImageURL = null;
+            if (currentQR) {
+                qrImageURL = await qrcodeLib.toDataURL(currentQR);
+            }
+            res.json({
+                connected: isConnected,
+                qr: qrImageURL
+            });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    qrApp.get('/qr', async (req, res) => {
+        try {
+            let qrImageURL = "";
+            if (currentQR) {
+                qrImageURL = await qrcodeLib.toDataURL(currentQR);
+            }
             res.send(`
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background: #111; color: white;">
-                    <h1 style="color: #ff0000;">Escanea con WhatsApp</h1>
-                    <p>Abre WhatsApp en tu celular > Dispositivos Vinculados > Vincular un dispositivo</p>
-                    <img src="${qrImageURL}" style="width: 350px; height: 350px; border-radius: 10px; padding: 20px; background: white;" />
-                    <p style="margin-top: 20px; opacity: 0.6;">Godzilla Consulting - Bot Authentication</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Godzilla Bot - Vinculación WhatsApp</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+                    <style>
+                        :root {
+                            --bg-color: #09090b;
+                            --card-bg: rgba(255, 255, 255, 0.03);
+                            --border-color: rgba(255, 255, 255, 0.08);
+                            --text-primary: #f4f4f5;
+                            --text-secondary: #a1a1aa;
+                            --accent-green: #10b981;
+                            --accent-red: #ef4444;
+                            --accent-blue: #3b82f6;
+                            --accent-yellow: #f59e0b;
+                        }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                            font-family: 'Outfit', sans-serif;
+                            background: radial-gradient(circle at center, #121026 0%, #050508 100%);
+                            color: var(--text-primary);
+                            overflow-x: hidden;
+                        }
+                        .container {
+                            width: 100%;
+                            max-width: 450px;
+                            padding: 20px;
+                            box-sizing: border-box;
+                        }
+                        .glass-card {
+                            background: var(--card-bg);
+                            backdrop-filter: blur(20px);
+                            -webkit-backdrop-filter: blur(20px);
+                            border: 1px solid var(--border-color);
+                            border-radius: 28px;
+                            padding: 40px 30px;
+                            text-align: center;
+                            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                            position: relative;
+                            overflow: hidden;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        }
+                        .glass-card:hover {
+                            border-color: rgba(255, 255, 255, 0.15);
+                            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+                        }
+                        .glow {
+                            position: absolute;
+                            width: 250px;
+                            height: 250px;
+                            background: var(--accent-red);
+                            filter: blur(100px);
+                            opacity: 0.12;
+                            top: -50px;
+                            left: -50px;
+                            border-radius: 50%;
+                            pointer-events: none;
+                            transition: background-color 0.8s ease;
+                        }
+                        .glow.connected {
+                            background: var(--accent-green);
+                        }
+                        h1 {
+                            font-size: 28px;
+                            font-weight: 800;
+                            margin: 0 0 10px 0;
+                            background: linear-gradient(135deg, #fff 30%, #a1a1aa 100%);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            letter-spacing: -0.02em;
+                        }
+                        .subtitle {
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                            line-height: 1.6;
+                            margin-bottom: 30px;
+                            font-weight: 300;
+                        }
+                        .qr-wrapper {
+                            position: relative;
+                            width: 280px;
+                            height: 280px;
+                            margin: 0 auto 30px auto;
+                            border-radius: 24px;
+                            padding: 16px;
+                            background: white;
+                            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            box-sizing: border-box;
+                            transition: all 0.5s ease;
+                        }
+                        .qr-image {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: contain;
+                            border-radius: 12px;
+                            transition: opacity 0.3s ease;
+                        }
+                        .scan-line {
+                            position: absolute;
+                            left: 16px;
+                            right: 16px;
+                            height: 3px;
+                            background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+                            box-shadow: 0 0 8px var(--accent-red);
+                            border-radius: 50%;
+                            animation: scan 2.5s linear infinite;
+                            pointer-events: none;
+                        }
+                        .status-container {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 8px 16px;
+                            background: rgba(255, 255, 255, 0.03);
+                            border: 1px solid var(--border-color);
+                            border-radius: 99px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            color: var(--text-secondary);
+                            margin-bottom: 15px;
+                            transition: all 0.3s ease;
+                        }
+                        .status-dot {
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background: var(--accent-yellow);
+                            box-shadow: 0 0 8px var(--accent-yellow);
+                            animation: pulse 1.8s infinite ease-in-out;
+                        }
+                        .status-dot.connected {
+                            background: var(--accent-green) !important;
+                            box-shadow: 0 0 8px var(--accent-green) !important;
+                        }
+                        .status-dot.loading {
+                            background: var(--accent-yellow);
+                            box-shadow: 0 0 8px var(--accent-yellow);
+                        }
+                        .spinner {
+                            width: 60px;
+                            height: 60px;
+                            border: 3px solid rgba(255, 255, 255, 0.05);
+                            border-top-color: var(--accent-red);
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                        }
+                        .success-checkmark {
+                            width: 100px;
+                            height: 100px;
+                            margin: 40px auto;
+                            display: none;
+                        }
+                        .checkmark-circle {
+                            stroke-dasharray: 166;
+                            stroke-dashoffset: 166;
+                            stroke-width: 2;
+                            stroke-miterlimit: 10;
+                            stroke: var(--accent-green);
+                            fill: none;
+                            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+                        }
+                        .checkmark-check {
+                            transform-origin: 50% 50%;
+                            stroke-dasharray: 48;
+                            stroke-dashoffset: 48;
+                            stroke-width: 3;
+                            stroke: var(--accent-green);
+                            fill: none;
+                            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+                        }
+                        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+                        @keyframes scan {
+                            0% { top: 16px; }
+                            50% { top: calc(100% - 19px); }
+                            100% { top: 16px; }
+                        }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        @keyframes pulse {
+                            0% { transform: scale(0.8); opacity: 0.5; }
+                            50% { transform: scale(1.2); opacity: 1; }
+                            100% { transform: scale(0.8); opacity: 0.5; }
+                        }
+                        .brand-footer {
+                            margin-top: 30px;
+                            font-size: 11px;
+                            color: var(--text-secondary);
+                            opacity: 0.5;
+                            letter-spacing: 0.05em;
+                            text-transform: uppercase;
+                        }
+                        .brand-footer span { color: var(--accent-red); font-weight: 700; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="glass-card" id="card">
+                            <div class="glow" id="glow"></div>
+                            <div class="status-container">
+                                <span class="status-dot" id="statusDot"></span>
+                                <span id="statusText">Iniciando...</span>
+                            </div>
+                            <h1 id="title">Vincular Dispositivo</h1>
+                            <p class="subtitle" id="subtitle">Escanea el código QR desde WhatsApp para conectar la Inteligencia Artificial.</p>
+                            <div class="qr-wrapper" id="qrWrapper">
+                                <div class="spinner" id="spinner" style="${qrImageURL ? 'display: none;' : 'display: block;'}"></div>
+                                <img src="${qrImageURL}" class="qr-image" id="qrImage" style="${qrImageURL ? 'display: block;' : 'display: none;'}" alt="Código QR WhatsApp" />
+                                <div class="scan-line" id="scanLine" style="${qrImageURL ? 'display: block;' : 'display: none;'}"></div>
+                                <svg class="success-checkmark" id="checkmark" viewBox="0 0 52 52">
+                                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                                </svg>
+                            </div>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.8;" id="instructions">
+                                Abre WhatsApp en tu teléfono celular > ve a <strong>Dispositivos Vinculados</strong> y toca en <strong>Vincular un dispositivo</strong>.
+                            </p>
+                            <div class="brand-footer">Godzilla <span>Consulting</span></div>
+                        </div>
+                    </div>
+                    <script>
+                        let currentQRString = '${qrImageURL}';
+                        const qrImage = document.getElementById('qrImage');
+                        const spinner = document.getElementById('spinner');
+                        const scanLine = document.getElementById('scanLine');
+                        const checkmark = document.getElementById('checkmark');
+                        const statusDot = document.getElementById('statusDot');
+                        const statusText = document.getElementById('statusText');
+                        const title = document.getElementById('title');
+                        const subtitle = document.getElementById('subtitle');
+                        const instructions = document.getElementById('instructions');
+                        const glow = document.getElementById('glow');
+                        async function checkStatus() {
+                            try {
+                                const response = await fetch(window.location.origin + '/qr/status');
+                                if (!response.ok) throw new Error('Network error');
+                                const data = await response.json();
+                                if (data.connected) {
+                                    statusDot.className = 'status-dot connected';
+                                    statusText.innerText = 'CONECTADO';
+                                    glow.className = 'glow connected';
+                                    spinner.style.display = 'none';
+                                    qrImage.style.display = 'none';
+                                    scanLine.style.display = 'none';
+                                    checkmark.style.display = 'block';
+                                    title.innerText = '¡Conexión Exitosa!';
+                                    subtitle.innerText = 'El bot Godzilla ha sido vinculado correctamente y está en línea.';
+                                    instructions.innerHTML = 'Ya puedes cerrar esta pestaña y comenzar a chatear. 🟢';
+                                    clearInterval(pollInterval);
+                                    return;
+                                }
+                                if (data.qr) {
+                                    if (currentQRString !== data.qr) {
+                                        currentQRString = data.qr;
+                                        qrImage.style.opacity = 0;
+                                        setTimeout(() => {
+                                            qrImage.src = data.qr;
+                                            qrImage.style.display = 'block';
+                                            spinner.style.display = 'none';
+                                            scanLine.style.display = 'block';
+                                            qrImage.style.opacity = 1;
+                                        }, 250);
+                                    }
+                                    statusDot.className = 'status-dot';
+                                    statusText.innerText = 'ESPERANDO ESCANEO';
+                                    title.innerText = 'Vincular Dispositivo';
+                                } else {
+                                    spinner.style.display = 'block';
+                                    qrImage.style.display = 'none';
+                                    scanLine.style.display = 'none';
+                                    checkmark.style.display = 'none';
+                                    statusDot.className = 'status-dot loading';
+                                    statusText.innerText = 'GENERANDO QR...';
+                                }
+                            } catch (error) {
+                                console.error('Error polling status:', error);
+                                statusText.innerText = 'DESCONECTADO';
+                            }
+                        }
+                        const pollInterval = setInterval(checkStatus, 2000);
+                        checkStatus();
+                    </script>
+                </body>
+                </html>
             `);
         } catch (e) {
             res.status(500).send("Error generando imagen QR: " + e.message);

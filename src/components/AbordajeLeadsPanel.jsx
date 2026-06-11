@@ -128,7 +128,7 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 shrink-0">
                 <div>
                     <h2 className="text-3xl font-black text-white flex items-center gap-3 drop-shadow-sm mb-1 uppercase tracking-tight">
-                        <span className="text-[#CC0000]">🎯</span> Leads de Abordaje
+                        <span className="material-symbols-outlined text-[#CC0000] text-[32px] select-none flex items-center justify-center">target</span> Leads de Abordaje
                     </h2>
                     <p className="text-sm text-white/50 font-bold max-w-xl">
                         Bóveda segura. Las credenciales se han desencriptado al vuelo (AES-256-GCM) utilizando la llave maestra del servidor.
@@ -145,7 +145,7 @@ export default function AbordajeLeadsPanel({ adminProfile }) {
             {/* Listado */}
             {leads.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-12 border border-dashed border-white/10 rounded-3xl bg-black/20">
-                    <span className="text-5xl opacity-50 mb-4">📭</span>
+                    <span className="material-symbols-outlined text-neutral-600 text-[64px] mb-4 select-none">inbox</span>
                     <h3 className="text-white font-bold text-lg">No hay abordajes registrados</h3>
                     <p className="text-white/40 text-sm text-center max-w-sm mt-2">Los clientes que completen el formulario de abordaje aparecerán aquí de forma segura.</p>
                 </div>

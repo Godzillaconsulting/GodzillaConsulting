@@ -1594,7 +1594,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 {/* STUDIO CONTENT (Galería y Live Slots) */}
                 <div className={`w-full flex flex-col items-center justify-center relative overflow-auto custom-scrollbar transition-all flex-1 min-h-[350px]`}>
                 
-                {/* Cabecera del Lienzo */}
+                {/* Cabecera del Lienzo — Solo se muestra si NO se muestra la Galería de Exploración */}
+                {(renderingAI || liveSlots.length > 0 || genMode === 'video') && (
                 <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-[#000000cc] to-transparent">
                     <h2 className="text-xl font-bold tracking-tight text-neutral-300">
                         {renderingAI ? (
@@ -1619,6 +1620,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* MODAL OUTBOX */}
                 {showOutbox && (() => {
@@ -1950,6 +1952,20 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                     </h1>
                                 </div>
                                 <div className="flex items-center gap-3 flex-wrap justify-end">
+                                    <button onClick={() => {
+                                        const pendings = queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved');
+                                        if(pendings.length > 0) setSelectedDraft(pendings[0]);
+                                        else alert('No hay scripts pendientes');
+                                    }} className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-600 px-5 py-2.5 rounded-full transition-colors flex items-center gap-2 bg-[#111]">
+                                        📋 Pendientes ({queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved').length})
+                                    </button>
+                                    
+                                    {canSeeAll && (
+                                        <button onClick={() => setShowOutbox(true)} className="text-[10px] font-black uppercase tracking-widest text-[#CC0000] hover:bg-[#CC0000] hover:text-white border border-[#CC0000]/50 px-5 py-2.5 rounded-full transition-colors flex items-center gap-2 bg-[#CC0000]/10 shadow-[0_0_10px_rgba(204,0,0,0.2)]">
+                                            📤 Enviados ({queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length})
+                                        </button>
+                                    )}
+
                                     <button 
                                         onClick={() => { localStorage.setItem('godzilla_editor_draft_src', ''); navigate('/admin/video-editor'); }}
                                         className="group bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-600 hover:to-pink-600 text-white border border-purple-500/50 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)]"

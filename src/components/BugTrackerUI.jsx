@@ -87,7 +87,7 @@ export default function BugTrackerUI() {
                     </div>
                 ) : bugs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-neutral-600">
-                        <span className="text-4xl mb-4">✨</span>
+                        <span className="material-symbols-outlined text-green-500 text-[48px] mb-4 select-none">check_circle</span>
                         <p className="font-bold">Sistema estable. No hay bugs reportados.</p>
                     </div>
                 ) : (
@@ -127,15 +127,15 @@ export default function BugTrackerUI() {
 
                                     <div className="mt-5 space-y-2 text-xs text-neutral-500 border-t border-white/5 pt-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="w-4 text-center">👤</span> 
+                                            <span className="material-symbols-outlined text-neutral-500 text-[16px] select-none w-4 flex items-center justify-center">person</span> 
                                             <span className="font-medium text-neutral-300">@{bug.reporter_username}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="w-4 text-center">📍</span> 
+                                            <span className="material-symbols-outlined text-neutral-500 text-[16px] select-none w-4 flex items-center justify-center">location_on</span> 
                                             <span className="font-mono truncate">{bug.path_url}</span>
                                         </div>
                                         <div className="flex items-center gap-2 pb-1">
-                                            <span className="w-4 text-center">📅</span> 
+                                            <span className="material-symbols-outlined text-neutral-500 text-[16px] select-none w-4 flex items-center justify-center">calendar_month</span> 
                                             <span className="truncate">{new Date(bug.created_at).toLocaleString('es-MX')}</span>
                                         </div>
                                     </div>
@@ -183,7 +183,7 @@ export default function BugTrackerUI() {
                                     {selectedBug.resolved && <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/30 px-3 py-1 rounded-full font-black ml-auto">SOLUCIONADO</span>}
                                 </div>
                                 
-                                <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest mb-2">Reporte del Usuario</h3>
+                                	<h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest mb-2">Reporte del Usuario</h3>
                                 <div className="bg-black/50 border border-white/5 rounded-xl p-6 mb-8 text-white font-sans whitespace-pre-wrap leading-relaxed">
                                     {selectedBug.description}
                                 </div>
@@ -191,20 +191,20 @@ export default function BugTrackerUI() {
                                 <div className="grid grid-cols-2 gap-4 text-sm text-neutral-400 border-t border-white/5 pt-6">
                                     <div>
                                         <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-widest mb-1">Reportado por</p>
-                                        <p className="text-white font-medium flex items-center gap-2"><span className="text-neutral-500">👤</span> @{selectedBug.reporter_username}</p>
+                                        <p className="text-white font-medium flex items-center gap-2"><span className="material-symbols-outlined text-neutral-500 text-[16px] select-none">person</span> @{selectedBug.reporter_username}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-widest mb-1">Ubicación</p>
-                                        <p className="text-white font-mono break-all flex items-center gap-2"><span className="text-neutral-500">📍</span> {selectedBug.path_url}</p>
+                                        <p className="text-white font-mono break-all flex items-center gap-2"><span className="material-symbols-outlined text-neutral-500 text-[16px] select-none">location_on</span> {selectedBug.path_url}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-widest mb-1">Fecha</p>
-                                        <p className="text-white flex items-center gap-2"><span className="text-neutral-500">📅</span> {new Date(selectedBug.created_at).toLocaleString('es-MX')}</p>
+                                        <p className="text-white flex items-center gap-2"><span className="material-symbols-outlined text-neutral-500 text-[16px] select-none">calendar_month</span> {new Date(selectedBug.created_at).toLocaleString('es-MX')}</p>
                                     </div>
                                     {selectedBug.resolved && (
                                         <div>
                                             <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-widest mb-1">Resuelto por</p>
-                                            <p className="text-green-400 font-medium flex items-center gap-2"><span className="text-green-900">✓</span> @{selectedBug.resolved_by || 'AdminTI'} <br/><span className="text-[10px] text-neutral-500">({new Date(selectedBug.resolved_at).toLocaleString('es-MX')})</span></p>
+                                            <p className="text-green-400 font-medium flex items-center gap-2"><span className="material-symbols-outlined text-green-500 text-[16px] select-none">check_circle</span> @{selectedBug.resolved_by || 'AdminTI'} <br/><span className="text-[10px] text-neutral-500">({new Date(selectedBug.resolved_at).toLocaleString('es-MX')})</span></p>
                                         </div>
                                     )}
                                 </div>

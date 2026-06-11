@@ -31,10 +31,10 @@ export default function CorreosInbox({ draftData, change }) {
     };
 
     return (
-        <div className="flex h-[600px] border border-neutral-800 rounded-xl overflow-hidden bg-[#0d0d0d]">
+        <div className="flex flex-col sm:flex-row h-auto sm:h-[600px] border border-neutral-800 rounded-xl overflow-hidden bg-[#0d0d0d]">
             
             {/* ─ INBOX SIDEBAR ─ */}
-            <div className="w-[35%] bg-[#0a0a0a] border-r border-neutral-800 flex flex-col">
+            <div className="w-full sm:w-[35%] h-48 sm:h-auto shrink-0 bg-[#0a0a0a] border-b sm:border-b-0 sm:border-r border-neutral-800 flex flex-col">
                 <div className="p-4 border-b border-neutral-800 bg-neutral-900/50">
                     <h3 className="text-sm font-black text-white flex items-center gap-2">
                         <Mail size={16} className="text-[#CC0000]"/> Bandeja de Salida
@@ -71,7 +71,7 @@ export default function CorreosInbox({ draftData, change }) {
             </div>
 
             {/* ─ EDITOR INBOX (DERECHA) ─ */}
-            <div className="w-[65%] flex flex-col bg-white">
+            <div className="w-full sm:w-[65%] flex flex-col bg-white min-h-[400px] sm:min-h-0">
                 
                 {/* Header estilo correo corporativo */}
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">

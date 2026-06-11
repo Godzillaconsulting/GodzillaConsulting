@@ -56,16 +56,16 @@ export default function PrivateRoute({ children }) {
  });
  }, []);
 
- if (status ==='checking') {
- return (
- <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 z-50">
- <span className="text-5xl animate-bounce">🦖</span>
- <p className="text-neutral-400 text-sm font-bold tracking-widest">
- Verificando sesión...
- </p>
- </div>
- );
- }
+  if (status ==='checking') {
+  return (
+  <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 z-50">
+  <span className="material-symbols-outlined text-5xl animate-bounce text-purple-400 select-none">smart_toy</span>
+  <p className="text-neutral-400 text-sm font-bold tracking-widest">
+  Verificando sesión...
+  </p>
+  </div>
+  );
+  }
 
  if (status ==='denied') {
  return <Navigate to="/login" replace />;

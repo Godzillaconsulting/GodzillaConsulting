@@ -69,9 +69,9 @@ function ReviewCard({ day, idx, selection, onToggle }) {
     };
 
     const OPTIONS = [
-        { key: 'ia',       label: '🤖 Opción IA',       desc: 'Generado automáticamente por Gemini', color: 'purple' },
-        { key: 'template', label: '📋 Template Manual',  desc: 'Usar estructura base propia',          color: 'blue'   },
-        { key: 'skip',     label: '⏭ Omitir día',       desc: 'No enviar este día al calendario',    color: 'neutral' },
+        { key: 'ia',       label: 'Opción IA',       icon: 'smart_toy', desc: 'Generado automáticamente por Gemini', color: 'purple' },
+        { key: 'template', label: 'Template Manual',  icon: 'description', desc: 'Usar estructura base propia',          color: 'blue'   },
+        { key: 'skip',     label: 'Omitir día',       icon: 'block', desc: 'No enviar este día al calendario',    color: 'neutral' },
     ];
 
     const colorMap = {
@@ -108,11 +108,12 @@ function ReviewCard({ day, idx, selection, onToggle }) {
                                     key={opt.key}
                                     onClick={() => onToggle(idx, opt.key)}
                                     title={opt.desc}
-                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${
                                         active ? `${c.bg} ${c.border} ${c.text}` : 'bg-black/30 border-neutral-800 text-neutral-600 hover:text-neutral-400'
                                     }`}
                                 >
-                                    {active ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+                                    {active ? <CheckSquare className="w-3 h-3 shrink-0" /> : <Square className="w-3 h-3 shrink-0" />}
+                                    <span className="material-symbols-outlined text-[12px] select-none shrink-0">{opt.icon}</span>
                                     <span className="hidden sm:inline">{opt.label}</span>
                                 </button>
                             );
@@ -145,20 +146,31 @@ function ReviewCard({ day, idx, selection, onToggle }) {
                                 <div key={n} className={`rounded-xl p-3 border mt-2 ${
                                     isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/30 border-neutral-800/50'
                                 }`}>
-                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
+                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-2 flex items-center gap-1 ${
                                         isCTA ? 'text-emerald-400' : 'text-neutral-500'
-                                    }`}>{isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}</p>
+                                    }`}>{isCTA ? <><span className="material-symbols-outlined text-[12px] select-none">target</span> Escena 5 — CTA</> : `Escena ${n}`}</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1">🎙 Narración</p>
+                                            <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1 flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">mic</span>
+                                                Narración
+                                            </p>
                                             <p className="text-xs text-neutral-300 leading-relaxed">{narr}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] text-blue-400 font-bold uppercase mb-1">🖼 Visual Prompt</p>
+                                            <p className="text-[9px] text-blue-400 font-bold uppercase mb-1 flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">image</span>
+                                                Visual Prompt
+                                            </p>
                                             <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
                                         </div>
                                     </div>
-                                    {txt && <p className="text-[9px] text-yellow-400 font-bold mt-2">💬 Pantalla: <span className="text-neutral-300 font-normal">{txt}</span></p>}
+                                    {txt && (
+                                        <p className="text-[9px] text-yellow-400 font-bold mt-2 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[12px] select-none">chat</span>
+                                            Pantalla: <span className="text-neutral-300 font-normal">{txt}</span>
+                                        </p>
+                                    )}
                                 </div>
                             );
                         })
@@ -226,37 +238,52 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
                         return (
                             <div key={n} className={`rounded-xl p-4 border mt-3 ${isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/40 border-neutral-800/50'}`}>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${isCTA ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-neutral-800 text-neutral-400'}`}>
-                                        {isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 ${isCTA ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-neutral-800 text-neutral-400'}`}>
+                                        {isCTA ? <><span className="material-symbols-outlined text-[12px] select-none">target</span> Escena 5 — CTA</> : `Escena ${n}`}
                                     </span>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {/* Narración */}
                                         <div className="space-y-1">
-                                            <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">🎙 Narración (TTS)</span>
+                                            <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">mic</span>
+                                                Narración (TTS)
+                                            </span>
                                             <p className="text-sm text-neutral-200 leading-relaxed">{narr}</p>
                                         </div>
                                         {/* Texto en Pantalla */}
                                         <div className="space-y-1">
-                                            <span className="text-[9px] text-yellow-400 font-bold uppercase tracking-widest block">💬 Texto Pantalla</span>
+                                            <span className="text-[9px] text-yellow-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">chat</span>
+                                                Texto Pantalla
+                                            </span>
                                             <p className="text-sm text-neutral-200 font-bold leading-relaxed">{txt}</p>
                                         </div>
                                         {/* Audio y SFX */}
                                         <div className="space-y-1">
-                                            <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest block">🎵 Audio & SFX</span>
+                                            <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">music_note</span>
+                                                Audio & SFX
+                                            </span>
                                             <p className="text-xs text-neutral-300 italic leading-relaxed">{aud}</p>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-neutral-800/50">
                                         {/* Visual Prompt */}
                                         <div className="space-y-1">
-                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest block">🖼 Visual Prompt</span>
+                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">image</span>
+                                                Visual Prompt
+                                            </span>
                                             <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vis}</p>
                                         </div>
                                         {/* Video Motion Prompt */}
                                         <div className="space-y-1">
-                                            <span className="text-[9px] text-fuchsia-400 font-bold uppercase tracking-widest block">🎬 Video Motion Prompt</span>
+                                            <span className="text-[9px] text-fuchsia-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[12px] select-none">movie</span>
+                                                Video Motion Prompt
+                                            </span>
                                             <p className="text-xs text-neutral-400 font-mono leading-relaxed">{vid}</p>
                                         </div>
                                     </div>
@@ -794,7 +821,7 @@ export default function AIContentPlanner({ adminProfile }) {
                         className="bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/40 text-[#00F0FF] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl transition-all text-[10px] shrink-0 h-[42px] flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.1)]"
                         title="Busca y explora temas antes de escribir el nicho"
                     >
-                        🔍 Explorar Radar
+                        <span className="material-symbols-outlined text-[14px] select-none">search</span> Explorar Radar
                     </button>
 
                     <button
@@ -803,7 +830,7 @@ export default function AIContentPlanner({ adminProfile }) {
                         className="bg-black border border-white/10 hover:border-white/30 text-white font-black uppercase tracking-widest px-5 py-2.5 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transition-all text-[10px] shrink-0 h-[42px]"
                         title="Carga hashtags y ganchos (requiere nicho)"
                     >
-                        {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔥 Estadísticas'}
+                        {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span className="material-symbols-outlined text-[14px] select-none">local_fire_department</span> Estadísticas</>}
                     </button>
 
                     <button
@@ -826,10 +853,10 @@ export default function AIContentPlanner({ adminProfile }) {
                             }
                         }}
                         disabled={isGenerating}
-                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all text-[10px] shrink-0 h-[42px] flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]"
+                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all text-[10px] shrink-0 h-[42px] flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
                         title="Borrar todo y limpiar panel"
                     >
-                        🗑️ Limpiar
+                        <span className="material-symbols-outlined text-[14px] select-none">delete</span> Limpiar
                     </button>
                 </div>
 
@@ -848,7 +875,10 @@ export default function AIContentPlanner({ adminProfile }) {
                     <div className="mt-4 p-4 border border-white/10 bg-black/50 rounded-xl space-y-4">
                         {plannerTrends.hashtags && plannerTrends.hashtags.length > 0 && (
                             <div>
-                                <p className="text-[10px] text-purple-400 font-bold uppercase mb-2">🔥 Trending Hashtags <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
+                                <p className="text-[10px] text-purple-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px] select-none">local_fire_department</span>
+                                    Trending Hashtags <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span>
+                                </p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {plannerTrends.hashtags.slice(0, 10).map((h, i) => (
                                         <span 
@@ -865,7 +895,10 @@ export default function AIContentPlanner({ adminProfile }) {
                         )}
                         {plannerTrends.hooks && plannerTrends.hooks.length > 0 && (
                             <div>
-                                <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2">🎣 Hooks Virales <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
+                                <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px] select-none">anchor</span>
+                                    Hooks Virales <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span>
+                                </p>
                                 <ul className="space-y-1.5">
                                     {plannerTrends.hooks.slice(0, 3).map((hook, i) => (
                                         <li 
@@ -874,7 +907,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                             className="text-[11px] text-white flex items-start gap-2 leading-tight cursor-pointer hover:bg-white/5 p-1 -ml-1 rounded transition-colors"
                                             title="Agregar al Contexto Extra"
                                         >
-                                            <span className="text-cyan-500 shrink-0 mt-0.5">👉</span> {hook}
+                                            <span className="material-symbols-outlined text-cyan-500 text-[10px] shrink-0 mt-0.5 select-none">arrow_forward</span> {hook}
                                         </li>
                                     ))}
                                 </ul>
@@ -882,7 +915,10 @@ export default function AIContentPlanner({ adminProfile }) {
                         )}
                         {plannerTrends.audiencia && (
                             <div>
-                                <p className="text-[10px] text-emerald-400 font-bold uppercase mb-2">🎯 Audiencia Objetivo Sugerida</p>
+                                <p className="text-[10px] text-emerald-400 font-bold uppercase mb-2 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px] select-none">target</span>
+                                    Audiencia Objetivo Sugerida
+                                </p>
                                 <p className="text-[11px] text-emerald-100/80 leading-tight italic">{plannerTrends.audiencia}</p>
                             </div>
                         )}
@@ -935,20 +971,25 @@ export default function AIContentPlanner({ adminProfile }) {
                             <div className="flex flex-wrap justify-between items-center gap-3">
                                 <div>
                                     <p className="text-sm font-black text-white flex items-center gap-2 flex-wrap">
-                                        🧠 Revisión — <span className="text-purple-400">{generatedNiche}</span>
+                                        <span className="material-symbols-outlined text-[16px] select-none text-purple-400">psychology</span>
+                                        Revisión — <span className="text-purple-400">{generatedNiche}</span>
                                         <span className="text-[10px] bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full font-bold">
                                             {plan.length} días
                                         </span>
                                     </p>
-                                    <p className="text-[10px] text-neutral-600 font-bold mt-1">
-                                        🤖 {Object.values(selections).filter(v => v==='ia').length} IA &nbsp;·&nbsp;
-                                        📋 {Object.values(selections).filter(v => v==='template').length} Template &nbsp;·&nbsp;
-                                        ⏭ {Object.values(selections).filter(v => v==='skip').length} omitidos
+                                    <p className="text-[10px] text-neutral-600 font-bold mt-1 flex items-center gap-2 flex-wrap">
+                                        <span className="flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px] select-none">smart_toy</span> {Object.values(selections).filter(v => v==='ia').length} IA</span> &nbsp;·&nbsp;
+                                        <span className="flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px] select-none">description</span> {Object.values(selections).filter(v => v==='template').length} Template</span> &nbsp;·&nbsp;
+                                        <span className="flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px] select-none">block</span> {Object.values(selections).filter(v => v==='skip').length} omitidos</span>
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <button onClick={() => handleSelectAll('ia')} className="text-[10px] px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg font-black hover:bg-purple-600/40 transition-colors">🤖 Todo IA</button>
-                                    <button onClick={() => handleSelectAll('template')} className="text-[10px] px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg font-black hover:bg-blue-600/40 transition-colors">📋 Todo Template</button>
+                                    <button onClick={() => handleSelectAll('ia')} className="text-[10px] px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg font-black hover:bg-purple-600/40 transition-colors flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[12px] select-none">smart_toy</span> Todo IA
+                                    </button>
+                                    <button onClick={() => handleSelectAll('template')} className="text-[10px] px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg font-black hover:bg-blue-600/40 transition-colors flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[12px] select-none">description</span> Todo Template
+                                    </button>
                                     <button onClick={() => exportToCSV(plan, generatedNiche)} className="text-[10px] px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg font-black flex items-center gap-1 hover:bg-emerald-600/40 transition-colors">
                                         <Download className="w-3 h-3" /> CSV
                                     </button>
@@ -958,7 +999,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                         className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
                                     >
                                         {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-                                        {isSendingBulk ? 'Enviando...' : '🎬 Mandar al Estudio IA'}
+                                        {isSendingBulk ? 'Enviando...' : <><span className="material-symbols-outlined text-xs select-none">movie</span> Mandar al Estudio IA</>}
                                     </button>
                                 </div>
                             </div>
@@ -974,18 +1015,18 @@ export default function AIContentPlanner({ adminProfile }) {
                     <div className="space-y-3">
                         <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                             <div>
-                                <p className="text-sm font-black text-white">
-                                    📅 Plan: <span className="text-purple-400">{generatedNiche}</span> · {plan.length} días
+                                <p className="text-sm font-black text-white flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-purple-400 text-[16px] select-none">calendar_month</span> Plan: <span className="text-purple-400">{generatedNiche}</span> · {plan.length} días
                                 </p>
                                 {bulkResult && (
-                                    <p className="text-xs text-emerald-400 font-bold mt-1">
-                                        ✅ {bulkResult.sent} días enviados · {bulkResult.skipped} omitidos
+                                    <p className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-emerald-400 text-xs select-none">check_circle</span> {bulkResult.sent} días enviados · {bulkResult.skipped} omitidos
                                     </p>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setReviewMode(true)} className="text-xs text-purple-400 hover:text-purple-300 font-bold border border-purple-500/30 px-3 py-1.5 rounded-lg bg-purple-600/10 transition-colors">
-                                    🔍 Revisar Plan
+                                <button onClick={() => setReviewMode(true)} className="text-xs text-purple-400 hover:text-purple-300 font-bold border border-purple-500/30 px-3 py-1.5 rounded-lg bg-purple-600/10 transition-colors flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-xs select-none">search</span> Revisar Plan
                                 </button>
                                 <button onClick={() => exportToCSV(plan, generatedNiche)} className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
                                     <Download className="w-3.5 h-3.5" /> CSV
@@ -1008,7 +1049,9 @@ export default function AIContentPlanner({ adminProfile }) {
                             {/* Header */}
                             <div className="shrink-0 bg-gradient-to-r from-[#0f0f0e] to-[#141413] border-b border-white/5 p-5 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0FF]/20 to-[#9D00FF]/20 border border-[#00F0FF]/30 flex items-center justify-center text-lg">🔍</div>
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0FF]/20 to-[#9D00FF]/20 border border-[#00F0FF]/30 flex items-center justify-center text-lg">
+                                        <span className="material-symbols-outlined text-[#00F0FF] select-none">search</span>
+                                    </div>
                                     <div>
                                         <h3 className="text-white font-black uppercase tracking-widest text-sm">Radar de Contenido</h3>
                                         <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Búsquedas reales Google · Hashtags IA · Costo cero</p>
@@ -1027,7 +1070,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                             : 'bg-transparent border border-transparent text-neutral-500 hover:text-neutral-300'
                                     }`}
                                 >
-                                    🔥 Tendencias de Hoy
+                                    <span className="material-symbols-outlined text-[14px] select-none">local_fire_department</span> Tendencias de Hoy
                                 </button>
                                 <button
                                     onClick={() => setRadarTab('search')}
@@ -1037,7 +1080,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                             : 'bg-transparent border border-transparent text-neutral-500 hover:text-neutral-300'
                                     }`}
                                 >
-                                    🔍 Explorar Radar
+                                    <span className="material-symbols-outlined text-[14px] select-none">search</span> Explorar Radar
                                 </button>
                             </div>
 
@@ -1055,7 +1098,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                                     : 'bg-[#111] border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-white'
                                             }`}
                                         >
-                                            {cat === 'All' ? '🌐 Todas las categorías' : cat}
+                                            {cat === 'All' ? <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs select-none">language</span> Todas las categorías</span> : cat}
                                         </button>
                                     ))}
                                 </div>
@@ -1087,13 +1130,13 @@ export default function AIContentPlanner({ adminProfile }) {
                                             {radarLoading ? (
                                                 <><span className="w-4 h-4 border-2 border-[#00F0FF]/30 border-t-[#00F0FF] rounded-full animate-spin"/> Analizando...</>
                                             ) : (
-                                                <>🔍 Analizar</>
+                                                <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] select-none">search</span> Analizar</span>
                                             )}
                                         </button>
                                     </div>
                                     {radarData && (
-                                        <p className="mt-2 text-[10px] text-neutral-500 font-bold">
-                                            ✅ {radarData.totalQuestions} preguntas reales encontradas para <span className="text-[#00F0FF]">"{radarData.topic}"</span>
+                                        <p className="mt-2 text-[10px] text-neutral-500 font-bold flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-emerald-400 text-xs select-none">check_circle</span> {radarData.totalQuestions} preguntas reales encontradas para <span className="text-[#00F0FF]">"{radarData.topic}"</span>
                                         </p>
                                     )}
                                 </div>
@@ -1104,8 +1147,8 @@ export default function AIContentPlanner({ adminProfile }) {
                                 {radarTab === 'search' && (
                                     <>
                                         {!radarData && !radarLoading && (
-                                            <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30">
-                                                <span className="text-6xl">🌐</span>
+                                            <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30 min-h-[30vh]">
+                                                <span className="material-symbols-outlined text-neutral-800 text-[64px] select-none">language</span>
                                                 <p className="text-white font-bold uppercase tracking-widest text-sm">Escribe un tema y presiona Analizar</p>
                                             </div>
                                         )}
@@ -1134,9 +1177,9 @@ export default function AIContentPlanner({ adminProfile }) {
                                                             </h4>
                                                             <button
                                                                 onClick={copyHashtags}
-                                                                className="text-[9px] font-black uppercase tracking-widest bg-[#9D00FF]/20 hover:bg-[#9D00FF]/40 border border-[#9D00FF]/40 text-[#9D00FF] px-3 py-1 rounded-full transition-all"
+                                                                className="text-[9px] font-black uppercase tracking-widest bg-[#9D00FF]/20 hover:bg-[#9D00FF]/40 border border-[#9D00FF]/40 text-[#9D00FF] px-3 py-1.5 rounded-full transition-all flex items-center gap-1"
                                                             >
-                                                                {radarCopied ? '✅ Copiado!' : '📋 Copiar todos'}
+                                                                {radarCopied ? <><span className="material-symbols-outlined text-[10px] select-none">check_circle</span> Copiado!</> : <><span className="material-symbols-outlined text-[10px] select-none">content_copy</span> Copiar todos</>}
                                                             </button>
                                                         </div>
                                                         <div className="flex flex-wrap gap-1.5 relative z-10">
@@ -1168,7 +1211,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                                         <div className="bg-gradient-to-br from-[#0f0f0e] to-[#141413] border border-[#00F0FF]/20 rounded-2xl p-4 relative overflow-hidden">
                                                             <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/5 rounded-bl-full blur-xl"/>
                                                             <h4 className="text-[#00F0FF] font-black uppercase tracking-widest text-[10px] mb-2 flex items-center gap-1.5 relative z-10">
-                                                                🧠 Análisis IA
+                                                                <span className="material-symbols-outlined text-[12px] select-none">psychology</span> Análisis IA
                                                             </h4>
                                                             <p className="text-neutral-300 text-xs leading-relaxed font-light relative z-10">{radarData.aiSummary}</p>
                                                         </div>
@@ -1222,7 +1265,7 @@ export default function AIContentPlanner({ adminProfile }) {
 
                                         {!dailyTrendsLoading && dailyTrends.length === 0 && (
                                             <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30 min-h-[40vh]">
-                                                <span className="text-6xl">📭</span>
+                                                <span className="material-symbols-outlined text-neutral-800 text-[64px] select-none">inbox</span>
                                                 <p className="text-white font-bold uppercase tracking-widest text-sm">No se encontraron tendencias hoy.</p>
                                             </div>
                                         )}
@@ -1243,7 +1286,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                                                         {trend.category || 'General'}
                                                                     </span>
                                                                     <span className="text-[10px] text-neutral-500 font-bold flex items-center gap-1">
-                                                                        📊 {trend.traffic || '50K+ búsquedas'}
+                                                                        <span className="material-symbols-outlined text-xs select-none">analytics</span> {trend.traffic || '50K+ búsquedas'}
                                                                     </span>
                                                                 </div>
 
@@ -1262,17 +1305,17 @@ export default function AIContentPlanner({ adminProfile }) {
                                                                     </div>
                                                                     <div className="text-center border-x border-white/5">
                                                                         <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Reacc.</span>
-                                                                        <span className="text-xs text-yellow-400 font-black">❤️ {trend.reactions || '90K'}</span>
+                                                                        <span className="text-xs text-yellow-400 font-black flex items-center justify-center gap-0.5"><span className="material-symbols-outlined text-yellow-500 text-xs select-none">favorite</span> {trend.reactions || '90K'}</span>
                                                                     </div>
                                                                     <div className="text-center">
                                                                         <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Comp.</span>
-                                                                        <span className="text-xs text-cyan-400 font-black">↗️ {trend.shares || '30K'}</span>
+                                                                        <span className="text-xs text-cyan-400 font-black flex items-center justify-center gap-0.5"><span className="material-symbols-outlined text-cyan-400 text-xs select-none">send</span> {trend.shares || '30K'}</span>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Hook */}
                                                                 <div className="space-y-1 bg-purple-950/10 border border-purple-900/10 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-purple-400 font-black uppercase tracking-widest block">🪝 Gancho sugerido</span>
+                                                                    <span className="text-[8px] text-purple-400 font-black uppercase tracking-widest flex items-center gap-1"><span className="material-symbols-outlined text-[10px] select-none">anchor</span> Gancho sugerido</span>
                                                                     <p className="text-xs text-neutral-300 font-medium italic leading-relaxed">
                                                                         "{trend.hook}"
                                                                     </p>
@@ -1280,7 +1323,7 @@ export default function AIContentPlanner({ adminProfile }) {
 
                                                                 {/* Idea */}
                                                                 <div className="space-y-1">
-                                                                    <span className="text-[8px] text-neutral-500 font-black uppercase tracking-widest block">💡 Idea de video</span>
+                                                                    <span className="text-[8px] text-neutral-500 font-black uppercase tracking-widest flex items-center gap-1"><span className="material-symbols-outlined text-[10px] select-none">lightbulb</span> Idea de video</span>
                                                                     <p className="text-xs text-neutral-400 leading-relaxed font-light">
                                                                         {trend.idea}
                                                                     </p>
@@ -1297,7 +1340,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                                                     }}
                                                                     className="w-full bg-purple-600/15 hover:bg-purple-600 hover:text-white border border-purple-500/30 text-purple-400 font-black uppercase tracking-wider text-[10px] py-2.5 rounded-xl transition-all hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] flex items-center justify-center gap-1.5 cursor-pointer"
                                                                 >
-                                                                    🎬 Planificar Video
+                                                                    <span className="material-symbols-outlined text-xs select-none">movie</span> Planificar Video
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1318,7 +1361,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 {showVoiceModal && createPortal(
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <div className="bg-[#111] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                            <h3 className="text-white font-black text-lg mb-2 flex items-center gap-2">🎤 Selecciona el Narrador (Auto)</h3>
+                            <h3 className="text-white font-black text-lg mb-2 flex items-center gap-2"><span className="material-symbols-outlined text-purple-400 select-none">mic</span> Selecciona el Narrador (Auto)</h3>
                             <p className="text-xs text-neutral-400 mb-6">Elige la voz que narrará este lote de videos generados.</p>
                             
                             <div className="space-y-3 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
@@ -1366,7 +1409,7 @@ export default function AIContentPlanner({ adminProfile }) {
                                 <button onClick={() => setShowVoiceModal(false)} className="px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancelar</button>
                                 <button onClick={confirmBulkSend} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
                                     {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                    {isSendingBulk ? 'Enviando...' : 'Mandar a Crear 🚀'}
+                                    {isSendingBulk ? 'Enviando...' : <span className="flex items-center gap-1">Mandar a Crear <span className="material-symbols-outlined text-xs select-none">rocket_launch</span></span>}
                                 </button>
                             </div>
                         </div>

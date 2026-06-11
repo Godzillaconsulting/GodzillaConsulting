@@ -3,15 +3,15 @@ import { createPortal } from 'react-dom';
 import VideoEditorModal from './VideoEditorModal';
 
 const STATUS_MAP = {
-    pending_cm_approval:   { label: '⏳ En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
-    rejected:              { label: '🔙 Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
-    approved:              { label: '✅ Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
-    published:             { label: '🚀 Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-    manual_studio:         { label: '🎬 En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
-    pending_render:        { label: '⚙️ Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
-    pending_render_docker: { label: '⚙️ Encolado (Worker)',tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
-    rendering:             { label: '🔄 Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
-    rendering_docker:      { label: '🔄 Renderizando (Worker)', tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    pending_cm_approval:   { label: 'En Revisión',    tab: 'pendientes',    color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
+    rejected:              { label: 'Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+    approved:              { label: 'Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
+    published:             { label: 'Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+    manual_studio:         { label: 'En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+    pending_render:        { label: 'Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+    pending_render_docker: { label: 'Encolado (Worker)',tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+    rendering:             { label: 'Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    rendering_docker:      { label: 'Renderizando (Worker)', tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
 };
 
 // Extrae escenas legibles de cualquier formato de payload
@@ -460,7 +460,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
             <div className="mb-6 border-b border-[#d946ef]/30 pb-4 shrink-0 relative z-10 flex justify-between items-end">
                 <div>
                     <h2 className="text-3xl font-black tracking-widest text-[#d946ef] drop-shadow-[0_0_15px_rgba(217,70,239,0.5)] flex items-center gap-2">
-                        <span>👑</span> CEO ESTUDIO
+                        <span className="material-symbols-outlined text-[#d946ef] text-[28px] select-none flex items-center justify-center">gavel</span> CEO ESTUDIO
                     </h2>
                     <p className="text-sm text-neutral-400 mt-1 uppercase tracking-widest">
                         Flujo de Aprobación y Publicación — Conectado al Estudio IA
@@ -476,21 +476,21 @@ export default function CeoEstudioPanel({ adminProfile }) {
             {/* ── Tabs ── */}
             <div className="flex gap-2 mb-6 shrink-0 z-10 relative flex-wrap">
                 {[
-                    { id: 'pendientes',    label: 'Pendientes por Revisar',    icon: '⏳' },
-                    { id: 'manual_studio', label: 'En Estudio IA',             icon: '🎬' },
-                    { id: 'ia_backlog',    label: 'Bandeja IA (Autogenerados)', icon: '🤖' },
-                    { id: 'devueltas',     label: 'Devueltas',                  icon: '🔙' },
-                    { id: 'aprobadas',     label: 'Aprobadas / Publicadas',     icon: '✅' },
+                    { id: 'pendientes',    label: 'Pendientes por Revisar',    icon: 'hourglass_empty' },
+                    { id: 'manual_studio', label: 'En Estudio IA',             icon: 'movie' },
+                    { id: 'ia_backlog',    label: 'Bandeja IA (Autogenerados)', icon: 'smart_toy' },
+                    { id: 'devueltas',     label: 'Devueltas',                  icon: 'undo' },
+                    { id: 'aprobadas',     label: 'Aprobadas / Publicadas',     icon: 'check_circle' },
                 ].map(tab => (
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                        className={`relative px-4 py-2.5 rounded-xl font-black text-sm transition-all border ${
+                        className={`relative px-4 py-2.5 rounded-xl font-black text-sm transition-all border flex items-center gap-2 ${
                             activeTab === tab.id
                                 ? tab.id === 'manual_studio'
                                     ? 'bg-cyan-500 border-cyan-500 text-white shadow-md'
                                     : 'bg-[#d946ef] border-[#d946ef] text-white shadow-md'
                                 : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white hover:border-[#d946ef]/50'
                         }`}>
-                        {tab.icon} {tab.label}
+                        <span className="material-symbols-outlined text-[18px] select-none">{tab.icon}</span> {tab.label}
                         {counts[tab.id] > 0 && (
                             <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black text-white ${
                                 tab.id === 'manual_studio' ? 'bg-cyan-600' :
@@ -526,7 +526,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                 {!loading && visible.length === 0 && (
                     <div className="col-span-full h-64 flex flex-col items-center justify-center text-neutral-500 border-2 border-dashed border-neutral-800 rounded-2xl">
-                        <span className="text-4xl mb-3">👻</span>
+                        <span className="material-symbols-outlined text-neutral-800 text-[48px] mb-3 select-none">inbox</span>
                         <p className="font-bold uppercase tracking-widest text-sm">Bandeja vacía</p>
                         <p className="text-xs text-neutral-700 mt-1">
                             {activeTab === 'pendientes' ? 'Alex aún no ha enviado nada a revisión.' : 'No hay contenido en esta sección.'}
@@ -550,12 +550,12 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     )
                                 ) : isGridAuto ? (
                                     <div className="flex flex-col items-center justify-center text-neutral-400">
-                                        <span className="text-4xl mb-1 text-[#d946ef]">📜</span>
+                                        <span className="material-symbols-outlined text-[#d946ef] text-[36px] mb-1 select-none">description</span>
                                         <span className="text-[10px] font-bold uppercase text-center px-4">Guion de Video<br/>(Renderizando)</span>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center opacity-40">
-                                        <span className="text-3xl mb-1">🖼</span>
+                                        <span className="material-symbols-outlined text-neutral-600 text-[28px] mb-1 select-none">image</span>
                                         <span className="text-[9px] font-bold uppercase">Sin preview</span>
                                     </div>
                                 )}
@@ -606,7 +606,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 {firstMedia?.url ? (
                                     videoError ? (
                                         <div className="text-center p-6 bg-red-500/10 border border-red-500/30 rounded-2xl max-w-sm">
-                                            <span className="text-4xl">⚠️</span>
+                                            <span className="material-symbols-outlined text-yellow-500 text-[40px] select-none">warning</span>
                                             <p className="text-sm font-bold text-red-400 mt-2">Error al cargar el archivo</p>
                                             <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
                                                 No se pudo reproducir el recurso. Es posible que el renderizado aún no esté completo o que el archivo haya sido eliminado del servidor.
@@ -628,14 +628,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             onError={() => { setVideoError(true); }} />
                                     )
                                 ) : isAutoVideo ? (() => {
-                                    // Detectar si está en espera manual (manual_studio) o ya renderizando
                                     const isManualPending = selected.status === 'manual_studio';
                                     const isRenderQueued  = ['pending_render', 'rendering', 'pending_render_docker', 'rendering_docker'].includes(selected.status);
                                     const readableScenes  = extractReadableScenes(selected.media_options);
-                                    const sourceLabel     = selected.media_options?.source === 'manual_cockers' ? '🎬 Video Manual (Cockers Studio)'
-                                                          : selected.media_options?.source === 'manual_planner' ? '📅 Video del Planificador'
-                                                          : selected.media_options?.source === 'ai_planner'     ? '🤖 Plan Mensual IA'
-                                                          : '📜 Video IA';
+                                    const sourceLabel     = selected.media_options?.source === 'manual_cockers' ? 'Video Manual (Cockers Studio)'
+                                                          : selected.media_options?.source === 'manual_planner' ? 'Video del Planificador'
+                                                          : selected.media_options?.source === 'ai_planner'     ? 'Plan Mensual IA'
+                                                          : 'Video IA';
                                     return (
                                     <div className="w-full h-full p-6 max-w-2xl mx-auto flex flex-col justify-start overflow-y-auto custom-scrollbar">
 
@@ -646,7 +645,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             </span>
                                             {selected.media_options?.niche && (
                                                 <span className="text-[10px] font-bold bg-neutral-800 border border-neutral-700 text-neutral-400 px-3 py-1 rounded-full">
-                                                    🏷️ {selected.media_options.niche}
+                                                    {selected.media_options.niche}
                                                 </span>
                                             )}
                                         </div>
@@ -658,14 +657,17 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             <>
                                                 {isManualPending && (
                                                     <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl p-4 mb-5 flex items-center gap-4">
-                                                        <span className="text-3xl shrink-0">🎬</span>
+                                                        <span className="material-symbols-outlined text-cyan-400 text-[32px] shrink-0 select-none">movie</span>
                                                         <div>
                                                             <p className="font-black tracking-widest uppercase text-sm">Esperando Activación</p>
                                                             <p className="text-xs text-cyan-400/70 mt-0.5">Este video fue enviado al Estudio IA. Revisa el guion y presiona "Generar" cuando esté listo.</p>
                                                         </div>
                                                     </div>
                                                 )}
-                                                <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">📜 Guion de Escenas</h3>
+                                                <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-[20px] select-none">description</span>
+                                                    Guion de Escenas
+                                                </h3>
                                                 <div className="space-y-3 text-sm pb-4">
                                                     {readableScenes ? readableScenes.map(({ n, isCTA, narr, visual, texto }) => (
                                                         <div key={n} className={`border rounded-xl p-4 ${
@@ -674,23 +676,23 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                                             <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${
                                                                 isCTA ? 'text-[#CC0000]' : 'text-neutral-500'
                                                             }`}>
-                                                                {isCTA ? `🎯 ESCENA ${n} — CTA` : `ESCENA ${n}`}
+                                                                {isCTA ? `ESCENA ${n} — CTA` : `ESCENA ${n}`}
                                                             </p>
                                                             {narr && (
                                                                 <div className="mb-2">
-                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🎙️ Narración</p>
+                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">Narración</p>
                                                                     <p className="text-neutral-200 text-xs leading-relaxed">{narr}</p>
                                                                 </div>
                                                             )}
                                                             {texto && (
                                                                 <div className="mb-2">
-                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">📝 Texto en Pantalla</p>
+                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">Texto en Pantalla</p>
                                                                     <p className="text-yellow-300/80 text-xs leading-relaxed font-bold">{texto}</p>
                                                                 </div>
                                                             )}
                                                             {visual && (
                                                                 <div>
-                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🖼️ Visual / Imagen IA</p>
+                                                                    <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">Visual / Imagen IA</p>
                                                                     <p className="text-violet-300/70 text-xs leading-relaxed italic">{visual}</p>
                                                                 </div>
                                                             )}
@@ -704,8 +706,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     </div>
                                     );
                                 })() : (
-                                    <div className="text-neutral-600 flex flex-col items-center gap-2">
-                                        <span className="text-5xl">🖼</span>
+                                    <div className="text-neutral-600 flex flex-col items-center gap-2 select-none">
+                                        <span className="material-symbols-outlined text-neutral-800 text-[48px] select-none">image</span>
                                         <p className="text-sm font-bold">Sin archivo adjunto aún</p>
                                     </div>
                                 )}
@@ -740,7 +742,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         }
                                     }}
                                     className="absolute bottom-4 left-4 bg-white/20 hover:bg-white text-white hover:text-black px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2 z-50 shadow-md">
-                                    ⬇️ Descargar
+                                    <span className="material-symbols-outlined text-[16px]">download</span> Descargar
                                 </button>
                             )}
                         </div>
@@ -754,7 +756,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     </span>
                                     {canReview && (
                                         <button onClick={(e) => handleDelete(selected.id, e)} className="text-[10px] font-bold text-red-500 hover:text-white border border-red-500/30 hover:bg-red-500 px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 focus:outline-none">
-                                            🗑 Borrar Activo
+                                            <span className="material-symbols-outlined text-[14px]">delete</span> Borrar Activo
                                         </button>
                                     )}
                                 </div>
@@ -781,12 +783,14 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                                     {/* --- SUBIR ARCHIVO DE REFERENCIA --- */}
                                     <div className="mb-4">
-                                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">📁 Archivo de Referencia Visual (Opcional)</p>
+                                        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">Archivo de Referencia Visual (Opcional)</p>
                                         {refFileUrl ? (
                                             <div className="relative group rounded-xl overflow-hidden border border-[#d946ef]/60 bg-neutral-950 p-2 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     {refFileType.startsWith('video/') ? (
-                                                        <div className="w-10 h-10 rounded bg-[#d946ef]/10 border border-[#d946ef]/30 flex items-center justify-center text-xs">🎥</div>
+                                                        <div className="w-10 h-10 rounded bg-[#d946ef]/10 border border-[#d946ef]/30 flex items-center justify-center">
+                                                            <span className="material-symbols-outlined text-cyan-400 text-[20px]">movie</span>
+                                                        </div>
                                                     ) : (
                                                         <img src={refFileUrl} className="w-10 h-10 rounded object-cover border border-neutral-800" alt="Ref" />
                                                     )}
@@ -803,7 +807,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <span className="text-sm">📎</span>
+                                                        <span className="material-symbols-outlined text-[16px] text-neutral-400">attach_file</span>
                                                         <span className="text-[9px] font-black uppercase text-neutral-500 tracking-widest mt-1">Subir Imagen o Video de Referencia</span>
                                                     </>
                                                 )}
@@ -844,7 +848,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             disabled={actionLoading || uploadingRef}
                                             className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-2.5 rounded-xl text-base shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2"
                                         >
-                                            {actionLoading ? <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</> : '✅ APROBAR'}
+                                            {actionLoading ? <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</> : 'APROBAR'}
                                         </button>
 
                                         {/* --- BOTON AUTOMATICO DE RE-GENERAR CON ESTA REFERENCIA --- */}
@@ -853,7 +857,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             disabled={actionLoading || uploadingRef}
                                             className="w-full bg-gradient-to-r from-[#d946ef] to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black py-2.5 rounded-xl text-sm shadow-[0_0_15px_rgba(217,70,239,0.3)] transition-all transform hover:scale-105 disabled:opacity-60 flex items-center justify-center gap-2"
                                         >
-                                            ✨ AUTO-REGENERAR CON REFERENCIA
+                                            <span className="material-symbols-outlined text-[18px]">auto_awesome</span> AUTO-REGENERAR
                                         </button>
 
                                         <button 
@@ -861,14 +865,14 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             disabled={actionLoading || uploadingRef}
                                             className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all disabled:opacity-60"
                                         >
-                                            🔙 DEVOLVER (Rehacer Todo)
+                                            DEVOLVER (Rehacer Todo)
                                         </button>
                                         <button 
                                             onClick={() => handleAction('reject', 'Cambiar fondo y visuales')}
                                             disabled={actionLoading || uploadingRef}
                                             className="w-full bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all disabled:opacity-60"
                                         >
-                                            🖼️ DEVOLVER (Cambiar Visuales)
+                                            DEVOLVER (Cambiar Visuales)
                                         </button>
                                         <button 
                                             onClick={() => {
@@ -878,7 +882,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             disabled={actionLoading || uploadingRef}
                                             className="w-full bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold py-1.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                                         >
-                                            ✂️ EDICIÓN MANUAL (Estudio Pro)
+                                            EDICIÓN MANUAL (Estudio Pro)
                                         </button>
                                     </div>
                                 </div>
@@ -888,7 +892,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                             {['pending_cm_approval', 'backlog'].includes(selected.status) && !canReview && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                                     <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
-                                        <span className="text-2xl">⏳</span>
+                                        <span className="material-symbols-outlined text-yellow-500 text-[24px]">hourglass_empty</span>
                                     </div>
                                     <p className="font-black text-white uppercase tracking-widest">En Revisión</p>
                                     <p className="text-xs text-neutral-500">Este activo está siendo revisado. Recibirás notificación cuando sea aprobado o devuelto.</p>
@@ -917,8 +921,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         onClick={handleSendToMediaWorker}
                                         className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-black py-5 rounded-xl text-base shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-3"
                                     >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
-                                        🎬 GENERAR CON ESTUDIO IA
+                                        <span className="material-symbols-outlined text-[20px]">smart_toy</span> GENERAR CON ESTUDIO IA
                                     </button>
                                     <p className="text-[9px] text-neutral-600 text-center leading-relaxed">
                                         El MediaWorker ensamblará las escenas con voz Edge TTS + imágenes Imagen 3 + subtítulos Whisper. ~2 min.
@@ -927,7 +930,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         onClick={(e) => handleDelete(selected.id, e)}
                                         className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors"
                                     >
-                                        🗑 Descartar Video Manual
+                                        Descartar Video Manual
                                     </button>
                                 </div>
                             )}
@@ -938,12 +941,12 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 text-center">
                                         <div className="w-8 h-8 border-4 border-orange-500/20 border-t-orange-400 rounded-full animate-spin mx-auto mb-3" />
                                         <p className="text-sm font-black text-orange-400 uppercase tracking-widest">
-                                            {['rendering', 'rendering_docker'].includes(selected.status) ? '🔄 Renderizando...' : '⚙️ En Cola del MediaWorker'}
+                                            {['rendering', 'rendering_docker'].includes(selected.status) ? 'Renderizando...' : 'En Cola del MediaWorker'}
                                         </p>
                                         <p className="text-xs text-neutral-500 mt-2">Generando voz + imágenes IA + subtítulos + ensamble FFmpeg. El resultado aparecerá en "Pendientes por Revisar" al terminar.</p>
                                     </div>
                                     <button onClick={fetchTasks} className="border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                        <span className="material-symbols-outlined text-[14px]">refresh</span>
                                         Actualizar Estado
                                     </button>
                                     {canReview && (
@@ -951,7 +954,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             onClick={(e) => handleDelete(selected.id, e)}
                                             className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors mt-2"
                                         >
-                                            🗑 Descartar / Borrar Activo
+                                            Descartar / Borrar Activo
                                         </button>
                                     )}
                                 </div>
@@ -962,16 +965,16 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 <div className="flex-1 flex flex-col gap-3">
                                     <div className="bg-green-500/10 border border-green-500/30 p-3 rounded-xl text-center">
                                         <p className="text-sm font-black text-green-400">
-                                            {selected.status === 'published' ? '🚀 YA PUBLICADA' : 
-                                             ['pending_render', 'rendering'].includes(selected.status) ? '✅ APROBADA (RENDERIZANDO VIDEO...)' : '✅ APROBADA'}
+                                            {selected.status === 'published' ? 'YA PUBLICADA' : 
+                                             ['pending_render', 'rendering'].includes(selected.status) ? 'APROBADA (RENDERIZANDO VIDEO...)' : 'APROBADA'}
                                         </p>
                                     </div>
                                     
                                     {/* Selector de fecha directo en CEO Estudio */}
                                     {selected.status !== 'published' && canPublish && (
                                         <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl flex flex-col gap-2">
-                                            <label className="text-[10px] font-bold text-blue-400 uppercase text-center flex items-center justify-center gap-1">
-                                                📅 Escoger Fecha y Hora
+                                            <label className="text-[10px] font-bold text-blue-400 uppercase text-center flex items-center justify-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[14px]">calendar_month</span> Escoger Fecha y Hora
                                             </label>
                                             <input 
                                                 type="datetime-local" 
@@ -986,7 +989,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     {canPublish && selected.status !== 'published' && firstMedia?.url && (
                                         <button onClick={() => setShowPublish(true)}
                                             className="mt-auto w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-white hover:to-white text-white hover:text-purple-600 font-black py-4 rounded-xl text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                                            📱 PUBLICAR AHORA
+                                            PUBLICAR AHORA
                                         </button>
                                     )}
                                     {selected.status === 'published' && (
@@ -1000,13 +1003,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                                 onClick={(e) => handleUnpublish(selected.id, e)}
                                                 className="flex-1 border border-yellow-500/40 text-yellow-500 hover:bg-yellow-500 hover:text-black py-2 rounded-xl text-xs font-bold transition-colors"
                                             >
-                                                ↩ Regresar a Pendiente
+                                                Regresar a Pendiente
                                             </button>
                                             <button 
                                                 onClick={(e) => handleDelete(selected.id, e)}
                                                 className="flex-1 border border-red-500/40 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition-colors"
                                             >
-                                                ✕ Eliminar Activo
+                                                Eliminar Activo
                                             </button>
                                         </div>
                                     )}
@@ -1028,7 +1031,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 <div className="flex items-center gap-4">
                                     {canReview && (
                                         <button onClick={(e) => handleDelete(selected.id, e)} className="text-[10px] font-bold text-red-500 hover:text-white border border-red-500/30 hover:bg-red-500 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5 focus:outline-none">
-                                            🗑 Borrar
+                                            Borrar
                                         </button>
                                     )}
                                     <button onClick={() => { setShowPublish(false); setPublishReport(null); }} className="text-neutral-500 hover:text-white text-sm focus:outline-none">✕ Cancelar</button>
@@ -1049,8 +1052,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                             <label className="text-xs font-bold text-neutral-400 mb-2">¿Cuándo Publicar?</label>
                             <div className="flex gap-2 mb-4">
-                                <button onClick={() => setPublishMode('now')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'now' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>🚀 Ahora Mismo</button>
-                                <button onClick={() => setPublishMode('schedule')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'schedule' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>📅 Programar</button>
+                                <button onClick={() => setPublishMode('now')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'now' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>Ahora Mismo</button>
+                                <button onClick={() => setPublishMode('schedule')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'schedule' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>Programar</button>
                             </div>
 
                             {publishMode === 'schedule' && (
@@ -1070,7 +1073,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
 
                             {publishReport && (
                                 <div className={`mb-4 p-3 rounded-xl text-xs font-bold overflow-y-auto max-h-32 border ${publishReport.error ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-green-500/10 border-green-500/30 text-green-400'}`}>
-                                    {publishReport.error ? '❌ ' : '✅ '} {publishReport.message || 'Éxito.'} 
+                                    {publishReport.error ? 'Error: ' : 'Éxito: '} {publishReport.message || 'Operación completada.'} 
                                     {!publishReport.error && publishReport.tiktok && <span className="block mt-1 font-mono text-[10px] break-all">{JSON.stringify(publishReport, null, 2)}</span>}
                                 </div>
                             )}
@@ -1080,9 +1083,9 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                 {publishing ? (
                                     <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</>
                                 ) : publishMode === 'schedule' ? (
-                                    '📅 GUARDAR PROGRAMACIÓN'
+                                    'GUARDAR PROGRAMACIÓN'
                                 ) : (
-                                    '🚀 CONFIRMAR Y PUBLICAR YA'
+                                    'CONFIRMAR Y PUBLICAR YA'
                                 )}
                             </button>
                         </div>
@@ -1107,7 +1110,11 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         {firstMedia?.url && <img src={firstMedia.url} className="w-full object-cover" alt="" />}
                                     </div>
                                     <div className="p-3">
-                                        <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
+                                        <div className="flex gap-4 mb-2">
+                                            <span className="material-symbols-outlined text-neutral-800 text-[20px] select-none">favorite</span>
+                                            <span className="material-symbols-outlined text-neutral-800 text-[20px] select-none">chat_bubble</span>
+                                            <span className="material-symbols-outlined text-neutral-800 text-[20px] select-none">send</span>
+                                        </div>
                                         <p className="text-sm line-clamp-3"><span className="font-bold">godzilla.consulting</span> {caption || 'Tu texto de publicación aquí...'}</p>
                                     </div>
                                 </div>
@@ -1132,8 +1139,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                     {firstMedia?.url && <img src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="" />}
                                     <div className="absolute inset-y-0 right-2 flex flex-col justify-end pb-20 gap-4">
                                         <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden"><img src="/favicon.png" className="bg-black" alt="" /></div>
-                                        <div className="text-center"><p className="text-3xl">❤️</p><p className="text-xs font-bold">128K</p></div>
-                                        <div className="text-center"><p className="text-3xl">💬</p><p className="text-xs font-bold">1024</p></div>
+                                        <div className="text-center flex flex-col items-center"><span className="material-symbols-outlined text-[28px] text-white select-none">favorite</span><p className="text-xs font-bold mt-1">128K</p></div>
+                                        <div className="text-center flex flex-col items-center"><span className="material-symbols-outlined text-[28px] text-white select-none">chat_bubble</span><p className="text-xs font-bold mt-1">1024</p></div>
                                     </div>
                                     <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                                         <p className="font-bold text-sm">@godzilla.consulting</p>

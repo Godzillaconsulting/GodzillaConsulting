@@ -84,9 +84,9 @@ export default React.memo(function GoyiAdmin() {
                 className="fixed bottom-6 right-6 z-[999999] w-14 h-14 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 shadow-[0_0_20px_rgba(234,179,8,0.5)] border-2 border-yellow-300 hover:scale-110 transition-transform flex items-center justify-center overflow-hidden pointer-events-auto"
             >
                 {isOpen ? (
-                    <span className="text-xl drop-shadow-md text-black">✖</span>
+                    <X className="w-6 h-6 text-black" />
                 ) : (
-                    <span className="text-2xl drop-shadow-md">🦖</span>
+                    <MessageSquare className="w-6 h-6 text-black fill-current" />
                 )}
             </button>
 
@@ -103,7 +103,7 @@ export default React.memo(function GoyiAdmin() {
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16"></div>
                         
                         <div className="w-10 h-10 rounded-full bg-black/40 border border-white/20 flex items-center justify-center shadow-inner relative z-10 transition-transform group-hover:scale-105">
-                            <span className="text-sm">🦖</span>
+                            <span className="material-symbols-outlined text-black text-[20px] select-none flex items-center justify-center">smart_toy</span>
                         </div>
                         <div className="relative z-10 flex-1">
                             <h3 className="font-black text-sm text-black tracking-widest uppercase">Goyi Experto</h3>

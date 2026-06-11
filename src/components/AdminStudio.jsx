@@ -102,6 +102,29 @@ const TABS_DEF = [
 
 const GOOGLE_FONTS = ['Inter','Roboto','Outfit','Poppins','Montserrat','Lato','Playfair Display','Raleway','Nunito','DM Sans'];
 
+const getSectionIcon = (id) => {
+    if (!id) return 'description';
+    if (id === 'hero') return 'layers';
+    if (id === 'servicios') return 'bolt';
+    if (id === 'cultura') return 'corporate_fare';
+    if (id === 'portafolio') return 'workspace_premium';
+    if (id === 'recursos') return 'auto_stories';
+    if (id === 'paquetes') return 'inventory_2';
+    if (id.includes('posicionamiento')) return 'campaign';
+    if (id.includes('expansion')) return 'rocket_launch';
+    if (id.includes('control-ia')) return 'smart_toy';
+    if (id.includes('elite')) return 'crown';
+    if (id.includes('bots')) return 'smart_toy';
+    if (id.includes('audiovisual') || id.includes('video')) return 'movie';
+    if (id.includes('embudo')) return 'filter_alt';
+    if (id.includes('redes')) return 'share';
+    if (id.includes('seo')) return 'search';
+    if (id.includes('crm')) return 'database';
+    if (id === 'socio-godzilla') return 'workspace_premium';
+    if (id === 'footer') return 'pin';
+    return 'description';
+};
+
 // ── Componente principal ────────────────────────────────────────────────────
 export default function AdminStudio() {
  const navigate = useNavigate();
@@ -532,7 +555,10 @@ export default function AdminStudio() {
   <div className="bg-neutral-900 rounded-2xl border border-neutral-700 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
   <div className="flex items-center justify-between p-6 border-b border-neutral-700">
   <div>
-  <h3 className="text-xl font-black text-white">📡 Vista Previa antes de Publicar</h3>
+  <h3 className="text-xl font-black text-white flex items-center gap-2">
+      <span className="material-symbols-outlined text-white text-[24px]">visibility</span>
+      Vista Previa antes de Publicar
+  </h3>
   <p className="text-sm text-gray-400 mt-1">Confirma que todo se ve bien.</p>
   </div>
   <button onClick={() => setShowPublishModal(false)} className="text-xl text-neutral-500 hover:text-white">✕</button>
@@ -558,7 +584,7 @@ export default function AdminStudio() {
         <div className="flex items-center justify-between p-6 border-b border-white/10 relative z-10">
           <div className="flex-1 mr-4">
             <h3 className="text-xl font-black text-white flex items-center gap-2 mb-3">
-              <span className="text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">🔥</span> 
+              <span className="material-symbols-outlined text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">local_fire_department</span> 
               Búsquedas Virales Globales
             </h3>
             <div className="flex gap-2 mb-2">
@@ -932,13 +958,13 @@ export default function AdminStudio() {
 
  {selectedNodeId ? (
  <div className="flex items-center gap-3">
- <span className="text-2xl drop-shadow-sm">{PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.emoji ||'📄'}</span>
+ <span className="material-symbols-outlined text-[#CC0000] text-[24px] flex items-center justify-center select-none shrink-0">{getSectionIcon(selectedNodeId)}</span>
  <div>
  <h2 className="text-lg font-black text-white leading-none drop-shadow-sm flex items-center gap-2">
  {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
  {activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username && (
     <span className="text-[9px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)] whitespace-nowrap">
-      🔒 Bloqueado por {activePresences[selectedNodeId].user}
+      <span className="material-symbols-outlined text-[12px] flex items-center justify-center">lock</span> Bloqueado por {activePresences[selectedNodeId].user}
     </span>
  )}
  </h2>
@@ -995,14 +1021,14 @@ export default function AdminStudio() {
          onClick={() => setShowPreview(false)}
          className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
        >
-         📝 Editar
+         <span className="material-symbols-outlined text-[14px] mr-1 inline-block align-middle">edit</span>Editar
        </button>
        <button 
          onClick={() => setShowPreview(true)}
          disabled={activeTab === 'correos'}
          className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
        >
-         👁️ Vista Previa
+         <span className="material-symbols-outlined text-[14px] mr-1 inline-block align-middle">visibility</span>Vista Previa
        </button>
      </div>
    )}
@@ -1056,10 +1082,10 @@ export default function AdminStudio() {
  }
  // Landing page: organized sections
  const sections = [
- { title: '🎬 Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
- { title: '📋 Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
- { title: '💰 Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
- { title: '🛡️ Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
+ { title: 'Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
+ { title: 'Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
+ { title: 'Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
+ { title: 'Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
  ];
  const usedKeys = new Set(sections.flatMap(s => s.fields));
  const remaining = textFields.filter(([k]) => !usedKeys.has(k));
@@ -1109,7 +1135,9 @@ export default function AdminStudio() {
  ))}
  {remaining.length > 0 && (
  <div className="space-y-3 pb-4">
- <p className="text-xs font-bold text-neutral-500 tracking-widest pt-1">📝 Otros campos</p>
+ <p className="text-xs font-bold text-neutral-500 tracking-widest pt-1 flex items-center gap-1.5">
+     <span className="material-symbols-outlined text-[16px]">more_horiz</span> Otros campos
+ </p>
  {remaining.map(([key, val]) => (
  <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
  <div className="space-y-1.5">
@@ -1133,7 +1161,7 @@ export default function AdminStudio() {
  {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
  <div key={prefix} className="space-y-3 pt-3 border-t border-neutral-800">
  <p className="text-xs font-bold text-yellow-400 tracking-widest">
- 📋 Grupo: {toLabel(prefix)} ({Object.keys(nums).length} items)
+  Grupo: {toLabel(prefix)} ({Object.keys(nums).length} items)
  </p>
  {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => (
  <div key={num} className="bg-neutral-900 rounded-xl p-3 space-y-2 border border-neutral-800">
@@ -1247,7 +1275,7 @@ export default function AdminStudio() {
           }}
           className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
       >
-          ➕ Añadir nuevo caso
+          <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo caso
       </button>
   )}
 
@@ -1271,7 +1299,7 @@ export default function AdminStudio() {
           }}
           className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
       >
-          ➕ Añadir nuevo recurso
+          <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo recurso
       </button>
   )}
   {selectedNodeId === 'cultura' && (
@@ -1334,7 +1362,7 @@ export default function AdminStudio() {
               }}
               className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
           >
-              ➕ Añadir nuevo medio
+              <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo medio
           </button>
       </div>
   )}
@@ -1344,7 +1372,9 @@ export default function AdminStudio() {
  Object.keys(el).some(k => MEDIA_PATTERNS.test(k))
  ) && (
  <div className="space-y-3 pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest">🖼️ Media por elemento</p>
+ <p className="text-xs font-bold text-yellow-400 tracking-widest flex items-center gap-1.5">
+     <span className="material-symbols-outlined text-[16px]">image</span> Media por elemento
+ </p>
  {draftData.elements.map((el, idx) => {
  const elMediaKeys = Object.keys(el).filter(k => MEDIA_PATTERNS.test(k));
  if (!elMediaKeys.length) return null;
@@ -1606,8 +1636,8 @@ export default function AdminStudio() {
  </div>
  </>
  ) : (
- <div className="flex-1 flex flex-col items-center pt-32 gap-4 text-neutral-700">
- <span className="text-6xl">🦖</span>
+ <div className="flex-1 flex flex-col items-center pt-32 gap-4 text-neutral-700 select-none">
+ <span className="material-symbols-outlined text-neutral-800 text-[64px] flex items-center justify-center">layers</span>
  <p className="text-base font-bold">Selecciona una sección</p>
  </div>
  )}
@@ -1631,14 +1661,14 @@ export default function AdminStudio() {
    <div className="bg-[#111111] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(204,0,0,0.2)] relative">
      <button onClick={() => setShowFeedbackModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
      <h3 className="text-xl font-black text-white tracking-widest uppercase mb-4 flex items-center gap-2">
-       <span className="text-yellow-500">💡</span> Reportar a IT
+       <span className="material-symbols-outlined text-yellow-500">lightbulb</span> Reportar a IT
      </h3>
      <p className="text-xs text-neutral-400 font-bold mb-4">Envía tus sugerencias, pide funciones o reporta bugs para <span className="text-[#CC0000]">Dani</span> y <span className="text-[#CC0000]">JareG</span>.</p>
      <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)} placeholder="Ej: Un botón para descargar imágenes está fallando..." rows="4" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none mb-3" />
      
      <label className={`block flex items-center justify-center p-3 mb-6 border border-dashed rounded-lg cursor-pointer transition-all ${isUploadingFeedbackMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/20 hover:border-yellow-500 hover:bg-white/5'}`}>
          <span className="text-xs font-black text-neutral-300 uppercase tracking-widest flex items-center gap-2">
-             <span className="text-lg">📸</span> {isUploadingFeedbackMedia ? 'Subiendo...' : 'Adjuntar Captura (SS)'}
+             <span className="material-symbols-outlined text-[18px]">camera_alt</span> {isUploadingFeedbackMedia ? 'Subiendo...' : 'Adjuntar Captura (SS)'}
          </span>
          <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingFeedbackMedia} onChange={handleUploadFeedbackImage} />
      </label>
@@ -1676,7 +1706,7 @@ export default function AdminStudio() {
               alert('Error de red al enviar reporte: ' + e.message);
           }
       }} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-white hover:to-white hover:text-black py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white border border-yellow-900/50">
-        Enviar Reporte ✔️
+        Enviar Reporte
       </button>
 
    </div>

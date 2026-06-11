@@ -216,7 +216,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
             {/* Modal */}
             {isOpen && createPortal(
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" style={{ zIndex: 99999 }}>
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6" style={{ zIndex: 99999 }}>
                     <div className="bg-neutral-900 rounded-2xl border border-neutral-700 w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
 
                         {/* Header del modal */}
@@ -251,11 +251,11 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
 
                             {/* TAB: Biblioteca */}
                             {tab === 'library' && (
-                                <div className="flex bg-neutral-900 overflow-hidden h-[50vh]">
+                                <div className="flex flex-col md:flex-row bg-neutral-900 overflow-hidden h-[50vh]">
                                     
                                     {/* Left Sidebar (Virtual Folders) */}
-                                    <div className="w-[220px] shrink-0 border-r border-neutral-800 bg-[#0a0a09] flex flex-col p-3 overflow-y-auto custom-scrollbar">
-                                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 px-2">📂 Carpetas</p>
+                                    <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-neutral-800 bg-[#0a0a09] flex flex-row md:flex-col p-3 overflow-x-auto md:overflow-y-auto custom-scrollbar gap-2 md:gap-0 shrink-0">
+                                        <p className="hidden md:block text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 px-2">📂 Carpetas</p>
                                         {[
                                             { id: 'all', icon: '🌌', label: 'Todo el Medios' },
                                             { id: 'images', icon: '🖼️', label: 'Imágenes / Fotos' },
@@ -265,7 +265,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                                             <button 
                                                 key={f.id} 
                                                 onClick={() => setFilter(f.id)} 
-                                                className={`flex items-center gap-3 px-3 py-3 mb-1 rounded-xl text-xs font-bold transition-all border ${
+                                                className={`flex items-center gap-2 md:gap-3 px-3 py-2 md:py-3 md:mb-1 rounded-xl text-[10px] md:text-xs font-bold transition-all border whitespace-nowrap ${
                                                     filter === f.id 
                                                         ? 'bg-[#CC0000]/10 border-[#CC0000] text-[#CC0000]' 
                                                         : 'border-transparent text-neutral-400 hover:bg-neutral-800 hover:text-white'

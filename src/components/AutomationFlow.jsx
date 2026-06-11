@@ -6,7 +6,7 @@ const getIcons = () => ({ Bot, MessageCircle, Webhook, Zap, Calendar, Server, Pl
 // ─── Plantillas ────────────────────────────────────────────────────────────────
 const FLOW_TEMPLATES = [
   {
-    name: '🌌 El Cerebro de Godzilla',
+    name: 'El Cerebro de Godzilla',
     description: 'Topología Masiva: Cloudflare, APIs y Ejército de Bots',
     nodes: [
       /* --- NÚCLEO --- */
@@ -96,7 +96,7 @@ const FLOW_TEMPLATES = [
     ]
   },
   {
-    name: '🌌 Ecosistema Central Godzilla',
+    name: 'Ecosistema Central Godzilla',
     description: 'Cerebro AI Central ↔ Memoria + Bots + Citas',
     nodes: [
       { id: 'ec1', type: 'trigger', title: 'WhatsApp Bot', subtitle: 'Recepción Leads', icon: 'Smartphone', x: 80, y: 100, color: '#25d366', pm2_process: 'whatsapp-bot' },
@@ -119,7 +119,7 @@ const FLOW_TEMPLATES = [
   },
 
   {
-    name: '🌌 Ecosistema Central Godzilla',
+    name: 'Ecosistema Central Godzilla',
     description: 'Cerebro AI Central ↔ Memoria + Bots + Citas',
     nodes: [
       { id: 'ec1', type: 'trigger', title: 'WhatsApp Bot', subtitle: 'Recepción Leads', icon: 'Smartphone', x: 80, y: 100, color: '#25d366', pm2_process: 'whatsapp-bot' },
@@ -141,7 +141,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🧠 RAG B2B LinkedIn',
+    name: 'RAG B2B LinkedIn',
     description: 'LinkedIn → Vector DB → Claude → CRM',
     nodes: [
       { id: 'l1', type: 'trigger', title: 'LinkedIn Bot', subtitle: 'Nuevo Lead', icon: 'Network', x: 100, y: 220, color: '#0a66c2', pm2_process: 'linkedin-bot' },
@@ -156,7 +156,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🎙️ Podcast a Social Media',
+    name: 'Podcast a Social Media',
     description: 'YouTube → IA → Twitter + LinkedIn + Newsletter',
     nodes: [
       { id: 'p1', type: 'trigger', title: 'YouTube Data API', subtitle: 'Nuevo Video', icon: 'Video', x: 100, y: 220, color: '#ff0000', pm2_process: '' },
@@ -173,7 +173,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🌱 Flujo Básico',
+    name: 'Flujo Básico',
     description: 'Planificador IA → Tarea de Studio',
     nodes: [
       { id: 't1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 200, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
@@ -183,7 +183,7 @@ const FLOW_TEMPLATES = [
     edges: [{ id: 'e1', source: 't1', target: 't2', color: '#a855f7' }],
   },
   {
-    name: '🚀 Máquina UGC Completa',
+    name: 'Máquina UGC Completa',
     description: 'Planificador → Imagen → Video → Tarea → WA + Email',
     nodes: [
       { id: 'n1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 250, color: '#a855f7', pm2_process: 'ai-core' },
@@ -203,7 +203,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🔥 Fábrica de Contenido Viral',
+    name: 'Fábrica de Contenido Viral',
     description: 'Input Tema → Planificador IA → Assets → CEO Studio',
     nodes: [
       { id: 'v1', type: 'trigger', title: 'Webhook Entrada', subtitle: 'Recibe Tema', icon: 'Globe', x: 100, y: 220, color: '#06b6d4', pm2_process: '' },
@@ -221,7 +221,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '📅 Recepción de Citas Omnicanal',
+    name: 'Recepción de Citas Omnicanal',
     description: 'Cita Web → Calendario → WhatsApp + Email',
     nodes: [
       { id: 'c1', type: 'trigger', title: 'Webhook Cita', subtitle: 'Entrada Web', icon: 'Globe', x: 100, y: 220, color: '#06b6d4', pm2_process: '' },
@@ -236,7 +236,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🤖 Cerebro WhatsApp Bot',
+    name: 'Cerebro WhatsApp Bot',
     description: 'WA Bot → Base de Datos → Tarea de Studio',
     nodes: [
       { id: 'w1', type: 'trigger', title: 'WhatsApp Bot', subtitle: 'Mensaje recibido', icon: 'Smartphone', x: 100, y: 220, color: '#25d366', pm2_process: 'whatsapp-bot' },
@@ -249,7 +249,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '📱 Bot de Alertas Omnicanal',
+    name: 'Bot de Alertas Omnicanal',
     description: 'Tarea → WhatsApp + Email simultáneo',
     nodes: [
       { id: 'a1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 100, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
@@ -264,7 +264,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🗄️ Recolector de Datos',
+    name: 'Recolector de Datos',
     description: 'Webhook → Base de Datos → Tarea',
     nodes: [
       { id: 'r1', type: 'trigger', title: 'Webhook Entrada', subtitle: 'API Externo', icon: 'Globe', x: 100, y: 220, color: '#06b6d4', pm2_process: '' },
@@ -277,7 +277,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '📣 Pipeline de Contenido Social',
+    name: 'Pipeline de Contenido Social',
     description: 'Planificador → Visual → Base de Datos → Tarea',
     nodes: [
       { id: 's1', type: 'trigger', title: 'Planificador IA', subtitle: 'Origen', icon: 'Wand2', x: 80, y: 220, color: '#a855f7', pm2_process: 'ai-core' },
@@ -292,7 +292,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🤖 Cerebro TikTok Bot',
+    name: 'Cerebro TikTok Bot',
     description: 'TikTok → Planificador IA → Tarea',
     nodes: [
       { id: 'tk1', type: 'trigger', title: 'TikTok Bot', subtitle: 'Interacción TikTok', icon: 'Video', x: 100, y: 220, color: '#ff0050', pm2_process: 'tiktok-bot' },
@@ -305,7 +305,7 @@ const FLOW_TEMPLATES = [
     ],
   },
   {
-    name: '🔁 Monitor de Sistema',
+    name: 'Monitor de Sistema',
     description: 'Server → PM2 Status → Alerta WA',
     nodes: [
       { id: 'm1', type: 'trigger', title: 'Monitor Servidor', subtitle: 'Health Check', icon: 'Server', x: 100, y: 220, color: '#ef4444', pm2_process: 'godzilla-server' },
@@ -406,7 +406,8 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
 
       {/* Zoom hint */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-neutral-600 pointer-events-none select-none flex items-center gap-3">
-        <span>🖱 Arrastra para mover</span><span>🔍 Rueda para zoom ({Math.round(scale * 100)}%)</span>
+        <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px] select-none">pan_tool</span> Arrastra para mover</span>
+        <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px] select-none">zoom_in</span> Rueda para zoom ({Math.round(scale * 100)}%)</span>
       </div>
 
       {/* Canvas */}
@@ -435,7 +436,7 @@ function GalaxyView({ flows, pm2Status, onEditFlow, onNewFlow, onDeleteFlow, use
               {/* Header */}
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="flex items-center gap-2">
-                  {isCore && <span className="text-lg">👑</span>}
+                  {isCore && <span className="material-symbols-outlined text-amber-400 text-lg select-none">crown</span>}
                   <div>
                     <p className={`text-sm font-black leading-none ${isCore ? 'text-yellow-300' : 'text-white'}`}>{flow.name}</p>
                     <p className="text-[10px] text-neutral-500 mt-0.5">ID #{flow.id} · Por {flow.created_by || 'sistema'}</p>
@@ -635,7 +636,10 @@ function AiSaveModal({ flowId, nodes, edges, onClose, onSaved }) {
       <div className="bg-neutral-950 border border-yellow-500/40 rounded-2xl shadow-[0_0_40px_rgba(234,179,8,0.2)] w-full max-w-md">
         <div className="flex items-center justify-between p-5 border-b border-neutral-800">
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2">🧠 Guardar & Analizar</h3>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-purple-400 select-none">psychology</span>
+              Guardar & Analizar
+            </h3>
             <p className="text-xs text-neutral-400 mt-0.5">El sistema central será evaluado por la IA antes de guardarse.</p>
           </div>
           <button onClick={onClose} className="text-neutral-500 hover:text-white transition"><X className="w-5 h-5" /></button>
@@ -712,82 +716,82 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
   const selectedNodePreset = selectedNode ? (selectedNode.presetName || selectedNode.title) : '';
   const NODE_PRESETS = [
     // ── NÚCLEO GODZILLA ──────────────────────────────────────────────────────
-    { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process: 'ai-core',       group:'🧠 Núcleo' },
-    { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
-    { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process: 'vector-db',     group:'🧠 Núcleo' },
-    { title:'Godzilla CM',          subtitle:'CRM & Leads',           icon:'LayoutDashboard',color:'#2563eb', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
-    { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
-    { title:'Tarea de Studio',      subtitle:'CEO Estudio',           icon:'CheckSquare',    color:'#10b981', pm2_process:'',              group:'🧠 Núcleo' },
-    { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'8b5cf6', pm2_process:'',              group:'🧠 Núcleo' },
+    { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process: 'ai-core',       group:'Núcleo' },
+    { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process: 'ai-core',              group:'Núcleo' },
+    { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process: 'vector-db',     group:'Núcleo' },
+    { title:'Godzilla CM',          subtitle:'CRM & Leads',           icon:'LayoutDashboard',color:'#2563eb', pm2_process:'',              group:'Núcleo' },
+    { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process: 'ai-core',              group:'Núcleo' },
+    { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process: 'ai-core',              group:'Núcleo' },
+    { title:'Tarea de Studio',      subtitle:'CEO Estudio',           icon:'CheckSquare',    color:'#10b981', pm2_process:'',              group:'Núcleo' },
+    { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'8b5cf6', pm2_process:'',              group:'Núcleo' },
     // ── BOTS PROPIOS ─────────────────────────────────────────────────────────
-    { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'🤖 Bots' },
-    { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'🤖 Bots' },
-    { title:'IG / Messenger Bot',   subtitle:'Meta DMs',              icon:'MessageCircle',  color:'#d946ef', pm2_process:'meta-bot',      group:'🤖 Bots' },
-    { title:'Twitter / X Bot',      subtitle:'Posts / DMs',           icon:'MessageCircle',  color:'#0f1419', pm2_process:'twitter-bot',   group:'🤖 Bots' },
-    { title:'LinkedIn Bot',         subtitle:'B2B Leads',             icon:'Network',        color:'#0a66c2', pm2_process:'linkedin-bot',  group:'🤖 Bots' },
-    { title:'Zilla Bot',            subtitle:'Asistente / Atención',  icon:'Bot',            color:'#10b981', pm2_process:'zilla-bot',     group:'🤖 Bots' },
-    { title:'Goyi Bot',             subtitle:'Asistente / Cierre',    icon:'Bot',            color:'#ec4899', pm2_process:'goyi-bot',      group:'🤖 Bots' },
-    { title:'Bot Newsletter',       subtitle:'Redacción / Email',     icon:'Mail',           color:'#f97316', pm2_process:'newsletter-bot',group:'🤖 Bots' },
-    { title:'Trends Bot',           subtitle:'Analizador de Redes',   icon:'TrendingUp',     color:'#8b5cf6', pm2_process:'trends-bot',    group:'🤖 Bots' },
+    { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'Bots' },
+    { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'Bots' },
+    { title:'IG / Messenger Bot',   subtitle:'Meta DMs',              icon:'MessageCircle',  color:'#d946ef', pm2_process:'meta-bot',      group:'Bots' },
+    { title:'Twitter / X Bot',      subtitle:'Posts / DMs',           icon:'MessageCircle',  color:'#0f1419', pm2_process:'twitter-bot',   group:'Bots' },
+    { title:'LinkedIn Bot',         subtitle:'B2B Leads',             icon:'Network',        color:'#0a66c2', pm2_process:'linkedin-bot',  group:'Bots' },
+    { title:'Zilla Bot',            subtitle:'Asistente / Atención',  icon:'Bot',            color:'#10b981', pm2_process:'zilla-bot',     group:'Bots' },
+    { title:'Goyi Bot',             subtitle:'Asistente / Cierre',    icon:'Bot',            color:'#ec4899', pm2_process:'goyi-bot',      group:'Bots' },
+    { title:'Bot Newsletter',       subtitle:'Redacción / Email',     icon:'Mail',           color:'#f97316', pm2_process:'newsletter-bot',group:'Bots' },
+    { title:'Trends Bot',           subtitle:'Analizador de Redes',   icon:'TrendingUp',     color:'#8b5cf6', pm2_process:'trends-bot',    group:'Bots' },
     // ── MENSAJERÍA EXTERNA ───────────────────────────────────────────────────
-    { title:'Telegram Bot',         subtitle:'Alertas / Gratis',      icon:'Send',           color:'#26a5e4', pm2_process:'',              group:'💬 Mensajería' },
-    { title:'Discord Webhook',      subtitle:'Notif. al equipo',      icon:'MessageCircle',  color:'#5865f2', pm2_process:'',              group:'💬 Mensajería' },
-    { title:'Slack Webhook',        subtitle:'Notif. al equipo',      icon:'Zap',            color:'#4a154b', pm2_process:'',              group:'💬 Mensajería' },
-    { title:'Twilio SMS',           subtitle:'SMS Universal',         icon:'Smartphone',     color:'#f22f46', pm2_process:'',              group:'💬 Mensajería' },
-    { title:'Email Worker',         subtitle:'SMTP Propio',           icon:'Mail',           color:'#f97316', pm2_process:'email-worker',  group:'💬 Mensajería' },
-    { title:'Resend',               subtitle:'Email API (3K/mes free)',icon:'Mail',           color:'#000000', pm2_process:'',              group:'💬 Mensajería' },
+    { title:'Telegram Bot',         subtitle:'Alertas / Gratis',      icon:'Send',           color:'#26a5e4', pm2_process:'',              group:'Mensajería' },
+    { title:'Discord Webhook',      subtitle:'Notif. al equipo',      icon:'MessageCircle',  color:'#5865f2', pm2_process:'',              group:'Mensajería' },
+    { title:'Slack Webhook',        subtitle:'Notif. al equipo',      icon:'Zap',            color:'#4a154b', pm2_process:'',              group:'Mensajería' },
+    { title:'Twilio SMS',           subtitle:'SMS Universal',         icon:'Smartphone',     color:'#f22f46', pm2_process:'',              group:'Mensajería' },
+    { title:'Email Worker',         subtitle:'SMTP Propio',           icon:'Mail',           color:'#f97316', pm2_process:'email-worker',  group:'Mensajería' },
+    { title:'Resend',               subtitle:'Email API (3K/mes free)',icon:'Mail',           color:'#000000', pm2_process:'',              group:'Mensajería' },
     // ── IA / LLMs ────────────────────────────────────────────────────────────
-    { title:'Gemini API',           subtitle:'Google LLM',            icon:'Sparkles',       color:'#4285f4', pm2_process:'',              group:'🤖 IA / LLMs' },
-    { title:'OpenAI / ChatGPT',     subtitle:'GPT-4o / GPT-4 mini',   icon:'Brain',          color:'#10a37f', pm2_process:'',              group:'🤖 IA / LLMs' },
-    { title:'Anthropic Claude',     subtitle:'Claude 3 Opus/Sonnet',  icon:'Brain',          color:'#d97757', pm2_process:'',              group:'🤖 IA / LLMs' },
-    { title:'DeepSeek API',         subtitle:'DeepSeek Coder/Chat',   icon:'Brain',          color:'#4d6bfe', pm2_process:'',              group:'🤖 IA / LLMs' },
-    { title:'ElevenLabs',           subtitle:'Generador de Voz/TTS',  icon:'Play',           color:'#000000', pm2_process:'',              group:'🤖 IA / LLMs' },
+    { title:'Gemini API',           subtitle:'Google LLM',            icon:'Sparkles',       color:'#4285f4', pm2_process:'',              group:'IA / LLMs' },
+    { title:'OpenAI / ChatGPT',     subtitle:'GPT-4o / GPT-4 mini',   icon:'Brain',          color:'#10a37f', pm2_process:'',              group:'IA / LLMs' },
+    { title:'Anthropic Claude',     subtitle:'Claude 3 Opus/Sonnet',  icon:'Brain',          color:'#d97757', pm2_process:'',              group:'IA / LLMs' },
+    { title:'DeepSeek API',         subtitle:'DeepSeek Coder/Chat',   icon:'Brain',          color:'#4d6bfe', pm2_process:'',              group:'IA / LLMs' },
+    { title:'ElevenLabs',           subtitle:'Generador de Voz/TTS',  icon:'Play',           color:'#000000', pm2_process:'',              group:'IA / LLMs' },
     // ── BASES DE DATOS ───────────────────────────────────────────────────────
-    { title:'Base de Datos',        subtitle:'PostgreSQL nativo',     icon:'Database',       color:'#64748b', pm2_process:'',              group:'🗄 Datos' },
-    { title:'Neon DB',              subtitle:'PostgreSQL Serverless',  icon:'Database',       color:'#00e599', pm2_process:'',              group:'🗄 Datos' },
-    { title:'Airtable',             subtitle:'Base de datos visual',  icon:'Database',       color:'#fcb400', pm2_process:'',              group:'🗄 Datos' },
-    { title:'Supabase',             subtitle:'DB + Auth gratis',      icon:'Database',       color:'#3ecf8e', pm2_process:'',              group:'🗄 Datos' },
-    { title:'Google Sheets',        subtitle:'Leer / Escribir',       icon:'Database',       color:'#34a853', pm2_process:'',              group:'🗄 Datos' },
+    { title:'Base de Datos',        subtitle:'PostgreSQL nativo',     icon:'Database',       color:'#64748b', pm2_process:'',              group:'Datos' },
+    { title:'Neon DB',              subtitle:'PostgreSQL Serverless',  icon:'Database',       color:'#00e599', pm2_process:'',              group:'Datos' },
+    { title:'Airtable',             subtitle:'Base de datos visual',  icon:'Database',       color:'#fcb400', pm2_process:'',              group:'Datos' },
+    { title:'Supabase',             subtitle:'DB + Auth gratis',      icon:'Database',       color:'#3ecf8e', pm2_process:'',              group:'Datos' },
+    { title:'Google Sheets',        subtitle:'Leer / Escribir',       icon:'Database',       color:'#34a853', pm2_process:'',              group:'Datos' },
     // ── PRODUCTIVIDAD ────────────────────────────────────────────────────────
-    { title:'Notion',               subtitle:'Docs / CRM Notion',     icon:'Braces',         color:'#ffffff', pm2_process:'',              group:'📋 Productividad' },
-    { title:'Google Calendar API',  subtitle:'Eventos externos',      icon:'Calendar',       color:'#4285f4', pm2_process:'',              group:'📋 Productividad' },
-    { title:'Cal.com',              subtitle:'Citas sin Calendly',    icon:'Calendar',       color:'#292929', pm2_process:'',              group:'📋 Productividad' },
+    { title:'Notion',               subtitle:'Docs / CRM Notion',     icon:'Braces',         color:'#ffffff', pm2_process:'',              group:'Productividad' },
+    { title:'Google Calendar API',  subtitle:'Eventos externos',      icon:'Calendar',       color:'#4285f4', pm2_process:'',              group:'Productividad' },
+    { title:'Cal.com',              subtitle:'Citas sin Calendly',    icon:'Calendar',       color:'#292929', pm2_process:'',              group:'Productividad' },
     // ── REDES SOCIALES ───────────────────────────────────────────────────────
-    { title:'YouTube Data API',     subtitle:'Upload / Gestión',      icon:'Video',          color:'#ff0000', pm2_process:'',              group:'📱 Social' },
-    { title:'Pinterest API',        subtitle:'Pins / Tableros',       icon:'Image',          color:'#e60023', pm2_process:'',              group:'📱 Social' },
-    { title:'Facebook Ads API',     subtitle:'Campañas / Anuncios',   icon:'TrendingUp',     color:'#1877f2', pm2_process:'',              group:'📱 Social' },
+    { title:'YouTube Data API',     subtitle:'Upload / Gestión',      icon:'Video',          color:'#ff0000', pm2_process:'',              group:'Social' },
+    { title:'Pinterest API',        subtitle:'Pins / Tableros',       icon:'Image',          color:'#e60023', pm2_process:'',              group:'Social' },
+    { title:'Facebook Ads API',     subtitle:'Campañas / Anuncios',   icon:'TrendingUp',     color:'#1877f2', pm2_process:'',              group:'Social' },
     // ── PAGOS / FINANZAS ─────────────────────────────────────────────────────
-    { title:'Stripe',               subtitle:'Pasarela de Pagos',     icon:'CreditCard',     color:'#6366f1', pm2_process:'',              group:'💰 Pagos' },
-    { title:'Stripe Webhook',       subtitle:'Eventos de pago',       icon:'CreditCard',     color:'#635bff', pm2_process:'',              group:'💰 Pagos' },
+    { title:'Stripe',               subtitle:'Pasarela de Pagos',     icon:'CreditCard',     color:'#6366f1', pm2_process:'',              group:'Pagos' },
+    { title:'Stripe Webhook',       subtitle:'Eventos de pago',       icon:'CreditCard',     color:'#635bff', pm2_process:'',              group:'Pagos' },
     // ── ANALÍTICA ────────────────────────────────────────────────────────────
-    { title:'Google Analytics',     subtitle:'Tracking de eventos',   icon:'TrendingUp',     color:'#e37400', pm2_process:'',              group:'📊 Analytics' },
-    { title:'RSS Feed',             subtitle:'Agregador de noticias', icon:'Globe',          color:'#ff6600', pm2_process:'',              group:'📊 Analytics' },
-    { title:'Monitor Servidor',     subtitle:'Health Check',          icon:'Server',         color:'#ef4444', pm2_process:'godzilla-server',group:'📊 Analytics' },
+    { title:'Google Analytics',     subtitle:'Tracking de eventos',   icon:'TrendingUp',     color:'#e37400', pm2_process:'',              group:'Analytics' },
+    { title:'RSS Feed',             subtitle:'Agregador de noticias', icon:'Globe',          color:'#ff6600', pm2_process:'',              group:'Analytics' },
+    { title:'Monitor Servidor',     subtitle:'Health Check',          icon:'Server',         color:'#ef4444', pm2_process:'godzilla-server',group:'Analytics' },
     // ── INFRAESTRUCTURA ──────────────────────────────────────────────────────
-    { title:'Webhook Entrada',      subtitle:'Recibir datos externos',icon:'Globe',          color:'#06b6d4', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'HTTP Request',         subtitle:'Llamar a cualquier API',icon:'Send',           color:'#6366f1', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'Reloj / Cron',         subtitle:'Programar en el tiempo',icon:'Timer',          color:'#14b8a6', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'Cloudflare Workers',   subtitle:'Edge Gateway',          icon:'Cloud',          color:'#f38020', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'Vercel',               subtitle:'Hosting / Deploy',      icon:'Server',         color:'#ffffff', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'Make (Integromat)',    subtitle:'Webhook a Make',        icon:'Webhook',        color:'#9c27b0', pm2_process:'',              group:'⚙️ Sistema' },
-    { title:'Zapier Webhook',       subtitle:'Webhook a Zapier',      icon:'Zap',            color:'#ff4a00', pm2_process:'',              group:'⚙️ Sistema' },
+    { title:'Webhook Entrada',      subtitle:'Recibir datos externos',icon:'Globe',          color:'#06b6d4', pm2_process:'',              group:'Sistema' },
+    { title:'HTTP Request',         subtitle:'Llamar a cualquier API',icon:'Send',           color:'#6366f1', pm2_process:'',              group:'Sistema' },
+    { title:'Reloj / Cron',         subtitle:'Programar en el tiempo',icon:'Timer',          color:'#14b8a6', pm2_process:'',              group:'Sistema' },
+    { title:'Cloudflare Workers',   subtitle:'Edge Gateway',          icon:'Cloud',          color:'#f38020', pm2_process:'',              group:'Sistema' },
+    { title:'Vercel',               subtitle:'Hosting / Deploy',      icon:'Server',         color:'#ffffff', pm2_process:'',              group:'Sistema' },
+    { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'Sistema' },
+    { title:'Make (Integromat)',    subtitle:'Webhook a Make',        icon:'Webhook',        color:'#9c27b0', pm2_process:'',              group:'Sistema' },
+    { title:'Zapier Webhook',       subtitle:'Webhook a Zapier',      icon:'Zap',            color:'#ff4a00', pm2_process:'',              group:'Sistema' },
     // ── CONTROL DE FLUJO ─────────────────────────────────────────────────────
-    { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'🔀 Flujo' },
-    { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'🔀 Flujo' },
-    { title:'Delay / Espera',       subtitle:'Pausa entre pasos',     icon:'Clock',          color:'#94a3b8', pm2_process:'',              group:'🔀 Flujo' },
-    { title:'Loop / Iterador',      subtitle:'Procesar listas',       icon:'GitBranch',      color:'#0ea5e9', pm2_process:'',              group:'🔀 Flujo' },
-    { title:'Merge / Combinar',     subtitle:'Unir resultados',       icon:'Network',        color:'#a78bfa', pm2_process:'',              group:'🔀 Flujo' },
-    { title:'Set Variables',        subtitle:'Guardar datos temporales',icon:'Braces',       color:'#cbd5e1', pm2_process:'',              group:'🔀 Flujo' },
+    { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'Flujo' },
+    { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'Flujo' },
+    { title:'Delay / Espera',       subtitle:'Pausa entre pasos',     icon:'Clock',          color:'#94a3b8', pm2_process:'',              group:'Flujo' },
+    { title:'Loop / Iterador',      subtitle:'Procesar listas',       icon:'GitBranch',      color:'#0ea5e9', pm2_process:'',              group:'Flujo' },
+    { title:'Merge / Combinar',     subtitle:'Unir resultados',       icon:'Network',        color:'#a78bfa', pm2_process:'',              group:'Flujo' },
+    { title:'Set Variables',        subtitle:'Guardar datos temporales',icon:'Braces',       color:'#cbd5e1', pm2_process:'',              group:'Flujo' },
     // ── GENERACIÓN DE ARCHIVOS ────────────────────────────────────────────────
-    { title:'PDF Generator',        subtitle:'Contratos / Reportes',  icon:'Image',          color:'#dc2626', pm2_process:'',              group:'📄 Archivos' },
-    { title:'Brevo',                subtitle:'Email Marketing',       icon:'Mail',           color:'#0092ff', pm2_process:'',              group:'📄 Archivos' },
+    { title:'PDF Generator',        subtitle:'Contratos / Reportes',  icon:'Image',          color:'#dc2626', pm2_process:'',              group:'Archivos' },
+    { title:'Brevo',                subtitle:'Email Marketing',       icon:'Mail',           color:'#0092ff', pm2_process:'',              group:'Archivos' },
   ];
 
   // Agrupar por categoria para el menu
   const PRESET_GROUPS = NODE_PRESETS.reduce((acc, p) => {
-    const g = p.group || '⚙️ Sistema';
+    const g = p.group || 'Sistema';
     if (!acc[g]) acc[g] = [];
     acc[g].push(p);
     return acc;
@@ -1003,11 +1007,11 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       return false;
     });
 
-    if (missing) return { status: 'warning', msg: `⚠️ El nodo "${missing.title}" requiere configuración. Seleccionalo y completa los campos obligatorios.` };
-    if (!hasTrigger) return { status: 'error', msg: '🛑 Falta un Nodo Origen (Trigger). El flujo necesita saber cómo iniciarse (ej. Webhook, Cron, Bot).' };
-    if (!hasAction) return { status: 'error', msg: '🛑 Falta un Nodo Acción (Salida). El flujo se activa pero no hace nada (ej. Guardar en DB, Enviar Email).' };
-    if (edges.length === 0 && nodes.length > 1) return { status: 'warning', msg: '⚠️ Conecta los nodos arrastrando desde el punto de salida al punto de entrada.' };
-    return { status: 'success', msg: '✅ Flujo válido y listo para ejecutarse en el servidor.' };
+    if (missing) return { status: 'warning', msg: `El nodo "${missing.title}" requiere configuración. Seleccionalo y completa los campos obligatorios.` };
+    if (!hasTrigger) return { status: 'error', msg: 'Falta un Nodo Origen (Trigger). El flujo necesita saber cómo iniciarse (ej. Webhook, Cron, Bot).' };
+    if (!hasAction) return { status: 'error', msg: 'Falta un Nodo Acción (Salida). El flujo se activa pero no hace nada (ej. Guardar en DB, Enviar Email).' };
+    if (edges.length === 0 && nodes.length > 1) return { status: 'warning', msg: 'Conecta los nodos arrastrando desde el punto de salida al punto de entrada.' };
+    return { status: 'success', msg: 'Flujo válido y listo para ejecutarse en el servidor.' };
   })();
 
   return (
@@ -1022,7 +1026,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
           <ArrowLeft className="w-4 h-4"/>Galaxia
         </button>
         <div className="w-px h-5 bg-neutral-800"/>
-        {isCore && <span className="text-sm">👑</span>}
+        {isCore && <span className="material-symbols-outlined text-amber-400 text-sm select-none">crown</span>}
         <input value={editName} onChange={e=>setEditName(e.target.value)} disabled={flowId === 1}
           className="bg-transparent text-sm font-black text-white outline-none border-b border-transparent focus:border-neutral-600 transition w-48 disabled:text-neutral-500" />
         <div className="flex-1"/>
@@ -1090,9 +1094,31 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                   const source = filtered
                     ? { 'Resultados': filtered }
                     : PRESET_GROUPS;
+                  const getCategoryIcon = (cat) => {
+                    switch (cat) {
+                      case 'Núcleo': return 'psychology';
+                      case 'Bots': return 'smart_toy';
+                      case 'Mensajería': return 'chat';
+                      case 'IA / LLMs': return 'auto_awesome';
+                      case 'Datos': return 'database';
+                      case 'Productividad': return 'assignment';
+                      case 'Social': return 'share';
+                      case 'Pagos': return 'payments';
+                      case 'Analytics': return 'analytics';
+                      case 'Sistema': return 'settings';
+                      case 'Flujo': return 'alt_route';
+                      case 'Archivos': return 'description';
+                      default: return 'settings';
+                    }
+                  };
                   return Object.entries(source).map(([group, items]) => (
                     <div key={group}>
-                      {!filtered && <div className="px-3 pt-2 pb-0.5"><span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest">{group}</span></div>}
+                      {!filtered && (
+                        <div className="px-3 pt-2 pb-0.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[11px] text-neutral-600 select-none">{getCategoryIcon(group)}</span>
+                          <span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest">{group}</span>
+                        </div>
+                      )}
                       {items.map((p,i) => (
                         <button key={i} onClick={()=>{addPreset(p);setNodeSearch('');}} className="w-full text-left px-3 py-2 hover:bg-neutral-800 flex items-center gap-2.5 transition group">
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{backgroundColor:`${p.color}22`,color:p.color}}>
@@ -1114,7 +1140,10 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
         </div>
 
         <button onClick={handleSave} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition border ${flowId===1?'bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20':'bg-white text-black border-white/20 hover:bg-neutral-200'}`}>
-          {flowId===1?'🧠 Validar IA':'💾 Guardar'}
+          <span className="material-symbols-outlined text-[14px] select-none">
+            {flowId === 1 ? 'psychology' : 'save'}
+          </span>
+          {flowId === 1 ? 'Validar IA' : 'Guardar'}
         </button>
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-900/20 px-3 py-1.5 rounded-xl border border-emerald-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>ACTIVO
@@ -1136,12 +1165,17 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
       )}
 
       {/* Educational Banner */}
-      <div className={`shrink-0 p-2.5 flex items-center justify-center text-xs font-bold transition-colors ${
+      <div className={`shrink-0 p-2.5 flex items-center justify-center gap-1.5 text-xs font-bold transition-colors ${
         flowHealth.status === 'success' ? 'bg-emerald-900/30 border-b border-emerald-500/40 text-emerald-400' :
         flowHealth.status === 'warning' ? 'bg-yellow-900/30 border-b border-yellow-500/40 text-yellow-400' :
         flowHealth.status === 'error' ? 'bg-rose-900/30 border-b border-rose-500/40 text-rose-400' :
         'bg-neutral-900 border-b border-neutral-800 text-neutral-400'
       }`}>
+        <span className="material-symbols-outlined text-[14px] select-none">
+          {flowHealth.status === 'success' ? 'check_circle' :
+           flowHealth.status === 'warning' ? 'warning' :
+           flowHealth.status === 'error' ? 'error' : 'info'}
+        </span>
         {flowHealth.msg}
       </div>
 
@@ -1484,7 +1518,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                   </div>
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Endpoint URL</label>
-                    <input value={selectedNode.config?.url||''} onChange={e=>updateNode({config:{...selectedNode.config, url:e.target.value}})} placeholder="https://api.externa.com/v1/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
+                    <input value={selectedNode.config?.url||''} onChange={e => updateNode({config: { ...selectedNode.config, url: e.target.value }})} placeholder="https://api.externa.com/v1/..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white transition"/>
                   </div>
                   <div>
                     <label className="text-[10px] text-neutral-400 mb-1 block">Body (JSON)</label>
@@ -1518,14 +1552,15 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                     className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-teal-500 transition"
                   >
                     <option value="">— Selecciona frecuencia —</option>
-                    <option value="every_minute">⚡ Cada minuto (pruebas)</option>
-                    <option value="every_hour">🕐 Cada hora en punto</option>
-                    <option value="every_day_8">?? Cada d�a a las 8:00 AM</option><option value="every_day_9">🌅 Cada día a las 9:00 AM</option>
-                    <option value="every_day_12">☀️ Cada día al mediodía</option>
-                    <option value="every_day_18">🌆 Cada día a las 6:00 PM</option>
-                    <option value="every_monday">📅 Cada lunes a las 9 AM</option>
-                    <option value="every_friday">🎉 Cada viernes a las 9 AM</option>
-                    <option value="custom">🕰 Hora específica...</option>
+                    <option value="every_minute">Cada minuto (pruebas)</option>
+                    <option value="every_hour">Cada hora en punto</option>
+                    <option value="every_day_8">Cada día a las 8:00 AM</option>
+                    <option value="every_day_9">Cada día a las 9:00 AM</option>
+                    <option value="every_day_12">Cada día al mediodía</option>
+                    <option value="every_day_18">Cada día a las 6:00 PM</option>
+                    <option value="every_monday">Cada lunes a las 9 AM</option>
+                    <option value="every_friday">Cada viernes a las 9 AM</option>
+                    <option value="custom">Hora específica...</option>
                   </select>
                   {selectedNode.config?.cron === 'custom' && (
                     <div>
@@ -1969,8 +2004,8 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                 )}
               </div>
               {selectedNode.pm2_process
-                ? (() => { const p=pm2Status.find(x=>x.name===selectedNode.pm2_process); return p?<p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE · {Math.round(p.memory/1024/1024)}MB · {p.cpu}%</p>:<p className="text-[10px] text-rose-400 font-bold">🔴 OFFLINE</p>; })()
-                : <><p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE - Integración Nativa</p><p className="text-[9px] text-emerald-500/60">Corre dentro del núcleo de Godzilla Server.</p></>
+                ? (() => { const p=pm2Status.find(x=>x.name===selectedNode.pm2_process); return p?<p className="text-[10px] text-emerald-400 font-bold flex items-center gap-1"><span className="material-symbols-outlined text-[12px] select-none">check_circle</span>ONLINE · {Math.round(p.memory/1024/1024)}MB · {p.cpu}%</p>:<p className="text-[10px] text-rose-400 font-bold flex items-center gap-1"><span className="material-symbols-outlined text-[12px] select-none">cancel</span>OFFLINE</p>; })()
+                : <><p className="text-[10px] text-emerald-400 font-bold flex items-center gap-1"><span className="material-symbols-outlined text-[12px] select-none">check_circle</span>ONLINE - Integración Nativa</p><p className="text-[9px] text-emerald-500/60 ml-[16px]">Corre dentro del núcleo de Godzilla Server.</p></>
               }
             </div>
           </div>

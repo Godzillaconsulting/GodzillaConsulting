@@ -96,7 +96,7 @@ const Login = () => {
     if (checking) {
         return (
             <div className="fixed inset-0 bg-[#111111] flex flex-col items-center justify-center gap-4">
-                <span className="text-5xl animate-bounce">🦖</span>
+                <span className="material-symbols-outlined text-5xl animate-bounce text-purple-400 select-none">smart_toy</span>
                 <p className="text-neutral-400 text-sm font-bold tracking-widest">Verificando sesión...</p>
             </div>
         );
@@ -326,8 +326,9 @@ const Login = () => {
                             </button>
                         </form>
 
-                        <p className="text-xs text-gray-600 text-center mt-6">
-                            🔒 Todos los intentos de acceso son registrados y monitoreados.
+                        <p className="text-xs text-gray-600 text-center mt-6 flex items-center justify-center gap-1">
+                            <span className="material-symbols-outlined text-xs select-none">lock</span>
+                            Todos los intentos de acceso son registrados y monitoreados.
                         </p>
                     </>
                 )}

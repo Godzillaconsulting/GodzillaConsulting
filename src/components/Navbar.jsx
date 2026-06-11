@@ -62,7 +62,7 @@ const Navbar = () => {
 
  <div className="flex items-center gap-4 border-l border-gray-700 pl-4 ml-2">
  <Link to="/login" className="flex items-center justify-center w-6 h-6 rounded-full transition-all opacity-80 hover:opacity-100 hover:scale-110" title={t('navbar.login', 'Acceso al Studio')}>
- <span className="text-xl filter grayscale hover:grayscale-0">🦖</span>
+ <span className="material-symbols-outlined text-white text-xl select-none hover:text-[#CC0000] transition-colors">admin_panel_settings</span>
  </Link>
  </div>
  </nav>
@@ -95,7 +95,7 @@ const Navbar = () => {
  </Link>
  <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-800">
  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#CC0000] transition-colors">
- <span className="text-xl filter grayscale hover:grayscale-0">🦖</span> Studio
+ <span className="material-symbols-outlined text-xl select-none align-middle mr-1">admin_panel_settings</span> Studio
  </Link>
  </div>
  </div>

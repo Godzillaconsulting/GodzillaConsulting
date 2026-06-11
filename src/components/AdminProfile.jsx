@@ -215,7 +215,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                     onClick={() => setSubTab('tasks')}
                     className={`pb-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${subTab === 'tasks' ? 'border-sky-500 text-white' : 'border-transparent text-neutral-500 hover:text-gray-300'}`}
                 >
-                    ✅ Mis Tareas
+                    Mis Tareas
                 </button>
 
             </div>
@@ -223,7 +223,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
             <div className="p-8 max-w-5xl mx-auto w-full">
                 {subTab === 'personal' && (
                     <div className="animate-in fade-in space-y-8">
-                        <div>
+                         <div>
                             <h2 className="text-2xl font-black text-white">Configuración de Perfil</h2>
                             <p className="text-sm text-neutral-400 mt-1">Edita tus credenciales de acceso al Admin Studio.</p>
                         </div>
@@ -236,7 +236,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                     {photoUrl ? (
                                         <img src={photoUrl} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
-                                        <span className="text-4xl">🦖</span>
+                                        <span className="material-symbols-outlined text-[48px] text-neutral-500 flex items-center justify-center">account_circle</span>
                                     )}
                                 </div>
                                 <div className="flex-1 space-y-2">
@@ -298,7 +298,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                             <div className="mt-8 bg-red-950/20 border border-red-500/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(204,0,0,0.15)] animate-in fade-in slide-in-from-bottom-4">
                                 <div className="px-6 py-4 border-b border-red-900/30 bg-[#CC0000]/10 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">🛡️</span>
+                                        <span className="material-symbols-outlined text-red-500 text-[20px] select-none flex items-center justify-center">shield</span>
                                         <h3 className="text-sm font-bold text-red-500 uppercase tracking-widest">Reporte de Amenazas Detección de Intrusos</h3>
                                     </div>
                                     <span className="text-xs font-black text-rose-500 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">{securityAlerts.length} Eventos</span>
@@ -331,7 +331,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                         )}
                         {canManageUsers && securityAlerts.length === 0 && (
                             <div className="mt-8 bg-green-950/20 border border-green-500/30 rounded-2xl p-6 text-center animate-in fade-in">
-                                <span className="text-2xl mb-2 block">✅</span>
+                                <span className="material-symbols-outlined text-green-500 text-[32px] mb-2 block select-none">check_circle</span>
                                 <p className="text-green-500 text-sm font-bold uppercase tracking-widest">Sin amenazas de inyección SQL registradas</p>
                             </div>
                         )}
@@ -454,7 +454,7 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                                                 </div>
                                             </div>
 
-                                        </div>
+                                         </div>
                                     </div>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 font-sans">
@@ -468,7 +468,10 @@ export default function AdminProfile({ profile, onProfileUpdate }) {
                     {isIT && (
                         <div className="mt-12 animate-in fade-in space-y-4 flex flex-col pt-8 border-t border-neutral-800">
                             <div>
-                                <h2 className="text-2xl font-black text-rose-500">🚨 IT Bugs & Sugerencias</h2>
+                                <h2 className="text-2xl font-black text-rose-500 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-rose-500 text-[28px] select-none flex items-center justify-center">error</span>
+                                    IT Bugs & Sugerencias
+                                </h2>
                                 <p className="text-sm text-neutral-400 mt-1">Reportes del sistema. Tablero exclusivo de JareG y Dani.</p>
                             </div>
                             

@@ -698,7 +698,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
     const pendingTaskEvents = tasks.filter(t => !t.done).map(t => ({
         id: `task-${t.id}`,
-        title: `✅ ${t.para}: ${t.que.substring(0, 35)}...`,
+        title: `[Tarea] ${t.para}: ${t.que.substring(0, 35)}...`,
         start: new Date(t.deadline + 'T00:00'),
         end: new Date(t.deadline + 'T00:00'),
         status: 'warning', tipo: 'pendiente', raw: t
@@ -719,7 +719,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
         return {
             id: `ia-${t.id}`,
-            title: `🤖 ${t.que || '(Sin título)'}`,
+            title: `[IA] ${t.que || '(Sin título)'}`,
             start: new Date(deadlineStr),
             end: new Date(deadlineStr),
             status: t.status === 'published' ? 'published' : t.status === 'approved' ? 'approved' : 'queued',
@@ -871,7 +871,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             className="absolute top-1 left-1 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider backdrop-blur-md border"
                             style={{ background: `${pm.color}25`, borderColor: `${pm.color}60`, color: pm.color }}
                         >
-                            <span>{pm.icon}</span> {pm.label}
+                            <span className="material-symbols-outlined text-[10px] select-none">{pm.icon}</span> {pm.label}
                         </div>
                         {/* Rescheduled badge */}
                         {event.is_rescheduled && (
@@ -903,7 +903,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     {!event.media_url && (
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1">
-                                <span className="text-[10px]">{pm.icon}</span>
+                                <span className="material-symbols-outlined text-[10px] select-none">{pm.icon}</span>
                                 <span className="text-[8px] font-black uppercase tracking-wider"
                                       style={{ color: pm.color }}>
                                     {pm.label}
@@ -1067,7 +1067,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     </div>
                     {event.media_url && <img src={resolveMedia(event.media_url)} className="w-full aspect-square object-cover" alt="post" />}
                     <div className="p-3">
-                        <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
+                        <div className="flex gap-4 mb-2 flex-items-center"><span className="material-symbols-outlined text-xl text-neutral-400 select-none">favorite</span><span className="material-symbols-outlined text-xl text-neutral-400 select-none">chat</span><span className="material-symbols-outlined text-xl text-neutral-400 select-none">send</span></div>
                         <p className="font-bold text-sm mb-1">1,234 Me gusta</p>
                         <p className="text-sm"><span className="font-bold mr-1">godzillaconsulting</span><span className="text-gray-700">{event.caption?.substring(0, 60)}...</span></p>
                     </div>
@@ -1081,7 +1081,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     </div>
                     <div className="px-3 pb-3 text-[14px] text-gray-800"><p className="whitespace-pre-wrap line-clamp-3">{event.caption}</p></div>
                     {event.media_url && <img src={resolveMedia(event.media_url)} className="w-full h-52 object-cover" alt="post" />}
-                    <div className="p-3 border-t border-gray-200 flex justify-between text-gray-500 text-sm font-semibold"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↪️ Compartir</span></div>
+                    <div className="p-3 border-t border-gray-200 flex justify-between text-gray-500 text-sm font-semibold"><span className="flex items-center gap-1"><span className="material-symbols-outlined text-[16px] select-none">thumb_up</span> Me gusta</span><span className="flex items-center gap-1"><span className="material-symbols-outlined text-[16px] select-none">chat</span> Comentar</span><span className="flex items-center gap-1"><span className="material-symbols-outlined text-[16px] select-none">share</span> Compartir</span></div>
                 </div>
             )}
             {event.platform === 'tiktok' && (
@@ -1089,7 +1089,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     {event.media_url && <img src={resolveMedia(event.media_url)} className="absolute inset-0 w-full h-full object-cover opacity-90" alt="post" />}
                     <div className="absolute right-2 bottom-12 flex flex-col items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden shadow-lg"><img src="/logo192.png" className="w-full h-full object-cover bg-black" alt="logo" /></div>
-                        <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">❤️</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
+                        <div className="flex flex-col items-center"><span className="material-symbols-outlined text-3xl text-rose-500 drop-shadow-md select-none">favorite</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
                     </div>
                     <div className="absolute bottom-4 left-4 right-16">
                         <p className="font-bold text-sm drop-shadow-md">@godzillaconsulting</p>
@@ -1120,7 +1120,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 <div className="flex-1 p-4 overflow-y-auto space-y-3">
                     {taskView === 'pendientes' && (
                         pendingTasks.length === 0
-                            ? <p className="text-neutral-600 text-xs font-bold text-center py-8">✅ Sin tareas pendientes</p>
+                            ? <p className="text-neutral-600 text-xs font-bold text-center py-8 flex items-center justify-center gap-1.5"><span className="material-symbols-outlined text-sm select-none">check_circle</span> Sin tareas pendientes</p>
                             : pendingTasks.map(task => (
                                 <div key={task.id} className="bg-black/30 border border-red-900/40 hover:border-red-500/60 p-4 rounded-xl transition-colors">
                                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -1163,11 +1163,11 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/0 via-yellow-400 to-yellow-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <div className="flex gap-3 mb-2">
                                             <div className="w-12 h-12 bg-black rounded shrink-0 overflow-hidden relative">
-                                                {mediaUrl ? (isVideo ? <video src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" /> : <img src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" />) : <span className="text-lg absolute inset-0 flex items-center justify-center">📷</span>}
+                                                {mediaUrl ? (isVideo ? <video src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" /> : <img src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" />) : <span className="material-symbols-outlined text-lg absolute inset-0 flex items-center justify-center text-neutral-600 select-none">photo_camera</span>}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-xs font-bold text-white line-clamp-2">{task.caption || task.que}</p>
-                                                <p className="text-[9px] text-yellow-500 font-black uppercase mt-1">🌟 Aprobado</p>
+                                                <p className="text-[9px] text-yellow-500 font-black uppercase mt-1 flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] select-none">grade</span> Aprobado</p>
                                             </div>
                                         </div>
                                         <button className="w-full bg-yellow-600/10 border border-yellow-600/30 text-yellow-500 text-[10px] font-black uppercase tracking-widest py-1.5 rounded transition-all mt-2 group-hover:bg-yellow-500 group-hover:text-black">Previsualizar</button>
@@ -1297,7 +1297,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             <div className="relative" data-dropdown="notifications">
                                 <button onClick={() => { setShowNotifications(!showNotifications); setNotifications(prev => prev.map(n => n.to?.toLowerCase() === currentUser.toLowerCase() ? { ...n, read: true } : n)); }}
                                     className="relative w-10 h-10 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center hover:border-[#00ff88]/50 transition-colors backdrop-blur-sm">
-                                    <span className="text-lg">🔔</span>
+                                    <span className="material-symbols-outlined text-lg text-white select-none">notifications</span>
                                     {unreadCount > 0 && (
                                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#CC0000] rounded-full text-[10px] font-black flex items-center justify-center text-white animate-pulse shadow-[0_0_8px_rgba(204,0,0,0.8)]">
                                             {unreadCount}
@@ -1320,7 +1320,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                                             <span className="text-neutral-600 text-[10px]">{n.time}</span>
                                                         </div>
                                                         <p className="text-xs text-neutral-300 font-bold leading-snug">{renderMentions(n.text)}</p>
-                                                        <p className="text-[10px] text-neutral-600 mt-1 font-bold">📅 En: {n.eventTitle}</p>
+                                                        <p className="text-[10px] text-neutral-600 mt-1 font-bold flex items-center gap-1"><span className="material-symbols-outlined text-xs select-none">calendar_month</span> En: {n.eventTitle}</p>
                                                     </div>
                                                 ))
                                             }
@@ -1331,21 +1331,21 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
                             {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewAssignModal(true)}
-                                    className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-[#CC0000]/40 text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest">
-                                    📋 Asignar Tarea
+                                    className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-[#CC0000]/40 text-[#CC0000] rounded-xl font-black text-xs transition-all uppercase tracking-widest flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-xs select-none">assignment</span> Asignar Tarea
                                 </button>
                             )}
                             {canEditSheetsAndAI && calendarTab !== 'pendientes' && (
                                 <button
                                     onClick={() => { setShowSheetsModal(true); setSheetsPreview(null); setSheetsError(''); setSheetsUrl(''); }}
                                     className="px-4 py-2 bg-white/[0.05] backdrop-blur-sm border border-white/10 hover:border-green-500/50 text-green-400 rounded-xl font-black text-xs transition-all uppercase tracking-widest flex items-center gap-1.5">
-                                    📊 Importar Sheets
+                                    <span className="material-symbols-outlined text-xs select-none">database</span> Importar Sheets
                                 </button>
                             )}
                             {canCreate && calendarTab !== 'pendientes' && (
                                 <button onClick={() => setShowNewCampaignModal(true)}
                                     className="px-4 py-2 bg-gradient-to-r from-[#CC0000] to-red-800 hover:from-white hover:to-white hover:text-[#CC0000] text-white rounded-xl font-black text-xs transition-all shadow-[0_4px_15px_rgba(204,0,0,0.4)] uppercase tracking-widest flex items-center gap-1">
-                                    ➕ Campaña
+                                    <span className="material-symbols-outlined text-xs select-none">add</span> Campaña
                                 </button>
                             )}
                         </div>
@@ -1447,7 +1447,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         <div className="mx-6 mt-4 mb-2 bg-[#0a0a0a]/80 backdrop-blur-sm border border-[#CC0000]/30 rounded-xl p-4 shadow-[0_0_20px_rgba(204,0,0,0.1)] shrink-0">
                             <div className="flex justify-between items-center mb-3">
                                 <h3 className="font-black text-white text-xs tracking-widest uppercase flex items-center gap-2">
-                                    <span className="text-[#CC0000]">🤖</span>
+                                    <span className="material-symbols-outlined text-[#CC0000] text-sm select-none">smart_toy</span>
                                     Configuración Neurona: <span className="text-neutral-400">{activePlatform}</span>
                                 </h3>
                                 <button onClick={saveBotConfig} disabled={savingBot || !botConfig}
@@ -1457,7 +1457,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             </div>
                             {!botConfig ? (
                                 <div className="text-neutral-500 text-xs py-2 flex items-center gap-2">
-                                    <span className="animate-spin text-xl">⚙️</span> Conectando con IA...
+                                    <span className="material-symbols-outlined text-lg animate-spin text-neutral-500 select-none">settings</span> Conectando con IA...
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -1552,13 +1552,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                                     <div className="flex items-center space-x-3 text-xs">
                                                         <button onClick={() => handleDeleteTask(selectedTaskBoard.id)}
                                                             className="border border-red-500/50 rounded-lg px-4 py-1.5 font-black uppercase tracking-widest flex items-center transition-all bg-red-900/20 text-red-500 hover:bg-red-500 hover:text-white">
-                                                            <span className="mr-2">❌</span> Eliminar Tarea
+                                                            <span className="material-symbols-outlined text-xs select-none mr-2">delete</span> Eliminar Tarea
                                                         </button>
                                                     </div>
                                                 </div>
                                                 <div className="flex-1 overflow-y-auto px-8 py-8">
                                                     <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 bg-neutral-900/50 w-max px-3 py-1.5 rounded-lg border border-neutral-800">
-                                                        <span className="mr-2 text-[#CC0000]">🔒</span>
+                                                        <span className="material-symbols-outlined text-xs select-none mr-2 text-[#CC0000]">lock</span>
                                                         Tarea Interna • Reporte asignado por {selectedTaskBoard.asignadoPor}.
                                                     </div>
                                                     <h1 className={`text-3xl font-black leading-tight mb-8 ${selectedTaskBoard.done ? 'text-neutral-600 line-through' : 'text-white'}`}>
@@ -1680,7 +1680,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             <div className="space-y-4">
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                                     <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 flex items-center gap-2">
-                                        <span>👤</span> Información del Cliente
+                                        <span className="material-symbols-outlined text-xs select-none">person</span> Información del Cliente
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                         <p><span className="text-neutral-500 font-bold">Nombre:</span> <span className="text-white font-bold">{selectedEvent.raw?.nombre_completo || selectedEvent.raw?.nombre || 'No especificado'}</span></p>
@@ -1692,7 +1692,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
 
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                                     <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 flex items-center gap-2">
-                                        <span>📝</span> Resumen de Conversación / Notas
+                                        <span className="material-symbols-outlined text-xs select-none">description</span> Resumen de Conversación / Notas
                                     </h4>
                                     <p className="text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
                                         {selectedEvent.raw?.notas_adicionales || selectedEvent.raw?.resumen || 'No hay notas adicionales o resumen de conversación disponible para esta cita.'}
@@ -1806,7 +1806,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                 <div className="absolute inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-[#0d0d0d] border border-white/[0.06] p-8 rounded-2xl w-full max-w-lg shadow-[0_0_50px_rgba(204,0,0,0.15)] relative">
                         <button onClick={() => setShowNewAssignModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white text-2xl font-black">×</button>
-                        <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">📋</span> Asignar Tarea</h3>
+                        <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="material-symbols-outlined text-[#CC0000] text-sm select-none">assignment</span> Asignar Tarea</h3>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">¿Qué se debe hacer? *</label>
@@ -1821,13 +1821,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-yellow-500/80 uppercase mb-2 flex items-center gap-2">
-                                    <span>📸 Referencias</span>
+                                    <span className="material-symbols-outlined text-xs select-none">photo_camera</span> Referencias
                                     <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[9px]">Opcional</span>
                                 </label>
                                 <div className="space-y-3 p-4 border border-white/5 bg-white/[0.02] rounded-xl">
                                     <input type="text" value={newTask.referencias} onChange={e => setNewTask({ ...newTask, referencias: e.target.value })} placeholder="Link, brief, notas o URL..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#CC0000] transition-colors" />
                                     <label className={`w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${isUploadingMedia ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-neutral-600 hover:border-yellow-500 hover:bg-white/5'}`}>
-                                        <span className="text-xl mb-1">↑</span>
+                                        <span className="material-symbols-outlined text-xl mb-1 select-none">upload</span>
                                         <span className="text-xs font-black text-white uppercase tracking-widest text-center">{isUploadingMedia ? 'Subiendo...' : 'Subir foto o screenshot'}</span>
                                         <input type="file" accept="image/*,video/*" className="hidden" disabled={isUploadingMedia} onChange={handleUploadTaskImage} />
                                     </label>
@@ -1897,8 +1897,8 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 <div>
                                     <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Empresa *</label>
                                     <select value={newCampaign.empresa} onChange={e => setNewCampaign({...newCampaign, empresa: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                        <option value="godzilla">🦖 Godzilla Consulting</option>
-                                        <option value="accrual" disabled>🏢 Accrual (Próximamente)</option>
+                                        <option value="godzilla">Godzilla Consulting</option>
+                                        <option value="accrual" disabled>Accrual (Próximamente)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1922,10 +1922,10 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             <div>
                                 <label className="block text-xs font-black text-neutral-500 uppercase mb-2">Plataforma *</label>
                                 <select value={newCampaign.plataforma} onChange={e => setNewCampaign({...newCampaign, plataforma: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#CC0000] transition-colors">
-                                    <option value="ALL">🌐 Multicanal (Todas)</option>
-                                    <option value="tiktok">⚫ TikTok</option>
-                                    <option value="instagram">🟣 Instagram</option>
-                                    <option value="facebook">🔵 Facebook</option>
+                                    <option value="ALL">Multicanal (Todas)</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="facebook">Facebook</option>
                                 </select>
                             </div>
                             <div>
@@ -1953,7 +1953,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                             >
                                 {savingCampaign ? (
                                     <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Guardando en DB...</>
-                                ) : '📡 AGREGAR AL CALENDARIO ✔️'}
+                                ) : <><span className="material-symbols-outlined text-xs select-none">send</span> AGREGAR AL CALENDARIO</>}
                             </button>
                         </div>
                     </div>
@@ -1966,7 +1966,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                         <div className="bg-[#111] p-5 border-b border-neutral-800 flex justify-between items-center shrink-0">
                             <div>
                                 <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                    🌟 Publicador de Redes
+                                    <span className="material-symbols-outlined text-amber-400 select-none">campaign</span> Publicador de Redes
                                 </h3>
                                 <p className="text-[10px] text-neutral-400 font-bold uppercase mt-1">Visualiza cómo se verá la media en el dispositivo móvil.</p>
                             </div>
@@ -2113,8 +2113,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 <label className="text-[10px] font-black uppercase text-neutral-500 mb-2 block">URL del Google Sheet con el calendario</label>
                                 <div className="flex gap-2">
                                     <input type="text" value={sheetsUrl} onChange={e => setSheetsUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchSheetsPreview()} placeholder="https://docs.google.com/spreadsheets/d/..." className="flex-1 bg-black border border-white/20 text-white text-xs rounded-xl px-4 py-3 focus:outline-none focus:border-green-500/60 placeholder-neutral-700 font-mono" />
-                                    <button onClick={fetchSheetsPreview} disabled={sheetsLoading || !sheetsUrl.trim()} className="px-5 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-black text-xs rounded-xl transition-colors">
-                                        {sheetsLoading ? '⏳' : '🔍 Leer'}
+                                    <button onClick={fetchSheetsPreview} disabled={sheetsLoading || !sheetsUrl.trim()} className="px-5 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-black text-xs rounded-xl transition-colors flex items-center gap-1.5 justify-center">
+                                        {sheetsLoading ? (
+                                              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                          ) : (
+                                              <span className="material-symbols-outlined text-[14px] select-none">search</span>
+                                          )}
+                                          {sheetsLoading ? 'Leyendo...' : 'Leer'}
                                     </button>
                                 </div>
                                 <p className="text-[10px] text-neutral-600 mt-2 font-bold">
@@ -2122,11 +2127,19 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                 </p>
                             </div>
 
-                            {sheetsError && <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-xs font-bold">❌ {sheetsError}</div>}
+                            {sheetsError && (
+                                        <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-xs font-bold flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-sm select-none">error</span>
+                                            {sheetsError}
+                                        </div>
+                                    )}
                             {sheetsPreview && (
                                 <div className="flex flex-col gap-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-green-400 font-black text-sm">✅ {sheetsPreview.total} eventos detectados</span>
+                                        <span className="text-green-400 font-black text-sm flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-sm select-none">check_circle</span>
+                                            {sheetsPreview.total} eventos detectados
+                                        </span>
                                         <span className="text-neutral-600 text-[10px] font-bold">Cols: {sheetsPreview.headers?.slice(0,5).join(', ')}</span>
                                     </div>
                                     <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto">
@@ -2135,13 +2148,13 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                                             const sm = STATUS_META[ev.status] || STATUS_META.warning;
                                             return (
                                                 <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${sm.bg} ${sm.border}`}>
-                                                    <span className="text-lg shrink-0" style={{ color: pm.color }}>{pm.icon}</span>
+                                                    <span className="material-symbols-outlined text-lg shrink-0 select-none" style={{ color: pm.color }}>{pm.icon}</span>
                                                     <div className="flex-1 min-w-0">
                                                         <p className={`text-xs font-black truncate ${sm.text}`}>{ev.title}</p>
                                                         {ev.caption && <p className="text-[10px] text-neutral-500 line-clamp-1">{ev.caption}</p>}
                                                         <div className="flex gap-3 mt-1">
-                                                            <span className="text-[9px] text-neutral-600 font-bold">📅 {new Date(ev.start_date).toLocaleDateString('es-MX', { day:'2-digit', month:'short' })}</span>
-                                                            {ev.assigned_to && <span className="text-[9px] text-neutral-600 font-bold">👤 {ev.assigned_to}</span>}
+                                                            <span className="text-[9px] text-neutral-600 font-bold"><span className="material-symbols-outlined text-[11px] select-none">calendar_month</span> {new Date(ev.start_date).toLocaleDateString('es-MX', { day:'2-digit', month:'short' })}</span>
+                                                            {ev.assigned_to && <span className="text-[9px] text-neutral-600 font-bold"><span className="material-symbols-outlined text-[11px] select-none">person</span> {ev.assigned_to}</span>}
                                                         </div>
                                                     </div>
                                                 </div>

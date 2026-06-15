@@ -1,0 +1,618 @@
+src\components\AbordajeLeadsPanel.jsx:131: <span className="text-[#CC0000]">🎯</span> Leads de Abordaje
+src\components\AbordajeLeadsPanel.jsx:148: <span className="text-5xl opacity-50 mb-4">📭</span>
+src\components\AdminProfile.jsx:140: if(!window.confirm("⚠️ ¿Estás totalmente seguro de aplicar los cambios a tu perfil maestro en la base de datos?")) return;
+src\components\AdminProfile.jsx:218: ✅ Mis Tareas
+src\components\AdminProfile.jsx:301: <span className="text-xl">🛡️</span>
+src\components\AdminProfile.jsx:334: <span className="text-2xl mb-2 block">✅</span>
+src\components\AdminProfile.jsx:407: <span className={`mr-2 ${selectedTask.done ? 'text-[#25c862]':'text-neutral-500'}`}>✓</span> {selectedTask.done ? 'Completed' : 'Mark complete'}
+src\components\AdminProfile.jsx:471: <h2 className="text-2xl font-black text-rose-500">🚨 IT Bugs & Sugerencias</h2>
+src\components\AdminProfile.jsx:479: {bug.resolved && <span className="text-[14px] font-black leading-none pb-0.5">✓</span>}
+src\components\AdminStudio.jsx:38: title="📝 Edita este valor aquí. Los cambios se verán al instante en la vista previa a tu izquierda."
+src\components\AdminStudio.jsx:397: alert('✅ Borrador guardado. Ahora presiona 🚀 Actualizar cambios para verlo en el sitio.');
+src\components\AdminStudio.jsx:399: alert(`❌ Error al guardar: ${err.message}`);
+src\components\AdminStudio.jsx:431: alert('🚀 Publicado');
+src\components\AdminStudio.jsx:432: } catch (err) { alert(`❌ Error al publicar: ${err.message}`); } finally { setIsPublishing(false); }
+src\components\AdminStudio.jsx:514: const formatted = `## Análisis de IA: ${data.data.niche}\n\n### 📈 Ganchos Virales Sugeridos\n` +
+src\components\AdminStudio.jsx:516: `\n\n### 🏷️ Hashtags Optimizados\n**` +
+src\components\AdminStudio.jsx:558: <h3 className="text-xl font-black text-white">📡 Vista Previa antes de Publicar</h3>
+src\components\AdminStudio.jsx:561: <button onClick={() => setShowPublishModal(false)} className="text-xl text-neutral-500 hover:text-white">✕</button>
+src\components\AdminStudio.jsx:584: <span className="text-orange-500 text-2xl drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">🔥</span>
+src\components\AdminStudio.jsx:604: <button onClick={() => setShowTrendsModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all self-start">✕</button>
+src\components\AdminStudio.jsx:656: <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1.5 text-white/40 hover:text-white rounded-md hover:bg-white/10">✕</button>
+src\components\AdminStudio.jsx:964: 🔒 Bloqueado por {activePresences[selectedNodeId].user}
+src\components\AdminStudio.jsx:1021: 📝 Editar
+src\components\AdminStudio.jsx:1028: 👁️ Vista Previa
+src\components\AdminStudio.jsx:1082: { title: '🎬 Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
+src\components\AdminStudio.jsx:1083: { title: '📋 Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
+src\components\AdminStudio.jsx:1084: { title: '💰 Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
+src\components\AdminStudio.jsx:1085: { title: '🛡️ Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
+src\components\AdminStudio.jsx:1135: <p className="text-xs font-bold text-neutral-500 tracking-widest pt-1">📝 Otros campos</p>
+src\components\AdminStudio.jsx:1159: 📋 Grupo: {toLabel(prefix)} ({Object.keys(nums).length} items)
+src\components\AdminStudio.jsx:1273: ➕ Añadir nuevo caso
+src\components\AdminStudio.jsx:1297: ➕ Añadir nuevo recurso
+src\components\AdminStudio.jsx:1313: }} className="absolute top-3 right-3 text-xs text-red-500 font-bold hover:text-red-400">✕ Eliminar</button>
+src\components\AdminStudio.jsx:1360: ➕ Añadir nuevo medio
+src\components\AdminStudio.jsx:1370: <p className="text-xs font-bold text-yellow-400 tracking-widest">🖼️ Media por elemento</p>
+src\components\AdminStudio.jsx:1633: <span className="text-6xl">🦖</span>
+src\components\AdminStudio.jsx:1657: <span className="text-yellow-500">💡</span> Reportar a IT
+src\components\AdminStudio.jsx:1664: <span className="text-lg">📸</span> {isUploadingFeedbackMedia ? 'Subiendo...' : 'Adjuntar Captura (SS)'}
+src\components\AdminStudio.jsx:1692: alert('🚀 Tu reporte fue enviado a la central de JareG y Dani. ¡Gracias!');
+src\components\AdminStudio.jsx:1702: Enviar Reporte ✔️
+src\components\AIContentPlanner.jsx:72: { key: 'ia',       label: '🤖 Opción IA',       desc: 'Generado automáticamente por Gemini', color: 'purple' },
+src\components\AIContentPlanner.jsx:73: { key: 'template', label: '📋 Template Manual',  desc: 'Usar estructura base propia',          color: 'blue'   },
+src\components\AIContentPlanner.jsx:150: }`}>{isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}</p>
+src\components\AIContentPlanner.jsx:153: <p className="text-[9px] text-emerald-400 font-bold uppercase mb-1">🎙 Narración</p>
+src\components\AIContentPlanner.jsx:157: <p className="text-[9px] text-blue-400 font-bold uppercase mb-1">🖼 Visual Prompt</p>
+src\components\AIContentPlanner.jsx:161: {txt && <p className="text-[9px] text-yellow-400 font-bold mt-2">💬 Pantalla: <span className="text-neutral-300 font-normal">{txt}</span></p>}
+src\components\AIContentPlanner.jsx:230: {isCTA ? '🎯 Escena 5 — CTA' : `Escena ${n}`}
+src\components\AIContentPlanner.jsx:237: <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">🎙 Narración (TTS)</span>
+src\components\AIContentPlanner.jsx:242: <span className="text-[9px] text-yellow-400 font-bold uppercase tracking-widest block">💬 Texto Pantalla</span>
+src\components\AIContentPlanner.jsx:247: <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest block">🎵 Audio & SFX</span>
+src\components\AIContentPlanner.jsx:254: <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest block">🖼 Visual Prompt</span>
+src\components\AIContentPlanner.jsx:259: <span className="text-[9px] text-fuchsia-400 font-bold uppercase tracking-widest block">🎬 Video Motion Prompt</span>
+src\components\AIContentPlanner.jsx:564: if (data.success) alert(`✅ "${day['Tema']}" enviado al Estudio IA. Revísalo en CEO Estudio → bandeja "🎬 En Estudio IA" para activar la generación.`);
+src\components\AIContentPlanner.jsx:676: 🔒 Solo Lectura
+src\components\AIContentPlanner.jsx:797: 🔍 Explorar Radar
+src\components\AIContentPlanner.jsx:806: {loadingTrends ? <Loader2 className="w-4 h-4 animate-spin" /> : '🔥 Estadísticas'}
+src\components\AIContentPlanner.jsx:832: 🗑️ Limpiar
+src\components\AIContentPlanner.jsx:851: <p className="text-[10px] text-purple-400 font-bold uppercase mb-2">🔥 Trending Hashtags <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
+src\components\AIContentPlanner.jsx:868: <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2">🎣 Hooks Virales <span className="text-neutral-500 lowercase normal-case text-[9px]">(click para usar)</span></p>
+src\components\AIContentPlanner.jsx:877: <span className="text-cyan-500 shrink-0 mt-0.5">👉</span> {hook}
+src\components\AIContentPlanner.jsx:885: <p className="text-[10px] text-emerald-400 font-bold uppercase mb-2">🎯 Audiencia Objetivo Sugerida</p>
+src\components\AIContentPlanner.jsx:938: 🧠 Revisión — <span className="text-purple-400">{generatedNiche}</span>
+src\components\AIContentPlanner.jsx:944: 🤖 {Object.values(selections).filter(v => v==='ia').length} IA &nbsp;·&nbsp;
+src\components\AIContentPlanner.jsx:945: 📋 {Object.values(selections).filter(v => v==='template').length} Template &nbsp;·&nbsp;
+src\components\AIContentPlanner.jsx:950: <button onClick={() => handleSelectAll('ia')} className="text-[10px] px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg font-black hover:bg-purple-600/40 transition-colors">🤖 Todo IA</button>
+src\components\AIContentPlanner.jsx:951: <button onClick={() => handleSelectAll('template')} className="text-[10px] px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg font-black hover:bg-blue-600/40 transition-colors">📋 Todo Template</button>
+src\components\AIContentPlanner.jsx:961: {isSendingBulk ? 'Enviando...' : '🎬 Mandar al Estudio IA'}
+src\components\AIContentPlanner.jsx:978: 📅 Plan: <span className="text-purple-400">{generatedNiche}</span> · {plan.length} días
+src\components\AIContentPlanner.jsx:982: ✅ {bulkResult.sent} días enviados · {bulkResult.skipped} omitidos
+src\components\AIContentPlanner.jsx:988: 🔍 Revisar Plan
+src\components\AIContentPlanner.jsx:1011: <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F0FF]/20 to-[#9D00FF]/20 border border-[#00F0FF]/30 flex items-center justify-center text-lg">🔍</div>
+src\components\AIContentPlanner.jsx:1030: 🔥 Tendencias de Hoy
+src\components\AIContentPlanner.jsx:1040: 🔍 Explorar Radar
+src\components\AIContentPlanner.jsx:1058: {cat === 'All' ? '🌐 Todas las categorías' : cat}
+src\components\AIContentPlanner.jsx:1090: <>🔍 Analizar</>
+src\components\AIContentPlanner.jsx:1096: ✅ {radarData.totalQuestions} preguntas reales encontradas para <span className="text-[#00F0FF]">"{radarData.topic}"</span>
+src\components\AIContentPlanner.jsx:1108: <span className="text-6xl">🌐</span>
+src\components\AIContentPlanner.jsx:1139: {radarCopied ? '✅ Copiado!' : '📋 Copiar todos'}
+src\components\AIContentPlanner.jsx:1171: 🧠 Análisis IA
+src\components\AIContentPlanner.jsx:1225: <span className="text-6xl">📭</span>
+src\components\AIContentPlanner.jsx:1246: 📊 {trend.traffic || '50K+ búsquedas'}
+src\components\AIContentPlanner.jsx:1265: <span className="text-xs text-yellow-400 font-black">❤️ {trend.reactions || '90K'}</span>
+src\components\AIContentPlanner.jsx:1275: <span className="text-[8px] text-purple-400 font-black uppercase tracking-widest block">🪝 Gancho sugerido</span>
+src\components\AIContentPlanner.jsx:1283: <span className="text-[8px] text-neutral-500 font-black uppercase tracking-widest block">💡 Idea de video</span>
+src\components\AIContentPlanner.jsx:1300: 🎬 Planificar Video
+src\components\AIContentPlanner.jsx:1321: <h3 className="text-white font-black text-lg mb-2 flex items-center gap-2">🎤 Selecciona el Narrador (Auto)</h3>
+src\components\AIContentPlanner.jsx:1369: {isSendingBulk ? 'Enviando...' : 'Mandar a Crear 🚀'}
+src\components\AnalyticsDashboard.jsx:503: { user: '@jare_dev22', txt: 'Bro la iluminación en este reel está brutal 🔥' },
+src\components\AnalyticsDashboard.jsx:591: <span className="text-neutral-500 text-xs mr-2">🔍</span>
+src\components\AnalyticsDashboard.jsx:681: 📌 ACTIVO <span className="text-neutral-500 font-normal">| Dominio Público</span>
+src\components\AutomationFlow.jsx:9: name: '🌌 El Cerebro de Godzilla',
+src\components\AutomationFlow.jsx:99: name: '🌌 Ecosistema Central Godzilla',
+src\components\AutomationFlow.jsx:122: name: '🌌 Ecosistema Central Godzilla',
+src\components\AutomationFlow.jsx:144: name: '🧠 RAG B2B LinkedIn',
+src\components\AutomationFlow.jsx:159: name: '🎙️ Podcast a Social Media',
+src\components\AutomationFlow.jsx:176: name: '🌱 Flujo Básico',
+src\components\AutomationFlow.jsx:186: name: '🚀 Máquina UGC Completa',
+src\components\AutomationFlow.jsx:206: name: '🔥 Fábrica de Contenido Viral',
+src\components\AutomationFlow.jsx:224: name: '📅 Recepción de Citas Omnicanal',
+src\components\AutomationFlow.jsx:239: name: '🤖 Cerebro WhatsApp Bot',
+src\components\AutomationFlow.jsx:252: name: '📱 Bot de Alertas Omnicanal',
+src\components\AutomationFlow.jsx:267: name: '🗄️ Recolector de Datos',
+src\components\AutomationFlow.jsx:280: name: '📣 Pipeline de Contenido Social',
+src\components\AutomationFlow.jsx:295: name: '🤖 Cerebro TikTok Bot',
+src\components\AutomationFlow.jsx:308: name: '🔁 Monitor de Sistema',
+src\components\AutomationFlow.jsx:409: <span>🖱 Arrastra para mover</span><span>🔍 Rueda para zoom ({Math.round(scale * 100)}%)</span>
+src\components\AutomationFlow.jsx:438: {isCore && <span className="text-lg">👑</span>}
+src\components\AutomationFlow.jsx:495: {canEdit ? 'Editar →' : '🔒 Ver'}
+src\components\AutomationFlow.jsx:621: alert('✅ Flujo guardado. Recomendaciones de la IA:\n\n' + data.recommendations);
+src\components\AutomationFlow.jsx:638: <h3 className="text-base font-black text-white flex items-center gap-2">🧠 Guardar & Analizar</h3>
+src\components\AutomationFlow.jsx:672: {submitting ? 'Analizando...' : '✨ Validar y Guardar'}
+src\components\AutomationFlow.jsx:687: // 🚀 Nuevos estados de Navegación (Pan & Zoom)
+src\components\AutomationFlow.jsx:715: { title:'Cerebro Central AI',   subtitle:'Motor RAG/Lógica',     icon:'Brain',          color:'#eab308', pm2_process: 'ai-core',       group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:716: { title:'Planificador IA',      subtitle:'Generador de Contenido',icon:'Wand2',          color:'#a855f7', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:717: { title:'Memoria a Largo Plazo',subtitle:'Base Vectorial',        icon:'Network',        color:'#0d9488', pm2_process: 'vector-db',     group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:718: { title:'Godzilla CM',          subtitle:'CRM & Leads',           icon:'LayoutDashboard',color:'#2563eb', pm2_process:'',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:719: { title:'Generador Visual',     subtitle:'Imagen 3 / Gemini',     icon:'Image',          color:'#3b82f6', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:720: { title:'Generador Video',      subtitle:'Veo / Kling',           icon:'Video',          color:'#f59e0b', pm2_process: 'ai-core',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:721: { title:'Tarea de Studio',      subtitle:'CEO Estudio',           icon:'CheckSquare',    color:'#10b981', pm2_process:'',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:722: { title:'Calendario Global',    subtitle:'Citas / Eventos',       icon:'Calendar',       color:'8b5cf6', pm2_process:'',              group:'🧠 Núcleo' },
+src\components\AutomationFlow.jsx:724: { title:'WhatsApp Bot',         subtitle:'Mensajería WA',         icon:'Smartphone',     color:'#25d366', pm2_process:'whatsapp-bot',  group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:725: { title:'TikTok Bot',           subtitle:'Interacción TikTok',    icon:'Video',          color:'#ff0050', pm2_process:'tiktok-bot',    group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:726: { title:'IG / Messenger Bot',   subtitle:'Meta DMs',              icon:'MessageCircle',  color:'#d946ef', pm2_process:'meta-bot',      group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:727: { title:'Twitter / X Bot',      subtitle:'Posts / DMs',           icon:'MessageCircle',  color:'#0f1419', pm2_process:'twitter-bot',   group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:728: { title:'LinkedIn Bot',         subtitle:'B2B Leads',             icon:'Network',        color:'#0a66c2', pm2_process:'linkedin-bot',  group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:729: { title:'Zilla Bot',            subtitle:'Asistente / Atención',  icon:'Bot',            color:'#10b981', pm2_process:'zilla-bot',     group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:730: { title:'Goyi Bot',             subtitle:'Asistente / Cierre',    icon:'Bot',            color:'#ec4899', pm2_process:'goyi-bot',      group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:731: { title:'Bot Newsletter',       subtitle:'Redacción / Email',     icon:'Mail',           color:'#f97316', pm2_process:'newsletter-bot',group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:732: { title:'Trends Bot',           subtitle:'Analizador de Redes',   icon:'TrendingUp',     color:'#8b5cf6', pm2_process:'trends-bot',    group:'🤖 Bots' },
+src\components\AutomationFlow.jsx:734: { title:'Telegram Bot',         subtitle:'Alertas / Gratis',      icon:'Send',           color:'#26a5e4', pm2_process:'',              group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:735: { title:'Discord Webhook',      subtitle:'Notif. al equipo',      icon:'MessageCircle',  color:'#5865f2', pm2_process:'',              group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:736: { title:'Slack Webhook',        subtitle:'Notif. al equipo',      icon:'Zap',            color:'#4a154b', pm2_process:'',              group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:737: { title:'Twilio SMS',           subtitle:'SMS Universal',         icon:'Smartphone',     color:'#f22f46', pm2_process:'',              group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:738: { title:'Email Worker',         subtitle:'SMTP Propio',           icon:'Mail',           color:'#f97316', pm2_process:'email-worker',  group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:739: { title:'Resend',               subtitle:'Email API (3K/mes free)',icon:'Mail',           color:'#000000', pm2_process:'',              group:'💬 Mensajería' },
+src\components\AutomationFlow.jsx:741: { title:'Gemini API',           subtitle:'Google LLM',            icon:'Sparkles',       color:'#4285f4', pm2_process:'',              group:'🤖 IA / LLMs' },
+src\components\AutomationFlow.jsx:742: { title:'OpenAI / ChatGPT',     subtitle:'GPT-4o / GPT-4 mini',   icon:'Brain',          color:'#10a37f', pm2_process:'',              group:'🤖 IA / LLMs' },
+src\components\AutomationFlow.jsx:743: { title:'Anthropic Claude',     subtitle:'Claude 3 Opus/Sonnet',  icon:'Brain',          color:'#d97757', pm2_process:'',              group:'🤖 IA / LLMs' },
+src\components\AutomationFlow.jsx:744: { title:'DeepSeek API',         subtitle:'DeepSeek Coder/Chat',   icon:'Brain',          color:'#4d6bfe', pm2_process:'',              group:'🤖 IA / LLMs' },
+src\components\AutomationFlow.jsx:745: { title:'ElevenLabs',           subtitle:'Generador de Voz/TTS',  icon:'Play',           color:'#000000', pm2_process:'',              group:'🤖 IA / LLMs' },
+src\components\AutomationFlow.jsx:747: { title:'Base de Datos',        subtitle:'PostgreSQL nativo',     icon:'Database',       color:'#64748b', pm2_process:'',              group:'🗄 Datos' },
+src\components\AutomationFlow.jsx:748: { title:'Neon DB',              subtitle:'PostgreSQL Serverless',  icon:'Database',       color:'#00e599', pm2_process:'',              group:'🗄 Datos' },
+src\components\AutomationFlow.jsx:749: { title:'Airtable',             subtitle:'Base de datos visual',  icon:'Database',       color:'#fcb400', pm2_process:'',              group:'🗄 Datos' },
+src\components\AutomationFlow.jsx:750: { title:'Supabase',             subtitle:'DB + Auth gratis',      icon:'Database',       color:'#3ecf8e', pm2_process:'',              group:'🗄 Datos' },
+src\components\AutomationFlow.jsx:751: { title:'Google Sheets',        subtitle:'Leer / Escribir',       icon:'Database',       color:'#34a853', pm2_process:'',              group:'🗄 Datos' },
+src\components\AutomationFlow.jsx:753: { title:'Notion',               subtitle:'Docs / CRM Notion',     icon:'Braces',         color:'#ffffff', pm2_process:'',              group:'📋 Productividad' },
+src\components\AutomationFlow.jsx:754: { title:'Google Calendar API',  subtitle:'Eventos externos',      icon:'Calendar',       color:'#4285f4', pm2_process:'',              group:'📋 Productividad' },
+src\components\AutomationFlow.jsx:755: { title:'Cal.com',              subtitle:'Citas sin Calendly',    icon:'Calendar',       color:'#292929', pm2_process:'',              group:'📋 Productividad' },
+src\components\AutomationFlow.jsx:757: { title:'YouTube Data API',     subtitle:'Upload / Gestión',      icon:'Video',          color:'#ff0000', pm2_process:'',              group:'📱 Social' },
+src\components\AutomationFlow.jsx:758: { title:'Pinterest API',        subtitle:'Pins / Tableros',       icon:'Image',          color:'#e60023', pm2_process:'',              group:'📱 Social' },
+src\components\AutomationFlow.jsx:759: { title:'Facebook Ads API',     subtitle:'Campañas / Anuncios',   icon:'TrendingUp',     color:'#1877f2', pm2_process:'',              group:'📱 Social' },
+src\components\AutomationFlow.jsx:761: { title:'Stripe',               subtitle:'Pasarela de Pagos',     icon:'CreditCard',     color:'#6366f1', pm2_process:'',              group:'💰 Pagos' },
+src\components\AutomationFlow.jsx:762: { title:'Stripe Webhook',       subtitle:'Eventos de pago',       icon:'CreditCard',     color:'#635bff', pm2_process:'',              group:'💰 Pagos' },
+src\components\AutomationFlow.jsx:764: { title:'Google Analytics',     subtitle:'Tracking de eventos',   icon:'TrendingUp',     color:'#e37400', pm2_process:'',              group:'📊 Analytics' },
+src\components\AutomationFlow.jsx:765: { title:'RSS Feed',             subtitle:'Agregador de noticias', icon:'Globe',          color:'#ff6600', pm2_process:'',              group:'📊 Analytics' },
+src\components\AutomationFlow.jsx:766: { title:'Monitor Servidor',     subtitle:'Health Check',          icon:'Server',         color:'#ef4444', pm2_process:'godzilla-server',group:'📊 Analytics' },
+src\components\AutomationFlow.jsx:768: { title:'Webhook Entrada',      subtitle:'Recibir datos externos',icon:'Globe',          color:'#06b6d4', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:769: { title:'HTTP Request',         subtitle:'Llamar a cualquier API',icon:'Send',           color:'#6366f1', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:770: { title:'Reloj / Cron',         subtitle:'Programar en el tiempo',icon:'Timer',          color:'#14b8a6', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:771: { title:'Cloudflare Workers',   subtitle:'Edge Gateway',          icon:'Cloud',          color:'#f38020', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:772: { title:'Vercel',               subtitle:'Hosting / Deploy',      icon:'Server',         color:'#ffffff', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:773: { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:774: { title:'Make (Integromat)',    subtitle:'Webhook a Make',        icon:'Webhook',        color:'#9c27b0', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:775: { title:'Zapier Webhook',       subtitle:'Webhook a Zapier',      icon:'Zap',            color:'#ff4a00', pm2_process:'',              group:'⚙️ Sistema' },
+src\components\AutomationFlow.jsx:777: { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:778: { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:779: { title:'Delay / Espera',       subtitle:'Pausa entre pasos',     icon:'Clock',          color:'#94a3b8', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:780: { title:'Loop / Iterador',      subtitle:'Procesar listas',       icon:'GitBranch',      color:'#0ea5e9', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:781: { title:'Merge / Combinar',     subtitle:'Unir resultados',       icon:'Network',        color:'#a78bfa', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:782: { title:'Set Variables',        subtitle:'Guardar datos temporales',icon:'Braces',       color:'#cbd5e1', pm2_process:'',              group:'🔀 Flujo' },
+src\components\AutomationFlow.jsx:784: { title:'PDF Generator',        subtitle:'Contratos / Reportes',  icon:'Image',          color:'#dc2626', pm2_process:'',              group:'📄 Archivos' },
+src\components\AutomationFlow.jsx:785: { title:'Brevo',                subtitle:'Email Marketing',       icon:'Mail',           color:'#0092ff', pm2_process:'',              group:'📄 Archivos' },
+src\components\AutomationFlow.jsx:790: const g = p.group || '⚙️ Sistema';
+src\components\AutomationFlow.jsx:902: alert(`✅ Proceso ${processName} reiniciado.`);
+src\components\AutomationFlow.jsx:904: alert(`❌ Error al reiniciar: ${data.error}`);
+src\components\AutomationFlow.jsx:907: alert(`❌ Error al reiniciar: ${err.message}`);
+src\components\AutomationFlow.jsx:984: // ⚙️ Sistema / Webhooks
+src\components\AutomationFlow.jsx:989: // 🤖 IA
+src\components\AutomationFlow.jsx:993: // 📱 Social / Bots
+src\components\AutomationFlow.jsx:998: // 🗄 Bases de Datos / Productividad
+src\components\AutomationFlow.jsx:1006: if (missing) return { status: 'warning', msg: `⚠️ El nodo "${missing.title}" requiere configuración. Seleccionalo y completa los campos obligatorios.` };
+src\components\AutomationFlow.jsx:1007: if (!hasTrigger) return { status: 'error', msg: '🛑 Falta un Nodo Origen (Trigger). El flujo necesita saber cómo iniciarse (ej. Webhook, Cron, Bot).' };
+src\components\AutomationFlow.jsx:1008: if (!hasAction) return { status: 'error', msg: '🛑 Falta un Nodo Acción (Salida). El flujo se activa pero no hace nada (ej. Guardar en DB, Enviar Email).' };
+src\components\AutomationFlow.jsx:1009: if (edges.length === 0 && nodes.length > 1) return { status: 'warning', msg: '⚠️ Conecta los nodos arrastrando desde el punto de salida al punto de entrada.' };
+src\components\AutomationFlow.jsx:1010: return { status: 'success', msg: '✅ Flujo válido y listo para ejecutarse en el servidor.' };
+src\components\AutomationFlow.jsx:1025: {isCore && <span className="text-sm">👑</span>}
+src\components\AutomationFlow.jsx:1117: {flowId===1?'🧠 Validar IA':'💾 Guardar'}
+src\components\AutomationFlow.jsx:1342: <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1.5 block">📆 Periodo del plan</label>
+src\components\AutomationFlow.jsx:1345: { value: 'day',   label: '1 Día',   icon: '☀️', desc: '1 post' },
+src\components\AutomationFlow.jsx:1346: { value: 'week',  label: '1 Semana', icon: '📅', desc: '7 posts' },
+src\components\AutomationFlow.jsx:1347: { value: 'month', label: '1 Mes',   icon: '🗓', desc: '30 posts' },
+src\components\AutomationFlow.jsx:1368: <label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho / Producto</label>
+src\components\AutomationFlow.jsx:1379: <label className="text-[10px] text-neutral-400 mb-1 block">📝 Contexto extra (opcional)</label>
+src\components\AutomationFlow.jsx:1393: ⚡ <strong>Modo Día:</strong> Genera 1 post completo con narración, visual y video para hoy. Ideal para disparar con Reloj/Cron cada mañana.
+src\components\AutomationFlow.jsx:1398: 📅 <strong>Modo Semana:</strong> Genera 7 días de contenido. Perfecto para planear el sprint de la semana los lunes.
+src\components\AutomationFlow.jsx:1403: 🗓 <strong>Modo Mes:</strong> Genera el calendario completo de 30 días. Se conecta directo con Tarea de Studio para producción automática.
+src\components\AutomationFlow.jsx:1413: <label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho a Analizar</label>
+src\components\AutomationFlow.jsx:1423: ⚡ <strong>Motor IA:</strong> El bot extraerá datos y cruzará tendencias virales de hoy para pasarlas al siguiente nodo.
+src\components\AutomationFlow.jsx:1432: <label className="text-[10px] text-neutral-400 mb-1 block">🧠 Tema (Opcional)</label>
+src\components\AutomationFlow.jsx:1441: <label className="text-[10px] text-neutral-400 mb-1 block">🛍️ Producto a vender (Opcional)</label>
+src\components\AutomationFlow.jsx:1451: ⚠️ <strong>Flujo:</strong> El paquete de 3 redes se enviará automáticamente al "CEO Estudio" para aprobación humana y publicación a un clic.
+src\components\AutomationFlow.jsx:1521: <option value="every_minute">⚡ Cada minuto (pruebas)</option>
+src\components\AutomationFlow.jsx:1522: <option value="every_hour">🕐 Cada hora en punto</option>
+src\components\AutomationFlow.jsx:1523: <option value="every_day_8">?? Cada d�a a las 8:00 AM</option><option value="every_day_9">🌅 Cada día a las 9:00 AM</option>
+src\components\AutomationFlow.jsx:1524: <option value="every_day_12">☀️ Cada día al mediodía</option>
+src\components\AutomationFlow.jsx:1525: <option value="every_day_18">🌆 Cada día a las 6:00 PM</option>
+src\components\AutomationFlow.jsx:1526: <option value="every_monday">📅 Cada lunes a las 9 AM</option>
+src\components\AutomationFlow.jsx:1527: <option value="every_friday">🎉 Cada viernes a las 9 AM</option>
+src\components\AutomationFlow.jsx:1528: <option value="custom">🕰 Hora específica...</option>
+src\components\AutomationFlow.jsx:1543: <p className="text-[9px] text-teal-400 font-bold">✅ El CronScheduler del servidor lo activará automáticamente</p>
+src\components\AutomationFlow.jsx:1553: <label className="text-[10px] font-bold text-neutral-300 mb-1.5 block uppercase tracking-widest">⚡ Acción del Bot</label>
+src\components\AutomationFlow.jsx:1555: <option value="trigger_flow">🔗 Disparar Flujo (al recibir msg/evento)</option>
+src\components\AutomationFlow.jsx:1556: <option value="send_message">📤 Enviar Mensaje / Post</option>
+src\components\AutomationFlow.jsx:1558: {selectedNodePreset === 'TikTok Bot' && <option value="post_content">🎬 Publicar Contenido TikTok</option>}
+src\components\AutomationFlow.jsx:1559: {selectedNodePreset === 'TikTok Bot' && <option value="reply_comment">💬 Responder Comentario</option>}
+src\components\AutomationFlow.jsx:1560: {selectedNodePreset === 'IG / Messenger Bot' && <option value="post_story">📸 Publicar Story IG</option>}
+src\components\AutomationFlow.jsx:1561: {selectedNodePreset === 'IG / Messenger Bot' && <option value="post_feed">🖼️ Publicar en Feed IG</option>}
+src\components\AutomationFlow.jsx:1562: {selectedNodePreset === 'Twitter / X Bot' && <option value="post_thread">🧵 Publicar Hilo (Thread)</option>}
+src\components\AutomationFlow.jsx:1563: {selectedNodePreset === 'LinkedIn Bot' && <option value="post_article">📝 Publicar Artículo B2B</option>}
+src\components\AutomationFlow.jsx:1564: {selectedNodePreset === 'Telegram Bot' && <option value="send_broadcast">📢 Enviar Difusión (Broadcast)</option>}
+src\components\AutomationFlow.jsx:1570: <div><label className="text-[10px] text-neutral-400 mb-1 block flex items-center gap-1">🔑 API Key / Access Token</label>
+src\components\AutomationFlow.jsx:1583: <p className="text-[9px] text-emerald-400 font-bold">🔗 Modo Trigger Activo</p>
+src\components\AutomationFlow.jsx:1686: <div><label className="text-[10px] text-neutral-400 mb-1 block">📦 Tema / Producto</label><input value={selectedNode.config?.topic||''} onChange={e=>updateNode({config:{...selectedNode.config, topic:e.target.value}})} placeholder="Ej: Tu producto / {{ $json.tema }}" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition"/></div>
+src\components\AutomationFlow.jsx:1687: <div><label className="text-[10px] text-neutral-400 mb-1 block">🎯 Nicho</label><input value={selectedNode.config?.niche||''} onChange={e=>updateNode({config:{...selectedNode.config, niche:e.target.value}})} placeholder="Marketing Digital, Consultoría..." className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition"/></div>
+src\components\AutomationFlow.jsx:1688: <div><label className="text-[10px] text-neutral-400 mb-1 block">🛍️ Producto/Servicio (opcional)</label><input value={selectedNode.config?.product||''} onChange={e=>updateNode({config:{...selectedNode.config, product:e.target.value}})} placeholder="Nombre específico del producto" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition"/></div>
+src\components\AutomationFlow.jsx:1690: <p className="text-[9px] text-amber-400 font-bold mb-1">🚀 Salida del nodo:</p>
+src\components\AutomationFlow.jsx:1698: <p className="text-[10px] font-bold text-purple-400 mb-1">🤖 Nodo Automático</p>
+src\components\AutomationFlow.jsx:1722: <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2"><p className="text-[9px] text-blue-400 font-bold">💡 Obtén tu token gratis en @BotFather en Telegram</p></div>
+src\components\AutomationFlow.jsx:1725: <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="🤖 {{ $json.titulo }} generado exitosamente" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 transition resize-none"/></div>
+src\components\AutomationFlow.jsx:1732: <div><label className="text-[10px] text-neutral-400 mb-1 block">Mensaje</label><textarea value={selectedNode.config?.message||''} onChange={e=>updateNode({config:{...selectedNode.config, message:e.target.value}})} placeholder="✅ {{ $json.title }} completado" rows={2} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+src\components\AutomationFlow.jsx:1747: <div><label className="text-[10px] text-neutral-400 mb-1 block">Asunto</label><input value={selectedNode.config?.subject||''} onChange={e=>updateNode({config:{...selectedNode.config, subject:e.target.value}})} placeholder="Tu plan está listo 🤖" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition"/></div>
+src\components\AutomationFlow.jsx:1943: <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2"><p className="text-[9px] text-amber-400">⚠️ Requiere OAuth — configura en Google Cloud Console / Meta Developers</p></div>
+src\components\AutomationFlow.jsx:1972: ? (() => { const p=pm2Status.find(x=>x.name===selectedNode.pm2_process); return p?<p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE · {Math.round(p.memory/1024/1024)}MB · {p.cpu}%</p>:<p className="text-[10px] text-rose-400 font-bold">🔴 OFFLINE</p>; })()
+src\components\AutomationFlow.jsx:1973: : <><p className="text-[10px] text-emerald-400 font-bold">🟢 ONLINE - Integración Nativa</p><p className="text-[9px] text-emerald-500/60">Corre dentro del núcleo de Godzilla Server.</p></>
+src\components\AutomationFlow.jsx:2111: alert(d.success ? '✅ Aprobado y aplicado.' : '❌ ' + d.error);
+src\components\AutomationFlow.jsx:2127: <h1 className="text-base font-black text-white flex items-center gap-2">⚡ Sistema de Automatización</h1>
+src\components\AutomationFlow.jsx:2134: 📨 {pendingRequests.length} Solicitud{pendingRequests.length!==1?'es':''}
+src\components\AutomationFlow.jsx:2148: <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-1">🔒 Solicitudes Pendientes</p>
+src\components\AutomationFlow.jsx:2156: <button onClick={()=>handleApprove(req.id)} className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg text-[10px] font-black transition">✓</button>
+src\components\AutomationFlow.jsx:2157: <button onClick={()=>handleReject(req.id)} className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 rounded-lg text-[10px] font-black transition">✗</button>
+src\components\BugReporterModal.jsx:79: alert('✅ Bug/Sugerencia reportada a TI exitosamente.');
+src\components\BugTrackerUI.jsx:90: <span className="text-4xl mb-4">✨</span>
+src\components\BugTrackerUI.jsx:130: <span className="w-4 text-center">👤</span>
+src\components\BugTrackerUI.jsx:134: <span className="w-4 text-center">📍</span>
+src\components\BugTrackerUI.jsx:138: <span className="w-4 text-center">📅</span>
+src\components\BugTrackerUI.jsx:166: <button onClick={() => setSelectedBug(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white bg-black/50 rounded-full w-8 h-8 flex items-center justify-center z-10 transition">✕</button>
+src\components\BugTrackerUI.jsx:194: <p className="text-white font-medium flex items-center gap-2"><span className="text-neutral-500">👤</span> @{selectedBug.reporter_username}</p>
+src\components\BugTrackerUI.jsx:198: <p className="text-white font-mono break-all flex items-center gap-2"><span className="text-neutral-500">📍</span> {selectedBug.path_url}</p>
+src\components\BugTrackerUI.jsx:202: <p className="text-white flex items-center gap-2"><span className="text-neutral-500">📅</span> {new Date(selectedBug.created_at).toLocaleString('es-MX')}</p>
+src\components\BugTrackerUI.jsx:207: <p className="text-green-400 font-medium flex items-center gap-2"><span className="text-green-900">✓</span> @{selectedBug.resolved_by || 'AdminTI'} <br/><span className="text-[10px] text-neutral-500">({new Date(selectedBug.resolved_at).toLocaleString('es-MX')})</span></p>
+src\components\CeoEstudioPanel.jsx:7: rejected:              { label: '🔙 Devuelta',       tab: 'devueltas',     color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+src\components\CeoEstudioPanel.jsx:8: approved:              { label: '✅ Aprobada',       tab: 'aprobadas',     color: 'text-green-400 bg-green-500/10 border-green-500/30' },
+src\components\CeoEstudioPanel.jsx:9: published:             { label: '🚀 Publicada',      tab: 'aprobadas',     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+src\components\CeoEstudioPanel.jsx:10: manual_studio:         { label: '🎬 En Estudio IA',  tab: 'manual_studio', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+src\components\CeoEstudioPanel.jsx:11: pending_render:        { label: '⚙️ Encolado',       tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+src\components\CeoEstudioPanel.jsx:12: pending_render_docker: { label: '⚙️ Encolado (Worker)',tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+src\components\CeoEstudioPanel.jsx:13: rendering:             { label: '🔄 Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+src\components\CeoEstudioPanel.jsx:14: rendering_docker:      { label: '🔄 Renderizando (Worker)', tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+src\components\CeoEstudioPanel.jsx:245: `📝 ¿Por qué apruebas este activo?\n\n` +
+src\components\CeoEstudioPanel.jsx:251: alert('⚠️ La nota es obligatoria para aprobar directamente.');
+src\components\CeoEstudioPanel.jsx:463: <span>👑</span> CEO ESTUDIO
+src\components\CeoEstudioPanel.jsx:480: { id: 'manual_studio', label: 'En Estudio IA',             icon: '🎬' },
+src\components\CeoEstudioPanel.jsx:481: { id: 'ia_backlog',    label: 'Bandeja IA (Autogenerados)', icon: '🤖' },
+src\components\CeoEstudioPanel.jsx:482: { id: 'devueltas',     label: 'Devueltas',                  icon: '🔙' },
+src\components\CeoEstudioPanel.jsx:483: { id: 'aprobadas',     label: 'Aprobadas / Publicadas',     icon: '✅' },
+src\components\CeoEstudioPanel.jsx:509: 🤖 Estudio IA
+src\components\CeoEstudioPanel.jsx:512: 👑 CEO Estudio
+src\components\CeoEstudioPanel.jsx:515: 📅 Calendario Global
+src\components\CeoEstudioPanel.jsx:529: <span className="text-4xl mb-3">👻</span>
+src\components\CeoEstudioPanel.jsx:553: <span className="text-4xl mb-1 text-[#d946ef]">📜</span>
+src\components\CeoEstudioPanel.jsx:558: <span className="text-3xl mb-1">🖼</span>
+src\components\CeoEstudioPanel.jsx:582: >✕</button>
+src\components\CeoEstudioPanel.jsx:609: <span className="text-4xl">⚠️</span>
+src\components\CeoEstudioPanel.jsx:635: const sourceLabel     = selected.media_options?.source === 'manual_cockers' ? '🎬 Video Manual (Cockers Studio)'
+src\components\CeoEstudioPanel.jsx:636: : selected.media_options?.source === 'manual_planner' ? '📅 Video del Planificador'
+src\components\CeoEstudioPanel.jsx:637: : selected.media_options?.source === 'ai_planner'     ? '🤖 Plan Mensual IA'
+src\components\CeoEstudioPanel.jsx:638: : '📜 Video IA';
+src\components\CeoEstudioPanel.jsx:649: 🏷️ {selected.media_options.niche}
+src\components\CeoEstudioPanel.jsx:661: <span className="text-3xl shrink-0">🎬</span>
+src\components\CeoEstudioPanel.jsx:668: <h3 className="text-base font-black text-white mb-3 flex items-center gap-2">📜 Guion de Escenas</h3>
+src\components\CeoEstudioPanel.jsx:677: {isCTA ? `🎯 ESCENA ${n} — CTA` : `ESCENA ${n}`}
+src\components\CeoEstudioPanel.jsx:681: <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🎙️ Narración</p>
+src\components\CeoEstudioPanel.jsx:687: <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">📝 Texto en Pantalla</p>
+src\components\CeoEstudioPanel.jsx:693: <p className="text-[8px] text-neutral-600 font-bold uppercase mb-1">🖼️ Visual / Imagen IA</p>
+src\components\CeoEstudioPanel.jsx:708: <span className="text-5xl">🖼</span>
+src\components\CeoEstudioPanel.jsx:717: ✕
+src\components\CeoEstudioPanel.jsx:757: 🗑 Borrar Activo
+src\components\CeoEstudioPanel.jsx:765: 🤖 Prompt: {selected.prompt}
+src\components\CeoEstudioPanel.jsx:784: <p className="text-[10px] font-black text-neutral-500 uppercase tracking-wider mb-2">📁 Archivo de Referencia Visual (Opcional)</p>
+src\components\CeoEstudioPanel.jsx:789: <div className="w-10 h-10 rounded bg-[#d946ef]/10 border border-[#d946ef]/30 flex items-center justify-center text-xs">🎥</div>
+src\components\CeoEstudioPanel.jsx:806: <span className="text-sm">📎</span>
+src\components\CeoEstudioPanel.jsx:847: {actionLoading ? <><div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Procesando...</> : '✅ APROBAR'}
+src\components\CeoEstudioPanel.jsx:856: ✨ AUTO-REGENERAR CON REFERENCIA
+src\components\CeoEstudioPanel.jsx:864: 🔙 DEVOLVER (Rehacer Todo)
+src\components\CeoEstudioPanel.jsx:871: 🖼️ DEVOLVER (Cambiar Visuales)
+src\components\CeoEstudioPanel.jsx:881: ✂️ EDICIÓN MANUAL (Estudio Pro)
+src\components\CeoEstudioPanel.jsx:921: 🎬 GENERAR CON ESTUDIO IA
+src\components\CeoEstudioPanel.jsx:930: 🗑 Descartar Video Manual
+src\components\CeoEstudioPanel.jsx:941: {['rendering', 'rendering_docker'].includes(selected.status) ? '🔄 Renderizando...' : '⚙️ En Cola del MediaWorker'}
+src\components\CeoEstudioPanel.jsx:954: 🗑 Descartar / Borrar Activo
+src\components\CeoEstudioPanel.jsx:965: {selected.status === 'published' ? '🚀 YA PUBLICADA' :
+src\components\CeoEstudioPanel.jsx:966: ['pending_render', 'rendering'].includes(selected.status) ? '✅ APROBADA (RENDERIZANDO VIDEO...)' : '✅ APROBADA'}
+src\components\CeoEstudioPanel.jsx:974: 📅 Escoger Fecha y Hora
+src\components\CeoEstudioPanel.jsx:989: 📱 PUBLICAR AHORA
+src\components\CeoEstudioPanel.jsx:1009: ✕ Eliminar Activo
+src\components\CeoEstudioPanel.jsx:1031: 🗑 Borrar
+src\components\CeoEstudioPanel.jsx:1034: <button onClick={() => { setShowPublish(false); setPublishReport(null); }} className="text-neutral-500 hover:text-white text-sm focus:outline-none">✕ Cancelar</button>
+src\components\CeoEstudioPanel.jsx:1052: <button onClick={() => setPublishMode('now')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'now' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>🚀 Ahora Mismo</button>
+src\components\CeoEstudioPanel.jsx:1053: <button onClick={() => setPublishMode('schedule')} className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${publishMode === 'schedule' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}>📅 Programar</button>
+src\components\CeoEstudioPanel.jsx:1073: {publishReport.error ? '❌ ' : '✅ '} {publishReport.message || 'Éxito.'}
+src\components\CeoEstudioPanel.jsx:1083: '📅 GUARDAR PROGRAMACIÓN'
+src\components\CeoEstudioPanel.jsx:1085: '🚀 CONFIRMAR Y PUBLICAR YA'
+src\components\CeoEstudioPanel.jsx:1110: <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
+src\components\CeoEstudioPanel.jsx:1122: <p className="text-xs text-gray-500">Justo ahora • 🌎</p>
+src\components\CeoEstudioPanel.jsx:1135: <div className="text-center"><p className="text-3xl">❤️</p><p className="text-xs font-bold">128K</p></div>
+src\components\CeoEstudioPanel.jsx:1136: <div className="text-center"><p className="text-3xl">💬</p><p className="text-xs font-bold">1024</p></div>
+src\components\CeoEstudioPanel.jsx:1154: <span className="text-xl shrink-0 mt-0.5">🔔</span>
+src\components\Chatbot.jsx:25: if (!tKey || tKey === 'chat.greeting') return 'Hi! I am Zilla 😊 Your AI Marketing Specialist at Godzilla Consulting. How can I help you grow your business today?';
+src\components\Chatbot.jsx:138: {isSpanish ? <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</> : <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span>}
+src\components\Chatbot.jsx:139: <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black hover:bg-gray-100 w-4 h-4 rounded-full flex items-center justify-center transition-colors">✕</button>
+src\components\CMCalendar.jsx:87: facebook:  { icon: '🔵', label: 'FB',      color: '#1877F2', glow: 'rgba(24,119,242,0.4)',  ring: 'border-[#1877F2]' },
+src\components\CMCalendar.jsx:88: instagram: { icon: '🟣', label: 'IG',      color: '#E1306C', glow: 'rgba(225,48,108,0.4)',  ring: 'border-[#E1306C]' },
+src\components\CMCalendar.jsx:89: tiktok:    { icon: '⚫', label: 'TK',      color: '#00f2ea', glow: 'rgba(0,242,234,0.4)',   ring: 'border-[#00f2ea]' },
+src\components\CMCalendar.jsx:90: ALL:       { icon: '🌐', label: 'Multi',   color: '#ffffff', glow: 'rgba(255,255,255,0.2)', ring: 'border-white/30'  },
+src\components\CMCalendar.jsx:302: title: `📅 ${c.nombre_completo || c.nombre} — ${c.tipo_sesion || 'Consultoría'}`,
+src\components\CMCalendar.jsx:315: { id: 'cita-1', title: '📅 Carlos Mendez — CRM', start: today, end: today, status: 'success', tipo: 'cita', raw: { email: 'carlos@demo.com', telefono: '664-000-0001', notas_adicionales: 'Interesado en plan B2B' } },
+src\components\CMCalendar.jsx:316: { id: 'cita-2', title: '📅 Ana Torres — SEO', start: tomorrow, end: tomorrow, status: 'warning', tipo: 'cita', raw: { email: 'ana@demo.com', telefono: '664-000-0002', notas_adicionales: 'Quiere auditoría SEO completa' } },
+src\components\CMCalendar.jsx:381: alert(`✅ ${imported} publicaciones importadas al Calendario de Contenido.`);
+src\components\CMCalendar.jsx:566: const platformPrefix = newCampaign.plataforma === 'tiktok' ? '⚫ TK' :
+src\components\CMCalendar.jsx:567: newCampaign.plataforma === 'instagram' ? '🟣 IG' :
+src\components\CMCalendar.jsx:568: newCampaign.plataforma === 'facebook' ? '🔵 FB' : '🌐 Multi';
+src\components\CMCalendar.jsx:701: title: `✅ ${t.para}: ${t.que.substring(0, 35)}...`,
+src\components\CMCalendar.jsx:722: title: `🤖 ${t.que || '(Sin título)'}`,
+src\components\CMCalendar.jsx:888: 🗑️
+src\components\CMCalendar.jsx:894: 📊 Sheets
+src\components\CMCalendar.jsx:914: <span className="text-[8px] bg-green-500/20 text-green-400 font-black px-1 rounded">📊</span>
+src\components\CMCalendar.jsx:918: 🗑️
+src\components\CMCalendar.jsx:926: {event.title?.replace(/^[🔵🟣⚫🌐]\s*\w+:\s*/u, '')}
+src\components\CMCalendar.jsx:936: 💬 {event.comments.length}
+src\components\CMCalendar.jsx:957: ✨ Generar en Studio
+src\components\CMCalendar.jsx:1070: <div className="flex gap-4 mb-2"><span className="text-xl">❤️</span><span className="text-xl">💬</span><span className="text-xl">↗️</span></div>
+src\components\CMCalendar.jsx:1080: <div><p className="font-bold text-[15px] leading-tight">Godzilla Consulting</p><p className="text-xs text-gray-500">Publicado • Hace 2 min • 🌎</p></div>
+src\components\CMCalendar.jsx:1084: <div className="p-3 border-t border-gray-200 flex justify-between text-gray-500 text-sm font-semibold"><span>👍 Me gusta</span><span>💬 Comentar</span><span>↪️ Compartir</span></div>
+src\components\CMCalendar.jsx:1092: <div className="flex flex-col items-center"><span className="text-3xl drop-shadow-md">❤️</span><span className="text-xs font-bold drop-shadow-md">124K</span></div>
+src\components\CMCalendar.jsx:1109: <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest">🔔 Mis Tareas</h3>
+src\components\CMCalendar.jsx:1123: ? <p className="text-neutral-600 text-xs font-bold text-center py-8">✅ Sin tareas pendientes</p>
+src\components\CMCalendar.jsx:1130: <span className="text-[10px]">✕</span>
+src\components\CMCalendar.jsx:1134: <p className="text-[10px] text-neutral-500 font-bold">📎 Ref: <span className="text-neutral-400">{task.referencias}</span></p>
+src\components\CMCalendar.jsx:1135: <p className="text-[10px] text-neutral-500 font-bold">📅 Para: <span className="text-yellow-400">{task.deadline}</span></p>
+src\components\CMCalendar.jsx:1136: <p className="text-[10px] text-neutral-500 font-bold">👤 Asignó: <span className="text-[#CC0000]">{task.asignadoPor}</span></p>
+src\components\CMCalendar.jsx:1138: <button onClick={() => navigate('/studio')} className="mt-3 w-full text-[10px] bg-black/60 border border-neutral-700 text-[#CC0000] px-3 py-1.5 rounded-lg font-black hover:bg-[#CC0000] hover:text-white transition-all">Ir al Estudio ➔</button>
+src\components\CMCalendar.jsx:1148: <span className="text-green-500 text-sm">✅</span>
+src\components\CMCalendar.jsx:1166: {mediaUrl ? (isVideo ? <video src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" /> : <img src={resolveMedia(mediaUrl)} className="w-full h-full object-cover" />) : <span className="text-lg absolute inset-0 flex items-center justify-center">📷</span>}
+src\components\CMCalendar.jsx:1170: <p className="text-[9px] text-yellow-500 font-black uppercase mt-1">🌟 Aprobado</p>
+src\components\CMCalendar.jsx:1300: <span className="text-lg">🔔</span>
+src\components\CMCalendar.jsx:1323: <p className="text-[10px] text-neutral-600 mt-1 font-bold">📅 En: {n.eventTitle}</p>
+src\components\CMCalendar.jsx:1335: 📋 Asignar Tarea
+src\components\CMCalendar.jsx:1342: 📊 Importar Sheets
+src\components\CMCalendar.jsx:1348: ➕ Campaña
+src\components\CMCalendar.jsx:1357: { id: 'contenido', label: '📣 Contenido', count: events.length },
+src\components\CMCalendar.jsx:1358: { id: 'contenido_ia', label: '🤖 Contenido IA', count: tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).length },
+src\components\CMCalendar.jsx:1359: { id: 'citas', label: '📅 Citas', count: citas.length },
+src\components\CMCalendar.jsx:1360: { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
+src\components\CMCalendar.jsx:1361: { id: 'todos', label: '🗺️ Todo', count: null },
+src\components\CMCalendar.jsx:1384: { id: 'ALL', label: 'Todas', icon: '🌐' },
+src\components\CMCalendar.jsx:1385: { id: 'facebook', label: 'Facebook', icon: '🔵' },
+src\components\CMCalendar.jsx:1386: { id: 'instagram', label: 'Instagram', icon: '🟣' },
+src\components\CMCalendar.jsx:1387: { id: 'tiktok', label: 'TikTok', icon: '⚫' }
+src\components\CMCalendar.jsx:1410: {v === 'month' ? '🗓 Mes' : '📅 Semana'}
+src\components\CMCalendar.jsx:1450: <span className="text-[#CC0000]">🤖</span>
+src\components\CMCalendar.jsx:1460: <span className="animate-spin text-xl">⚙️</span> Conectando con IA...
+src\components\CMCalendar.jsx:1512: <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Rebrand Outreach Campaign
+src\components\CMCalendar.jsx:1516: <span className="opacity-50 group-hover:opacity-100 text-sm">☑</span> Blog Updates Template
+src\components\CMCalendar.jsx:1555: <span className="mr-2">❌</span> Eliminar Tarea
+src\components\CMCalendar.jsx:1561: <span className="mr-2 text-[#CC0000]">🔒</span>
+src\components\CMCalendar.jsx:1639: <span className="text-5xl">📅</span>
+src\components\CMCalendar.jsx:1671: 🗑️
+src\components\CMCalendar.jsx:1683: <span>👤</span> Información del Cliente
+src\components\CMCalendar.jsx:1695: <span>📝</span> Resumen de Conversación / Notas
+src\components\CMCalendar.jsx:1732: const finalComment = `📌 NUEVO PENDIENTE:\n• ¿Qué?: ${correctionForm.que}\n• ¿Cuándo?: ${correctionForm.cuando}\n• ¿Para qué?: ${correctionForm.paraQue}\n• Refs: ${correctionForm.referencias}\n• Comentarios: ${correctionForm.comentarios}`;
+src\components\CMCalendar.jsx:1744: Mandar a Corregir ➔
+src\components\CMCalendar.jsx:1754: 💬 Comentarios del equipo
+src\components\CMCalendar.jsx:1796: <button onClick={() => handleRejectAIContent(selectedEvent.id)} className="w-1/3 bg-transparent border border-[#CC0000] text-[#CC0000] hover:bg-[#CC0000] hover:text-white font-black py-3 rounded-xl transition-all uppercase text-[10px] tracking-widest">Tachar ❌</button>
+src\components\CMCalendar.jsx:1797: <button onClick={() => handleApproveAIContent(selectedEvent.id)} className="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl shadow-[0_5px_15px_rgba(22,163,74,0.3)] transition-all uppercase text-[10px] tracking-widest">Aprobar y Agendar ✔️</button>
+src\components\CMCalendar.jsx:1809: <h3 className="text-xl font-black text-white tracking-widest uppercase mb-6 flex items-center gap-2"><span className="text-[#CC0000]">📋</span> Asignar Tarea</h3>
+src\components\CMCalendar.jsx:1824: <span>📸 Referencias</span>
+src\components\CMCalendar.jsx:1879: Asignar Tarea ✔️
+src\components\CMCalendar.jsx:1892: <span className="text-[#CC0000]">🎯</span> Programar Campaña
+src\components\CMCalendar.jsx:1900: <option value="godzilla">🦖 Godzilla Consulting</option>
+src\components\CMCalendar.jsx:1901: <option value="accrual" disabled>🏢 Accrual (Próximamente)</option>
+src\components\CMCalendar.jsx:1925: <option value="ALL">🌐 Multicanal (Todas)</option>
+src\components\CMCalendar.jsx:1926: <option value="tiktok">⚫ TikTok</option>
+src\components\CMCalendar.jsx:1927: <option value="instagram">🟣 Instagram</option>
+src\components\CMCalendar.jsx:1928: <option value="facebook">🔵 Facebook</option>
+src\components\CMCalendar.jsx:1933: <span>📸 Referencias</span>
+src\components\CMCalendar.jsx:1937: {[['🖼️', 'urlFoto', 'URL de Foto/Drive...'], ['🎬', 'urlVideo', 'URL de TikTok/Reel...'], ['🔗', 'urlReferencia', 'URL al documento...']].map(([icon, key, ph]) => (
+src\components\CMCalendar.jsx:1956: ) : '📡 AGREGAR AL CALENDARIO ✔️'}
+src\components\CMCalendar.jsx:1969: 🌟 Publicador de Redes
+src\components\CMCalendar.jsx:1990: { id: 'instagram', icon: '🟣', label: 'Instagram Feed' },
+src\components\CMCalendar.jsx:1991: { id: 'tiktok', icon: '⚫', label: 'TikTok For You' },
+src\components\CMCalendar.jsx:1992: { id: 'facebook', icon: '🔵', label: 'Facebook Feed' }
+src\components\CMCalendar.jsx:2050: {isPublishingToSocial ? <><span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span> ESPERANDO REDES...</> : '🚀 IMPACTAR AHORA'}
+src\components\CMCalendar.jsx:2080: 📊 Automatizar Contenido desde Sheets
+src\components\CMCalendar.jsx:2098: <option value="godzilla">🦖 Godzilla Consulting</option>
+src\components\CMCalendar.jsx:2099: <option value="cliente1">📁 Cliente 1</option>
+src\components\CMCalendar.jsx:2100: <option value="cliente2">📁 Cliente 2</option>
+src\components\CMCalendar.jsx:2101: <option value="cockers">🎬 Cockers Studio</option>
+src\components\CMCalendar.jsx:2117: {sheetsLoading ? '⏳' : '🔍 Leer'}
+src\components\CMCalendar.jsx:2121: ⚠️ Comparte el Sheet con: <span className="text-green-400 font-mono text-[9px]">zilla-calendar@bot-godzilla.iam.gserviceaccount.com</span>
+src\components\CMCalendar.jsx:2125: {sheetsError && <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-400 text-xs font-bold">❌ {sheetsError}</div>}
+src\components\CMCalendar.jsx:2129: <span className="text-green-400 font-black text-sm">✅ {sheetsPreview.total} eventos detectados</span>
+src\components\CMCalendar.jsx:2143: <span className="text-[9px] text-neutral-600 font-bold">📅 {new Date(ev.start_date).toLocaleDateString('es-MX', { day:'2-digit', month:'short' })}</span>
+src\components\CMCalendar.jsx:2144: {ev.assigned_to && <span className="text-[9px] text-neutral-600 font-bold">👤 {ev.assigned_to}</span>}
+src\components\CMCalendar.jsx:2158: {sheetsImporting ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>Importando...</> : `📥 Importar ${sheetsPreview.total} eventos`}
+src\components\CockersStudio.jsx:219: { id: 'ultra_real',     label: '📷 Ultra Realismo',    prompt: 'Photorealistic, ultra-detailed, sharp focus, natural light, Sony A7R V, 8K resolution, RAW file quality, no filters, documentary realism' },
+src\components\CockersStudio.jsx:220: { id: 'hyper_real',     label: '🔬 Hiper Real',        prompt: 'Hyperrealism, every pore and texture visible, clinical sharpness, studio controlled lighting, Canon EF 100mm macro, ultra high definition' },
+src\components\CockersStudio.jsx:222: { id: 'lens_28mm',      label: '🎞️ 28mm Gran Angular',  prompt: '28mm wide-angle lens, slight barrel distortion, deep depth of field, architectural perspective, street photography aesthetic, analogue film grain' },
+src\components\CockersStudio.jsx:223: { id: 'lens_35mm_40s',  label: '📽️ 35mm Cine 40s',     prompt: '35mm film, 1940s cinematic look, soft grain, warm sepia-to-silver tones, dramatic chiaroscuro, classic Hollywood golden era cinematography' },
+src\components\CockersStudio.jsx:224: { id: 'lens_35mm',      label: '📸 35mm Analógico',    prompt: '35mm analog film photography, authentic grain texture, Kodak Portra 400, warm color rendition, slightly desaturated highlights, photojournalism style' },
+src\components\CockersStudio.jsx:225: { id: 'lens_40mm',      label: '🎯 40mm Pancake',      prompt: '40mm pancake lens, natural perspective, compact street photography, moderate bokeh, Leica-style rendering, reportage documentary feel' },
+src\components\CockersStudio.jsx:226: { id: 'lens_50mm',      label: '👁️ 50mm Ojo Humano',   prompt: '50mm standard lens, natural human perspective, shallow depth of field f/1.8, beautiful circular bokeh, portrait photography, Nikon D850' },
+src\components\CockersStudio.jsx:227: { id: 'lens_85mm',      label: '👠 85mm Retrato',      prompt: '85mm portrait lens f/1.4, silky smooth bokeh background, razor-sharp subject focus, flattering facial compression, professional portrait studio' },
+src\components\CockersStudio.jsx:229: { id: 'cine_scope',     label: '🎬 Cinemascope 2.39:1', prompt: 'Anamorphic widescreen 2.39:1 aspect ratio, oval bokeh lens flares, horizontal letterbox, Hollywood blockbuster cinematography, ARRI ALEXA camera' },
+src\components\CockersStudio.jsx:230: { id: 'cine_16mm',      label: '🎥 16mm Indie',        prompt: '16mm film stock, heavy organic grain, desaturated muted palette, raw handheld aesthetic, indie documentary cinema, gritty emotional realism' },
+src\components\CockersStudio.jsx:231: { id: 'cine_lut',       label: '🌈 LUT Cine Pro',      prompt: 'Professional color grading LUT applied, teal-orange complementary color scheme, lifted blacks, crushed highlights, Hollywood blockbuster grade' },
+src\components\CockersStudio.jsx:232: { id: 'cine_vhs',       label: '📼 VHS Retro',         prompt: 'VHS tape analog artifacts, color bleeding chromatic aberration, scan lines, low resolution noise, 80s 90s lo-fi camcorder aesthetic' },
+src\components\CockersStudio.jsx:234: { id: 'cartoon_toon',   label: '🎨 Cartoon Studio',    prompt: 'Cartoon illustration style, bold clean outlines, flat vibrant colors, expressive exaggerated features, modern 2D animation aesthetic, Disney Pixar inspired' },
+src\components\CockersStudio.jsx:235: { id: 'cartoon_comic',  label: '💥 Cómic Book',        prompt: 'Comic book style, bold black ink outlines, Ben-Day dot pattern, over-saturated primary colors, dramatic speech bubble composition, Marvel DC aesthetic' },
+src\components\CockersStudio.jsx:236: { id: 'anime_ghibli',   label: '🌸 Anime Ghibli',      prompt: 'Studio Ghibli anime style, soft watercolor backgrounds, lush nature details, warm earthy palette, hand-drawn 2D animation, Hayao Miyazaki aesthetic' },
+src\components\CockersStudio.jsx:237: { id: 'anime_modern',   label: '⚡ Anime Dark',        prompt: 'High-budget dark anime art, sharp shading, dramatic lighting contrasts, detailed character design, Attack on Titan aesthetic, vibrant action composition' },
+src\components\CockersStudio.jsx:238: { id: 'claymation',     label: '🧸 Stop Motion',       prompt: 'Stop motion claymation style, plasticine textures, visible fingerprint marks, tilt-shift miniature effect, Aardman Wallace Gromit aesthetic' },
+src\components\CockersStudio.jsx:239: { id: 'watercolor',     label: '🖌️ Acuarela',          prompt: 'Traditional watercolor painting, visible paper texture, soft wet-on-wet bleeding edges, transparent layered washes, impressionist looseness' },
+src\components\CockersStudio.jsx:240: { id: 'oil_painting',   label: '🖼️ Óleo Clásico',      prompt: 'Oil painting classical style, visible textured brushstrokes, impasto technique, Rembrandt dramatic lighting, museum quality old master aesthetic' },
+src\components\CockersStudio.jsx:241: { id: 'pixel_16bit',    label: '🕹️ Pixel Art 16-bit',  prompt: '16-bit pixel art style, isometric perspective, limited color palette, retro SNES SEGA era sprites, sharp pixel edges, nostalgic gaming aesthetic' },
+src\components\CockersStudio.jsx:243: { id: 'fix_sharp',      label: '🔭 Súper Definición',  prompt: 'AI-enhanced sharpness, denoised, restored detail in shadows and highlights, professional retouching, no chromatic aberration, tack-sharp studio quality' },
+src\components\CockersStudio.jsx:244: { id: 'fix_hdr',        label: '☀️ HDR Natural',       prompt: 'Natural HDR processing, balanced exposure across highlights and shadows, rich color depth, detailed sky gradients, no tone-mapping halo artifacts' },
+src\components\CockersStudio.jsx:246: { id: 'fix_golden',     label: '🌅 Golden Hour',       prompt: 'Golden hour natural sunlight, warm orange amber tones, long soft shadows, rim lighting effect, atmospheric haze, landscape photography magic hour' },
+src\components\CockersStudio.jsx:247: { id: 'fix_lowlight',   label: '🌙 Noche ISO Alta',    prompt: 'Night photography, high ISO grain texture, long exposure light trails, available light only, moody dark atmosphere, luminous point lights bokeh' },
+src\components\CockersStudio.jsx:248: { id: 'fix_commercial', label: '💎 Foto Comercial',    prompt: 'Commercial product photography, clean white cyclorama background, controlled studio strobe lighting, professional retouching, advertising catalog quality' },
+src\components\CockersStudio.jsx:294: label: '⚙️ ' + customFilterForm.label.trim(),
+src\components\CockersStudio.jsx:442: provider: origOpt.provider + ' + ✨ Ultra HQ',
+src\components\CockersStudio.jsx:471: provider: origOpt.provider + ' + ✨ Ultra HQ (FB)',
+src\components\CockersStudio.jsx:550: const icon = prompt('Un emoji para identificarlo (Ej: 🎨):') || '📌';
+src\components\CockersStudio.jsx:843: alert(`✅ Exito: El contenido se movió a estado: ${newStatus}.`);
+src\components\CockersStudio.jsx:850: alert(`⚠️ Error al procesar: ${error.message}`);
+src\components\CockersStudio.jsx:874: alert(`✅ Enviado a revisión. Revísalo en CEO Estudio.`);
+src\components\CockersStudio.jsx:893: alert(`✅ Activo enviado a revisión. Revísalo en CEO Estudio.`);
+src\components\CockersStudio.jsx:897: alert(`⚠️ Error: ${e.message}`);
+src\components\CockersStudio.jsx:1282: 🖼 Fotogramas
+src\components\CockersStudio.jsx:1285: 🧩 Ingredientes
+src\components\CockersStudio.jsx:1288: ✨ Limpiador
+src\components\CockersStudio.jsx:1322: <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5 mt-1">📐 Lentes / Realismo / Arte</p>
+src\components\CockersStudio.jsx:1334: {isActive && <span className="text-[7px] bg-red-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
+src\components\CockersStudio.jsx:1343: <p className="text-[7px] font-black uppercase tracking-[0.2em] text-neutral-700 mb-1.5">⚙️ Mis Filtros Personalizados</p>
+src\components\CockersStudio.jsx:1355: {isActive && <span className="text-[7px] bg-violet-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
+src\components\CockersStudio.jsx:1361: >🗑</button>
+src\components\CockersStudio.jsx:1373: 🤖 IA Generativa
+src\components\CockersStudio.jsx:1390: {isActive && <span className="text-[7px] bg-indigo-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>}
+src\components\CockersStudio.jsx:1417: ✨ {label}
+src\components\CockersStudio.jsx:1418: <span className="text-[7px] bg-indigo-900/40 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">✕</span>
+src\components\CockersStudio.jsx:1440: <span className="text-2xl mb-1">🧩</span>
+src\components\CockersStudio.jsx:1468: <span className="text-2xl mb-1">✨</span>
+src\components\CockersStudio.jsx:1551: <h3 className="text-[#CC0000] font-black uppercase text-sm tracking-widest flex items-center gap-2">✨ Redactor IA</h3>
+src\components\CockersStudio.jsx:1613: 📋 Pendientes ({queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved').length})
+src\components\CockersStudio.jsx:1618: 📤 Enviados y Devueltos ({queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length})
+src\components\CockersStudio.jsx:1639: <h3 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">📤 Bandeja de Salida (Arte)</h3>
+src\components\CockersStudio.jsx:1652: <span className="text-4xl mb-4">📭</span>
+src\components\CockersStudio.jsx:1661: {task.status === 'rejected' ? '❌ DEVUELTO' : task.status === 'approved' ? '🌟 APROBADA' : '⏳ EN REVISIÓN'}
+src\components\CockersStudio.jsx:1787: <span className="text-xl">⚠️</span>
+src\components\CockersStudio.jsx:1831: <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">Ultra HQ ✨</div>
+src\components\CockersStudio.jsx:1842: <span>✨</span> {slot.refinedUrl === 'error' ? 'Reintentar Ultra' : '+ Variante Ultra'}
+src\components\CockersStudio.jsx:1960: 📋 Pendientes ({queue.filter(q => q.status !== 'pending_cm_approval' && q.status !== 'rejected' && q.status !== 'approved').length})
+src\components\CockersStudio.jsx:1965: 📤 Enviados ({queue.filter(q => q.status === 'pending_cm_approval' || q.status === 'rejected').length})
+src\components\CockersStudio.jsx:1981: <span className={isFetchingInspiration ? "animate-spin" : ""}>✨</span>
+src\components\CockersStudio.jsx:2037: ✨ Generations Ready
+src\components\CockersStudio.jsx:2131: <span>✨</span> Aplicar Filtro Ultra
+src\components\CockersStudio.jsx:2138: <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_10px_rgba(79,70,229,0.5)]">Ultra HQ ✨</div>
+src\components\CockersStudio.jsx:2188: Aprobar ✔️
+src\components\CockersStudio.jsx:2203: <span className="text-yellow-500 text-lg">💡</span> ¿Las IAs no captaron la visión? Mejora el prompt, dale otra oportunidad y alimenta nuestra DB:
+src\components\CockersStudio.jsx:2224: <span>⚠️</span> NOTAS DE CORRECCIÓN (CEO)
+src\components\CockersStudio.jsx:2255: <button onClick={() => setShowCustomFilterModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition-colors">✕</button>
+src\components\ContactForm.jsx:346: 📅 {t('contact.addCalendar')}
+src\components\DBStudioPanel.jsx:109: <span className="text-xl">🗄️</span>
+src\components\DBStudioPanel.jsx:148: <span className="text-xs font-bold text-neutral-400">⚡ Consola SQL Directa (Bypass)</span>
+src\components\DBStudioPanel.jsx:213: ❌ {error}
+src\components\DBStudioPanel.jsx:219: ✅ Operación {data.command} ejecutada exitosamente. ({data.rowCount} filas afectadas)
+src\components\GodzillaSora.jsx:212: 📸 MODO FOTO
+src\components\GodzillaSora.jsx:218: 🎥 MODO VIDEO
+src\components\GodzillaSora.jsx:280: <button className="btn-icon" onClick={()=>setSeed(-1)}>🎲</button>
+src\components\GoyiAdmin.jsx:87: <span className="text-xl drop-shadow-md text-black">✖</span>
+src\components\GoyiAdmin.jsx:89: <span className="text-2xl drop-shadow-md">🦖</span>
+src\components\GoyiAdmin.jsx:106: <span className="text-sm">🦖</span>
+src\components\LeadMagnetsPanel.jsx:113: <span>💌</span> Correos de Recursos (Lead Magnets)
+src\components\LeadMagnetsPanel.jsx:235: <label className="text-[10px] font-bold text-neutral-500 uppercase">🎯 Asunto del Correo</label>
+src\components\LeadMagnetsPanel.jsx:241: placeholder="Ej: Aquí tienes tu guía de marketing 🎁"
+src\components\LeadMagnetsPanel.jsx:243: <p className="text-[10px] text-yellow-500 mt-1">⚠️ <strong>IMPORTANTE:</strong> El nombre del asunto debe ser exactamente igual al nombre del recurso descargable al que hace alusión la página en su momento. (Se jalará automáticamente según el "Nombre" arriba).</p>
+src\components\LeadMagnetsPanel.jsx:249: <span>📝 Mensaje</span>
+src\components\Login.jsx:99: <span className="text-5xl animate-bounce">🦖</span>
+src\components\Login.jsx:330: 🔒 Todos los intentos de acceso son registrados y monitoreados.
+src\components\MediaPicker.jsx:79: alert(`❌ Fallo de servidor/red. ${errorMsg}\n\nSi es un video grande y ves "413", Cloudflare está bloqueando el peso máximo permitido (100MB). Verifica el peso del archivo.`);
+src\components\MediaPicker.jsx:113: if (!confirm(`⚠️ ALERTA: ¿Seguro que quieres eliminar permanentemente ${filename} de la base de datos? Esto no se puede deshacer.`)) return;
+src\components\MediaPicker.jsx:202: ✏️ Cambiar archivo
+src\components\MediaPicker.jsx:213: ✕ Quitar media
+src\components\MediaPicker.jsx:224: <h3 className="text-lg font-black text-white">📁 Biblioteca de Medios</h3>
+src\components\MediaPicker.jsx:225: <button onClick={() => setIsOpen(false)} className="text-neutral-500 hover:text-white text-xl">✕</button>
+src\components\MediaPicker.jsx:231: { id: 'library', label: '🖼️ Biblioteca' },
+src\components\MediaPicker.jsx:233: { id: 'url', label: '🔗 Pegar URL' },
+src\components\MediaPicker.jsx:258: <p className="hidden md:block text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 px-2">📂 Carpetas</p>
+src\components\MediaPicker.jsx:260: { id: 'all', icon: '🌌', label: 'Todo el Medios' },
+src\components\MediaPicker.jsx:261: { id: 'images', icon: '🖼️', label: 'Imágenes / Fotos' },
+src\components\MediaPicker.jsx:262: { id: 'videos', icon: '🎬', label: 'Producción Video' },
+src\components\MediaPicker.jsx:263: { id: 'docs', icon: '📃', label: 'Documentos (PDF)' }
+src\components\MediaPicker.jsx:284: <span className="text-4xl opacity-50">🕳️</span>
+src\components\MediaPicker.jsx:322: ✕
+src\components\MediaPicker.jsx:381: <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📤</div>
+src\components\MediaPicker.jsx:422: ✅ Usar esta URL
+src\components\Navbar.jsx:65: <span className="text-xl filter grayscale hover:grayscale-0">🦖</span>
+src\components\Navbar.jsx:98: <span className="text-xl filter grayscale hover:grayscale-0">🦖</span> Studio
+src\components\NewsletterPanel.jsx:199: <h2 className="text-sm font-black text-white">📧 Newsletter & Premium PDF</h2>
+src\components\NewsletterPanel.jsx:204: <span>🤖 Edición de un Borrador Inteligente</span>
+src\components\NewsletterPanel.jsx:211: }} className="ml-2 hover:text-white transition-colors">✕ Cancelar</button>
+src\components\NewsletterPanel.jsx:219: { id: 'compose', label: '📝 Redactar' },
+src\components\NewsletterPanel.jsx:220: { id: 'subscribers', label: '👥 Suscriptores' },
+src\components\NewsletterPanel.jsx:221: { id: 'history', label: '📜 Historial' },
+src\components\NewsletterPanel.jsx:252: {generating ? <><Loader size={14} className="animate-spin" /> Ensamblando Reporte Bi-fásico...</> : <>🤖 Forzar/Generar Borrador</>}
+src\components\NewsletterPanel.jsx:264: placeholder="ej. 🦖 Estrategias de IA para esta semana"
+src\components\NewsletterPanel.jsx:349: 🔄 Actualizar
+src\components\NewsletterPanel.jsx:376: 🗑️
+src\components\NewsletterPanel.jsx:392: ⚠️ Borradores IA se envían automáticamente a las 7:00 AM (Juárez)
+src\components\NewsletterPanel.jsx:413: 💎 Ver Premium
+src\components\NewsletterPanel.jsx:418: ✅ Aprobar / Enviar
+src\components\NewsletterPanel.jsx:429: ✏️ Edición Manual
+src\components\NewsletterPanel.jsx:433: 🗑️
+src\components\PanelMaestroPanel.jsx:47: if(!window.confirm("⚠️ ¿Confirmas la adición de un nuevo operario al sistema central?")) return;
+src\components\PanelMaestroPanel.jsx:82: if(!window.confirm("⚠️ PELIGRO: ¿Estás seguro de ELIMINAR permanentemente a este usuario? Esto destruirá su cuenta.")) return;
+src\components\PanelMaestroPanel.jsx:134: const actionText = newRole === 'superadmin' ? 'ASCENDER a 👑 SuperAdmin' : (newRole === 'admin' ? 'ASIGNAR a Editor/Admin' : 'DEGRADAR a Community Manager');
+src\components\PanelMaestroPanel.jsx:163: <span className="text-6xl mx-auto block mb-6">⛔</span>
+src\components\PanelMaestroPanel.jsx:179: <span>👑</span> PANEL MAESTRO DE EQUIPO
+src\components\PanelMaestroPanel.jsx:187: {showCreate ? 'Cancelar Edición' : '➕ Añadir Nuevo Usuario'}
+src\components\PanelMaestroPanel.jsx:194: { label: 'Cuentas Activas', value: users.length, icon: '👥' },
+src\components\PanelMaestroPanel.jsx:195: { label: 'Super Administradores', value: superAdminsCount, icon: '👑' },
+src\components\PanelMaestroPanel.jsx:196: { label: 'Community Managers', value: cmsCount, icon: '📱' },
+src\components\PanelMaestroPanel.jsx:197: { label: 'Acciones Auditadas', value: logs.length, icon: '👁️' },
+src\components\PanelMaestroPanel.jsx:219: {showCreate ? 'Cerrar Panel' : '➕ Añadir Nuevo Usuario'}
+src\components\PanelMaestroPanel.jsx:225: <h3 className="text-sm font-black text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2"><span>🛡️</span> Registrar Operario</h3>
+src\components\PanelMaestroPanel.jsx:239: <option value="superadmin">👑 SuperAdmin</option>
+src\components\PanelMaestroPanel.jsx:240: <option value="admin">📝 Editor/Admin</option>
+src\components\PanelMaestroPanel.jsx:241: <option value="cm">📱 Community Manager</option>
+src\components\PanelMaestroPanel.jsx:277: {u.photo_url ? <img src={u.photo_url} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex justify-center items-center text-sm bg-neutral-900">🦖</div>}
+src\components\PanelMaestroPanel.jsx:286: <span className="text-amber-500 font-bold bg-amber-500/10 px-3 py-1.5 rounded text-[10px] uppercase w-[120px] inline-flex items-center justify-center shrink-0 border border-amber-500/30"><span className="text-xs mr-1 leading-none">👑</span> Fundador</span>
+src\components\PanelMaestroPanel.jsx:294: <option value="superadmin">👑 SuperAdmin</option>
+src\components\PanelMaestroPanel.jsx:295: <option value="admin">📝 Editor Admin</option>
+src\components\PanelMaestroPanel.jsx:296: <option value="cm">📱 CM</option>
+src\components\PanelMaestroPanel.jsx:323: <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><span>🛡️</span> Radar de Auditoría</h3>
+src\components\PrivateRoute.jsx:62: <span className="text-5xl animate-bounce">🦖</span>
+src\components\SociosGodzilla.jsx:38: <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature1 }} /></li>
+src\components\SociosGodzilla.jsx:39: <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature2 }} /></li>
+src\components\SociosGodzilla.jsx:40: <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature3 }} /></li>
+src\components\SociosGodzilla.jsx:41: <li style={styles.featureItem}><span style={styles.check}>✓</span> <span dangerouslySetInnerHTML={{ __html: content.feature4 }} /></li>
+src\components\SociosGodzilla.jsx:56: <p style={styles.guarantee}><span style={styles.lock}>🔒</span> <span dangerouslySetInnerHTML={{ __html: content.guarantee }} /></p>
+src\components\SqlAtaquesPanel.jsx:37: <span className="animate-pulse">🛡️</span> CENTRO DE MONITOREO WAF
+src\components\SqlAtaquesPanel.jsx:64: <p className="text-xs font-bold">📡 REGISTRO EN TIEMPO REAL</p>
+src\components\StudioPreview.jsx:30: <span className="text-5xl">⚠️</span>
+src\components\StudioPreview.jsx:223: <span className="text-4xl">🔒</span>
+src\components\StudioPreview.jsx:262: <span className="text-5xl">👁️</span>
+src\components\StudioPreview.jsx:277: ✦ {hoveredField}
+src\components\StudioPreview.jsx:286: title="👁️ Vista Previa en Vivo: Aquí puedes ver cómo quedará la sección final. Los textos e imágenes que cambies en el panel derecho se actualizarán aquí automáticamente."
+src\components\VideoEditorModal.jsx:35: { id: 's1', type: 'audio', url: 'https://actions.google.com/sounds/v1/foley/whoosh.ogg', caption: '💨 Whoosh Rápido', icon: '💨' },
+src\components\VideoEditorModal.jsx:36: { id: 's2', type: 'audio', url: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg', caption: '🫧 Pop Text', icon: '🫧' },
+src\components\VideoEditorModal.jsx:37: { id: 's3', type: 'audio', url: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg', caption: '🛎️ Ding Idea', icon: '🛎️' },
+src\components\VideoEditorModal.jsx:38: { id: 's4', type: 'audio', url: 'https://actions.google.com/sounds/v1/office/cash_register.ogg', caption: '💵 Caja Registradora', icon: '💵' },
+src\components\VideoEditorModal.jsx:39: { id: 's5', type: 'audio', url: 'https://actions.google.com/sounds/v1/science_fiction/alien_spaceship_takeoff.ogg', caption: '📈 Tensión Riser', icon: '📈' },
+src\components\VideoEditorModal.jsx:290: alert(`⚠️ Error en el servicio de Voz IA:\n\n${e.message}\n\nAsegúrate de que el backend está corriendo y el modelo seleccionado está disponible.`);
+src\components\VideoEditorModal.jsx:785: ⚠️ AVISO: Si no guardas el borrador, los archivos se perderán al cerrar.
+src\components\VideoEditorModal.jsx:988: <optgroup label="⚡ Piper TTS — Local (Ultarrápido)">
+src\components\VideoEditorModal.jsx:989: <option value="piper:es_MX-ald-medium">🇲🇽 Narrador Neutro (es_MX)</option>
+src\components\VideoEditorModal.jsx:991: <optgroup label="☁️ Edge TTS — Básico (Respaldo)">
+src\components\VideoEditorModal.jsx:992: <option value="edge:es-MX-JorgeNeural">🇲🇽 Jorge MX — Narrador épico</option>
+src\components\VideoEditorModal.jsx:994: <optgroup label="🎭 FakeYou — Celebridades (Gratis)">
+src\components\VideoEditorModal.jsx:995: <option value="fakeyou:adal-ramones">🎤 Adal Ramones (Español)</option>
+src\components\VideoEditorModal.jsx:996: <option value="fakeyou:alucard-latino">🧛 Alucard — Hellsing (Latino)</option>
+src\components\VideoEditorModal.jsx:997: <option value="fakeyou:ballas-gta">🎮 Pandillero Ballas — GTA</option>
+src\components\VideoEditorModal.jsx:998: <option value="fakeyou:spongebob">🧽 Bob Esponja (EN)</option>
+src\components\VideoEditorModal.jsx:999: <option value="fakeyou:andrew-tate">💪 Andrew Tate (EN)</option>
+src\components\VideoEditorModal.jsx:1000: <option value="fakeyou:alan-watts">🧘 Alan Watts (EN)</option>
+src\components\VideoEditorModal.jsx:1002: <optgroup label="🐕 Bark (HuggingFace) — Muy Expresivas">
+src\components\VideoEditorModal.jsx:1003: <option value="bark:v2/es_speaker_0">🇪🇸 Español Speaker 0 (Hombre)</option>
+src\components\VideoEditorModal.jsx:1004: <option value="bark:v2/es_speaker_1">🇪🇸 Español Speaker 1 (Mujer)</option>
+src\components\VideoEditorModal.jsx:1005: <option value="bark:v2/es_speaker_2">🇪🇸 Español Speaker 2 (Hombre suave)</option>
+src\components\VideoEditorModal.jsx:1006: <option value="bark:v2/es_speaker_9">🇪🇸 Español Speaker 9 (Mujer cálida)</option>
+src\components\VideoEditorModal.jsx:1008: <optgroup label="🧬 XTTS-v2 (HuggingFace) — Clonación">
+src\components\VideoEditorModal.jsx:1009: <option value="xtts:clone">🎙️ Clonar Voz (Sube un audio)</option>
+src\components\VideoEditorModal.jsx:1032: <p className="text-[9px] text-green-400 mb-1">✓ Audio listo para clonar</p>
+src\components\VideoEditorModal.jsx:1166: <p className="text-[9px] text-purple-400 text-center mt-2 font-medium">✨ Se aplicará Chroma Key automático si es fondo verde/negro.</p>
+src\utils\studioConfig.js:22: { id:'hero', label:'Encabezado principal (Hero)', emoji:'🦖', tag:'INICIO' },
+src\utils\studioConfig.js:23: { id:'servicios', label:'Servicios', emoji:'⚡', tag:'SERVICIOS' },
+src\utils\studioConfig.js:24: { id:'cultura', label:'Cultura', emoji:'🏢', tag:'CULTURA' },
+src\utils\studioConfig.js:25: { id:'portafolio', label:'Casos de Éxito', emoji:'🏆', tag:'PORTAFOLIO'},
+src\utils\studioConfig.js:26: { id:'recursos', label:'Recursos', emoji:'📚', tag:'RECURSOS' },
+src\utils\studioConfig.js:27: { id:'paquetes', label:'Paquetes Grid', emoji:'📦', tag:'PAQUETES' },
+src\utils\studioConfig.js:28: { id: 'paquete-posicionamiento-social', label: 'Posicionamiento', emoji: '📣', tag: 'LANDING' },
+src\utils\studioConfig.js:29: { id: 'paquete-expansion', label: 'Expansión', emoji: '🚀', tag: 'LANDING' },
+src\utils\studioConfig.js:30: { id: 'paquete-control-ia', label: 'Control IA', emoji: '🤖', tag: 'LANDING' },
+src\utils\studioConfig.js:31: { id: 'paquete-elite', label: 'Élite', emoji: '👑', tag: 'LANDING' },
+src\utils\studioConfig.js:32: { id: 'servicio-bots', label: 'S. Bots', emoji: '🤖', tag: 'SERVICIO' },
+src\utils\studioConfig.js:33: { id: 'servicio-audiovisual', label: 'S. Video', emoji: '🎥', tag: 'SERVICIO' },
+src\utils\studioConfig.js:34: { id: 'servicio-embudos', label: 'S. Embudos', emoji: '🧲', tag: 'SERVICIO' },
+src\utils\studioConfig.js:35: { id: 'servicio-redes', label: 'S. Redes', emoji: '📱', tag: 'SERVICIO' },
+src\utils\studioConfig.js:36: { id: 'servicio-seo', label: 'S. SEO', emoji: '🔍', tag: 'SERVICIO' },
+src\utils\studioConfig.js:37: { id: 'servicio-crm', label: 'S. CRM', emoji: '📊', tag: 'SERVICIO' },
+src\utils\studioConfig.js:38: { id: 'landing-recurso-prompts', label: 'L. Protocolo Lázaro', emoji: '🔗', tag: 'LANDING' },
+src\utils\studioConfig.js:39: { id: 'landing-recurso-boveda-scripts', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
+src\utils\studioConfig.js:40: { id: 'landing-recurso-crm', label: 'L. Tablero Control', emoji: '🔗', tag: 'LANDING' },
+src\utils\studioConfig.js:41: { id: 'socio-godzilla', label: 'Socios VIP', emoji: '👑', tag: 'LANDING' },
+src\utils\studioConfig.js:42: { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
+src\utils\studioConfig.js:206: combinedData.recurso1EmailSubject = "📂 Acceso a tu Bóveda de Scripts de IA";
+src\utils\studioConfig.js:211: combinedData.recurso2EmailSubject = "📂 Tu descarga: El Protocolo Lázaro";
+src\utils\studioConfig.js:216: combinedData.recurso3EmailSubject = "📂 Acceso inmediato: Tu Tablero de Control de Ventas";

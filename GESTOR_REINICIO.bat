@@ -18,6 +18,10 @@ cd /d "%~dp0"
 title GODZILLA - Gestor de Reinicio Granular
 color 0A
 
+:: ---- Variables comunes ----
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+set PM2_CMD="C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd"
+
 :MENU
 cls
 echo.
@@ -60,15 +64,13 @@ if "%OPCION%"=="13" goto REPARAR_WP
 if "%OPCION%"=="0" exit /b
 goto MENU
 
-:: ---- Variables comunes ----
-set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
-set PM2_CMD=C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd
+
 
 :RESTART_WP
 cls
 echo.
 echo  Reiniciando SOLO whatsapp-bot...
-docker exec godzilla_ecosystem pm2 restart whatsapp-bot --update-env
+call %PM2_CMD% restart whatsapp-bot --update-env
 echo  Esperando 20s para que Chrome cargue...
 timeout /t 20 /nobreak >nul
 powershell -Command "Get-Content -Tail 45 'C:\Users\GODZILLA.IA\.pm2\logs\whatsapp-bot-out.log'"
@@ -82,7 +84,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO godzilla-server...
-docker exec godzilla_ecosystem pm2 restart godzilla-server --update-env
+call %PM2_CMD% restart godzilla-server --update-env
 timeout /t 5 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\godzilla-server-out.log'"
 echo.
@@ -93,7 +95,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO email-worker...
-docker exec godzilla_ecosystem pm2 restart email-worker --update-env
+call %PM2_CMD% restart email-worker --update-env
 timeout /t 3 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\email-worker-out.log'"
 echo.
@@ -104,7 +106,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO ai-core...
-docker exec godzilla_ecosystem pm2 restart ai-core --update-env
+call %PM2_CMD% restart ai-core --update-env
 timeout /t 5 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\ai-core-out.log'"
 echo.
@@ -115,7 +117,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO trends-bot...
-docker exec godzilla_ecosystem pm2 restart trends-bot --update-env
+call %PM2_CMD% restart trends-bot --update-env
 timeout /t 3 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\trends-bot-out.log'"
 echo.
@@ -126,7 +128,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO tiktok-bot...
-docker exec godzilla_ecosystem pm2 restart tiktok-bot --update-env
+call %PM2_CMD% restart tiktok-bot --update-env
 echo  Esperando 10s para que TikTok cargue...
 timeout /t 10 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\tiktok-bot-out.log'"
@@ -138,7 +140,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO instagram-bot...
-docker exec godzilla_ecosystem pm2 restart instagram-bot --update-env
+call %PM2_CMD% restart instagram-bot --update-env
 echo  Esperando 10s para que IG cargue...
 timeout /t 10 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\instagram-bot-out.log'"
@@ -150,7 +152,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO newsletter-bot...
-docker exec godzilla_ecosystem pm2 restart newsletter-bot --update-env
+call %PM2_CMD% restart newsletter-bot --update-env
 timeout /t 3 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\newsletter-bot-out.log'"
 echo.
@@ -161,7 +163,7 @@ goto MENU
 cls
 echo.
 echo  === ESTADO ACTUAL DE TODOS LOS PROCESOS PM2 ===
-docker exec godzilla_ecosystem pm2 list
+call %PM2_CMD% list
 echo.
 pause
 goto MENU
@@ -245,13 +247,13 @@ echo   LIMPIEZA EXTREMA DE SESION CORRUPTA DE WHATSAPP
 echo ========================================================
 echo.
 echo [1/2] Deteniendo el bot...
-docker exec godzilla_ecosystem pm2 stop whatsapp-bot
+call %PM2_CMD% stop whatsapp-bot
 
 echo [2/2] Borrando carpeta de sesion de Baileys...
 rmdir /S /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\baileys"
 
 echo [Listo] Arrancando bot fresco...
-docker exec godzilla_ecosystem pm2 restart whatsapp-bot --update-env
+call %PM2_CMD% restart whatsapp-bot --update-env
 
 echo.
 echo ========================================================

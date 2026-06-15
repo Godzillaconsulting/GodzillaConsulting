@@ -100,9 +100,9 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
     let realNewsContext = "";
     try {
         console.log("📰 Obteniendo contexto de noticias reales para inyectar en el cerebro de Godzilla...");
-        const rssRes = await fetch('https://news.google.com/rss/search?q=Inteligencia+Artificial+OR+Startups+OR+Tecnologia+when:1d&hl=es-419&gl=MX&ceid=MX:es-419');
+        const rssRes = await fetch('https://news.google.com/rss/search?q=(Inteligencia+Artificial+OR+AI+OR+"Artificial+Intelligence"+OR+automation)+when:1d&hl=es-419&gl=MX&ceid=MX:es-419');
         const xml = await rssRes.text();
-        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 15).map(m => m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'));
+        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 30).map(m => m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'));
         realNewsContext = "\nCONTEXTO DE NOTICIAS REALES DE LAS ÚLTIMAS 24 HORAS (Úsalo como base obligatoria para tu análisis):\n- " + titles.join("\n- ");
         console.log("📰 " + titles.length + " titulares inyectados al prompt.");
     } catch(e) {
@@ -111,7 +111,14 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
 
     // 0.5. FASE 1: EXTRAER INFO CON GEMINI Y JITTER (Evitar 429)
     console.log("🧠 [Fase 1] Extrayendo y resumiendo contexto crudo usando Gemini...");
-    const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet. Extrae un resumen crudo en texto plano (bullet points) de las 3 más importantes sobre Inteligencia Artificial, Startups o Negocios. REGLA ESTRICTA: Las noticias deben ser frescas, no inventes eventos pasados ni repitas noticias viejas. Solo usa el contexto provisto.\n\n${realNewsContext}`;
+    const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet. Extrae un resumen crudo en texto plano (bullet points) de las noticias más impactantes sobre los últimos avances de Inteligencia Artificial. Queremos cubrir de manera integral múltiples áreas críticas:
+1. Avances Tecnológicos y Nuevos Modelos (ej. GPT, Gemini, Claude, herramientas de programación/autocodificación, hardware de IA, etc.).
+2. Seguridad, Ataques y Riesgos (ej. ciberataques impulsados por IA, hackeos, vulnerabilidades, estafas).
+3. Aplicaciones Médicas y de Salud (ej. diagnósticos asistidos, robótica médica, salud preventiva).
+4. Ámbito Social, Laboral y de Negocios (ej. impacto en el empleo, adopción corporativa, startups).
+5. Regulación, Geopolítica y Uso Bélico/Militar (ej. leyes de la UE/USA, uso táctico en conflictos armados).
+
+REGLA ESTRICTA: Las noticias deben ser frescas del día de hoy, no inventes eventos pasados ni repitas noticias viejas. Solo usa el contexto provisto.\n\n${realNewsContext}`;
     
     let rawNewsSummary = "";
     try {
@@ -131,7 +138,8 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
 AQUÍ TIENES LOS HECHOS CLAVE FRESCOS DE HOY (Recopilados de internet hace un instante):
 ${rawNewsSummary}
 
-TAREA CRÍTICA: Eres un analista Senior de primer nivel. El contenido generado debe ser PROFUNDO y detallado basándose ÚNICAMENTE en los hechos provistos. ESTÁ TOTALMENTE PROHIBIDO alucinar noticias viejas o reciclar temas de la semana pasada. Explica el contexto actual y el impacto real. Ve al grano estratégico.
+TAREA CRÍTICA: Eres un analista Senior de primer nivel. El contenido generado debe ser PROFUNDO, sumamente profesional y detallado. Debe abarcar de forma integral los aspectos y avances reportados en los hechos clave de hoy (nuevos modelos, autocodificación, ciberseguridad/ataques, salud/medicina, impacto social o implicaciones políticas/militares de la IA).
+ESTÁ TOTALMENTE PROHIBIDO alucinar noticias viejas o reciclar temas de la semana pasada. Explica el contexto actual y el impacto real. Ve al grano estratégico.
 
 DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA BASE (TODO EN ESPAÑOL POR AHORA):
 {

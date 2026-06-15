@@ -199,7 +199,7 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
     // ── 4. ELEVENLABS (si está configurado) ────────────────────────────
     if (process.env.ELEVENLABS_API_KEY) {
         try {
-            const elVoiceId = provider === 'elevenlabs' ? voiceId : 'ODO4sbmD3pTjhgRVVRP6';
+            const elVoiceId = provider === 'elevenlabs' ? voiceId : '21m00Tcm4TlvDq8ikWAM';
             const response = await fetch(
                 `https://api.elevenlabs.io/v1/text-to-speech/${elVoiceId}?output_format=mp3_44100_128`,
                 {

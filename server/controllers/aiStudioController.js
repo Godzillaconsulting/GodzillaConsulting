@@ -1101,36 +1101,32 @@ REGLAS ESTRÍCTAS DE GUIONISTA EXPERTO:
 10. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para la IA en INGLÉS.
 11. MEMORIA TEMPORAL Y ACTUALIDAD: Estamos en mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026 que comenzará el próximo mes en México, Estados Unidos y Canadá. Integra esta temporalidad y contexto en tus videos si son relevantes (ej. deportes, fútbol, economía del turismo, etc.) para mantenerlos actualizados e interactivos.
 12. PROHIBICIÓN DE SITIO WEB EN CTA: NUNCA menciones nombres de páginas web, URLs o dominios (ej. "visita Godzilla Consulting punto IA", "godzillaconsulting.ia", ".ia", etc.) al final en el CTA de la última escena. En su lugar, usa llamados a la acción interactivos (ej. comenta abajo, dale like, comparte, suscríbete, o deja tu opinión).
+14. PONYTAIL RULE (RITMO FRENÉTICO): NUNCA repitas textos o conceptos entre escenas. Cada escena dura aprox. 3 SEGUNDOS. Cada video dura entre 45 y 60 SEGUNDOS. Esto significa que DEBES generar un mínimo de 15 y un máximo de 20 escenas por video. Textos narrados cortísimos (máximo 8-10 palabras por escena).
 
 EJEMPLO DE REFERENCIA (ESTÁNDAR DE CALIDAD VIRAL Y ESTRUCTURA):
 \`\`\`json
 {
-  "Tema": "El gancho de 3s",
-  "NARRACION ESCENA 1": "Tu video morirá si no haces esto ahora.",
-  "TEXTO EN PANTALLA ESCENA 1": "TU VIDEO MORIRÁ 💀",
-  "AUDIO Y SFX ESCENA 1": "[SFX: Deep bass drop + Glitch effect] Música tensa estilo Phonk.",
-  "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Cinematic close-up of a futuristic smartphone hovering above a dark reflective black glass surface. The screen emits a soft cyan and magenta glow. Floating digital particles and bokeh lights in the background. High-end product photography, 8k resolution, volumetric lighting.",
-  "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "The camera performs a slow dramatic dolly-in towards the smartphone screen. The digital particles swirl gently around the device while the screen light pulses rhythmically.",
-  "NARRACION ESCENA 2": "No es el baile, es el contraste visual inicial.",
-  "TEXTO EN PANTALLA ESCENA 2": "CONTRASTE VISUAL > BAILES",
-  "AUDIO Y SFX ESCENA 2": "[SFX: Swoosh de transición] Beat marcado.",
-  "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "A minimalist high-tech white office desk. In the center sits a single vibrant neon red glass sphere. The lighting is cold and clinical, creating sharp shadows.",
-  "VIDEO ESCENA 2 (Prompt Movimiento Detallado)": "The neon red sphere pulses with an intense inner light, casting a red glow that expands and retracts across the white desk surface.",
-  "NARRACION ESCENA 3": "Usa colores que rompan el patrón visual.",
-  "TEXTO EN PANTALLA ESCENA 3": "ROMPE EL PATRÓN ⚡",
-  "AUDIO Y SFX ESCENA 3": "[SFX: Cristal mágico brillando] Sube la energía musical.",
-  "VISUAL ESCENA 3 (Prompt Imagen Detallado)": "Abstract 3D geometric shapes in vibrant electric purple and sulfur yellow floating in a neutral grey void. Smooth textures, soft studio lighting, ray-tracing reflections.",
-  "VIDEO ESCENA 3 (Prompt Movimiento Detallado)": "The shapes begin to rotate slowly in opposite directions. Suddenly they collide softly, releasing a small wave of golden energy particles.",
-  "NARRACION ESCENA 4": "Si parece anuncio, lo saltarán de inmediato.",
-  "TEXTO EN PANTALLA ESCENA 4": "ANUNCIO = SKIP 🚫",
-  "AUDIO Y SFX ESCENA 4": "[SFX: Ruido blanco / VHS glitch]",
-  "VISUAL ESCENA 4 (Prompt Imagen Detallado)": "A dark silhouette of a person standing before a massive wall of digital static and white noise. The room is hazy with blue light.",
-  "VIDEO ESCENA 4 (Prompt Movimiento Detallado)": "The static noise on the wall suddenly transforms into a clear, tranquil liquid surface. The person reaches out to touch it, causing ripples.",
-  "NARRACION ESCENA 5 (CTA)": "¿El secreto para que no deslicen?",
-  "TEXTO EN PANTALLA ESCENA 5": "EL SECRETO 🤫",
-  "AUDIO Y SFX ESCENA 5": "[SFX: Reloj tic-tac]",
-  "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "A golden pocket watch suspended in mid-air surrounded by floating puzzle pieces. Dark background with dramatic spotlight. Hyper-realistic 8k.",
-  "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "The camera pushes in on the watch while the puzzle pieces slowly rotate around it."
+  "plan": [
+    {
+      "Tema": "El gancho brutal",
+      "scenes": [
+        {
+          "narration": "Tu video morirá si no haces esto.",
+          "text_on_screen": "TU VIDEO MORIRÁ 💀",
+          "audio_sfx": "[SFX: Deep bass drop] Música tensa.",
+          "visual_prompt": "Cinematic close-up of a futuristic smartphone hovering...",
+          "video_prompt": "The camera performs a slow dramatic dolly-in..."
+        },
+        {
+          "narration": "No es el baile, es el contraste.",
+          "text_on_screen": "CONTRASTE > BAILES",
+          "audio_sfx": "[SFX: Swoosh de transición]",
+          "visual_prompt": "A minimalist high-tech white office desk...",
+          "video_prompt": "The neon red sphere pulses with an intense inner light..."
+        }
+      ]
+    }
+  ]
 }
 \`\`\`
 
@@ -1138,31 +1134,20 @@ NICHO/PRODUCTO: ${niche}
 MES DE REFERENCIA: ${month || 'Mayo'} ${year || new Date().getFullYear()}
 ${extraContext ? `CONTEXTO ADICIONAL: ${extraContext}` : ''}
 
-Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta estructura EXACTA para las 5 escenas (1 a 5):
+Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta estructura EXACTA. Cada video debe tener entre 15 y 20 escenas:
 {
   "plan": [
     {
       "Tema": "Título del tema del video",
-      "NARRACION ESCENA 1": "Texto narrado en voz en off para la escena 1 (hook)",
-      "TEXTO EN PANTALLA ESCENA 1": "Texto dinámico/título corto que aparece en el video",
-      "AUDIO Y SFX ESCENA 1": "Diseño sonoro y efectos [SFX: Whoosh, etc]",
-      "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "Prompt detallado para generar la imagen/visual de escena 1",
-      "VIDEO ESCENA 1 (Prompt Movimiento Detallado)": "Prompt de movimiento de cámara y animación para escena 1",
-      "NARRACION ESCENA 2": "Texto narrado escena 2",
-      "TEXTO EN PANTALLA ESCENA 2": "Texto dinámico",
-      "AUDIO Y SFX ESCENA 2": "Efectos",
-      "VISUAL ESCENA 2 (Prompt Imagen Detallado)": "Prompt imagen escena 2",
-      "VIDEO ESCENA 2 (Prompt Movimiento Detallado)": "Prompt movimiento escena 2",
-      "NARRACION ESCENA N": "...",
-      "TEXTO EN PANTALLA ESCENA N": "...",
-      "AUDIO Y SFX ESCENA N": "...",
-      "VISUAL ESCENA N (Prompt Imagen Detallado)": "...",
-      "VIDEO ESCENA N (Prompt Movimiento Detallado)": "...",
-      "NARRACION ESCENA 5 (CTA)": "Texto narrado escena final con llamada a la acción",
-      "TEXTO EN PANTALLA ESCENA 5": "Texto CTA",
-      "AUDIO Y SFX ESCENA 5": "SFX final",
-      "VISUAL ESCENA 5 (Prompt Imagen Detallado)": "Prompt imagen escena final",
-      "VIDEO ESCENA 5 (Prompt Movimiento Detallado)": "Prompt movimiento escena final"
+      "scenes": [
+        {
+          "narration": "Texto narrado en voz en off para la escena (máximo 8 palabras)",
+          "text_on_screen": "Texto dinámico corto",
+          "audio_sfx": "Diseño sonoro y efectos",
+          "visual_prompt": "Prompt visual hiper detallado en INGLÉS",
+          "video_prompt": "Prompt de animación/movimiento en INGLÉS"
+        }
+      ]
     }
   ]
 }

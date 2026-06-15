@@ -27,21 +27,27 @@ setInterval(async () => {
             lastAttemptMinute = minuto;
             console.log(`[${BOT_NAME}] ⏰ ¡Es la hora! Iniciando generación automática del Newsletter... (Intento a las 8:${minuto.toString().padStart(2, '0')})`);
             
+            let client;
             try {
-                // Revisar si ya se envió hoy en la base de datos para evitar duplicados si PM2 reinicia el bot
-                const res = await pool.query(
+                client = await pool.connect();
+                // Usar un advisory lock exclusivo (ID arbitrario: 102938)
+                const lockRes = await client.query('SELECT pg_try_advisory_lock(102938) AS acquired');
+                if (!lockRes.rows[0].acquired) {
+                    console.log(`[${BOT_NAME}] ⏭️ Otro proceso ya está generando el newsletter de hoy. Saltando.`);
+                    return;
+                }
+
+                // Revisar si ya se envió hoy en la base de datos para evitar duplicados
+                const res = await client.query(
                     `SELECT id FROM newsletters WHERE DATE(created_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
                 );
                 if (res.rows.length > 0) {
                     console.log(`[${BOT_NAME}] ⏭️ El newsletter de hoy ya fue generado en la DB. Evitando duplicado.`);
                     hasRunToday = true;
+                    await client.query('SELECT pg_advisory_unlock(102938)');
                     return;
                 }
-            } catch (dbErr) {
-                console.error(`[${BOT_NAME}] ⚠️ Error verificando DB para duplicados:`, dbErr.message);
-            }
 
-            try {
                 const result = await generateAndSendAutoNewsletter();
                 console.log(`[${BOT_NAME}] ✅ Éxito masivo. Newsletter generado:`, result);
                 hasRunToday = true; // Marcar como exitoso para no volver a ejecutar hoy
@@ -56,6 +62,15 @@ setInterval(async () => {
             } catch (e) {
                 console.error(`[${BOT_NAME}] ❌ Error en la generación del Newsletter:`, e.message);
                 console.log(`[${BOT_NAME}] ⏳ Falló. Reintentará en 10 minutos (hasta las 8:50).`);
+            } finally {
+                if (client) {
+                    try {
+                        await client.query('SELECT pg_advisory_unlock(102938)');
+                    } catch (lockErr) {
+                        console.error(`[${BOT_NAME}] ⚠️ Error liberando lock advisory:`, lockErr.message);
+                    }
+                    client.release();
+                }
             }
         }
     } 

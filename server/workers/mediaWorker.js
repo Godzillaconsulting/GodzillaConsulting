@@ -446,7 +446,7 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16', re
     console.log(`[GoogleImageGen] Generando imagen para prompt: "${activePrompt.substring(0, 70)}..."`);
 
     // Intentamos en cascada sobre los modelos de Imagen soportados para lidiar con límites de cuota/429
-    const models = ['imagen-4.0-generate-001', 'imagen-3.0-generate-002', 'imagen-3.0-fast-generate-001'];
+    const models = ['imagen-3.0-generate-002'];
     let imageBytes = null;
 
     for (const model of models) {
@@ -1167,7 +1167,7 @@ Instructions:
         const dayData = payload.scenes;
         
         const fallbackVoices = process.env.ELEVENLABS_API_KEY 
-            ? ['elevenlabs:ODO4sbmD3pTjhgRVVRP6', 'elevenlabs:tTQzD8U9VSnJgfwC6HbY', 'elevenlabs:J4vZAFDEcpenkMp3f3R9', 'elevenlabs:9Godp7dNohUvXk6qp0gS'] 
+            ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'] 
             : ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
         
         let selectedVoice = payload.voice;
@@ -1176,7 +1176,7 @@ Instructions:
         if (!selectedVoice || selectedVoice === 'Automático') {
             selectedVoice = fallbackVoices[task.id % fallbackVoices.length];
             if (process.env.ELEVENLABS_API_KEY && !selectedVoice.startsWith('elevenlabs:')) {
-                const elevenVoices = ['elevenlabs:ODO4sbmD3pTjhgRVVRP6', 'elevenlabs:tTQzD8U9VSnJgfwC6HbY', 'elevenlabs:J4vZAFDEcpenkMp3f3R9', 'elevenlabs:9Godp7dNohUvXk6qp0gS'];
+                const elevenVoices = ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'];
                 selectedVoice = elevenVoices[task.id % elevenVoices.length];
                 console.log(`[MediaWorker] 🎙️ ElevenLabs disponible y voz en automático. Usando ElevenLabs: ${selectedVoice}`);
             }
@@ -1185,8 +1185,9 @@ Instructions:
         }
 
         const clipsPaths = [];
-        const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || 5);
+        const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || dayData.sceneCount || 5);
         let usedVideoUrls = new Set();
+        const workerStartTime = Date.now();
 
         // Generar recursos por escena
         for (let i = 1; i <= sceneCount; i++) {
@@ -1206,7 +1207,19 @@ Instructions:
             if (!visualPrompt && !videoPrompt && !narration) continue;
 
             const scenePercent = Math.floor(10 + ((i - 1) / sceneCount) * 80);
-            await sendProgress(task.id, scenePercent, `Procesando Escena ${i} de ${sceneCount}`);
+            
+            let etaStr = "";
+            if (i > 1) {
+                const elapsedMs = Date.now() - workerStartTime;
+                const avgMs = elapsedMs / (i - 1);
+                const remScenes = sceneCount - (i - 1);
+                const remSecs = Math.round((remScenes * avgMs) / 1000);
+                const m = Math.floor(remSecs / 60);
+                const s = remSecs % 60;
+                etaStr = ` (Faltan aprox ${m}m ${s}s)`;
+            }
+
+            await sendProgress(task.id, scenePercent, `Procesando Escena ${i} de ${sceneCount}${etaStr}`);
             console.log(`[MediaWorker] Procesando Escena ${i} (voz: ${selectedVoice})...`);
             const sceneImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}.jpg`);
             const sceneVidPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_broll.mp4`);

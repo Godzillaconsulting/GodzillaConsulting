@@ -186,7 +186,9 @@ async function compressContextIfNeeded(senderId, historial_mensajes, resumen_con
         console.error("❌ Error comprimiendo contexto WA:", e);
     }
 }
-
+let currentQR = null;
+let isConnected = false;
+let qrServerStarted = false;
 
 export const initWhatsAppBot = async () => {
     console.log("🟢 Iniciando Cliente de WhatsApp Local (whatsapp-web.js)...");
@@ -225,9 +227,6 @@ export const initWhatsAppBot = async () => {
     });
 
     client.ev.on('creds.update', saveCreds);
-
-    let currentQR = null;
-    let isConnected = false;
 
     client.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -614,7 +613,9 @@ export const initWhatsAppBot = async () => {
     // ===============================================
     // MICRO-SERVIDOR WEB PARA ENVIARLE EL QR AL CLIENTE
     // ===============================================
-    const qrApp = express();
+    if (!qrServerStarted) {
+        qrServerStarted = true;
+        const qrApp = express();
 
     qrApp.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -961,6 +962,7 @@ export const initWhatsAppBot = async () => {
         });
     };
     tryListen(QR_PORT_BASE);
+    } // End of qrServerStarted check
 
     let dynamicPromptWA = null;
 

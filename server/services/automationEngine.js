@@ -210,15 +210,23 @@ class AutomationEngine {
             for (let i = 0; i < ctx.plan.length; i++) {
                 const day = ctx.plan[i];
                 let narrations = '';
-                for (let s=1; s<=5; s++) {
-                    const n = day[`NARRACION ESCENA ${s}`] || day[`NARRACION ESCENA ${s} (CTA)`];
-                    if (n) narrations += n + " ";
+                let sceneCount = 0;
+                
+                if (day.scenes && Array.isArray(day.scenes)) {
+                    sceneCount = day.scenes.length;
+                    narrations = day.scenes.map(s => s.narration || s.NARRACION || '').join(' ');
+                } else {
+                    for (let s=1; s<=20; s++) {
+                        const n = day[`NARRACION ESCENA ${s}`] || day[`NARRACION ESCENA ${s} (CTA)`];
+                        if (n) { narrations += n + " "; sceneCount++; }
+                    }
                 }
 
                 const mediaPayload = {
                     source: 'automation_flow',
                     niche: ctx.niche, month: ctx.month, year: ctx.year,
-                    scenes: day,
+                    scenes: day.scenes || day,
+                    sceneCount: sceneCount,
                     visualJobs: day._visualJobs || [],
                     videoJobs:  day._videoJobs  || []
                 };

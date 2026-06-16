@@ -1070,24 +1070,21 @@ Instructions:
                 try {
                     const imgPrompt = (videoPrompt || visualPrompt || task.title).substring(0, 300);
                     
-                    let themeSuffix = ', premium 3D cartoon illustration style, Pixar animation aesthetic, vibrant colors, highly detailed character designs, clean shapes, cinematic lighting, no watermark, no text';
                     let sportsAdditions = '';
                     const lowerPrompt = imgPrompt.toLowerCase();
                     if (lowerPrompt.includes('cruz azul') || lowerPrompt.includes('soccer') || lowerPrompt.includes('futbol') || lowerPrompt.includes('football') || lowerPrompt.includes('liga mx') || lowerPrompt.includes('pumas')) {
-                        themeSuffix = ', cinematic 3D cartoon animation style, Pixar and Spider-Verse aesthetic, vibrant team colors, clean shapes, highly detailed character designs, cinematic lighting, no watermark, no text';
-                        
                         // Inyección de precisión para uniformes y escudos reales
                         if (lowerPrompt.includes('cruz azul')) {
-                            sportsAdditions = ' The animated players must wear the official Cruz Azul home kit: a royal blue jersey, white shorts, and blue socks. The jersey must feature the Cruz Azul crest: a blue cross inside a white circle, set against a red square. The stadium has intense cartoonish blue and white crowd flags.';
+                            sportsAdditions = ' The players must wear the official Cruz Azul home kit: a royal blue jersey, white shorts, and blue socks. The jersey must feature the Cruz Azul crest: a blue cross inside a white circle, set against a red square. The stadium has intense blue and white crowd flags.';
                         }
                         if (lowerPrompt.includes('pumas') || lowerPrompt.includes('unam')) {
-                            sportsAdditions = ' The animated players must wear the official Pumas UNAM kit: a dark blue and gold jersey, with the famous large stylized golden puma face emblem displayed prominently on the front of the shirt. The background is a cartoonish Estadio Olímpico Universitario.';
+                            sportsAdditions = ' The players must wear the official Pumas UNAM kit: a dark blue and gold jersey, with the famous large stylized golden puma face emblem displayed prominently on the front of the shirt. The background is Estadio Olímpico Universitario.';
                         }
                     }
                     
-                    let varPrompt = `${imgPrompt}${sportsAdditions}${themeSuffix}`;
+                    let varPrompt = `${imgPrompt}${sportsAdditions}`;
                     if (extractedStylePrompt) {
-                        varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}. ${themeSuffix}`;
+                        varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}.`;
                     }
 
                     const durationPerImg = 3.0;

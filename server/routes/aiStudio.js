@@ -800,6 +800,48 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
             });
         }
 
+        if (updatedStatus === 'approved') {
+            try {
+                const fs = await import('fs');
+                const path = await import('path');
+                const targetDrive = 'E:\\Godzilla_Studio_Cache\\ApprovedVideos';
+                
+                if (!fs.existsSync(targetDrive)) {
+                    fs.mkdirSync(targetDrive, { recursive: true });
+                }
+
+                let parsedMedia = typeof updatedMedia === 'string' ? JSON.parse(updatedMedia) : updatedMedia;
+                let hasChanges = false;
+                
+                if (Array.isArray(parsedMedia)) {
+                    for (let i = 0; i < parsedMedia.length; i++) {
+                        let opt = parsedMedia[i];
+                        if (opt.url && opt.url.startsWith('/outputs/')) {
+                            const fileName = path.basename(opt.url);
+                            // Las rutas de los archivos generados están en la raíz del proyecto en 'public/outputs' o 'outputs'
+                            const sourcePath = path.join(process.cwd(), 'outputs', fileName);
+                            const altSourcePath = path.join(process.cwd(), 'public', 'outputs', fileName);
+                            const finalSourcePath = fs.existsSync(sourcePath) ? sourcePath : (fs.existsSync(altSourcePath) ? altSourcePath : null);
+                            
+                            if (finalSourcePath) {
+                                const destPath = path.join(targetDrive, fileName);
+                                fs.copyFileSync(finalSourcePath, destPath);
+                                // Actualizamos la URL a la ruta estática montada
+                                opt.url = `/api/studio/approved/${fileName}`;
+                                hasChanges = true;
+                                console.log(`[aiStudio] ✅ Video aprobado copiado al Disco E: ${destPath}`);
+                            }
+                        }
+                    }
+                }
+                if (hasChanges) {
+                    updatedMedia = JSON.stringify(parsedMedia);
+                }
+            } catch(moveErr) {
+                console.error('[aiStudio] ⚠️ Error moviendo video a disco E:', moveErr);
+            }
+        }
+
         const query = `
             UPDATE studio_tasks 
             SET status = $1, media_payload = $2, publish_targets = $3, ig_publish_date = $4, title = $6, feedback_notes = COALESCE($7, feedback_notes), updated_at = CURRENT_TIMESTAMP

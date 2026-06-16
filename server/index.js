@@ -321,6 +321,7 @@ app.post('/api/sora-restore', async (req, res) => {
 // Evita el error de CORS/CORB que causaba el redirect 302 hacia Python en el reproductor de React.
 app.use('/api/sora/media', express.static('E:/GodzillaSora_Outputs', { maxAge: '1y', immutable: true }));
 app.use('/api/sora/media', express.static(path.join(__dirname, '..', 'outputs'), { maxAge: '1y', immutable: true }));
+app.use('/api/studio/approved', express.static('E:/Godzilla_Studio_Cache/ApprovedVideos', { maxAge: '1y', immutable: true }));
 
 app.get('/api/sora/proxy-veo', async (req, res) => {
     try {

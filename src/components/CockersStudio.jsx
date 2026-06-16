@@ -82,6 +82,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
     // Eliminado showEditorModal
     const [selectedDraft, setSelectedDraft] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [flowStyles, setFlowStyles] = useState(['Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion']);
     const [renderingAI, setRenderingAI] = useState(false);
     const [renderProgress, setRenderProgress] = useState(0);
     const [liveSlots, setLiveSlots] = useState([]); // Progressive: each slot has { provider, status, progress, url, isVideo }
@@ -109,6 +110,27 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
             console.warn('Video editor is disabled in production.');
         }
     }, [forceOpenEditor]);
+
+    // Fetch IT Flow Styles
+    useEffect(() => {
+        const fetchStyles = async () => {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+                const res = await fetch(`${API}/api/nodes`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data.success && data.nodes) {
+                    const styleNodes = data.nodes
+                        .filter(n => n.node_type === 'feature' || n.category === 'style' || (n.tags && n.tags.toLowerCase().includes('estilo')))
+                        .map(n => n.title);
+                    if (styleNodes.length > 0) {
+                        setFlowStyles(styleNodes);
+                    }
+                }
+            } catch(e) { console.warn('Error fetching styles', e); }
+        };
+        fetchStyles();
+    }, []);
 
     // Aplica Filtro Ultra (Gemini imagen) a un slot específico de liveSlots
     const triggerUltraVariant = useCallback(async (slot, slotIdx, prompt) => {
@@ -1802,7 +1824,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                     <>
                                                         <div className="flex-1 relative cursor-pointer group/orig" onClick={() => handleMediaClick(slot.url)}>
                                                             <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
-                                                            <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
+                                                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10 flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
+                                                                <span className="text-[8px] font-black tracking-widest text-white uppercase">Google Imagen 3</span>
+                                                            </div>
                                                             <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
                                                                 {/* Editor disabled */}
                                                             </div>
@@ -1817,7 +1842,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             ) : slot.refinedUrl && slot.refinedUrl !== 'error' ? (
                                                                 <>
                                                                     <img src={slot.refinedUrl} alt="refined" onClick={() => handleMediaClick(slot.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
-                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_8px_rgba(79,70,229,0.6)]">Ultra HQ ✨</div>
+                                                                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10 flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
+                                                                        <span className="text-[8px] font-black tracking-widest text-white uppercase">Google Imagen 3</span>
+                                                                    </div>
                                                                 </>
                                                             ) : (
                                                                 <div className="flex flex-col items-center justify-center h-full gap-2 p-2">
@@ -1985,8 +2013,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                         <div className="overflow-hidden border-y border-white/5 bg-black/30 backdrop-blur-sm py-2 mb-6">
                             <div className="marquee-track flex gap-8 whitespace-nowrap">
                                 {(
-                                    ['8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal',
-                                     '8K Cinematic', 'Golden Hour', 'Cyberpunk Neon', 'Macro Product', 'Drone Shot', 'Editorial Fashion', 'Synthwave', 'Analog Film', 'Unreal Engine 5', 'Studio Lighting', 'Bokeh F/1.4', 'Blade Runner', 'National Geographic', 'Futuristic UI', 'CGI Hyperreal']
+                                    [...flowStyles, ...flowStyles, ...flowStyles, ...flowStyles].slice(0, 30)
                                 ).map((tag, i) => (
                                     <span key={i} className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-[#CC0000]/50" />
@@ -2100,7 +2127,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                     {/* Original Image Pane */}
                                                     <div className="flex-1 rounded-xl overflow-hidden relative cursor-pointer group/orig" onClick={() => handleMediaClick(opt.url)}>
                                                         <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
-                                                        {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
+                                                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10 flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
+                                                            <span className="text-[8px] font-black tracking-widest text-white uppercase">Google Imagen 3</span>
+                                                        </div>
                                                         <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
                                                             {/* Editor disabled */}
                                                         </div>
@@ -2124,7 +2154,10 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             ) : (
                                                                 <>
                                                                     <img src={opt.refinedUrl} alt="refined" onClick={() => handleMediaClick(opt.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
-                                                                    <div className="absolute top-2 right-2 bg-indigo-600/90 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-[0_0_10px_rgba(79,70,229,0.5)]">Ultra HQ ✨</div>
+                                                                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10 flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
+                                                                        <span className="text-[8px] font-black tracking-widest text-white uppercase">Google Imagen 3</span>
+                                                                    </div>
                                                                 </>
                                                             )}
                                                         </div>

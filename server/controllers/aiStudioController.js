@@ -1088,20 +1088,21 @@ El formato es FACELESS (sin rostro). El contenido debe estar en ESPAÑOL.
 ${learningContext}
 ${realTimeTrendsText}
 
-REGLAS ESTRÍCTAS DE GUIONISTA EXPERTO:
-1. NO REPETIR: NUNCA repitas las mismas frases o palabras en escenas consecutivas. Cada escena debe aportar nueva información.
-2. CONEXIÓN NARRATIVA: Las escenas DEBEN tener un hilo conductor. El salto de una a otra debe sentirse natural, lógico y fuertemente conectado al tema principal.
-3. RITMO FRENÉTICO: La narración debe fluir de forma constante. NUNCA dejes corriendo el video sin narración por 10 o 15 segundos. El guion debe cubrir el tiempo de la escena de forma atractiva.
-4. ADAPTACIÓN AL NICHO: Analiza a profundidad qué busca la audiencia y por qué. Aporta valor real, no generalidades. Si hablas de fútbol, muestra contexto futbolístico; si hablas de negocios, muestra empresas. Adapta los visuales a la temática.
-5. CREADOR, NO VENDEDOR: Actúa como un CREADOR DE CONTENIDO EDUCATIVO Y VIRAL. NUNCA asumas que vendes algo a menos que se te indique explícitamente. Eres la autoridad en el tema.
-6. Cada video dura MÁXIMO 50 segundos, dividido en 8 a 12 escenas MUY CORTAS.
-7. ESCENA 1: Hook visual y textual IMPACTANTE que atrape en los primeros 3 segundos.
-8. ÚLTIMA ESCENA (CTA): Llamada a la acción clara, específica y valiosa.
-9. Los VISUAL PROMPTS deben ser ultra-detallados en INGLÉS (estilo, iluminación, composición) y DIRECTAMENTE RELACIONADOS al tema tratado.
+REGLAS ESTRÍCTAS DE GUIONISTA EXPERTO Y PSICOLOGÍA HUMANA:
+1. PSICOLOGÍA Y RETENCIÓN (OPEN LOOPS): NUNCA des la respuesta de inmediato. Abre un misterio, polémica o dato chocante en la primera escena, y resuélvelo hasta el final. Usa la curiosidad morbosa, el FOMO (miedo a perderse algo) y el shock.
+2. TONO DOCUMENTAL CINEMATOGRÁFICO: Escribe como si fuera un micro-documental de Netflix o un reporte de noticias hiper-dinámico. NO des consejos baratos ni información genérica. Cuenta una historia, revela un secreto, expón una conspiración o un dato oscuro.
+3. CONTEXTO PROFUNDO: Si hablas del mundial, no digas "hoy juegan". Di "Hoy se define la venganza de hace 20 años que tiene a todo un país paralizado". Dales drama, tensión y conflicto. Convierte lo ordinario en épico.
+4. RITMO FRENÉTICO Y CONEXIÓN: La narración debe fluir de forma constante. Las escenas DEBEN tener un hilo conductor. El salto de una a otra debe sentirse natural, pero acelerado.
+5. NO REPETIR: NUNCA repitas las mismas frases o palabras en escenas consecutivas. Cada escena debe aportar nueva información que cambie la perspectiva del espectador.
+6. Cada video dura MÁXIMO 50 segundos, dividido en 5 escenas MUY CORTAS.
+7. ESCENA 1: Hook visual y textual IMPACTANTE que atrape en los primeros 3 segundos. Debe romper patrones mentales.
+8. ÚLTIMA ESCENA (CTA): Llamada a la acción clara, pidiendo debate o provocando a los comentarios.
+9. Los VISUAL PROMPTS deben ser ultra-detallados en INGLÉS (estilo, iluminación, composición) y DIRECTAMENTE RELACIONADOS al tema tratado, creando una atmósfera cinematográfica.
 10. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para la IA en INGLÉS.
-11. MEMORIA TEMPORAL Y ACTUALIDAD: Estamos en mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026 que comenzará el próximo mes en México, Estados Unidos y Canadá. Integra esta temporalidad y contexto en tus videos si son relevantes (ej. deportes, fútbol, economía del turismo, etc.) para mantenerlos actualizados e interactivos.
-12. PROHIBICIÓN DE SITIO WEB EN CTA: NUNCA menciones nombres de páginas web, URLs o dominios (ej. "visita Godzilla Consulting punto IA", "godzillaconsulting.ia", ".ia", etc.) al final en el CTA de la última escena. En su lugar, usa llamados a la acción interactivos (ej. comenta abajo, dale like, comparte, suscríbete, o deja tu opinión).
-14. PONYTAIL RULE (RITMO FRENÉTICO): NUNCA repitas textos o conceptos entre escenas. Cada escena dura aprox. 3 SEGUNDOS. Cada video dura entre 45 y 60 SEGUNDOS. Esto significa que DEBES generar un mínimo de 15 y un máximo de 20 escenas por video. Textos narrados cortísimos (máximo 8-10 palabras por escena).
+11. MEMORIA TEMPORAL Y ACTUALIDAD: Estamos en mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026.
+12. PROHIBICIÓN DE SITIO WEB EN CTA: NUNCA menciones URLs o dominios.
+13. RITMO VISUAL VS. FLUIDEZ NARRATIVA (CRÍTICO): Las escenas representan CORTES VISUALES rápidos (imágenes que cambian), pero la NARRACIÓN (voz en off) fluye de forma continua, natural y envolvente como un párrafo largo y atrapante. NO hagas frases robóticas ni entrecortadas. 
+14. ALINEACIÓN VISUAL: El VISUAL PROMPT de cada escena DEBE ILUSTRAR EXACTAMENTE la acción o metáfora de lo que la voz está diciendo en ese preciso momento, para que audio y video encajen perfecto en el cerebro del espectador. Deben generar exactamente 5 ESCENAS por video.
 
 EJEMPLO DE REFERENCIA (ESTÁNDAR DE CALIDAD VIRAL Y ESTRUCTURA):
 \`\`\`json
@@ -1134,7 +1135,7 @@ NICHO/PRODUCTO: ${niche}
 MES DE REFERENCIA: ${month || 'Mayo'} ${year || new Date().getFullYear()}
 ${extraContext ? `CONTEXTO ADICIONAL: ${extraContext}` : ''}
 
-Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta estructura EXACTA. Cada video debe tener entre 15 y 20 escenas:
+Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta estructura EXACTA. Cada video debe tener exactamente 5 escenas:
 {
   "plan": [
     {
@@ -1152,7 +1153,7 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
   ]
 }
 
-Genera los 30 días completos basándote en la calidad suprema del ejemplo de referencia. La calidad es CRÍTICA — cada narración debe ser magnética, cada prompt visual debe ser cinematográfico en inglés y ultra descriptivo, y el diseño sonoro debe atrapar.
+Genera los días completos basándote en la calidad suprema del ejemplo de referencia. La calidad es CRÍTICA — cada narración debe usar pura PSICOLOGÍA HUMANA y contar una historia oscura/fascinante, cada prompt visual debe ser cinematográfico en inglés y ultra descriptivo, y el diseño sonoro debe atrapar.
 `;
 
         const generateBatch = async (startDay, endDay) => {

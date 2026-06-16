@@ -1355,7 +1355,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
                     <div className="flex gap-2 mb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden shrink-0 pb-1">
                         {[
                             { id: 'contenido', label: '📣 Contenido', count: events.length },
-                            { id: 'contenido_ia', label: '🤖 Contenido IA', count: tasks.filter(t => t.mediaPayload && t.mediaPayload.length > 0).length },
+                            { id: 'contenido_ia', label: '🎬 Guiones IA', count: tasks.filter(t => t.mediaPayload && (t.mediaPayload.length > 0 || t.mediaPayload.source === 'manual_planner')).length },
                             { id: 'citas', label: '📅 Citas', count: citas.length },
                             { id: 'pendientes', label: '✅ Tablero', count: tasks.filter(t => !t.done).length },
                             { id: 'todos', label: '🗺️ Todo', count: null },

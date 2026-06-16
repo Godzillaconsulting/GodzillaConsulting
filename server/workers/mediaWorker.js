@@ -962,7 +962,10 @@ async function processTask() {
         console.log(`\n[MediaWorker] 🚀 Iniciando ensamblaje para Tarea #${task.id}: ${task.title}`);
         await sendProgress(task.id, 5, "Iniciando ensamblaje");
 
-        let payload = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
+        let payload = task.media_payload;
+        while (typeof payload === 'string') {
+            try { payload = JSON.parse(payload); } catch(e) { break; }
+        }
         if (Array.isArray(payload) && payload.length > 0) payload = payload[0];
         
         if (!payload || !payload.scenes) {
@@ -1173,12 +1176,12 @@ Instructions:
         let selectedVoice = payload.voice;
         
         // Si no se definió o es 'Automático', seleccionamos de los fallbacks o ElevenLabs
-        if (!selectedVoice || selectedVoice === 'Automático') {
+        if (!selectedVoice || selectedVoice === 'Automático' || selectedVoice === 'null' || selectedVoice === 'undefined') {
             selectedVoice = fallbackVoices[task.id % fallbackVoices.length];
             if (process.env.ELEVENLABS_API_KEY && !selectedVoice.startsWith('elevenlabs:')) {
                 const elevenVoices = ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'];
                 selectedVoice = elevenVoices[task.id % elevenVoices.length];
-                console.log(`[MediaWorker] 🎙️ ElevenLabs disponible y voz en automático. Usando ElevenLabs: ${selectedVoice}`);
+                console.log(`[MediaWorker] 🎙️ ElevenLabs disponible y voz en automático. Usando ElevenLabs aleatoria: ${selectedVoice}`);
             }
         } else {
             console.log(`[MediaWorker] 🎙️ Voz explícitamente seleccionada por usuario: ${selectedVoice}`);

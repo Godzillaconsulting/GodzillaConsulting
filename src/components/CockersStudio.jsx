@@ -105,8 +105,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
     useEffect(() => {
         if (forceOpenEditor) {
-            localStorage.setItem('godzilla_editor_draft_src', forceOpenEditor.mediaUrl);
-            navigate('/admin/video-editor');
+            // Video editor disabled in production
+            console.warn('Video editor is disabled in production.');
         }
     }, [forceOpenEditor]);
 
@@ -1667,13 +1667,8 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         <div className="relative group/vid">
                                                             <video src={task.media_options[0].url} className="w-full h-32 object-cover rounded-lg border border-neutral-800" autoPlay loop muted playsInline />
                                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-lg">
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', JSON.stringify(task.media_options)); navigate('/admin/video-editor'); }}
-                                                                    className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] text-[10px] font-black uppercase px-4 py-2 rounded-xl flex items-center gap-2 transform hover:scale-105 transition-all"
-                                                                >
-                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                                                    Editar y Guardar en Carrete
-                                                                </button>
+                                                                {/* Editor disabled */}
+
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -1799,13 +1794,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             <video src={slot.url} className="w-full h-full object-cover" autoPlay loop muted playsInline controls />
                                                         )}
                                                         <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', JSON.stringify(liveSlots)); navigate('/admin/video-editor'); }}
-                                                                className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5"
-                                                            >
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                                                Mandar Todos a Editar y Guardar
-                                                            </button>
+                                                            {/* Editor disabled */}
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -1815,7 +1804,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                             <img src={slot.url} alt={slot.provider} className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                             <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[7px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none">Original</div>
                                                             <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
-                                                                <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', JSON.stringify(liveSlots)); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar Todos</button>
+                                                                {/* Editor disabled */}
                                                             </div>
                                                         </div>
                                                         {/* Gemini Ultra Pane */}
@@ -2103,7 +2092,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         </>
                                                     )}
                                                     <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
-                                                        <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', JSON.stringify(selectedDraft.media_options)); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar Todos</button>
+                                                        {/* Editor disabled */}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -2113,7 +2102,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                         <img src={opt.url} alt="render" className="w-full h-full object-cover transition-transform duration-700 group-hover/orig:scale-105" />
                                                         {!opt.provider.includes('GotSora') && <div className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[8px] uppercase tracking-wider text-white backdrop-blur-sm pointer-events-none shadow-md">Original</div>}
                                                         <div className="absolute top-2 right-2 opacity-0 group-hover/orig:opacity-100 transition-opacity">
-                                                            <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('godzilla_editor_draft_src', JSON.stringify(selectedDraft.media_options)); navigate('/admin/video-editor'); }} className="bg-purple-600 hover:bg-purple-500 text-white shadow-lg text-[8px] font-black uppercase px-2 py-1 rounded-md flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar Todos</button>
+                                                            {/* Editor disabled */}
                                                         </div>
                                                     </div>
 

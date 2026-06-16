@@ -725,12 +725,29 @@ Responde SOLO el JSON válido, sin bloques de código markdown.`;
                     paquete = { raw: aiResponse.content };
                 }
 
-                // Generate the infographic image via Pollinations (free, no API key)
                 let imageUrl = null;
-                const imgPrompt = paquete.imagen_prompt || `viral infographic about ${topic}, vertical format, bold typography, vibrant neon colors, modern design`;
-                const encodedPrompt = encodeURIComponent(imgPrompt);
-                imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1920&nologo=true&seed=${Date.now()}`;
-                console.log(`[Engine] 🖼️  Imagen URL generada vía Pollinations`);
+                try {
+                    const imgPrompt = paquete.imagen_prompt || `viral infographic about ${topic}, vertical format, bold typography, vibrant neon colors, modern design`;
+                    const { GoogleGenAI } = await import('@google/genai');
+                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                    const imgRes = await ai.models.generateImages({
+                        model: 'imagen-3.0-generate-002',
+                        prompt: imgPrompt,
+                        config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: '9:16' }
+                    });
+                    if (imgRes.generatedImages?.[0]?.image?.imageBytes) {
+                        const fs = await import('fs');
+                        const path = await import('path');
+                        const fileName = `infographic_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+                        const outPath = path.join(process.cwd(), 'public', 'uploads', fileName);
+                        if (!fs.existsSync(path.join(process.cwd(), 'public', 'uploads'))) fs.mkdirSync(path.join(process.cwd(), 'public', 'uploads'), { recursive: true });
+                        fs.writeFileSync(outPath, Buffer.from(imgRes.generatedImages[0].image.imageBytes, 'base64'));
+                        imageUrl = `/uploads/${fileName}`;
+                        console.log(`[Engine] 🖼️  Imagen generada vía Google Imagen 3 (Guardada: ${fileName})`);
+                    }
+                } catch(imgErr) {
+                    console.error('[Engine] ❌ Error generando imagen con Google:', imgErr.message);
+                }
 
                 // Save to studio_tasks for CEO review
                 try {

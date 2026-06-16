@@ -64,7 +64,16 @@ function ReviewCard({ day, idx, selection, onToggle }) {
         const monthMap = { 'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11 };
         const currentYear = parseInt(day.year) || now.getFullYear();
         const currentMonth = monthMap[(day.month||'').toLowerCase().trim()] ?? now.getMonth();
-        const date = new Date(currentYear, currentMonth, idx + 1);
+        // El AI devuelve días en orden desde el 1. idx es 0-indexed.
+        // Si ya pasó el mes (ej. estamos en 16 de junio, y generamos junio), empezará desde el 16.
+        // Pero para simplificar y mostrar lo que pide el usuario:
+        const today = new Date();
+        let targetDay = idx + 1;
+        // Si el mes seleccionado es el mes actual, y el año es el actual, empezamos desde hoy.
+        if (currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+            targetDay = today.getDate() + idx;
+        }
+        const date = new Date(currentYear, currentMonth, targetDay);
         return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     };
 
@@ -136,12 +145,17 @@ function ReviewCard({ day, idx, selection, onToggle }) {
                             <p className="text-[10px] text-blue-500/70 mt-1">Se enviará el tema en blanco al Estudio IA para que lo llenes manualmente.</p>
                         </div>
                     ) : (
-                        SCENE_COLUMNS.map(n => {
-                            const narr = day[COL(n).narracion] || '';
-                            const txt  = day[COL(n).texto]     || '';
-                            const vis  = day[COL(n).visual]    || '';
+                        (day.scenes ? day.scenes : SCENE_COLUMNS).map((sceneData, i) => {
+                            const isNewFormat = !!day.scenes;
+                            const n = isNewFormat ? i + 1 : sceneData;
+                            const narr = isNewFormat ? sceneData.narration : (day[COL(n).narracion] || '');
+                            const txt  = isNewFormat ? sceneData.text_on_screen : (day[COL(n).texto] || '');
+                            const vis  = isNewFormat ? sceneData.visual_prompt : (day[COL(n).visual] || '');
+                            const aud  = isNewFormat ? sceneData.audio_sfx : '';
+                            const vid  = isNewFormat ? sceneData.video_prompt : '';
+                            
                             if (!narr && !vis) return null;
-                            const isCTA = n === 5;
+                            const isCTA = isNewFormat ? (i === day.scenes.length - 1) : (n === 5);
                             return (
                                 <div key={n} className={`rounded-xl p-3 border mt-2 ${
                                     isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/30 border-neutral-800/50'
@@ -190,7 +204,12 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
         const monthMap = { 'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11 };
         const currentYear = parseInt(day.year) || now.getFullYear();
         const currentMonth = monthMap[(day.month||'').toLowerCase().trim()] ?? now.getMonth();
-        const date = new Date(currentYear, currentMonth, idx + 1);
+        const today = new Date();
+        let targetDay = idx + 1;
+        if (currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+            targetDay = today.getDate() + idx;
+        }
+        const date = new Date(currentYear, currentMonth, targetDay);
         return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     };
 
@@ -227,13 +246,15 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
             {/* Escenas desplegables */}
             {open && (
                 <div className="px-6 pb-6 space-y-3 border-t border-neutral-800">
-                    {SCENE_COLUMNS.map(n => {
-                        const isCTA = n === 5;
-                        const narr  = day[COL(n).narracion] || '';
-                        const txt   = day[COL(n).texto]     || '';
-                        const aud   = day[COL(n).audio]     || '';
-                        const vis   = day[COL(n).visual]    || '';
-                        const vid   = day[COL(n).video]     || '';
+                    {(day.scenes ? day.scenes : SCENE_COLUMNS).map((sceneData, i) => {
+                        const isNewFormat = !!day.scenes;
+                        const n = isNewFormat ? i + 1 : sceneData;
+                        const isCTA = isNewFormat ? (i === day.scenes.length - 1) : (n === 5);
+                        const narr = isNewFormat ? sceneData.narration : (day[COL(n).narracion] || '');
+                        const txt  = isNewFormat ? sceneData.text_on_screen : (day[COL(n).texto] || '');
+                        const aud  = isNewFormat ? sceneData.audio_sfx : (day[COL(n).audio] || '');
+                        const vis  = isNewFormat ? sceneData.visual_prompt : (day[COL(n).visual] || '');
+                        const vid  = isNewFormat ? sceneData.video_prompt : (day[COL(n).video] || '');
                         if (!narr && !vis && !vid && !txt && !aud) return null;
                         return (
                             <div key={n} className={`rounded-xl p-4 border mt-3 ${isCTA ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/40 border-neutral-800/50'}`}>

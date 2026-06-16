@@ -155,6 +155,77 @@ Genera EXACTAMENTE este formato JSON sin markdown, código o texto extra:
 });
 
 // ==========================================
+// Tendencias de X (Twitter)
+// ==========================================
+let xTrendsCache = { data: null, timestamp: 0 };
+router.get('/x-trends', authenticateToken, async (req, res) => {
+    try {
+        const now = Date.now();
+        if (xTrendsCache.data && (now - xTrendsCache.timestamp < CACHE_DURATION_MS)) {
+            console.log('[XTrends] Retornando tendencias de X desde caché.');
+            return res.json({ success: true, data: xTrendsCache.data });
+        }
+
+        console.log('[XTrends] Iniciando scraping de tendencias de X...');
+        const { scrapeXTrends } = await import('../services/xTrendsService.js');
+        const rawTrends = await scrapeXTrends();
+
+        if (!rawTrends || rawTrends.length === 0) {
+            throw new Error('No se pudieron extraer tendencias de X.');
+        }
+
+        console.log(`[XTrends] Extraídas ${rawTrends.length} tendencias. Clasificando con IA...`);
+        const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+        const prompt = `Eres un estratega digital de élite. Analiza estas tendencias extraídas de X (Twitter):
+${JSON.stringify(rawTrends.slice(0, 15))}
+
+Tu tarea es categorizarlas, generar una idea de video viral para cada una, y estimar métricas de interacción.
+
+Divide las tendencias en categorías lógicas y atractivas como: "Tecnología e IA", "Negocios y Finanzas", "Deportes y Entretenimiento", "Cultura Pop y General".
+
+Genera EXACTAMENTE este formato JSON sin markdown, código o texto extra:
+{
+  "trends": [
+    {
+      "topic": "Nombre del tema o hashtag",
+      "category": "Categoría (ej: Cultura Pop y General)",
+      "traffic": "Tráfico (ej: 15K posts)",
+      "views": "Estimación de vistas (ej: 500K vistas est.)",
+      "reactions": "Estimación de reacciones",
+      "shares": "Estimación de compartidos",
+      "hook": "Un gancho viral y provocador (máx 15 palabras) para iniciar el video",
+      "idea": "Idea corta de contenido de video para este tema"
+    }
+  ]
+}`;
+
+        const aiRes = await executeAiWaterfall([
+            { role: 'user', content: prompt }
+        ], { mode: 'premium', temperature: 0.7, maxTokens: 8192 });
+
+        let responseText = aiRes.content || '';
+        if (responseText.startsWith('\`\`\`json')) {
+            responseText = responseText.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
+        } else if (responseText.startsWith('\`\`\`')) {
+            responseText = responseText.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
+        }
+
+        const data = JSON.parse(responseText.trim());
+        
+        xTrendsCache = {
+            data: data.trends || [],
+            timestamp: now
+        };
+
+        res.json({ success: true, data: xTrendsCache.data });
+
+    } catch (err) {
+        console.error('[XTrends] Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
 // Radar de Contenido (AnswerThePublic Engine — Costo Cero)
 // ==========================================
 router.get('/content-radar', authenticateToken, async (req, res) => {

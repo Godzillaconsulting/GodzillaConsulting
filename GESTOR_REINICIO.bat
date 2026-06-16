@@ -128,7 +128,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO tiktok-bot...
-call %PM2_CMD% restart tiktok-bot --update-env
+call %PM2_CMD% restart tiktok-bot --update-env || call %PM2_CMD% start server/tiktok_bot.cjs --name tiktok-bot
 echo  Esperando 10s para que TikTok cargue...
 timeout /t 10 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\tiktok-bot-out.log'"
@@ -140,7 +140,7 @@ goto MENU
 cls
 echo.
 echo  Reiniciando SOLO instagram-bot...
-call %PM2_CMD% restart instagram-bot --update-env
+call %PM2_CMD% restart instagram-bot --update-env || call %PM2_CMD% start server/instagram_bot.cjs --name instagram-bot
 echo  Esperando 10s para que IG cargue...
 timeout /t 10 /nobreak >nul
 powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\instagram-bot-out.log'"

@@ -106,10 +106,40 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
 
     useEffect(() => {
         if (forceOpenEditor) {
-            // Video editor disabled in production
             console.warn('Video editor is disabled in production.');
         }
     }, [forceOpenEditor]);
+
+    // Recuperar estado en caso de refresh (Evitar perder la chamba y el progreso de la IA)
+    useEffect(() => {
+        const savedState = localStorage.getItem('cockers_studio_session');
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                if (parsed.finalPrompt) setFinalPrompt(parsed.finalPrompt);
+                if (parsed.ytLink) setYtLink(parsed.ytLink);
+                if (parsed.renderingAI) setRenderingAI(parsed.renderingAI);
+                if (parsed.liveSlots && parsed.liveSlots.length > 0) setLiveSlots(parsed.liveSlots);
+                if (parsed.builderData) setBuilderData(parsed.builderData);
+                if (parsed.videoScript) setVideoScript(parsed.videoScript);
+            } catch (e) { console.warn(e); }
+        }
+    }, []);
+
+    // Autoguardar estado cada vez que cambie
+    useEffect(() => {
+        // Prevent saving empty state initially
+        const stateToSave = { finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript };
+        localStorage.setItem('cockers_studio_session', JSON.stringify(stateToSave));
+    }, [finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript]);
+
+    // Helper de Resolución de Medios
+    const resolveMediaUrl = (url) => {
+        if (!url) return '';
+        if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+        const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+        return `${API}${url.startsWith('/') ? '' : '/'}${url}`;
+    };
 
     // Fetch IT Flow Styles
     useEffect(() => {
@@ -2153,7 +2183,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <img src={opt.refinedUrl} alt="refined" onClick={() => handleMediaClick(opt.refinedUrl)} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
+                                                                    <img src={resolveMediaUrl(opt.refinedUrl)} alt="refined" onClick={() => handleMediaClick(resolveMediaUrl(opt.refinedUrl))} className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover/ref:scale-105" />
                                                                     <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10 flex items-center gap-2">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
                                                                         <span className="text-[8px] font-black tracking-widest text-white uppercase">Google Imagen 3</span>

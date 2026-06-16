@@ -12,6 +12,7 @@ const STATUS_MAP = {
     pending_render_docker: { label: 'Encolado (Worker)',tab: 'manual_studio', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
     rendering:             { label: 'Renderizando',   tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
     rendering_docker:      { label: 'Renderizando (Worker)', tab: 'manual_studio', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    failed_docker:         { label: 'Error de Motor', tab: 'manual_studio', color: 'text-red-100 bg-red-600 border-red-600' },
 };
 
 // Extrae escenas legibles de cualquier formato de payload
@@ -393,7 +394,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Filtered view ─────────────────────────────────────────
     const tabStatuses = {
         pendientes:    ['pending_cm_approval'],
-        manual_studio: ['manual_studio', 'pending_render', 'rendering', 'pending_render_docker', 'rendering_docker'],
+        manual_studio: ['manual_studio', 'pending_render', 'rendering', 'pending_render_docker', 'rendering_docker', 'failed_docker'],
         ia_backlog:    ['backlog'],
         devueltas:     ['rejected'],
         aprobadas:     ['approved', 'published'],
@@ -403,7 +404,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
     // ── Counts ────────────────────────────────────────────────
     const counts = {
         pendientes:    tasks.filter(t => t.status === 'pending_cm_approval').length,
-        manual_studio: tasks.filter(t => ['manual_studio','pending_render','rendering','pending_render_docker','rendering_docker'].includes(t.status)).length,
+        manual_studio: tasks.filter(t => ['manual_studio','pending_render','rendering','pending_render_docker','rendering_docker','failed_docker'].includes(t.status)).length,
         ia_backlog:    tasks.filter(t => t.status === 'backlog').length,
         devueltas:     tasks.filter(t => t.status === 'rejected').length,
         aprobadas:     tasks.filter(t => ['approved','published'].includes(t.status)).length,
@@ -1107,7 +1108,7 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                         <span className="font-black">⋮</span>
                                     </div>
                                     <div className="bg-black w-full aspect-square flex items-center justify-center overflow-hidden">
-                                        {firstMedia?.url && <img src={firstMedia.url} className="w-full object-cover" alt="" />}
+                                        {firstMedia?.url && <img src={resolveMedia(firstMedia.url)} className="w-full object-cover" alt="" />}
                                     </div>
                                     <div className="p-3">
                                         <div className="flex gap-4 mb-2">
@@ -1130,13 +1131,13 @@ export default function CeoEstudioPanel({ adminProfile }) {
                                             </div>
                                         </div>
                                         <p className="text-sm mb-2">{caption || 'Tu texto aquí...'}</p>
-                                        {firstMedia?.url && <div className="bg-black"><img src={firstMedia.url} className="w-full object-cover" alt="" /></div>}
+                                        {firstMedia?.url && <div className="bg-black"><img src={resolveMedia(firstMedia.url)} className="w-full object-cover" alt="" /></div>}
                                     </div>
                                 </div>
                             )}
                             {network === 'tiktok' && (
                                 <div className="flex-1 bg-black text-white flex flex-col relative pt-0">
-                                    {firstMedia?.url && <img src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="" />}
+                                    {firstMedia?.url && <img src={resolveMedia(firstMedia.url)} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="" />}
                                     <div className="absolute inset-y-0 right-2 flex flex-col justify-end pb-20 gap-4">
                                         <div className="w-10 h-10 rounded-full bg-white border-2 border-white overflow-hidden"><img src="/favicon.png" className="bg-black" alt="" /></div>
                                         <div className="text-center flex flex-col items-center"><span className="material-symbols-outlined text-[28px] text-white select-none">favorite</span><p className="text-xs font-bold mt-1">128K</p></div>

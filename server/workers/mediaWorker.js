@@ -1068,7 +1068,8 @@ Instructions:
                 isFaceless = true;
             } else if (videoPrompt || visualPrompt) {
                 try {
-                    const imgPrompt = (videoPrompt || visualPrompt || task.title).substring(0, 300);
+                    const sceneDescription = videoPrompt || visualPrompt || 'Cinematic shot';
+                    const imgPrompt = `Theme context: ${task.title}. Scene details: ${sceneDescription}`;
                     
                     let sportsAdditions = '';
                     const lowerPrompt = imgPrompt.toLowerCase();

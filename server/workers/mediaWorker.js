@@ -582,16 +582,57 @@ function timestampToSeconds(timestamp) {
     return 0;
 }
 
-async function downloadBackgroundMusic(outputPath) {
-    console.log(`[MusicScraper] Buscando música de fondo libre de derechos...`);
-    try {
+async function downloadBackgroundMusic(outputPath, taskTitle = '', niche = '') {
+    // Seleccionar query de música según el tema del video
+    const combined = (taskTitle + ' ' + niche).toLowerCase();
+    let musicQuery;
+    if (/conspira|misterio|secreto|oculto|teor|filtrac|esc.ndalo|oscur/i.test(combined)) {
         const queries = [
-            'royalty free background music upbeat 3 minutes',
-            'upbeat background music no copyright 3 minutes',
-            'no copyright instrumental background music for videos'
+            'dark mystery suspense background music no copyright',
+            'cinematic dark thriller background music royalty free',
+            'mysterious investigation music no copyright dark ambient',
+            'suspense horror ambient music no copyright'
         ];
-        const keyword = queries[Math.floor(Math.random() * queries.length)];
-        const r = await ytSearch(keyword);
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    } else if (/educa|aprende|c.mo|tips|gu.a|tutorial|datos|ciencia/i.test(combined)) {
+        const queries = [
+            'calm focus background music no copyright study',
+            'chill lofi background music royalty free educational',
+            'peaceful piano background music no copyright'
+        ];
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    } else if (/motiv|.xito|dinero|finanza|emprend|habit|negocio/i.test(combined)) {
+        const queries = [
+            'epic motivational background music no copyright',
+            'uplifting cinematic background music royalty free',
+            'powerful inspiring music no copyright business'
+        ];
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    } else if (/deporte|futbol|f.tbol|basket|sport|gym|fitness/i.test(combined)) {
+        const queries = [
+            'energetic sport background music no copyright',
+            'hype trap sport music royalty free',
+            'aggressive sport background music no copyright'
+        ];
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    } else if (/amor|romance|pareja|relaci.n|coraz.n/i.test(combined)) {
+        const queries = [
+            'romantic background music no copyright soft piano',
+            'emotional love background music royalty free'
+        ];
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    } else {
+        const queries = [
+            'upbeat background music no copyright 3 minutes',
+            'royalty free background music upbeat positive',
+            'chill vibes background music no copyright'
+        ];
+        musicQuery = queries[Math.floor(Math.random() * queries.length)];
+    }
+
+    console.log(`[MusicScraper] 🎵 Buscando música temática: "${musicQuery}"`);
+    try {
+        const r = await ytSearch(musicQuery);
         if (r.videos.length === 0) throw new Error("No music found");
         
         const getDuration = (v) => {
@@ -612,18 +653,13 @@ async function downloadBackgroundMusic(outputPath) {
             });
             if (videosToChoose.length === 0 && sorted.length > 0) {
                 const shortestSec = getDuration(sorted[0]);
-                if (shortestSec < 1200) {
-                    videosToChoose = [sorted[0]];
-                }
+                if (shortestSec < 1200) videosToChoose = [sorted[0]];
             }
         }
 
-        if (videosToChoose.length === 0) {
-            throw new Error("No suitable short background music videos found (all are too long)");
-        }
+        if (videosToChoose.length === 0) throw new Error("No suitable music videos found");
 
         const video = videosToChoose[Math.floor(Math.random() * Math.min(3, videosToChoose.length))];
-        
         console.log(`[MusicScraper] Seleccionada música: ${video.title} (${(video.duration && video.duration.timestamp) || video.timestamp || 'unknown'}, ${video.url})`);
         await youtubedl(video.url, {
             output: outputPath,
@@ -1467,7 +1503,7 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
 
         await sendProgress(task.id, 95, "Mezclando música de fondo...");
         const bgMusicPath = path.join(OUTPUT_DIR, `task_${task.id}_bgmusic.mp3`);
-        const hasMusic = await downloadBackgroundMusic(bgMusicPath);
+        const hasMusic = await downloadBackgroundMusic(bgMusicPath, task.title, payload.niche || '');
 
         if (hasMusic && fs.existsSync(bgMusicPath)) {
             await new Promise((resolve, reject) => {

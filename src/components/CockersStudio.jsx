@@ -49,7 +49,6 @@ const RAW_PROMPTS = [
 ];
 
 const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
-    img: `/favicon.png`,
     ...p
 }));
 
@@ -1214,17 +1213,20 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 onMouseLeave={resetTilt}
                 className={`gallery-card relative group rounded-2xl overflow-hidden border border-white/5 hover:border-[#CC0000]/60 transition-colors shadow-xl shadow-black/60 aspect-video bg-[#0f0f0f] min-h-[220px] flex flex-col justify-center${isFeatured ? ' featured' : ''}`}
             >
-                {/* Shimmer skeleton */}
-                <div className="absolute inset-0 bg-neutral-900 animate-pulse pointer-events-none" />
-                <img
-                    src={resolveMediaUrl(item.img)}
-                    alt={item.tag}
-                    loading="lazy"
-                    className="gallery-img absolute inset-0 z-10 w-full h-full object-cover block pointer-events-none"
-                    onError={(e) => { 
-                        e.target.style.opacity = 0.3; 
-                    }}
-                />
+                {/* Shimmer skeleton (sólo si hay imagen para cargar) */}
+                {item.img && <div className="absolute inset-0 bg-neutral-900 animate-pulse pointer-events-none" />}
+                
+                {item.img && (
+                    <img
+                        src={resolveMediaUrl(item.img)}
+                        alt={item.tag}
+                        loading="lazy"
+                        className="gallery-img absolute inset-0 z-10 w-full h-full object-cover block pointer-events-none"
+                        onError={(e) => { 
+                            e.target.style.opacity = 0.3; 
+                        }}
+                    />
+                )}
                 {/* Dark gradient */}
                 <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
 

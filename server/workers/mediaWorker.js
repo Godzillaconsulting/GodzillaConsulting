@@ -1016,20 +1016,73 @@ Instructions:
                 }
 
                 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+                // Detectar tipo de contenido para seleccionar el framework correcto
+                const niche = (payload.niche || task.tags?.join(' ') || '').toLowerCase();
+                const contentType = (task.content_type || '').toLowerCase();
+                const isConspiracy = /conspira|misterio|secreto|oculto|teoría|viral|filtrac|escándalo/i.test(niche + task.title + contentType);
+                const isEducational = /educa|aprende|cómo|tips|guía|tutorial|datos/i.test(niche + task.title + contentType);
+                const isMotivational = /motiv|éxito|dinero|finanza|emprend|habit/i.test(niche + task.title + contentType);
+
+                // Seleccionar framework según tipo
+                let frameworkInstructions = '';
+                let toneInstruction = '';
+
+                if (isConspiracy) {
+                    frameworkInstructions = `Usa el THRILLER ARC framework:
+- SETUP (0-5s): Entra directo al misterio o contradicción. NUNCA empieces con "Hoy les voy a hablar de" o presentaciones genéricas. Drops us into the tension.
+- INCITING INCIDENT (5-15s): El momento exacto en que todo cambió.
+- UNRAVELING (15-55s): Frases cortas y contundentes. Usa narración tipo "y entonces descubrí algo que el informe oficial no mencionaba...". Re-engancha cada 15s con una nueva pregunta o revelación.
+- CTA/OPEN LOOP (55-90s): Pregunta provocadora que genera comentarios. Deja algo sin resolver para que el espectador comente.`;
+                    toneInstruction = `Tono: narrador de podcast de conspiraciones. Suspenso creciente. Urgente pero controlado. Como si estuvieras revelando algo peligroso.`;
+                } else if (isEducational) {
+                    frameworkInstructions = `Usa el framework AIDA + PAS:
+- HOOK (0-3s): Pattern interrupt o número específico impactante. Ejemplo: "El 94% de los negocios fracasan por esto."
+- PROBLEMA (3-15s): Describe el dolor exacto del espectador. Hazlo sentir identificado.
+- AGITACIÓN (15-35s): Amplifica el costo emocional de ignorar este problema.
+- SOLUCIÓN (35-55s): Presenta la solución clara, paso a paso, simple.
+- CTA (55-75s): Un solo paso de acción, sin fricción.`;
+                    toneInstruction = `Tono: mentor cercano, directo, sin academicismos. Como un amigo que sabe más que tú.`;
+                } else if (isMotivational) {
+                    frameworkInstructions = `Usa el framework PSP (Problem-Solution-Proof):
+- HOOK (0-8s): Resultado impactante primero. "Este hombre ganó $40K en 30 días. Aquí está exactamente cómo."
+- SOLUCIÓN (8-35s): Presenta el método claramente.
+- PRUEBA (35-60s): Ejemplos reales, números, testimonios, evidencia.
+- CTA (60-75s): Acción específica de un solo paso.`;
+                    toneInstruction = `Tono: energético, inspirador, aspiracional. Velocidad rápida. Como un coach que ya lo logró.`;
+                } else {
+                    frameworkInstructions = `Usa el framework S.T.A.R.T.:
+- STOP (0-3s): Hook que interrumpe el scroll. Usa curiosity gap o controversia.
+- TARGET (3-10s): Conecta con el problema o deseo del espectador.
+- ADD VALUE (10-40s): Desarrolla la historia con datos reales y ritmo cinematográfico.
+- REINFORCE (40-55s): Refuerza con ejemplos o prueba.
+- TAKE ACTION (55-75s): CTA claro y de fricción mínima.`;
+                    toneInstruction = `Tono: periodístico, viral, dinámico. Frases cortas y contundentes.`;
+                }
+
                 const unifyRes = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: `Eres un guionista viral experto en contenido corto para Reels y TikTok en español.
+                    contents: `Eres un guionista de nivel cine experto en contenido viral de formato corto (Reels/TikTok) en español.
 
-Título del video: "${task.title}"
-Narración actual (puede tener repeticiones): "${existingNarrations.trim()}"
+TÍTULO: "${task.title}"
+AUDIENCIA: adultos hispanohablantes 25-45 años
+NARRACIÓN BASE (puede tener repeticiones/borrador): "${existingNarrations.trim()}"
 
-Tu tarea:
-1. Reescribe esta narración como UN SOLO GUION CONTINUO en español, sin repetir ideas.
-2. Estructura obligatoria: GANCHO impactante (primeras 2-3 palabras que enganchen) → desarrollo de la historia con datos reales → revelación o giro → cierre con CTA.
-3. Duración objetivo: 60 a 90 segundos hablado (aprox 150-220 palabras). NO más.
-4. Tono: misterioso, urgente, informativo, viral. Como si lo narrara un podcast de conspiraciones.
-5. Divide el guion en exactamente ${sceneCountForUnify} segmentos numerados, cada uno separado por "||ESCENA||".
-6. Responde SOLO con los segmentos separados por "||ESCENA||", sin números, sin encabezados, sin explicación extra.`
+${frameworkInstructions}
+
+${toneInstruction}
+
+REGLAS CINEMATOGRÁFICAS OBLIGATORIAS:
+1. Oraciones máximo 12 palabras. Sin palabras de relleno ("básicamente", "entonces", "eh", "como que").
+2. NUNCA repitas la misma idea en dos segmentos distintos.
+3. Cada oración debe ser visualmente traducible (el espectador debe poder imaginar la imagen mientras escucha).
+4. Usa HOOKS de alto impacto: curiosity gap, números específicos, o pattern interrupt.
+5. Duración total: 60-90 segundos hablado (150-220 palabras máximo en total).
+6. El PRIMER SEGMENTO debe comenzar con el hook más fuerte. NUNCA con introducción.
+
+FORMATO DE RESPUESTA:
+Divide en exactamente ${sceneCountForUnify} segmentos separados por "||ESCENA||"
+Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación extra.`
                 });
 
                 const unifiedText = unifyRes.text?.trim() || '';
@@ -1066,8 +1119,17 @@ Tu tarea:
         }
 
         const fallbackVoices = process.env.ELEVENLABS_API_KEY 
-            ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'] 
-            : ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
+            ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ', 'elevenlabs:D38z5RcWu1voky8WS1ja', 'elevenlabs:ThT5KcBeYPX3keUQqHPh'] 
+            : [
+                'edge:es-MX-JorgeNeural',    // neutro masculino
+                'edge:es-ES-EliasNeural',    // misterioso
+                'edge:es-ES-DarioNeural',    // grave dramático
+                'edge:es-MX-GerardoNeural',  // energético
+                'edge:es-MX-LarissaNeural',  // femenino noticias
+                'edge:es-AR-TomasNeural',    // rioplatense
+                'edge:es-ES-SaulNeural',     // periodista maduro
+                'edge:es-MX-CecilioNeural',  // grave denso
+            ];
         
         let selectedVoice = payload.voice;
         

@@ -279,10 +279,10 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
         }
     }
 
-    // ── 5. ELEVENLABS (si está configurado) ──────────────────────────
-    if (process.env.ELEVENLABS_API_KEY) {
+    // ── 5. ELEVENLABS — SOLO si el provider solicitado ES elevenlabs ──────────────
+    if (provider === 'elevenlabs' && process.env.ELEVENLABS_API_KEY) {
         try {
-            const elVoiceId = provider === 'elevenlabs' ? voiceId : '21m00Tcm4TlvDq8ikWAM';
+            const elVoiceId = voiceId || '21m00Tcm4TlvDq8ikWAM';
             const response = await fetch(
                 `https://api.elevenlabs.io/v1/text-to-speech/${elVoiceId}?output_format=mp3_44100_128`,
                 {
@@ -297,13 +297,15 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
                 await generateEdgeTtsSubtitlesOnly(text, outputPath);
                 return outputPath;
             }
-            console.warn(`[TTS Service] ⚠️ ElevenLabs HTTP ${response.status}.`);
+            // NO escribir archivo corrupto si falla — cae al Edge TTS
+            console.warn(`[TTS Service] ⚠️ ElevenLabs HTTP ${response.status}. Usando Edge TTS.`);
         } catch (e) {
-            console.error(`[TTS Service] ElevenLabs error: ${e.message}`);
+            console.warn(`[TTS Service] ElevenLabs error: ${e.message}. Usando Edge TTS.`);
         }
     }
 
-    console.log(`[TTS Service] 🔊 Edge TTS (fallback final)...`);
+    // ── 6. EDGE TTS — Fallback final siempre confiable ───────────────────────────
+    console.log(`[TTS Service] 🔊 Edge TTS...`);
     const edgeVoiceName = provider === 'edge' ? voiceId : 'es-MX-JorgeNeural';
     const edgeTts = new EdgeTTS({ voice: edgeVoiceName, saveSubtitles: true });
     await edgeTts.ttsPromise(text, outputPath);

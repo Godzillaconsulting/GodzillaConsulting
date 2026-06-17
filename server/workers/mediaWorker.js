@@ -1335,17 +1335,61 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
                     const imagePaths = [];
                     for (let j = 0; j < numImages; j++) {
                         const tempImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_temp_${j}.jpg`);
-                        console.log(`[MediaWorker] Generando imagen ${j+1}/${numImages} para Escena ${i}...`);
+                        
+                        // Buscar foto real en la web para este fragmento de narración
+                        const words = narration ? narration.split(' ') : [];
+                        const wordsPerChunk = Math.max(1, Math.ceil(words.length / numImages));
+                        const chunkText = words.slice(j * wordsPerChunk, (j + 1) * wordsPerChunk).join(' ') || task.title;
+                        const searchQuery = encodeURIComponent(`${chunkText} ${task.title}`.substring(0, 80));
+                        
+                        let gotRealPhoto = false;
                         try {
-                            await generateGoogleImage(prompts[j], tempImgPath, '9:16');
-                        } catch (imgErr) {
-                            console.warn(`[MediaWorker] ⚠️ Imagen ${j+1} falló (${imgErr.message}), continuando con las demás...`);
+                            console.log(`[MediaWorker] 🔍 Buscando foto real para imagen ${j+1}/${numImages}...`);
+                            const imgApiUrl = `https://duckduckgo.com/i.js?q=${searchQuery}&o=json&s=${j * 10}&u=bing&f=,,,,,&l=es-mx`;
+                            const ddgRes = await fetch(imgApiUrl, {
+                                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': 'https://duckduckgo.com/' },
+                                signal: AbortSignal.timeout(8000)
+                            });
+                            if (ddgRes.ok) {
+                                const ddgData = await ddgRes.json();
+                                const validImgs = (ddgData.results || []).filter(r =>
+                                    r.image && (r.image.includes('.jpg') || r.image.includes('.jpeg') || r.image.includes('.png'))
+                                    && r.width > 300 && r.height > 300
+                                );
+                                for (const img of validImgs.slice(0, 6)) {
+                                    try {
+                                        const imgDl = await fetch(img.image, {
+                                            headers: { 'User-Agent': 'Mozilla/5.0' },
+                                            signal: AbortSignal.timeout(8000)
+                                        });
+                                        if (imgDl.ok) {
+                                            const buf = await imgDl.arrayBuffer();
+                                            if (buf.byteLength > 15000) {
+                                                fs.writeFileSync(tempImgPath, Buffer.from(buf));
+                                                console.log(`[MediaWorker] ✅ Foto real descargada (${Math.round(buf.byteLength/1024)}KB) para imagen ${j+1}`);
+                                                gotRealPhoto = true;
+                                                break;
+                                            }
+                                        }
+                                    } catch (dlErr) { /* intentar siguiente */ }
+                                }
+                            }
+                        } catch (searchErr) {
+                            console.warn(`[MediaWorker] ⚠️ Búsqueda web falló para imagen ${j+1}: ${searchErr.message}`);
                         }
-                        if (fs.existsSync(tempImgPath)) {
-                            imagePaths.push(tempImgPath);
+
+                        // Fallback: Google Imagen si no se encontró foto real
+                        if (!gotRealPhoto) {
+                            console.log(`[MediaWorker] 🤖 Fallback a Google Imagen para imagen ${j+1}...`);
+                            try {
+                                await generateGoogleImage(prompts[j] || varPrompt, tempImgPath, '9:16');
+                            } catch (imgErr) {
+                                console.warn(`[MediaWorker] ⚠️ Google Imagen también falló: ${imgErr.message}`);
+                            }
                         }
-                        // Esperar 1 segundo para evitar saturar el límite de cuota
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        if (fs.existsSync(tempImgPath)) imagePaths.push(tempImgPath);
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
 
                     if (imagePaths.length > 0) {

@@ -636,7 +636,11 @@ export default function AIContentPlanner({ adminProfile }) {
 
     const handleBulkSend = () => {
         if (!plan) return;
-        setAutoVoice(selectedVoice);
+        // Sincronizar con el selector principal; si es Automático → Jorge MX por defecto
+        const syncVoice = (selectedVoice === 'Automático' || !selectedVoice.startsWith('edge:'))
+            ? 'edge:es-MX-JorgeNeural'
+            : selectedVoice;
+        setAutoVoice(syncVoice);
         setShowVoiceModal(true);
     };
 
@@ -825,17 +829,12 @@ export default function AIContentPlanner({ adminProfile }) {
                             disabled={!canEdit || isGenerating}
                             className="w-full bg-black/50 border border-neutral-800 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-purple-500 disabled:opacity-50"
                         >
-                            <option value="Automático">Automático (Inteligente)</option>
-                            <option value="elevenlabs:ODO4sbmD3pTjhgRVVRP6">Sara - Voz Cálida (ElevenLabs)</option>
-                            <option value="elevenlabs:tTQzD8U9VSnJgfwC6HbY">Nathalia - Voz Dulce (ElevenLabs)</option>
-                            <option value="elevenlabs:J4vZAFDEcpenkMp3f3R9">Valentina - Voz Conversacional (ElevenLabs)</option>
-                            <option value="elevenlabs:9Godp7dNohUvXk6qp0gS">Regina - Contact Center (ElevenLabs)</option>
-                            <option value="elevenlabs:9y2QVHqoZ9f198GJJ99i">Tijuana La Iguana (Clonada)</option>
-                            <option value="edge:es-MX-JorgeNeural">Jorge (Edge es-MX Local)</option>
-                            <option value="edge:es-MX-DaliaNeural">Dalia (Edge es-MX Local)</option>
-                            <option value="edge:es-ES-AlvaroNeural">Alvaro (Edge es-ES Local)</option>
-                            <option value="edge:es-ES-ElviraNeural">Elvira (Edge es-ES Local)</option>
-                            <option value="edge:es-AR-TomasNeural">Tomas (Edge es-AR Local)</option>
+                            <option value="Automático">Automático (Jorge MX)</option>
+                            <option value="edge:es-MX-JorgeNeural">🎙️ Jorge (Masculino MX)</option>
+                            <option value="edge:es-MX-DaliaNeural">🎙️ Dalia (Femenino MX)</option>
+                            <option value="edge:es-ES-AlvaroNeural">🎙️ Álvaro (Masculino ES)</option>
+                            <option value="edge:es-ES-ElviraNeural">🎙️ Elvira (Femenino ES)</option>
+                            <option value="edge:es-AR-TomasNeural">🎙️ Tomás (Masculino AR)</option>
                         </select>
                     </div>
                     <div className="flex-1 min-w-[160px]">
@@ -1400,9 +1399,11 @@ export default function AIContentPlanner({ adminProfile }) {
                             
                             <div className="space-y-3 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
                                 {[
-                                    { id: 'edge:es-MX-JorgeNeural', name: 'Jorge (Pro - Defecto)', desc: 'Voz dinámica y profesional' },
-                                    ...ELEVENLABS_VOICES.map(v => ({ id: v.id, name: v.name, desc: 'Premium AI Voice', preview: v.preview })),
-                                    { id: 'custom', name: 'Clonar voz (ID Personalizado)', desc: 'Usa tu propio ID de ElevenLabs' },
+                                    { id: 'edge:es-MX-JorgeNeural',  name: '🎙️ Jorge',  desc: 'Masculino · México · Defecto' },
+                                    { id: 'edge:es-MX-DaliaNeural',  name: '🎙️ Dalia',  desc: 'Femenino · México' },
+                                    { id: 'edge:es-ES-AlvaroNeural', name: '🎙️ Álvaro', desc: 'Masculino · España' },
+                                    { id: 'edge:es-ES-ElviraNeural', name: '🎙️ Elvira', desc: 'Femenino · España' },
+                                    { id: 'edge:es-AR-TomasNeural',  name: '🎙️ Tomás',  desc: 'Masculino · Argentina' },
                                 ].map(v => (
                                     <label key={v.id} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${autoVoice === v.id ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20 bg-black/50'}`}>
                                         <div className="flex items-center justify-between gap-3 w-full">
@@ -1431,12 +1432,6 @@ export default function AIContentPlanner({ adminProfile }) {
                                     </label>
                                 ))}
 
-                                {autoVoice === 'custom' && (
-                                    <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/5">
-                                        <label className="text-[10px] text-purple-400 font-bold uppercase tracking-widest block mb-1">ID de ElevenLabs</label>
-                                        <input type="text" value={customVoiceId} onChange={e => setCustomVoiceId(e.target.value)} placeholder="Ej: pNInz6obbfIdGwnf8p5A" className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500" />
-                                    </div>
-                                )}
                             </div>
 
                             <div className="flex items-center justify-end gap-3">

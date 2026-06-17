@@ -635,6 +635,7 @@ export default function AIContentPlanner({ adminProfile }) {
     };
 
     const confirmBulkSend = async () => {
+        if (isSendingBulk) return;
         setShowVoiceModal(false);
         setIsSendingBulk(true);
         let sent = 0, skipped = 0;
@@ -1428,7 +1429,7 @@ export default function AIContentPlanner({ adminProfile }) {
 
                             <div className="flex items-center justify-end gap-3">
                                 <button onClick={() => setShowVoiceModal(false)} className="px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancelar</button>
-                                <button onClick={confirmBulkSend} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
+                                <button onClick={confirmBulkSend} disabled={isSendingBulk} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
                                     {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                     {isSendingBulk ? 'Enviando...' : <span className="flex items-center gap-1">Mandar a Crear <span className="material-symbols-outlined text-xs select-none">rocket_launch</span></span>}
                                 </button>

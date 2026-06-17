@@ -342,6 +342,7 @@ export default function AIContentPlanner({ adminProfile }) {
     const [reviewMode, setReviewMode]       = useState(false); // true = pantalla de revisión
     const [selections, setSelections]       = useState({});    // { idx: 'ia'|'template'|'skip' }
     const [isSendingBulk, setIsSendingBulk] = useState(false);
+    const isSendingBulkRef = useRef(false);
     const [bulkResult, setBulkResult]       = useState(null);  // { sent, skipped }
     
     // ── Voice Selection (Auto Flow) ──
@@ -640,7 +641,8 @@ export default function AIContentPlanner({ adminProfile }) {
     };
 
     const confirmBulkSend = async () => {
-        if (isSendingBulk) return;
+        if (isSendingBulkRef.current) return;
+        isSendingBulkRef.current = true;
         setShowVoiceModal(false);
         setIsSendingBulk(true);
         let sent = 0, skipped = 0;
@@ -653,6 +655,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 sent++;
             } catch (_) { skipped++; }
         }
+        isSendingBulkRef.current = false;
         setIsSendingBulk(false);
         setBulkResult({ sent, skipped });
         setReviewMode(false);

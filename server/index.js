@@ -1,4 +1,5 @@
 import express from 'express';
+import { exec } from 'child_process';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -470,27 +471,32 @@ app.use((err, req, res, next) => {
 // 3. INICIO DEL SERVIDOR (Solo local)
 // ==========================================
 if (!process.env.VERCEL) {
-    const server = app.listen(port, () => {
-        console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
-        console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
-    });
-    
-    // 🔥 ESTABILIZADOR CLOUDFLARE TUNNEL (Previene Error 502 Bad Gateway)
-    // Cloudflare usa un timeout de 60s. Node usa 5s. Si no se ajusta, 
-    // Node cierra el socket HTTP silenciosamente mientras Cloudflare intenta re-usarlo para 
-    // pedir una imagen pesada, causando una caída abrupta de conexión.
-    server.keepAliveTimeout = 65000;
-    server.headersTimeout = 66000;
+    function startServer(retries = 3) {
+        const server = app.listen(port);
 
-    // 🤖 WhatsApp Bot — Corre como proceso PM2 separado: `zilla-whatsapp`
-    // Para iniciarlo: npx pm2 start server/whatsappBot.js --name zilla-whatsapp
-    // Para verlo: npx pm2 logs zilla-whatsapp
+        server.on('listening', () => {
+            console.log(`🚀 Servidor backend encendido en el puerto ${port}`);
+            console.log(`🔒 Dominio frontend autorizado: ${process.env.FRONTEND_URL}`);
+            server.keepAliveTimeout = 65000;
+            server.headersTimeout = 66000;
+            cronScheduler.start(60_000);
+            import('./workers/mediaWorker.js').catch(err => console.error('[MediaWorker] Error al importar:', err));
+        });
 
-    // ⏰ GODZILLA CRON SCHEDULER — activa nodos "Reloj / Cron" de todos los flujos
-    cronScheduler.start(60_000); // revisa cada 60 segundos
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE' && retries > 0) {
+                console.warn(`[Server] ⚠️ Puerto ${port} ocupado. Liberando y reintentando en 3s (${retries} intentos)...`);
+                exec(`FOR /F "tokens=5" %P IN ('netstat -ano ^| findstr :${port} ^| findstr LISTENING') DO taskkill /PID %P /F`, () => {
+                    setTimeout(() => startServer(retries - 1), 3000);
+                });
+            } else {
+                console.error('[Server] Error fatal al iniciar:', err.message);
+                process.exit(1);
+            }
+        });
+    }
 
-    // 🔥 FIX PM2 EPERM: Arrancamos el MediaWorker directamente en el proceso principal
-    import('./workers/mediaWorker.js').catch(err => console.error('[MediaWorker] Error al importar:', err));
+    startServer();
 }
 
 // Exportar para Vercel

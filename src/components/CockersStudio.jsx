@@ -49,6 +49,7 @@ const RAW_PROMPTS = [
 ];
 
 const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
+    img: `/gallery/gal_${i % 12}.jpg`,
     ...p
 }));
 

@@ -4,7 +4,61 @@ import path from 'path';
 import { EdgeTTS } from 'node-edge-tts';
 
 // ────────────────────────────────────────────────────────────────────
-// CATÁLOGO DE VOCES VIRALES DE FAKEYOU (tokens verificados)
+// CATÁLOGO COMPLETO DE VOCES DISPONIBLES
+// ────────────────────────────────────────────────────────────────────
+export const VOICE_CATALOG = [
+    // 🎙️ ELEVENLABS — Premium, ultra-realistas
+    { id: 'elevenlabs:21m00Tcm4TlvDq8ikWAM', name: 'Rachel (ElevenLabs)', tone: 'Narrador documental', lang: 'ES', provider: 'elevenlabs', premium: true },
+    { id: 'elevenlabs:29vD33N1CtxCmqQRPOHJ', name: 'Drew (ElevenLabs)',  tone: 'Masculino energético', lang: 'ES', provider: 'elevenlabs', premium: true },
+    { id: 'elevenlabs:D38z5RcWu1voky8WS1ja', name: 'Fin (ElevenLabs)',   tone: 'Joven dinámico', lang: 'ES', provider: 'elevenlabs', premium: true },
+    { id: 'elevenlabs:ThT5KcBeYPX3keUQqHPh', name: 'Dorothy (ElevenLabs)', tone: 'Femenino cálido', lang: 'ES', provider: 'elevenlabs', premium: true },
+
+    // 🎭 EDGE TTS — Gratuito, calidad alta, muchos tonos
+    // 🇲🇽 México
+    { id: 'edge:es-MX-JorgeNeural',    name: 'Jorge (MX)',    tone: 'Narrador neutro masculino', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-DaliaNeural',    name: 'Dalia (MX)',    tone: 'Femenino profesional', lang: 'MX', provider: 'edge' },
+    // 🇪🇸 España
+    { id: 'edge:es-ES-AlvaroNeural',   name: 'Álvaro (ES)',   tone: 'Masculino autoritario', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-ElviraNeural',   name: 'Elvira (ES)',   tone: 'Femenino elegante', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-AbrilNeural',    name: 'Abril (ES)',    tone: 'Femenino joven vibrante', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-ArnauNeural',    name: 'Arnau (ES)',    tone: 'Masculino joven directo', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-DarioNeural',    name: 'Darío (ES)',    tone: 'Masculino grave dramático', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-EliasNeural',    name: 'Elías (ES)',    tone: 'Narrador misterioso', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-EstrellaNeural', name: 'Estrella (ES)', tone: 'Femenino noticias', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-IreneNeural',    name: 'Irene (ES)',    tone: 'Femenino cálido cercano', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-LaiaNeural',     name: 'Laia (ES)',     tone: 'Femenino suave', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-NilNeural',      name: 'Nil (ES)',      tone: 'Masculino serio', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-SaulNeural',     name: 'Saúl (ES)',     tone: 'Masculino maduro periodista', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-TeoNeural',      name: 'Teo (ES)',      tone: 'Masculino energético joven', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-TrianaNeural',   name: 'Triana (ES)',   tone: 'Femenino andaluz cálido', lang: 'ES', provider: 'edge' },
+    { id: 'edge:es-ES-VeraNeural',     name: 'Vera (ES)',     tone: 'Femenino neutro limpio', lang: 'ES', provider: 'edge' },
+    // 🇦🇷 Argentina
+    { id: 'edge:es-AR-TomasNeural',    name: 'Tomás (AR)',    tone: 'Masculino rioplatense', lang: 'AR', provider: 'edge' },
+    { id: 'edge:es-AR-ElenaNeural',    name: 'Elena (AR)',    tone: 'Femenino rioplatense', lang: 'AR', provider: 'edge' },
+    // 🇨🇴 Colombia
+    { id: 'edge:es-CO-GonzaloNeural',  name: 'Gonzalo (CO)', tone: 'Masculino colombiano cálido', lang: 'CO', provider: 'edge' },
+    { id: 'edge:es-CO-SalomeNeural',   name: 'Salomé (CO)',  tone: 'Femenino colombiana', lang: 'CO', provider: 'edge' },
+    // 🇲🇽 México adicional
+    { id: 'edge:es-MX-BeatrizNeural',  name: 'Beatriz (MX)', tone: 'Femenino maduro serio', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-CandelaNeural',  name: 'Candela (MX)', tone: 'Femenino joven animada', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-CarlotaNeural',  name: 'Carlota (MX)', tone: 'Femenino elegante formal', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-CecilioNeural',  name: 'Cecilio (MX)', tone: 'Masculino grave denso', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-GerardoNeural',  name: 'Gerardo (MX)', tone: 'Masculino energético', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-LarissaNeural',  name: 'Larissa (MX)', tone: 'Femenino dinámico noticias', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-LibertoNeural',  name: 'Liberto (MX)', tone: 'Masculino relajado narrativo', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-LucianoNeural',  name: 'Luciano (MX)', tone: 'Masculino joven fresco', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-MarinaNeural',   name: 'Marina (MX)',  tone: 'Femenino suave storytelling', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-NuriaNeural',    name: 'Nuria (MX)',   tone: 'Femenino formal claro', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-PelayoNeural',   name: 'Pelayo (MX)',  tone: 'Masculino neutro limpio', lang: 'MX', provider: 'edge' },
+    { id: 'edge:es-MX-YemisiNeural',   name: 'Yemisi (MX)',  tone: 'Femenino tropical vibrante', lang: 'MX', provider: 'edge' },
+
+    // 🎭 FAKEYOU — Voces virales / celebridades
+    { id: 'fakeyou:adal-ramones',   name: 'Adal Ramones', tone: 'Cómico viral Mexico', lang: 'MX', provider: 'fakeyou' },
+    { id: 'fakeyou:alucard-latino', name: 'Alucard Latino', tone: 'Villano dramático', lang: 'MX', provider: 'fakeyou' },
+];
+
+// ────────────────────────────────────────────────────────────────────
+// CATÁLOGO DE VOCES FAKEYOU (tokens verificados)
 // ────────────────────────────────────────────────────────────────────
 export const FAKEYOU_CATALOG = {
     // 🌍 Español LATAM
@@ -196,7 +250,36 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
         }
     }
 
-    // ── 4. ELEVENLABS (si está configurado) ────────────────────────────
+    // ── 4. OPENAI TTS (si está configurado) ───────────────────────────
+    if (provider === 'openai' && process.env.OPENAI_API_KEY) {
+        try {
+            const openaiVoice = voiceId || 'onyx'; // onyx=grave, nova=femenino, echo=medio, alloy=neutro
+            const oaiRes = await fetch('https://api.openai.com/v1/audio/speech', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'tts-1',
+                    input: text,
+                    voice: openaiVoice,
+                    response_format: 'mp3'
+                })
+            });
+            if (oaiRes.ok) {
+                fs.writeFileSync(outputPath, Buffer.from(await oaiRes.arrayBuffer()));
+                console.log(`[TTS Service] ✅ OpenAI TTS listo (${openaiVoice}).`);
+                await generateEdgeTtsSubtitlesOnly(text, outputPath);
+                return outputPath;
+            }
+            throw new Error(`OpenAI TTS HTTP ${oaiRes.status}`);
+        } catch (e) {
+            console.warn(`[TTS Service] ⚠️ OpenAI TTS falló (${e.message}). Pasando a siguiente...`);
+        }
+    }
+
+    // ── 5. ELEVENLABS (si está configurado) ──────────────────────────
     if (process.env.ELEVENLABS_API_KEY) {
         try {
             const elVoiceId = provider === 'elevenlabs' ? voiceId : '21m00Tcm4TlvDq8ikWAM';

@@ -334,6 +334,21 @@ Genera EXACTAMENTE este JSON sin markdown ni texto extra:
 });
 
 // ==========================================
+// Catálogo de Voces Disponibles
+// ==========================================
+router.get('/voices', authenticateToken, async (req, res) => {
+    const { VOICE_CATALOG } = await import('../services/ttsService.js');
+    const hasElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+    const voices = VOICE_CATALOG.filter(v => {
+        if (v.provider === 'elevenlabs' && !hasElevenLabs) return false;
+        if (v.provider === 'openai' && !hasOpenAI) return false;
+        return true;
+    });
+    res.json({ success: true, voices, hasElevenLabs, hasOpenAI });
+});
+
+// ==========================================
 // Generación TTS Directa (Editor de Video)
 // ==========================================
 router.post('/tts', authenticateToken, async (req, res) => {

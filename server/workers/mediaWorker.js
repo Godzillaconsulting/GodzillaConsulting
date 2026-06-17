@@ -928,8 +928,8 @@ Instructions:
             }
         }
 
-        const isArrayFormat = Array.isArray(payload.scenes);
-        const dayData = payload.scenes;
+        const isArrayFormat = Array.isArray(payload.scenes) || (payload.scenes && Array.isArray(payload.scenes.scenes));
+        const dayData = Array.isArray(payload.scenes) ? payload.scenes : (payload.scenes && Array.isArray(payload.scenes.scenes) ? payload.scenes.scenes : payload.scenes);
         
         const fallbackVoices = process.env.ELEVENLABS_API_KEY 
             ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'] 

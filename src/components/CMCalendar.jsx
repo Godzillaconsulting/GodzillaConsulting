@@ -262,7 +262,7 @@ export default React.memo(function CMCalendar({ adminProfile }) {
         .then(r => r.json())
         .then(data => {
             if (data.success && data.tasks) {
-                const mapped = data.tasks.map(t => ({
+                const mapped = data.tasks.filter(t => !['pending_render', 'manual_studio', 'processing'].includes(t.status)).map(t => ({
                     id: t.id,
                     que: t.title,
                     para: t.assigned_to,

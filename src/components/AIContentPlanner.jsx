@@ -577,10 +577,15 @@ export default function AIContentPlanner({ adminProfile }) {
             const isoDate = publishDate.toISOString().split('T')[0];
 
             // Build narrations
-            const narrations = [1, 2, 3, 4, 5].map(n => {
-                const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
-                return day[key] ? `Escena ${n}: ${day[key]}` : null;
-            }).filter(Boolean).join('\n');
+            let narrations = '';
+            if (day.scenes && Array.isArray(day.scenes)) {
+                narrations = day.scenes.map((s, i) => `Escena ${i+1}: ${s.narration}`).join('\n');
+            } else {
+                narrations = [1, 2, 3, 4, 5].map(n => {
+                    const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+                    return day[key] ? `Escena ${n}: ${day[key]}` : null;
+                }).filter(Boolean).join('\n');
+            }
 
             const mediaPayload = {
                 source: 'manual_planner',
@@ -667,10 +672,14 @@ export default function AIContentPlanner({ adminProfile }) {
         let scenesData = { 'Tema': day['Tema'] };
 
         if (sel === 'ia') {
-            narrations = [1,2,3,4,5].map(n => {
-                const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
-                return day[key] ? `Escena ${n}: ${day[key]}` : null;
-            }).filter(Boolean).join('\n');
+            if (day.scenes && Array.isArray(day.scenes)) {
+                narrations = day.scenes.map((s, i) => `Escena ${i+1}: ${s.narration}`).join('\n');
+            } else {
+                narrations = [1,2,3,4,5].map(n => {
+                    const key = n === 5 ? 'NARRACION ESCENA 5 (CTA)' : `NARRACION ESCENA ${n}`;
+                    return day[key] ? `Escena ${n}: ${day[key]}` : null;
+                }).filter(Boolean).join('\n');
+            }
             scenesData = day;
         } else {
             // Si es 'template', mandamos vacío para que lo edite a mano

@@ -446,7 +446,7 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16', re
     console.log(`[GoogleImageGen] Generando imagen para prompt: "${activePrompt.substring(0, 70)}..."`);
 
     // Intentamos en cascada sobre los modelos de Imagen soportados para lidiar con límites de cuota/429
-    const models = ['imagen-3.0-generate-002'];
+    const models = ['imagen-4.0-generate-001', 'imagen-4.0-fast-generate-001'];
     let imageBytes = null;
 
     for (const model of models) {
@@ -1106,7 +1106,11 @@ Instructions:
                     for (let j = 0; j < numImages; j++) {
                         const tempImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_temp_${j}.jpg`);
                         console.log(`[MediaWorker] Generando imagen ${j+1}/${numImages} para Escena ${i}...`);
-                        await generateGoogleImage(prompts[j], tempImgPath, '9:16');
+                        try {
+                            await generateGoogleImage(prompts[j], tempImgPath, '9:16');
+                        } catch (imgErr) {
+                            console.warn(`[MediaWorker] ⚠️ Imagen ${j+1} falló (${imgErr.message}), continuando con las demás...`);
+                        }
                         if (fs.existsSync(tempImgPath)) {
                             imagePaths.push(tempImgPath);
                         }
@@ -1130,8 +1134,13 @@ Instructions:
                         }
                     }
                 } catch (googleErr) {
-                    console.error(`[MediaWorker] Falló la generación de la imagen de Google:`, googleErr.message);
-                    throw googleErr;
+                    console.error(`[MediaWorker] Falló generación de imágenes Google, usando stock video como fallback:`, googleErr.message);
+                    // FALLBACK: usar stock video en lugar de morir
+                    if (fs.existsSync(randomStock)) {
+                        finalImgPath = randomStock;
+                        isFaceless = false;
+                        console.log(`[MediaWorker] ✅ Usando stock video como fallback: ${randomStock}`);
+                    }
                 }
             }
 

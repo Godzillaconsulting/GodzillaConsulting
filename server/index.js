@@ -485,9 +485,23 @@ if (!process.env.VERCEL) {
 
         server.on('error', (err) => {
             if (err.code === 'EADDRINUSE' && retries > 0) {
-                console.warn(`[Server] ⚠️ Puerto ${port} ocupado. Liberando y reintentando en 3s (${retries} intentos)...`);
-                exec(`FOR /F "tokens=5" %P IN ('netstat -ano ^| findstr :${port} ^| findstr LISTENING') DO taskkill /PID %P /F`, () => {
-                    setTimeout(() => startServer(retries - 1), 3000);
+                console.warn(`[Server] ⚠️ Puerto ${port} ocupado. Liberando con taskkill y reintentando en 4s (${retries} intentos)...`);
+                // Matar directamente cualquier proceso en el puerto usando netstat + taskkill
+                exec(`netstat -ano | findstr :${port} | findstr LISTENING`, (e, stdout) => {
+                    const lines = stdout.trim().split('\n').filter(Boolean);
+                    const pids = new Set();
+                    lines.forEach(line => {
+                        const parts = line.trim().split(/\s+/);
+                        const pid = parts[parts.length - 1];
+                        if (pid && pid !== '0') pids.add(pid);
+                    });
+                    const killAll = Array.from(pids).map(pid =>
+                        new Promise(res => exec(`taskkill /PID ${pid} /F`, () => res()))
+                    );
+                    Promise.all(killAll).then(() => {
+                        console.log(`[Server] 🔓 Puerto ${port} liberado. Reintentando en 4s...`);
+                        setTimeout(() => startServer(retries - 1), 4000);
+                    });
                 });
             } else {
                 console.error('[Server] Error fatal al iniciar:', err.message);

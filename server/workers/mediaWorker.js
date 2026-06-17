@@ -1154,31 +1154,39 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
             }
         }
 
-        const fallbackVoices = process.env.ELEVENLABS_API_KEY 
-            ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ', 'elevenlabs:D38z5RcWu1voky8WS1ja', 'elevenlabs:ThT5KcBeYPX3keUQqHPh'] 
-            : [
-                'edge:es-MX-JorgeNeural',    // neutro masculino
-                'edge:es-ES-EliasNeural',    // misterioso
-                'edge:es-ES-DarioNeural',    // grave dramático
-                'edge:es-MX-GerardoNeural',  // energético
-                'edge:es-MX-LarissaNeural',  // femenino noticias
-                'edge:es-AR-TomasNeural',    // rioplatense
-                'edge:es-ES-SaulNeural',     // periodista maduro
-                'edge:es-MX-CecilioNeural',  // grave denso
-            ];
-        
+        // Voces Edge TTS gratuitas — variedad de tonos, géneros y acentos
+        const fallbackVoices = [
+            'edge:es-ES-EliasNeural',    // 🌙 misterioso / conspiraciones
+            'edge:es-MX-JorgeNeural',    // 🎙️ neutro masculino
+            'edge:es-ES-DarioNeural',    // 🔊 grave dramático
+            'edge:es-MX-GerardoNeural',  // ⚡ energético
+            'edge:es-MX-LarissaNeural',  // 📺 femenino noticias
+            'edge:es-AR-TomasNeural',    // 🇦🇷 rioplatense
+            'edge:es-ES-SaulNeural',     // 📰 periodista maduro
+            'edge:es-MX-CecilioNeural',  // 🎭 grave denso
+            'edge:es-ES-AlvaroNeural',   // 💼 autoritario
+            'edge:es-MX-DaliaNeural',    // 👩 femenino profesional
+            'edge:es-ES-EstrellaNeural', // 📡 femenino noticias ES
+            'edge:es-MX-LibertoNeural',  // 🎧 narrativo relajado
+            'edge:es-CO-GonzaloNeural',  // 🇨🇴 colombiano cálido
+            'edge:es-MX-MarinaNeural',   // ✨ storytelling suave
+            'edge:es-ES-TeoNeural',      // 🔥 energético joven
+            'edge:es-AR-ElenaNeural',    // 🌸 femenino AR
+            'edge:es-MX-LucianoNeural',  // 🎤 joven fresco
+            'edge:es-ES-IreneNeural',    // 💫 cálido cercano
+            'edge:es-MX-CandelaNeural',  // 🎉 animada joven
+            'edge:es-ES-VeraNeural',     // 🧊 neutro limpio
+        ];
+
         let selectedVoice = payload.voice;
-        
+
         if (!selectedVoice || selectedVoice === 'Automático' || selectedVoice === 'null' || selectedVoice === 'undefined') {
             selectedVoice = fallbackVoices[task.id % fallbackVoices.length];
-            if (process.env.ELEVENLABS_API_KEY && !selectedVoice.startsWith('elevenlabs:')) {
-                const elevenVoices = ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'];
-                selectedVoice = elevenVoices[task.id % elevenVoices.length];
-                console.log(`[MediaWorker] 🎙️ ElevenLabs disponible y voz en automático. Usando ElevenLabs aleatoria: ${selectedVoice}`);
-            }
+            console.log(`[MediaWorker] 🎙️ Voz Edge TTS seleccionada: ${selectedVoice}`);
         } else {
-            console.log(`[MediaWorker] 🎙️ Voz explícitamente seleccionada por usuario: ${selectedVoice}`);
+            console.log(`[MediaWorker] 🎙️ Voz seleccionada por usuario: ${selectedVoice}`);
         }
+
 
         const clipsPaths = [];
         const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || dayData.sceneCount || 5);

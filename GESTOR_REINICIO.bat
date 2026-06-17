@@ -19,7 +19,7 @@ title GODZILLA - Gestor de Reinicio Granular
 color 0A
 
 :: ---- Variables comunes ----
-set PM2_HOME=C:\Users\GODZILLA.IA\.pm2
+set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla
 set PM2_CMD="C:\Users\GODZILLA.IA\AppData\Roaming\npm\pm2.cmd"
 
 :MENU
@@ -32,15 +32,12 @@ echo.
 echo   Elige que proceso reiniciar:
 echo.
 echo   [1] WhatsApp Bot         (whatsapp-bot)
-echo   [2] Servidor API         (godzilla-server)
+echo   [2] Servidor API + Worker (godzilla-server)
 echo   [3] Email Worker         (email-worker)
-echo   [4] AI Core              (ai-core)
-echo   [5] Trends Bot           (trends-bot)
-echo   [6] TikTok Bot           (tiktok-bot)
-echo   [7] Instagram Bot        (instagram-bot)
-echo   [8] Newsletter Bot       (newsletter-bot)
+echo   [4] Trends Bot           (trends-bot)
+echo   [5] Newsletter Bot       (newsletter-bot)
 echo   [9] Ver estado PM2       (sin reiniciar nada)
-echo   [10] REINICIO TOTAL      (servicio completo - TODOS se caen)
+echo   [10] REINICIO TOTAL      (todos los procesos)
 echo   [11] LIMPIEZA ZOMBIE     (mata todo Node/Chrome atascado)
 echo   [12] Auto-Renovar IG     (inicia sesion automaticamente)
 echo   [13] REPARAR WHATSAPP    (borra sesion corrupta - usa solo si hay bucle)
@@ -51,11 +48,8 @@ set /p OPCION="  Tu eleccion: "
 if "%OPCION%"=="1" goto RESTART_WP
 if "%OPCION%"=="2" goto RESTART_SERVER
 if "%OPCION%"=="3" goto RESTART_EMAIL
-if "%OPCION%"=="4" goto RESTART_AICORE
-if "%OPCION%"=="5" goto RESTART_TRENDS
-if "%OPCION%"=="6" goto RESTART_TIKTOK
-if "%OPCION%"=="7" goto RESTART_IG
-if "%OPCION%"=="8" goto RESTART_NEWSLETTER
+if "%OPCION%"=="4" goto RESTART_TRENDS
+if "%OPCION%"=="5" goto RESTART_NEWSLETTER
 if "%OPCION%"=="9" goto STATUS
 if "%OPCION%"=="10" goto RESTART_TOTAL
 if "%OPCION%"=="11" goto LIMPIEZA_ZOMBIE
@@ -83,10 +77,22 @@ goto MENU
 :RESTART_SERVER
 cls
 echo.
-echo  Reiniciando SOLO godzilla-server...
-call %PM2_CMD% restart godzilla-server --update-env
-timeout /t 5 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\godzilla-server-out.log'"
+echo  [1/3] Liberando el puerto 3000...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 " ^| findstr LISTENING') do (
+    echo  Matando PID %%a...
+    taskkill /PID %%a /F
+)
+timeout /t 3 /nobreak >nul
+
+echo  [2/3] Reiniciando godzilla-server via PM2 (sesion de usuario)...
+set PM2_RESTART_CMD=%PM2_CMD% stop godzilla-server ^& timeout /t 2 ^& %PM2_CMD% start godzilla-server --update-env
+start "PM2 Restart" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% stop godzilla-server && timeout /t 3 /nobreak && %PM2_CMD% start godzilla-server --update-env"
+timeout /t 10 /nobreak >nul
+
+echo  [3/3] Reseteando tareas en error...
+node -e "import('pg').then(({Pool})=>{const p=new Pool({user:'postgres',host:'localhost',database:'godzilla',password:'godzilla2026',port:5432});p.query(\"UPDATE studio_tasks SET status='pending_render' WHERE status IN ('failed_docker','rendering_docker')\").then(r=>{console.log('Tareas reseteadas:',r.rowCount);p.end();})})"
+echo.
+powershell -Command "Get-Content -Tail 10 'C:\Users\GODZILLA.IA\.pm2_godzilla\logs\godzilla-server-out.log'"
 echo.
 pause
 goto MENU
@@ -102,48 +108,13 @@ echo.
 pause
 goto MENU
 
-:RESTART_AICORE
-cls
-echo.
-echo  Reiniciando SOLO ai-core...
-call %PM2_CMD% restart ai-core --update-env
-timeout /t 5 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\ai-core-out.log'"
-echo.
-pause
-goto MENU
-
 :RESTART_TRENDS
 cls
 echo.
 echo  Reiniciando SOLO trends-bot...
 call %PM2_CMD% restart trends-bot --update-env
 timeout /t 3 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\trends-bot-out.log'"
-echo.
-pause
-goto MENU
-
-:RESTART_TIKTOK
-cls
-echo.
-echo  Reiniciando SOLO tiktok-bot...
-call %PM2_CMD% restart tiktok-bot --update-env || call %PM2_CMD% start server/tiktok_bot.cjs --name tiktok-bot
-echo  Esperando 10s para que TikTok cargue...
-timeout /t 10 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\tiktok-bot-out.log'"
-echo.
-pause
-goto MENU
-
-:RESTART_IG
-cls
-echo.
-echo  Reiniciando SOLO instagram-bot...
-call %PM2_CMD% restart instagram-bot --update-env || call %PM2_CMD% start server/instagram_bot.cjs --name instagram-bot
-echo  Esperando 10s para que IG cargue...
-timeout /t 10 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\instagram-bot-out.log'"
+powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2_godzilla\logs\trends-bot-out.log'"
 echo.
 pause
 goto MENU
@@ -154,7 +125,7 @@ echo.
 echo  Reiniciando SOLO newsletter-bot...
 call %PM2_CMD% restart newsletter-bot --update-env
 timeout /t 3 /nobreak >nul
-powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2\logs\newsletter-bot-out.log'"
+powershell -Command "Get-Content -Tail 5 'C:\Users\GODZILLA.IA\.pm2_godzilla\logs\newsletter-bot-out.log'"
 echo.
 pause
 goto MENU
@@ -171,14 +142,23 @@ goto MENU
 :RESTART_TOTAL
 cls
 echo.
-echo  ADVERTENCIA: Esto detendra TODOS los procesos.
+echo  ADVERTENCIA: Esto detendra TODOS los procesos PM2 y los reiniciara.
 echo  Presiona ENTER para confirmar o cierra esta ventana para cancelar.
 pause
 echo.
-echo  Deteniendo servicio GodzillaBackend...
-docker compose restart
-timeout /t 5 /nobreak >nul
-docker compose ps
+echo  [1/3] Liberando puerto 3000...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 " ^| findstr LISTENING') do (
+    echo  Matando PID %%a...
+    taskkill /PID %%a /F
+)
+timeout /t 3 /nobreak >nul
+echo  [2/3] Reiniciando todos los procesos PM2...
+start "PM2 Restart All" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% restart all --update-env"
+timeout /t 8 /nobreak >nul
+echo  [3/3] Reseteando tareas en error...
+node -e "import('pg').then(({Pool})=>{const p=new Pool({user:'postgres',host:'localhost',database:'godzilla',password:'godzilla2026',port:5432});p.query(\"UPDATE studio_tasks SET status='pending_render' WHERE status IN ('failed_docker','rendering_docker')\").then(r=>{console.log('Tareas reseteadas:',r.rowCount);p.end();})})"
+echo.
+call %PM2_CMD% list
 echo.
 pause
 goto MENU
@@ -190,29 +170,25 @@ echo  ==========================================
 echo   GODZILLA - LIMPIEZA DE EMERGENCIA
 echo  ==========================================
 echo.
-echo  [1/4] Apagando contenedores Docker y matando zombies locales...
-docker compose down
-taskkill /F /IM node.exe /T >nul 2>&1
+echo  [1/3] Liberando puerto 3000 y matando zombies...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 " ^| findstr LISTENING') do (
+    echo  Matando PID %%a...
+    taskkill /PID %%a /F
+)
 taskkill /F /IM chrome.exe /T >nul 2>&1
 timeout /t 3 /nobreak >nul
 
-echo  [2/4] Limpiando candados de sesion localmente...
+echo  [2/3] Limpiando candados de sesion...
 if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\lockfile" 2>nul
 if exist "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" del /F /Q "C:\Users\GODZILLA.IA\.godzilla-sessions\whatsapp\session\SingletonLock" 2>nul
-del /Q /F "C:\Users\GODZILLA.IA\.pm2\*.sock" 2>nul
 timeout /t 2 /nobreak >nul
 
-echo  [3/4] Reconstruyendo imagen (absorbiendo cambios)...
-docker compose build
-timeout /t 2 /nobreak >nul
-
-echo  [4/4] Levantando ecosistema Docker de nuevo (limpio)...
-docker compose up -d
-timeout /t 5 /nobreak >nul
-docker compose ps
-
+echo  [3/3] Reiniciando godzilla-server limpio...
+start "PM2 Restart" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% restart godzilla-server --update-env"
+timeout /t 8 /nobreak >nul
+powershell -Command "Get-Content -Tail 8 'C:\Users\GODZILLA.IA\.pm2_godzilla\logs\godzilla-server-out.log'"
 echo.
-echo  [!] Listo. Si tenias sesion pendiente de WhatsApp, escanea en http://localhost:4010/qr
+echo  [!] Limpieza completa.
 echo.
 pause
 goto MENU

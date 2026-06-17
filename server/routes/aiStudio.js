@@ -243,7 +243,11 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         'polémica de', 'por qué es tendencia',
         'datos curiosos de', 'secretos de', 'mitos de', 'easter eggs de',
         'cosas que no sabías de', 'la verdad sobre', 'teorías de',
-        'qué es', 'cómo hacer', 'cuál es el mejor', 'errores en'
+        'qué es', 'cómo hacer', 'cuál es el mejor', 'errores en',
+        'historia de', 'escándalo de', 'revelaciones de', 'lo mejor de',
+        'critica de', 'opiniones de', 'análisis de', 'comparativa de',
+        'problemas con', 'beneficios de', 'peligros de', 'futuro de',
+        'cómo funciona', 'quién es'
     ];
 
     const fetchGoogle = async (query) => {
@@ -262,17 +266,17 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         MODIFIERS.map(mod => fetchGoogle(mod ? `${mod} ${keyword}` : keyword))
     );
 
-        // Agregamos y deduplicamos (asegurando que sean strings) limitando a los 50 más virales globales para la IA
+        // Agregamos y deduplicamos limitando a los 100 más virales para la IA
         const allQuestions = [...new Set(results.flat())].filter(q =>
             typeof q === 'string' && q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
-        ).slice(0, 50);
+        ).slice(0, 100);
 
-        // Agrupar por tipo de modifier (Tomando solo los 10 más buscados por categoría)
+        // Agrupar por tipo de modifier (mostrando hasta 30 por categoría)
         const structured = {};
         MODIFIERS.forEach((mod, i) => {
             const qs = results[i].filter(q => typeof q === 'string' && q.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
             const groupName = mod === '' ? '🔥 TOP BÚSQUEDAS' : mod;
-            if (qs.length > 0) structured[groupName] = qs.slice(0, 10);
+            if (qs.length > 0) structured[groupName] = qs.slice(0, 30);
         });
 
     // Generar hashtags con IA Gratuita (Groq/Cerebras, costo CERO)
@@ -285,13 +289,13 @@ router.get('/content-radar', authenticateToken, async (req, res) => {
         const aiRes = await executeAiWaterfall([{
             role: 'user',
             content: `Eres un experto estratega de contenido viral en México. NO vendemos productos, creamos contenido magnético.
-Basado en el tema "${keyword}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 30).join(' | ')}
+Basado en el tema "${keyword}" y estas búsquedas reales de Google: ${allQuestions.slice(0, 60).join(' | ')}
 
 Genera EXACTAMENTE este JSON sin markdown ni texto extra:
 {
-  "hashtags": ["#hashtag1","#hashtag2",...] (15 hashtags reales, virales y enfocados a la audiencia objetivo),
+  "hashtags": ["#hashtag1","#hashtag2",...] (30 hashtags reales, virales y enfocados a la audiencia objetivo, mezcla de español e inglés),
   "summary": "1 párrafo conciso (3-4 oraciones) sobre oportunidades de contenido viral para este tema basado en las búsquedas",
-  "hooks": ["Gancho 1", "Gancho 2", ...] (5 ganchos hiper persuasivos, controversiales o magnéticos basados en estas búsquedas reales),
+  "hooks": ["Gancho 1", "Gancho 2", ...] (10 ganchos hiper persuasivos, controversiales o magnéticos basados en estas búsquedas reales),
   "audiencia": "Ejemplo: Jóvenes 18-25 años, gamers, interesados en desarrollo indie, tono dinámico." (Descripción corta y directa de la audiencia objetivo ideal)
 }`
         }], { mode: 'compression', temperature: 0.7 });

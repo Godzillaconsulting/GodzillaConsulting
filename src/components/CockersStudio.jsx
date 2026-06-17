@@ -110,28 +110,7 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         }
     }, [forceOpenEditor]);
 
-    // Recuperar estado en caso de refresh (Evitar perder la chamba y el progreso de la IA)
-    useEffect(() => {
-        const savedState = localStorage.getItem('cockers_studio_session');
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                if (parsed.finalPrompt) setFinalPrompt(parsed.finalPrompt);
-                if (parsed.ytLink) setYtLink(parsed.ytLink);
-                if (parsed.renderingAI) setRenderingAI(parsed.renderingAI);
-                if (parsed.liveSlots && parsed.liveSlots.length > 0) setLiveSlots(parsed.liveSlots);
-                if (parsed.builderData) setBuilderData(parsed.builderData);
-                if (parsed.videoScript) setVideoScript(parsed.videoScript);
-            } catch (e) { console.warn(e); }
-        }
-    }, []);
 
-    // Autoguardar estado cada vez que cambie
-    useEffect(() => {
-        // Prevent saving empty state initially
-        const stateToSave = { finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript };
-        localStorage.setItem('cockers_studio_session', JSON.stringify(stateToSave));
-    }, [finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript]);
 
     // Helper de Resolución de Medios
     const resolveMediaUrl = (url) => {
@@ -738,6 +717,29 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
         "Cinematic FPV drone shot, flying through a hyper-realistic neo-tokyo corporate office at midnight...",
         "Extreme macro close-up of a glowing glowing server rack cable snapping, sparks flying in explosive super slow motion..."
     ]);
+
+    // Recuperar estado en caso de refresh (Evitar perder la chamba y el progreso de la IA)
+    useEffect(() => {
+        const savedState = localStorage.getItem('cockers_studio_session');
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                if (parsed.finalPrompt) setFinalPrompt(parsed.finalPrompt);
+                if (parsed.ytLink) setYtLink(parsed.ytLink);
+                if (parsed.renderingAI) setRenderingAI(parsed.renderingAI);
+                if (parsed.liveSlots && parsed.liveSlots.length > 0) setLiveSlots(parsed.liveSlots);
+                if (parsed.builderData) setBuilderData(parsed.builderData);
+                if (parsed.videoScript) setVideoScript(parsed.videoScript);
+            } catch (e) { console.warn(e); }
+        }
+    }, []);
+
+    // Autoguardar estado cada vez que cambie
+    useEffect(() => {
+        // Prevent saving empty state initially
+        const stateToSave = { finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript };
+        localStorage.setItem('cockers_studio_session', JSON.stringify(stateToSave));
+    }, [finalPrompt, ytLink, renderingAI, liveSlots, builderData, videoScript]);
 
     useEffect(() => {
         fetchQueue();

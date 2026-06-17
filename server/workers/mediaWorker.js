@@ -1210,9 +1210,14 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
             
             // 1. Generar la voz primero para saber la duración exacta
             if (narration) {
-                if (fs.existsSync(sceneAudioPath)) {
-                    console.log(`[MediaWorker] ♻️ Reutilizando audio de voz existente para Escena ${i}`);
+                const existingSize = fs.existsSync(sceneAudioPath) ? fs.statSync(sceneAudioPath).size : 0;
+                if (existingSize > 5000) {
+                    console.log(`[MediaWorker] ♻️ Reutilizando audio válido para Escena ${i} (${(existingSize/1024).toFixed(1)}KB)`);
                 } else {
+                    if (existingSize > 0) {
+                        console.warn(`[MediaWorker] ⚠️ Audio cacheado inválido (${existingSize}B) para Escena ${i}. Regenerando...`);
+                        fs.unlinkSync(sceneAudioPath);
+                    }
                     await generateVoice(narration, sceneAudioPath, selectedVoice, payload.referenceAudio).catch(e => null);
                 }
                 if (fs.existsSync(sceneAudioPath)) {

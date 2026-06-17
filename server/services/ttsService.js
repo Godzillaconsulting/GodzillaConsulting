@@ -304,22 +304,20 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
         }
     }
 
-    // ── 6. EDGE TTS — con validación de archivo y fallback a voz estable ─────────
-    // Voces ESTABLES garantizadas (no preview) — siempre producen audio válido
-    const SAFE_VOICES = ['es-MX-JorgeNeural', 'es-MX-DaliaNeural', 'es-ES-AlvaroNeural', 'es-ES-ElviraNeural', 'es-AR-TomasNeural'];
+    // ── 6. EDGE TTS — Voz estable Jorge MX con fallback a Álvaro ES ─────────────
+    const SAFE_VOICES = ['es-MX-JorgeNeural', 'es-ES-AlvaroNeural', 'es-MX-DaliaNeural'];
     const requestedEdgeVoice = provider === 'edge' ? voiceId : 'es-MX-JorgeNeural';
     const voicesToTry = [requestedEdgeVoice, ...SAFE_VOICES.filter(v => v !== requestedEdgeVoice)];
 
     for (const edgeVoiceName of voicesToTry) {
         try {
-            console.log(`[TTS Service] 🔊 Edge TTS intentando voz: ${edgeVoiceName}`);
+            console.log(`[TTS Service] 🔊 Edge TTS: ${edgeVoiceName}`);
             const edgeTts = new EdgeTTS({ voice: edgeVoiceName, saveSubtitles: true });
             await edgeTts.ttsPromise(text, outputPath);
 
-            // Validar que el archivo tiene contenido real (>5KB)
             const fileSize = fs.existsSync(outputPath) ? fs.statSync(outputPath).size : 0;
             if (fileSize < 5000) {
-                console.warn(`[TTS Service] ⚠️ Voz ${edgeVoiceName} generó archivo vacío (${fileSize} bytes). Reintentando con siguiente voz...`);
+                console.warn(`[TTS Service] ⚠️ ${edgeVoiceName} vacío (${fileSize}B). Reintentando...`);
                 if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
                 continue;
             }
@@ -327,10 +325,10 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
             console.log(`[TTS Service] ✅ Edge TTS listo: ${edgeVoiceName} (${(fileSize/1024).toFixed(1)}KB)`);
             return outputPath;
         } catch (e) {
-            console.warn(`[TTS Service] ⚠️ Voz ${edgeVoiceName} falló: ${e.message}. Probando siguiente...`);
+            console.warn(`[TTS Service] ⚠️ ${edgeVoiceName} falló: ${e.message}. Probando siguiente...`);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         }
     }
 
-    throw new Error('Todas las voces Edge TTS fallaron. Revisa la conexión a internet.');
+    throw new Error('Todas las voces Edge TTS fallaron.');
 }

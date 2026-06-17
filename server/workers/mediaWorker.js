@@ -1163,7 +1163,8 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
 
 
         const clipsPaths = [];
-        const sceneCount = isArrayFormat ? dayData.length : (payload.sceneCount || dayData.sceneCount || 5);
+        // Máximo 5 escenas para mantener 45-90 segundos totales
+        const sceneCount = isArrayFormat ? Math.min(dayData.length, 5) : Math.min(payload.sceneCount || dayData.sceneCount || 5, 5);
         let usedVideoUrls = new Set();
         const workerStartTime = Date.now();
 
@@ -1306,13 +1307,24 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
                         varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}.`;
                     }
 
-                    const durationPerImg = 8.0;
-                    const numImages = Math.min(3, Math.max(1, Math.ceil(targetDuration / durationPerImg)));
-                    console.log(`[MediaWorker] Generando ${numImages} imágenes para slideshow de la Escena ${i} (duración target: ${targetDuration}s)`);
+                    // Imágenes cada 3 segundos, máximo 5 por escena para no saturar API
+                    const durationPerImg = 3.0;
+                    const numImages = Math.min(5, Math.max(1, Math.ceil(targetDuration / durationPerImg)));
+                    console.log(`[MediaWorker] Generando ${numImages} imágenes (3s c/u) para Escena ${i} (duración: ${targetDuration}s)`);
 
+                    // Dividir la narración en tantos fragmentos como imágenes para que cada imagen
+                    // corresponda al momento exacto de lo que se está diciendo
                     let prompts = [];
                     if (sceneRefBytes) {
                         prompts = await generateMultiplePromptsFromRef(sceneRefBytes, sceneRefMime, numImages, varPrompt);
+                    } else if (narration && numImages > 1) {
+                        // Dividir narración en N fragmentos iguales y generar prompt relevante a cada uno
+                        const words = narration.split(' ');
+                        const wordsPerChunk = Math.ceil(words.length / numImages);
+                        for (let j = 0; j < numImages; j++) {
+                            const chunk = words.slice(j * wordsPerChunk, (j + 1) * wordsPerChunk).join(' ');
+                            prompts.push(`${varPrompt}. Visual moment: "${chunk}". Cinematic, 9:16 vertical, variation ${j + 1}.`);
+                        }
                     } else {
                         for (let j = 0; j < numImages; j++) {
                             const seed = Math.floor(Math.random() * 1000000);

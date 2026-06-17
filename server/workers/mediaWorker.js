@@ -1088,8 +1088,8 @@ Instructions:
                         varPrompt = `${imgPrompt}${sportsAdditions}. In the exact artistic style of: ${extractedStylePrompt}.`;
                     }
 
-                    const durationPerImg = 3.0;
-                    const numImages = Math.max(1, Math.ceil(targetDuration / durationPerImg));
+                    const durationPerImg = 8.0;
+                    const numImages = Math.min(3, Math.max(1, Math.ceil(targetDuration / durationPerImg)));
                     console.log(`[MediaWorker] Generando ${numImages} imágenes para slideshow de la Escena ${i} (duración target: ${targetDuration}s)`);
 
                     let prompts = [];

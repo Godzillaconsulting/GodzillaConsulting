@@ -49,7 +49,7 @@ const RAW_PROMPTS = [
 ];
 
 const COMMUNITY_GALLERY_POOL = RAW_PROMPTS.map((p, i) => ({
-    img: `https://image.pollinations.ai/prompt/${encodeURIComponent(p.prompt)}?width=700&height=450&nologo=true&seed=${i * 9999}`,
+    img: `/favicon.png`,
     ...p
 }));
 
@@ -1217,18 +1217,12 @@ export default React.memo(function CockersStudio({ adminProfile, forceOpenEditor
                 {/* Shimmer skeleton */}
                 <div className="absolute inset-0 bg-neutral-900 animate-pulse pointer-events-none" />
                 <img
-                    src={item.img}
+                    src={resolveMediaUrl(item.img)}
                     alt={item.tag}
                     loading="lazy"
                     className="gallery-img absolute inset-0 z-10 w-full h-full object-cover block pointer-events-none"
                     onError={(e) => { 
-                        if (!e.target.dataset.retried) {
-                            e.target.dataset.retried = 'true';
-                            // Reintentar con una nueva semilla para forzar una recarga en la CDN
-                            e.target.src = item.img + '&retry=1';
-                        } else {
-                            e.target.style.opacity = 0.3; 
-                        }
+                        e.target.style.opacity = 0.3; 
                     }}
                 />
                 {/* Dark gradient */}

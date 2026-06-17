@@ -575,87 +575,48 @@ export const getElitePrompts = async (req, res) => {
 export const getInspirationGallery = async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
-        if (!process.env.SAMBANOVA_API_KEY) throw new Error("No SambaNova API key available");
-        
-        const promptInstruction = `Return a JSON array of 12 extremely creative, breathtaking, and unique cinematic visual prompts. 
-        Each object must have:
-        1. "prompt": hyper-detailed cinematic description in english. VERY IMPORTANT: KEEP PROMPT UNDER 150 CHARACTERS to prevent URL crashes. Make them avant-garde, macro photography, unreal engine 5 style, or dark fantasy.
-        2. "tag": short catchy name in spanish representing the aesthetic style. BE CREATIVE. DO NOT USE GENERIC ONES. Invent completely new wild labels for each (e.g., "Bio-Terror", "Cyber-Gótico", "Luz Alienígena", "Plástico Fundido"). DO NOT REPEAT TAGS.
-        3. "model": randomly choose between "Imagen 4 Ultra", "Gemini 3 Pro", "Higgsfield Cosmos", "Veo 3".
-        Random Seed to ensure total uniqueness this time: ${Date.now()}.
-        Return ONLY a valid, strict JSON array with 12 objects. DO NOT use unescaped quotes inside the strings. Do not include markdown \`\`\` blocks or any conversational text.`;
-        
-        const aiRes = await executeAiWaterfall([
-            { role: 'user', content: promptInstruction }
-        ], { temperature: 0.9, mode: 'premium', maxTokens: 4000 });
+        // Obtenemos hasta 12 tareas aprobadas o publicadas aleatorias que tengan opciones de media
+        const result = await pool.query(`
+            SELECT id, title, prompt, media_payload, status
+            FROM studio_tasks 
+            WHERE status IN ('approved', 'published') 
+              AND media_payload IS NOT NULL 
+              AND media_payload != '[]'
+            ORDER BY RANDOM() 
+            LIMIT 12
+        `);
 
-        if (!aiRes || !aiRes.content) {
-            throw new Error(`Waterfall Error: No content returned`);
+        if (result.rows.length === 0) {
+            return res.status(200).json({ success: true, gallery: [] });
         }
 
-        let jsonStr = extractJSON(aiRes.content);
-        
-        let generationList;
-        try {
-            generationList = JSON.parse(jsonStr.trim());
-            if (!Array.isArray(generationList)) throw new Error("Expected an array of objects");
-        } catch(err) {
-            console.error("[INSPIRATION] JSON parsing failed. Raw extracted:", jsonStr);
-            console.error("[INSPIRATION] Original AI content:", aiRes.content);
-            throw new Error("La IA no devolvió un JSON válido. Intenta de nuevo.");
-        }
-        
-        // Le asignamos a cada prompt una imagen dinámica generada por IA sobre la marcha mediante Pollinations (Turbo es más estable y rápido para grid render)
-        const finalGallery = generationList.map(item => {
-            const promptStr = item.prompt || item.Prompt || '';
-            // Recortar strings enormes para no romper la URL de Pollinations API
-            const safePrompt = promptStr.length > 200 ? promptStr.substring(0, 200) : promptStr;
+        const finalGallery = result.rows.map(task => {
+            let media = [];
+            try {
+                media = typeof task.media_payload === 'string' ? JSON.parse(task.media_payload) : task.media_payload;
+            } catch(e) {}
+            
+            // Buscar la primera URL válida
+            let imgUrl = '';
+            if (Array.isArray(media) && media.length > 0) {
+                imgUrl = media[0].url || '';
+            } else if (media && media.scenes && media.scenes.length > 0) {
+                const firstValidScene = media.scenes.find(s => s.status === 'success' && s.url);
+                if (firstValidScene) imgUrl = firstValidScene.url;
+            }
+
             return {
-                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
-                prompt: promptStr,
-                tag: item.tag || item.Tag || 'Inspiración',
-                model: item.model || item.Model || 'AI Engine'
+                img: imgUrl, // La UI utilizará resolveMediaUrl para parcharla
+                prompt: task.prompt || task.title || 'Generado por IA',
+                tag: 'Google IA Studio',
+                model: 'gemini-3.5-pro'
             };
-        });
-
-        // --- TELEMETRÍA ---
-        try {
-            const inputTk  = aiRes.usage?.prompt_tokens     || 0;
-            const outputTk = aiRes.usage?.completion_tokens || 0;
-            // SambaNova 70B Free Tier: coste simbólico ~$0.60/1M tokens
-            const costUsd = ((inputTk + outputTk) / 1_000_000) * 0.60;
-            await pool.query(
-                `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
-                ['Estudio IA (Imágenes)', 'Meta-Llama-3.1-70B-Instruct', inputTk, outputTk, costUsd]
-            );
-        } catch (telErr) { console.warn('[TELEMETRY] Galería:', telErr.message); }
+        }).filter(item => item.img !== '');
 
         res.status(200).json({ success: true, gallery: finalGallery });
     } catch (error) {
         console.error("Error getInspirationGallery:", error);
-        
-        const fallbackPrompts = [
-            { prompt: 'Vaporwave marble statue with pink and cyan grid, palm trees, 80s aesthetic', tag: 'Vaporwave', model: 'Gemini 3.1 Flash' },
-            { prompt: 'A glowing crystal cave with underground river, bioluminescent blue water, fantasy art', tag: 'Crystal Cave', model: 'Sora LCM' },
-            { prompt: 'Close up of a DJ turntable with neon soundwaves bursting out, energetic club vibe', tag: 'Neon DJ', model: 'Imagen 4 Ultra' },
-            { prompt: 'A cute robot dog playing with a glowing ball, futuristic living room, pixar style 3d render', tag: 'Robo Dog', model: 'Gemini 3 Pro' },
-            { prompt: 'Dark fantasy knight in black armor with a glowing red sword, ash falling, cinematic', tag: 'Dark Knight', model: 'Imagen 3 Ultra' },
-            { prompt: 'A floating island made of glowing geometric crystals, low poly art style, vibrant colors', tag: 'Low Poly Island', model: 'Imagen 4 Ultra' },
-            { prompt: 'Macro of a frozen soap bubble with ice crystals forming, winter magic, 8k resolution', tag: 'Frozen Bubble', model: 'Sora LCM' },
-            { prompt: 'A futuristic bullet train speeding through a neon megacity, motion blur, cyberpunk', tag: 'Bullet Train', model: 'Gemini 3.1 Flash' },
-            { prompt: 'An astronaut floating in deep space holding a glowing galaxy orb, cinematic lighting', tag: 'Astro Orb', model: 'Imagen 4 Ultra' }
-        ];
-
-        const finalGallery = fallbackPrompts.map(item => {
-            return {
-                img: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.prompt)}?width=500&height=500&nologo=true&seed=${Math.floor(Math.random() * 99999)}`,
-                prompt: item.prompt,
-                tag: item.tag,
-                model: item.model
-            };
-        });
-
-        res.status(200).json({ success: true, gallery: finalGallery });
+        res.status(500).json({ success: false, message: 'Fallo al cargar la galería de inspiración', gallery: [] });
     }
 };
 

@@ -84,8 +84,11 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 " ^| findstr LISTENING
 )
 timeout /t 3 /nobreak >nul
 
+echo  [1.5/3] Eliminando ai-core duplicado si existe...
+start "PM2 Delete ai-core" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% delete ai-core 2>nul"
+timeout /t 2 /nobreak >nul
+
 echo  [2/3] Reiniciando godzilla-server via PM2 (sesion de usuario)...
-set PM2_RESTART_CMD=%PM2_CMD% stop godzilla-server ^& timeout /t 2 ^& %PM2_CMD% start godzilla-server --update-env
 start "PM2 Restart" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% stop godzilla-server && timeout /t 3 /nobreak && %PM2_CMD% start godzilla-server --update-env"
 timeout /t 10 /nobreak >nul
 

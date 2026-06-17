@@ -785,25 +785,88 @@ async function processTask() {
                     refMimeType = resolvedRefImagePath.split(';')[0].split(':')[1];
                     refImageBytes = resolvedRefImagePath.split(',')[1];
                 }
-            } catch (err) {
-                console.warn(`[MediaWorker] ⚠️ Failed to extract reference file bytes:`, err.message);
-            }
-        }
 
-        // --- 0. PRIOR WEB INVESTIGATION STAGE ---
+         // --- 0. PRIOR WEB INVESTIGATION + REAL PHOTO SEARCH + SCRIPT UNIFICATION ---
         if (!payload.investigated) {
             try {
                 console.log(`[MediaWorker] 🌐 Starting Prior Web Investigation for Task #${task.id}: "${task.title}"`);
-                await sendProgress(task.id, 7, "Investigando contexto real");
+                await sendProgress(task.id, 7, "Investigando contexto real y buscando fotos");
                 
-                // Fetch search queries related to the title and prompt
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+                // ── A. BUSCAR FOTO REAL DE PERSONAJES PÚBLICOS ────────────────────────────
+                // Si no hay imagen de referencia, detectar personas conocidas y buscar su foto real
+                if (!refImageBytes) {
+                    try {
+                        console.log(`[MediaWorker] 🔍 Detectando personajes públicos en el título...`);
+                        const detectRes = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: `Analiza este título de video: "${task.title}". ¿Menciona personas públicas conocidas (artistas, influencers, deportistas, políticos, personajes famosos)? Si sí, devuelve SOLO el nombre completo del personaje más relevante (el primero mencionado o el más buscado). Si no hay personas conocidas, devuelve exactamente: NONE. Solo el nombre o NONE, sin explicación.`
+                        });
+                        const detectedPerson = detectRes.text?.trim() || 'NONE';
+                        
+                        if (detectedPerson !== 'NONE' && detectedPerson.length > 2) {
+                            console.log(`[MediaWorker] 👤 Personaje público detectado: "${detectedPerson}". Buscando foto real...`);
+                            // Buscar foto en DuckDuckGo Images
+                            const photoQuery = encodeURIComponent(`${detectedPerson} foto`);
+                            const ddgImgUrl = `https://duckduckgo.com/?q=${photoQuery}&iax=images&ia=images&t=h_`;
+                            const ddgRes = await fetch(`https://html.duckduckgo.com/html/?q=${photoQuery}+site:instagram.com+OR+site:twitter.com`, {
+                                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                                signal: AbortSignal.timeout(6000)
+                            });
+                            // Buscar directamente imágenes via DuckDuckGo API de imágenes
+                            const imgApiUrl = `https://duckduckgo.com/i.js?q=${photoQuery}&o=json&s=0&u=bing&f=,,,,,&l=es-es`;
+                            const imgRes = await fetch(imgApiUrl, {
+                                headers: { 
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    'Referer': 'https://duckduckgo.com/'
+                                },
+                                signal: AbortSignal.timeout(8000)
+                            });
+                            if (imgRes.ok) {
+                                const imgData = await imgRes.json();
+                                const results = imgData.results || [];
+                                // Filtrar imágenes de personas (JPG/PNG, tamaño razonable)
+                                const validImgs = results.filter(r => 
+                                    r.image && (r.image.endsWith('.jpg') || r.image.endsWith('.jpeg') || r.image.endsWith('.png') || r.image.includes('jpg') || r.image.includes('jpeg'))
+                                    && r.width > 200 && r.height > 200
+                                );
+                                if (validImgs.length > 0) {
+                                    // Intentar descargar la primera imagen válida
+                                    for (const img of validImgs.slice(0, 5)) {
+                                        try {
+                                            const imgDownload = await fetch(img.image, {
+                                                headers: { 'User-Agent': 'Mozilla/5.0' },
+                                                signal: AbortSignal.timeout(8000)
+                                            });
+                                            if (imgDownload.ok) {
+                                                const imgBuffer = await imgDownload.arrayBuffer();
+                                                if (imgBuffer.byteLength > 10000) { // mínimo 10KB
+                                                    refImageBytes = Buffer.from(imgBuffer).toString('base64');
+                                                    refMimeType = imgDownload.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+                                                    if (!refMimeType.startsWith('image/')) refMimeType = 'image/jpeg';
+                                                    console.log(`[MediaWorker] ✅ Foto real de "${detectedPerson}" descargada (${Math.round(imgBuffer.byteLength/1024)}KB) → se usará como referencia visual`);
+                                                    break;
+                                                }
+                                            }
+                                        } catch(dlErr) {
+                                            console.warn(`[MediaWorker] ⚠️ No se pudo descargar imagen: ${dlErr.message}`);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch(photoErr) {
+                        console.warn(`[MediaWorker] ⚠️ Búsqueda de foto real falló: ${photoErr.message}`);
+                    }
+                }
+
+                // ── B. INVESTIGACIÓN WEB Y ENRIQUECIMIENTO ────────────────────────────────
                 const searchQuery = `${task.title} ${payload.niche || ''}`.trim();
                 const searchContext = await searchWebContext(searchQuery);
                 console.log(`[MediaWorker] 🔎 Search context retrieved (${searchContext.length} chars). Enriching script...`);
                 
-                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                
-                const systemPrompt = `You are a professional AI video editor and research director.
+                const enrichPrompt = `You are a professional AI video editor and research director.
 We are creating a highly engaging social media video.
 Your task is to enrich the current video script payload (narration scenes and visual prompts) using the provided web search context.
 
@@ -814,37 +877,37 @@ Web Search Context (Real-world facts, names, teams, colors, logos, stadiums, etc
 ${searchContext}
 
 Instructions:
-1. Research & Enrich: Rewrite the narration text and visual prompts to reflect real-world facts, names, stadiums, team colors, crest descriptions, and official team aesthetics from the search context. For example, if the script is about "Cruz Azul vs Pumas final", make sure it names actual stadiums (like Estadio Ciudad de los Deportes, Estadio Olímpico Universitario), correct colors (royal blue for Cruz Azul, navy/gold for Pumas), correct crest descriptions, etc.
-2. Safety & Policy Compliance: Avoid naming specific real active football players/coaches directly in the visual prompts (instead of "Lionel Messi" or "Charly Rodríguez", describe "an athletic professional soccer player wearing a royal blue jersey with a circular red and white crest on the chest"). This avoids safety/policy blocks from Google Imagen. You may use real names of teams, stadiums, historical coaches, and general terms.
+1. Research & Enrich: Rewrite the narration text and visual prompts to reflect real-world facts, names, and official aesthetics from the search context.
+2. Safety & Policy Compliance: Avoid naming specific real active people directly in the visual prompts — describe them physically instead. Use real names only in narration text.
 3. Quality: Keep the tone epic, viral, educational, and engaging.
-4. Structure: Keep the JSON structure exactly identical to the original script (either a dictionary of keys like {"NARRACION ESCENA 1": "...", "VISUAL ESCENA 1 (Prompt Imagen Detallado)": "..."} or an array of scenes).
-5. Respond ONLY with the valid JSON object representing the updated script. Do not include markdown code block formatting (like \`\`\`json), just the raw JSON text.`;
-
+4. Structure: Keep the JSON structure exactly identical to the original script.
+5. Respond ONLY with the valid JSON object. No markdown fences.`;
+                
                 const rewriteRes = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
+                    contents: [{ role: 'user', parts: [{ text: enrichPrompt }] }]
                 });
                 
                 let rawText = rewriteRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
                 
                 if (rawText.startsWith('{') || rawText.startsWith('[')) {
-                    const newScenes = JSON.parse(rawText);
-                    payload.scenes = newScenes;
-                    payload.investigated = true;
+                    payload.scenes = JSON.parse(rawText);
                     payload.investigationContext = searchContext;
                     console.log(`[MediaWorker] ✅ Script successfully enriched with real-world facts!`);
-                    
-                    // Save updated scenes back to the database in media_payload
-                    await pool.query(
-                        `UPDATE studio_tasks SET media_payload = $1 WHERE id = $2`,
-                        [JSON.stringify([payload]), task.id]
-                    );
-                } else {
-                    console.warn(`[MediaWorker] ⚠️ Gemini response for enrichment was not valid JSON:\n${rawText}`);
                 }
+
+                payload.investigated = true;
+                await pool.query(
+                    `UPDATE studio_tasks SET media_payload = $1 WHERE id = $2`,
+                    [JSON.stringify([payload]), task.id]
+                );
             } catch (err) {
                 console.error(`[MediaWorker] ❌ Failed prior web investigation:`, err.message);
+            }
+        }
+            } catch (err) {
+                console.warn(`[MediaWorker] ⚠️ Failed to extract reference file bytes:`, err.message);
             }
         }
 
@@ -929,15 +992,85 @@ Instructions:
         }
 
         const isArrayFormat = Array.isArray(payload.scenes) || (payload.scenes && Array.isArray(payload.scenes.scenes));
-        const dayData = Array.isArray(payload.scenes) ? payload.scenes : (payload.scenes && Array.isArray(payload.scenes.scenes) ? payload.scenes.scenes : payload.scenes);
+        let dayData = Array.isArray(payload.scenes) ? payload.scenes : (payload.scenes && Array.isArray(payload.scenes.scenes) ? payload.scenes.scenes : payload.scenes);
         
+        // ── 3. UNIFICAR NARRACIÓN EN GUION ÚNICO SIN REPETICIONES ────────────────────
+        // Aplica a TODOS los videos. Toma las narraciones por escena, las une, y pide a Gemini
+        // que las reescriba como UNA sola historia progresiva de 60-90s y las redistribuye.
+        if (process.env.GEMINI_API_KEY && !payload.narrationUnified) {
+            try {
+                console.log(`[MediaWorker] ✍️ Unificando narración en guion continuo sin repeticiones...`);
+                await sendProgress(task.id, 9, "Escribiendo guion unificado");
+
+                // Extraer todas las narraciones actuales
+                let existingNarrations = '';
+                const sceneCountForUnify = isArrayFormat ? dayData.length : (payload.sceneCount || 5);
+                for (let si = 0; si < sceneCountForUnify; si++) {
+                    let narr = '';
+                    if (isArrayFormat) {
+                        narr = dayData[si]?.narration || '';
+                    } else {
+                        narr = dayData[`NARRACION ESCENA ${si+1} (CTA)`] || dayData[`NARRACION ESCENA ${si+1}`] || '';
+                    }
+                    if (narr) existingNarrations += narr + ' ';
+                }
+
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                const unifyRes = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: `Eres un guionista viral experto en contenido corto para Reels y TikTok en español.
+
+Título del video: "${task.title}"
+Narración actual (puede tener repeticiones): "${existingNarrations.trim()}"
+
+Tu tarea:
+1. Reescribe esta narración como UN SOLO GUION CONTINUO en español, sin repetir ideas.
+2. Estructura obligatoria: GANCHO impactante (primeras 2-3 palabras que enganchen) → desarrollo de la historia con datos reales → revelación o giro → cierre con CTA.
+3. Duración objetivo: 60 a 90 segundos hablado (aprox 150-220 palabras). NO más.
+4. Tono: misterioso, urgente, informativo, viral. Como si lo narrara un podcast de conspiraciones.
+5. Divide el guion en exactamente ${sceneCountForUnify} segmentos numerados, cada uno separado por "||ESCENA||".
+6. Responde SOLO con los segmentos separados por "||ESCENA||", sin números, sin encabezados, sin explicación extra.`
+                });
+
+                const unifiedText = unifyRes.text?.trim() || '';
+                const segments = unifiedText.split('||ESCENA||').map(s => s.trim()).filter(s => s.length > 5);
+
+                if (segments.length >= 2) {
+                    // Redistribuir los segmentos en las escenas existentes
+                    if (isArrayFormat) {
+                        dayData = dayData.map((scene, idx) => ({
+                            ...scene,
+                            narration: segments[idx] || scene.narration
+                        }));
+                        if (Array.isArray(payload.scenes)) payload.scenes = dayData;
+                    } else {
+                        segments.forEach((seg, idx) => {
+                            const key1 = `NARRACION ESCENA ${idx+1} (CTA)`;
+                            const key2 = `NARRACION ESCENA ${idx+1}`;
+                            if (dayData[key1] !== undefined) dayData[key1] = seg;
+                            else if (dayData[key2] !== undefined) dayData[key2] = seg;
+                        });
+                    }
+                    payload.narrationUnified = true;
+                    console.log(`[MediaWorker] ✅ Guion unificado en ${segments.length} segmentos sin repeticiones.`);
+                    await pool.query(
+                        `UPDATE studio_tasks SET media_payload = $1 WHERE id = $2`,
+                        [JSON.stringify([payload]), task.id]
+                    );
+                } else {
+                    console.warn(`[MediaWorker] ⚠️ No se pudo unificar el guion (segmentos insuficientes: ${segments.length}). Usando original.`);
+                }
+            } catch (unifyErr) {
+                console.warn(`[MediaWorker] ⚠️ Error al unificar narración: ${unifyErr.message}. Continuando con original.`);
+            }
+        }
+
         const fallbackVoices = process.env.ELEVENLABS_API_KEY 
             ? ['elevenlabs:21m00Tcm4TlvDq8ikWAM', 'elevenlabs:29vD33N1CtxCmqQRPOHJ'] 
             : ['edge:es-MX-JorgeNeural', 'edge:es-MX-DaliaNeural', 'edge:es-ES-AlvaroNeural', 'edge:es-ES-ElviraNeural', 'edge:es-AR-TomasNeural'];
         
         let selectedVoice = payload.voice;
         
-        // Si no se definió o es 'Automático', seleccionamos de los fallbacks o ElevenLabs
         if (!selectedVoice || selectedVoice === 'Automático' || selectedVoice === 'null' || selectedVoice === 'undefined') {
             selectedVoice = fallbackVoices[task.id % fallbackVoices.length];
             if (process.env.ELEVENLABS_API_KEY && !selectedVoice.startsWith('elevenlabs:')) {

@@ -897,40 +897,55 @@ async function processTask() {
                     }
                 }
 
+                // Guardar detectedPerson para usarlo en búsquedas de imágenes
+                if (typeof detectedPerson !== 'undefined' && detectedPerson !== 'NONE') {
+                    payload._detectedPerson = detectedPerson;
+                }
+
                 // ── B. INVESTIGACIÓN WEB Y ENRIQUECIMIENTO ────────────────────────────────
                 const searchQuery = `${task.title} ${payload.niche || ''}`.trim();
                 const searchContext = await searchWebContext(searchQuery);
-                console.log(`[MediaWorker] 🔎 Search context retrieved (${searchContext.length} chars). Enriching script...`);
-                
-                const enrichPrompt = `You are a professional AI video editor and research director.
-We are creating a highly engaging social media video.
-Your task is to enrich the current video script payload (narration scenes and visual prompts) using the provided web search context.
+                // Segunda búsqueda más específica para contexto adicional
+                const searchContext2 = await searchWebContext(`${task.title} historia facts datos reales`);
+                const fullContext = [searchContext, searchContext2].filter(c => c && !c.startsWith('Search failed')).join('\n---\n');
+                console.log(`[MediaWorker] 🔎 Contexto web obtenido (${fullContext.length} chars). Reescribiendo con hechos reales...`);
 
-Current Script Payload:
+                const enrichPrompt = `Eres un investigador periodístico y guionista de contenido viral en español.
+
+TEMA DEL VIDEO: "${task.title}"
+NICHO: ${payload.niche || 'General'}
+
+CONTEXTO DE INVESTIGACIÓN WEB (hechos reales documentados):
+${fullContext}
+
+GUIÓN ACTUAL (puede tener errores, inventos o mezcla de temas):
 ${JSON.stringify(payload.scenes, null, 2)}
 
-Web Search Context (Real-world facts, names, teams, colors, logos, stadiums, etc.):
-${searchContext}
+TU TAREA: Reescribe el guion corrigiendo errores con HECHOS REALES documentados sobre "${task.title}".
 
-Instructions:
-1. Research & Enrich: Rewrite the narration text and visual prompts to reflect real-world facts, names, and official aesthetics from the search context.
-2. Safety & Policy Compliance: Avoid naming specific real active people directly in the visual prompts — describe them physically instead. Use real names only in narration text.
-3. Quality: Keep the tone epic, viral, educational, and engaging.
-4. Structure: Keep the JSON structure exactly identical to the original script.
-5. Respond ONLY with the valid JSON object. No markdown fences.`;
-                
+REGLAS ESTRICTAS DE VERACIDAD:
+1. SOLO incluye información verificable sobre "${task.title}" específicamente.
+2. NO mezcles con otros temas, personas o eventos no directamente relacionados con "${task.title}".
+3. Si el guion actual confunde temas o personajes, CORRÍGELO usando el contexto de investigación.
+4. Usa datos específicos del contexto (años, nombres reales, eventos documentados).
+5. Si algo es especulación o teoría, menciónalo explícitamente como tal ("se especula", "la teoría dice").
+6. NO inventes fechas, eventos ni conexiones sin respaldo en el contexto de investigación.
+7. Las imágenes visuales deben mostrar EXACTAMENTE lo que dice la narración de esa escena.
+8. Mantén la misma estructura JSON del guion original.
+9. Responde SOLO el JSON válido, sin markdown ni explicaciones.`;
+
                 const rewriteRes = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
                     contents: [{ role: 'user', parts: [{ text: enrichPrompt }] }]
                 });
-                
+
                 let rawText = rewriteRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-                
+
                 if (rawText.startsWith('{') || rawText.startsWith('[')) {
                     payload.scenes = JSON.parse(rawText);
-                    payload.investigationContext = searchContext;
-                    console.log(`[MediaWorker] ✅ Script successfully enriched with real-world facts!`);
+                    payload.investigationContext = fullContext;
+                    console.log(`[MediaWorker] ✅ Guion reescrito con hechos reales verificados!`);
                 }
 
                 payload.investigated = true;
@@ -1103,10 +1118,20 @@ Instructions:
 TÍTULO: "${task.title}"
 AUDIENCIA: adultos hispanohablantes 25-45 años
 NARRACIÓN BASE (puede tener repeticiones/borrador): "${existingNarrations.trim()}"
+${payload.investigationContext ? `
+HECHOS REALES INVESTIGADOS (ÚSA ESTOS como base factual):
+${payload.investigationContext.substring(0, 1200)}
+` : ''}
 
 ${frameworkInstructions}
 
 ${toneInstruction}
+
+REGLAS DE VERACIDAD OBLIGATORIAS:
+- Cada afirmación debe ser real y verificable sobre "${task.title}" específicamente.
+- NO mezcles personajes, eventos o temas no directamente relacionados con "${task.title}".
+- Si usas datos (fechas, nombres, hechos), que sean REALES y comprobables.
+- Las teorías o especulaciones deben presentarse como tal ("se especula", "hay quienes creen").
 
 REGLAS CINEMATOGRÁFICAS OBLIGATORIAS:
 1. Oraciones máximo 12 palabras. Sin palabras de relleno ("básicamente", "entonces", "eh", "como que").
@@ -1336,11 +1361,14 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
                     for (let j = 0; j < numImages; j++) {
                         const tempImgPath = path.join(OUTPUT_DIR, `task_${task.id}_scene_${i}_temp_${j}.jpg`);
                         
-                        // Buscar foto real en la web para este fragmento de narración
-                        const words = narration ? narration.split(' ') : [];
-                        const wordsPerChunk = Math.max(1, Math.ceil(words.length / numImages));
-                        const chunkText = words.slice(j * wordsPerChunk, (j + 1) * wordsPerChunk).join(' ') || task.title;
-                        const searchQuery = encodeURIComponent(`${chunkText} ${task.title}`.substring(0, 80));
+                        // Buscar foto real — usar subject visual del prompt o personaje detectado
+                        const detectedSubject = payload._detectedPerson || '';
+                        const visualSubject = (visualPrompt || task.title).split(',')[0].trim().substring(0, 60);
+                        const searchBase = detectedSubject || visualSubject || task.title;
+                        // Variar la query por slot para obtener fotos distintas
+                        const searchVariants = ['foto real', 'imagen', 'foto', 'picture', 'photo'];
+                        const searchTerm = `${searchBase} ${searchVariants[j % searchVariants.length]}`;
+                        const searchQuery = encodeURIComponent(searchTerm.substring(0, 80));
                         
                         let gotRealPhoto = false;
                         try {

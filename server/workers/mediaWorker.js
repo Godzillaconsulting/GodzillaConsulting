@@ -193,37 +193,25 @@ function formatAssTime(seconds) {
     return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
 }
 
-// Generar archivo ASS con subtítulos (Inglés arriba en Blanco, Español abajo en Amarillo) dentro del mismo bloque
-function generateAssSubtitles(cuesEn, cuesEs) {
+// Generar archivo ASS con subtítulos SOLO en español — estilo YouTube viral
+function generateAssSubtitles(cuesEs) {
     let ass = `[Script Info]
-Title: Dual Subtitles
+Title: Subtitulos ES
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: StyleDefault,Arial,48,&H00FFFFFF&,&H000000FF&,&H00000000&,&H00000000&,1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,650,1
+Style: StyleES,Arial,54,&H0000FFFF&,&H000000FF&,&H00000000&,&H80000000&,1,0,0,0,100,100,0.5,0,1,2,1.5,2,20,20,80,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
-
-    // Asumiendo que cuesEn y cuesEs tienen la misma longitud y alineación temporal
-    const len = Math.min(cuesEn.length, cuesEs.length);
-    for (let i = 0; i < len; i++) {
-        const cueEn = cuesEn[i];
-        const cueEs = cuesEs[i];
-        
-        const textEn = cueEn.text.trim().replace(/\n/g, ' ');
-        const textEs = cueEs.text.trim().replace(/\n/g, ' ');
-        
-        // Poner inglés arriba (blanco) y español abajo (amarillo)
-        const combinedText = `${textEn}\\N{\\c&H0000FFFF&}${textEs}`;
-        
-        ass += `Dialogue: 0,${formatAssTime(cueEn.start)},${formatAssTime(cueEn.end)},StyleDefault,,0000,0000,0000,,${combinedText}\n`;
+    for (const cue of cuesEs) {
+        const text = cue.text.trim().replace(/\n/g, ' ');
+        ass += `Dialogue: 0,${formatAssTime(cue.start)},${formatAssTime(cue.end)},StyleES,,0000,0000,0000,,${text}\n`;
     }
-
     return ass;
 }
 
@@ -1371,6 +1359,8 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
                         const searchQuery = encodeURIComponent(searchTerm.substring(0, 80));
                         
                         let gotRealPhoto = false;
+                        // Dominios con watermarks — saltar
+                        const SKIP_DOMAINS = ['gettyimages','shutterstock','istockphoto','123rf','alamy','depositphotos','dreamstime','bigstockphoto','pond5','adobestock','stock.adobe'];
                         try {
                             console.log(`[MediaWorker] 🔍 Buscando foto real para imagen ${j+1}/${numImages}...`);
                             const imgApiUrl = `https://duckduckgo.com/i.js?q=${searchQuery}&o=json&s=${j * 10}&u=bing&f=,,,,,&l=es-mx`;
@@ -1380,11 +1370,17 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
                             });
                             if (ddgRes.ok) {
                                 const ddgData = await ddgRes.json();
-                                const validImgs = (ddgData.results || []).filter(r =>
-                                    r.image && (r.image.includes('.jpg') || r.image.includes('.jpeg') || r.image.includes('.png'))
-                                    && r.width > 300 && r.height > 300
-                                );
-                                for (const img of validImgs.slice(0, 6)) {
+                                const validImgs = (ddgData.results || []).filter(r => {
+                                    if (!r.image) return false;
+                                    // Filtrar stock photo domains
+                                    if (SKIP_DOMAINS.some(d => r.image.includes(d) || (r.url && r.url.includes(d)))) return false;
+                                    // Filtrar banners (aspecto muy horizontal = texto superpuesto)
+                                    if (r.width && r.height && (r.width / r.height) > 2.5) return false;
+                                    // Filtrar demasiado pequeñas
+                                    if (r.width < 300 || r.height < 200) return false;
+                                    return true;
+                                });
+                                for (const img of validImgs.slice(0, 8)) {
                                     try {
                                         const imgDl = await fetch(img.image, {
                                             headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -1454,32 +1450,19 @@ Responde SOLO los segmentos. Sin numeración, sin encabezados, sin explicación 
 
             if (fs.existsSync(sceneAudioPath)) {
                 const jsonPath = sceneAudioPath + '.json';
-                let cuesEs = buildSrtFromEdgeTtsJson(jsonPath, targetDuration);
-                let cuesEn = [];
+                const cuesEs = buildSrtFromEdgeTtsJson(jsonPath, targetDuration);
 
                 if (cuesEs && cuesEs.length > 0) {
                     console.log(`[MediaWorker] 🎙️ Subtítulos sincronizados construidos con éxito a partir de JSON para Escena ${i}...`);
-                    // Traducir los cues sincronizados conservando los mismos tiempos
-                    const englishTexts = await translateCuesToEnglish(cuesEs);
-                    cuesEn = cuesEs.map((cue, idx) => ({
-                        text: englishTexts[idx] || cue.text,
-                        start: cue.start,
-                        end: cue.end
-                    }));
                 } else {
                     // Fallback lineal si no hay JSON
                     console.log(`[MediaWorker] ⚠️ No se encontró JSON de tiempos de EdgeTTS. Usando fallback lineal para Escena ${i}...`);
-                    cuesEs = generateFallbackCues(narration, targetDuration);
-                    
-                    console.log(`[Translate] Traduciendo narración a inglés con Gemini...`);
-                    const translatedNarration = await translateTextToEnglish(narration);
-                    cuesEn = generateFallbackCues(translatedNarration, targetDuration);
-                }
-
-                if (cuesEs.length > 0 && cuesEn.length > 0) {
-                    const assContent = generateAssSubtitles(cuesEn, cuesEs);
-                    fs.writeFileSync(assPath, assContent);
-                    hasAss = true;
+                    const fallbackCues = generateFallbackCues(narration, targetDuration);
+                    if (fallbackCues.length > 0) {
+                        const assContent = generateAssSubtitles(fallbackCues);
+                        fs.writeFileSync(assPath, assContent);
+                        hasAss = true;
+                    }
                 }
             }
 

@@ -304,15 +304,21 @@ export async function generateVoice(text, outputPath, voiceParam = 'edge:es-MX-J
         }
     }
 
-    // ── 6. EDGE TTS — Voz estable Jorge MX con fallback a Álvaro ES ─────────────
-    const SAFE_VOICES = ['es-MX-JorgeNeural', 'es-ES-AlvaroNeural', 'es-MX-DaliaNeural'];
-    const requestedEdgeVoice = provider === 'edge' ? voiceId : 'es-MX-JorgeNeural';
+    // ── 6. EDGE TTS — Voz natural con parámetros de prosodia ──────────────────
+    const SAFE_VOICES = ['es-ES-AlvaroNeural', 'es-MX-DaliaNeural', 'es-MX-JorgeNeural'];
+    const requestedEdgeVoice = provider === 'edge' ? voiceId : 'es-ES-AlvaroNeural';
     const voicesToTry = [requestedEdgeVoice, ...SAFE_VOICES.filter(v => v !== requestedEdgeVoice)];
 
     for (const edgeVoiceName of voicesToTry) {
         try {
-            console.log(`[TTS Service] 🔊 Edge TTS: ${edgeVoiceName}`);
-            const edgeTts = new EdgeTTS({ voice: edgeVoiceName, saveSubtitles: true });
+            console.log(`[TTS Service] 🔊 Edge TTS: ${edgeVoiceName} (rate=-12%, pitch natural)`);
+            const edgeTts = new EdgeTTS({ 
+                voice: edgeVoiceName, 
+                saveSubtitles: true,
+                rate: '-12%',       // ligeramente más lento = más humano
+                pitch: '+2Hz',      // leve calidez en el tono
+                volume: '+0%'
+            });
             await edgeTts.ttsPromise(text, outputPath);
 
             const fileSize = fs.existsSync(outputPath) ? fs.statSync(outputPath).size : 0;

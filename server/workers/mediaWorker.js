@@ -821,8 +821,12 @@ async function processTask() {
                     refMimeType = resolvedRefImagePath.split(';')[0].split(':')[1];
                     refImageBytes = resolvedRefImagePath.split(',')[1];
                 }
+            } catch (err) {
+                console.warn(`[MediaWorker] ⚠️ Failed to extract reference file bytes:`, err.message);
+            }
+        } // end if (payload.refImage)
 
-         // --- 0. PRIOR WEB INVESTIGATION + REAL PHOTO SEARCH + SCRIPT UNIFICATION ---
+        // --- 0. PRIOR WEB INVESTIGATION + REAL PHOTO SEARCH + SCRIPT UNIFICATION ---
         if (!payload.investigated) {
             try {
                 console.log(`[MediaWorker] 🌐 Starting Prior Web Investigation for Task #${task.id}: "${task.title}"`);
@@ -955,10 +959,6 @@ REGLAS ESTRICTAS DE VERACIDAD:
                 );
             } catch (err) {
                 console.error(`[MediaWorker] ❌ Failed prior web investigation:`, err.message);
-            }
-        }
-            } catch (err) {
-                console.warn(`[MediaWorker] ⚠️ Failed to extract reference file bytes:`, err.message);
             }
         }
 

@@ -1,5 +1,7 @@
 import Lottie from 'lottie-react';
-import lottieData from '../assets/lottie-hero.json';
+import { useTranslation } from 'react-i18next';
+import lottieDataEs from '../assets/lottie-hero.json';
+import lottieDataEn from '../assets/lottie-hero-en.json';
 
 /**
  * AnimatedHeadline
@@ -8,6 +10,10 @@ import lottieData from '../assets/lottie-hero.json';
  * Positioned above the ColorBends background.
  */
 export default function AnimatedHeadline({ className = '', style = {} }) {
+  const { i18n } = useTranslation();
+  const isSpanish = i18n.resolvedLanguage?.startsWith('es') || !i18n.resolvedLanguage;
+  const currentAnimation = isSpanish ? lottieDataEs : lottieDataEn;
+
   return (
     <div
       className={className}
@@ -18,7 +24,7 @@ export default function AnimatedHeadline({ className = '', style = {} }) {
       aria-label="Detén la fuga de leads y escala tu facturación con inteligencia artificial"
     >
       <Lottie
-        animationData={lottieData}
+        animationData={currentAnimation}
         loop={true}
         autoplay={true}
         style={{ width: '100%', height: 'auto' }}

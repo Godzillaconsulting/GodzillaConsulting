@@ -185,7 +185,7 @@ REGLAS:
         await client.query(
             `INSERT INTO search_trends (keywords, aggregated_questions, summary, created_at)
              VALUES ($1, $2, $3, NOW())`,
-            [JSON.stringify(KEYWORDS), JSON.stringify(structuredQuestions), summaryText]
+            [JSON.stringify(activeKeywords), JSON.stringify(structuredQuestions), summaryText]
         );
         console.log(`[${BOT_NAME}] 🌐 Datos guardados en search_trends para el Dashboard Analítico.`);
 

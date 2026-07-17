@@ -44,7 +44,6 @@ const SEOPageWrapper = React.lazy(() => import('./components/SEOPageWrapper'));
 const PreguntasFrecuentes = React.lazy(() => import('./components/PreguntasFrecuentes'));
 const RecursoPage = React.lazy(() => import('./components/RecursoPage'));
 const GodzillaSora = React.lazy(() => import('./components/GodzillaSora'));
-const SociosGodzilla = React.lazy(() => import('./components/SociosGodzilla'));
 
 // Animación principal gobernada de forma particular por el Componente Hero.jsx. No requiere background global.
 

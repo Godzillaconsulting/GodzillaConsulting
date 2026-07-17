@@ -489,8 +489,22 @@ export default function AdminStudio() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        if (data.success && data.data?.searchTrends) {
-            setTrendsData(data.data.searchTrends);
+        if (data.success && data.searchTrends) {
+            let questionsObj = data.searchTrends.aggregated_questions || {};
+            let allQuestions = [];
+            Object.values(questionsObj).forEach(arr => {
+                if(Array.isArray(arr)) {
+                    allQuestions = allQuestions.concat(arr.slice(0, 5)); // Take top 5 from each category to avoid huge lists
+                }
+            });
+            const topQuestions = allQuestions.slice(0, 15);
+
+            const formatted = `## Búsquedas Recientes Globales\n\n### 🔑 Palabras Clave Virales\n` + 
+                (data.searchTrends.keywords || []).slice(0, 15).map(k => `- ${k}`).join('\n') + 
+                `\n\n### ❓ Preguntas de la Audiencia\n` + 
+                topQuestions.map(q => `- ${q}`).join('\n') +
+                `\n\n### 📝 Resumen del Bot\n` + (data.searchTrends.summary || 'Sin resumen.');
+            setTrendsData(formatted);
         } else {
             setTrendsData('No se encontraron tendencias recientes. El bot podría estar recolectando datos aún.');
         }

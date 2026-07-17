@@ -38,7 +38,6 @@ export const PAGE_SECTIONS = [
  { id: 'landing-recurso-prompts', label: 'L. Protocolo Lázaro', emoji: '🔗', tag: 'LANDING' },
  { id: 'landing-recurso-boveda-scripts', label: 'L. Bóveda Scripts', emoji: '🔗', tag: 'LANDING' },
  { id: 'landing-recurso-crm', label: 'L. Tablero Control', emoji: '🔗', tag: 'LANDING' },
- { id: 'socio-godzilla', label: 'Socios VIP', emoji: '👑', tag: 'LANDING' },
  { id: 'footer', label: 'Footer', emoji: '📌', tag: 'PIE' },
 ];
 
@@ -219,23 +218,7 @@ export function injectSectionDefaults(nodeId, draftSource) {
       }
   }
 
-  // Inject defaults for Socio Godzilla Landing
-  if (nodeId === 'socio-godzilla') {
-      if (combinedData.heroText === undefined) combinedData.heroText = 'Godzilla Business Insights';
-      if (combinedData.subtext === undefined) combinedData.subtext = 'Inteligencia C-Level en Tiempo Real';
-      if (combinedData.description === undefined) combinedData.description = 'Decodificamos el ecosistema corporativo diario usando I.A. Obtén acceso absoluto a reportes PDF avanzados, métricas visuales y estrategias accionables diseñadas para directivos.';
-      if (combinedData.feature1 === undefined) combinedData.feature1 = 'Análisis Corporativos y Geográficos';
-      if (combinedData.feature2 === undefined) combinedData.feature2 = 'Vectores Geométricos B2B Exclusivos';
-      if (combinedData.feature3 === undefined) combinedData.feature3 = 'Acceso Cero-Fricción Universal Multi-idioma';
-      if (combinedData.feature4 === undefined) combinedData.feature4 = 'Repositorios Periodísticos HD';
-      if (combinedData.checkoutTitle === undefined) combinedData.checkoutTitle = 'Membresía Socio Executive';
-      if (combinedData.price === undefined) combinedData.price = '1.00';
-      if (combinedData.period === undefined) combinedData.period = 'USD / Quincena';
-      if (combinedData.guarantee === undefined) combinedData.guarantee = 'Cobro Seguro y Cancelación 1 Click';
-      if (combinedData.infoText === undefined) combinedData.infoText = 'Aceptamos todas las tarjetas de crédito corporativas y débito.\nDesbloquea instantáneamente tu Biblioteca Premium PDF.';
-      if (combinedData.buttonText === undefined) combinedData.buttonText = 'Convertirme en Socio (Pagar $1 USD)';
-      if (combinedData.terms === undefined) combinedData.terms = 'Suscripción auto-renovable periódica. Términos y condiciones aplicables.';
-  }
+
 
   // Inject defaults for Paquetes
 

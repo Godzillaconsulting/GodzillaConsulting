@@ -50,11 +50,11 @@ export const getTrends = async (req, res) => {
             }
         }
 
-        // yt-search como fallback o fuente principal de videos reales
-        if (!rawTrends || examples.length === 0) {
+        // yt-search como fallback o fuente principal de videos reales (SOLO si la red lo permite)
+        if ((!rawTrends || examples.length === 0) && (network === 'General' || network === 'YouTube')) {
             try {
                 // Removemos 'shorts viral' porque arruina el algoritmo de relevancia de noticias recientes de YouTube
-                const searchResults = await ytSearch(`${filter} hoy`);
+                const searchResults = await ytSearch(`Noticias de ${filter} hoy`);
                 if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
                     examples = searchResults.videos.slice(0, 4).map(v => ({
                         title: v.title,
@@ -69,11 +69,15 @@ export const getTrends = async (req, res) => {
                     console.log(`[Trends] ✅ Fase 1 completada - obtenidos videos virales desde yt-search.`);
                 }
             } catch (err) {
-                console.warn(`[Trends] ⚠️ Fallo yt-search, usando LLM puro.`, err.message);
+                console.warn(`[Trends] ⚠️ Fallo yt-search:`, err.message);
             }
         }
 
-        if (!rawTrends) {
+        if (!rawTrends || examples.length === 0) {
+            if (network !== 'General' && network !== 'YouTube') {
+                return res.status(404).json({ success: false, message: `No se encontraron videos hiper-recientes (últimas 48 hrs) sobre "${filter}" en ${network}. El motor está configurado para no mostrar basura antigua.` });
+            }
+            
             const rawTrendsPrompt = `Dame una lista rápida y cruda de 5-7 hashtags y 3 frases gancho (hooks) que estén funcionando AHORA en ${network} para el nicho "${filter}". Solo texto plano, sin formato, sin JSON.`;
             try {
                 const rawRes = await executeAiWaterfall([

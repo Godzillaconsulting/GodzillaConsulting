@@ -532,7 +532,7 @@ export default function AdminStudio() {
         if (data.success && data.data) {
             setTrendsData(data.data);
         } else {
-            setTrendsData('No se lograron extraer tendencias analíticas para esta búsqueda.');
+            setTrendsData(data.message || 'No se lograron extraer tendencias analíticas para esta búsqueda.');
         }
     } catch (e) {
         setTrendsData('Error al contactar con el motor de IA Trends.');

@@ -722,7 +722,7 @@ export default function AdminStudio() {
                             </button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {trendsData.examples.map((ex, i) => (
+                            {Array.isArray(trendsData.examples) && trendsData.examples.map((ex, i) => (
                                 <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-colors">
                                     <div className="h-32 bg-neutral-950 relative border-b border-neutral-800">
                                         {ex.thumbnail && <img src={ex.thumbnail} alt={ex.title} onError={(e) => e.target.style.display='none'} className="w-full h-full object-cover opacity-60" />}
@@ -755,7 +755,7 @@ export default function AdminStudio() {
                 <div>
                     <h3 className="text-white font-bold mb-3 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">trending_up</span> Ganchos Sugeridos</h3>
                     <div className="space-y-2">
-                        {trendsData.hooks?.map((hook, i) => (
+                        {Array.isArray(trendsData.hooks) && trendsData.hooks.map((hook, i) => (
                             <div key={i} className="bg-neutral-900 border border-neutral-800 p-3 rounded-lg flex items-start gap-3 hover:border-orange-500/30 transition-colors group">
                                 <span className="text-orange-500 mt-0.5">•</span>
                                 <p className="text-sm text-gray-300 flex-1">{hook}</p>
@@ -782,7 +782,7 @@ export default function AdminStudio() {
                 <div>
                     <h3 className="text-white font-bold mb-2 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">tag</span> Hashtags</h3>
                     <div className="flex flex-wrap gap-2">
-                        {trendsData.hashtags?.map((tag, i) => (
+                        {Array.isArray(trendsData.hashtags) && trendsData.hashtags.map((tag, i) => (
                             <span key={i} className="text-xs font-bold bg-black border border-orange-500/20 text-orange-300 px-2.5 py-1 rounded-full cursor-pointer hover:bg-orange-500/10 transition-colors">
                                 {tag}
                             </span>

@@ -382,7 +382,8 @@ export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
         
         try {
             const token = localStorage.getItem('adminToken');
-            const res = await fetch('/api/newsletter/generate-video-plan', {
+            const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+            const res = await fetch(`${API}/api/newsletter/generate-video-plan`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

@@ -12,26 +12,42 @@ const BOT_NAME = 'Trends Bot (Nativo)';
 console.log(`[${BOT_NAME}] 🚀 Inicializado exitosamente y desconectado de Antigravity.`);
 console.log(`[${BOT_NAME}] 🕒 Sincronizando reloj interno...`);
 
-const KEYWORDS = [
-    "Marketing Digital",
-    "Publicidad Creativa",
-    "Tecnología",
-    "Inteligencia Artificial",
-    "Emprendimiento",
-    "Redes Sociales",
-    "Tendencias Virales"
-];
-
 // Preguntas comunes para emular AnswerThePublic y buscar lo viral
 const MODIFIERS = [
     "qué es", "cómo hacer", "tendencias en", "lo más nuevo de", "viral en", "herramientas para"
 ];
 
+const fetchRealTrends = async () => {
+    try {
+        console.log(`[${BOT_NAME}] 🌐 Obteniendo tendencias reales de Google Trends (México)...`);
+        const res = await fetch('https://trends.google.com/trending/rss?geo=MX');
+        const xml = await res.text();
+        const items = xml.split('<item>');
+        items.shift(); // remover el encabezado del canal
+        const keywords = items.map(item => {
+            const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/);
+            return titleMatch ? titleMatch[1].replace(/&amp;/g, '&') : null;
+        }).filter(Boolean).slice(0, 10); // Tomar el Top 10
+        
+        if (keywords.length > 0) {
+            console.log(`[${BOT_NAME}] ✅ Tendencias actuales: ${keywords.join(', ')}`);
+            return keywords;
+        }
+    } catch (e) {
+        console.warn(`[${BOT_NAME}] ⚠️ Falló la extracción de Trends en vivo:`, e.message);
+    }
+    // Fallback de seguridad
+    return ["Marketing Digital", "Inteligencia Artificial", "Tecnología", "Redes Sociales", "Emprendimiento"];
+};
+
 const fetchGoogleAutocomplete = async (query) => {
     try {
         const url = `http://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=es&gl=mx`;
         const res = await fetch(url);
-        const data = await res.json();
+        // Google devuelve ISO-8859-1. Para evitar palabras rotas, leemos como buffer y decodificamos.
+        const buffer = await res.arrayBuffer();
+        const text = new TextDecoder('iso-8859-1').decode(buffer);
+        const data = JSON.parse(text);
         // data[1] contiene el array de sugerencias
         return data[1] || [];
     } catch (e) {
@@ -46,7 +62,9 @@ export const runTrendsScraper = async () => {
     let allRawQuestions = [];
     let structuredQuestions = {};
 
-    for (const keyword of KEYWORDS) {
+    const activeKeywords = await fetchRealTrends();
+
+    for (const keyword of activeKeywords) {
         structuredQuestions[keyword] = [];
         for (const mod of MODIFIERS) {
             const query = `${mod} ${keyword}`;

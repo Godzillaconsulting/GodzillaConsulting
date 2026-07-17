@@ -1,12 +1,13 @@
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
+import ytSearch from 'yt-search';
 
 export const getTrends = async (req, res) => {
     const { network = 'General', filter = 'B2B Tech' } = req.query;
     
     try {
-
-        // FASE 1: Buscar datos reales (Exa Search o LLM Gratuito)
+        // FASE 1: Buscar datos reales (Exa Search o yt-search)
         let rawTrends = '';
+        let examples = [];
         
         if (process.env.EXA_API_KEY) {
             try {
@@ -18,19 +19,48 @@ export const getTrends = async (req, res) => {
                         'x-api-key': process.env.EXA_API_KEY
                     },
                     body: JSON.stringify({
-                        query: `Tendencias virales actuales, noticias recientes y contenido viral en ${network} sobre ${filter}`,
+                        query: `Tendencias virales de videos cortos y reels sobre ${filter}`,
                         useAutoprompt: true,
                         numResults: 5,
+                        includeDomains: ['tiktok.com', 'instagram.com', 'facebook.com'],
                         contents: { text: { maxCharacters: 1000 } }
                     })
                 });
                 const exaData = await exaRes.json();
                 if (exaData.results && exaData.results.length > 0) {
+                    examples = exaData.results.map(r => ({
+                        title: r.title || 'Video Viral',
+                        url: r.url,
+                        thumbnail: r.image || null,
+                        views: r.author || 'Viral'
+                    }));
                     rawTrends = exaData.results.map(r => `TITULO: ${r.title}\nURL: ${r.url}\nTEXTO: ${r.text}\n---\n`).join('');
                     console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos de EXA SEARCH.`);
                 }
             } catch(e) {
-                console.warn(`[Trends] ⚠️ Fallo Búsqueda Exa, usando LLM Fallback.`, e.message);
+                console.warn(`[Trends] ⚠️ Fallo Búsqueda Exa, usando yt-search Fallback.`, e.message);
+            }
+        }
+
+        // yt-search como fallback o fuente principal de videos reales
+        if (!rawTrends || examples.length === 0) {
+            try {
+                const searchResults = await ytSearch(`${filter} ${network !== 'General' ? network : 'shorts'} viral`);
+                if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
+                    examples = searchResults.videos.slice(0, 4).map(v => ({
+                        title: v.title,
+                        url: v.url,
+                        thumbnail: v.thumbnail || v.image,
+                        views: v.views
+                    }));
+                    
+                    if (!rawTrends) {
+                        rawTrends = examples.map(v => `TITULO VIRAL: ${v.title}`).join('\n');
+                    }
+                    console.log(`[Trends] ✅ Fase 1 completada - obtenidos videos virales desde yt-search.`);
+                }
+            } catch (err) {
+                console.warn(`[Trends] ⚠️ Fallo yt-search, usando LLM puro.`, err.message);
             }
         }
 
@@ -52,7 +82,7 @@ export const getTrends = async (req, res) => {
 TENEMOS ESTAS IDEAS BASE para ${network}, nicho: "${filter}":
 ${rawTrends ? rawTrends : 'Sin datos previos — genera tú mismo las tendencias más probables para hoy.'}
 
-Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON sin backticks:
+Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON estricto sin comillas invertidas ni bloques de código:
 
 {
   "network": "${network}",
@@ -79,6 +109,12 @@ Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON sin backtick
         }
         
         const data = JSON.parse(responseText.trim());
+        
+        // Inyectar ejemplos reales en la data para el radar
+        if (examples && examples.length > 0) {
+            data.examples = examples;
+        }
+
         res.json({ success: true, data });
 
     } catch (err) {
@@ -98,3 +134,4 @@ Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON sin backtick
         res.json({ success: true, data: fallbackData, isFallback: true });
     }
 };
+

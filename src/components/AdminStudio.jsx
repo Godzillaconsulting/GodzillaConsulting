@@ -525,11 +525,7 @@ export default function AdminStudio() {
         });
         const data = await res.json();
         if (data.success && data.data) {
-            const formatted = `## Análisis de IA: ${data.data.niche}\n\n### 📈 Ganchos Virales Sugeridos\n` + 
-                data.data.hooks.map(h => `- ${h}`).join('\n') + 
-                `\n\n### 🏷️ Hashtags Optimizados\n**` + 
-                data.data.hashtags.join(' ') + `**`;
-            setTrendsData(formatted);
+            setTrendsData(data.data);
         } else {
             setTrendsData('No se lograron extraer tendencias analíticas para esta búsqueda.');
         }
@@ -627,7 +623,7 @@ export default function AdminStudio() {
               <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(249,115,22,0.4)]"></div>
               <p className="text-sm font-bold text-orange-500 animate-pulse tracking-widest uppercase">Analizando Búsquedas Globales...</p>
             </div>
-          ) : (
+          ) : typeof trendsData === 'string' ? (
             <div className="prose prose-invert prose-sm max-w-none 
               prose-h2:text-orange-400 prose-h2:font-black prose-h2:border-b prose-h2:border-orange-500/20 prose-h2:pb-2 prose-h2:mb-3 
               prose-h3:text-white prose-h3:font-bold prose-h3:mt-4 
@@ -635,6 +631,87 @@ export default function AdminStudio() {
               prose-ul:text-gray-400 prose-li:marker:text-orange-500 
               prose-strong:text-orange-300">
               <div dangerouslySetInnerHTML={{ __html: trendsData.replace(/\n/g, '<br/>').replace(/## (.*?)(<br\/>|$)/g, '<h2>$1</h2>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/- (.*?)(<br\/>|$)/g, '<li>$1</li>') }} />
+            </div>
+          ) : (
+            <div className="space-y-6">
+                <div className="mb-2">
+                    <h2 className="text-orange-400 font-black text-lg border-b border-orange-500/20 pb-2">Análisis de IA: {trendsData.niche}</h2>
+                </div>
+                
+                {trendsData.examples && trendsData.examples.length > 0 && (
+                    <div>
+                        <h3 className="text-white font-bold mb-3 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">play_circle</span> Videos Virales Reales</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {trendsData.examples.map((ex, i) => (
+                                <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-colors">
+                                    <div className="h-32 bg-black relative">
+                                        {ex.thumbnail && <img src={ex.thumbnail} alt={ex.title} className="w-full h-full object-cover opacity-80" />}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <a href={ex.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-black/50 hover:bg-orange-500/80 rounded-full flex items-center justify-center backdrop-blur transition-colors cursor-pointer text-white">
+                                                <span className="material-symbols-outlined">play_arrow</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 flex-1 flex flex-col justify-between">
+                                        <p className="text-xs text-white font-medium line-clamp-2 mb-2" title={ex.title}>{ex.title}</p>
+                                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-neutral-800">
+                                            <span className="text-[10px] text-gray-400">{ex.views ? `${ex.views} vistas` : 'Viral'}</span>
+                                            <button 
+                                                onClick={() => {
+                                                    sessionStorage.setItem('godzilla_radar_niche', ex.title);
+                                                    setShowTrendsModal(false);
+                                                    setIsAnalyticsMode(false);
+                                                    setSelectedNodeId(null);
+                                                    if (isMobile) setIsSidebarOpen(false);
+                                                    navigate('/admin/creativo/planificador');
+                                                }}
+                                                className="text-[10px] font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white px-2 py-1 rounded transition-colors"
+                                            >
+                                                Usar en Planeador
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                <div>
+                    <h3 className="text-white font-bold mb-3 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">trending_up</span> Ganchos Sugeridos</h3>
+                    <div className="space-y-2">
+                        {trendsData.hooks?.map((hook, i) => (
+                            <div key={i} className="bg-neutral-900 border border-neutral-800 p-3 rounded-lg flex items-start gap-3 hover:border-orange-500/30 transition-colors group">
+                                <span className="text-orange-500 mt-0.5">•</span>
+                                <p className="text-sm text-gray-300 flex-1">{hook}</p>
+                                <button 
+                                    onClick={() => {
+                                        sessionStorage.setItem('godzilla_radar_niche', hook);
+                                        setShowTrendsModal(false);
+                                        setIsAnalyticsMode(false);
+                                        setSelectedNodeId(null);
+                                        if (isMobile) setIsSidebarOpen(false);
+                                        navigate('/admin/creativo/planificador');
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 text-[10px] font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white px-3 py-1.5 rounded transition-all whitespace-nowrap"
+                                >
+                                    Mandar al Planeador
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-white font-bold mb-2 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">tag</span> Hashtags</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {trendsData.hashtags?.map((tag, i) => (
+                            <span key={i} className="text-xs font-bold bg-black border border-orange-500/20 text-orange-300 px-2.5 py-1 rounded-full cursor-pointer hover:bg-orange-500/10 transition-colors">
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+                </div>
             </div>
           )}
         </div>

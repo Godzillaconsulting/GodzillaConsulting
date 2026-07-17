@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, Wand2, Loader2, Send, Download, ChevronDown, ChevronUp, CheckSquare, Square, Rocket } from 'lucide-react';
 
@@ -349,6 +349,14 @@ export default function AIContentPlanner({ adminProfile }) {
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [autoVoice, setAutoVoice]           = useState('edge:es-MX-JorgeNeural');
     const [customVoiceId, setCustomVoiceId]   = useState('');
+    
+    useEffect(() => {
+        const prefillNiche = sessionStorage.getItem('godzilla_radar_niche');
+        if (prefillNiche) {
+            setNiche(prefillNiche);
+            sessionStorage.removeItem('godzilla_radar_niche');
+        }
+    }, []);
     
     // ─── Radar de Contenido (AnswerThePublic Engine + Tendencias) ──────────
     const [showContentRadar, setShowContentRadar] = useState(false);

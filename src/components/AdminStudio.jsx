@@ -515,14 +515,15 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeepSearch = async () => {
-    if (!trendsSearchQuery.trim()) return;
+  const handleDeepSearch = async (q = trendsSearchQuery) => {
+    const queryToSearch = typeof q === 'string' ? q : trendsSearchQuery;
+    if (!queryToSearch.trim()) return;
     setShowTrendsModal(true);
     setTrendsData(null);
     try {
         const token = localStorage.getItem('adminToken');
         const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-        const res = await fetch(`${API}/api/trends?network=General&filter=${encodeURIComponent(trendsSearchQuery)}`, {
+        const res = await fetch(`${API}/api/trends?network=General&filter=${encodeURIComponent(queryToSearch)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -651,11 +652,19 @@ export default function AdminStudio() {
               <p className="text-sm font-bold text-orange-500 animate-pulse tracking-widest uppercase">Analizando Búsquedas Globales...</p>
             </div>
           ) : typeof trendsData === 'string' ? (
-            <div className="prose prose-invert prose-sm max-w-none 
+            <div 
+              onClick={(e) => {
+                  if (e.target.tagName === 'LI') {
+                      const text = e.target.innerText.replace(/^- /, '').trim();
+                      setTrendsSearchQuery(text);
+                      handleDeepSearch(text);
+                  }
+              }}
+              className="prose prose-invert prose-sm max-w-none 
               prose-h2:text-orange-400 prose-h2:font-black prose-h2:border-b prose-h2:border-orange-500/20 prose-h2:pb-2 prose-h2:mb-3 
               prose-h3:text-white prose-h3:font-bold prose-h3:mt-4 
               prose-p:text-gray-300 prose-p:leading-relaxed 
-              prose-ul:text-gray-400 prose-li:marker:text-orange-500 
+              prose-ul:text-gray-400 prose-li:marker:text-orange-500 prose-li:cursor-pointer hover:prose-li:text-orange-400 prose-li:transition-colors
               prose-strong:text-orange-300">
               <div dangerouslySetInnerHTML={{ __html: trendsData.replace(/\n/g, '<br/>').replace(/## (.*?)(<br\/>|$)/g, '<h2>$1</h2>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/- (.*?)(<br\/>|$)/g, '<li>$1</li>') }} />
             </div>

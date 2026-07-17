@@ -22,8 +22,8 @@ export const getTrends = async (req, res) => {
                         'x-api-key': process.env.EXA_API_KEY
                     },
                     body: JSON.stringify({
-                        query: `Noticias y tendencias de hoy o ayer sobre ${filter}`,
-                        useAutoprompt: true,
+                        query: filter,
+                        type: 'keyword',
                         numResults: 5,
                         startPublishedDate: twoDaysAgo,
                         includeDomains: network === 'TikTok' ? ['tiktok.com'] 
@@ -53,7 +53,8 @@ export const getTrends = async (req, res) => {
         // yt-search como fallback o fuente principal de videos reales
         if (!rawTrends || examples.length === 0) {
             try {
-                const searchResults = await ytSearch(`${filter} hoy ${network !== 'General' ? network : 'shorts'} viral`);
+                // Removemos 'shorts viral' porque arruina el algoritmo de relevancia de noticias recientes de YouTube
+                const searchResults = await ytSearch(`${filter} hoy`);
                 if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
                     examples = searchResults.videos.slice(0, 4).map(v => ({
                         title: v.title,

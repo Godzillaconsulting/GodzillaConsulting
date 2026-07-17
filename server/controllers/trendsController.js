@@ -10,6 +10,8 @@ export const getTrends = async (req, res) => {
         let rawTrends = '';
         let examples = [];
         
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        
         if (process.env.EXA_API_KEY) {
             try {
                 const exaRes = await fetch('https://api.exa.ai/search', {
@@ -20,9 +22,10 @@ export const getTrends = async (req, res) => {
                         'x-api-key': process.env.EXA_API_KEY
                     },
                     body: JSON.stringify({
-                        query: `Tendencias virales de videos cortos y reels sobre ${filter}`,
+                        query: `Lo más reciente y viral sobre ${filter}`,
                         useAutoprompt: true,
                         numResults: 5,
+                        startPublishedDate: thirtyDaysAgo,
                         includeDomains: network === 'TikTok' ? ['tiktok.com'] 
                             : network === 'Instagram' ? ['instagram.com'] 
                             : network === 'YouTube' ? ['youtube.com']
@@ -50,7 +53,7 @@ export const getTrends = async (req, res) => {
         // yt-search como fallback o fuente principal de videos reales
         if (!rawTrends || examples.length === 0) {
             try {
-                const searchResults = await ytSearch(`${filter} ${network !== 'General' ? network : 'shorts'} viral`);
+                const searchResults = await ytSearch(`${filter} hoy ${network !== 'General' ? network : 'shorts'} viral`);
                 if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
                     examples = searchResults.videos.slice(0, 4).map(v => ({
                         title: v.title,

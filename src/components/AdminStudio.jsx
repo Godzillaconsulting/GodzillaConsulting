@@ -14,7 +14,7 @@ import AIContentPlanner from './AIContentPlanner';
 import IntegratedVideoEditor from './VideoEditorModal';
 import BugReporterModal from './BugReporterModal';
 import BugTrackerUI from './BugTrackerUI';
-import DBStudioPanel from './DBStudioPanel';
+
 import AbordajeLeadsPanel from './AbordajeLeadsPanel';
 import CeoEstudioPanel from './CeoEstudioPanel';
 import SqlAtaquesPanel from './SqlAtaquesPanel';
@@ -847,13 +847,6 @@ export default function AdminStudio() {
         <div className="space-y-0.5">
             <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Desarrollo & TI</p>
 
-            {/* DB Studio */}
-            <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/db'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
-            className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'it_db' ? 'bg-[#00ff88]/10 text-[#00ff88] font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
-                {activeSection === 'it_db' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#00ff88] rounded-r-full" />}
-                <span className={`w-4 h-4 ${activeSection === 'it_db' ? 'text-[#00ff88]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>database</span>
-                <span className="text-xs">DB Studio</span>
-            </button>
 
             {/* Flujo de Bots */}
             <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/it/flow'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
@@ -951,8 +944,6 @@ export default function AdminStudio() {
   <CeoEstudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'leads' ? (
   <AbordajeLeadsPanel adminProfile={adminProfile} />
-  ) : activeSection === 'it_db' ? (
-  <DBStudioPanel adminProfile={adminProfile} />
   ) : activeSection === 'it_maestro' ? (
   <PanelMaestroPanel adminProfile={adminProfile} />
   ) : activeSection === 'it_waf' ? (

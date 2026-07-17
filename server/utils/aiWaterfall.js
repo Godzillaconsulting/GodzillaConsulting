@@ -24,7 +24,7 @@ dotenv.config({ path: path.join(__dirname_wf, '..', '.env'), override: true });
  *   • compression  → Cerebras → SambaNova → Groq (modelos rápidos y baratos para resumir)
  *   • premium      → Gemini 2.5 Flash first (para tareas críticas que justifican costo)
  */
-class GeminiMutex {
+class ProviderMutex {
     constructor() { this.queue = []; this.locked = false; }
     async lock() {
         if (!this.locked) { this.locked = true; return; }
@@ -35,9 +35,18 @@ class GeminiMutex {
         else { this.locked = false; }
     }
 }
-const geminiMutex = new GeminiMutex();
+const geminiMutex = new ProviderMutex();
+const groqMutex = new ProviderMutex();
+const sambaMutex = new ProviderMutex();
+const cerebrasMutex = new ProviderMutex();
+
 let geminiLastCallTime = 0;
+let groqLastCallTime = 0;
+let sambaLastCallTime = 0;
+let cerebrasLastCallTime = 0;
+
 const GEMINI_COOLDOWN_MS = 3000; // 3 segundos entre llamadas para evitar 429
+const OPENSOURCE_COOLDOWN_MS = 4000; // 4 segundos para Groq/Samba/Cerebras
 
 export async function executeAiWaterfall(messages, options = {}) {
     const {
@@ -98,85 +107,123 @@ export async function executeAiWaterfall(messages, options = {}) {
 
     const callGroq = async () => {
         if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY no configurada");
-        console.log(`[WATERFALL] ➡️ Intentando: GROQ (Llama 3.3 70B)`);
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        
+        await groqMutex.lock();
+        try {
+            const now = Date.now();
+            if (now - groqLastCallTime < OPENSOURCE_COOLDOWN_MS) {
+                await new Promise(r => setTimeout(r, OPENSOURCE_COOLDOWN_MS - (now - groqLastCallTime)));
+            }
+            groqLastCallTime = Date.now();
 
-        const reqData = {
-            messages: trimmedMessages,
-            model: "llama-3.3-70b-versatile",
-            temperature,
-            max_tokens: maxTokens // Removido hardcap de 1024 para no romper JSON largos
-        };
+            console.log(`[WATERFALL] ➡️ Intentando: GROQ (Llama 3.3 70B)`);
+            const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-        if (hasTools && mode !== 'compression') {
-            reqData.tools = tools;
-            reqData.tool_choice = "auto";
+            const reqData = {
+                messages: trimmedMessages,
+                model: "llama-3.3-70b-versatile",
+                temperature,
+                max_tokens: maxTokens
+            };
+
+            if (hasTools && mode !== 'compression') {
+                reqData.tools = tools;
+                reqData.tool_choice = "auto";
+            }
+            if (jsonMode) reqData.response_format = { type: "json_object" };
+
+            const completion = await groq.chat.completions.create(reqData, { timeout: 15000 });
+            const responseMessage = completion.choices?.[0]?.message;
+            if (!responseMessage) throw new Error("Groq devolvió respuesta vacía");
+            console.log(`[WATERFALL] ✅ Éxito con Groq.`);
+            return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
+        } finally {
+            groqMutex.release();
         }
-
-        const completion = await groq.chat.completions.create(reqData, { timeout: 15000 });
-        const responseMessage = completion.choices?.[0]?.message;
-        if (!responseMessage) throw new Error("Groq devolvió respuesta vacía");
-        console.log(`[WATERFALL] ✅ Éxito con Groq.`);
-        return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
     };
 
     const callSambaNova = async () => {
         if (!process.env.SAMBANOVA_API_KEY) throw new Error("SAMBANOVA_API_KEY no configurada");
-        console.log(`[WATERFALL] ➡️ Intentando: SAMBANOVA (Llama 3.3 70B)`);
-        const reqData = {
-            messages: trimmedMessages,
-            model: "Meta-Llama-3.3-70B-Instruct",
-            temperature,
-            max_tokens: maxTokens
-        };
-        if (hasTools && mode !== 'compression') reqData.tools = tools;
-        if (jsonMode) reqData.response_format = { type: "json_object" };
+        
+        await sambaMutex.lock();
+        try {
+            const now = Date.now();
+            if (now - sambaLastCallTime < OPENSOURCE_COOLDOWN_MS) {
+                await new Promise(r => setTimeout(r, OPENSOURCE_COOLDOWN_MS - (now - sambaLastCallTime)));
+            }
+            sambaLastCallTime = Date.now();
 
-        const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqData),
-            signal: AbortSignal.timeout(15000)
-        });
+            console.log(`[WATERFALL] ➡️ Intentando: SAMBANOVA (Llama 3.3 70B)`);
+            const reqData = {
+                messages: trimmedMessages,
+                model: "Meta-Llama-3.3-70B-Instruct",
+                temperature,
+                max_tokens: maxTokens
+            };
+            if (hasTools && mode !== 'compression') reqData.tools = tools;
+            if (jsonMode) reqData.response_format = { type: "json_object" };
 
-        if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-        const data = await response.json();
-        const responseMessage = data.choices[0]?.message;
-        if (!responseMessage) throw new Error("SambaNova devolvió respuesta vacía");
-        console.log(`[WATERFALL] ✅ Éxito con SambaNova.`);
-        return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
+            const response = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${process.env.SAMBANOVA_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(reqData),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+            const data = await response.json();
+            const responseMessage = data.choices[0]?.message;
+            if (!responseMessage) throw new Error("SambaNova devolvió respuesta vacía");
+            console.log(`[WATERFALL] ✅ Éxito con SambaNova.`);
+            return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
+        } finally {
+            sambaMutex.release();
+        }
     };
 
     const callCerebras = async () => {
         if (!process.env.CEREBRAS_API_KEY) throw new Error("CEREBRAS_API_KEY no configurada");
-        console.log(`[WATERFALL] ➡️ Intentando: CEREBRAS (Llama 3.1 8B)`);
+        
+        await cerebrasMutex.lock();
+        try {
+            const now = Date.now();
+            if (now - cerebrasLastCallTime < OPENSOURCE_COOLDOWN_MS) {
+                await new Promise(r => setTimeout(r, OPENSOURCE_COOLDOWN_MS - (now - cerebrasLastCallTime)));
+            }
+            cerebrasLastCallTime = Date.now();
 
-        const hasTool_msgs = trimmedMessages.some(m => m.role === 'tool');
-        const reqData = {
-            messages: hasTool_msgs ? sanitizeForBasicProviders(trimmedMessages) : trimmedMessages,
-            model: "llama3.1-8b",
-            temperature,
-            max_tokens: maxTokens // Allow higher tokens if requested
-        };
+            console.log(`[WATERFALL] ➡️ Intentando: CEREBRAS (Llama 3.1 8B)`);
 
-        if (hasTools && !hasTool_msgs && mode !== 'compression') {
-            reqData.tools = tools;
-            reqData.tool_choice = "auto";
+            const hasTool_msgs = trimmedMessages.some(m => m.role === 'tool');
+            const reqData = {
+                messages: hasTool_msgs ? sanitizeForBasicProviders(trimmedMessages) : trimmedMessages,
+                model: "llama3.1-8b",
+                temperature,
+                max_tokens: maxTokens
+            };
+
+            if (hasTools && !hasTool_msgs && mode !== 'compression') {
+                reqData.tools = tools;
+                reqData.tool_choice = "auto";
+            }
+            if (jsonMode) reqData.response_format = { type: "json_object" };
+
+            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(reqData),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+            const data = await response.json();
+            const responseMessage = data.choices[0]?.message;
+            if (!responseMessage) throw new Error("Cerebras devolvió respuesta vacía");
+            console.log(`[WATERFALL] ✅ Éxito con Cerebras.`);
+            return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
+        } finally {
+            cerebrasMutex.release();
         }
-
-        const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqData),
-            signal: AbortSignal.timeout(15000)
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-        const data = await response.json();
-        const responseMessage = data.choices[0]?.message;
-        if (!responseMessage) throw new Error("Cerebras devolvió respuesta vacía");
-        console.log(`[WATERFALL] ✅ Éxito con Cerebras.`);
-        return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
     };
 
     const callOllama = async () => {
@@ -337,11 +384,11 @@ if (mode === 'compression') {
     console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash, luego Open Source...`);
     activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras];
 } else if (mode === 'noTools') {
-    console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini];
+    console.log(`[WATERFALL] ➡️ Modo SIN TOOLS - Priorizando Open Source...`);
+    activeWaterfall = [callSambaNova, callGroq, callCerebras, callGemini, callOllama];
 } else {
-    console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini];
+    console.log(`[WATERFALL] ➡️ Modo ESTANDAR - Priorizando Gemini Flash...`);
+    activeWaterfall = [callGemini, callSambaNova, callGroq, callCerebras, callOllama];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

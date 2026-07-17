@@ -552,7 +552,11 @@ export default function AdminStudio() {
           });
           const data = await res.json();
           if (data.success) {
-              alert('✅ ' + data.message + '\n\nRevisa el Planificador (CEO Studio) para ver el guion generado.');
+              // Guardar el guion en la sesión temporal para el Planificador
+              sessionStorage.setItem('godzilla_radar_script', data.script);
+              window.dispatchEvent(new Event('godzilla_radar_updated'));
+              setShowTrendsModal(false);
+              setActiveTab('ai-planner');
               if (id === 'manual') setManualVideoUrl('');
           } else {
               alert('❌ Falló el análisis: ' + data.error);
@@ -758,7 +762,9 @@ export default function AdminStudio() {
                                 <button 
                                     onClick={() => {
                                         sessionStorage.setItem('godzilla_radar_niche', hook);
+                                        window.dispatchEvent(new Event('godzilla_radar_updated'));
                                         setShowTrendsModal(false);
+                                        setActiveTab('ai-planner');
                                         setIsAnalyticsMode(false);
                                         setSelectedNodeId(null);
                                         if (isMobile) setIsSidebarOpen(false);
@@ -1076,7 +1082,7 @@ export default function AdminStudio() {
       <AutomationFlow />
   </div>
   <div style={{ display: (!isAnalyticsMode && activeSection === 'ai-planner') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
-      <AIContentPlanner adminProfile={adminProfile} />
+      <AIContentPlanner adminProfile={adminProfile} openGlobalRadar={() => setShowTrendsModal(true)} />
   </div>
   <div style={{ display: (!isAnalyticsMode && activeSection === 'social') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <CMCalendar adminProfile={adminProfile} />

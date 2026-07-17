@@ -319,7 +319,7 @@ function DayCard({ day, idx, canEdit, onSendToCalendar }) {
 }
 
 // ─── Componente principal ──────────────────────────────────────────────────────
-export default function AIContentPlanner({ adminProfile }) {
+export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
     const [niche, setNiche]           = useState('');
     const [month, setMonth]           = useState(() => {
         const d = new Date(); 
@@ -351,11 +351,21 @@ export default function AIContentPlanner({ adminProfile }) {
     const [customVoiceId, setCustomVoiceId]   = useState('');
     
     useEffect(() => {
-        const prefillNiche = sessionStorage.getItem('godzilla_radar_niche');
-        if (prefillNiche) {
-            setNiche(prefillNiche);
-            sessionStorage.removeItem('godzilla_radar_niche');
-        }
+        const handleUpdate = () => {
+            const prefillNiche = sessionStorage.getItem('godzilla_radar_niche');
+            if (prefillNiche) {
+                setNiche(prefillNiche);
+                sessionStorage.removeItem('godzilla_radar_niche');
+            }
+            const prefillScript = sessionStorage.getItem('godzilla_radar_script');
+            if (prefillScript) {
+                setPlan(prefillScript);
+                sessionStorage.removeItem('godzilla_radar_script');
+            }
+        };
+        handleUpdate();
+        window.addEventListener('godzilla_radar_updated', handleUpdate);
+        return () => window.removeEventListener('godzilla_radar_updated', handleUpdate);
     }, []);
     
     // ─── Radar de Contenido (AnswerThePublic Engine + Tendencias) ──────────
@@ -389,10 +399,7 @@ export default function AIContentPlanner({ adminProfile }) {
     };
 
     const handleOpenContentRadar = () => {
-        setShowContentRadar(true);
-        if (dailyTrends.length === 0) {
-            fetchDailyTrends();
-        }
+        if (openGlobalRadar) openGlobalRadar();
     };
 
     const fetchContentRadar = async () => {

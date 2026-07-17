@@ -30,7 +30,8 @@ export const getTrends = async (req, res) => {
                             : network === 'Instagram' ? ['instagram.com'] 
                             : network === 'YouTube' ? ['youtube.com']
                             : network === 'Facebook' ? ['facebook.com']
-                            : ['tiktok.com', 'instagram.com', 'youtube.com'],
+                            : network === 'Twitter' ? ['x.com', 'twitter.com']
+                            : ['tiktok.com', 'instagram.com', 'youtube.com', 'x.com', 'twitter.com'],
                         contents: { text: { maxCharacters: 1000 } }
                     })
                 });
@@ -215,26 +216,16 @@ Responde ÚNICAMENTE con un JSON válido con este formato:
         
         const parsed = JSON.parse(responseText.trim());
         
-        // 3. Crear tarea en el Planificador (CEO Studio)
+        // 3. Devolver el guion directamente al frontend para previsualización
         let readableScript = `🎥 GUION BASADO EN VIDEO VIRAL:\n🔗 URL Original: ${url}\n\n`;
         parsed.scenes.forEach((s, i) => {
             readableScript += `Escena ${i+1}:\n🎤 Voz: ${s.narration}\n👁️ Visual: ${s.visual}\n\n`;
         });
         
-        const client = await pool.connect();
-        try {
-            await client.query(
-                `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, status, content_type, created_by) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                [`🔥 ANALIZADO: ${parsed.title || title || 'Trend Viral'}`, readableScript.trim(), 'me', JSON.stringify(['Trend Analizado']), 'alta', 'pending', 'video', 'trends_bot']
-            );
-        } finally {
-            client.release();
-        }
+        res.json({ success: true, script: readableScript.trim() });
 
-        res.json({ success: true, message: 'Analizado y enviado al planificador', script: parsed });
     } catch (err) {
-        console.error('Error analizando video trend:', err);
-        res.status(500).json({ success: false, error: 'Error analizando el video: ' + err.message });
+        console.error('Error analizando video:', err);
+        res.status(500).json({ success: false, error: 'Error procesando el análisis de IA.' });
     }
 };

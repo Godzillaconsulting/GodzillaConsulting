@@ -282,6 +282,28 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         // No re-lanzamos — el newsletter ya está en DB, se puede reenviar manualmente desde el panel.
     }
 
+    // ✅ 4. CREAR TAREAS DIARIAS EN EL PLANIFICADOR (CEO STUDIO)
+    // El usuario quiere que cada noticia del newsletter aparezca como tarea diaria para hacer un video.
+    try {
+        console.log(`📋 [Planner] Generando tareas automáticas en studio_tasks a partir del newsletter...`);
+        if (data.pdfSections && Array.isArray(data.pdfSections)) {
+            for (const section of data.pdfSections) {
+                // Título claro para identificar que viene del boletín
+                const taskTitle = `🎬 NOTICIA VLOG: ${section.heading || 'Tema del día'}`;
+                // Agregamos todo el contenido profundo de la noticia para que el planificador tenga contexto completo
+                const taskPrompt = `Contexto Completo extraído del Newsletter de hoy:\n\n${section.content}\n\nInstrucciones:\nGenera un guion de video corto para redes sociales (TikTok/Reels) explicando esta noticia. Hazlo muy dinámico, directo, con un gancho fuerte y llamado a la acción.`;
+                
+                await pool.query(`
+                    INSERT INTO studio_tasks (title, prompt, content_type, priority, tags, status)
+                    VALUES ($1, $2, 'Video', 'Alta', $3, 'pending')
+                `, [taskTitle, taskPrompt, JSON.stringify(['Newsletter Automático', 'Noticia Diaria'])]);
+            }
+            console.log(`✅ [Planner] ${data.pdfSections.length} tareas insertadas en studio_tasks.`);
+        }
+    } catch (taskErr) {
+        console.error(`❌ [Planner] Error al crear tareas en studio_tasks:`, taskErr.message);
+    }
+
     return { 
         newsletterId, 
         total: totalSent, 

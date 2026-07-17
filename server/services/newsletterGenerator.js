@@ -282,26 +282,31 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         // No re-lanzamos — el newsletter ya está en DB, se puede reenviar manualmente desde el panel.
     }
 
-    // ✅ 4. CREAR TAREAS DIARIAS EN EL PLANIFICADOR (CEO STUDIO)
-    // El usuario quiere que cada noticia del newsletter aparezca como tarea diaria para hacer un video.
+    // ✅ 4. DISPARAR FLUJO TOPOLÓGICO (n8n local)
+    // El usuario requiere que el flujo visual ejecute la lógica. 
+    // El nodo 'Bot Newsletter' disparará a 'Tarea de Studio' o 'Planificador IA' a través de AutomationEngine.
     try {
-        console.log(`📋 [Planner] Generando tareas automáticas en studio_tasks a partir del newsletter...`);
+        console.log(`📋 [Planner] Disparando automatización topológica desde 'Bot Newsletter'...`);
+        
+        // Importación dinámica para evitar ciclos de dependencia
+        const { default: Engine } = await import('./automationEngine.js');
+        
         if (data.pdfSections && Array.isArray(data.pdfSections)) {
-            for (const section of data.pdfSections) {
-                // Título claro para identificar que viene del boletín
-                const taskTitle = `🎬 NOTICIA VLOG: ${section.heading || 'Tema del día'}`;
-                // Agregamos todo el contenido profundo de la noticia para que el planificador tenga contexto completo
-                const taskPrompt = `Contexto Completo extraído del Newsletter de hoy:\n\n${section.content}\n\nInstrucciones:\nGenera un guion de video corto para redes sociales (TikTok/Reels) explicando esta noticia. Hazlo muy dinámico, directo, con un gancho fuerte y llamado a la acción.`;
-                
-                await pool.query(`
-                    INSERT INTO studio_tasks (title, prompt, content_type, priority, tags, status)
-                    VALUES ($1, $2, 'Video', 'Alta', $3, 'pending')
-                `, [taskTitle, taskPrompt, JSON.stringify(['Newsletter Automático', 'Noticia Diaria'])]);
-            }
-            console.log(`✅ [Planner] ${data.pdfSections.length} tareas insertadas en studio_tasks.`);
+            const planItems = data.pdfSections.map(section => ({
+                Tema: `🎬 NOTICIA VLOG: ${section.heading || 'Tema del día'}`,
+                'NARRACION ESCENA 1': `Contexto Completo extraído del Newsletter de hoy:\n\n${section.content}\n\nInstrucciones:\nGenera un guion de video corto para redes sociales (TikTok/Reels) explicando esta noticia. Hazlo muy dinámico, directo, con un gancho fuerte y llamado a la acción.`,
+                'NARRACION ESCENA 2': 'Desarrollo de la noticia',
+                'NARRACION ESCENA 3': 'Impacto',
+                'NARRACION ESCENA 4': 'Dato curioso',
+                'NARRACION ESCENA 5 (CTA)': 'Comenta y síguenos'
+            }));
+
+            // Disparar el nodo 'Bot Newsletter' con el payload (el plan)
+            await Engine.triggerFlow('Bot Newsletter', { plan: planItems });
+            console.log(`✅ [Planner] Flujo disparado con ${planItems.length} noticias.`);
         }
-    } catch (taskErr) {
-        console.error(`❌ [Planner] Error al crear tareas en studio_tasks:`, taskErr.message);
+    } catch (e) {
+        console.error("❌ Error disparando el flujo de automatización desde el Newsletter:", e.message);
     }
 
     return { 

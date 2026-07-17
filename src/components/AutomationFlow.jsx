@@ -44,6 +44,7 @@ const FLOW_TEMPLATES = [
       /* --- RESOLUCIÓN / SALIDAS --- */
       { id: 'out1', type: 'action', title: 'Godzilla CM', subtitle: 'CRM & Tareas', icon: 'LayoutDashboard', x: 1200, y: 800, color: '#2563eb', pm2_process: '' },
       { id: 'out2', type: 'action', title: 'Brevo', subtitle: 'Email Marketing', icon: 'Mail', x: 1200, y: 1000, color: '#0092ff', pm2_process: '' },
+      { id: 'out3', type: 'action', title: 'Tarea de Studio', subtitle: 'Planificador de Video', icon: 'CheckSquare', x: 1200, y: 650, color: '#10b981', pm2_process: '' },
       
       /* --- CAPA FINANCIERA / DATOS --- */
       { id: 'fin1', type: 'action', title: 'Stripe', subtitle: 'Pasarela Pagos', icon: 'CreditCard', x: 1600, y: 800, color: '#6366f1', pm2_process: '' },
@@ -68,6 +69,9 @@ const FLOW_TEMPLATES = [
       { id: 'eb7', source: 'bot5', target: 'edge1', color: '#d946ef' },
       { id: 'eb5', source: 'core1', target: 'bot6', color: '#f97316' }, /* El cerebro manda la señal al Newsletter */
       { id: 'eb6', source: 'bot7', target: 'core1', color: '#8b5cf6' }, /* Trends le avisa al cerebro */
+      
+      /* PUENTE AUTOMÁTICO RECIÉN AGREGADO: Newsletter -> Tareas de Studio */
+      { id: 'eb_newsletter_to_studio', source: 'bot6', target: 'out3', color: '#10b981', dashed: true },
 
       /* Integraciones Frontend -> Edge Gateway */
       { id: 'ei1', source: 'in1', target: 'edge1', color: '#1bbb11' },
@@ -777,6 +781,7 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
     { title:'GoDaddy',              subtitle:'DNS / Dominios',        icon:'Globe',          color:'#1bbb11', pm2_process:'',              group:'Sistema' },
     { title:'Make (Integromat)',    subtitle:'Webhook a Make',        icon:'Webhook',        color:'#9c27b0', pm2_process:'',              group:'Sistema' },
     { title:'Zapier Webhook',       subtitle:'Webhook a Zapier',      icon:'Zap',            color:'#ff4a00', pm2_process:'',              group:'Sistema' },
+    { title:'Evento DB',            subtitle:'Trigger Base de Datos', icon:'Database',       color:'#0d9488', pm2_process:'',              group:'Sistema' },
     // ── CONTROL DE FLUJO ─────────────────────────────────────────────────────
     { title:'Router / Switch',      subtitle:'Condición lógica',      icon:'GitBranch',      color:'#f43f5e', pm2_process:'',              group:'Flujo' },
     { title:'Transformador JSON',   subtitle:'Mapear / remodelar data',icon:'Braces',        color:'#f59e0b', pm2_process:'',              group:'Flujo' },
@@ -1796,6 +1801,40 @@ function EditorView({ flowId, flowName, username, pm2Status, onBack, onSaved }) 
                   </div>
                   <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Analiza este contenido: {{ $json.titulo }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                   <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: OPENAI_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNodePreset === 'DeepSeek API' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
+                    <select value={selectedNode.config?.model||'deepseek-chat'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="deepseek-chat">DeepSeek Chat</option>
+                      <option value="deepseek-coder">DeepSeek Coder</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Escribe código en Python para {{ $json.tarea }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: DEEPSEEK_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNodePreset === 'Gemini API' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 mb-1 block">Modelo</label>
+                    <select value={selectedNode.config?.model||'gemini-2.5-flash'} onChange={e=>updateNode({config:{...selectedNode.config, model:e.target.value}})} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none transition">
+                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    </select>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">Prompt</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Analiza esto con Google AI: {{ $json.texto }}" rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
+                  <div className="bg-neutral-800/50 rounded-lg p-2"><p className="text-[9px] text-neutral-400">Credencial en .env: GEMINI_API_KEY</p></div>
+                </div>
+              )}
+
+              {selectedNodePreset === 'Cerebro Central AI' && (
+                <div className="space-y-2">
+                  <div><label className="text-[10px] text-neutral-400 mb-1 block">System Prompt / Rol Principal</label><textarea value={selectedNode.config?.prompt||''} onChange={e=>updateNode({config:{...selectedNode.config, prompt:e.target.value}})} placeholder="Eres el cerebro lógico principal de Godzilla..." rows={3} className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none transition"/></div>
                 </div>
               )}
 

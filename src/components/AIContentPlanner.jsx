@@ -368,6 +368,36 @@ export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
         return () => window.removeEventListener('godzilla_radar_updated', handleUpdate);
     }, []);
     
+    // ─── Convertir Boletín a Video ───────────────────────────────────────────
+    const handleNewsletterToVideo = async () => {
+        if (!confirm('¿Quieres cargar el último boletín y generar un guion de video por cada noticia? Esto tomará unos segundos.')) return;
+        setIsGenerating(true);
+        setPlan(null);
+        setProgressText('Leyendo último boletín y generando guiones...');
+        setProgress(30);
+        
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch('/api/newsletter/generate-video-plan', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPlan(data.script);
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('❌ Falló la conexión con el servidor.');
+        } finally {
+            setIsGenerating(false);
+            setProgress(0);
+            setProgressText('');
+        }
+    };
+    
     // ─── Radar de Contenido (AnswerThePublic Engine + Tendencias) ──────────
     const [showContentRadar, setShowContentRadar] = useState(false);
     const [radarTopic, setRadarTopic] = useState('');
@@ -751,6 +781,14 @@ export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleNewsletterToVideo}
+                        disabled={isGenerating || !canEdit}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-[16px]">newspaper</span>
+                        Boletín a Video
+                    </button>
                     {!canEdit && (
                         <span className="text-[10px] bg-red-900/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-full font-bold">
                             🔒 Solo Lectura

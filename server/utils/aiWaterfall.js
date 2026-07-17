@@ -45,8 +45,8 @@ let groqLastCallTime = 0;
 let sambaLastCallTime = 0;
 let cerebrasLastCallTime = 0;
 
-const GEMINI_COOLDOWN_MS = 3000; // 3 segundos entre llamadas para evitar 429
-const OPENSOURCE_COOLDOWN_MS = 4000; // 4 segundos para Groq/Samba/Cerebras
+const GEMINI_COOLDOWN_MS = 5000; // 5 segundos entre llamadas para evitar 429
+const OPENSOURCE_COOLDOWN_MS = 10000; // 10 segundos para Groq/Samba/Cerebras
 
 export async function executeAiWaterfall(messages, options = {}) {
     const {

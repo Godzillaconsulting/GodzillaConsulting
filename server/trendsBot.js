@@ -69,8 +69,17 @@ export const runTrendsScraper = async () => {
         for (const mod of MODIFIERS) {
             const query = `${mod} ${keyword}`;
             const suggestions = await fetchGoogleAutocomplete(query);
-            // Filtramos las que realmente contengan la palabra clave para evitar basura
-            const valid = suggestions.filter(s => s.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]));
+            // Filtramos las que realmente contengan la palabra clave y corregimos acentos básicos
+            const valid = suggestions
+                .filter(s => s.toLowerCase().includes(keyword.toLowerCase().split(' ')[0]))
+                .map(s => s
+                    .replace(/^que es /i, 'qué es ')
+                    .replace(/^como /i, 'cómo ')
+                    .replace(/^cual /i, 'cuál ')
+                    .replace(/^cuando /i, 'cuándo ')
+                    .replace(/^donde /i, 'dónde ')
+                    .replace(/^por que /i, 'por qué ')
+                );
             structuredQuestions[keyword].push(...valid);
             allRawQuestions.push(...valid);
             // Delay para no saturar a Google
@@ -108,18 +117,26 @@ export const runTrendsScraper = async () => {
 
         // FASE 2: Gemini Premium genera el JSON perfecto
         console.log(`[${BOT_NAME}] 🧠 Fase 2: Gemini Premium redactando Guion JSON...`);
-        const systemPrompt = `Eres el Director Creativo de Godzilla Consulting. Tu misión es crear un guion de 5 escenas para TikTok basado en estas tendencias: ${baseContext}
-REGLAS:
-1. Crea un guion sobre la tendencia más interesante.
-2. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026 que comenzará el próximo mes en México, Estados Unidos y Canadá. Usa esta actualidad si es relevante para enriquecer el contexto del video.
-3. PROHIBICIÓN DE SITIO WEB EN CTA: En la escena 5 (CTA), NUNCA menciones nombres de páginas web, URLs o dominios (ej. "visita Godzilla Consulting punto IA", ".ia", etc.). Usa llamados a la acción interactivos o sociales en su lugar.
-4. Responde ÚNICAMENTE con un JSON válido con este formato:
+        const systemPrompt = `Eres el Director Creativo de Godzilla Consulting. Tu misión es crear un guion VIRAL de 5 escenas para TikTok/Reels basado en estas tendencias: ${baseContext}
+
+REGLAS ESTRICTAS DE STORYTELLING:
+1. NARRATIVA CONTINUA: El video es una sola historia/explicación dividida en 5 partes. PROHIBIDO REPETIR la misma idea en múltiples escenas. Cada escena debe avanzar la idea de la anterior.
+2. ESTRUCTURA:
+   - Escena 1 (GANCHO): Llama la atención agresivamente en los primeros 3 segundos.
+   - Escena 2 (RETENCIÓN/PROBLEMA): Plantea el dolor o el misterio.
+   - Escena 3 (VALOR/DESARROLLO): Da el consejo, solución o dato revelador.
+   - Escena 4 (CLÍMAX): El remate o la conclusión más fuerte.
+   - Escena 5 (CTA): Llamado a la acción rápido.
+3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026. Menciona sutilmente la Copa Mundial de la FIFA 2026 (México/USA/Canadá) si es relevante.
+4. PROHIBICIÓN DE SITIO WEB EN CTA: Nunca menciones URLs o dominios.
+
+Responde ÚNICAMENTE con un JSON válido con este formato:
 {
-  "title": "título corto del video",
+  "title": "Título llamativo del video",
   "scenes": [
-    { "visual": "hyper-detailed english prompt for image generation, cinematic lighting, ultra realistic", "narration": "texto corto en español para la voz en off" }
+    { "visual": "hyper-detailed english prompt for image generation, cinematic lighting", "narration": "Texto fluido en español para locución (sin repetir escenas anteriores)" }
   ]
-} (Exactamente 5 escenas, la 5 es CTA)`;
+} (Exactamente 5 escenas)`;
 
         const waterfallRes = await executeAiWaterfall([
             { role: 'system', content: systemPrompt },

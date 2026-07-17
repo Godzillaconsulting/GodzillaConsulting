@@ -1,5 +1,6 @@
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 import ytSearch from 'yt-search';
+import pool from '../config/db.js';
 
 export const getTrends = async (req, res) => {
     const { network = 'General', filter = 'B2B Tech' } = req.query;
@@ -135,3 +136,93 @@ Tu trabajo es MEJORARLAS y devolverlas ÚNICAMENTE como objeto JSON estricto sin
     }
 };
 
+export const analyzeTrendVideo = async (req, res) => {
+    const { url, title } = req.body;
+    if (!url) return res.status(400).json({ success: false, error: 'Se requiere una URL' });
+
+    try {
+        let videoContext = `Título: ${title || 'Video Viral'}\nURL: ${url}`;
+        
+        // 1. Intentar extraer transcripción con EXA
+        if (process.env.EXA_API_KEY) {
+            try {
+                const exaRes = await fetch('https://api.exa.ai/contents', {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'content-type': 'application/json',
+                        'x-api-key': process.env.EXA_API_KEY
+                    },
+                    body: JSON.stringify({
+                        ids: [url],
+                        text: { maxCharacters: 3000 }
+                    })
+                });
+                const exaData = await exaRes.json();
+                if (exaData.results && exaData.results.length > 0 && exaData.results[0].text) {
+                    videoContext += `\n\nContenido/Transcripción del video extraída:\n${exaData.results[0].text}`;
+                }
+            } catch(e) {
+                console.warn(`[Trends Analyze] ⚠️ Fallo EXA /contents, usando solo título y url.`, e.message);
+            }
+        }
+
+        // 2. Usar LLM para crear el guion estructurado
+        const systemPrompt = `Eres el Director Creativo de Godzilla Consulting. Tu misión es hacer "Ingeniería Inversa" de este video viral y crear un guion MEJORADO de 5 escenas para TikTok/Reels basado en su contenido/estructura.
+
+CONTENIDO DEL VIDEO VIRAL ORIGINAL:
+${videoContext}
+
+REGLAS ESTRICTAS DE STORYTELLING:
+1. NARRATIVA CONTINUA: El video es una sola historia/explicación dividida en 5 partes. PROHIBIDO REPETIR la misma idea en múltiples escenas. Cada escena debe avanzar la idea de la anterior.
+2. ESTRUCTURA (Si el original es lista/enumerado, adáptalo, pero mantén el flujo):
+   - Escena 1 (GANCHO): Llama la atención agresivamente en los primeros 3 segundos.
+   - Escena 2 (RETENCIÓN/PROBLEMA): Plantea el dolor o el misterio.
+   - Escena 3 (VALOR/DESARROLLO): Da el consejo, solución o dato revelador.
+   - Escena 4 (CLÍMAX): El remate o la conclusión más fuerte.
+   - Escena 5 (CTA): Llamado a la acción rápido interactivo.
+3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026.
+4. PROHIBICIÓN DE SITIO WEB EN CTA: Nunca menciones URLs o dominios.
+
+Responde ÚNICAMENTE con un JSON válido con este formato:
+{
+  "title": "Título sugerido para la tarea",
+  "scenes": [
+    { "visual": "hyper-detailed english prompt for image generation", "narration": "Texto fluido en español (sin repetir escenas anteriores)" }
+  ]
+} (Exactamente 5 escenas)`;
+
+        const aiRes = await executeAiWaterfall([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Genera el JSON de 5 escenas ahora.' }
+        ], { jsonMode: true, mode: 'premium' });
+
+        let responseText = aiRes.content || '';
+        if (responseText.startsWith('```json')) responseText = responseText.replace(/```json\n?/, '').replace(/```$/, '');
+        else if (responseText.startsWith('```')) responseText = responseText.replace(/```\n?/, '').replace(/```$/, '');
+        
+        const parsed = JSON.parse(responseText.trim());
+        
+        // 3. Crear tarea en el Planificador (CEO Studio)
+        let readableScript = `🎥 GUION BASADO EN VIDEO VIRAL:\n🔗 URL Original: ${url}\n\n`;
+        parsed.scenes.forEach((s, i) => {
+            readableScript += `Escena ${i+1}:\n🎤 Voz: ${s.narration}\n👁️ Visual: ${s.visual}\n\n`;
+        });
+        
+        const client = await pool.connect();
+        try {
+            await client.query(
+                `INSERT INTO studio_tasks (title, prompt, assigned_to, tags, priority, status, content_type, created_by) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [`🔥 ANALIZADO: ${parsed.title || title || 'Trend Viral'}`, readableScript.trim(), 'me', JSON.stringify(['Trend Analizado']), 'alta', 'pending', 'video', 'trends_bot']
+            );
+        } finally {
+            client.release();
+        }
+
+        res.json({ success: true, message: 'Analizado y enviado al planificador', script: parsed });
+    } catch (err) {
+        console.error('Error analizando video trend:', err);
+        res.status(500).json({ success: false, error: 'Error analizando el video: ' + err.message });
+    }
+};

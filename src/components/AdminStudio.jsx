@@ -166,6 +166,8 @@ export default function AdminStudio() {
  const [showTrendsModal, setShowTrendsModal] = useState(false);
  const [trendsData, setTrendsData] = useState(null);
  const [trendsSearchQuery, setTrendsSearchQuery] = useState('');
+ const [manualVideoUrl, setManualVideoUrl] = useState('');
+ const [analyzingVideoId, setAnalyzingVideoId] = useState(null);
  const [showPreview, setShowPreview] = useState(true);
  const [hoveredField, setHoveredField] = useState(null);
  const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
@@ -534,6 +536,31 @@ export default function AdminStudio() {
     }
   };
 
+  const handleAnalyzeVideo = async (url, title, id = 'manual') => {
+      if (!url) return;
+      setAnalyzingVideoId(id);
+      try {
+          const token = localStorage.getItem('adminToken');
+          const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
+          const res = await fetch(`${API}/api/trends/analyze`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, title })
+          });
+          const data = await res.json();
+          if (data.success) {
+              alert('✅ ' + data.message + '\n\nRevisa el Planificador (CEO Studio) para ver el guion generado.');
+              if (id === 'manual') setManualVideoUrl('');
+          } else {
+              alert('❌ Falló el análisis: ' + data.error);
+          }
+      } catch (err) {
+          alert('❌ Error al conectar con el servidor.');
+      } finally {
+          setAnalyzingVideoId(null);
+      }
+  };
+
  return (
  <div 
    className="fixed inset-0 z-50 flex bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(204,0,0,0.15),rgba(255,255,255,0))] text-white font-sans overflow-hidden relative"
@@ -640,7 +667,29 @@ export default function AdminStudio() {
                 
                 {trendsData.examples && trendsData.examples.length > 0 && (
                     <div>
-                        <h3 className="text-white font-bold mb-3 text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">play_circle</span> Videos Virales Reales</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-white font-bold text-base flex items-center gap-2"><span className="material-symbols-outlined text-orange-500">play_circle</span> Videos Virales Reales</h3>
+                        </div>
+                        <div className="flex gap-2 mb-4">
+                            <input 
+                                value={manualVideoUrl}
+                                onChange={e => setManualVideoUrl(e.target.value)}
+                                type="text" 
+                                placeholder="Pega el URL de un video de TikTok/YouTube Shorts para analizar..." 
+                                className="flex-1 bg-black/50 border border-purple-500/30 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-purple-500 transition-colors placeholder:text-neutral-600"
+                            />
+                            <button 
+                                onClick={() => handleAnalyzeVideo(manualVideoUrl, 'Video Manual', 'manual')}
+                                disabled={!manualVideoUrl || analyzingVideoId === 'manual'}
+                                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-white rounded-lg font-bold text-sm transition-colors shadow-[0_0_10px_rgba(168,85,247,0.4)] flex items-center gap-2"
+                            >
+                                {analyzingVideoId === 'manual' ? (
+                                    <><span className="material-symbols-outlined animate-spin">refresh</span> Analizando...</>
+                                ) : (
+                                    <><span className="material-symbols-outlined">psychology</span> Analizar URL</>
+                                )}
+                            </button>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {trendsData.examples.map((ex, i) => (
                                 <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-colors">
@@ -657,17 +706,12 @@ export default function AdminStudio() {
                                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-neutral-800">
                                             <span className="text-[10px] text-gray-400">{ex.views ? `${ex.views} vistas` : 'Viral'}</span>
                                             <button 
-                                                onClick={() => {
-                                                    sessionStorage.setItem('godzilla_radar_niche', ex.title);
-                                                    setShowTrendsModal(false);
-                                                    setIsAnalyticsMode(false);
-                                                    setSelectedNodeId(null);
-                                                    if (isMobile) setIsSidebarOpen(false);
-                                                    navigate('/admin/creativo/planificador');
-                                                }}
-                                                className="text-[10px] font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white px-2 py-1 rounded transition-colors"
+                                                onClick={() => handleAnalyzeVideo(ex.url, ex.title, `vid-${i}`)}
+                                                disabled={analyzingVideoId === `vid-${i}`}
+                                                className="text-[10px] flex items-center gap-1 font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white px-2 py-1 rounded transition-colors disabled:opacity-50"
                                             >
-                                                Usar en Planeador
+                                                {analyzingVideoId === `vid-${i}` ? <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[12px]">psychology</span>}
+                                                Analizar y Planificar
                                             </button>
                                         </div>
                                     </div>

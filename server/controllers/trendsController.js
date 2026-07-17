@@ -23,7 +23,11 @@ export const getTrends = async (req, res) => {
                         query: `Tendencias virales de videos cortos y reels sobre ${filter}`,
                         useAutoprompt: true,
                         numResults: 5,
-                        includeDomains: ['tiktok.com', 'instagram.com', 'facebook.com'],
+                        includeDomains: network === 'TikTok' ? ['tiktok.com'] 
+                            : network === 'Instagram' ? ['instagram.com'] 
+                            : network === 'YouTube' ? ['youtube.com']
+                            : network === 'Facebook' ? ['facebook.com']
+                            : ['tiktok.com', 'instagram.com', 'youtube.com'],
                         contents: { text: { maxCharacters: 1000 } }
                     })
                 });
@@ -181,7 +185,7 @@ REGLAS ESTRICTAS DE STORYTELLING:
    - Escena 3 (VALOR/DESARROLLO): Da el consejo, solución o dato revelador.
    - Escena 4 (CLÍMAX): El remate o la conclusión más fuerte.
    - Escena 5 (CTA): Llamado a la acción rápido interactivo.
-3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026.
+3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es ${new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date())}.
 4. PROHIBICIÓN DE SITIO WEB EN CTA: Nunca menciones URLs o dominios.
 
 Responde ÚNICAMENTE con un JSON válido con este formato:

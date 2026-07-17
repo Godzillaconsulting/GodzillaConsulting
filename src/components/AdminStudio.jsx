@@ -166,6 +166,7 @@ export default function AdminStudio() {
  const [showTrendsModal, setShowTrendsModal] = useState(false);
  const [trendsData, setTrendsData] = useState(null);
  const [trendsSearchQuery, setTrendsSearchQuery] = useState('');
+ const [trendsNetwork, setTrendsNetwork] = useState('General');
  const [manualVideoUrl, setManualVideoUrl] = useState('');
  const [analyzingVideoId, setAnalyzingVideoId] = useState(null);
  const [showPreview, setShowPreview] = useState(true);
@@ -523,7 +524,7 @@ export default function AdminStudio() {
     try {
         const token = localStorage.getItem('adminToken');
         const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-        const res = await fetch(`${API}/api/trends?network=General&filter=${encodeURIComponent(queryToSearch)}`, {
+        const res = await fetch(`${API}/api/trends?network=${encodeURIComponent(trendsNetwork)}&filter=${encodeURIComponent(queryToSearch)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -629,12 +630,23 @@ export default function AdminStudio() {
                 <input 
                     value={trendsSearchQuery}
                     onChange={e => setTrendsSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleDeepSearch()}
                     type="text" 
                     placeholder="Buscar tema (ej. automatización, marketing)..." 
                     className="flex-1 bg-black/50 border border-orange-500/30 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors placeholder:text-neutral-600"
                 />
+                <select 
+                    value={trendsNetwork}
+                    onChange={e => setTrendsNetwork(e.target.value)}
+                    className="bg-black/50 border border-orange-500/30 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                >
+                    <option value="General">Todas</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="YouTube">YouTube</option>
+                </select>
                 <button 
-                    onClick={handleDeepSearch}
+                    onClick={() => handleDeepSearch()}
                     className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm transition-colors shadow-[0_0_10px_rgba(249,115,22,0.4)]"
                 >
                     Buscar Tema
@@ -702,8 +714,8 @@ export default function AdminStudio() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {trendsData.examples.map((ex, i) => (
                                 <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-colors">
-                                    <div className="h-32 bg-black relative">
-                                        {ex.thumbnail && <img src={ex.thumbnail} alt={ex.title} className="w-full h-full object-cover opacity-80" />}
+                                    <div className="h-32 bg-neutral-950 relative border-b border-neutral-800">
+                                        {ex.thumbnail && <img src={ex.thumbnail} alt={ex.title} onError={(e) => e.target.style.display='none'} className="w-full h-full object-cover opacity-60" />}
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <a href={ex.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-black/50 hover:bg-orange-500/80 rounded-full flex items-center justify-center backdrop-blur transition-colors cursor-pointer text-white">
                                                 <span className="material-symbols-outlined">play_arrow</span>

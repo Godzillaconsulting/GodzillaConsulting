@@ -127,7 +127,7 @@ REGLAS ESTRICTAS DE STORYTELLING:
    - Escena 3 (VALOR/DESARROLLO): Da el consejo, solución o dato revelador.
    - Escena 4 (CLÍMAX): El remate o la conclusión más fuerte.
    - Escena 5 (CTA): Llamado a la acción rápido.
-3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es mayo de 2026. Menciona sutilmente la Copa Mundial de la FIFA 2026 (México/USA/Canadá) si es relevante.
+3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es ${new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date())}. Incorpora referencias sutiles a la actualidad si es orgánico para el tema.
 4. PROHIBICIÓN DE SITIO WEB EN CTA: Nunca menciones URLs o dominios.
 
 Responde ÚNICAMENTE con un JSON válido con este formato:

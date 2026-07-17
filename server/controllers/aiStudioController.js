@@ -1061,7 +1061,7 @@ REGLAS ESTRÍCTAS DE GUIONISTA EXPERTO Y PSICOLOGÍA HUMANA:
 9. Los VISUAL PROMPTS deben ser ultra-detallados en INGLÉS (estilo, iluminación, composición) y DIRECTAMENTE RELACIONADOS al tema tratado, creando una atmósfera cinematográfica.
 10. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para la IA en INGLÉS.
 11. ESTÉTICA FACELESS VIRAL: Basa tu estilo visual y narrativo en los videos automatizados más virales de YouTube Shorts y TikTok (Ejemplo: canales que convierten videos largos en cortos, cortan partes aburridas, usan imágenes dinámicas de archivo/B-roll atractivas y texto vibrante). NO HAGAS descripciones de personas hablando a la cámara, sino metáforas visuales, zooms dinámicos y b-roll altamente cinético y adictivo.
-11. MEMORIA TEMPORAL Y ACTUALIDAD: Estamos en mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026.
+11. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es ${new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date())}. Incorpora referencias sutiles a la actualidad si es orgánico para el tema.
 12. PROHIBICIÓN DE SITIO WEB EN CTA: NUNCA menciones URLs o dominios.
 13. RITMO VISUAL VS. FLUIDEZ NARRATIVA (CRÍTICO): Las escenas representan CORTES VISUALES rápidos (imágenes que cambian), pero la NARRACIÓN (voz en off) fluye de forma continua, natural y envolvente como un párrafo largo y atrapante. NO hagas frases robóticas ni entrecortadas. 
 14. ALINEACIÓN VISUAL: El VISUAL PROMPT de cada escena DEBE ILUSTRAR EXACTAMENTE la acción o metáfora de lo que la voz está diciendo en ese preciso momento, para que audio y video encajen perfecto en el cerebro del espectador. Deben generar exactamente 5 ESCENAS por video.

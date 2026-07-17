@@ -359,7 +359,11 @@ export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
             }
             const prefillScript = sessionStorage.getItem('godzilla_radar_script');
             if (prefillScript) {
-                setPlan(prefillScript);
+                try {
+                    setPlan(JSON.parse(prefillScript));
+                } catch (e) {
+                    setPlan(prefillScript);
+                }
                 sessionStorage.removeItem('godzilla_radar_script');
             }
         };
@@ -1051,25 +1055,17 @@ export default function AIContentPlanner({ adminProfile, openGlobalRadar }) {
                         )}
                     </div>
                 ) : typeof plan === 'string' ? (
-                    <div className="h-full flex flex-col items-center justify-start p-4">
-                        <div className="w-full max-w-4xl bg-[#0a0a0a]/95 backdrop-blur-sm border border-orange-500/50 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 h-full min-h-[500px]">
-                            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                <h3 className="text-orange-400 font-black uppercase tracking-widest text-sm flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">local_fire_department</span>
-                                    Guion de Análisis Viral
-                                </h3>
-                                <button 
-                                    onClick={() => setPlan(null)} 
-                                    className="text-xs px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-lg transition-colors"
-                                >
-                                    Cerrar y Limpiar
-                                </button>
-                            </div>
-                            <textarea 
-                                readOnly 
-                                className="flex-1 w-full bg-black/50 border border-neutral-800 rounded-xl p-4 text-sm text-gray-300 font-mono focus:outline-none focus:border-orange-500/50 resize-none custom-scrollbar"
-                                value={plan}
-                            />
+                    <div className="h-full flex flex-col items-center justify-center p-8 text-neutral-500">
+                        <div className="w-full max-w-xl bg-red-900/10 border border-red-500/20 rounded-2xl p-6 text-center">
+                            <span className="material-symbols-outlined text-4xl text-red-500/50 mb-4 block">error</span>
+                            <h3 className="text-red-400 font-bold mb-2">Formato Obsoleto</h3>
+                            <p className="text-sm">El guion guardado está en formato de texto plano y ya no es compatible. Por favor, vuelve a generar el análisis o el boletín para obtener las nuevas tarjetas editables.</p>
+                            <button 
+                                onClick={() => setPlan(null)} 
+                                className="mt-6 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-lg transition-colors text-xs"
+                            >
+                                Limpiar y Empezar de Nuevo
+                            </button>
                         </div>
                     </div>
                 ) : reviewMode ? (

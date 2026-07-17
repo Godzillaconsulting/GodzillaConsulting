@@ -61,20 +61,31 @@ ESTRUCTURA PARA CADA VIDEO (Noticia):
 - Escena 2 (RETENCIÓN): Plantea el contexto o el problema.
 - Escena 3 (VALOR): Da los detalles clave de la noticia.
 - Escena 4 (CLÍMAX): El impacto o conclusión más fuerte.
-- Escena 5 (CTA): Llamado a la acción (ej. "Síguenos para más noticias").
+- Escena 5 (CTA): Llamado a la acción rápido (ej. "Síguenos para más noticias") sin usar URLs.
 
-Responde ÚNICAMENTE con un JSON válido con este formato:
-{
-  "videos": [
-    {
-      "topic": "Tema de la noticia",
-      "scenes": [
-        { "visual": "hyper-detailed english prompt for image", "narration": "Texto en español fluido" },
-        ... (5 escenas)
-      ]
-    }
-  ]
-}`;
+ESTÉTICA Y TEXTOS (CRÍTICO):
+1. Todos los "visual_prompt" DEBEN especificar formato vertical 9:16 (ej. "Vertical 9:16 aspect ratio...").
+2. Debes llenar el campo "text_on_screen" con subtítulos llamativos o palabras resaltadas (ej. "[TEXTO ROJO] ¡Cuidado!").
+
+Responde ÚNICAMENTE con un JSON válido con este formato EXACTO (Array de objetos):
+[
+  {
+    "Tema": "Tema de la noticia 1",
+    "scenes": [
+      {
+        "narration": "Texto en español fluido para voz",
+        "text_on_screen": "Subtítulos o textos clave",
+        "visual_prompt": "Vertical 9:16 framing, hyper-detailed english prompt",
+        "audio_sfx": "Efectos sonoros sugeridos",
+        "video_prompt": "Instrucciones de cámara en inglés"
+      }
+    ]
+  },
+  {
+    "Tema": "Tema de la noticia 2",
+    "scenes": [ ... ]
+  }
+]`;
 
         const aiRes = await executeAiWaterfall([
             { role: 'system', content: systemPrompt },
@@ -85,17 +96,14 @@ Responde ÚNICAMENTE con un JSON válido con este formato:
         if (responseText.startsWith('\`\`\`json')) responseText = responseText.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
         else if (responseText.startsWith('\`\`\`')) responseText = responseText.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
         
-        const parsed = JSON.parse(responseText.trim());
+        let parsed = JSON.parse(responseText.trim());
         
-        let readableScript = `📰 GUION BASADO EN EL ÚLTIMO BOLETÍN:\n🎯 Tema: ${latestNewsletter.subject}\n\n`;
-        parsed.videos.forEach((vid, vIdx) => {
-            readableScript += `=======================================\n🎥 VIDEO ${vIdx+1}: ${vid.topic}\n=======================================\n`;
-            vid.scenes.forEach((s, i) => {
-                readableScript += `Escena ${i+1}:\n🎤 Voz: ${s.narration}\n👁️ Visual: ${s.visual}\n\n`;
-            });
-        });
+        // El array es directamente el "script" que consume el frontend
+        if (!Array.isArray(parsed) && parsed.videos) parsed = parsed.videos.map(v => ({ Tema: v.topic || v.Tema || "Noticia", scenes: v.scenes }));
+        if (!Array.isArray(parsed) && parsed.plan) parsed = parsed.plan;
+        if (!Array.isArray(parsed)) parsed = [parsed];
         
-        res.json({ success: true, script: readableScript.trim() });
+        res.json({ success: true, script: parsed });
     } catch (e) {
         console.error("Newsletter to Video Error", e);
         res.status(500).json({ success: false, error: e.message });

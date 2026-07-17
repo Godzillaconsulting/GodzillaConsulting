@@ -553,7 +553,7 @@ export default function AdminStudio() {
           const data = await res.json();
           if (data.success) {
               // Guardar el guion en la sesión temporal para el Planificador
-              sessionStorage.setItem('godzilla_radar_script', data.script);
+              sessionStorage.setItem('godzilla_radar_script', typeof data.script === 'string' ? data.script : JSON.stringify(data.script));
               window.dispatchEvent(new Event('godzilla_radar_updated'));
               setShowTrendsModal(false);
               setActiveTab('ai-planner');

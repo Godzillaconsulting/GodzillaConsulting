@@ -186,24 +186,32 @@ export const analyzeTrendVideo = async (req, res) => {
 CONTENIDO DEL VIDEO VIRAL ORIGINAL:
 ${videoContext}
 
-REGLAS ESTRICTAS DE STORYTELLING:
+REGLAS ESTRICTAS DE STORYTELLING Y FORMATO:
 1. NARRATIVA CONTINUA: El video es una sola historia/explicación dividida en 5 partes. PROHIBIDO REPETIR la misma idea en múltiples escenas. Cada escena debe avanzar la idea de la anterior.
 2. ESTRUCTURA (Si el original es lista/enumerado, adáptalo, pero mantén el flujo):
    - Escena 1 (GANCHO): Llama la atención agresivamente en los primeros 3 segundos.
    - Escena 2 (RETENCIÓN/PROBLEMA): Plantea el dolor o el misterio.
    - Escena 3 (VALOR/DESARROLLO): Da el consejo, solución o dato revelador.
    - Escena 4 (CLÍMAX): El remate o la conclusión más fuerte.
-   - Escena 5 (CTA): Llamado a la acción rápido interactivo.
-3. MEMORIA TEMPORAL Y ACTUALIDAD: Hoy es ${new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date())}.
-4. PROHIBICIÓN DE SITIO WEB EN CTA: Nunca menciones URLs o dominios.
+   - Escena 5 (CTA): Llamado a la acción rápido interactivo sin mencionar URLs.
+3. ESTÉTICA 9:16 VERTICAL: Todos los "visual_prompt" DEBEN especificar formato vertical 9:16 (ej. "Vertical 9:16 aspect ratio framing..."). 
+4. TEXTOS EN PANTALLA: Es CRUCIAL llenar el campo "text_on_screen" con subtítulos o títulos magnéticos, cortos y con instrucciones de diseño (ej. "[TEXTO EN AMARILLO NEGRITA] ¡No hagas esto!").
 
-Responde ÚNICAMENTE con un JSON válido con este formato:
-{
-  "title": "Título sugerido para la tarea",
-  "scenes": [
-    { "visual": "hyper-detailed english prompt for image generation", "narration": "Texto fluido en español (sin repetir escenas anteriores)" }
-  ]
-} (Exactamente 5 escenas)`;
+Responde ÚNICAMENTE con un JSON válido con este formato EXACTO (es un Array de 1 solo video/Día):
+[
+  {
+    "Tema": "Título sugerido para la tarea basado en el video",
+    "scenes": [
+      {
+        "narration": "Texto fluido en español (sin repetir escenas anteriores)",
+        "text_on_screen": "Títulos y subtítulos magnéticos cortos en pantalla",
+        "visual_prompt": "Vertical 9:16 framing, hyper-detailed english prompt for image generation",
+        "audio_sfx": "Efectos de sonido sugeridos",
+        "video_prompt": "Instrucciones de cámara en inglés"
+      }
+    ]
+  }
+]`;
 
         const aiRes = await executeAiWaterfall([
             { role: 'system', content: systemPrompt },
@@ -211,18 +219,14 @@ Responde ÚNICAMENTE con un JSON válido con este formato:
         ], { jsonMode: true, mode: 'premium' });
 
         let responseText = aiRes.content || '';
-        if (responseText.startsWith('```json')) responseText = responseText.replace(/```json\n?/, '').replace(/```$/, '');
-        else if (responseText.startsWith('```')) responseText = responseText.replace(/```\n?/, '').replace(/```$/, '');
+        if (responseText.startsWith('\`\`\`json')) responseText = responseText.replace(/\`\`\`json\n?/, '').replace(/\`\`\`$/, '');
+        else if (responseText.startsWith('\`\`\`')) responseText = responseText.replace(/\`\`\`\n?/, '').replace(/\`\`\`$/, '');
         
-        const parsed = JSON.parse(responseText.trim());
+        let parsed = JSON.parse(responseText.trim());
+        if (!Array.isArray(parsed) && parsed.plan) parsed = parsed.plan;
+        if (!Array.isArray(parsed) && parsed.scenes) parsed = [ { Tema: parsed.title || "Video Viral", scenes: parsed.scenes } ];
         
-        // 3. Devolver el guion directamente al frontend para previsualización
-        let readableScript = `🎥 GUION BASADO EN VIDEO VIRAL:\n🔗 URL Original: ${url}\n\n`;
-        parsed.scenes.forEach((s, i) => {
-            readableScript += `Escena ${i+1}:\n🎤 Voz: ${s.narration}\n👁️ Visual: ${s.visual}\n\n`;
-        });
-        
-        res.json({ success: true, script: readableScript.trim() });
+        res.json({ success: true, script: parsed });
 
     } catch (err) {
         console.error('Error analizando video:', err);

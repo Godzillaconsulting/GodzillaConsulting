@@ -10,7 +10,7 @@ export const getTrends = async (req, res) => {
         let rawTrends = '';
         let examples = [];
         
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
         
         if (process.env.EXA_API_KEY) {
             try {
@@ -22,10 +22,10 @@ export const getTrends = async (req, res) => {
                         'x-api-key': process.env.EXA_API_KEY
                     },
                     body: JSON.stringify({
-                        query: `Lo más reciente y viral sobre ${filter}`,
+                        query: `Noticias y tendencias de hoy o ayer sobre ${filter}`,
                         useAutoprompt: true,
                         numResults: 5,
-                        startPublishedDate: thirtyDaysAgo,
+                        startPublishedDate: twoDaysAgo,
                         includeDomains: network === 'TikTok' ? ['tiktok.com'] 
                             : network === 'Instagram' ? ['instagram.com'] 
                             : network === 'YouTube' ? ['youtube.com']

@@ -516,15 +516,16 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeepSearch = async (q = trendsSearchQuery) => {
+  const handleDeepSearch = async (q = trendsSearchQuery, net = trendsNetwork) => {
     const queryToSearch = typeof q === 'string' ? q : trendsSearchQuery;
+    const networkToSearch = typeof net === 'string' ? net : trendsNetwork;
     if (!queryToSearch.trim()) return;
     setShowTrendsModal(true);
     setTrendsData(null);
     try {
         const token = localStorage.getItem('adminToken');
         const API = import.meta.env.DEV ? 'http://localhost:3000' : '';
-        const res = await fetch(`${API}/api/trends?network=${encodeURIComponent(trendsNetwork)}&filter=${encodeURIComponent(queryToSearch)}`, {
+        const res = await fetch(`${API}/api/trends?network=${encodeURIComponent(networkToSearch)}&filter=${encodeURIComponent(queryToSearch)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -637,7 +638,12 @@ export default function AdminStudio() {
                 />
                 <select 
                     value={trendsNetwork}
-                    onChange={e => setTrendsNetwork(e.target.value)}
+                    onChange={e => {
+                        setTrendsNetwork(e.target.value);
+                        if (trendsSearchQuery.trim()) {
+                            handleDeepSearch(trendsSearchQuery, e.target.value);
+                        }
+                    }}
                     className="bg-black/50 border border-orange-500/30 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                 >
                     <option value="General">Todas</option>

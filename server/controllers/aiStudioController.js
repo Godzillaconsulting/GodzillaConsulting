@@ -1060,6 +1060,7 @@ REGLAS ESTRÍCTAS DE GUIONISTA EXPERTO Y PSICOLOGÍA HUMANA:
 8. ÚLTIMA ESCENA (CTA): Llamada a la acción clara, pidiendo debate o provocando a los comentarios.
 9. Los VISUAL PROMPTS deben ser ultra-detallados en INGLÉS (estilo, iluminación, composición) y DIRECTAMENTE RELACIONADOS al tema tratado, creando una atmósfera cinematográfica.
 10. Los VIDEO PROMPTS deben describir el MOVIMIENTO de cámara y animación para la IA en INGLÉS.
+11. ESTÉTICA FACELESS VIRAL: Basa tu estilo visual y narrativo en los videos automatizados más virales de YouTube Shorts y TikTok (Ejemplo: canales que convierten videos largos en cortos, cortan partes aburridas, usan imágenes dinámicas de archivo/B-roll atractivas y texto vibrante). NO HAGAS descripciones de personas hablando a la cámara, sino metáforas visuales, zooms dinámicos y b-roll altamente cinético y adictivo.
 11. MEMORIA TEMPORAL Y ACTUALIDAD: Estamos en mayo de 2026. El gran acontecimiento del momento es la Copa Mundial de la FIFA 2026.
 12. PROHIBICIÓN DE SITIO WEB EN CTA: NUNCA menciones URLs o dominios.
 13. RITMO VISUAL VS. FLUIDEZ NARRATIVA (CRÍTICO): Las escenas representan CORTES VISUALES rápidos (imágenes que cambian), pero la NARRACIÓN (voz en off) fluye de forma continua, natural y envolvente como un párrafo largo y atrapante. NO hagas frases robóticas ni entrecortadas. 
@@ -1117,8 +1118,12 @@ Devuelve ESTRICTAMENTE un JSON válido (sin markdown, sin texto extra) con esta 
 Genera los días completos basándote en la calidad suprema del ejemplo de referencia. La calidad es CRÍTICA — cada narración debe usar pura PSICOLOGÍA HUMANA y contar una historia oscura/fascinante, cada prompt visual debe ser cinematográfico en inglés y ultra descriptivo, y el diseño sonoro debe atrapar.
 `;
 
-        const generateBatch = async (startDay, endDay) => {
-            const premiumPrompt = systemPrompt + `\n\nATENCIÓN: Necesitamos diseñar la CHULADA DE DISEÑO FINAL para los días del ${startDay} al ${endDay} para el nicho: "${niche}". Mes objetivo: ${month}.
+        const generateBatch = async (startDay, endDay, previousPlan = []) => {
+            const previousContext = previousPlan.length > 0 
+                ? `\n\n[CONTEXTO HISTÓRICO]: Ya has generado los siguientes videos para días anteriores: ${JSON.stringify(previousPlan.map(p => p.Tema))}. ESTÁ ESTRICTAMENTE PROHIBIDO repetir estas temáticas, conceptos o ganchos. Inicia con ideas 100% nuevas y frescas.` 
+                : '';
+
+            const premiumPrompt = systemPrompt + `\n\nATENCIÓN: Necesitamos diseñar la CHULADA DE DISEÑO FINAL para los días del ${startDay} al ${endDay} para el nicho: "${niche}". Mes objetivo: ${month}.${previousContext}
 Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conteniendo exactamente estos ${endDay - startDay + 1} días, siguiendo el formato estricto y la calidad suprema del EJEMPLO DE REFERENCIA. Sé sumamente creativo y persuasivo.`;
 
             let batchData = null;
@@ -1188,7 +1193,7 @@ Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conte
                     }
 
                     // Ejecución secuencial para no ahogar la API con 'fetch failed' (Rate Limits)
-                    const batchResult = await generateBatch(b.start, b.end);
+                    const batchResult = await generateBatch(b.start, b.end, fullPlan);
                     fullPlan = [...fullPlan, ...batchResult.plan];
                     totalInput += batchResult.input;
                     totalOutput += batchResult.output;

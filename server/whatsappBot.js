@@ -24,7 +24,32 @@ const __filename = _wa_fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const activeSessionsCache = new Map();
+class LRUCache {
+    constructor(limit) {
+        this.cache = new Map();
+        this.limit = limit;
+    }
+    get(key) {
+        if (!this.cache.has(key)) return undefined;
+        const val = this.cache.get(key);
+        this.cache.delete(key);
+        this.cache.set(key, val);
+        return val;
+    }
+    set(key, val) {
+        if (this.cache.has(key)) this.cache.delete(key);
+        else if (this.cache.size >= this.limit) {
+            this.cache.delete(this.cache.keys().next().value);
+            console.log(`🧹 [LRU Cache] Memoria máxima alcanzada (${this.limit}). Sesión más antigua liberada de RAM.`);
+        }
+        this.cache.set(key, val);
+    }
+    delete(key) { return this.cache.delete(key); }
+    entries() { return this.cache.entries(); }
+}
+
+// Límite estricto de 200 sesiones simultáneas en RAM para evitar Memory Leaks
+const activeSessionsCache = new LRUCache(200);
 const userMessageQueues = new Map();
 
 /**
@@ -35,7 +60,6 @@ function checkIsSpamMessage(text) {
     if (!text || typeof text !== 'string') return false;
     const t = text.toLowerCase();
 
-    // Links de acortadores/spam típicos de bots de cupones
     const spamLinks = [
         'rappi.sng.link', 'rappisng.link', 'bit.ly', 'tinyurl.com',
         'cutt.ly', 'short.gy', 'ow.ly', 'rb.gy', 't.co',
@@ -43,29 +67,18 @@ function checkIsSpamMessage(text) {
     ];
     if (spamLinks.some(link => t.includes(link))) return true;
 
-    // Patrones de texto de spam
     const spamPatterns = [
-        /\d+%\s*off/i,
-        /cup[oó]n\s*:\s*\w+/i,
-        /c[oó]digo\s*:\s*\w+/i,
-        /promocion\s+exclusiva/i,
-        /oferta\s+por\s+tiempo\s+limitado/i,
-        /gratis\s+por\s+\d+\s+d[ií]as/i,
-        /solo\s+\d+\s+redenciones/i,
-        /descuento\s+del\s+\d+%/i,
-        /precio\s+especial\s+hoy/i,
-        /\*\d+%\s*off\*/i,
+        /\d+%\s*off/i, /cup[oó]n\s*:\s*\w+/i, /c[oó]digo\s*:\s*\w+/i,
+        /promocion\s+exclusiva/i, /oferta\s+por\s+tiempo\s+limitado/i,
+        /gratis\s+por\s+\d+\s+d[ií]as/i, /solo\s+\d+\s+redenciones/i,
+        /descuento\s+del\s+\d+%/i, /precio\s+especial\s+hoy/i, /\*\d+%\s*off\*/i,
     ];
     if (spamPatterns.some(p => p.test(text))) return true;
 
-    // Broadcast keywords genéricos de bots masivos
     const broadcastKeywords = [
-        'hola, me interesa recibir',
-        'aplica términos y condiciones',
-        'aplica terminos y condiciones',
-        'válido hasta agotar existencias',
-        'valido hasta agotar existencias',
-        'consulta términos y condiciones',
+        'hola, me interesa recibir', 'aplica términos y condiciones',
+        'aplica terminos y condiciones', 'válido hasta agotar existencias',
+        'valido hasta agotar existencias', 'consulta términos y condiciones',
     ];
     if (broadcastKeywords.some(kw => t.includes(kw))) return true;
 
@@ -73,21 +86,8 @@ function checkIsSpamMessage(text) {
 }
 
 // --- ZILLA RAM CLEANUP SKILL ---
-// Limpiador automático para evitar Memory Leaks (Fuga de Memoria)
-setInterval(() => {
-    const now = Date.now();
-    let eliminados = 0;
-    for (const [senderId, session] of activeSessionsCache.entries()) {
-        // Si han pasado más de 1 hora (3600000 ms) sin interactuar, lo borramos de RAM
-        if (now - (session.lastAccessed || 0) > 3600000) {
-            activeSessionsCache.delete(senderId);
-            eliminados++;
-        }
-    }
-    if (eliminados > 0) {
-        console.log(`🧹 [RAM Cleanup] Se liberaron ${eliminados} sesiones inactivas de WhatsApp de la memoria RAM.`);
-    }
-}, 15 * 60 * 1000); // Se ejecuta cada 15 minutos
+// El caché LRU ahora maneja esto dinámicamente limitando el crecimiento,
+// garantizando uso de memoria O(1) máximo.
 // -------------------------------
 
 // Cola de procesamiento GLOBAL secuencial — un mensaje a la vez, igual que Terapias y Ventas.

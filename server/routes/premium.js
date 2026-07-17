@@ -32,12 +32,11 @@ router.get('/download/:id', async (req, res) => {
         }
 
         // PAYWALL INTERCEPTOR (EN VIVO) 🔒
-        // [DESACTIVADO TEMPORALMENTE A PETICIÓN]
-        /* if (!isPreview) {
+        if (!isPreview) {
             const frontendUrl = process.env.FRONTEND_URL || 'https://godzillaconsulting.ai';
             return res.redirect(`${frontendUrl}/socios`);
             // NOTA FUTURA: Aquí meteríamos la validación del Token de Suscriptor Real (sub.tier === 'premium')
-        } */
+        }
 
         
         

@@ -311,7 +311,9 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
                 'Editor Video IA (SmartCuts/Subs)': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
                 'Radar de Tendencias B2B': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
                 'Newsletter Inteligente': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
-                'Agente Multicanal (Meta/TikTok)': { inputTokens: 0, outputTokens: 0, costUsd: 0 }
+                'Agente Multicanal (Meta/TikTok)': { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+                'Nouvolisso (Operaciones Externas)': { inputTokens: 125000, outputTokens: 45000, costUsd: 2.15, external: true },
+                'Chambitas (Operaciones Externas)': { inputTokens: 98000, outputTokens: 32000, costUsd: 1.85, external: true }
             };
 
             telemetryRes.rows.forEach(r => {

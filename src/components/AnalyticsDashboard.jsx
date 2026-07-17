@@ -283,7 +283,10 @@ export default function AnalyticsDashboard() {
                         data.apiTelemetry.map((apiItem, idx) => (
                             <div key={idx} className="bg-[#161615]/50 border border-white/5 p-5 rounded-2xl flex flex-col justify-between">
                                 <div>
-                                    <h4 className="text-white font-bold mb-1">{apiItem.service}</h4>
+                                    <h4 className="text-white font-bold mb-1 flex items-center gap-2">
+                                        {apiItem.service}
+                                        {apiItem.external && <span className="bg-blue-500/20 text-blue-400 text-[9px] px-2 py-0.5 rounded-full uppercase tracking-widest border border-blue-500/30">Docker</span>}
+                                    </h4>
                                     <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Consumo de Tokens</p>
                                 </div>
                                 <div className="mt-4 flex flex-col gap-2">

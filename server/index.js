@@ -179,9 +179,10 @@ const analyticsLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Parsea el Body como JSON (si no haces esto req.body es undefined)
-app.use(express.json({ limit: '500mb' }));
-app.use(express.urlencoded({ limit: '500mb', extended: true }));
+// Parsea el Body como JSON (Límite dinámico reducido de 500mb a 50mb para evitar Memory Leaks fatales)
+// Los archivos grandes deben ir por form-data/multer (streams), NUNCA base64 en JSON.
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ==========================================
 // FIREWALL WAF: BLOQUEA ATAQUES ANTES DE LAS RUTAS

@@ -167,12 +167,20 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
                 responseMimeType: "application/json"
             }
         });
-        const jsonText = cleanJsonStr(baseResponse.text);
+        const rawText = baseResponse.text || '';
+        console.log(`📝 [Fase 2] Raw response length: ${rawText.length} chars. Preview: ${rawText.substring(0, 120)}`);
+        const jsonText = cleanJsonStr(rawText);
         data = JSON.parse(jsonText);
-        console.log("✅ Contenido IA Base Generado.");
+        
+        // Guardia defensiva: si la IA devolvió un objeto vacío o sin campos clave, abortamos.
+        if (!data || !data.subject_es || !data.pdfIntro) {
+            console.error("❌ [Fase 2] Gemini devolvió un JSON vacío o incompleto:", JSON.stringify(data));
+            throw new Error("El JSON generado por la IA está vacío o sin los campos requeridos (subject_es, pdfIntro).");
+        }
+        console.log("✅ Contenido IA Base Generado. Subject:", data.subject_es);
     } catch(err) {
         console.error("❌ Fallo en la Fase 2 con Gemini:", err.message);
-        throw new Error("No se pudo generar el contenido base del newsletter.");
+        throw new Error("No se pudo generar el contenido base del newsletter: " + err.message);
     }
 
     // 2. MEGA-DICCIONARIO 11 IDIOMAS — Traducción con Gemini + Jitter (Bloques)
@@ -258,11 +266,26 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
 
     const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
     const attachmentUrl = `${botBase}/api/premium/download/${nlRes.rows[0].id}`;
+    const newsletterId = nlRes.rows[0].id;
 
-    await pool.query(`UPDATE newsletters SET attachment_url = $1 WHERE id = $2`, [attachmentUrl, nlRes.rows[0].id]);
+    await pool.query(`UPDATE newsletters SET attachment_url = $1 WHERE id = $2`, [attachmentUrl, newsletterId]);
+
+    // ✅ FIX CRÍTICO: Encolar y enviar el newsletter a todos los suscriptores activos.
+    // Sin esta llamada el newsletter queda como 'draft' en DB y nunca llega a nadie.
+    let totalSent = 0;
+    try {
+        console.log(`📤 [Newsletter] Iniciando envío masivo para newsletter #${newsletterId}...`);
+        totalSent = await enqueueNewsletter(newsletterId);
+        console.log(`✅ [Newsletter] Enviado a ${totalSent} suscriptores.`);
+    } catch (sendErr) {
+        console.error(`❌ [Newsletter] Error al encolar/enviar newsletter #${newsletterId}:`, sendErr.message);
+        // No re-lanzamos — el newsletter ya está en DB, se puede reenviar manualmente desde el panel.
+    }
 
     return { 
-        newsletterId: nlRes.rows[0].id, total: 0, attachmentUrl, 
+        newsletterId, 
+        total: totalSent, 
+        attachmentUrl, 
         subject: data.subject_es, 
         bodyHtml: stringifiedHtml 
     };

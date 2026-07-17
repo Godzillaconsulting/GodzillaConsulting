@@ -23,7 +23,7 @@ const Paquetes = () => {
  {
  id: 2,
  title:'Control IA',
- price:'$7,900',
+ price:'$9,900',
  period:'al mes',
  highlighted: false,
  features: ['Agente IA (Web + WhatsApp)','Respuesta en menos de 5 segundos 24/7','Captura de datos automática'

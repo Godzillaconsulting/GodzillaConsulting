@@ -336,8 +336,9 @@ async function processAndReply(from, text, phoneNumberId, platform) {
 }
 
 async function sendWhatsAppMessage(phoneNumberId, to, text) {
-    const token = process.env.WP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
-    if (!token) return console.error("[WhatsApp] WP_ACCESS_TOKEN no encontrado en .env");
+    const rawToken = process.env.WP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+    if (!rawToken) return console.error("[WhatsApp] WP_ACCESS_TOKEN no encontrado en .env");
+    const token = rawToken.trim();
 
     try {
         const response = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
@@ -362,8 +363,9 @@ async function sendWhatsAppMessage(phoneNumberId, to, text) {
 }
 
 async function sendMessengerMessage(sender_psid, text) {
-    const token = process.env.PAGE_ACCESS_TOKEN;
-    if (!token) return console.error("[Messenger] PAGE_ACCESS_TOKEN no encontrado en .env");
+    const rawToken = process.env.PAGE_ACCESS_TOKEN;
+    if (!rawToken) return console.error("[Messenger] PAGE_ACCESS_TOKEN no encontrado en .env");
+    const token = rawToken.trim();
 
     try {
         const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${token}`, {
@@ -385,8 +387,9 @@ async function sendMessengerMessage(sender_psid, text) {
 }
 
 async function sendInstagramMessage(ig_recipient_id, text) {
-    const token = process.env.PAGE_ACCESS_TOKEN;
-    if (!token) return console.error("[Instagram] ❌ PAGE_ACCESS_TOKEN no configurado");
+    const rawToken = process.env.PAGE_ACCESS_TOKEN;
+    if (!rawToken) return console.error("[Instagram] ❌ PAGE_ACCESS_TOKEN no configurado");
+    const token = rawToken.trim();
 
     try {
         const response = await fetch(`https://graph.facebook.com/v19.0/me/messages`, {

@@ -71,10 +71,19 @@ class EmailQueue {
     async _sendNode(node) {
         const client = await pool.connect();
         try {
-            await client.query(
-                `UPDATE queue_log SET attempts = attempts + 1, last_attempt = NOW() WHERE id = $1`,
+            // FIX: Atomic lock to prevent race condition when multiple workers fetch the same row
+            const lockRes = await client.query(
+                `UPDATE queue_log 
+                 SET status = 'processing', attempts = attempts + 1, last_attempt = NOW() 
+                 WHERE id = $1 AND status = 'pending' 
+                 RETURNING id`,
                 [node.queueLogId]
             );
+
+            // If row wasn't updated, another process already sent it. Safely abort.
+            if (lockRes.rowCount === 0) {
+                return;
+            }
 
             const ok = await sendNewsletterEmail({
                 to:            node.email,
@@ -192,11 +201,26 @@ export async function enqueueNewsletter(newsletterId) {
         );
 
         for (const sub of subs) {
-            const logRes = await client.query(
-                `INSERT INTO queue_log (newsletter_id, subscriber_email, status)
-                 VALUES ($1, $2, 'pending') RETURNING id`,
+            let queueLogId;
+            const existingRes = await client.query(
+                `SELECT id, status FROM queue_log WHERE newsletter_id = $1 AND subscriber_email = $2`,
                 [newsletterId, sub.email]
             );
+
+            if (existingRes.rows.length > 0) {
+                queueLogId = existingRes.rows[0].id;
+                // If it's already sent or processing, we don't enqueue it again
+                if (existingRes.rows[0].status === 'sent' || existingRes.rows[0].status === 'processing') {
+                    continue; 
+                }
+            } else {
+                const logRes = await client.query(
+                    `INSERT INTO queue_log (newsletter_id, subscriber_email, status)
+                     VALUES ($1, $2, 'pending') RETURNING id`,
+                    [newsletterId, sub.email]
+                );
+                queueLogId = logRes.rows[0].id;
+            }
 
             const lang = sub.language || 'es';
             const dataForLang = (lang === 'es') ? dBase : (translationsDict[lang] || dBase);
@@ -267,7 +291,7 @@ export async function enqueueNewsletter(newsletterId) {
             emailQueue.enqueue(
                 sub.email,
                 newsletterId,
-                logRes.rows[0].id,
+                queueLogId,
                 finalSubject,
                 finalBodyHtml,
                 finalAttachmentUrl

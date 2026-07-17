@@ -5,18 +5,46 @@ export const getTrends = async (req, res) => {
     
     try {
 
-        // FASE 1: IA Gratuita investiga tendencias crudas
-        const rawTrendsPrompt = `Dame una lista rápida y cruda de 5-7 hashtags y 3 frases gancho (hooks) que estén funcionando AHORA en ${network} para el nicho "${filter}". Solo texto plano, sin formato, sin JSON.`;
-        
+        // FASE 1: Buscar datos reales (Exa Search o LLM Gratuito)
         let rawTrends = '';
-        try {
-            const rawRes = await executeAiWaterfall([
-                { role: 'user', content: rawTrendsPrompt }
-            ], { mode: 'compression' });
-            rawTrends = rawRes.content || '';
-            console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos.`);
-        } catch(e) {
-            console.warn(`[Trends] ⚠️ Fallo Fase 1 (gratuita), Gemini hará todo directamente.`);
+        
+        if (process.env.EXA_API_KEY) {
+            try {
+                const exaRes = await fetch('https://api.exa.ai/search', {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'content-type': 'application/json',
+                        'x-api-key': process.env.EXA_API_KEY
+                    },
+                    body: JSON.stringify({
+                        query: `Tendencias virales actuales, noticias recientes y contenido viral en ${network} sobre ${filter}`,
+                        useAutoprompt: true,
+                        numResults: 5,
+                        contents: { text: { maxCharacters: 1000 } }
+                    })
+                });
+                const exaData = await exaRes.json();
+                if (exaData.results && exaData.results.length > 0) {
+                    rawTrends = exaData.results.map(r => `TITULO: ${r.title}\nURL: ${r.url}\nTEXTO: ${r.text}\n---\n`).join('');
+                    console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos de EXA SEARCH.`);
+                }
+            } catch(e) {
+                console.warn(`[Trends] ⚠️ Fallo Búsqueda Exa, usando LLM Fallback.`, e.message);
+            }
+        }
+
+        if (!rawTrends) {
+            const rawTrendsPrompt = `Dame una lista rápida y cruda de 5-7 hashtags y 3 frases gancho (hooks) que estén funcionando AHORA en ${network} para el nicho "${filter}". Solo texto plano, sin formato, sin JSON.`;
+            try {
+                const rawRes = await executeAiWaterfall([
+                    { role: 'user', content: rawTrendsPrompt }
+                ], { mode: 'compression' });
+                rawTrends = rawRes.content || '';
+                console.log(`[Trends] ✅ Fase 1 completada - datos crudos obtenidos de LLM Fallback.`);
+            } catch(e) {
+                console.warn(`[Trends] ⚠️ Fallo Fase 1 (gratuita), Gemini hará todo directamente.`);
+            }
         }
 
         // FASE 2: Gemini Premium formatea y mejora los datos

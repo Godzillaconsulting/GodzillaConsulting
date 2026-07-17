@@ -727,13 +727,14 @@ export default function AdminStudio() {
     <div className="space-y-0.5">
         <p className="px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Estudio Creativo & IA</p>
         
-        {/* Estudio IA */}
+        {/* Estudio IA - Oculto por solicitud
         <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/creativo/estudio'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
         className={`w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 relative ${ activeSection === 'social_studio' ? 'bg-[#CC0000]/10 text-white font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }`}>
             {activeSection === 'social_studio' && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[#CC0000] rounded-r-full" />}
             <span className={`w-4 h-4 ${activeSection === 'social_studio' ? 'text-[#CC0000]' : 'text-white/40'} material-symbols-outlined text-[16px] flex items-center justify-center`}>smart_toy</span>
             <span className="text-xs">Estudio IA</span>
         </button>
+        */}
 
         {/* Planificador IA */}
         <button onClick={() => { setIsAnalyticsMode(false); navigate('/admin/creativo/planificador'); setSelectedNodeId(null); setIsSidebarOpen(false); }}
@@ -795,12 +796,7 @@ export default function AdminStudio() {
             <span className="text-xs">Newsletter</span>
         </button>
 
-        {/* Landing Socios VIP */}
-        <button onClick={() => { window.open('/socios', '_blank'); }}
-        className="w-full px-2.5 py-2 rounded-md transition-all duration-200 flex items-center gap-2.5 text-white/60 hover:bg-white/5 hover:text-white font-medium">
-            <span className={"w-4 h-4 text-yellow-500/70" + " material-symbols-outlined text-[16px] flex items-center justify-center"}>workspace_premium</span>
-            <span className="text-xs">Landing Socios VIP</span>
-        </button>
+
 
         {/* SECCIÓN CRM COLAPSABLE */}
         <div className="space-y-0.5 pt-1">

@@ -255,9 +255,8 @@ export default function CeoEstudioPanel({ adminProfile }) {
             finalTitle = nota.trim();
         }
 
-        let newStatus = 'rejected';
+        let newStatus = 'pending_render_docker'; // Siempre reenviar a renderizado al devolver o regenerar
         if (action === 'approve') newStatus = 'approved';
-        else if (action === 'auto_regenerate') newStatus = 'pending_render_docker';
 
         let updatedMediaPayload = selected.media_options;
         if (refFileUrl) {

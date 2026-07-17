@@ -85,8 +85,8 @@ export const wafMiddleware = (req, res, next) => {
         return next();
     }
 
-    // 3. Whitelist requests for outputs and static media
-    if (req.path.includes('/outputs/') || req.path.includes('/media/')) {
+    // 3. Whitelist requests for outputs, static media, and webhooks
+    if (req.path.includes('/outputs/') || req.path.includes('/media/') || req.path.includes('/webhook')) {
         return next();
     }
 

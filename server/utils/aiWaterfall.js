@@ -222,7 +222,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             console.log(`[WATERFALL] ➡️ Intentando: GEMINI 2.0 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const config = {
-                model: "gemini-2.5-flash",
+                model: "gemini-2.0-flash",
                 systemInstruction,
                 generationConfig: {
                     maxOutputTokens: maxTokens, // 🔓 Sin límite restrictivo por orden del CEO
@@ -328,51 +328,53 @@ const callPollinations = async () => {
 let activeWaterfall = [];
 
 if (mode === 'compression') {
-    // Compresión de contexto: rápida y barata (Gemini primero, luego los demás)
     console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini, callCerebras, callSambaNova, callGroq, callOllama];
-
-} else if (mode === 'gemini_exclusive') {
-    // 💎 BOTS DE CHAT (WA, FB, IG): Usan tu API de PAGA de Google (gemini-2.5-flash)
-    console.log(`[WATERFALL] 💎 Modo CHATBOT — Usando Google (Flash)...`);
     activeWaterfall = [callGemini];
-
+} else if (mode === 'gemini_exclusive') {
+    console.log(`[WATERFALL] 🤖 Modo CHATBOT - Usando Google (Flash)...`);
+    activeWaterfall = [callGemini];
 } else if (mode === 'premium') {
-    // 🧠 CONTENIDO (Guiones, Newsletters): Priorizando Gemini Flash para ahorrar tokens de Groq
-    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
-
+    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash, luego Open Source...`);
+    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras];
 } else if (mode === 'noTools') {
     console.log(`[WATERFALL] 🚀 Modo SIN TOOLS — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
-
+    activeWaterfall = [callGemini];
 } else {
-    // 🤖 DEFAULT: Cascada con Gemini Primero
     console.log(`[WATERFALL] 🤖 Modo ESTÁNDAR — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras, callPollinations, callOllama];
+    activeWaterfall = [callGemini];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
 // EJECUCIÓN CASCADA
 // ─────────────────────────────────────────────────────────────────────────
 for (const provider of activeWaterfall) {
-    try {
-        const result = await provider();
+    let retries = 3;
+    while (retries > 0) {
+        try {
+            const result = await provider();
 
-        // 🛡️ ANTI-ALUCINACIÓN GLOBAL: detectar si el modelo devuelve su propio System Prompt
-        if (result.content && (
-            result.content.includes("Posicionamiento Social") ||
-            result.content.includes("*Reglas de Comportamiento*") ||
-            result.content.includes("Protocolo de Agendamiento")
-        )) {
-            console.warn("[WATERFALL] ⚠️ Modelo alucinó devolviendo System Prompt. Filtrando...");
-            result.content = "Dame un momento para organizar esta información... ⏳";
+            // 🛡️ ANTI-ALUCINACIÓN GLOBAL: detectar si el modelo devuelve su propio System Prompt
+            if (result.content && (
+                result.content.includes("Posicionamiento Social") ||
+                result.content.includes("*Reglas de Comportamiento*") ||
+                result.content.includes("Protocolo de Agendamiento")
+            )) {
+                console.warn("[WATERFALL] ⚠️ Modelo alucinó devolviendo System Prompt. Filtrando...");
+                result.content = "Dame un momento para organizar esta información... ⏳";
+            }
+
+            return result;
+        } catch (e) {
+            const is429 = e.status === 429 || (e.message && e.message.includes('429'));
+            if (is429 && retries > 1) {
+                console.warn(`[WATERFALL] ⚠️ 429 Too Many Requests. Reintentando en 5 segundos... (Quedan ${retries - 1} intentos)`);
+                await new Promise(r => setTimeout(r, 5000));
+                retries--;
+                continue;
+            }
+            console.error(`[WATERFALL] ⚠️ Proveedor falló: ${e.message}${is429 ? ' [RATE LIMIT 429]' : ''}. Saltando...`);
+            break;
         }
-
-        return result;
-    } catch (e) {
-        const is429 = e.status === 429 || (e.message && e.message.includes('429'));
-        console.error(`[WATERFALL] ⚠️ Proveedor falló: ${e.message}${is429 ? ' [RATE LIMIT 429]' : ''}. Saltando...`);
     }
 }
 

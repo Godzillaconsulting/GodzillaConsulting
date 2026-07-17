@@ -149,16 +149,22 @@ echo  ADVERTENCIA: Esto detendra TODOS los procesos PM2 y los reiniciara.
 echo  Presiona ENTER para confirmar o cierra esta ventana para cancelar.
 pause
 echo.
-echo  [1/3] Liberando puerto 3000...
+echo  [1/4] Asesinando TODOS los procesos Node zombies a la fuerza...
+taskkill /F /IM node.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
+
+echo  [2/4] Verificando puerto 3000...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 " ^| findstr LISTENING') do (
     echo  Matando PID %%a...
-    taskkill /PID %%a /F
+    taskkill /PID %%a /F >nul 2>&1
 )
-timeout /t 3 /nobreak >nul
-echo  [2/3] Reiniciando todos los procesos PM2...
-start "PM2 Restart All" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% restart all --update-env"
+timeout /t 2 /nobreak >nul
+
+echo  [3/4] Reiniciando todos los procesos PM2...
+start "PM2 Restart All" /wait cmd /c "set PM2_HOME=C:\Users\GODZILLA.IA\.pm2_godzilla && %PM2_CMD% start ecosystem.config.cjs --update-env"
 timeout /t 8 /nobreak >nul
-echo  [3/3] Reseteando tareas en error...
+
+echo  [4/4] Reseteando tareas en error...
 node -e "import('pg').then(({Pool})=>{const p=new Pool({user:'postgres',host:'localhost',database:'godzilla',password:'godzilla2026',port:5432});p.query(\"UPDATE studio_tasks SET status='pending_render' WHERE status IN ('failed_docker','rendering_docker')\").then(r=>{console.log('Tareas reseteadas:',r.rowCount);p.end();})})"
 echo.
 call %PM2_CMD% list

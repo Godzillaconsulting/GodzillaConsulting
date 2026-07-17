@@ -644,7 +644,7 @@ export default function AIContentPlanner({ adminProfile }) {
         setShowVoiceModal(true);
     };
 
-    const confirmBulkSend = async () => {
+    const confirmBulkSend = async (targetStatus = 'pending_render') => {
         if (isSendingBulkRef.current) return;
         isSendingBulkRef.current = true;
         setShowVoiceModal(false);
@@ -655,7 +655,7 @@ export default function AIContentPlanner({ adminProfile }) {
             const sel = selections[idx] || 'ia';
             if (sel === 'skip') { skipped++; continue; }
             try {
-                await handleSendToCalendarSilent(plan[idx], idx, sel, finalVoice);
+                await handleSendToCalendarSilent(plan[idx], idx, sel, finalVoice, targetStatus);
                 sent++;
             } catch (_) { skipped++; }
         }
@@ -666,7 +666,7 @@ export default function AIContentPlanner({ adminProfile }) {
     };
 
     // Silent version (no alert) used by bulk send
-    const handleSendToCalendarSilent = async (day, idx, sel = 'ia', voiceParam = null) => {
+    const handleSendToCalendarSilent = async (day, idx, sel = 'ia', voiceParam = null, targetStatus = 'pending_render') => {
         const token = localStorage.getItem('adminToken');
         const API   = import.meta.env.DEV ? 'http://localhost:3000' : '';
         const now = new Date();
@@ -708,7 +708,7 @@ export default function AIContentPlanner({ adminProfile }) {
                 assigned_to: 'auto',
                 tags: JSON.stringify([generatedNiche || niche || 'auto', 'ai-planner']),
                 priority: 'Media',
-                status: 'pending_render', // Va directo a renderizarse (Flujo Auto)
+                status: targetStatus,
                 content_type: 'Video Corto',
                 ig_publish_date: isoDate,
                 media_payload: JSON.stringify(mediaPayload)
@@ -1434,11 +1434,14 @@ export default function AIContentPlanner({ adminProfile }) {
 
                             </div>
 
-                            <div className="flex items-center justify-end gap-3">
+                            <div className="flex items-center justify-end gap-3 mt-4">
                                 <button onClick={() => setShowVoiceModal(false)} className="px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancelar</button>
-                                <button onClick={confirmBulkSend} disabled={isSendingBulk} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
+                                <button onClick={() => confirmBulkSend('pending')} disabled={isSendingBulk} className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[16px]">description</span> Solo Guardar Guiones
+                                </button>
+                                <button onClick={() => confirmBulkSend('pending_render')} disabled={isSendingBulk} className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2">
                                     {isSendingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                    {isSendingBulk ? 'Enviando...' : <span className="flex items-center gap-1">Mandar a Crear <span className="material-symbols-outlined text-xs select-none">rocket_launch</span></span>}
+                                    {isSendingBulk ? 'Enviando...' : <span className="flex items-center gap-1">Producir con IA <span className="material-symbols-outlined text-xs select-none">rocket_launch</span></span>}
                                 </button>
                             </div>
                         </div>

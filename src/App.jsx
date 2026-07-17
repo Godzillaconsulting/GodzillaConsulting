@@ -252,11 +252,6 @@ function AppLayout() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/formulario" element={<FormAbordaje />} />
                 <Route path="/faq" element={<PreguntasFrecuentes />} />
-                <Route path="/socios" element={
-                  <SEOPageWrapper title="Socios Executive" description="Desbloquea el PDF Ejecutivo Inteligente">
-                    <SociosGodzilla />
-                  </SEOPageWrapper>
-                } />
               </Routes>
             </Suspense>
           </GlobalErrorBoundary>

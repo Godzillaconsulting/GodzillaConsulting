@@ -54,7 +54,11 @@ export const getTrends = async (req, res) => {
         if (!rawTrends || examples.length === 0) {
             try {
                 // Buscamos noticias recientes sin contaminar el algoritmo
-                const searchResults = await ytSearch(`${filter} noticias recientes`);
+                const searchResults = await ytSearch({ 
+                    query: `${filter} noticias recientes`,
+                    hl: 'es',
+                    gl: 'MX'
+                });
                 if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
                     examples = searchResults.videos.slice(0, 4).map(v => ({
                         title: v.title.replace(/\| TikTok|\| Instagram|#shorts|#tiktok|\| YouTube/gi, '').trim(),

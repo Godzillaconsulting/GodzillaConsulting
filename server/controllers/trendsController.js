@@ -50,14 +50,14 @@ export const getTrends = async (req, res) => {
             }
         }
 
-        // yt-search como fallback o fuente principal de videos reales (SOLO si la red lo permite)
-        if ((!rawTrends || examples.length === 0) && (network === 'General' || network === 'YouTube')) {
+        // yt-search como fallback o fuente principal de videos reales
+        if (!rawTrends || examples.length === 0) {
             try {
-                // Removemos 'shorts viral' porque arruina el algoritmo de relevancia de noticias recientes de YouTube
-                const searchResults = await ytSearch(`Noticias de ${filter} hoy`);
+                // Buscamos noticias recientes sin contaminar el algoritmo
+                const searchResults = await ytSearch(`${filter} noticias recientes`);
                 if (searchResults && searchResults.videos && searchResults.videos.length > 0) {
                     examples = searchResults.videos.slice(0, 4).map(v => ({
-                        title: v.title,
+                        title: v.title.replace(/\| TikTok|\| Instagram|#shorts|#tiktok|\| YouTube/gi, '').trim(),
                         url: v.url,
                         thumbnail: v.thumbnail || v.image,
                         views: v.views
@@ -74,10 +74,6 @@ export const getTrends = async (req, res) => {
         }
 
         if (!rawTrends || examples.length === 0) {
-            if (network !== 'General' && network !== 'YouTube') {
-                return res.status(404).json({ success: false, message: `No se encontraron videos hiper-recientes (últimas 48 hrs) sobre "${filter}" en ${network}. El motor está configurado para no mostrar basura antigua.` });
-            }
-            
             const rawTrendsPrompt = `Dame una lista rápida y cruda de 5-7 hashtags y 3 frases gancho (hooks) que estén funcionando AHORA en ${network} para el nicho "${filter}". Solo texto plano, sin formato, sin JSON.`;
             try {
                 const rawRes = await executeAiWaterfall([

@@ -101,9 +101,6 @@ export const processChatMessage = async (req, res) => {
         let responseText = '';
         let functionCalls = [];
 
-        let responseText = '';
-        let functionCalls = [];
-
         const aiRes = await executeAiWaterfall(waterfallMessages, {
             tools: waterfallTools,
             temperature: hasBookingIntent ? 0.1 : 0.5,

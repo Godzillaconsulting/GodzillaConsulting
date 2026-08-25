@@ -124,7 +124,7 @@ async function callGroq(apiKey, systemPrompt, tools, messages) {
     ];
 
     const body = {
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-120b',
         messages: formattedMessages,
         temperature: 0.1,
         top_p: 0.95
@@ -276,6 +276,8 @@ export default async function handler(req, res) {
         } else {
             responseText = groqMessage.content || '';
         }
+
+        responseText = responseText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
         // ── Goyi: guardar aprendizaje ──
         if (isGoyi && responseText) {

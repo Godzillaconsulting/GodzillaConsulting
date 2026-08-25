@@ -264,14 +264,14 @@ export default async function handler(req, res) {
 
             const toolResult = await executeTool(name, args);
 
-            // Segunda llamada con resultado del tool
+            // Segunda llamada con resultado del tool (sin tools para forzar respuesta en lenguaje natural)
             const contents2 = [
                 ...contents,
                 groqMessage,
                 { role: 'tool', tool_call_id: toolCall.id, name: name, content: JSON.stringify(toolResult) }
             ];
             
-            const groqMessage2 = await callGroq(apiKey, systemPrompt, tools, contents2);
+            const groqMessage2 = await callGroq(apiKey, systemPrompt, undefined, contents2);
             responseText = groqMessage2.content || '';
         } else {
             responseText = groqMessage.content || '';

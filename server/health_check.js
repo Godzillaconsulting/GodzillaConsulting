@@ -1,13 +1,16 @@
 import fetch from 'node-fetch';
 
-const BASE = 'https://godzillaconsulting.ai';
+const BASE = process.env.BASE_URL || 'https://godzillaconsulting.ai';
+const testUser = process.env.ADMIN_TEST_USER;
+const testPass = process.env.ADMIN_TEST_PASSWORD;
+
 const tests = [
   { name: 'Sitio principal',     url: `${BASE}/`,                       method: 'GET' },
   { name: 'API Health',          url: `${BASE}/api/health`,             method: 'GET' },
   { name: 'API Nodes',           url: `${BASE}/api/nodes`,              method: 'GET' },
-  { name: 'Login API',           url: `${BASE}/api/auth/login`,         method: 'POST', body: { username: 'godzilla_admin', password: 'Godzilla2026!' } },
-  { name: 'Login godzilla_admin',url: `${BASE}/api/auth/login`,         method: 'POST', body: { username: 'godzilla_admin', password: 'Godzilla2026!' } },
-  { name: 'Login cockers',       url: `${BASE}/api/auth/login`,         method: 'POST', body: { username: 'cockers',        password: 'pussyniggabitch' } },
+  ...(testUser && testPass ? [
+    { name: 'Login API',         url: `${BASE}/api/auth/login`,         method: 'POST', body: { username: testUser, password: testPass } }
+  ] : [])
 ];
 
 console.log('\n🦖 GODZILLA CONSULTING — HEALTH CHECK PRE-LIVE\n' + '═'.repeat(50));

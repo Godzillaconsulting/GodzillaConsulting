@@ -212,7 +212,7 @@ router.get('/file/:id', async (req, res) => {
 });
 
 // ─── GET /api/media (Lista de Galería para Admin Studio) ────────────────────
-router.get('/', async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         const result = await pool.query('SELECT id, filename, mimetype, size, created_at FROM media_storage ORDER BY created_at DESC');
@@ -262,15 +262,16 @@ router.delete('/:type/:filename', requireAdmin, async (req, res) => {
     const { type, filename } = req.params;
 
     if (!filename) return res.status(400).json({ error: 'Falta el nombre del archivo.' });
+    const safeFilename = path.basename(filename);
 
     // Videos: borrar del disco local
     if (type === 'videos') {
-        const filePath = path.join(ARCHIVOS_PESADOS_DIR, filename);
+        const filePath = path.join(ARCHIVOS_PESADOS_DIR, safeFilename);
         try {
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
-                console.log(`[Media-Local] Video eliminado del disco: ${filename}`);
-                return res.json({ success: true, deleted: filename });
+                console.log(`[Media-Local] Video eliminado del disco: ${safeFilename}`);
+                return res.json({ success: true, deleted: safeFilename });
             } else {
                 return res.status(404).json({ error: 'Video no encontrado en disco' });
             }

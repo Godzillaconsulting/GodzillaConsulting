@@ -7,7 +7,7 @@ const SiteContext = createContext();
 
 export function SiteProvider({ children }) {
   const [nodes, setNodes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // SWR: render inmediato con defaults, revalidar en background
 
   // Preview override: permite al AdminStudio inyectar draftData en tiempo real
   // { nodeId: string, data: object } | null
@@ -16,7 +16,7 @@ export function SiteProvider({ children }) {
   // Load all nodes with retry logic for API cold starts
   const fetchNodes = useCallback(async (retries = 3, silent = false) => {
     try {
-      if (retries === 3 && !silent) setLoading(true);
+      if (retries === 3 && !silent) { /* SWR: no bloquear render, datos llegan en background */ }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s límite máximo absoluto

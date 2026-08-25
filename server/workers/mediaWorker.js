@@ -71,7 +71,7 @@ async function translateTextToEnglish(text) {
         console.log(`[Translate] Traduciendo narración a inglés con Gemini...`);
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: `Translate the following Spanish video narration text to English for video subtitles/captions. Maintain a matching tone, keep it punchy and short. Only return the direct English translation text, do not include quotes, prefix, or extra text:\n\n${text}`
         });
         const translated = response.text?.trim() || text;
@@ -152,7 +152,7 @@ async function translateCuesToEnglish(cues) {
 
         console.log(`[Translate] Traduciendo cues a inglés en lote...`);
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: prompt
         });
         
@@ -358,7 +358,7 @@ async function generateMultiplePromptsFromRef(refImageBytes, refMimeType, count,
         - Return ONLY a valid JSON array of strings. Do not include markdown code fences (like \`\`\`json), headers, or extra text.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: [
                 {
                     role: 'user',
@@ -410,7 +410,7 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16', re
         try {
             console.log(`[GoogleImageGen] 🤖 Analizando imagen de referencia con Gemini 2.5 Flash para recreación exacta...`);
             const analysisRes = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: [
                     {
                         role: 'user',
@@ -433,8 +433,8 @@ async function generateGoogleImage(prompt, outputPath, aspect_ratio = '9:16', re
 
     console.log(`[GoogleImageGen] Generando imagen para prompt: "${activePrompt.substring(0, 70)}..."`);
 
-    // Intentamos en cascada sobre los modelos de Imagen soportados para lidiar con límites de cuota/429
-    const models = ['imagen-4.0-generate-001', 'imagen-4.0-fast-generate-001'];
+    // Modelos oficiales de Imagen 3 soportados en Google GenAI
+    const models = ['imagen-3.0-generate-002', 'imagen-3.0-fast-generate-001'];
     let imageBytes = null;
 
     for (const model of models) {
@@ -828,7 +828,7 @@ async function processTask() {
                     try {
                         console.log(`[MediaWorker] 🔍 Detectando personajes públicos en el título...`);
                         const detectRes = await ai.models.generateContent({
-                            model: 'gemini-2.5-flash',
+                            model: 'gemini-3.6-flash',
                             contents: `Analiza este título de video: "${task.title}". ¿Menciona personas públicas conocidas (artistas, influencers, deportistas, políticos, personajes famosos)? Si sí, devuelve SOLO el nombre completo del personaje más relevante (el primero mencionado o el más buscado). Si no hay personas conocidas, devuelve exactamente: NONE. Solo el nombre o NONE, sin explicación.`
                         });
                         const detectedPerson = detectRes.text?.trim() || 'NONE';
@@ -927,7 +927,7 @@ REGLAS ESTRICTAS DE VERACIDAD:
 9. Responde SOLO el JSON válido, sin markdown ni explicaciones.`;
 
                 const rewriteRes = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.6-flash',
                     contents: [{ role: 'user', parts: [{ text: enrichPrompt }] }]
                 });
 
@@ -978,7 +978,7 @@ Instructions:
                 }
 
                 const rewriteRes = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.6-flash',
                     contents: [{ role: 'user', parts: rewriteParts }]
                 });
                 
@@ -1009,7 +1009,7 @@ Instructions:
                 console.log(`[MediaWorker] 🤖 Analyzing style of reference image via Gemini 2.5 Flash...`);
                 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
                 const analysisRes = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.6-flash',
                     contents: [
                         {
                             role: 'user',
@@ -1100,7 +1100,7 @@ Instructions:
                 }
 
                 const unifyRes = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.6-flash',
                     contents: `Eres un guionista de nivel cine experto en contenido viral de formato corto (Reels/TikTok) en español.
 
 TÍTULO: "${task.title}"

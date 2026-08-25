@@ -7,8 +7,12 @@
 const BACKEND = 'https://bot.godzillaconsulting.ai';
 
 export default async function handler(req, res) {
-    // Reconstruir la ruta original: /api/proxy?path=chat => /api/chat
-    const subpath = req.query.path || '';
+    // Reconstruir la ruta original asegurando que no se duplique /api/
+    let subpath = req.query.path || '';
+    if (subpath.startsWith('/api/')) subpath = subpath.substring(5);
+    else if (subpath.startsWith('api/')) subpath = subpath.substring(4);
+    if (subpath.startsWith('/')) subpath = subpath.substring(1);
+
     const targetUrl = `${BACKEND}/api/${subpath}`;
 
     // Pasar query params adicionales (excluyendo 'path' que es nuestro)

@@ -381,8 +381,19 @@ router.post('/restart-process', verifyAdminToken, async (req, res) => {
         const { processName } = req.body;
         if (!processName) return res.status(400).json({ success: false, error: 'processName requerido' });
         
-        await execPromise(`npx pm2 restart ${processName}`, { windowsHide: true });
-        res.json({ success: true, message: `Proceso ${processName} reiniciado exitosamente.` });
+        // Whitelist estricta para evitar Command Injection
+        const ALLOWED_PROCESSES = [
+            'godzilla-server', 'email-worker', 'newsletter-bot', 
+            'trends-bot', 'whatsapp-bot', 'instagram-bot', 'tiktok-bot', 'media-worker', 'all'
+        ];
+        
+        if (!ALLOWED_PROCESSES.includes(processName.trim())) {
+            return res.status(400).json({ success: false, error: 'Nombre de proceso no autorizado para reinicio.' });
+        }
+        
+        const safeName = processName.trim();
+        await execPromise(`npx pm2 restart ${safeName}`, { windowsHide: true });
+        res.json({ success: true, message: `Proceso ${safeName} reiniciado exitosamente.` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Fallo al reiniciar proceso', details: err.message });
     }

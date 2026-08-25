@@ -7,6 +7,7 @@ import { ARCHIVOS_PESADOS_DIR } from '../routes/media.js';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { GoogleGenAI } from '@google/genai';
+import * as cheerio from 'cheerio';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,56 +31,56 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
-const generateWithRetry = async (modelName, options, maxRetries = 3) => {
-    // Capa 1 y Capa 2: Primero el modelo solicitado, luego el fallback ultra-barato de 8b.
-    const modelsToTry = [modelName, 'gemini-2.5-flash-8b'];
+const callWithTimeout = (promise, ms = 15000) => {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timeout de ${ms}ms excedido en Gemini`)), ms);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+};
+
+const generateWithRetry = async (modelName, options, maxRetries = 1) => {
+    // Capa 1: gemini-3.6-flash (activo y rápido)
+    // Capa 2: gemini-3.7-flash y gemini-3.5-flash como fallback
+    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash'];
     
     for (const currentModel of modelsToTry) {
         let attempt = 0;
         while (attempt < maxRetries) {
             try {
-                await sleep(2000 + Math.random() * 2000); // Base jitter
-                return await ai.models.generateContent({
+                await sleep(500 + Math.random() * 500); // Base jitter corto
+                const res = await callWithTimeout(ai.models.generateContent({
                     model: currentModel,
                     ...options
-                });
+                }), 15000);
+                if (res && res.text) return res;
             } catch (e) {
                 attempt++;
-                console.error(`⚠️ Error Gemini (${currentModel}) Intento ${attempt}:`, e.message);
-                if (e.message.includes('503') || e.message.includes('429') || e.message.includes('fetch failed')) {
-                    if (attempt >= maxRetries) {
-                        console.log(`❌ ${currentModel} agotó sus intentos por saturación.`);
-                        break; // Sale del while y pasa al siguiente modelo del for
-                    }
-                    const waitTime = 5000 * attempt;
-                    console.log(`⏳ [JITTER] Esperando ${waitTime}ms antes del próximo intento con ${currentModel}...`);
-                    await sleep(waitTime);
-                } else {
-                    if (attempt >= maxRetries) break;
-                }
+                console.error(`⚠️ Error Gemini (${currentModel}) Intento ${attempt}:`, e.message?.substring(0, 120));
+                console.log(`⚠️ Gemini (${currentModel}) no disponible (${e.message?.substring(0, 60)}). Probando siguiente capa...`);
+                break; // Saltar inmediatamente a la siguiente capa
             }
         }
     }
     
-    // Capa 3: Emergencia total fuera de Google
-    console.log(`🚨 Toda la red de Google falló. Activando FALLBACK (Groq / SambaNova / Llama 3.3)...`);
+    // Capa 3: Emergencia total fuera de Google — Groq/SambaNova/Cerebras con tokens extendidos
+    console.log(`🚨 Toda la red de Google falló. Activando FALLBACK Open Source con tokens extendidos...`);
     const systemPrompt = options.config?.systemInstruction || "Eres un analista experto.";
     const userPrompt = typeof options.contents === 'string' ? options.contents : JSON.stringify(options.contents);
     const isJson = options.config?.responseMimeType === "application/json";
     
     try {
         const fallbackRes = await executeAiWaterfall([
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: `${systemPrompt}\n\nResponde SOLO con JSON puro válido sin markdown. El JSON debe estar completo hasta el último }.` },
             { role: 'user', content: userPrompt }
         ], {
             mode: 'noTools',
             jsonMode: isJson,
-            temperature: 0.4
+            temperature: 0.3,
+            maxTokens: 6000  // Suficiente para JSON con 4 secciones densas
         });
         
-        return {
-            text: fallbackRes.content
-        };
+        return { text: fallbackRes.content };
     } catch (fallbackError) {
         throw new Error(`Todos los fallbacks fallaron. Error final: ${fallbackError.message}`);
     }
@@ -91,100 +92,272 @@ const generateWithRetry = async (modelName, options, maxRetries = 3) => {
 export async function generateAndSendAutoNewsletter(feedback = null) {
     console.log("🤖 Iniciando Generador Godzilla (WATERFALL METHOD & MEGA-DICTIONARY)...");
     
+    // ==========================================
+    // BLOQUEO ANTI-DUPLICADOS (CRITICAL FIX)
+    // ==========================================
+    const client = await pool.connect();
+    try {
+        // 1. Lock a nivel de base de datos para evitar race conditions si 2 crons disparan al mismo tiempo
+        const lockRes = await client.query('SELECT pg_try_advisory_lock(991122) AS acquired');
+        if (!lockRes.rows[0].acquired) {
+            console.log("⏭️ [Generador] Otro proceso ya está generando el newsletter en este instante. Cancelando duplicado.");
+            return { skipped: true, reason: 'concurrent_generation_locked' };
+        }
+
+        // 2. Verificar si ya se envió un newsletter hoy (usando sent_at)
+        const checkRes = await client.query(
+            `SELECT id FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
+        );
+        if (checkRes.rows.length > 0) {
+            console.log("⏭️ [Generador] El newsletter de hoy ya existe en la base de datos. Evitando envío doble.");
+            return { skipped: true, reason: 'already_generated_today' };
+        }
+    } catch (dbErr) {
+        console.error("❌ Error verificando duplicados:", dbErr.message);
+    } finally {
+        if (client) {
+            try { await client.query('SELECT pg_advisory_unlock(991122)'); } catch (e) {}
+            client.release();
+        }
+    }
+
     const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'full', timeStyle: 'short' });
     const systemInstruction = `Eres Godzilla AI, consultor estratégico. Escribes reportes ejecutivos dirigidos de 'tú a tú' a líderes empresariales, emprendedores y entusiastas de la tecnología. Prohibido usar relleno paja.\nREGLA JSON CRÍTICA: Tu salida será consumida por JSON.parse() estricto. LAS CLAVES Y VALORES DEL ESQUEMA PADRE DEBEN USAR COMILLAS DOBLES ("). Pero DENTRO del texto, si necesitas citar algo, usa SOLAMENTE comillas simples (''). NUNCA uses saltos de línea literales; si necesitas un salto de línea, escribe estrictamente '\\n'. Jamás metas comillas dobles internas sin escapar.\nREGLA ANTI-ALUCINACIÓN (ROJA): Es una ofensa inaceptable inventar rutas web y dar errores 404. Jamás fabriques URLs largas.\nREGLA ESPACIO-TIEMPO: Hoy es ${currentDate}. Bajo ninguna circunstancia inventes fechas futuras o hables de noticias desactualizadas. Actúa con pleno contexto de esta fecha.`;
 
     let fdbkStr = feedback ? `\n[ATENCIÓN ORDEN DEL CEO: Corrige el borrador anterior aplicando esto: "${feedback}"]\n` : '';
 
-    // 0. FETCH CONTEXTO REAL (NOTICIAS DE HOY) PARA EVITAR ALUCINACIONES
+    // 0. FETCH CONTEXTO REAL CATEGORIZADO DE NOTICIAS DE HOY (4 VERTICALES)
     let realNewsContext = "";
+    const usedHeadingsSet = new Set();
+
     try {
-        console.log("📰 Obteniendo contexto de noticias reales para inyectar en el cerebro de Godzilla...");
-        const rssRes = await fetch('https://news.google.com/rss/search?q=(Inteligencia+Artificial+OR+AI+OR+"Artificial+Intelligence"+OR+automation)+when:1d&hl=es-419&gl=MX&ceid=MX:es-419');
-        const xml = await rssRes.text();
-        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 30).map(m => m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'));
-        realNewsContext = "\nCONTEXTO DE NOTICIAS REALES DE LAS ÚLTIMAS 24 HORAS (Úsalo como base obligatoria para tu análisis):\n- " + titles.join("\n- ");
-        console.log("📰 " + titles.length + " titulares inyectados al prompt.");
+        console.log("🛡️ [Anti-Duplicación] Consultando historial de los últimos 14 días...");
+        const pastRes = await client.query(`
+            SELECT base_json FROM newsletters 
+            WHERE created_at >= NOW() - INTERVAL '14 days'
+        `);
+        pastRes.rows.forEach(r => {
+            try {
+                const data = typeof r.base_json === 'string' ? JSON.parse(r.base_json) : r.base_json;
+                (data.pdfSections || []).forEach(s => {
+                    if (s.heading) usedHeadingsSet.add(s.heading.toLowerCase().trim());
+                });
+            } catch(e) {}
+        });
+        console.log(`🛡️ [Anti-Duplicación] ${usedHeadingsSet.size} titulares cargados para prevenir noticias repetidas.`);
+
+        console.log("📰 [Scraper 24h] Obteniendo noticias exclusivas de las últimas 24 horas...");
+        const feeds = [
+            { url: 'https://news.google.com/rss/search?q=(OpenAI+OR+Nvidia+OR+Anthropic+OR+Gemini+OR+Blackwell+OR+"agentic+AI")+when:1d&hl=en-US&gl=US&ceid=US:en', cat: '1. NUEVOS MODELOS, HARDWARE Y AVANCES TÉCNICOS' },
+            { url: 'https://news.google.com/rss/search?q=(cybersecurity+OR+"data+breach"+OR+ransomware+OR+"zero-day")+AI+when:1d&hl=en-US&gl=US&ceid=US:en', cat: '2. CIBERSEGURIDAD, HACKEOS Y VULNERABILIDADES DE IA' },
+            { url: 'https://news.google.com/rss/search?q=(healthcare+OR+"clinical+AI"+OR+biotech+OR+medicine)+AI+when:1d&hl=en-US&gl=US&ceid=US:en', cat: '3. MEDICINA, SALUD Y TRABAJO' },
+            { url: 'https://news.google.com/rss/search?q=(defense+OR+military+OR+"Pentagon"+OR+regulation+OR+law)+AI+when:1d&hl=en-US&gl=US&ceid=US:en', cat: '4. GEOPOLÍTICA, REGULACIÓN Y USO BÉLICO/MILITAR' }
+        ];
+
+        let fullDigest = "";
+        let totalCount = 0;
+        const fetch = (await import('node-fetch')).default;
+
+        for (const f of feeds) {
+            try {
+                const res = await fetch(f.url, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000) });
+                if (!res.ok) continue;
+                const xml = await res.text();
+                const matches = [...xml.matchAll(/<item>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<description>(.*?)<\/description>/g)];
+                let catItems = [];
+                for (const m of matches) {
+                    let t = m[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
+                    let d = m[2].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+                    
+                    const lowerT = t.toLowerCase();
+                    const isDupe = Array.from(usedHeadingsSet).some(past => past.includes(lowerT.substring(0, 25)) || lowerT.includes(past.substring(0, 25)));
+                    if (isDupe) {
+                        console.log(`   ⏭️ [Filtro Anti-Repetición] Omitiendo noticia usada en días anteriores: "${t.substring(0, 45)}..."`);
+                        continue;
+                    }
+
+                    if (t && t.length > 10) {
+                        catItems.push(`• [${f.cat}] NOTICIA FRESCA DE HOY: ${t}\n  CONTEXTO/DATOS: ${d.substring(0, 250)}`);
+                    }
+                    if (catItems.length >= 3) break;
+                }
+                if (catItems.length > 0) {
+                    fullDigest += `\n--- ${f.cat} ---\n` + catItems.join("\n");
+                    totalCount += catItems.length;
+                }
+            } catch(e) {
+                console.error(`❌ Error scraping feed ${f.cat}:`, e.message);
+            }
+        }
+
+        // Complementar con DuckDuckGo Search Scraper para datos directos verificados en tiempo real de HOY
+        try {
+            const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            console.log(`🔍 [WebScraper] Enriqueciendo hechos de HOY (${todayStr}) con DuckDuckGo Search...`);
+            const searchQueries = [
+                `latest artificial intelligence news breaking ${todayStr}`,
+                `cybersecurity vulnerability breach news ${todayStr}`
+            ];
+            for (const q of searchQueries) {
+                const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+                const res = await fetch(searchUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                    signal: AbortSignal.timeout(6000)
+                });
+                if (res.ok) {
+                    const html = await res.text();
+                    const $ = cheerio.load(html);
+                    const snippets = [];
+                    $('.result__snippet').each((i, el) => {
+                        const txt = $(el).text().trim();
+                        if (txt && snippets.length < 3) snippets.push(txt);
+                    });
+                    if (snippets.length > 0) {
+                        fullDigest += `\n--- BÚSQUEDA WEB EN TIEMPO REAL (${q}) ---\n• ` + snippets.join("\n• ");
+                        totalCount += snippets.length;
+                    }
+                }
+            }
+        } catch (ddgErr) {
+            console.warn("⚠️ Falló DuckDuckGo Search complementario:", ddgErr.message);
+        }
+
+        realNewsContext = fullDigest;
+        console.log(`📰 [Scraper Híbrido Anti-Duplicados] ${totalCount} noticias NUTRIDAS Y 100% NUEVAS inyectadas.`);
     } catch(e) {
         console.error("❌ Fallo obteniendo RSS de noticias:", e.message);
     }
 
-    // 0.5. FASE 1: EXTRAER INFO CON GEMINI Y JITTER (Evitar 429)
-    console.log("🧠 [Fase 1] Extrayendo y resumiendo contexto crudo usando Gemini...");
-    const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet. Extrae un resumen crudo en texto plano (bullet points) de las noticias más impactantes sobre los últimos avances de Inteligencia Artificial. Queremos cubrir de manera integral múltiples áreas críticas:
-1. Avances Tecnológicos y Nuevos Modelos (ej. GPT, Gemini, Claude, herramientas de programación/autocodificación, hardware de IA, etc.).
-2. Seguridad, Ataques y Riesgos (ej. ciberataques impulsados por IA, hackeos, vulnerabilidades, estafas).
-3. Aplicaciones Médicas y de Salud (ej. diagnósticos asistidos, robótica médica, salud preventiva).
-4. Ámbito Social, Laboral y de Negocios (ej. impacto en el empleo, adopción corporativa, startups).
-5. Regulación, Geopolítica y Uso Bélico/Militar (ej. leyes de la UE/USA, uso táctico en conflictos armados).
+    // 0.5. FASE 1: RESUMEN ANALÍTICO DE HECHOS REALES
+    console.log("🧠 [Fase 1] Extrayendo síntesis ejecutiva de hechos reales...");
+    const rawPrompt = `HOY ES ${currentDate}. Revisa estas noticias extraídas hace 1 segundo de internet:
+${realNewsContext}
 
-REGLA ESTRICTA: Las noticias deben ser frescas del día de hoy, no inventes eventos pasados ni repitas noticias viejas. Solo usa el contexto provisto.\n\n${realNewsContext}`;
+TAREA: Sintetiza estas noticias reales en 4 bloques de datos verificados (uno para cada categoría). No inventes ningún dato, nombres o empresas que no estén arriba. Menciónalos explícitamente.`;
     
     let rawNewsSummary = "";
     try {
-        const rawRes = await generateWithRetry('gemini-2.5-flash', {
-            contents: rawPrompt
-        });
+        const rawRes = await generateWithRetry('gemini-3.6-flash', { contents: rawPrompt });
         rawNewsSummary = rawRes.text || '';
-        console.log("✅ [Fase 1] Resumen crudo obtenido.");
+        console.log("✅ [Fase 1] Síntesis cruda obtenida.");
     } catch(e) {
         console.error("⚠️ Fallo en la fase 1, usando contexto original crudo.", e.message);
         rawNewsSummary = realNewsContext;
     }
 
-    // 1. FASE 2: GENERAR JSON FINAL (ESPAÑOL) CON IA PREMIUM
+    // 1. FASE 2: GENERAR JSON FINAL CON 4 SECCIONES OBLIGATORIAS
     const premiumPrompt = `Crea el boletín de inteligencia estratégica del día de HOY (${currentDate}).${fdbkStr}
     
-AQUÍ TIENES LOS HECHOS CLAVE FRESCOS DE HOY (Recopilados de internet hace un instante):
+AQUÍ TIENES LAS NOTICIAS REALES Y COMPROBADAS DE HOY:
 ${rawNewsSummary}
 
-TAREA CRÍTICA: Eres un analista Senior de primer nivel. El contenido generado debe ser PROFUNDO, sumamente profesional y detallado. Debe abarcar de forma integral los aspectos y avances reportados en los hechos clave de hoy (nuevos modelos, autocodificación, ciberseguridad/ataques, salud/medicina, impacto social o implicaciones políticas/militares de la IA).
-ESTÁ TOTALMENTE PROHIBIDO alucinar noticias viejas o reciclar temas de la semana pasada. Explica el contexto actual y el impacto real. Ve al grano estratégico.
+TAREA CRÍTICA: Eres un analista Senior de tecnología. El contenido generado debe ser PROFUNDO, altamente técnico y 100% basado en los hechos reales arriba provistos.
+ESTÁ ESTRICTAMENTE PROHIBIDO:
+1. Usar titulares genéricos como "Avances en Modelos y Hardware" o "Ciberseguridad y Hackeos". CADA TITULAR DEBE SER ESPECÍFICO CON NOMBRE DE EMPRESA Y SUCESO REAL (Ej: "NVIDIA anuncia procesador Blackwell Ultra", "Anthropic lanza Claude 3.5 Sonnet").
+2. Repetir noticias anteriores.
+3. Generar menos de 4 noticias. DEBES REDACTAR EXACTAMENTE 4 NOTICIAS SEPARADAS.
 
-DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA BASE (TODO EN ESPAÑOL POR AHORA):
+DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) CON ESTA ESTRUCTURA (TODO EN ESPAÑOL POR AHORA):
 {
-    "subject_es": "Asunto (con emoji)",
-    "miniSummary_es": "Misterio y valor agresivo de 2 renglones para que abran el PDF.",
+    "subject_es": "Asunto impactante (con emoji)",
+    "miniSummary_es": "Resumen ejecutivo de 2 líneas para abrir el PDF.",
     "coverPrompt": "English prompt for text2image merging the day's topics in 'TIME magazine cover' style...",
-    "emailHTML_es": "<h2>Lo que debes saber hoy</h2><ul><li><strong>Noticia: </strong>1 o 2 oraciones de alto impacto.</li></ul>",
+    "emailHTML_es": "HTML limpio con un saludo formal y una lista <ul> con los 4 titulares del día y 1 línea de impacto por cada uno.",
     "pdfTitle": "DIARIO GODZILLA AI",
     "pdfSubtitle": "Inteligencia Ejecutiva Diaria",
-    "pdfIntro": "Un editorial inicial extenso (al menos 2 párrafos) hablando de tú a tú, analizando el panorama macro actual. (Solo plain text, nada de HTML)",
-    "pdfMetrics": [ { "label": "Impacto a Productividad (%)", "value": 85 } ],
-    "pdfChart": { "title": "Adopción de Mercado", "data": [ {"label": "Líder", "value": 60}, {"label": "Rival", "value": 40} ] },
-    "pdfSections": [ { "heading": "Título Noticia", "content": "Detalle analítico profundo de al menos 2 párrafos explicando el por qué, el cómo y el impacto en los negocios. (Solo plain text)" } ],
-    "pdfQuote": "Insight profundo de supervivencia tecnológica o reflexión de un líder de la industria.",
-    "pdfConclusion": "Conclusión estratégica orientada al ROI, pasos a seguir o predicciones para el resto de la semana."
+    "pdfIntro": "Editorial extenso (al menos 2 párrafos) analizando el panorama tecnológico actual basado en las noticias reales de hoy.",
+    "pdfMetrics": [ { "label": "Adopción Corporativa (%)", "value": 74 }, { "label": "Reducción de Costos (%)", "value": 38 } ],
+    "pdfChart": { "title": "Balance de Mercado IA", "data": [ {"label": "EE.UU.", "value": 58}, {"label": "China", "value": 42} ] },
+    "pdfSections": [
+        { "heading": "Titular Específico Noticia 1 con Nombre de Empresa/Modelo", "content": "Análisis técnico profundo (3+ párrafos de 150+ palabras c/u, separados con \\n\\n). Nombres reales de empresas, modelos y benchmarks. Cero Q&A." },
+        { "heading": "Titular Específico Noticia 2 de Ciberseguridad", "content": "Análisis de vulnerabilidades, hackeos o riesgos reales reportados hoy (3+ párrafos separados con \\n\\n)." },
+        { "heading": "Titular Específico Noticia 3 de Medicina/Salud", "content": "Análisis sobre uso en medicina, ciencia o impacto laboral real (3+ párrafos separados con \\n\\n)." },
+        { "heading": "Titular Específico Noticia 4 de Geopolítica/Regulación", "content": "Análisis sobre uso bélico/militar, regulaciones gubernamentales o NATO/Pentágono (3+ párrafos separados con \\n\\n)." }
+    ],
+    "pdfQuote": "Reflexión estratégica de un líder tecnológico.",
+    "pdfConclusion": "Conclusión orientada al ROI y predicciones para el resto de la semana."
 }`;
+    
+    const finalPrompt = premiumPrompt + `\n\nREGLAS ABSOLUTAMENTE OBLIGATORIAS:
+1. DEBES INCLUIR EXACTAMENTE 4 OBJETOS DENTRO DEL ARRAY 'pdfSections'. NO 1, NO 2, SINO EXACTAMENTE 4.
+2. Cada titular en 'heading' DEBE SER ESPECÍFICO y mencionar empresas/modelos reales. PROHIBIDO usar nombres de categoría genéricos.
+3. BASADO 100% EN LAS NOTICIAS REALES PROVISTAS. Cero alucinaciones. Cero generalidades vagas.
+4. PÁRRAFOS: Usa \\n\\n para separar párrafos. Mínimo 3 párrafos por noticia (150+ palabras cada uno).`;
 
     console.log("🧠 [Fase 2] Enviando resumen a Gemini para diseño de Copywriting Premium...");
     let data;
-    try {
-        const baseResponse = await generateWithRetry('gemini-2.5-flash', {
-            contents: premiumPrompt,
-            config: {
-                systemInstruction: systemInstruction,
-                responseMimeType: "application/json"
+    
+    const parseAndValidate = (rawText) => {
+        const jsonText = cleanJsonStr(rawText);
+        const parsed = JSON.parse(jsonText);
+        if (!parsed || !parsed.subject_es || !parsed.pdfIntro) {
+            throw new Error("JSON incompleto: faltan campos clave (subject_es, pdfIntro).");
+        }
+        const sectionCount = parsed.pdfSections?.length || 0;
+        if (sectionCount < 4) {
+            throw new Error(`Se generaron sólo ${sectionCount} secciones. Se requieren EXACTAMENTE 4 noticias distintas.`);
+        }
+
+        // Rechazar titulares genéricos o repetidos del historial
+        const genericKeywords = ["avances en modelos", "avances en hardware", "ciberseguridad y hackeos", "medicina y salud", "geopolítica", "uso de la ia", "inteligencia artificial"];
+        for (const s of parsed.pdfSections) {
+            const hLower = (s.heading || '').toLowerCase().trim();
+            if (genericKeywords.some(g => hLower === g)) {
+                throw new Error(`El titular "${s.heading}" es una etiqueta genérica. Exigiendo titulares con empresas y hechos concretos.`);
             }
+            const isDupe = Array.from(usedHeadingsSet).some(past => past.length > 15 && (past.includes(hLower) || hLower.includes(past)));
+            if (isDupe) {
+                throw new Error(`El titular "${s.heading}" ya fue usado en boletines anteriores. Exigiendo noticia nueva de hoy.`);
+            }
+        }
+
+        return parsed;
+    };
+
+    // Intento 1: Gemini (puede estar limitado)
+    try {
+        const baseResponse = await generateWithRetry('gemini-3.6-flash', {
+            contents: finalPrompt,
+            config: { systemInstruction: systemInstruction, responseMimeType: "application/json" }
         });
         const rawText = baseResponse.text || '';
-        console.log(`📝 [Fase 2] Raw response length: ${rawText.length} chars. Preview: ${rawText.substring(0, 120)}`);
-        const jsonText = cleanJsonStr(rawText);
-        data = JSON.parse(jsonText);
+        console.log(`📝 [Fase 2] Gemini OK — ${rawText.length} chars. Preview: ${rawText.substring(0, 120)}`);
+        data = parseAndValidate(rawText);
+        console.log(`✅ Contenido IA Base Generado (Gemini). Subject: ${data.subject_es} | Noticias: ${data.pdfSections.length}`);
+    } catch(geminiErr) {
+        console.error(`⚠️ [Fase 2] Gemini falló: ${geminiErr.message}. Activando Waterfall con tokens extendidos...`);
         
-        // Guardia defensiva: si la IA devolvió un objeto vacío o sin campos clave, abortamos.
-        if (!data || !data.subject_es || !data.pdfIntro) {
-            console.error("❌ [Fase 2] Gemini devolvió un JSON vacío o incompleto:", JSON.stringify(data));
-            throw new Error("El JSON generado por la IA está vacío o sin los campos requeridos (subject_es, pdfIntro).");
+        // Intento 2: Waterfall Open Source con maxTokens alto (Groq soporta hasta 8192)
+        // El prompt se simplifica para que Groq pueda generar el JSON completo sin truncarse.
+        const groqFallbackPrompt = `${finalPrompt}
+
+INSTRUCCIÓN CRÍTICA PARA GROQ/LLAMA: Debes generar un JSON COMPLETO con EXACTAMENTE 4 objetos en pdfSections. 
+El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provisto para rellenar las 4 secciones.`;
+
+        try {
+            const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
+            const fallbackRes = await executeAiWaterfall([
+                { role: 'system', content: `${systemInstruction}\n\nResponde SOLO con JSON puro válido. Sin markdown. Sin texto adicional. El JSON debe estar completo hasta el último }.` },
+                { role: 'user', content: groqFallbackPrompt }
+            ], { 
+                mode: 'noTools', 
+                jsonMode: true, 
+                temperature: 0.3, 
+                maxTokens: 6000  // Suficiente para 4 noticias densas en JSON
+            });
+            
+            const rawFallback = fallbackRes.content || '';
+            console.log(`📝 [Fase 2] Waterfall OK — ${rawFallback.length} chars. Preview: ${rawFallback.substring(0, 120)}`);
+            data = parseAndValidate(rawFallback);
+            console.log(`✅ Contenido IA Base Generado (Waterfall). Subject: ${data.subject_es} | Noticias: ${data.pdfSections.length}`);
+        } catch(waterfallErr) {
+            console.error(`❌ [Fase 2] Waterfall también falló: ${waterfallErr.message}`);
+            throw new Error(`No se pudo generar el contenido base del newsletter. Gemini: ${geminiErr.message} | Waterfall: ${waterfallErr.message}`);
         }
-        console.log("✅ Contenido IA Base Generado. Subject:", data.subject_es);
-    } catch(err) {
-        console.error("❌ Fallo en la Fase 2 con Gemini:", err.message);
-        throw new Error("No se pudo generar el contenido base del newsletter: " + err.message);
     }
 
-    // 2. MEGA-DICCIONARIO 11 IDIOMAS — Traducción con Gemini + Jitter (Bloques)
-    const targetLangs = ['en', 'fr', 'pt', 'de', 'ja', 'it', 'zh', 'ko', 'ar', 'ru'];
+    // 2. DICCIONARIO IDIOMAS (ES + EN fallback para dispositivos en otro idioma)
+    const targetLangs = ['en'];
     const translationsJson = { "es": data };
     
     console.log("🌍 Iniciando Traducción de Diccionario por Bloques con Jitter...");
@@ -192,7 +365,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         console.log(`   Traduciendo a [${lang}]...`);
         const transPrompt = `Translate the following JSON precisely into ISO language code [${lang}]. Keep EXACT JSON keys and schema. Do not change structure. Return ONLY pure valid JSON:\n\n${JSON.stringify(data)}`;
         try {
-            const transRes = await generateWithRetry('gemini-2.5-flash', {
+            const transRes = await generateWithRetry('gemini-3.6-flash', {
                 contents: transPrompt,
                 config: {
                     systemInstruction: "You are a perfect JSON translator. Reply only with valid JSON.",
@@ -209,38 +382,91 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     }
     console.log("✅ Mega-Diccionario Guardado (8 Idiomas Listos).");
 
-    // 3. GENERAR PORTADA (Con IA dinámica, omitido si no hay llave)
+    // 3. GENERAR PORTADA EDITORIAL DE ULTRA ALTA DEFINICIÓN (HD)
     let visualCoverUrl = null;
-    if (data.coverPrompt && process.env.GEMINI_API_KEY) {
-        // En caso de que se resuelva la disputa, Gemini hará la imagen. 
-        // TODO: Migrar a Pollinations Image si la disputa persiste.
-        try {
-            const imgRes = await ai.models.generateImages({
-                model: 'imagen-3.0-generate-002',
-                prompt: data.coverPrompt,
-                config: { numberOfImages: 1, outputMimeType: 'image/png' }
-            });
+    try {
+        console.log("📸 [Portada HD] Seleccionando y descargando fotografía editorial temática de alta resolución...");
+        const fullTopicText = [
+            data.subject_es || '',
+            data.pdfIntro || '',
+            ...(data.pdfSections || []).map(s => `${s.heading} ${s.content}`)
+        ].join(' ').toLowerCase();
 
-            if (imgRes.generatedImages?.[0]?.image?.imageBytes) {
-                const b64 = imgRes.generatedImages[0].image.imageBytes;
-                const buffer = Buffer.from(b64, 'base64');
-                const fileName = `newsletter_cover_${Date.now()}.png`;
+        const curatedCategoryPhotos = [
+            {
+                // 1. Hardware, Microchips, GPUs, NVIDIA, Semiconductores, Procesadores
+                match: (t) => t.includes('nvidia') || t.includes('amd') || t.includes('intel') || t.includes('gpu') || t.includes('microchip') || t.includes('procesador') || t.includes('semiconductor') || t.includes('blackwell') || t.includes('chip') || t.includes('hardware'),
+                url: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Microchips, GPUs & AI Hardware'
+            },
+            {
+                // 2. Vehículos Autónomos, Robotaxis, Robótica, Humanoides, Drones
+                match: (t) => t.includes('robot') || t.includes('autónomo') || t.includes('vehículo') || t.includes('robotaxi') || t.includes('tesla') || t.includes('waymo') || t.includes('drone') || t.includes('robótica'),
+                url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Robotics & Autonomous Systems'
+            },
+            {
+                // 3. Ciberseguridad, Hackers, Vulnerabilidades, Ransomware, Defensa
+                match: (t) => t.includes('ciberseguridad') || t.includes('cybersecurity') || t.includes('hack') || t.includes('brecha') || t.includes('malware') || t.includes('vulnerabilidad') || t.includes('seguridad') || t.includes('ciberataque'),
+                url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Cybersecurity & Digital Defense'
+            },
+            {
+                // 4. Cloud Computing, Supercomputadoras, Datacenters, Infraestructura
+                match: (t) => t.includes('datacenter') || t.includes('cloud') || t.includes('nube') || t.includes('servidor') || t.includes('infraestructura') || t.includes('supercomputadora') || t.includes('cluster'),
+                url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Datacenters & Cloud Infrastructure'
+            },
+            {
+                // 5. Salud, Medicina, Biotecnología, Diagnóstico IA, Genómica
+                match: (t) => t.includes('salud') || t.includes('medicina') || t.includes('médico') || t.includes('biotech') || t.includes('hospital') || t.includes('fármaco') || t.includes('genoma') || t.includes('clínica') || t.includes('doctor'),
+                url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Healthcare & Biotech Innovation'
+            },
+            {
+                // 6. Finanzas, Fintech, Inversión, Startups, Wall Street, Negocios
+                match: (t) => t.includes('fintech') || t.includes('inversión') || t.includes('startup') || t.includes('bolsa') || t.includes('mercado') || t.includes('acciones') || t.includes('millones') || t.includes('fondos'),
+                url: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Fintech & Tech Venture Capital'
+            },
+            {
+                // 7. Geopolítica, Leyes, Regulación, NATO, Pentágono, Militar
+                match: (t) => t.includes('militar') || t.includes('guerra') || t.includes('pentágono') || t.includes('nato') || t.includes('regulación') || t.includes('ley') || t.includes('gobierno') || t.includes('juicio') || t.includes('defensa'),
+                url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'AI Policy, Governance & Defense'
+            },
+            {
+                // 8. Modelos Fundacionales, Redes Neuronales, Cerebros IA, OpenAI, Anthropic, Gemini
+                match: (t) => t.includes('openai') || t.includes('anthropic') || t.includes('gemini') || t.includes('deepmind') || t.includes('llm') || t.includes('gpt') || t.includes('inteligencia artificial') || t.includes('modelo'),
+                url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&h=630&q=85',
+                tag: 'Frontier AI Models & Neural Networks'
+            }
+        ];
+
+        let selected = curatedCategoryPhotos.find(p => p.match(fullTopicText));
+        let photoUrl = selected ? selected.url : 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=85';
+        let photoTag = selected ? selected.tag : 'Executive Tech Innovation';
+
+        const photoRes = await fetch(photoUrl, { signal: AbortSignal.timeout(15000), redirect: 'follow' });
+        if (photoRes.ok) {
+            const arrayBuf = await photoRes.arrayBuffer();
+            const buffer = Buffer.from(arrayBuf);
+            if (buffer.length > 15000) {
+                const fileName = `newsletter_cover_${Date.now()}.jpg`;
                 const savePath = path.join(ASSETS_DIR, fileName);
                 fs.writeFileSync(savePath, buffer);
-                const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+                const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || 'https://godzillaconsulting.ai';
                 visualCoverUrl = `${botBase}/api/media/${fileName}`;
-                console.log("📸 Portada TIME Generada:", visualCoverUrl);
+                console.log(`✅ [Portada HD] Portada temática [${photoTag}] guardada localmente (${(buffer.length/1024).toFixed(0)} KB): ${visualCoverUrl}`);
             }
-        } catch(e) {
-            console.error("❌ Fallo generando portada (Probablemente por disputa Gemini):", e.message);
         }
+    } catch(coverErr) {
+        console.warn(`⚠️ [Portada HD] Falló descarga local: ${coverErr.message}. Usando URL remota directa.`);
+        visualCoverUrl = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=85';
     }
 
     if (!visualCoverUrl) {
-        // Fallback a Pollinations Image
-        console.log("📸 Usando Pollinations Image como Fallback para la Portada...");
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("Award-winning TIME magazine cover, photorealistic, shot on 35mm lens, authentic corporate documentary style, professional photography, hyper-realistic, natural lighting, highly detailed, no CGI, no 3D render, no cartoon, lifelike texture. " + data.coverPrompt)}?width=1080&height=1920&nologo=true&model=flux-realism&enhance=true`;
-        visualCoverUrl = fallbackUrl;
+        visualCoverUrl = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=85';
     }
 
     try {
@@ -271,43 +497,17 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
     await pool.query(`UPDATE newsletters SET attachment_url = $1 WHERE id = $2`, [attachmentUrl, newsletterId]);
 
     // ✅ FIX CRÍTICO: Encolar y enviar el newsletter a todos los suscriptores activos.
-    // Sin esta llamada el newsletter queda como 'draft' en DB y nunca llega a nadie.
     let totalSent = 0;
     try {
         console.log(`📤 [Newsletter] Iniciando envío masivo para newsletter #${newsletterId}...`);
         totalSent = await enqueueNewsletter(newsletterId);
-        console.log(`✅ [Newsletter] Enviado a ${totalSent} suscriptores.`);
+        console.log(`✅ [Newsletter] Enviado a ${totalSent} suscriptores con portada HD temática.`);
     } catch (sendErr) {
         console.error(`❌ [Newsletter] Error al encolar/enviar newsletter #${newsletterId}:`, sendErr.message);
-        // No re-lanzamos — el newsletter ya está en DB, se puede reenviar manualmente desde el panel.
     }
 
-    // ✅ 4. DISPARAR FLUJO TOPOLÓGICO (n8n local)
-    // El usuario requiere que el flujo visual ejecute la lógica. 
-    // El nodo 'Bot Newsletter' disparará a 'Tarea de Studio' o 'Planificador IA' a través de AutomationEngine.
-    try {
-        console.log(`📋 [Planner] Disparando automatización topológica desde 'Bot Newsletter'...`);
-        
-        // Importación dinámica para evitar ciclos de dependencia
-        const { default: Engine } = await import('./automationEngine.js');
-        
-        if (data.pdfSections && Array.isArray(data.pdfSections)) {
-            const planItems = data.pdfSections.map(section => ({
-                Tema: `🎬 NOTICIA VLOG: ${section.heading || 'Tema del día'}`,
-                'NARRACION ESCENA 1': `Contexto Completo extraído del Newsletter de hoy:\n\n${section.content}\n\nInstrucciones:\nGenera un guion de video corto para redes sociales (TikTok/Reels) explicando esta noticia. Hazlo muy dinámico, directo, con un gancho fuerte y llamado a la acción.`,
-                'NARRACION ESCENA 2': 'Desarrollo de la noticia',
-                'NARRACION ESCENA 3': 'Impacto',
-                'NARRACION ESCENA 4': 'Dato curioso',
-                'NARRACION ESCENA 5 (CTA)': 'Comenta y síguenos'
-            }));
-
-            // Disparar el nodo 'Bot Newsletter' con el payload (el plan)
-            await Engine.triggerFlow('Bot Newsletter', { plan: planItems });
-            console.log(`✅ [Planner] Flujo disparado con ${planItems.length} noticias.`);
-        }
-    } catch (e) {
-        console.error("❌ Error disparando el flujo de automatización desde el Newsletter:", e.message);
-    }
+    // Flujo de video automático deshabilitado para evitar generación de tareas fallidas
+    console.log("ℹ️ [Planner] Generación automática de videos desde el newsletter desactivada.");
 
     return { 
         newsletterId, 

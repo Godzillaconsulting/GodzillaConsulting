@@ -66,14 +66,12 @@ const createTransporter = () => {
 };
 
 
-// ── Cabeceras anti-spam estándar (ingeniería de Brevo aplicada) ──────────────
+// ── Cabeceras anti-spam estándar ─────────────────────────────────────────────
 // List-Unsubscribe: Gmail/Outlook muestran botón de desuscripción nativo
-// Precedence: bulk → clasifica como boletín, no spam
 // X-Mailer: firma del servidor
 const bulkHeaders = (unsubUrl) => ({
     'List-Unsubscribe':      `<${unsubUrl}>`,
     'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    'Precedence':            'bulk',
     'X-Mailer':              'GodzillaConsulting-Mailer/1.0',
 });
 
@@ -83,6 +81,8 @@ const bulkHeaders = (unsubUrl) => ({
  */
 export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
     let retries = 1;
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@godzillaconsulting.ai';
+    const fromName = (process.env.EMAIL_FROM_NAME || 'Godzilla Consulting').replace(/[^\x00-\x7F]/g, '').trim() || 'Godzilla Consulting';
 
     // Inyectar datos en la envoltura HTML corporativa
     const templateData = getLeadMagnetTemplate(subject, body || 'Aquí tienes tu recurso descargable.', fileUrl);
@@ -91,7 +91,8 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
         try {
             const transporter = createTransporter();
             const result = await transporter.sendMail({
-                from: `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
+                from: `"${fromName}" <${fromAddress}>`,
+                replyTo: fromAddress,
                 to,
                 subject: templateData.subject,
                 text: templateData.text,
@@ -113,9 +114,11 @@ export const sendLeadMagnetEmail = async ({ to, subject, body, fileUrl }) => {
  */
 export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl }) => {
     const unsubUrl = `https://godzillaconsulting.ai/api/newsletter/unsubscribe?email=${encodeURIComponent(to)}`;
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@godzillaconsulting.ai';
+    const fromName = (process.env.EMAIL_FROM_NAME || 'Godzilla Consulting').replace(/[^\x00-\x7F]/g, '').trim() || 'Godzilla Consulting';
 
     // Asegurarse de quitar literales \n que la IA a veces inyecta erróneamente en el HTML
-    const cleanBodyHtml = String(bodyHtml).replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>').replace(/```html/g, '').replace(/```/g, '');
+    const cleanBodyHtml = String(bodyHtml).replace(/\\n/g, '<br/>').replace(/```html/g, '').replace(/```/g, '');
 
     const html = `
     <!DOCTYPE html>
@@ -180,7 +183,8 @@ export const sendNewsletterEmail = async ({ to, subject, bodyHtml, attachmentUrl
     try {
         const transporter = createTransporter();
         const result = await transporter.sendMail({
-            from:    `"${process.env.EMAIL_FROM_NAME || 'Godzilla Consulting 🦖'}" <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`,
+            from:    `"${fromName}" <${fromAddress}>`,
+            replyTo: fromAddress,
             to,
             subject,
             text: textPlain,  // versión texto plano — crítico para entregabilidad

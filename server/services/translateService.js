@@ -23,7 +23,7 @@ Rules:
 - CRITICAL: Return purely the JSON.`;
 
         const response = await aiSDK.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: [
                 { role: 'user', parts: [
                     { text: instruction },

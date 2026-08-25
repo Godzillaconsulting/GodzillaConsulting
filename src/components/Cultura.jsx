@@ -15,14 +15,11 @@ const Cultura = () => {
   const { getNodeData } = useSiteData();
   const nodeData = getNodeData('cultura') || {};
 
-  // Si mediaGallery está vacío, muestra un placeholder transparente
+  // Si mediaGallery está vacío o no tiene URLs válidas, muestra la imagen de cultura oficial
   let mediaGallery = nodeData.mediaGallery && nodeData.mediaGallery.filter(m => m.url).length > 0
     ? nodeData.mediaGallery.filter(m => m.url)
-    : [ { type: 'image', url: 'https://placehold.co/800x600/111111/333333?text=Agrega+tus+fotos+en+Admin+Studio' } ];
+    : [ { type: 'image', url: culturaImage } ];
 
-  if (mediaGallery.length === 1 && mediaGallery[0].url.includes('placehold.co')) {
-      mediaGallery.push({ type: 'image', url: 'https://placehold.co/800x600/111111/333333?text=Haz+clic+en+Añadir+Medio' });
-  }
 
   // Prevenir que un string vacío reviva a Godzilla en el fondo:
   let finalBgVideo = nodeData.bgVideoUrl !== undefined && nodeData.bgVideoUrl !== '' 
@@ -215,10 +212,10 @@ const Cultura = () => {
  <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-[#CC0000]/10 to-transparent blur-[100px] pointer-events-none"></div>
 
  <div className="container relative z-10 mx-auto px-6 max-w-7xl">
- <div className="grid lg:grid-cols-2 gap-16 items-center">
+ <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
  {/* Text Content */}
- <div className="space-y-12">
+ <div className="min-w-0 w-full space-y-12">
  <div ref={titleContainerRef}>
  <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-none">
  <span className="block text-gray-500">{isSpanish ? (nodeData.overline || 'NUESTRA') : t('culture.title')}</span>
@@ -228,7 +225,7 @@ const Cultura = () => {
 
  {/* Slider Container */}
  <div
- className="relative overflow-hidden cursor-grab active:cursor-grabbing pb-4"
+ className="relative overflow-hidden cursor-grab active:cursor-grabbing pb-4 w-full"
  onMouseEnter={() => setIsPaused(true)}
  onMouseLeave={() => { setIsPaused(false); setIsDragging(false); }}
  onTouchStart={onTouchStart}
@@ -302,7 +299,7 @@ const Cultura = () => {
  </div>
 
         {/* Right Slider */}
-        <div className="relative group h-full">
+        <div className="min-w-0 w-full relative group h-full">
           <div className="absolute inset-0 bg-[#CC0000] rounded-2xl transform translate-x-4 translate-y-4 group-hover:translate-x-6 group-hover:translate-y-6 transition-transform duration-500"></div>
           <div 
             className="relative rounded-2xl overflow-hidden aspect-[4/5] bg-gray-900 shadow-2xl cursor-grab active:cursor-grabbing"

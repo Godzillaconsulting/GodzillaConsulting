@@ -20,7 +20,7 @@
         },
         {
             "source": "/api/media/:path*",
-            "destination": "/api/proxy?path=api/media/:path*"
+            "destination": "/api/proxy?path=media/:path*"
         },
         {
             "source": "/outputs/:path*",

@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const getGeminiModel = (apiKey, systemInstruction, chatTools) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const config = {
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         systemInstruction: systemInstruction
     };
     if (chatTools && chatTools.length > 0) {

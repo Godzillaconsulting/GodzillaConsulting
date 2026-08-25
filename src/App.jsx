@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import React, { useState, useEffect, memo, Suspense } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import CustomCursor from './components/CustomCursor';
+const CustomCursor = React.lazy(() => import('./components/CustomCursor'));
 import PrivateRoute from './components/PrivateRoute';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 import { SiteProvider, useSiteData } from './context/SiteContext';
@@ -9,20 +9,22 @@ import { useTranslation } from 'react-i18next';
 
 // Eliminando CONSTANTS de ColorBends ya que usa ParticleField en Hero
 
-// Componentes críticos cargados inmediatamente (First Contentful Paint)
+// Componentes críticos cargados inmediatamente (above-the-fold / First Contentful Paint)
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import Cultura from './components/Cultura';
-import Servicios from './components/Servicios';
-import CasosExito from './components/CasosExito';
-import Recursos from './components/Recursos';
-import Paquetes from './components/Paquetes';
-import Responsabilidades from './components/Responsabilidades';
-import ContactForm from './components/ContactForm';
-import Footer from './components/Footer';
-import Chatbot from './components/Chatbot';
-import whatsappIcon from './assets/icons/WhatsApp (white).png';
-import CookieConsent from './components/CookieConsent';
+
+// Below-the-fold — lazy loaded para reducir initial bundle de ~449KB a ~120KB
+const Cultura = React.lazy(() => import('./components/Cultura'));
+const Servicios = React.lazy(() => import('./components/Servicios'));
+const CasosExito = React.lazy(() => import('./components/CasosExito'));
+const Recursos = React.lazy(() => import('./components/Recursos'));
+const Paquetes = React.lazy(() => import('./components/Paquetes'));
+const Responsabilidades = React.lazy(() => import('./components/Responsabilidades'));
+const ContactForm = React.lazy(() => import('./components/ContactForm'));
+const Footer = React.lazy(() => import('./components/Footer'));
+const Chatbot = React.lazy(() => import('./components/Chatbot'));
+const CookieConsent = React.lazy(() => import('./components/CookieConsent'));
+
 
 // Lazy loading para optimizar el peso del compilado de Vite
 const AdminStudio = React.lazy(() => import('./components/AdminStudio'));
@@ -139,7 +141,7 @@ function FloatingWhatsApp() {
       <div className="relative">
         <div className="absolute inset-0 bg-[#25D366] rounded-full blur-md animate-pulse opacity-70"></div>
         <a href="https://wa.me/526565818912?text=Hola,%20me%20gustaría%20saber%20más%20sobre%20sus%20servicios" target="_blank" rel="noopener noreferrer" className="relative bg-[#25D366] hover:bg-green-600 p-4 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center">
-          <img src={whatsappIcon} alt="WhatsApp" className="w-8 h-8 object-contain" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </a>
       </div>
     </div>
@@ -173,16 +175,13 @@ function GlobalSuspenseFallback() {
 
 function AppLayout() {
   const { pathname } = useLocation();
-  const { loading } = useSiteData();
   const hideChromeRoutes = [
     '/login', '/admin', '/cm', '/studio', '/godzilla-sora',
     '/posicionamiento-social', '/control-ia', '/expansion', '/elite', '/formulario'
   ];
   const hideChrome = hideChromeRoutes.some(route => pathname.startsWith(route));
 
-  if (loading) {
-    return <GlobalSuspenseFallback />;
-  }
+  // SWR: render inmediato con defaults de studioConfig.js, datos frescos llegan en background
 
   return (
     <div className="font-sans text-white bg-[#050505] min-h-screen flex flex-col relative w-full overflow-hidden">

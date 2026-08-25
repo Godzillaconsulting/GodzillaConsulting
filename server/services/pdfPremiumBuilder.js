@@ -99,44 +99,28 @@ export async function buildPremiumPDF(data, lang = 'es', coverUrl = null) {
 
             doc.y += 25;
 
-            // --- DATA VISUALIZATION (GEOMETRÍA PIE) ---
+            // --- DATA VISUALIZATION (DASHBOARD TIPOGRÁFICO) ---
             if (data.pdfChart && data.pdfChart.data) {
-                checkPageWrap(160);
-                doc.fillColor(colorDark).fontSize(14).font('Helvetica-Bold').text(cleanHtmlStr(data.pdfChart.title || 'Market Topology'), 40, doc.y);
-                doc.y += 20;
+                checkPageWrap(100);
+                doc.fillColor(colorDark).fontSize(14).font('Helvetica-Bold').text(cleanHtmlStr(data.pdfChart.title || 'Market Topology').toUpperCase(), 40, doc.y);
+                doc.y += 15;
 
-                const cx = 110;
-                const cy = doc.y + 50;
-                const radius = 45;
+                const startX = 40;
+                let currentX = startX;
+                const dashY = doc.y;
                 
-                const pieData = data.pdfChart.data;
-                const total = pieData.reduce((acc, curr) => acc + (curr.value || 0), 0) || 100;
-                
-                const palette = [colorPrimary, colorDark, colorAccent, '#555555'];
-                let currentAngle = -90 * (Math.PI / 180); // Empezar arriba (12 O clock)
-
-                pieData.forEach((slice, idx) => {
-                    const sliceAngle = ((slice.value || 0) / total) * 2 * Math.PI;
-                    const endAngle = currentAngle + sliceAngle;
+                // Tipografía masiva estilo McKinsey / Apple
+                data.pdfChart.data.forEach((item, idx) => {
+                    const val = item.value || 0;
+                    const label = cleanHtmlStr(item.label);
                     
-                    doc.save()
-                       .moveTo(cx, cy)
-                       .lineTo(cx + radius * Math.cos(currentAngle), cy + radius * Math.sin(currentAngle))
-                       .arc(cx, cy, radius, currentAngle, endAngle)
-                       .lineTo(cx, cy)
-                       .fill(palette[idx % palette.length])
-                       .restore();
+                    doc.fillColor(colorPrimary).fontSize(42).font('Helvetica-Bold').text(`${val}%`, currentX, dashY);
+                    doc.fillColor('#666666').fontSize(10).font('Helvetica-Bold').text(label.toUpperCase(), currentX + 5, dashY + 45);
                     
-                    // Legenda
-                    const legY = doc.y + (idx * 20);
-                    doc.rect(180, legY, 12, 12).fill(palette[idx % palette.length]);
-                    doc.fillColor('#333').fontSize(10).font('Helvetica-Bold').text(`${slice.value}%`, 200, legY + 1);
-                    doc.fillColor('#666').fontSize(9).font('Helvetica').text(cleanHtmlStr(slice.label), 235, legY + 2);
-
-                    currentAngle = endAngle;
+                    currentX += 160; 
                 });
                 
-                doc.y += 120; // Espaciado despues del pie
+                doc.y = dashY + 70;
             }
 
             // --- DATA VISUALIZATION BARS ---
@@ -165,24 +149,49 @@ export async function buildPremiumPDF(data, lang = 'es', coverUrl = null) {
             // --- SECCIONES CON REFERENCIAS ---
             if (data.pdfSections && Array.isArray(data.pdfSections)) {
                 for (const [index, sec] of data.pdfSections.entries()) {
-                    if (index >= 3) break; 
+                    if (index >= 4) break; 
                     
                     const textLines = (sec.content.match(/\n/g) || []).length;
-                    const approxHeight = 80 + (textLines * 15);
+                    const approxHeight = 120 + (textLines * 20);
                     checkPageWrap(approxHeight); 
                     
                     const titleStr = cleanHtmlStr(sec.heading);
                     const contentStr = cleanHtmlStr(sec.content).trim();
 
                     const startY = doc.y;
-                    const headerH = 28;
-                    doc.rect(40, startY, doc.page.width - 80, headerH).fill(colorLight);
-                    doc.rect(40, startY, 4, headerH).fill(colorPrimary);
                     
-                    doc.fillColor(colorDark).fontSize(12).font('Helvetica-Bold').text(titleStr.toUpperCase(), 55, startY + 8, { width: doc.page.width - 100, height: 20, lineBreak: false });
+                    // Separador minimalista superior en vez de caja gris pesada
+                    doc.rect(40, startY, doc.page.width - 80, 1).fill('#DDDDDD');
                     
-                    doc.y = startY + headerH + 15;
-                    doc.fillColor('#222222').fontSize(11).font('Helvetica').lineGap(5).text(contentStr, 40, doc.y, { align: 'justify', width: doc.page.width - 80 });
+                    doc.fillColor(colorPrimary).fontSize(14).font('Helvetica-Bold').text(titleStr.toUpperCase(), 40, startY + 15, { width: doc.page.width - 80, height: 20, lineBreak: false });
+                    
+                    doc.y = startY + 45;
+                    
+                    // Parser básico para renderizar negritas (**) de la IA y saltos de línea (\n)
+                    const renderMarkdownText = (text, startX, startY, maxWidth) => {
+                        doc.y = startY;
+                        
+                        const paragraphs = text.split(/\n+/);
+                        for (let p of paragraphs) {
+                            if (!p.trim()) continue;
+                            const parts = p.split(/(\*\*.*?\*\*)/g);
+                            
+                            for (let part of parts) {
+                                if (!part) continue;
+                                const isBold = part.startsWith('**') && part.endsWith('**');
+                                const cleanPart = isBold ? part.slice(2, -2) : part;
+                                
+                                doc.fillColor('#222222').fontSize(11);
+                                doc.font(isBold ? 'Helvetica-Bold' : 'Helvetica');
+                                
+                                doc.text(cleanPart, { continued: true, align: 'justify', width: maxWidth, lineGap: 6 });
+                            }
+                            doc.text(' ', { continued: false }); // Fin del párrafo
+                            doc.y += 8; // Espacio entre párrafos
+                        }
+                    };
+                    
+                    renderMarkdownText(contentStr, 40, doc.y, doc.page.width - 80);
                     
                     if (sec.sourceName || sec.url) {
                         doc.y += 8;

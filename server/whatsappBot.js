@@ -1222,7 +1222,7 @@ export const initWhatsAppBot = async () => {
             try {
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
                 const config = {
-                    model: "gemini-2.5-flash",
+                    model: "gemini-3.6-flash",
                     systemInstruction: finalSystemPrompt + systemPromptContexto,
                     generationConfig: { temperature: 0.5, maxOutputTokens: hasBookingIntent ? 768 : 256 }
                 };
@@ -1485,7 +1485,7 @@ export const initWhatsAppBot = async () => {
                 try {
                     const genAI2 = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
                     const geminiModel2 = genAI2.getGenerativeModel({
-                        model: "gemini-2.5-flash",
+                        model: "gemini-3.6-flash",
                         systemInstruction: finalSystemPrompt + systemPromptContexto,
                         generationConfig: { temperature: 0.5, maxOutputTokens: 512 }
                     });

@@ -1,12 +1,11 @@
 import express from 'express';
 import pool from '../config/db.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
-// Middleware simplificado: Asumimos que la petición viene de un admin local, 
-// o puedes usar un middleware de token en el futuro.
 // GET /api/bots/config/:plataforma
-router.get('/:plataforma', async (req, res) => {
+router.get('/:plataforma', requireAdmin, async (req, res) => {
     try {
         const { plataforma } = req.params;
         const result = await pool.query('SELECT * FROM bot_configs WHERE plataforma = $1', [plataforma]);
@@ -21,7 +20,7 @@ router.get('/:plataforma', async (req, res) => {
 });
 
 // POST /api/bots/config/:plataforma
-router.post('/:plataforma', async (req, res) => {
+router.post('/:plataforma', requireAdmin, async (req, res) => {
     try {
         const { plataforma } = req.params;
         const { keywords, comment_template, dm_system_prompt } = req.body;

@@ -60,7 +60,6 @@
     "recharts": "^2.15.1",
     "resend": "^6.9.3",
     "socket.io-client": "^4.8.3",
-    "three": "^0.183.2",
     "uuid": "^11.0.0",
     "wavefile": "^11.0.0",
     "youtube-dl-exec": "^3.1.6",

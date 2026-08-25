@@ -13,7 +13,7 @@ import { useEffect, useRef } from 'react';
  *    enlarge the disc, and add an autonomous, smooth "figure-eight" drift for life.
  */
 export default function ParticleField({
-  particleCount = 800, // Reducido drásticamente de 2000 a 800 (visualmente idéntico por relleno)
+  particleCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 300 : 500, // Adaptive: 300 mobile, 500 desktop (visual idéntico)
   colors = ['#CC0000', '#FF2200', '#FF3300', '#FF4400', '#FF5500', '#990000', '#8B0000', '#CC2200'],
   speed = 1,
   discRadius = 0.38,

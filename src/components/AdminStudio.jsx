@@ -1115,7 +1115,7 @@ export default function AdminStudio() {
  <div className="flex items-center gap-3">
  <span className="material-symbols-outlined text-[#CC0000] text-[24px] flex items-center justify-center select-none shrink-0">{getSectionIcon(selectedNodeId)}</span>
  <div>
- <h2 className="text-lg font-black text-white leading-none drop-shadow-sm flex items-center gap-2">
+ <h2 className="text-sm md:text-base font-black text-white leading-none drop-shadow-sm flex items-center gap-2">
  {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
  {activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username && (
     <span className="text-[9px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)] whitespace-nowrap">
@@ -1123,15 +1123,20 @@ export default function AdminStudio() {
     </span>
  )}
  </h2>
- <p className="text-[10px] font-bold text-[#CC0000]/60 uppercase">Vista de Editor Glassy</p>
+ <p className="text-[10px] font-bold text-[#CC0000]/70 uppercase tracking-wider mt-0.5">Vista de Editor Glassy</p>
  </div>
  </div>
  ) : (
-  <div className="flex flex-col justify-center w-full h-full">
-      <div className="flex flex-col items-center justify-center">
-        <p className="text-sm font-black text-white/90 leading-none drop-shadow-sm tracking-wider uppercase">Admin</p>
-        <p className="text-xs text-[#CC0000] font-bold mt-1 tracking-widest uppercase">Studio</p>
-      </div>
+  <div className="flex items-center gap-3">
+    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#CC0000] to-red-950 flex items-center justify-center text-white border border-red-500/30 shadow-[0_0_12px_rgba(204,0,0,0.3)] shrink-0">
+      <span className="material-symbols-outlined text-[18px]">dashboard</span>
+    </div>
+    <div>
+      <h2 className="text-xs md:text-sm font-black text-white leading-none tracking-wider uppercase flex items-center gap-1.5">
+        Admin <span className="text-[#CC0000]">Studio</span>
+      </h2>
+      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Estudio de Edición & CMS</p>
+    </div>
   </div>
  )}
 

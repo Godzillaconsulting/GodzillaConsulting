@@ -101,33 +101,35 @@ export const processChatMessage = async (req, res) => {
         let responseText = '';
         let functionCalls = [];
 
-            const aiRes = await executeAiWaterfall(waterfallMessages, {
-                tools: waterfallTools,
-                temperature: hasBookingIntent ? 0.1 : 0.5,
-                maxTokens: hasBookingIntent ? 768 : 256,
-                mode: 'gemini_exclusive'
-            });
+        let responseText = '';
+        let functionCalls = [];
 
-            responseText = aiRes.content || '';
+        const aiRes = await executeAiWaterfall(waterfallMessages, {
+            tools: waterfallTools,
+            temperature: hasBookingIntent ? 0.1 : 0.5,
+            maxTokens: hasBookingIntent ? 768 : 384,
+            mode: 'auto'
+        });
+
+        responseText = aiRes.content || '';
+        
+        if (aiRes.tool_calls && aiRes.tool_calls.length > 0) {
+            waterfallMessages.push({
+                role: 'assistant',
+                content: aiRes.content || '',
+                tool_calls: aiRes.tool_calls
+            });
             
-            if (aiRes.tool_calls && aiRes.tool_calls.length > 0) {
-                // Agregar el call original al historial para que Llama/OpenAI no se queje
-                waterfallMessages.push({
-                    role: 'assistant',
-                    content: aiRes.content || '',
-                    tool_calls: aiRes.tool_calls
-                });
-                
-                functionCalls = aiRes.tool_calls.map(tc => {
-                    let parsedArgs = {};
-                    try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
-                    return {
-                        name: tc.function.name,
-                        args: parsedArgs,
-                        id: tc.id
-                    };
-                });
-            }
+            functionCalls = aiRes.tool_calls.map(tc => {
+                let parsedArgs = {};
+                try { parsedArgs = JSON.parse(tc.function.arguments); } catch(e){}
+                return {
+                    name: tc.function.name,
+                    args: parsedArgs,
+                    id: tc.id
+                };
+            });
+        }
 
         if (functionCalls.length > 0) {
             for (const toolCall of functionCalls) {
@@ -139,7 +141,6 @@ export const processChatMessage = async (req, res) => {
                     if (name === "check_availability") {
                         const { fecha, hora } = args;
                         
-                        // Anti-hallucination guard
                         if (!fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
                             resultMessage = "SISTEMA: No ejecutes herramientas sin fecha u hora exacta. Dile al usuario: '¿Para qué fecha y hora te gustaría agendar?'";
                         } else {
@@ -157,7 +158,6 @@ export const processChatMessage = async (req, res) => {
                     } else if (name === "save_appointment") {
                         const { nombre, correo, telefono, servicio, fecha, hora, notas } = args;
                         
-                        // Anti-hallucination guard
                         if (!nombre || !fecha || !hora || fecha.includes('YYYY') || hora.includes('HH')) {
                             resultMessage = "SISTEMA: Faltan datos obligatorios. Pídele al usuario todos los datos faltantes.";
                         } else {
@@ -166,39 +166,80 @@ export const processChatMessage = async (req, res) => {
                             if (errorValidacion) {
                                 resultMessage = errorValidacion;
                             } else {
-                            const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
-                            const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
-                            
-                            if (parseInt(conflictCheck.rows[0].total) > 0) {
-                                resultMessage = "Error: Ese horario ya está ocupado.";
-                            } else {
-                                let calendarId = null;
-                                try {
-                                    const gRes = await agendarEnGoogleCalendar({
-                                        nombre: nombre,
-                                        correo: correo || 'sin-correo@portal.com',
-                                        telefono: telefono,
-                                        servicio: servicio,
-                                        fecha: fecha,
-                                        hora: hora,
-                                        notas: notas || ''
-                                    });
-                                    calendarId = gRes.id;
-                                    
-                                    await pool.query(
-                                        "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8, 'portal')",
-                                        [nombre, correo || 'sin-correo@portal.com', telefono, servicio, fecha, hora, notas || '', calendarId]
-                                    );
-                                    resultMessage = "Cita agendada con éxito en BD y Calendar.";
-                                } catch (err) {
-                                    console.error('Error al agendar cita en portal: ', err);
-                                    if (calendarId) {
-                                        await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error('Fallo en Rollback Calendar:', rollbackErr.message));
+                                const queryConflict = `SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada'`;
+                                const conflictCheck = await pool.query(queryConflict, [fecha, hora]);
+                                
+                                if (parseInt(conflictCheck.rows[0].total) > 0) {
+                                    resultMessage = "Error: Ese horario ya está ocupado.";
+                                } else {
+                                    let calendarId = null;
+                                    try {
+                                        const gRes = await agendarEnGoogleCalendar({
+                                            nombre: nombre,
+                                            correo: correo || 'sin-correo@portal.com',
+                                            telefono: telefono,
+                                            servicio: servicio,
+                                            fecha: fecha,
+                                            hora: hora,
+                                            notas: notas || ''
+                                        });
+                                        calendarId = gRes?.id || null;
+                                        
+                                        await pool.query(
+                                            "INSERT INTO citas (nombre_completo, email, telefono, tipo_sesion, fecha, hora, notas_adicionales, status, google_calendar_id, origen) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', $8, 'portal')",
+                                            [nombre, correo || 'sin-correo@portal.com', telefono || '', servicio || 'Consultoría Estratégica', fecha, hora, notas || '', calendarId]
+                                        );
+                                        resultMessage = "Cita agendada con éxito en BD y Calendar.";
+                                    } catch (err) {
+                                        console.error('Error al agendar cita en portal: ', err);
+                                        if (calendarId) {
+                                            await cancelarEnGoogleCalendar(calendarId).catch(rollbackErr => console.error('Fallo en Rollback Calendar:', rollbackErr.message));
+                                        }
+                                        resultMessage = "Hubo un error agendando la cita: " + err.message;
                                     }
-                                    resultMessage = "Hubo un error agendando la cita: " + err.message;
                                 }
                             }
                         }
+                    } else if (name === "cancel_appointment") {
+                        const { telefono } = args;
+                        if (!telefono) {
+                            resultMessage = "SISTEMA: Solicita el número de teléfono para buscar y cancelar la cita.";
+                        } else {
+                            const resCita = await pool.query("SELECT id, google_calendar_id FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                            if (resCita.rows.length === 0) {
+                                resultMessage = "No se encontró ninguna cita confirmada asociada a ese número de teléfono.";
+                            } else {
+                                const cita = resCita.rows[0];
+                                if (cita.google_calendar_id) {
+                                    await cancelarEnGoogleCalendar(cita.google_calendar_id).catch(() => {});
+                                }
+                                await pool.query("UPDATE citas SET status = 'cancelada' WHERE id = $1", [cita.id]);
+                                resultMessage = "La cita ha sido cancelada exitosamente en el sistema.";
+                            }
+                        }
+                    } else if (name === "reschedule_appointment") {
+                        const { telefono, nueva_fecha, nueva_hora } = args;
+                        if (!telefono || !nueva_fecha || !nueva_hora) {
+                            resultMessage = "SISTEMA: Faltan datos (teléfono, nueva fecha o nueva hora) para reagendar.";
+                        } else {
+                            const errorValidacion = validateBusinessHours(nueva_fecha, nueva_hora);
+                            if (errorValidacion) {
+                                resultMessage = errorValidacion;
+                            } else {
+                                const resCita = await pool.query("SELECT id, google_calendar_id, nombre_completo, email, tipo_sesion FROM citas WHERE telefono = $1 AND status = 'confirmada' ORDER BY id DESC LIMIT 1", [telefono]);
+                                if (resCita.rows.length === 0) {
+                                    resultMessage = "No se encontró una cita activa para ese teléfono.";
+                                } else {
+                                    const cita = resCita.rows[0];
+                                    const dup = await pool.query("SELECT COUNT(*) as total FROM citas WHERE fecha=$1 AND ABS(EXTRACT(EPOCH FROM (hora::time - $2::time))) < 3600 AND status!='cancelada' AND id!=$3", [nueva_fecha, nueva_hora, cita.id]);
+                                    if (parseInt(dup.rows[0].total) > 0) {
+                                        resultMessage = "El nuevo horario solicitado ya está ocupado. Ofrece otra opción.";
+                                    } else {
+                                        await pool.query("UPDATE citas SET fecha = $1, hora = $2 WHERE id = $3", [nueva_fecha, nueva_hora, cita.id]);
+                                        resultMessage = "Cita reagendada exitosamente.";
+                                    }
+                                }
+                            }
                         }
                     } else {
                         resultMessage = "Herramienta ejecutada o no soportada.";
@@ -218,7 +259,7 @@ export const processChatMessage = async (req, res) => {
                     tools: waterfallTools,
                     temperature: 0.1,
                     maxTokens: 512,
-                    mode: 'gemini_exclusive'
+                    mode: 'auto'
                 });
                 
                 if (aiRes2 && aiRes2.content) {
@@ -229,14 +270,9 @@ export const processChatMessage = async (req, res) => {
             }
         }
 
-        // ⏱️ DELAY HUMANO: Esperar ~8 segundos para simular tiempo de redacción
-        const humanDelay = Math.floor(Math.random() * 2000) + 7000;
-        console.log(`[Web Chat] ⏱️ Esperando ${humanDelay}ms antes de responder...`);
-        await new Promise(r => setTimeout(r, humanDelay));
-
         res.json({ reply: responseText });
     } catch (e) {
-        console.error("❌ Error en chatController procesando Gemini", e);
+        console.error("❌ Error en chatController procesando IA", e);
         res.status(500).json({ error: "Internal Error", details: e.message });
     }
 };

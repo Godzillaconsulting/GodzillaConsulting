@@ -642,13 +642,17 @@ router.get('/tasks/stream', (req, res) => {
     });
 });
 
-// PUT: Progreso interno (Worker a UI)
-router.put('/internal-progress/:id', async (req, res) => {
+// PUT: Progreso interno (Worker a UI) — Protegido para local/admin
+router.put('/internal-progress/:id', (req, res, next) => {
+    const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+    if (isLocal) return next();
+    return authenticateToken(req, res, next);
+}, async (req, res) => {
     try {
-        const taskId = req.params.id;
+        const taskId = parseInt(req.params.id, 10);
         const { progress, msg } = req.body;
         
-        broadcast('TASK_PROGRESS', { id: taskId, progress, msg });
+        broadcast('PROGRESS', { taskId, progress, msg, task: { taskId, progress, msg } });
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -823,10 +827,18 @@ router.put('/tasks/:id', authenticateToken, async (req, res) => {
             try {
                 const fs = await import('fs');
                 const path = await import('path');
-                const targetDrive = 'E:\\Godzilla_Studio_Cache\\ApprovedVideos';
+                let targetDrive = 'E:\\Godzilla_Studio_Cache\\ApprovedVideos';
                 
-                if (!fs.existsSync(targetDrive)) {
-                    fs.mkdirSync(targetDrive, { recursive: true });
+                // Fallback a almacenamiento local del servidor si el disco E no existe
+                try {
+                    if (!fs.existsSync(targetDrive)) {
+                        fs.mkdirSync(targetDrive, { recursive: true });
+                    }
+                } catch(driveErr) {
+                    targetDrive = path.join(process.cwd(), 'server', 'uploads', 'ApprovedVideos');
+                    if (!fs.existsSync(targetDrive)) {
+                        fs.mkdirSync(targetDrive, { recursive: true });
+                    }
                 }
 
                 let parsedMedia = typeof updatedMedia === 'string' ? JSON.parse(updatedMedia) : updatedMedia;
@@ -902,18 +914,6 @@ router.post('/learning', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error POST /learning:', error);
         res.status(500).json({ success: false, message: 'Error al registrar aprendizaje', error: error.message });
-    }
-});
-
-// PUT: Internal progress update para el MediaWorker (Localhost/Worker)
-router.put('/internal-progress/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { progress, msg } = req.body;
-        broadcast('PROGRESS', { taskId: parseInt(id), progress, msg });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
     }
 });
 

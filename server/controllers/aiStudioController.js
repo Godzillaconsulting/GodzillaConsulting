@@ -121,7 +121,7 @@ ${cacheBuster}`;
                 }
 
                 const directorRes = await aiSDK.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.6-flash',
                     contents: [{ role: 'user', parts: directorParts }]
                 });
                 const rawText = directorRes.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -304,7 +304,7 @@ ${cacheBuster}`;
             return res.status(400).json({ error: "No cuentas con suscripción API Activa para Luma o Runway." });
         } else {
             // Generadores de Imágenes AI NATIVOS usando Google GenAI (Gemini Image Models)
-            const targetModel = engine.includes('Imagen 4') ? 'gemini-2.5-flash' : 'gemini-2.5-flash'; // Fallback text models if standard doesn't work.
+            const targetModel = engine.includes('Imagen 4') ? 'gemini-3.6-flash' : 'gemini-3.6-flash'; // Fallback text models if standard doesn't work.
             console.log(`[STUDIO] Generando Foto Comercial simulando llamada Google. Prompt: ${prompt}`);
             
             if (!process.env.GEMINI_API_KEY) {
@@ -923,7 +923,7 @@ IMPORTANTE: Los tiempos (start, end) deben estar en segundos exactos (decimales)
 `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: [{
                 role: 'user',
                 parts: [
@@ -1210,7 +1210,7 @@ Asegúrate de devolver ÚNICAMENTE un JSON válido con la propiedad "plan" conte
                 try {
                     await pool.query(
                         `INSERT INTO api_telemetry (service_name, model, input_tokens, output_tokens, estimated_cost_usd) VALUES ($1, $2, $3, $4, $5)`,
-                        ['Planificador IA', 'gemini-2.5-flash', totalInput, totalOutput, costUsd]
+                        ['Planificador IA', 'gemini-3.6-flash', totalInput, totalOutput, costUsd]
                     );
                 } catch (e) {
                     console.error('[TELEMETRY] Error guardando costo API:', e.message);

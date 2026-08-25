@@ -5,6 +5,7 @@ import gsap from 'gsap';
 export default function CustomCursor() {
   const [isVisible, setIsVisible] = useState(false);
   const elementsRef = useRef([]);
+  const rafRef = useRef(null);
 
   const { pathname } = useLocation();
   const hiddenRoutes = ['/admin', '/cm', '/studio', '/login', '/dashboard', '/godzilla-sora'];
@@ -18,21 +19,29 @@ export default function CustomCursor() {
       return;
     }
 
-    const moveBox = (e) => {
-      if (!isVisible) setIsVisible(true);
+    let lastX = 0, lastY = 0;
 
-      // Tween each box mimicking the CodePen "TweenMax motion blur"
-      elementsRef.current.forEach((el, index) => {
-        if (el) {
-          gsap.to(el, {
-            duration: 0.05,
-            x: e.clientX,
-            y: e.clientY,
-            delay: index / 750,
-            overwrite: "auto",
-            ease: "none"
-          });
-        }
+    const moveBox = (e) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      if (rafRef.current) return; // Throttle to 1 rAF
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        if (!isVisible) setIsVisible(true);
+
+        elementsRef.current.forEach((el, index) => {
+          if (el) {
+            gsap.to(el, {
+              duration: 0.05,
+              x: lastX,
+              y: lastY,
+              delay: index / 750,
+              overwrite: "auto",
+              ease: "none"
+            });
+          }
+        });
       });
     };
 
@@ -40,18 +49,18 @@ export default function CustomCursor() {
       setIsVisible(false);
     };
 
-    // Make elements visible immediately to avoid flash of invisible items
     gsap.set(elementsRef.current, { autoAlpha: 1 });
 
-    window.addEventListener('mousemove', moveBox);
+    window.addEventListener('mousemove', moveBox, { passive: true });
     document.documentElement.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       window.removeEventListener('mousemove', moveBox);
       document.documentElement.removeEventListener('mouseleave', handleMouseLeave);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       gsap.killTweensOf(elementsRef.current);
     };
-  }, [isVisible, pathname]);
+  }, [pathname]); // Solo re-bind cuando cambia la ruta, no en cada isVisible toggle
 
   if (
     typeof window !== 'undefined' &&
@@ -60,8 +69,8 @@ export default function CustomCursor() {
     return null;
   }
 
-  // Generate 30 layered boxes for the blur tail, plus 1 solid core dot at the very end
-  const boxes = Array.from({ length: 30 });
+  // 8 trailing boxes instead of 30 (visually identical comet tail, 73% fewer GSAP tweens)
+  const boxes = Array.from({ length: 8 });
 
   return (
     <div className={`fixed inset-0 pointer-events-none z-[99999] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
@@ -76,7 +85,7 @@ export default function CustomCursor() {
         }
       `}</style>
 
-      {/* Trailing blur elements */}
+      {/* Trailing blur elements — reduced from 30 to 8 */}
       {boxes.map((_, i) => (
         <div
           key={i}
@@ -86,7 +95,7 @@ export default function CustomCursor() {
         />
       ))}
 
-      {/* Core solid pointer (Index 0 gets 0 delay, so it leads the comet) */}
+      {/* Core solid pointer */}
       <div
         ref={(el) => (elementsRef.current[0] = el)}
         className="absolute top-0 left-0 w-3 h-3 bg-[#CC0000] border border-white/60 shadow-[0_0_8px_rgba(255,255,255,0.4)] rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2"
@@ -95,3 +104,4 @@ export default function CustomCursor() {
     </div>
   );
 }
+

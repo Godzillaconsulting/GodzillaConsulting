@@ -34,7 +34,7 @@ import botConfigsRoutes from './routes/botConfigs.js';
 import calendarRoutes from './routes/calendar.js';
 import sheetsRoutes from './routes/sheets.js';
 import automationRoutes from './routes/automation.js';
-import { verifyAdminToken, requireSuperAdmin } from './middleware/adminAuth.js';
+import { verifyAdminToken, requireSuperAdmin, requireAdmin } from './middleware/adminAuth.js';
 import { wafMiddleware } from './middleware/wafService.js';
 import adminWafRoutes from './routes/adminWaf.js';
 import internalToolsRoutes from './routes/internalTools.js';
@@ -230,7 +230,7 @@ app.use('/api/internal', internalToolsRoutes); // Herramientas internas — solo
 // PROXY SEGURO PARA EL MOTOR GOTSORA (PYTHON)
 // Supera el bloqueo Mixed Content (HTTPS -> HTTP) en el navegador
 // ==========================================
-app.post('/api/sora-start', async (req, res) => {
+app.post('/api/sora-start', requireAdmin, async (req, res) => {
     try {
         const fetch = (await import('node-fetch')).default;
         let finalPrompt = req.body.prompt;
@@ -291,7 +291,7 @@ Genera ÚNICAMENTE el nuevo prompt en inglés directo, sin explicaciones.`;
     }
 });
 
-app.get('/api/sora-history', async (req, res) => {
+app.get('/api/sora-history', requireAdmin, async (req, res) => {
     try {
         const fetch = (await import('node-fetch')).default;
         const response = await fetch('http://127.0.0.1:5000/sora-history');
@@ -302,7 +302,7 @@ app.get('/api/sora-history', async (req, res) => {
     }
 });
 
-app.post('/api/sora-restore', async (req, res) => {
+app.post('/api/sora-restore', requireAdmin, async (req, res) => {
     try {
         const fetch = (await import('node-fetch')).default;
         const response = await fetch('http://127.0.0.1:5000/sora-restore', {
@@ -322,6 +322,7 @@ app.post('/api/sora-restore', async (req, res) => {
 app.use('/api/sora/media', express.static('E:/GodzillaSora_Outputs', { maxAge: '1y', immutable: true }));
 app.use('/api/sora/media', express.static(path.join(__dirname, '..', 'outputs'), { maxAge: '1y', immutable: true }));
 app.use('/api/studio/approved', express.static('E:/Godzilla_Studio_Cache/ApprovedVideos', { maxAge: '1y', immutable: true }));
+app.use('/api/studio/approved', express.static(path.join(__dirname, 'uploads', 'ApprovedVideos'), { maxAge: '1y', immutable: true }));
 
 app.get('/api/sora/proxy-veo', async (req, res) => {
     try {
@@ -480,6 +481,7 @@ if (!process.env.VERCEL) {
             server.headersTimeout = 66000;
             cronScheduler.start(60_000);
             import('./workers/mediaWorker.js').catch(err => console.error('[MediaWorker] Error al importar:', err));
+            import('./newsletterBot.js').catch(err => console.error('[NewsletterBot] Error al importar:', err));
         });
 
         server.on('error', (err) => {

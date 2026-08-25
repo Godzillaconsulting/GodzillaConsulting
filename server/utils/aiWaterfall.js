@@ -116,12 +116,12 @@ export async function executeAiWaterfall(messages, options = {}) {
             }
             groqLastCallTime = Date.now();
 
-            console.log(`[WATERFALL] ➡️ Intentando: GROQ (Llama 3.3 70B)`);
+            console.log(`[WATERFALL] ➡️ Intentando: GROQ (GPT-OSS 120B)`);
             const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
             const reqData = {
                 messages: trimmedMessages,
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-120b",
                 temperature,
                 max_tokens: maxTokens
             };
@@ -132,11 +132,13 @@ export async function executeAiWaterfall(messages, options = {}) {
             }
             if (jsonMode) reqData.response_format = { type: "json_object" };
 
-            const completion = await groq.chat.completions.create(reqData, { timeout: 15000 });
+            const completion = await groq.chat.completions.create(reqData, { timeout: 25000 });
             const responseMessage = completion.choices?.[0]?.message;
             if (!responseMessage) throw new Error("Groq devolvió respuesta vacía");
+            let cleanContent = responseMessage.content || "";
+            cleanContent = cleanContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
             console.log(`[WATERFALL] ✅ Éxito con Groq.`);
-            return { content: responseMessage.content || "", tool_calls: responseMessage.tool_calls || [] };
+            return { content: cleanContent, tool_calls: responseMessage.tool_calls || [] };
         } finally {
             groqMutex.release();
         }
@@ -197,7 +199,7 @@ export async function executeAiWaterfall(messages, options = {}) {
             const hasTool_msgs = trimmedMessages.some(m => m.role === 'tool');
             const reqData = {
                 messages: hasTool_msgs ? sanitizeForBasicProviders(trimmedMessages) : trimmedMessages,
-                model: "llama3.1-8b",
+                model: "llama-3.3-70b",
                 temperature,
                 max_tokens: maxTokens
             };
@@ -266,10 +268,10 @@ export async function executeAiWaterfall(messages, options = {}) {
             }
             geminiLastCallTime = Date.now();
 
-            console.log(`[WATERFALL] ➡️ Intentando: GEMINI 2.0 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
+            console.log(`[WATERFALL] ➡️ Intentando: GEMINI 3.6 FLASH (💰 Proveedor Pagado Premium — Limitado y Encolado)`);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
             const config = {
-                model: "gemini-2.0-flash",
+                model: "gemini-3.6-flash",
                 systemInstruction,
                 generationConfig: {
                     maxOutputTokens: maxTokens, // 🔓 Sin límite restrictivo por orden del CEO
@@ -376,19 +378,19 @@ let activeWaterfall = [];
 
 if (mode === 'compression') {
     console.log(`[WATERFALL] 📦 Modo COMPRESIÓN — Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini];
+    activeWaterfall = [callGemini, callGroq];
 } else if (mode === 'gemini_exclusive') {
     console.log(`[WATERFALL] 🤖 Modo CHATBOT - Usando Google (Flash)...`);
     activeWaterfall = [callGemini];
 } else if (mode === 'premium') {
-    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash, luego Open Source...`);
-    activeWaterfall = [callGemini, callGroq, callSambaNova, callCerebras];
+    console.log(`[WATERFALL] 🧠 Modo CONTENIDO — Priorizando Gemini Flash, luego Groq...`);
+    activeWaterfall = [callGemini, callGroq];
 } else if (mode === 'noTools') {
-    console.log(`[WATERFALL] ➡️ Modo SIN TOOLS - Priorizando Open Source...`);
-    activeWaterfall = [callSambaNova, callGroq, callCerebras, callGemini, callOllama];
+    console.log(`[WATERFALL] ➡️ Modo SIN TOOLS — Priorizando Groq, luego Gemini...`);
+    activeWaterfall = [callGroq, callGemini];
 } else {
-    console.log(`[WATERFALL] ➡️ Modo ESTANDAR - Priorizando Gemini Flash...`);
-    activeWaterfall = [callGemini, callSambaNova, callGroq, callCerebras, callOllama];
+    console.log(`[WATERFALL] ➡️ Modo ESTANDAR — Priorizando Gemini Flash, luego Groq...`);
+    activeWaterfall = [callGemini, callGroq];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

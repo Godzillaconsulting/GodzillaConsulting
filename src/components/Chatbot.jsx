@@ -19,11 +19,10 @@ const Chatbot = () => {
     
     // Mensaje inicial multilingüe sin depender de t() — evita undefined si i18n no cargó
     const getInitialMessage = () => {
-        if (isSpanish) return '¡Hola! Soy Zilla, Especialista en Performance Marketing de Godzilla Consulting. ¿Estás listo para optimizar tu embudo y llevar tu ROAS al siguiente nivel? ¿Cómo puedo ayudarte hoy?';
+        if (isSpanish) return '¡Hola! Soy Zilla, especialista en marketing de Godzilla Consulting. ¿Cómo puedo ayudarte hoy con tu negocio o agendar una consulta estratégica?';
         const tKey = t('chat.greeting');
-        // Fallback si la clave i18n aún no cargó o devuelve la clave misma
-        if (!tKey || tKey === 'chat.greeting') return 'Hi! I am Zilla 😊 Your AI Marketing Specialist at Godzilla Consulting. How can I help you grow your business today?';
-        return tKey;
+        if (!tKey || tKey === 'chat.greeting') return 'Hello, I am Zilla, AI Marketing Specialist at Godzilla Consulting. How can I assist you with your business or schedule a consultation today?';
+        return tKey.replace('😊', '').replace('😉', '');
     };
     const [messages, setMessages] = useState([
         { role: 'model', text: getInitialMessage() }
@@ -33,17 +32,13 @@ const Chatbot = () => {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
-        // Initial delay before showing the tooltip for the first time
-        const initialTimer = setTimeout(() => setShowTooltip(true), 2000);
-
-        // Cycle showing and hiding the tooltip
-        const cycleInterval = setInterval(() => {
-            setShowTooltip(prev => !prev);
-        }, 15000); // Toggle every 15 seconds
+        // Mostrar el mensaje solo una vez a los 1.5s, mantenerlo 3s y ocultarlo permanentemente
+        const showTimer = setTimeout(() => setShowTooltip(true), 1500);
+        const hideTimer = setTimeout(() => setShowTooltip(false), 4500);
 
         return () => {
-            clearTimeout(initialTimer);
-            clearInterval(cycleInterval);
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
         };
     }, []);
 
@@ -59,10 +54,8 @@ const Chatbot = () => {
     const fetchChatWithRetry = async (messages, maxRetries = 3) => {
         // Filtrar mensajes de error previos E inválidos — no contaminar el contexto de Gemini
         const cleanMessages = messages.filter(m => {
-            // Descartar mensajes sin texto válido (undefined, null, vacío)
             if (!m.text || typeof m.text !== 'string' || m.text.trim() === '') return false;
             if (m.role !== 'model') return true;
-            // Descartar mensajes de error previos en cualquier idioma
             return !(
                 m.text.startsWith('Lo siento, ha ocurrido un error') ||
                 m.text.startsWith('Sorry, an error occurred') ||
@@ -78,16 +71,15 @@ const Chatbot = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messages: cleanMessages, lang: currentLang }),
-                    signal: AbortSignal.timeout(55000), // 55s — alineado con maxDuration de Vercel
+                    signal: AbortSignal.timeout(55000),
                 });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.reply) return data.reply;
                     throw new Error('Respuesta vacía');
                 }
-                // 502/503: reintenta
                 if ((response.status === 502 || response.status === 503) && attempt < maxRetries) {
-                    await new Promise(r => setTimeout(r, 1200 * attempt)); // backoff: 1.2s, 2.4s
+                    await new Promise(r => setTimeout(r, 1200 * attempt));
                     continue;
                 }
                 throw new Error(`HTTP ${response.status}`);
@@ -133,28 +125,22 @@ const Chatbot = () => {
             {/* Chatbot Toggle Button */}
             <div className="fixed bottom-[240px] md:bottom-[150px] right-6 z-50 flex flex-col items-end pointer-events-none">
                 <div
-                    className={`relative z-20 mb-4 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-1000 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
+                    className={`relative z-20 mb-3 mr-2 bg-white text-black px-4 py-2.5 pr-7 rounded-2xl shadow-2xl text-xs font-bold text-center leading-snug w-max max-w-[180px] border border-gray-100 transition-all duration-700 transform origin-bottom-right ${showTooltip && !isOpen && !tooltipDismissed ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'}`}
                 >
-                    {isSpanish ? <>¡Hola! Soy Zilla. 😊<br />¿Cómo puedo ayudarte?</> : <span dangerouslySetInnerHTML={{__html: t('chat.greeting').replace('How can I help you today?', '<br/>How can I help you today?') }}></span>}
+                    {isSpanish ? <>¡Hola! Soy Zilla.<br />¿Cómo puedo ayudarte?</> : <>Hello! I am Zilla.<br />How can I help you?</>}
                     <button onClick={() => setTooltipDismissed(true)} className="absolute top-1 right-1.5 text-gray-400 hover:text-black hover:bg-gray-100 w-4 h-4 rounded-full flex items-center justify-center transition-colors">✕</button>
                     <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-100"></div>
                 </div>
                 <div className="relative pointer-events-auto flex items-center justify-center">
-                    {/* Halos concéntricos (visibles al estar cerrado) */}
-                    {!isOpen && (
-                        <>
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple" />
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple animation-delay-1000" />
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#ff5e00] to-[#CC0000] pointer-events-none animate-ripple animation-delay-2000" />
-                        </>
-                    )}
                     <motion.button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`relative z-10 rounded-full shadow-[0_8px_25px_rgba(204,0,0,0.6)] flex items-center justify-center focus:outline-none bg-gradient-to-br from-[#ff5e00] via-[#CC0000] to-[#4a0000] text-white ${isOpen ? 'p-4' : 'w-[70px] h-[70px]'}`}
+                        className={`relative z-10 rounded-full shadow-[0_4px_20px_rgba(204,0,0,0.5)] hover:shadow-[0_6px_28px_rgba(204,0,0,0.8)] flex items-center justify-center focus:outline-none bg-gradient-to-br from-[#CC0000] via-[#990000] to-[#550000] text-white border border-[#FF3333]/30 ${isOpen ? 'p-4' : 'w-[64px] h-[64px]'}`}
                         transition={{ duration: 0.2 }}
-                        whileHover={{ scale: 1.1, filter: "brightness(1.1)" }}
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.95 }}
+                        aria-label="Abrir asistente Zilla"
                     >
-                        {isOpen ? <X size={28} /> : <img src={chatbotIcon} alt="Chatbot" className="w-8 h-8 brightness-0 invert p-0.5" />}
+                        {isOpen ? <X size={26} /> : <img src={chatbotIcon} alt="Chatbot" className="w-7 h-7 brightness-0 invert" />}
                     </motion.button>
                 </div>
             </div>

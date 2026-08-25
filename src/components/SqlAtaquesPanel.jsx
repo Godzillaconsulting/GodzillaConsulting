@@ -8,7 +8,7 @@ export default function SqlAtaquesPanel({ adminProfile }) {
     // Polling en vivo hacia el WAF
     const fetchWafLogs = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('adminToken');
         const res = await fetch('/api/admin/waf/live', {
           headers: {
             'Authorization': `Bearer ${token}`

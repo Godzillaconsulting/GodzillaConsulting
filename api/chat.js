@@ -256,27 +256,32 @@ export default async function handler(req, res) {
         let groqMessage = await callGroq(apiKey, systemPrompt, tools, contents);
         let responseText = '';
 
-        // ── Manejo de Function Calls ──
-        if (groqMessage.tool_calls && groqMessage.tool_calls.length > 0) {
-            const toolCall = groqMessage.tool_calls[0];
+        // ── Manejo de Function Calls (hasta 2 turnos para check + save) ──
+        let turn = 0;
+        let currentGroqMessage = groqMessage;
+        let currentContents = [...contents];
+
+        while (currentGroqMessage.tool_calls && currentGroqMessage.tool_calls.length > 0 && turn < 2) {
+            turn++;
+            const toolCall = currentGroqMessage.tool_calls[0];
             const name = toolCall.function.name;
-            const args = JSON.parse(toolCall.function.arguments || '{}');
+            let args = {};
+            try { args = JSON.parse(toolCall.function.arguments || '{}'); } catch(e) {}
 
             const toolResult = await executeTool(name, args);
 
-            // Segunda llamada con resultado del tool (sin tools para forzar respuesta en lenguaje natural)
-            const contents2 = [
-                ...contents,
-                groqMessage,
-                { role: 'tool', tool_call_id: toolCall.id, name: name, content: JSON.stringify(toolResult) }
-            ];
-            
-            const groqMessage2 = await callGroq(apiKey, systemPrompt, undefined, contents2);
-            responseText = groqMessage2.content || '';
-        } else {
-            responseText = groqMessage.content || '';
+            currentContents.push(currentGroqMessage);
+            currentContents.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                name: name,
+                content: JSON.stringify(toolResult)
+            });
+
+            currentGroqMessage = await callGroq(apiKey, systemPrompt, tools, currentContents);
         }
 
+        responseText = currentGroqMessage.content || '';
         responseText = responseText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
         // ── Goyi: guardar aprendizaje ──

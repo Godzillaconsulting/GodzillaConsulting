@@ -177,6 +177,9 @@ export default function AdminStudio() {
  const [bugReporterPos, setBugReporterPos] = useState(null);
  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+ const [openAccordion, setOpenAccordion] = useState({ 'service_1': true, 'caso_1': true, 'sec_hero': true, 'sec_card': true, 'sec_prices': true, 'sec_guarantee': true });
+
+ const toggleAccordion = (key) => setOpenAccordion(p => ({ ...p, [key]: !p[key] }));
 
  useEffect(() => {
      const handleResize = () => {
@@ -1063,21 +1066,9 @@ export default function AdminStudio() {
  </div>
   <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-black/30 backdrop-blur-md shadow-inner border-l border-red-900/30">
   
-  {/* Botón Flotante Toggle Menu (Estilo Apple) */}
-  <div className="absolute top-3 left-3 z-[60]">
-      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-1.5 rounded-md bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-md ${isSidebarOpen ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`}>
-          {isSidebarOpen ? <span className={"w-5 h-5"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>menu_open</span> : <span className={"w-5 h-5"  + " material-symbols-outlined text-[16px] flex items-center justify-center"}>menu</span>}
-      </button>
-  </div>
-  
   <div style={{ display: (!isAnalyticsMode && activeSection === 'social_studio') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <CockersStudio adminProfile={adminProfile} forceOpenEditor={false} />
   </div>
-  {/* 
-  <div style={{ display: (!isAnalyticsMode && activeSection === 'video_editor') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
-      <IntegratedVideoEditor />
-  </div>
-  */}
   <div style={{ display: (!isAnalyticsMode && activeSection === 'it_flow') ? 'flex' : 'none', flex: 1, height: '100%', overflow: 'hidden' }}>
       <AutomationFlow />
   </div>
@@ -1109,711 +1100,717 @@ export default function AdminStudio() {
   ) : (<>
 
   {/* Barra superior del editor */}
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-14 pr-4 sm:px-6 py-4 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-2.5 border-b border-red-900/30 bg-black/40 backdrop-blur-xl shrink-0 shadow-sm relative">
 
- {selectedNodeId ? (
- <div className="flex items-center gap-3">
- <span className="material-symbols-outlined text-[#CC0000] text-[24px] flex items-center justify-center select-none shrink-0">{getSectionIcon(selectedNodeId)}</span>
- <div>
- <h2 className="text-sm md:text-base font-black text-white leading-none drop-shadow-sm flex items-center gap-2">
- {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
- {activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username && (
-    <span className="text-[9px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)] whitespace-nowrap">
-      <span className="material-symbols-outlined text-[12px] flex items-center justify-center">lock</span> Bloqueado por {activePresences[selectedNodeId].user}
-    </span>
- )}
- </h2>
- <p className="text-[10px] font-bold text-[#CC0000]/70 uppercase tracking-wider mt-0.5">Vista de Editor Glassy</p>
- </div>
- </div>
- ) : (
-  <div className="flex items-center gap-3">
-    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#CC0000] to-red-950 flex items-center justify-center text-white border border-red-500/30 shadow-[0_0_12px_rgba(204,0,0,0.3)] shrink-0">
-      <span className="material-symbols-outlined text-[18px]">dashboard</span>
+    <div className="flex items-center gap-2.5 min-w-0">
+      <button 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+        title={isSidebarOpen ? "Ocultar menú lateral" : "Mostrar menú lateral"}
+        className="p-1.5 rounded-lg bg-black/50 hover:bg-neutral-800 border border-white/10 text-white/70 hover:text-white transition-all shadow-sm flex items-center justify-center shrink-0"
+      >
+        <span className="material-symbols-outlined text-[18px]">
+          {isSidebarOpen ? 'menu_open' : 'menu'}
+        </span>
+      </button>
+
+      {selectedNodeId ? (
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="material-symbols-outlined text-[#CC0000] text-[20px] flex items-center justify-center select-none shrink-0">{getSectionIcon(selectedNodeId)}</span>
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-sm font-black text-white leading-tight truncate flex items-center gap-2">
+              {PAGE_SECTIONS.find(s => s.id === selectedNodeId)?.label || selectedNodeId}
+              {activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username && (
+                <span className="text-[9px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 px-1.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                  <span className="material-symbols-outlined text-[10px]">lock</span> Bloqueado por {activePresences[selectedNodeId].user}
+                </span>
+              )}
+            </h2>
+            <p className="text-[9px] font-bold text-[#CC0000]/70 uppercase tracking-wider">Editor CMS</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#CC0000] to-red-950 flex items-center justify-center text-white border border-red-500/30 shadow-sm shrink-0">
+            <span className="material-symbols-outlined text-[14px]">dashboard</span>
+          </div>
+          <div>
+            <h2 className="text-xs font-black text-white leading-tight tracking-wider uppercase">
+              Admin <span className="text-[#CC0000]">Studio</span>
+            </h2>
+            <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Estudio de Edición</p>
+          </div>
+        </div>
+      )}
     </div>
-    <div>
-      <h2 className="text-xs md:text-sm font-black text-white leading-none tracking-wider uppercase flex items-center gap-1.5">
-        Admin <span className="text-[#CC0000]">Studio</span>
-      </h2>
-      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-0.5">Estudio de Edición & CMS</p>
+
+    <div className="flex items-center flex-wrap gap-2 justify-end w-full sm:w-auto">
+      <button onClick={() => setShowPreview(p => !p)}
+        className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 shadow-sm border border-transparent whitespace-nowrap ${
+          showPreview ? 'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' : 'bg-black/40 text-neutral-300 hover:bg-neutral-800'
+        }`}>
+        {showPreview ? '◧ Ocultar Vista' : '▣ Ver Vista'}
+      </button>
+
+      <button onClick={handleSave} 
+        disabled={saving || !selectedNodeId || !isRecursosValid || isCM || (activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username)}
+        className={`group px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 border relative whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 ${
+          hasUnsavedChanges 
+            ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]' 
+            : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
+        }`}>
+        {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#CC0000]"></span></span>}
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        {saving ? 'Guardando...' : 'Guardar borrador'}
+      </button>
+
+      <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || isCM}
+        className="group px-4 py-1.5 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-[11px] font-black rounded-lg transition-all duration-200 shadow-[0_2px_12px_rgba(204,0,0,0.4)] border border-red-900/30 hover:border-[#CC0000] disabled:opacity-50 whitespace-nowrap flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Publicar cambios
+      </button>
     </div>
   </div>
- )}
 
- <div className="flex items-center flex-wrap gap-2 sm:gap-3 justify-end w-full sm:w-auto">
- <button onClick={() => setShowPreview(p => !p)}
- className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 active:scale-95 hover:scale-105 hover:-translate-y-0.5 shadow-sm border border-transparent whitespace-nowrap ${
- showPreview ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-[#CC0000] hover:bg-white hover:border-[#CC0000]/50'
- }`}>
- {showPreview ?'◧ Ocultar' :'▣ Visualizar'}
- </button>
- 
- { /* ── Botón Guardar (Bloqueable por Presence) ── */ }
- <button onClick={handleSave} 
- disabled={saving || !selectedNodeId || !isRecursosValid || isCM || (activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username)}
- className={`group px-5 py-2 text-xs font-black rounded-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 shadow-md active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0 border relative whitespace-nowrap flex-shrink-0 ${
-     hasUnsavedChanges 
-         ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)]' 
-         : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
- }`}>
- {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-[#CC0000]"></span></span>}
- {saving ? '...' : (
-    <span className="flex items-center justify-center gap-1.5">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-        Guardar borrador
-    </span>
- )}
- </button>
- <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || isCM}
- className="group px-6 py-2 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-xs font-black rounded-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 shadow-[0_4px_15px_rgba(204,0,0,0.4)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.7)] border border-red-900/30 hover:border-[#CC0000] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0 whitespace-nowrap flex-shrink-0">
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-    Actualizar cambios
- </button>
- </div>
- </div>
+  {/* Cuerpo */}
+  <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-2.5 sm:p-3 gap-3">
 
- {/* Cuerpo */}
- <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
+    {isMobile && selectedNodeId && (
+      <div className="flex p-1 bg-black/60 border border-white/10 rounded-xl shrink-0 gap-1 mb-1">
+        <button 
+          onClick={() => setShowPreview(false)}
+          className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+        >
+          <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">edit</span>Editar
+        </button>
+        <button 
+          onClick={() => setShowPreview(true)}
+          disabled={activeTab === 'correos'}
+          className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
+        >
+          <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">visibility</span>Vista Previa
+        </button>
+      </div>
+    )}
 
-   {isMobile && selectedNodeId && (
-     <div className="flex p-1 bg-black/60 border border-white/10 rounded-2xl shrink-0 gap-1 mb-2">
-       <button 
-         onClick={() => setShowPreview(false)}
-         className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-       >
-         <span className="material-symbols-outlined text-[14px] mr-1 inline-block align-middle">edit</span>Editar
-       </button>
-       <button 
-         onClick={() => setShowPreview(true)}
-         disabled={activeTab === 'correos'}
-         className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
-       >
-         <span className="material-symbols-outlined text-[14px] mr-1 inline-block align-middle">visibility</span>Vista Previa
-       </button>
-     </div>
+  {/* ─ PANEL EDITOR ─ */}
+  {(!isMobile || !showPreview || activeTab === 'correos') && (
+  <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-all duration-200 w-full"
+  style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '52%' : '100%') }}>
+
+  {selectedNodeId && draftData ? (
+  <>
+  {/* Tabs */}
+  <div className="flex gap-1.5 px-3 py-1.5 border-b border-red-900/30 bg-black/40 shrink-0 overflow-x-auto custom-scrollbar">
+  {tabs.map(tab => (
+  <button key={tab.id}
+  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
+  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border border-transparent transition-all ${
+   activeTab === tab.id ? 'bg-white text-[#CC0000] border-[#CC0000]/50 shadow-sm' : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800'
+   }`}>
+    {tab.label}
+  </button>
+  ))}
+  </div>
+
+  {/* Tab content */}
+  <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+
+  {/* ══ TAB TEXTOS ══ */}
+  {activeTab === 'textos' && (
+  <div className="space-y-3">
+
+   {/* ── FOOTER DEDICADO ── */}
+   {selectedNodeId === 'footer' ? (
+      <div className="space-y-3">
+        {/* Tarjeta 1: Contacto */}
+        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px]">contact_phone</span> Información de Contacto
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-0.5">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Contacto</label>
+              <input type="text" value={draftData.contactTitle || ''} onChange={e => change('contactTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Contacto</label>
+              <input type="email" value={draftData.contactEmail || ''} onChange={e => change('contactEmail', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+            </div>
+            <div className="space-y-0.5 col-span-full">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Teléfono Contacto</label>
+              <input type="text" value={draftData.contactPhone || ''} onChange={e => change('contactPhone', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tarjeta 2: Navegación */}
+        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px]">menu</span> Menú de Navegación
+            </span>
+          </div>
+          <div className="space-y-0.5 mb-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Sección</label>
+            <input type="text" value={draftData.navTitle || ''} onChange={e => change('navTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[1, 2, 3, 4, 5, 6].map(idx => (
+              <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
+                <span className="text-[9px] font-mono text-neutral-400">Enlace {idx}</span>
+                <input type="text" placeholder="Texto enlace" value={draftData[`navLink${idx}`] || ''} onChange={e => change(`navLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
+                <input type="text" placeholder="URL (#seccion)" value={draftData[`navUrl${idx}`] || ''} onChange={e => change(`navUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tarjeta 3: Legales & Copyright */}
+        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px]">policy</span> Enlaces Legales & Copyright
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[1, 2, 3, 4, 5].map(idx => (
+              <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
+                <span className="text-[9px] font-mono text-neutral-400">Legal {idx}</span>
+                <input type="text" placeholder="Texto" value={draftData[`legalLink${idx}`] || ''} onChange={e => change(`legalLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
+                <input type="text" placeholder="URL (/legal)" value={draftData[`legalUrl${idx}`] || ''} onChange={e => change(`legalUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-0.5 pt-1 border-t border-white/5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Texto de Copyright</label>
+            <input type="text" value={draftData.copyrightText || ''} onChange={e => change('copyrightText', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+          </div>
+        </div>
+      </div>
+   ) : (
+    <>
+      {/* ── LANDINGS PAQUETES ── */}
+      {(() => {
+        const isLanding = selectedNodeId?.startsWith('paquete-');
+        if (isLanding) {
+          const sections = [
+            { id: 'sec_hero', title: 'Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
+            { id: 'sec_card', title: 'Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
+            { id: 'sec_prices', title: 'Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
+            { id: 'sec_guarantee', title: 'Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
+          ];
+          const usedKeys = new Set(sections.flatMap(s => s.fields));
+          const remaining = textFields.filter(([k]) => !usedKeys.has(k));
+
+          const renderLandingField = (key) => {
+            const val = draftData[key] || '';
+            const isLong = val.length > 80 || key.includes('Disclaimer') || key.includes('Text');
+            return (
+              <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+                <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
+                  <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
+                  {isLong ? (
+                    <textarea rows={2} value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
+                  ) : (
+                    <input type="text" value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors placeholder:text-neutral-600" />
+                  )}
+                </div>
+              </EditorField>
+            );
+          };
+
+          return (
+            <div className="space-y-2.5">
+              {sections.map(sec => (
+                <div key={sec.id} className="bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden">
+                  <div onClick={() => toggleAccordion(sec.id)} className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors">
+                    <span className="text-[11px] font-bold text-yellow-400 tracking-wider flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px]">tune</span> {sec.title}
+                    </span>
+                    <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: openAccordion[sec.id] ? 'rotate(180deg)' : 'none' }}>
+                      expand_more
+                    </span>
+                  </div>
+                  {openAccordion[sec.id] && (
+                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5">
+                      {sec.fields.map(k => renderLandingField(k))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {remaining.length > 0 && (
+                <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-3">
+                  <p className="text-[11px] font-bold text-neutral-400 mb-2">Otros campos</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {remaining.map(([k, v]) => renderLandingField(k))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // ── SECCIONES ESTÁNDAR (Hero, Servicios, Cultura, etc.) ──
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {textFields.map(([key, val]) => {
+              const isLong = typeof val === 'string' && (val.length > 80 || val.includes('\n') || /desc|texto|mission|vision|disclaimer|guarantee|about|body/i.test(key));
+              return (
+                <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+                  <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
+                    <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
+                    {isLong ? (
+                      <textarea 
+                        rows={val.length > 140 ? 3 : 2} 
+                        value={val || ''} 
+                        onChange={e => change(key, e.target.value)} 
+                        className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" 
+                      />
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={val || ''} 
+                        onChange={e => change(key, e.target.value)} 
+                        className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors" 
+                      />
+                    )}
+                  </div>
+                </EditorField>
+              );
+            })}
+          </div>
+        );
+      })()}
+    </>
    )}
 
- {/* ─ PANEL EDITOR ─ */}
- {(!isMobile || !showPreview || activeTab === 'correos') && (
- <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-300 w-full"
- style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '45%' : '100%') }}>
-
- {selectedNodeId && draftData ? (
- <>
- {/* Tabs */}
- <div className="flex gap-2 px-6 py-3 border-b border-[#CC0000]/40 bg-[#CC0000]/5 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CC0000]/50 hover:[&::-webkit-scrollbar-thumb]:bg-[#CC0000]/80 [&::-webkit-scrollbar-track]:bg-transparent">
- {tabs.map(tab => (
- <button key={tab.id}
- onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
- className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap border border-transparent shadow-sm transition-all ${
-  activeTab === tab.id ?'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' :'bg-black/40 text-neutral-400 hover:text-white hover:bg-[#CC0000]/20 hover:border-[#CC0000]/40'
-  }`}>
- <><span className="material-symbols-outlined text-[14px]">{tab.icon}</span>{tab.label}</>
- </button>
- ))}
- </div>
-
- {/* Tab content */}
- <div className="flex-1 overflow-y-auto p-4 space-y-4">
-
- {/* ══ TAB TEXTOS ══ */}
- {activeTab ==='textos' && (
- <div className="space-y-4">
- <p className="text-xs font-bold text-neutral-500 tracking-widest">Textos detectados</p>
-
-  {/* Campos de texto — con secciones para landings */}
- {(() => {
- const isLanding = selectedNodeId?.startsWith('paquete-');
- if (!isLanding) {
- // Non-landing nodes: auto-detect as before
- return textFields.map(([key, val]) => (
- <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
- <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
- {toLabel(key)}
- </label>
- <textarea rows={val.length > 80 ? 3 : 2} value={val}
- onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
- </div>
- </EditorField>
- ));
- }
- // Landing page: organized sections
- const sections = [
- { title: 'Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
- { title: 'Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
- { title: 'Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
- { title: 'Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
- ];
- const usedKeys = new Set(sections.flatMap(s => s.fields));
- const remaining = textFields.filter(([k]) => !usedKeys.has(k));
- 
- const renderField = (key) => {
- const val = draftData[key];
- if (val === undefined || val === null) {
- // Field doesn't exist yet, create it with empty string
- return (
- <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
- <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
- {toLabel(key)}
- </label>
- <textarea rows={1} value={''}
- onChange={e => change(key, e.target.value)}
- placeholder={`Añadir ${toLabel(key).toLowerCase()}...`}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
- </div>
- </EditorField>
- );
- }
- if (typeof val !== 'string') return null;
- return (
- <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
- <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
- {toLabel(key)}
- </label>
- <textarea rows={val.length > 80 ? 3 : 2} value={val}
- onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
- </div>
- </EditorField>
- );
- };
-
- return (
- <>
- {sections.map(section => (
- <div key={section.title} className="space-y-3 pb-4 border-b border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest pt-1">{section.title}</p>
- {section.fields.map(key => renderField(key))}
- </div>
- ))}
- {remaining.length > 0 && (
- <div className="space-y-3 pb-4">
- <p className="text-xs font-bold text-neutral-500 tracking-widest pt-1 flex items-center gap-1.5">
-     <span className="material-symbols-outlined text-[16px]">more_horiz</span> Otros campos
- </p>
- {remaining.map(([key, val]) => (
- <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400 flex items-center gap-1">
- <span className="text-[10px] font-mono bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">{key}</span>
- {toLabel(key)}
- </label>
- <textarea rows={val.length > 80 ? 3 : 2} value={val}
- onChange={e => change(key, e.target.value)}
- className="w-full p-3 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" />
- </div>
- </EditorField>
- ))}
- </div>
- )}
- </>
- );
- })()}
-
- {/* Campos agrupados (service1Title, service2Desc...) */}
- {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
- <div key={prefix} className="space-y-3 pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest">
-  Grupo: {toLabel(prefix)} ({Object.keys(nums).length} items)
- </p>
- {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => (
- <div key={num} className="bg-neutral-900 rounded-xl p-3 space-y-2 border border-neutral-800">
-  <div className="flex items-center justify-between">
-    <p className="text-[10px] text-neutral-500 font-bold">#{num}</p>
-    <button
-      title="Eliminar este elemento por completo"
-      onClick={() => {
-        setDraftData(prev => {
-          const next = { ...prev };
-          Object.keys(next).forEach(k => {
-            const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-            if (m && m[1] === prefix && m[2] === num) next[k] = '';
-          });
-          return next;
-        });
-      }}
-      className="px-2 py-1 text-[10px] font-black text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-all flex items-center gap-1"
-    >
-      Eliminar
-    </button>
-  </div>
- {Object.entries(fields).filter(([k]) => k !=='_keys').map(([field, val]) => {
- const originalKey = fields._keys[field];
- return (
- <EditorField key={originalKey} fieldKey={originalKey} onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">{toLabel(field)}</label>
- <textarea rows={typeof val ==='string' && val.length > 60 ? 3 : 1}
- value={val ||''} onChange={e => change(originalKey, e.target.value)}
- className="w-full p-2 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" />
- </div>
- </EditorField>
- );
- })}
- </div>
- ))}
- </div>
- ))}
-
- {textFields.length === 0 && !hasGrouped && (
- <p className="text-neutral-600 text-sm text-center py-8">Sin campos de texto para esta sección.</p>
- )}
- </div>
- )}
-
- {/* ══ TAB MEDIA ══ */}
- {activeTab ==='media' && (
- <div className="space-y-4">
- <p className="text-xs font-bold text-neutral-500 tracking-widest">
- Media detectada ({mediaFields.length} slots)
- </p>
-
-  {mediaFields.map(([key, val]) => {
-  const grpMatch = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-  return (
-  <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
-    <div className="space-y-1">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold text-yellow-500">
-          {toLabel(key)}
-        </span>
-        {grpMatch && (
-          <button
-            title="Eliminar este elemento completo"
-            onClick={() => {
-              const [, grpPfx, grpNum] = grpMatch;
-              setDraftData(prev => {
-                const next = { ...prev };
-                Object.keys(next).forEach(k => {
-                  const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-                  if (m && m[1] === grpPfx && m[2] === grpNum) next[k] = '';
-                });
-                return next;
-              });
-            }}
-            className="px-2 py-1 text-[10px] font-black text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-all flex items-center gap-1"
-          >
-            Eliminar
-          </button>
-        )}
+  {/* Campos agrupados (service1Title, service2Desc...) */}
+  {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
+    <div key={prefix} className="space-y-2 pt-2 border-t border-neutral-800">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold text-yellow-400 tracking-wider uppercase flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[15px]">dataset</span> {toLabel(prefix)} ({Object.keys(nums).length} elementos)
+        </p>
       </div>
-      <MediaPicker
-        label={``}
-        value={val ||''}
-        onChange={url => change(key, url)}
-        accept={key.toLowerCase().includes('video') ?'video' :'all'}
-      />
+
+      <div className="space-y-1.5">
+        {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => {
+          const accKey = `${prefix}_${num}`;
+          const isOpen = openAccordion[accKey] ?? (num === '1');
+          const titleField = Object.entries(fields).find(([k]) => k.toLowerCase().includes('title') || k.toLowerCase().includes('nombre'))?.[1] || `#${num}`;
+
+          return (
+            <div key={num} className="bg-neutral-900/80 rounded-xl border border-white/5 overflow-hidden">
+              <div 
+                onClick={() => toggleAccordion(accKey)} 
+                className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] font-mono font-bold text-[#CC0000] bg-[#CC0000]/10 px-1.5 py-0.5 rounded shrink-0">#{num}</span>
+                  <span className="text-xs font-bold text-white/90 truncate">{String(titleField)}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    title="Eliminar este elemento"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`¿Eliminar elemento #${num}?`)) {
+                        setDraftData(prev => {
+                          const next = { ...prev };
+                          Object.keys(next).forEach(k => {
+                            const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+                            if (m && m[1] === prefix && m[2] === num) next[k] = '';
+                          });
+                          return next;
+                        });
+                      }
+                    }}
+                    className="px-2 py-0.5 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                  <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                    expand_more
+                  </span>
+                </div>
+              </div>
+
+              {isOpen && (
+                <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
+                  {Object.entries(fields).filter(([k]) => k !== '_keys').map(([field, val]) => {
+                    const originalKey = fields._keys[field];
+                    const isLong = typeof val === 'string' && (val.length > 60 || field.toLowerCase().includes('desc'));
+                    return (
+                      <EditorField key={originalKey} fieldKey={originalKey} onHover={setHoveredField}>
+                        <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
+                          <label className="text-[10px] font-semibold text-gray-400 block">{toLabel(field)}</label>
+                          {isLong ? (
+                            <textarea 
+                              rows={2} 
+                              value={val || ''} 
+                              onChange={e => change(originalKey, e.target.value)} 
+                              className="w-full p-2 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" 
+                            />
+                          ) : (
+                            <input 
+                              type="text" 
+                              value={val || ''} 
+                              onChange={e => change(originalKey, e.target.value)} 
+                              className="w-full px-2.5 py-1.5 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none" 
+                            />
+                          )}
+                        </div>
+                      </EditorField>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
-  </EditorField>
-  );
-  })}
+  ))}
 
-  {selectedNodeId === 'portafolio' && (
-      <button 
-          onClick={() => {
-              let max = 0;
-              Object.keys(draftData).forEach(k => {
-                  if(k.startsWith('caso') && k.endsWith('LogoUrl')) {
-                      const num = parseInt(k.replace('caso', '').replace('LogoUrl', '')) || 0;
-                      if (num > max) max = num;
-                  }
-              });
-              const next = max + 1;
-              setDraftData(p => ({
-                  ...p,
-                  [`caso${next}LogoUrl`]: '',
-                  [`caso${next}Nombre`]: `Caso ${next}`,
-                  [`caso${next}Category`]: 'Nueva Categoría'
-              }));
-          }}
-          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
-      >
-          <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo caso
-      </button>
+  {textFields.length === 0 && !hasGrouped && selectedNodeId !== 'footer' && (
+    <p className="text-neutral-500 text-xs text-center py-6">Sin campos de texto configurables para esta sección.</p>
+  )}
+  </div>
   )}
 
-  {selectedNodeId === 'recursos' && (
-      <button 
-          onClick={() => {
-              let max = 0;
-              Object.keys(draftData).forEach(k => {
-                  if(k.startsWith('recurso') && k.endsWith('ImageUrl')) {
-                      const num = parseInt(k.replace('recurso', '').replace('ImageUrl', '')) || 0;
-                      if (num > max) max = num;
-                  }
-              });
-              const next = max + 1;
-              setDraftData(p => ({
-                  ...p,
-                  [`recurso${next}ImageUrl`]: '',
-                  [`recurso${next}Nombre`]: `Recurso ${next}`,
-                  [`recurso${next}Desc`]: 'Descripción del nuevo recurso'
-              }));
-          }}
-          className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
-      >
-          <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo recurso
-      </button>
-  )}
-  {selectedNodeId === 'cultura' && (
-      <div className="space-y-4 mt-6 pt-4 border-t border-neutral-800">
-          <p className="text-xs font-bold text-yellow-400 tracking-widest">Carrusel de Cultura</p>
-          {(draftData.mediaGallery || []).map((mediaItem, idx) => (
-              <div key={idx} className="bg-neutral-900 rounded-xl p-3 space-y-3 border border-neutral-800 relative">
-                  <button onClick={() => {
-                        if(window.confirm('¿Eliminar este medio?')) {
-                            setDraftData(p => {
-                                const arr = [...(p.mediaGallery || [])];
-                                arr.splice(idx, 1);
-                                return { ...p, mediaGallery: arr };
-                            });
-                        }
-                  }} className="absolute top-3 right-3 text-xs text-red-500 font-bold hover:text-red-400">✕ Eliminar</button>
-                  <p className="text-xs font-bold text-white mb-2">Medio {idx + 1}</p>
-                  
-                  <EditorField fieldKey={`mediaGallery_${idx}_url`} onHover={setHoveredField}>
-                      <MediaPicker
-                          label="Video o Imagen"
-                          value={mediaItem.url || ''}
-                          onChange={url => {
-                              setDraftData(p => {
-                                  const arr = [...(p.mediaGallery || [])];
-                                  const isVideo = url && url.match(/\.(mp4|webm|mov)$/i);
-                                  arr[idx] = { ...arr[idx], url, type: isVideo ? 'video' : 'image' };
-                                  return { ...p, mediaGallery: arr };
-                              });
-                          }}
-                          accept="all"
-                      />
-                  </EditorField>
-                  
-                  <div className="space-y-1 mt-2">
-                        <label className="text-xs font-semibold text-gray-400">Tipo (Auto-detectado o forzado)</label>
-                        <select 
-                            value={mediaItem.type || 'image'}
-                            onChange={e => {
-                                setDraftData(p => {
+  {/* ══ TAB MEDIA ══ */}
+  {activeTab === 'media' && (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between pb-1 border-b border-white/5">
+      <p className="text-[11px] font-bold text-neutral-400 tracking-wider uppercase">
+        Media detectada ({mediaFields.length} slots)
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      {mediaFields.map(([key, val]) => {
+        const grpMatch = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+        return (
+          <div key={key} className="bg-neutral-900/70 border border-white/5 rounded-xl p-2.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold text-yellow-400 truncate">
+                {toLabel(key)}
+              </span>
+              {grpMatch && (
+                <button
+                  title="Eliminar este elemento"
+                  onClick={() => {
+                    const [, grpPfx, grpNum] = grpMatch;
+                    setDraftData(prev => {
+                      const next = { ...prev };
+                      Object.keys(next).forEach(k => {
+                        const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+                        if (m && m[1] === grpPfx && m[2] === grpNum) next[k] = '';
+                      });
+                      return next;
+                    });
+                  }}
+                  className="px-1.5 py-0.5 text-[9px] font-bold text-red-400 hover:text-red-300 rounded"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <EditorField fieldKey={key} onHover={setHoveredField}>
+              <MediaPicker
+                label=""
+                compact={true}
+                value={val || ''}
+                onChange={url => change(key, url)}
+                accept={key.toLowerCase().includes('video') ? 'video' : 'all'}
+              />
+            </EditorField>
+          </div>
+        );
+      })}
+    </div>
+
+    {selectedNodeId === 'portafolio' && (
+        <button 
+            onClick={() => {
+                let max = 0;
+                Object.keys(draftData).forEach(k => {
+                    if(k.startsWith('caso') && k.endsWith('LogoUrl')) {
+                        const num = parseInt(k.replace('caso', '').replace('LogoUrl', '')) || 0;
+                        if (num > max) max = num;
+                    }
+                });
+                const next = max + 1;
+                setDraftData(p => ({
+                    ...p,
+                    [`caso${next}LogoUrl`]: '',
+                    [`caso${next}Nombre`]: `Caso ${next}`,
+                    [`caso${next}Category`]: 'Nueva Categoría'
+                }));
+            }}
+            className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
+        >
+            <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo caso
+        </button>
+    )}
+
+    {selectedNodeId === 'recursos' && (
+        <button 
+            onClick={() => {
+                let max = 0;
+                Object.keys(draftData).forEach(k => {
+                    if(k.startsWith('recurso') && k.endsWith('ImageUrl')) {
+                        const num = parseInt(k.replace('recurso', '').replace('ImageUrl', '')) || 0;
+                        if (num > max) max = num;
+                    }
+                });
+                const next = max + 1;
+                setDraftData(p => ({
+                    ...p,
+                    [`recurso${next}ImageUrl`]: '',
+                    [`recurso${next}Nombre`]: `Recurso ${next}`,
+                    [`recurso${next}Desc`]: 'Descripción del nuevo recurso'
+                }));
+            }}
+            className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
+        >
+            <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo recurso
+        </button>
+    )}
+
+    {selectedNodeId === 'cultura' && (
+        <div className="space-y-3 mt-4 pt-3 border-t border-neutral-800">
+            <p className="text-xs font-bold text-yellow-400 tracking-widest">Carrusel de Cultura</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {(draftData.mediaGallery || []).map((mediaItem, idx) => (
+                  <div key={idx} className="bg-neutral-900/80 rounded-xl p-2.5 border border-white/5 relative flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-white">Medio {idx + 1}</span>
+                        <button onClick={() => {
+                              if(window.confirm('¿Eliminar este medio?')) {
+                                  setDraftData(p => {
                                       const arr = [...(p.mediaGallery || [])];
-                                      arr[idx] = { ...arr[idx], type: e.target.value };
+                                      arr.splice(idx, 1);
                                       return { ...p, mediaGallery: arr };
                                   });
-                            }}
-                            className="w-full p-2 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white text-xs focus:border-[#CC0000] outline-none"
-                        >
-                            <option value="image">Imagen</option>
-                            <option value="video">Vídeo</option>
-                        </select>
+                              }
+                        }} className="text-[10px] text-red-500 font-bold hover:text-red-400">✕ Eliminar</button>
+                      </div>
+                      
+                      <EditorField fieldKey={`mediaGallery_${idx}_url`} onHover={setHoveredField}>
+                          <MediaPicker
+                              label=""
+                              compact={true}
+                              value={mediaItem.url || ''}
+                              onChange={url => {
+                                  setDraftData(p => {
+                                      const arr = [...(p.mediaGallery || [])];
+                                      const isVideo = url && url.match(/\.(mp4|webm|mov)$/i);
+                                      arr[idx] = { ...arr[idx], url, type: isVideo ? 'video' : 'image' };
+                                      return { ...p, mediaGallery: arr };
+                                  });
+                              }}
+                              accept="all"
+                          />
+                      </EditorField>
+                      
+                      <div className="mt-1.5">
+                            <select 
+                                value={mediaItem.type || 'image'}
+                                onChange={e => {
+                                    setDraftData(p => {
+                                        const arr = [...(p.mediaGallery || [])];
+                                        arr[idx] = { ...arr[idx], type: e.target.value };
+                                        return { ...p, mediaGallery: arr };
+                                    });
+                                }}
+                                className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-neutral-300 text-[10px] outline-none"
+                            >
+                                <option value="image">Imagen</option>
+                                <option value="video">Video</option>
+                            </select>
+                      </div>
                   </div>
-              </div>
-          ))}
-          <button 
-              onClick={() => {
-                  setDraftData(p => ({
-                      ...p,
-                      mediaGallery: [...(p.mediaGallery || []), { type: 'image', url: '' }]
-                  }));
-              }}
-              className="mt-4 px-4 py-3 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-xl hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-2"
-          >
-              <span className="material-symbols-outlined text-[16px]">add</span> Añadir nuevo medio
-          </button>
-      </div>
+              ))}
+            </div>
+            <button 
+                onClick={() => {
+                    setDraftData(p => ({
+                        ...p,
+                        mediaGallery: [...(p.mediaGallery || []), { url: '', type: 'image' }]
+                    }));
+                }}
+                className="w-full py-2 bg-[#CC0000]/10 hover:bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+            >
+                <span className="material-symbols-outlined text-[15px]">add_photo_alternate</span> Añadir elemento al carrusel
+            </button>
+        </div>
+    )}
+  </div>
   )}
 
- {/* Slots de media en elementos */}
- {hasElements && draftData.elements.some(el =>
- Object.keys(el).some(k => MEDIA_PATTERNS.test(k))
- ) && (
- <div className="space-y-3 pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest flex items-center gap-1.5">
-     <span className="material-symbols-outlined text-[16px]">image</span> Media por elemento
- </p>
- {draftData.elements.map((el, idx) => {
- const elMediaKeys = Object.keys(el).filter(k => MEDIA_PATTERNS.test(k));
- if (!elMediaKeys.length) return null;
- return (
- <div key={idx} className="bg-neutral-900 rounded-xl p-3 space-y-2 border border-neutral-800">
- <p className="text-xs font-bold text-white">{el.title || `Elemento ${idx + 1}`}</p>
- {elMediaKeys.map(k => (
- <EditorField key={k} fieldKey={`elements_${idx}_${k}`} onHover={setHoveredField}>
- <MediaPicker
- label={toLabel(k)}
- value={el[k] ||''}
- onChange={url => {
- setDraftData(prev => {
- const els = [...(prev.elements || [])];
- els[idx] = { ...els[idx], [k]: url };
- return { ...prev, elements: els };
- });
- }}
- accept={k.toLowerCase().includes('video') ?'video' :'all'}
- />
- </EditorField>
- ))}
- </div>
- );
- })}
- </div>
- )}
+  {/* ══ TAB COLORES ══ */}
+  {activeTab === 'colores' && (
+  <div className="space-y-2.5">
+    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Colores de la Sección</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <ColorField label="Color Primario" fieldKey="primaryColor" draftData={draftData} onChange={change} />
+      <ColorField label="Color Secundario" fieldKey="secondaryColor" draftData={draftData} onChange={change} />
+      <ColorField label="Color de Fondo" fieldKey="bgColor" draftData={draftData} onChange={change} />
+      <ColorField label="Color de Texto" fieldKey="textColor" draftData={draftData} onChange={change} />
+      <ColorField label="Color de Acento" fieldKey="accentColor" draftData={draftData} onChange={change} />
+    </div>
+  </div>
+  )}
 
- {mediaFields.length === 0 && (
- <div className="text-center py-8 space-y-2">
- <p className="text-neutral-600 text-sm">No hay campos de media en los datos publicados.</p>
- <p className="text-neutral-700 text-xs">Añade campos como imageUrl, videoUrl, logoUrl en la BD para habilitarlos aquí.</p>
- </div>
- )}
- </div>
- )}
+  {/* ══ TAB TIPOGRAFÍA ══ */}
+  {activeTab === 'tipografia' && (
+  <div className="space-y-2.5">
+    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Tipografía & Fuentes</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="space-y-0.5">
+        <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Títulos</label>
+        <select 
+          value={draftData.titleFont || 'Inter'}
+          onChange={e => change('titleFont', e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
+        >
+          {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+      </div>
 
- {/* ══ TAB CORREOS (RECURSOS) ══ */}
- {activeTab === 'correos' && selectedNodeId === 'recursos' && (
-    <CorreosInbox draftData={draftData} change={change} />
- )}
+      <div className="space-y-0.5">
+        <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Cuerpo</label>
+        <select 
+          value={draftData.bodyFont || 'Roboto'}
+          onChange={e => change('bodyFont', e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
+        >
+          {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+      </div>
+    </div>
+  </div>
+  )}
 
- {/* ══ TAB COLORES ══ */}
- {activeTab ==='colores' && (
- <div className="space-y-5">
- <p className="text-xs font-bold text-neutral-500 tracking-widest">Paleta de Colores</p>
- {[
- ['accentColor','Color de Acento','#CC0000'],
- ['bgColor','Color de Fondo','#111111'],
- ['textColor','Color de Texto Principal','#FFFFFF'],
- ['subtextColor','Color de Texto Secundario','#9CA3AF'],
- ['ctaColor','Color del Botón CTA','#CC0000'],
- ['borderColor','Color de Bordes','#333333'],
- ].map(([field, label, fallback]) => (
- <ColorField key={field}
- label={label}
- fieldKey={field}
- draftData={{ [field]: fallback, ...draftData }}
- onChange={change}
- />
- ))}
- </div>
- )}
+  {/* ══ TAB ELEMENTOS (Features y Precios) ══ */}
+  {activeTab === 'elementos' && (
+  <div className="space-y-3">
+    {hasFeatures && (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider">Características ({draftData.planFeaturesExtended?.length || 0})</p>
+          <button 
+            onClick={() => {
+                setDraftData(p => ({
+                    ...p,
+                    planFeaturesExtended: [...(p.planFeaturesExtended || []), { title: 'Nueva característica', desc: '', price: '' }]
+                }));
+                setSelectedFeatureIndex((draftData.planFeaturesExtended || []).length);
+            }}
+            className="px-2 py-1 text-[10px] font-bold text-[#CC0000] border border-[#CC0000]/30 rounded-lg hover:bg-[#CC0000] hover:text-white transition-all flex items-center gap-1"
+          >
+            + Añadir
+          </button>
+        </div>
 
- {/* ══ TAB TIPOGRAFÍA ══ */}
- {activeTab ==='tipografia' && (
- <div className="space-y-5">
- <p className="text-xs font-bold text-neutral-500 tracking-widest">Tipografías</p>
+        <div className="space-y-1.5">
+          {(draftData.planFeaturesExtended || []).map((f, idx) => (
+            <div key={idx} className="bg-neutral-900/80 border border-white/5 rounded-xl p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white">#{idx + 1}</span>
+                <button
+                  onClick={() => {
+                    if (window.confirm('¿Eliminar esta característica?')) {
+                      setDraftData(p => {
+                        const arr = [...(p.planFeaturesExtended || [])];
+                        arr.splice(idx, 1);
+                        return { ...p, planFeaturesExtended: arr };
+                      });
+                    }
+                  }}
+                  className="text-[10px] text-red-400 font-bold hover:text-red-300"
+                >
+                  ✕ Eliminar
+                </button>
+              </div>
+              <input 
+                type="text" 
+                placeholder="Título" 
+                value={f.title || ''} 
+                onChange={e => {
+                  const arr = [...(draftData.planFeaturesExtended || [])];
+                  arr[idx] = { ...arr[idx], title: e.target.value };
+                  setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
+                }}
+                className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-xs text-white outline-none" 
+              />
+              <textarea 
+                rows={2} 
+                placeholder="Descripción..." 
+                value={f.desc || ''} 
+                onChange={e => {
+                  const arr = [...(draftData.planFeaturesExtended || [])];
+                  arr[idx] = { ...arr[idx], desc: e.target.value };
+                  setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
+                }}
+                className="w-full p-2 bg-black/60 border border-white/10 rounded text-xs text-white outline-none resize-none" 
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+  )}
 
- {/* Font family */}
- <EditorField fieldKey="fontFamily" onHover={setHoveredField}>
- <div className="space-y-1.5">
- <label className="text-xs font-semibold text-gray-400">Familia de fuente</label>
- <select value={draftData.fontFamily ||'Inter'} onChange={e => change('fontFamily', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none">
- {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
- </select>
- <p className="text-[10px] text-neutral-600">Requiere importar la fuente en index.html</p>
- </div>
- </EditorField>
+  </div>
+  </>
+  ) : (
+  <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center custom-scrollbar">
+    <div className="max-w-md w-full">
+      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#CC0000]/20 to-neutral-900 border border-red-500/30 flex items-center justify-center mx-auto mb-3 text-[#CC0000] shadow-[0_0_20px_rgba(204,0,0,0.2)]">
+        <span className="material-symbols-outlined text-[24px]">dashboard_customize</span>
+      </div>
+      <h3 className="text-sm font-black text-white tracking-wide mb-1">Editor Visual de Contenido</h3>
+      <p className="text-[11px] text-neutral-400 mb-4">Selecciona una sección del sitio para editar sus textos, imágenes y colores en tiempo real.</p>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-left">
+        {PAGE_SECTIONS.slice(0, 9).map(sec => {
+          const node = nodes.find(n => n.id === sec.id) || { id: sec.id };
+          return (
+            <button
+              key={sec.id}
+              onClick={() => handleSelectSection(node)}
+              className="p-2.5 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/5 hover:border-[#CC0000]/40 transition-all flex flex-col gap-1.5 group"
+            >
+              <span className="material-symbols-outlined text-[18px] text-neutral-400 group-hover:text-[#CC0000] transition-colors">
+                {getSectionIcon(sec.id)}
+              </span>
+              <span className="text-[11px] font-bold text-white/90 group-hover:text-white truncate">{sec.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+  )}
+  </div>
+  )}
 
- {/* Título */}
- <div className="space-y-3 pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest">Títulos (H1 / H2)</p>
- <div className="grid grid-cols-2 gap-3">
- <EditorField fieldKey="titleFontSize" onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
- <input type="number" min={12} max={120} value={draftData.titleFontSize || 64}
- onChange={e => change('titleFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
- </div>
- </EditorField>
- <EditorField fieldKey="titleFontWeight" onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">Peso</label>
- <select value={draftData.titleFontWeight ||'900'} onChange={e => change('titleFontWeight', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none">
- {['300','400','500','600','700','800','900'].map(w => <option key={w}>{w}</option>)}
- </select>
- </div>
- </EditorField>
- </div>
- <EditorField fieldKey="titleLetterSpacing" onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">Letter Spacing</label>
- <input type="text" placeholder="-0.05em" value={draftData.titleLetterSpacing ||''}
- onChange={e => change('titleLetterSpacing', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
- </div>
- </EditorField>
- </div>
-
- {/* Cuerpo */}
- <div className="space-y-3 pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-yellow-400 tracking-widest">Texto Cuerpo</p>
- <div className="grid grid-cols-2 gap-3">
- <EditorField fieldKey="bodyFontSize" onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">Tamaño (px)</label>
- <input type="number" min={10} max={32} value={draftData.bodyFontSize || 16}
- onChange={e => change('bodyFontSize', +e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
- </div>
- </EditorField>
- <EditorField fieldKey="bodyLineHeight" onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">Line Height</label>
- <input type="text" placeholder="1.6" value={draftData.bodyLineHeight ||''}
- onChange={e => change('bodyLineHeight', e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-lg text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none" />
- </div>
- </EditorField>
- </div>
- </div>
-
- {/* Preview tipografía */}
- <div className="pt-3 border-t border-neutral-800">
- <p className="text-xs font-bold text-neutral-500 tracking-widest mb-3">Preview</p>
- <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800"
- style={{ fontFamily: draftData.fontFamily ||'Inter' }}>
- <p style={{ fontSize: `${Math.min(draftData.titleFontSize || 32, 36)}px`, fontWeight: draftData.titleFontWeight || 900, letterSpacing: draftData.titleLetterSpacing ||'-0.02em', color: draftData.textColor ||'#fff' }}>
- Título de Ejemplo
- </p>
- <p style={{ fontSize: `${draftData.bodyFontSize || 14}px`, lineHeight: draftData.bodyLineHeight || 1.6, color: draftData.subtextColor ||'#9ca3af', marginTop: 8 }}>
- Este es el texto cuerpo con la fuente seleccionada. Así se vería el párrafo principal de la sección.
- </p>
- </div>
- </div>
- </div>
- )}
-
- {/* ══ TAB ELEMENTOS ══ */}
- {activeTab ==='elementos' && (
-  <div className="flex flex-col sm:flex-row gap-3 h-full min-h-0">
-
-  {/* Lista */}
-  <div className="w-full sm:w-40 shrink-0 space-y-1 overflow-y-auto max-h-32 sm:max-h-none border-b sm:border-b-0 sm:border-r border-white/5 pb-2 sm:pb-0">
- {hasElements && <>
- <p className="text-[10px] text-neutral-500 font-bold mb-2">Tarjetas / Items</p>
- {draftData.elements.map((el, idx) => (
- <button key={idx} onClick={() => { setSelectedElementIndex(idx); setSelectedFeatureIndex(null); }}
- className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition border ${
- selectedElementIndex === idx ?'bg-neutral-700 border-[#CC0000] text-white' :'bg-neutral-800 border-transparent text-neutral-400 hover:text-white'
- }`}>
- <span className="block font-bold truncate">{el.title || `Item ${idx+1}`}</span>
- {el.price && <span className="text-[10px] text-green-400">{el.price}</span>}
- </button>
- ))}
- </>}
- {hasFeatures && <>
- <p className="text-[10px] text-neutral-500 font-bold mb-2 mt-3">Características</p>
- {draftData.planFeaturesExtended.map((f, idx) => (
- <button key={idx} onClick={() => { setSelectedFeatureIndex(idx); setSelectedElementIndex(null); }}
- className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition border ${
- selectedFeatureIndex === idx ?'bg-neutral-700 border-[#CC0000] text-white' :'bg-neutral-800 border-transparent text-neutral-400 hover:text-white'
- }`}>
- <span className="block font-bold truncate">{f.title || `Feature ${idx+1}`}</span>
- {f.price && <span className="text-[10px] text-green-400">{f.price}</span>}
- </button>
- ))}
- <button onClick={() => {
-     setDraftData(p => ({
-         ...p,
-         planFeaturesExtended: [...(p.planFeaturesExtended || []), { title: 'Nueva característica', desc: '', price: '' }]
-     }));
-     setSelectedFeatureIndex((draftData.planFeaturesExtended || []).length);
-     setSelectedElementIndex(null);
- }}
- className="mt-2 w-full text-center px-2 py-2 border border-dashed border-neutral-700 text-neutral-500 rounded-lg text-xs font-semibold hover:text-[#CC0000] hover:border-[#CC0000] transition transition-all duration-300">
-     + Añadir característica
- </button>
- </>}
- </div>
-
- {/* Editor de elemento/feature */}
- <div className="flex-1 space-y-3 overflow-y-auto">
- {activeElement && (
- <>
- <p className="text-xs font-bold text-[#CC0000]">Editando elemento</p>
- {Object.entries(activeElement).map(([k, v]) => {
- if (typeof v ==='object' || k.startsWith('_')) return null;
- if (MEDIA_PATTERNS.test(k)) return (
- <EditorField key={k} fieldKey={`el_${k}`} onHover={setHoveredField}>
- <MediaPicker label={toLabel(k)} value={v ||''} onChange={url => changeEl(k, url)} accept="all" />
- </EditorField>
- );
- return (
- <EditorField key={k} fieldKey={`el_${k}`} onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
- <textarea rows={typeof v ==='string' && v.length > 60 ? 3 : 1}
- value={v ||''} onChange={e => changeEl(k, e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none" />
- </div>
- </EditorField>
- );
- })}
- </>
- )}
-
- {activeFeature && (
- <>
- <p className="text-xs font-bold text-[#CC0000]">Editando característica</p>
- {['title', 'desc', 'price'].map(k => {
- const v = activeFeature[k] || '';
- return (
- <EditorField key={k} fieldKey={`ft_${k}`} onHover={setHoveredField}>
- <div className="space-y-1">
- <label className="text-xs font-semibold text-gray-400">{toLabel(k)}</label>
- <textarea rows={v.length > 60 ? 4 : 2} value={v} onChange={e => changeFt(k, e.target.value)}
- className="w-full p-2.5 bg-black/40 backdrop-blur-md border border-[#CC0000]/20 shadow-inner rounded-xl text-white font-bold text-sm focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none" />
- </div>
- </EditorField>
- );
- })}
- <button onClick={() => {
-     if (window.confirm('¿Seguro que quieres eliminar esta característica?')) {
-         setDraftData(p => {
-             const arr = [...(p.planFeaturesExtended || [])];
-             arr.splice(selectedFeatureIndex, 1);
-             return { ...p, planFeaturesExtended: arr };
-         });
-         setSelectedFeatureIndex(null);
-     }
- }} className="w-full mt-4 px-4 py-3 bg-red-900/10 text-red-500 text-sm font-bold rounded-xl border border-red-900/30 hover:bg-red-900/30 hover:border-red-900/50 transition">
-     Eliminar característica
- </button>
- </>
- )}
-
- {!activeElement && !activeFeature && (
- <p className="text-neutral-600 text-sm text-center py-12">← Selecciona un elemento</p>
- )}
- </div>
- </div>
- )}
-
- </div>
- </>
- ) : (
- <div className="flex-1 flex flex-col items-center pt-32 gap-4 text-neutral-700 select-none">
- <span className="material-symbols-outlined text-neutral-800 text-[64px] flex items-center justify-center">layers</span>
- <p className="text-base font-bold">Selecciona una sección</p>
- </div>
- )}
- </div>
- )}
-
- {/* ─ PANEL PREVIEW ─ */}
+  {/* ─ PANEL PREVIEW ─ */}
   {(!isMobile || showPreview) && (showPreview && activeTab !== 'correos') && (
   <div className="flex-1 overflow-hidden border-l border-neutral-800 w-full">
- <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
- </div>
- )}
+    <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
+  </div>
+  )}
 
- </div>
- </>)}
- </div>
+  </div>
+  </>)}
+  </div>
 
  {/* Modal de Feedback Global */}
  {showFeedbackModal && (

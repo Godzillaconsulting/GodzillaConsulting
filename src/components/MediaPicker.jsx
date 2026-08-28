@@ -13,7 +13,7 @@ export const getYouTubeId = (url) => {
  * MediaPicker — Componente para subir y seleccionar imágenes/videos.
  * En producción usa Vercel Blob Store (/api/blob); en dev usa /api/media local.
  */
-export default function MediaPicker({ value, onChange, accept = 'all', label = 'Imagen / Media' }) {
+export default function MediaPicker({ value, onChange, accept = 'all', label = '', compact = false }) {
     const [isOpen, setIsOpen] = useState(false);
     const [tab, setTab] = useState('library'); // 'library' | 'upload' | 'url'
     const [media, setMedia] = useState({ images: [], videos: [] });
@@ -23,20 +23,12 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
     const [filter, setFilter] = useState('all');
     const fileInputRef = useRef(null);
 
-    const getYouTubeId = (url) => {
-        if (!url) return null;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    };
-
     useEffect(() => {
         if (isOpen) fetchMedia();
     }, [isOpen]);
 
     const fetchMedia = async () => {
         try {
-            // Anti-cache total: Headers estrictos
             const r = await fetch(`${API}/api/media`, {
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -58,7 +50,6 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         setUploading(true);
         setUploadProgress(0);
 
-        // Use relative path or Vite proxy to avoid CORS and mixed content issues
         const isVideoFile = file.type.startsWith('video/');
         const endpoint = isVideoFile ? `${API}/api/media/upload-video` : `${API}/api/media/upload`;
 
@@ -89,7 +80,7 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
                     }
                 } catch (err) {
                     console.error('Upload error:', err);
-                    if(err.message.includes("413")) return; // Ya se alertó
+                    if(err.message.includes("413")) return;
                     alert('Error en el formato de transferencia. Es posible que el archivo exceda los limites o sea bloqueado por el firewall.');
                 } finally {
                     setUploading(false);
@@ -98,14 +89,39 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
             };
             xhr.onerror = () => { setUploading(false); alert('Error de red al subir archivo.'); };
             xhr.open('POST', endpoint);
-            const token = localStorage.getItem('adminToken');
-            if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.send(formData);
-        } catch (e) {
+        } catch (err) {
+            console.error('Upload catch error:', err);
             setUploading(false);
-            console.error('XHR setup error:', e);
-            alert('Error al preparar la subida del archivo.');
+            alert('Error al iniciar la subida.');
         }
+    };
+
+    const filteredMedia = () => {
+        let items = [];
+        if (accept === 'all') {
+            items = [
+                ...media.images.map(i => ({ ...i, type: 'images' })),
+                ...media.videos.map(v => ({ ...v, type: 'videos' })),
+                ...(media.documents || []).map(d => ({ ...d, type: 'document' }))
+            ];
+        } else if (accept === 'video') {
+            items = media.videos.map(v => ({ ...v, type: 'videos' }));
+        } else if (accept === 'image') {
+            items = media.images.map(i => ({ ...i, type: 'images' }));
+        } else if (accept === 'document') {
+            items = (media.documents || []).map(d => ({ ...d, type: 'document' }));
+        }
+
+        if (filter === 'images') {
+            items = items.filter(i => i.type === 'images');
+        } else if (filter === 'videos') {
+            items = items.filter(i => i.type === 'videos');
+        } else if (filter === 'docs') {
+            items = items.filter(i => i.type === 'document');
+        }
+
+        return items;
     };
 
     const handleDelete = async (type, filename, e, url) => {
@@ -128,32 +144,6 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
         }
     };
 
-    const filteredItems = () => {
-        let items = [];
-        
-        // Step 1: Base list based on accept prop
-        if (accept === 'image') {
-            items = media.images || [];
-        } else if (accept === 'video') {
-            items = (media.videos || []).filter(v => v.type === 'videos');
-        } else if (accept === 'docs') {
-            items = (media.videos || []).filter(v => v.type === 'document');
-        } else {
-            items = [...(media.images || []), ...(media.videos || [])];
-        }
-
-        // Step 2: Apply folder filter
-        if (filter === 'images') {
-            items = items.filter(i => i.type === 'images' || i.type === 'image');
-        } else if (filter === 'videos') {
-            items = items.filter(i => i.type === 'videos' || i.type === 'video');
-        } else if (filter === 'docs') {
-            items = items.filter(i => i.type === 'document');
-        }
-
-        return items;
-    };
-
     const isVideo = (item) => item.type === 'videos';
 
     const formatSize = (bytes) => {
@@ -162,57 +152,60 @@ export default function MediaPicker({ value, onChange, accept = 'all', label = '
     };
 
     return (
-        <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-400 block">{label}</label>
+        <div className="space-y-1">
+            {label && <label className="text-[11px] font-semibold text-gray-400 block">{label}</label>}
 
             {/* Preview del valor actual */}
-            <div
-                className="relative shrink-0 w-32 h-32 bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden cursor-pointer group hover:border-[#CC0000] p-2 flex items-center justify-center transition-colors"
-                onClick={() => setIsOpen(true)}
-            >
-                {value ? (
-                    (typeof value === 'string' && getYouTubeId(value)) ? (
-                        <iframe 
-                            src={`https://www.youtube.com/embed/${getYouTubeId(value)}?controls=0&mute=1&autoplay=1&loop=1`}
-                            className="w-full h-full object-contain pointer-events-none"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media"
-                        ></iframe>
-                    ) : (typeof value === 'string' && value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) ? (
-                        <video src={value} className="w-full h-full object-contain" muted />
-                    ) : (typeof value === 'string' && value.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)(\?.*)?$/i)) ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-2">
-                            <svg className="w-10 h-10 mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                            <span className="text-[10px] font-mono truncate w-full text-center">Documento</span>
-                        </div>
-                    ) : (
-                        <img src={value} alt="preview" className="w-full h-full object-contain" />
-                    )
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-2">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span className="text-xs">Clic para agregar imagen/video</span>
-                    </div>
-                )}
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full">
-                        ✏️ Cambiar archivo
-                    </span>
-                </div>
-            </div>
-
-            {/* Botón para limpiar */}
-            {value && (
-                <button
-                    onClick={() => onChange('')}
-                    className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+            <div className="flex items-center gap-2">
+                <div
+                    className={`relative shrink-0 ${compact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-full max-w-[200px] h-20 sm:h-24'} bg-neutral-900 border border-neutral-700/60 rounded-lg overflow-hidden cursor-pointer group hover:border-[#CC0000] p-1.5 flex items-center justify-center transition-colors shadow-inner`}
+                    onClick={() => setIsOpen(true)}
                 >
-                    ✕ Quitar media
-                </button>
-            )}
+                    {value ? (
+                        (typeof value === 'string' && getYouTubeId(value)) ? (
+                            <iframe 
+                                src={`https://www.youtube.com/embed/${getYouTubeId(value)}?controls=0&mute=1&autoplay=1&loop=1`}
+                                className="w-full h-full object-contain pointer-events-none"
+                                frameBorder="0"
+                                allow="autoplay; encrypted-media"
+                            ></iframe>
+                        ) : (typeof value === 'string' && value.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) ? (
+                            <video src={value} className="w-full h-full object-contain" muted />
+                        ) : (typeof value === 'string' && value.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|csv)(\?.*)?$/i)) ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-blue-900/20 text-blue-400 p-1">
+                                <svg className="w-6 h-6 mb-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                <span className="text-[9px] font-mono truncate w-full text-center">Doc</span>
+                            </div>
+                        ) : (
+                            <img src={value} alt="preview" className="w-full h-full object-contain" />
+                        )
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-1 text-center p-1">
+                            <svg className="w-5 h-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-[10px] font-medium leading-tight">Elegir media</span>
+                        </div>
+                    )}
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-[10px] font-bold bg-[#CC0000]/80 px-2 py-1 rounded">
+                            Cambiar
+                        </span>
+                    </div>
+                </div>
+
+                {/* Botón para limpiar */}
+                {value && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onChange(''); }}
+                        title="Quitar archivo actual"
+                        className="p-1 text-neutral-500 hover:text-red-400 transition-colors text-xs flex items-center gap-0.5 rounded hover:bg-neutral-800"
+                    >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                )}
+            </div>
 
             {/* Modal */}
             {isOpen && createPortal(

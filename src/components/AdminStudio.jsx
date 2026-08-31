@@ -22,7 +22,7 @@ import PanelMaestroPanel from './PanelMaestroPanel';
 // ── Hover field wrapper → activa resaltado en preview ──────────────────────
 import { PAGE_SECTIONS, injectSectionDefaults } from '../utils/studioConfig';
 import { detectTextFields, detectMediaFields, toLabel, detectGroupedFields, MEDIA_PATTERNS } from '../utils/editorParser';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   Bot, Video, Zap, Calendar, Mail, 
   BarChart2, Bug, LogOut, LayoutDashboard, 
@@ -127,8 +127,9 @@ const getSectionIcon = (id) => {
 
 // ── Componente principal ────────────────────────────────────────────────────
 export default function AdminStudio() {
- const navigate = useNavigate();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { nodes, fetchNodes, setPreviewOverride } = useSiteData();
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [collapsedGroups, setCollapsedGroups] = useState({ 0: true, 1: true, 2: true, 3: true, 4: true, crm: true });
@@ -328,44 +329,80 @@ export default function AdminStudio() {
  const isTechAdmin = isSuperAdmin || username === 'godzilla_admin' || username === 'jareg' || ['dani', 'oscar'].includes(username); 
  
  // Alex es un CEO de contenido, pero no ve las bases de datos técnicas
- const isCEO = isTechAdmin || ['alex'].includes(username);
- 
- const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
- 
- const isEditor = adminProfile?.role === 'admin' || isCEO || ['judith'].includes(username);
- const canEditSite = isEditor;
+  const isCEO = isTechAdmin || ['alex'].includes(username);
+  const isCM = adminProfile?.role === 'cm' && username !== 'oscar';
+  const isEditor = adminProfile?.role === 'admin' || isCEO || ['judith'].includes(username);
+  const canEditSite = isEditor;
 
- // Vista de Centro Técnico IT
- const canSeeITStudio = isTechAdmin || isEditor;
+  // Vista de Centro Técnico IT
+  const canSeeITStudio = isTechAdmin || isEditor;
 
- // Sync draftData → preview
- useEffect(() => {
-   const timeoutId = setTimeout(() => {
-     if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
-     else setPreviewOverride(null, null);
-   }, 150); // Debounce ligero para evitar lag masivo al escribir
-   return () => clearTimeout(timeoutId);
- }, [draftData, selectedNodeId]);
+  useEffect(() => {
+    return () => setPreviewOverride(null, null);
+  }, []);
 
- useEffect(() => {
-   return () => setPreviewOverride(null, null);
- }, []);
+  // Sincronización bidireccional URL ⇄ Estado (Historial del Navegador, Botones Atrás/Adelante, Deep Linking)
+  useEffect(() => {
+    if (activeSection !== 'editor') {
+      if (selectedNodeId) setSelectedNodeId(null);
+      return;
+    }
 
- const selectedNode = nodes.find(n => n.id === selectedNodeId);
+    const secParam = searchParams.get('section');
+    const tabParam = searchParams.get('tab') || 'textos';
 
- const handleSelectSection = (node) => {
-  setIsAnalyticsMode(false);
-  setSelectedNodeId(node.id);
-  setActiveTab('textos');
-  setSelectedElementIndex(null);
-  setSelectedFeatureIndex(null);
-  navigate('/admin');
-  if (isMobile) setIsSidebarOpen(false);
-  
-   let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
-   combinedData = injectSectionDefaults(node.id, combinedData);
+    if (secParam) {
+      if (secParam !== selectedNodeId) {
+        setSelectedNodeId(secParam);
+        const node = nodes.find(n => n.id === secParam) || { id: secParam };
+        let combinedData = { ...(node.published_data || {}), ...(node.draft_data || {}) };
+        combinedData = injectSectionDefaults(secParam, combinedData);
+        setDraftData(combinedData);
+      }
+      if (tabParam !== activeTab) {
+        setActiveTab(tabParam);
+      }
+    } else {
+      if (selectedNodeId) {
+        setSelectedNodeId(null);
+        setDraftData(null);
+      }
+    }
+  }, [searchParams, nodes, activeSection]);
 
-  setDraftData(combinedData);
+
+  // Sync draftData → preview
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (selectedNodeId && draftData) setPreviewOverride(selectedNodeId, draftData);
+      else setPreviewOverride(null, null);
+    }, 150); // Debounce ligero para evitar lag masivo al escribir
+    return () => clearTimeout(timeoutId);
+  }, [draftData, selectedNodeId]);
+
+  const selectedNode = nodes.find(n => n.id === selectedNodeId);
+
+  const handleSelectSection = (node) => {
+    setIsAnalyticsMode(false);
+    setSelectedElementIndex(null);
+    setSelectedFeatureIndex(null);
+    if (isMobile) setIsSidebarOpen(false);
+    navigate(`/admin?section=${node.id}&tab=textos`);
+  };
+
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    setSelectedElementIndex(null);
+    setSelectedFeatureIndex(null);
+    if (selectedNodeId) {
+      navigate(`/admin?section=${selectedNodeId}&tab=${tabId}`);
+    }
+  };
+
+  const handleBackToHub = () => {
+    setSelectedNodeId(null);
+    setDraftData(null);
+    navigate('/admin');
   };
 
  const change = (key, val) => {
@@ -1116,7 +1153,7 @@ export default function AdminStudio() {
       {selectedNodeId ? (
         <div className="flex items-center gap-2 min-w-0">
           <button
-            onClick={() => { setSelectedNodeId(null); setDraftData(null); }}
+            onClick={handleBackToHub}
             className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all mr-1"
             title="Volver a la selección de secciones"
           >
@@ -1366,7 +1403,7 @@ export default function AdminStudio() {
         <div className="flex gap-1.5 px-3 py-1.5 border-b border-red-900/30 bg-black/40 shrink-0 overflow-x-auto custom-scrollbar">
           {tabs.map(tab => (
             <button key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
+              onClick={() => handleSelectTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border border-transparent transition-all ${
                 activeTab === tab.id ? 'bg-white text-[#CC0000] border-[#CC0000]/50 shadow-sm' : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}>

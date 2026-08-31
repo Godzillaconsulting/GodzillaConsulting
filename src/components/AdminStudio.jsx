@@ -1115,6 +1115,14 @@ export default function AdminStudio() {
 
       {selectedNodeId ? (
         <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={() => { setSelectedNodeId(null); setDraftData(null); }}
+            className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all mr-1"
+            title="Volver a la selección de secciones"
+          >
+            <span className="material-symbols-outlined text-[15px]">arrow_back</span>
+            <span className="hidden sm:inline">Secciones</span>
+          </button>
           <span className="material-symbols-outlined text-[#CC0000] text-[20px] flex items-center justify-center select-none shrink-0">{getSectionIcon(selectedNodeId)}</span>
           <div className="min-w-0">
             <h2 className="text-xs sm:text-sm font-black text-white leading-tight truncate flex items-center gap-2">
@@ -1137,329 +1145,399 @@ export default function AdminStudio() {
             <h2 className="text-xs font-black text-white leading-tight tracking-wider uppercase">
               Admin <span className="text-[#CC0000]">Studio</span>
             </h2>
-            <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Estudio de Edición</p>
+            <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Gestor de Contenido Visual</p>
           </div>
         </div>
       )}
     </div>
 
-    <div className="flex items-center flex-wrap gap-2 justify-end w-full sm:w-auto">
-      <button onClick={() => setShowPreview(p => !p)}
-        className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 shadow-sm border border-transparent whitespace-nowrap ${
-          showPreview ? 'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' : 'bg-black/40 text-neutral-300 hover:bg-neutral-800'
-        }`}>
-        {showPreview ? '◧ Ocultar Vista' : '▣ Ver Vista'}
-      </button>
-
-      <button onClick={handleSave} 
-        disabled={saving || !selectedNodeId || !isRecursosValid || isCM || (activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username)}
-        className={`group px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 border relative whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 ${
-          hasUnsavedChanges 
-            ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]' 
-            : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
-        }`}>
-        {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#CC0000]"></span></span>}
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-        {saving ? 'Guardando...' : 'Guardar borrador'}
-      </button>
-
-      <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || isCM}
-        className="group px-4 py-1.5 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-[11px] font-black rounded-lg transition-all duration-200 shadow-[0_2px_12px_rgba(204,0,0,0.4)] border border-red-900/30 hover:border-[#CC0000] disabled:opacity-50 whitespace-nowrap flex-shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        Publicar cambios
-      </button>
-    </div>
-  </div>
-
-  {/* Cuerpo */}
-  <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-2.5 sm:p-3 gap-3">
-
-    {isMobile && selectedNodeId && (
-      <div className="flex p-1 bg-black/60 border border-white/10 rounded-xl shrink-0 gap-1 mb-1">
-        <button 
-          onClick={() => setShowPreview(false)}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-        >
-          <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">edit</span>Editar
+    {selectedNodeId && (
+      <div className="flex items-center flex-wrap gap-2 justify-end w-full sm:w-auto">
+        <button onClick={() => setShowPreview(p => !p)}
+          className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 shadow-sm border border-transparent whitespace-nowrap ${
+            showPreview ? 'bg-white/90 text-[#CC0000] border-[#CC0000]/50 shadow-md' : 'bg-black/40 text-neutral-300 hover:bg-neutral-800'
+          }`}>
+          {showPreview ? '◧ Ocultar Vista' : '▣ Ver Vista'}
         </button>
-        <button 
-          onClick={() => setShowPreview(true)}
-          disabled={activeTab === 'correos'}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
-        >
-          <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">visibility</span>Vista Previa
+
+        <button onClick={handleSave} 
+          disabled={saving || !selectedNodeId || !isRecursosValid || isCM || (activePresences[selectedNodeId] && activePresences[selectedNodeId].user !== adminProfile?.username)}
+          className={`group px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 border relative whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 ${
+            hasUnsavedChanges 
+              ? 'bg-[#CC0000]/20 text-[#CC0000] border-[#CC0000] hover:bg-[#CC0000] hover:text-white shadow-[0_0_12px_rgba(204,0,0,0.4)]' 
+              : 'bg-white hover:bg-gray-100 text-[#CC0000] border-[#CC0000]/50'
+          }`}>
+          {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC0000] opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#CC0000]"></span></span>}
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          {saving ? 'Guardando...' : 'Guardar borrador'}
+        </button>
+
+        <button onClick={() => setShowPublishModal(true)} disabled={!selectedNodeId || !isRecursosValid || isCM}
+          className="group px-4 py-1.5 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#CC0000] to-[#880000] hover:from-white hover:to-gray-200 text-white hover:text-[#CC0000] text-[11px] font-black rounded-lg transition-all duration-200 shadow-[0_2px_12px_rgba(204,0,0,0.4)] border border-red-900/30 hover:border-[#CC0000] disabled:opacity-50 whitespace-nowrap flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Publicar cambios
         </button>
       </div>
     )}
-
-  {/* ─ PANEL EDITOR ─ */}
-  {(!isMobile || !showPreview || activeTab === 'correos') && (
-  <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-all duration-200 w-full"
-  style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '52%' : '100%') }}>
-
-  {selectedNodeId && draftData ? (
-  <>
-  {/* Tabs */}
-  <div className="flex gap-1.5 px-3 py-1.5 border-b border-red-900/30 bg-black/40 shrink-0 overflow-x-auto custom-scrollbar">
-  {tabs.map(tab => (
-  <button key={tab.id}
-  onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
-  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border border-transparent transition-all ${
-   activeTab === tab.id ? 'bg-white text-[#CC0000] border-[#CC0000]/50 shadow-sm' : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800'
-   }`}>
-    {tab.label}
-  </button>
-  ))}
   </div>
 
-  {/* Tab content */}
-  <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-
-  {/* ══ TAB TEXTOS ══ */}
-  {activeTab === 'textos' && (
-  <div className="space-y-3">
-
-   {/* ── FOOTER DEDICADO ── */}
-   {selectedNodeId === 'footer' ? (
-      <div className="space-y-3">
-        {/* Tarjeta 1: Contacto */}
-        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
-            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]">contact_phone</span> Información de Contacto
-            </span>
+  {/* Cuerpo: Si NO hay sección seleccionada -> Hub Centrado Completo. Si hay sección -> Split Editor/Preview */}
+  {!selectedNodeId ? (
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+      <div className="max-w-6xl mx-auto w-full space-y-8">
+        
+        {/* Header Hero Hub */}
+        <div className="text-center space-y-2 py-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#CC0000]/10 border border-[#CC0000]/30 text-[#CC0000] text-xs font-bold uppercase tracking-wider mb-1">
+            <span className="material-symbols-outlined text-[16px]">tune</span> Gestor Visual de Contenidos
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="space-y-0.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Contacto</label>
-              <input type="text" value={draftData.contactTitle || ''} onChange={e => change('contactTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
-            </div>
-            <div className="space-y-0.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Contacto</label>
-              <input type="email" value={draftData.contactEmail || ''} onChange={e => change('contactEmail', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
-            </div>
-            <div className="space-y-0.5 col-span-full">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Teléfono Contacto</label>
-              <input type="text" value={draftData.contactPhone || ''} onChange={e => change('contactPhone', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
-            </div>
-          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            ¿Qué sección o página deseas editar?
+          </h2>
+          <p className="text-sm text-neutral-400 max-w-xl mx-auto font-medium">
+            Selecciona un bloque del sitio para modificar sus textos, imágenes, videos y configuraciones en tiempo real.
+          </p>
         </div>
 
-        {/* Tarjeta 2: Navegación */}
-        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
-            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]">menu</span> Menú de Navegación
-            </span>
+        {/* Grupo 1: Sitio Principal */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 px-1 border-b border-white/10 pb-2">
+            <span className="material-symbols-outlined text-red-500 text-[20px]">web</span>
+            <h3 className="text-sm font-black uppercase text-white tracking-wider">Sitio Principal (Landing)</h3>
+            <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full font-bold">7 Bloques</span>
           </div>
-          <div className="space-y-0.5 mb-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Sección</label>
-            <input type="text" value={draftData.navTitle || ''} onChange={e => change('navTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[1, 2, 3, 4, 5, 6].map(idx => (
-              <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
-                <span className="text-[9px] font-mono text-neutral-400">Enlace {idx}</span>
-                <input type="text" placeholder="Texto enlace" value={draftData[`navLink${idx}`] || ''} onChange={e => change(`navLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
-                <input type="text" placeholder="URL (#seccion)" value={draftData[`navUrl${idx}`] || ''} onChange={e => change(`navUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tarjeta 3: Legales & Copyright */}
-        <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
-            <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]">policy</span> Enlaces Legales & Copyright
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[1, 2, 3, 4, 5].map(idx => (
-              <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
-                <span className="text-[9px] font-mono text-neutral-400">Legal {idx}</span>
-                <input type="text" placeholder="Texto" value={draftData[`legalLink${idx}`] || ''} onChange={e => change(`legalLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
-                <input type="text" placeholder="URL (/legal)" value={draftData[`legalUrl${idx}`] || ''} onChange={e => change(`legalUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
-              </div>
-            ))}
-          </div>
-          <div className="space-y-0.5 pt-1 border-t border-white/5">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Texto de Copyright</label>
-            <input type="text" value={draftData.copyrightText || ''} onChange={e => change('copyrightText', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
-          </div>
-        </div>
-      </div>
-   ) : (
-    <>
-      {/* ── LANDINGS PAQUETES ── */}
-      {(() => {
-        const isLanding = selectedNodeId?.startsWith('paquete-');
-        if (isLanding) {
-          const sections = [
-            { id: 'sec_hero', title: 'Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
-            { id: 'sec_card', title: 'Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
-            { id: 'sec_prices', title: 'Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
-            { id: 'sec_guarantee', title: 'Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
-          ];
-          const usedKeys = new Set(sections.flatMap(s => s.fields));
-          const remaining = textFields.filter(([k]) => !usedKeys.has(k));
-
-          const renderLandingField = (key) => {
-            const val = draftData[key] || '';
-            const isLong = val.length > 80 || key.includes('Disclaimer') || key.includes('Text');
-            return (
-              <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
-                <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
-                  <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
-                  {isLong ? (
-                    <textarea rows={2} value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
-                  ) : (
-                    <input type="text" value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors placeholder:text-neutral-600" />
-                  )}
-                </div>
-              </EditorField>
-            );
-          };
-
-          return (
-            <div className="space-y-2.5">
-              {sections.map(sec => (
-                <div key={sec.id} className="bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden">
-                  <div onClick={() => toggleAccordion(sec.id)} className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors">
-                    <span className="text-[11px] font-bold text-yellow-400 tracking-wider flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[15px]">tune</span> {sec.title}
-                    </span>
-                    <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: openAccordion[sec.id] ? 'rotate(180deg)' : 'none' }}>
-                      expand_more
-                    </span>
-                  </div>
-                  {openAccordion[sec.id] && (
-                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5">
-                      {sec.fields.map(k => renderLandingField(k))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {remaining.length > 0 && (
-                <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-3">
-                  <p className="text-[11px] font-bold text-neutral-400 mb-2">Otros campos</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {remaining.map(([k, v]) => renderLandingField(k))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        // ── SECCIONES ESTÁNDAR (Hero, Servicios, Cultura, etc.) ──
-        return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {textFields.map(([key, val]) => {
-              const isLong = typeof val === 'string' && (val.length > 80 || val.includes('\n') || /desc|texto|mission|vision|disclaimer|guarantee|about|body/i.test(key));
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+            {[
+              { id: 'hero', label: 'Encabezado Principal', desc: 'Título, subtítulo, llamada a la acción y logos de clientes', icon: 'layers', tag: 'Hero' },
+              { id: 'servicios', label: 'Servicios', desc: 'Resumen de los 6 servicios principales y gifs ilustrativos', icon: 'bolt', tag: 'Servicios' },
+              { id: 'cultura', label: 'Cultura & Filosofía', desc: 'Video de fondo, visión, misión y carrusel de fotos', icon: 'corporate_fare', tag: 'Cultura' },
+              { id: 'portafolio', label: 'Casos de Éxito', desc: 'Logos y categorías de marcas destacadas', icon: 'workspace_premium', tag: 'Portafolio' },
+              { id: 'recursos', label: 'Recursos Descargables', desc: 'Lead magnets gratuitos y envío de correos', icon: 'auto_stories', tag: 'Recursos' },
+              { id: 'paquetes', label: 'Paquetes Grid', desc: 'Tarjetas comparativas de planes de servicio', icon: 'inventory_2', tag: 'Precios' },
+              { id: 'footer', label: 'Pie de Página (Footer)', desc: 'Información de contacto, menú de navegación y enlaces legales', icon: 'pin', tag: 'Footer' },
+            ].map(item => {
+              const node = nodes.find(n => n.id === item.id) || { id: item.id };
               return (
-                <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
-                  <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
-                    <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
-                    {isLong ? (
-                      <textarea 
-                        rows={val.length > 140 ? 3 : 2} 
-                        value={val || ''} 
-                        onChange={e => change(key, e.target.value)} 
-                        className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" 
-                      />
-                    ) : (
-                      <input 
-                        type="text" 
-                        value={val || ''} 
-                        onChange={e => change(key, e.target.value)} 
-                        className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors" 
-                      />
-                    )}
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectSection(node)}
+                  className="p-4 bg-neutral-900/90 hover:bg-neutral-800/95 border border-white/10 hover:border-[#CC0000]/70 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(204,0,0,0.25)] flex flex-col justify-between text-left group cursor-pointer min-h-[140px] relative overflow-hidden"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-500/30 text-[#CC0000] flex items-center justify-center group-hover:bg-[#CC0000] group-hover:text-white transition-all shadow-sm">
+                        <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-neutral-400 bg-black/40 px-2 py-0.5 rounded-md uppercase tracking-wider">{item.tag}</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white group-hover:text-red-400 transition-colors leading-snug">{item.label}</h4>
+                      <p className="text-xs text-neutral-400 mt-1 line-clamp-2 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                </EditorField>
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-bold text-[#CC0000] group-hover:text-red-400">
+                    <span>Editar sección</span>
+                    <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </div>
+                </button>
               );
             })}
           </div>
-        );
-      })()}
-    </>
-   )}
+        </div>
 
-  {/* Campos agrupados (service1Title, service2Desc...) */}
-  {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
-    <div key={prefix} className="space-y-2 pt-2 border-t border-neutral-800">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold text-yellow-400 tracking-wider uppercase flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[15px]">dataset</span> {toLabel(prefix)} ({Object.keys(nums).length} elementos)
-        </p>
+        {/* Grupo 2: Páginas de Servicios */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 px-1 border-b border-white/10 pb-2">
+            <span className="material-symbols-outlined text-purple-400 text-[20px]">design_services</span>
+            <h3 className="text-sm font-black uppercase text-white tracking-wider">Páginas de Servicio Dedicadas</h3>
+            <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full font-bold">6 Páginas</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3.5">
+            {[
+              { id: 'servicio-bots', label: 'Automatización de Bots', desc: 'Página especializada de bots y atención 24/7', icon: 'smart_toy' },
+              { id: 'servicio-audiovisual', label: 'Producción Audiovisual', desc: 'Página de producción de videos y comerciales', icon: 'movie' },
+              { id: 'servicio-embudos', label: 'Embudos de Venta', desc: 'Página de funnels y conversión comercial', icon: 'filter_alt' },
+              { id: 'servicio-redes', label: 'Gestión de Redes Sociales', desc: 'Página de branding y contenido estratégico', icon: 'share' },
+              { id: 'servicio-seo', label: 'Optimización Web & SEO', desc: 'Página de posicionamiento en Google y rendimiento', icon: 'search' },
+              { id: 'servicio-crm', label: 'CRM SaaS a Medida', desc: 'Página de plataformas y software comercial', icon: 'database' },
+            ].map(item => {
+              const node = nodes.find(n => n.id === item.id) || { id: item.id };
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectSection(node)}
+                  className="p-4 bg-neutral-900/90 hover:bg-neutral-800/95 border border-white/10 hover:border-purple-500/70 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(168,85,247,0.2)] flex flex-col justify-between text-left group cursor-pointer min-h-[130px]"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-400 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+                        <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-purple-400 bg-purple-950/30 px-2 py-0.5 rounded-md uppercase tracking-wider">Servicio</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white group-hover:text-purple-300 transition-colors leading-snug">{item.label}</h4>
+                      <p className="text-xs text-neutral-400 mt-1 line-clamp-2 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-bold text-purple-400 group-hover:text-purple-300">
+                    <span>Editar contenido</span>
+                    <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Grupo 3: Landings de Paquetes */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 px-1 border-b border-white/10 pb-2">
+            <span className="material-symbols-outlined text-amber-400 text-[20px]">shopping_bag</span>
+            <h3 className="text-sm font-black uppercase text-white tracking-wider">Landings de Paquetes Promocionales</h3>
+            <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full font-bold">4 Landings</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+            {[
+              { id: 'paquete-posicionamiento-social', label: 'Posicionamiento Social', desc: 'Landing de plan starter y branding', icon: 'campaign' },
+              { id: 'paquete-expansion', label: 'Expansión', desc: 'Landing de plan growth para empresas', icon: 'rocket_launch' },
+              { id: 'paquete-control-ia', label: 'Control IA', desc: 'Landing de plan con bots e integraciones', icon: 'smart_toy' },
+              { id: 'paquete-elite', label: 'Élite', desc: 'Landing de plan premium todo incluido', icon: 'crown' },
+            ].map(item => {
+              const node = nodes.find(n => n.id === item.id) || { id: item.id };
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectSection(node)}
+                  className="p-4 bg-neutral-900/90 hover:bg-neutral-800/95 border border-white/10 hover:border-amber-500/70 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(245,158,11,0.2)] flex flex-col justify-between text-left group cursor-pointer min-h-[130px]"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-400 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
+                        <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-950/30 px-2 py-0.5 rounded-md uppercase tracking-wider">Plan</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors leading-snug">{item.label}</h4>
+                      <p className="text-xs text-neutral-400 mt-1 line-clamp-2 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-bold text-amber-400 group-hover:text-amber-300">
+                    <span>Editar landing</span>
+                    <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
+    </div>
+  ) : (
+    /* Split Editor & Preview */
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-2.5 sm:p-3 gap-3">
 
-      <div className="space-y-1.5">
-        {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => {
-          const accKey = `${prefix}_${num}`;
-          const isOpen = openAccordion[accKey] ?? (num === '1');
-          const titleField = Object.entries(fields).find(([k]) => k.toLowerCase().includes('title') || k.toLowerCase().includes('nombre'))?.[1] || `#${num}`;
+      {isMobile && (
+        <div className="flex p-1 bg-black/60 border border-white/10 rounded-xl shrink-0 gap-1 mb-1">
+          <button 
+            onClick={() => setShowPreview(false)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${!showPreview ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+          >
+            <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">edit</span>Editar
+          </button>
+          <button 
+            onClick={() => setShowPreview(true)}
+            disabled={activeTab === 'correos'}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${showPreview && activeTab !== 'correos' ? 'bg-[#CC0000] text-white shadow-md' : 'text-gray-400 hover:text-white'} disabled:opacity-30 disabled:pointer-events-none`}
+          >
+            <span className="material-symbols-outlined text-[13px] mr-1 inline-block align-middle">visibility</span>Vista Previa
+          </button>
+        </div>
+      )}
 
-          return (
-            <div key={num} className="bg-neutral-900/80 rounded-xl border border-white/5 overflow-hidden">
-              <div 
-                onClick={() => toggleAccordion(accKey)} 
-                className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[10px] font-mono font-bold text-[#CC0000] bg-[#CC0000]/10 px-1.5 py-0.5 rounded shrink-0">#{num}</span>
-                  <span className="text-xs font-bold text-white/90 truncate">{String(titleField)}</span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    title="Eliminar este elemento"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`¿Eliminar elemento #${num}?`)) {
-                        setDraftData(prev => {
-                          const next = { ...prev };
-                          Object.keys(next).forEach(k => {
-                            const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-                            if (m && m[1] === prefix && m[2] === num) next[k] = '';
-                          });
-                          return next;
-                        });
-                      }
-                    }}
-                    className="px-2 py-0.5 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                  >
-                    Eliminar
-                  </button>
-                  <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
-                    expand_more
+      {/* ─ PANEL EDITOR ─ */}
+      {(!isMobile || !showPreview || activeTab === 'correos') && (
+      <div className="flex flex-col overflow-hidden bg-black/40 backdrop-blur-xl border border-red-900/30 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-all duration-200 w-full"
+      style={{ width: isMobile ? '100%' : ((showPreview && activeTab !== 'correos') ? '52%' : '100%') }}>
+
+        {/* Tabs */}
+        <div className="flex gap-1.5 px-3 py-1.5 border-b border-red-900/30 bg-black/40 shrink-0 overflow-x-auto custom-scrollbar">
+          {tabs.map(tab => (
+            <button key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSelectedElementIndex(null); setSelectedFeatureIndex(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border border-transparent transition-all ${
+                activeTab === tab.id ? 'bg-white text-[#CC0000] border-[#CC0000]/50 shadow-sm' : 'bg-black/40 text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+
+        {/* ══ TAB TEXTOS ══ */}
+        {activeTab === 'textos' && (
+        <div className="space-y-3">
+
+        {/* ── FOOTER DEDICADO ── */}
+        {selectedNodeId === 'footer' ? (
+            <div className="space-y-3">
+              {/* Tarjeta 1: Contacto */}
+              <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+                  <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]">contact_phone</span> Información de Contacto
                   </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Contacto</label>
+                    <input type="text" value={draftData.contactTitle || ''} onChange={e => change('contactTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Contacto</label>
+                    <input type="email" value={draftData.contactEmail || ''} onChange={e => change('contactEmail', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+                  </div>
+                  <div className="space-y-0.5 col-span-full">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Teléfono Contacto</label>
+                    <input type="text" value={draftData.contactPhone || ''} onChange={e => change('contactPhone', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+                  </div>
                 </div>
               </div>
 
-              {isOpen && (
-                <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
-                  {Object.entries(fields).filter(([k]) => k !== '_keys').map(([field, val]) => {
-                    const originalKey = fields._keys[field];
-                    const isLong = typeof val === 'string' && (val.length > 60 || field.toLowerCase().includes('desc'));
+              {/* Tarjeta 2: Navegación */}
+              <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+                  <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]">menu</span> Menú de Navegación
+                  </span>
+                </div>
+                <div className="space-y-0.5 mb-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Título Sección</label>
+                  <input type="text" value={draftData.navTitle || ''} onChange={e => change('navTitle', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[1, 2, 3, 4, 5, 6].map(idx => (
+                    <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
+                      <span className="text-[9px] font-mono text-neutral-400">Enlace {idx}</span>
+                      <input type="text" placeholder="Texto enlace" value={draftData[`navLink${idx}`] || ''} onChange={e => change(`navLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
+                      <input type="text" placeholder="URL (#seccion)" value={draftData[`navUrl${idx}`] || ''} onChange={e => change(`navUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tarjeta 3: Legales & Copyright */}
+              <div className="bg-neutral-900/70 border border-white/10 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+                  <span className="text-[11px] font-black uppercase text-yellow-500 tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]">policy</span> Enlaces Legales & Copyright
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[1, 2, 3, 4, 5].map(idx => (
+                    <div key={idx} className="bg-black/40 border border-white/5 rounded-lg p-2 space-y-1">
+                      <span className="text-[9px] font-mono text-neutral-400">Legal {idx}</span>
+                      <input type="text" placeholder="Texto" value={draftData[`legalLink${idx}`] || ''} onChange={e => change(`legalLink${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-white text-xs outline-none" />
+                      <input type="text" placeholder="URL (/legal)" value={draftData[`legalUrl${idx}`] || ''} onChange={e => change(`legalUrl${idx}`, e.target.value)} className="w-full px-2 py-1 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded text-neutral-400 text-[11px] font-mono outline-none" />
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-0.5 pt-1 border-t border-white/5">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Texto de Copyright</label>
+                  <input type="text" value={draftData.copyrightText || ''} onChange={e => change('copyrightText', e.target.value)} className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none" />
+                </div>
+              </div>
+            </div>
+        ) : (
+          <>
+            {/* ── LANDINGS PAQUETES ── */}
+            {(() => {
+              const isLanding = selectedNodeId?.startsWith('paquete-');
+              if (isLanding) {
+                const sections = [
+                  { id: 'sec_hero', title: 'Sección Hero', fields: ['heroTitle','heroTopText','heroDisclaimer'] },
+                  { id: 'sec_card', title: 'Tarjeta de Detalles', fields: ['cardTitle','planTarget','tableHeaderLeft','tableHeaderRight'] },
+                  { id: 'sec_prices', title: 'Precios y Totales', fields: ['planPrice','planPeriod','totalLabel','totalValue','normalLabel','normalPrice','offerLabel','offerPrice'] },
+                  { id: 'sec_guarantee', title: 'Garantía', fields: ['guaranteeTitle','guaranteeBadge','guaranteeText'] },
+                ];
+                const usedKeys = new Set(sections.flatMap(s => s.fields));
+                const remaining = textFields.filter(([k]) => !usedKeys.has(k));
+
+                const renderLandingField = (key) => {
+                  const val = draftData[key] || '';
+                  const isLong = val.length > 80 || key.includes('Disclaimer') || key.includes('Text');
+                  return (
+                    <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
+                      <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
+                        <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
+                        {isLong ? (
+                          <textarea rows={2} value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors placeholder:text-neutral-600" />
+                        ) : (
+                          <input type="text" value={val} onChange={e => change(key, e.target.value)} placeholder={`Añadir ${toLabel(key).toLowerCase()}...`} className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors placeholder:text-neutral-600" />
+                        )}
+                      </div>
+                    </EditorField>
+                  );
+                };
+
+                return (
+                  <div className="space-y-2.5">
+                    {sections.map(sec => (
+                      <div key={sec.id} className="bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden">
+                        <div onClick={() => toggleAccordion(sec.id)} className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors">
+                          <span className="text-[11px] font-bold text-yellow-400 tracking-wider flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[15px]">tune</span> {sec.title}
+                          </span>
+                          <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: openAccordion[sec.id] ? 'rotate(180deg)' : 'none' }}>
+                            expand_more
+                          </span>
+                        </div>
+                        {openAccordion[sec.id] && (
+                          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5">
+                            {sec.fields.map(k => renderLandingField(k))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {remaining.length > 0 && (
+                      <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-3">
+                        <p className="text-[11px] font-bold text-neutral-400 mb-2">Otros campos</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {remaining.map(([k, v]) => renderLandingField(k))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // ── SECCIONES ESTÁNDAR (Hero, Servicios, Cultura, etc.) ──
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {textFields.map(([key, val]) => {
+                    const isLong = typeof val === 'string' && (val.length > 80 || val.includes('\n') || /desc|texto|mission|vision|disclaimer|guarantee|about|body/i.test(key));
                     return (
-                      <EditorField key={originalKey} fieldKey={originalKey} onHover={setHoveredField}>
+                      <EditorField key={key} fieldKey={key} onHover={setHoveredField}>
                         <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
-                          <label className="text-[10px] font-semibold text-gray-400 block">{toLabel(field)}</label>
+                          <label className="text-[11px] font-semibold text-gray-300 block">{toLabel(key)}</label>
                           {isLong ? (
                             <textarea 
-                              rows={2} 
+                              rows={val.length > 140 ? 3 : 2} 
                               value={val || ''} 
-                              onChange={e => change(originalKey, e.target.value)} 
-                              className="w-full p-2 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" 
+                              onChange={e => change(key, e.target.value)} 
+                              className="w-full p-2 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none resize-none transition-colors" 
                             />
                           ) : (
                             <input 
                               type="text" 
                               value={val || ''} 
-                              onChange={e => change(originalKey, e.target.value)} 
-                              className="w-full px-2.5 py-1.5 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none" 
+                              onChange={e => change(key, e.target.value)} 
+                              className="w-full px-2.5 py-1.5 bg-black/40 border border-[#CC0000]/20 rounded-lg text-white font-medium text-xs focus:bg-[#CC0000]/10 focus:border-[#CC0000]/50 outline-none transition-colors" 
                             />
                           )}
                         </div>
@@ -1467,348 +1545,404 @@ export default function AdminStudio() {
                     );
                   })}
                 </div>
-              )}
+              );
+            })()}
+          </>
+        )}
+
+        {/* Campos agrupados (service1Title, service2Desc...) */}
+        {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
+          <div key={prefix} className="space-y-2 pt-2 border-t border-neutral-800">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-yellow-400 tracking-wider uppercase flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px]">dataset</span> {toLabel(prefix)} ({Object.keys(nums).length} elementos)
+              </p>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  ))}
 
-  {textFields.length === 0 && !hasGrouped && selectedNodeId !== 'footer' && (
-    <p className="text-neutral-500 text-xs text-center py-6">Sin campos de texto configurables para esta sección.</p>
-  )}
-  </div>
-  )}
+            <div className="space-y-1.5">
+              {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => {
+                const accKey = `${prefix}_${num}`;
+                const isOpen = openAccordion[accKey] ?? (num === '1');
+                const titleField = Object.entries(fields).find(([k]) => k.toLowerCase().includes('title') || k.toLowerCase().includes('nombre'))?.[1] || `#${num}`;
 
-  {/* ══ TAB MEDIA ══ */}
-  {activeTab === 'media' && (
-  <div className="space-y-3">
-    <div className="flex items-center justify-between pb-1 border-b border-white/5">
-      <p className="text-[11px] font-bold text-neutral-400 tracking-wider uppercase">
-        Media detectada ({mediaFields.length} slots)
-      </p>
-    </div>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-      {mediaFields.map(([key, val]) => {
-        const grpMatch = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-        return (
-          <div key={key} className="bg-neutral-900/70 border border-white/5 rounded-xl p-2.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-bold text-yellow-400 truncate">
-                {toLabel(key)}
-              </span>
-              {grpMatch && (
-                <button
-                  title="Eliminar este elemento"
-                  onClick={() => {
-                    const [, grpPfx, grpNum] = grpMatch;
-                    setDraftData(prev => {
-                      const next = { ...prev };
-                      Object.keys(next).forEach(k => {
-                        const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
-                        if (m && m[1] === grpPfx && m[2] === grpNum) next[k] = '';
-                      });
-                      return next;
-                    });
-                  }}
-                  className="px-1.5 py-0.5 text-[9px] font-bold text-red-400 hover:text-red-300 rounded"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <EditorField fieldKey={key} onHover={setHoveredField}>
-              <MediaPicker
-                label=""
-                compact={true}
-                value={val || ''}
-                onChange={url => change(key, url)}
-                accept={key.toLowerCase().includes('video') ? 'video' : 'all'}
-              />
-            </EditorField>
-          </div>
-        );
-      })}
-    </div>
-
-    {selectedNodeId === 'portafolio' && (
-        <button 
-            onClick={() => {
-                let max = 0;
-                Object.keys(draftData).forEach(k => {
-                    if(k.startsWith('caso') && k.endsWith('LogoUrl')) {
-                        const num = parseInt(k.replace('caso', '').replace('LogoUrl', '')) || 0;
-                        if (num > max) max = num;
-                    }
-                });
-                const next = max + 1;
-                setDraftData(p => ({
-                    ...p,
-                    [`caso${next}LogoUrl`]: '',
-                    [`caso${next}Nombre`]: `Caso ${next}`,
-                    [`caso${next}Category`]: 'Nueva Categoría'
-                }));
-            }}
-            className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
-        >
-            <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo caso
-        </button>
-    )}
-
-    {selectedNodeId === 'recursos' && (
-        <button 
-            onClick={() => {
-                let max = 0;
-                Object.keys(draftData).forEach(k => {
-                    if(k.startsWith('recurso') && k.endsWith('ImageUrl')) {
-                        const num = parseInt(k.replace('recurso', '').replace('ImageUrl', '')) || 0;
-                        if (num > max) max = num;
-                    }
-                });
-                const next = max + 1;
-                setDraftData(p => ({
-                    ...p,
-                    [`recurso${next}ImageUrl`]: '',
-                    [`recurso${next}Nombre`]: `Recurso ${next}`,
-                    [`recurso${next}Desc`]: 'Descripción del nuevo recurso'
-                }));
-            }}
-            className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
-        >
-            <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo recurso
-        </button>
-    )}
-
-    {selectedNodeId === 'cultura' && (
-        <div className="space-y-3 mt-4 pt-3 border-t border-neutral-800">
-            <p className="text-xs font-bold text-yellow-400 tracking-widest">Carrusel de Cultura</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {(draftData.mediaGallery || []).map((mediaItem, idx) => (
-                  <div key={idx} className="bg-neutral-900/80 rounded-xl p-2.5 border border-white/5 relative flex flex-col justify-between">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-bold text-white">Medio {idx + 1}</span>
-                        <button onClick={() => {
-                              if(window.confirm('¿Eliminar este medio?')) {
-                                  setDraftData(p => {
-                                      const arr = [...(p.mediaGallery || [])];
-                                      arr.splice(idx, 1);
-                                      return { ...p, mediaGallery: arr };
-                                  });
-                              }
-                        }} className="text-[10px] text-red-500 font-bold hover:text-red-400">✕ Eliminar</button>
+                return (
+                  <div key={num} className="bg-neutral-900/80 rounded-xl border border-white/5 overflow-hidden">
+                    <div 
+                      onClick={() => toggleAccordion(accKey)} 
+                      className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-mono font-bold text-[#CC0000] bg-[#CC0000]/10 px-1.5 py-0.5 rounded shrink-0">#{num}</span>
+                        <span className="text-xs font-bold text-white/90 truncate">{String(titleField)}</span>
                       </div>
-                      
-                      <EditorField fieldKey={`mediaGallery_${idx}_url`} onHover={setHoveredField}>
-                          <MediaPicker
-                              label=""
-                              compact={true}
-                              value={mediaItem.url || ''}
-                              onChange={url => {
-                                  setDraftData(p => {
-                                      const arr = [...(p.mediaGallery || [])];
-                                      const isVideo = url && url.match(/\.(mp4|webm|mov)$/i);
-                                      arr[idx] = { ...arr[idx], url, type: isVideo ? 'video' : 'image' };
-                                      return { ...p, mediaGallery: arr };
-                                  });
-                              }}
-                              accept="all"
-                          />
-                      </EditorField>
-                      
-                      <div className="mt-1.5">
-                            <select 
-                                value={mediaItem.type || 'image'}
-                                onChange={e => {
-                                    setDraftData(p => {
-                                        const arr = [...(p.mediaGallery || [])];
-                                        arr[idx] = { ...arr[idx], type: e.target.value };
-                                        return { ...p, mediaGallery: arr };
-                                    });
-                                }}
-                                className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-neutral-300 text-[10px] outline-none"
-                            >
-                                <option value="image">Imagen</option>
-                                <option value="video">Video</option>
-                            </select>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          title="Eliminar este elemento"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`¿Eliminar elemento #${num}?`)) {
+                              setDraftData(prev => {
+                                const next = { ...prev };
+                                Object.keys(next).forEach(k => {
+                                  const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+                                  if (m && m[1] === prefix && m[2] === num) next[k] = '';
+                                });
+                                return next;
+                              });
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                        >
+                          Eliminar
+                        </button>
+                        <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                          expand_more
+                        </span>
                       </div>
+                    </div>
+
+                    {isOpen && (
+                      <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
+                        {Object.entries(fields).filter(([k]) => k !== '_keys').map(([field, val]) => {
+                          const originalKey = fields._keys[field];
+                          const isLong = typeof val === 'string' && (val.length > 60 || field.toLowerCase().includes('desc'));
+                          return (
+                            <EditorField key={originalKey} fieldKey={originalKey} onHover={setHoveredField}>
+                              <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
+                                <label className="text-[10px] font-semibold text-gray-400 block">{toLabel(field)}</label>
+                                {isLong ? (
+                                  <textarea 
+                                    rows={2} 
+                                    value={val || ''} 
+                                    onChange={e => change(originalKey, e.target.value)} 
+                                    className="w-full p-2 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" 
+                                  />
+                                ) : (
+                                  <input 
+                                    type="text" 
+                                    value={val || ''} 
+                                    onChange={e => change(originalKey, e.target.value)} 
+                                    className="w-full px-2.5 py-1.5 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none" 
+                                  />
+                                )}
+                              </div>
+                            </EditorField>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-              ))}
+                );
+              })}
             </div>
-            <button 
-                onClick={() => {
-                    setDraftData(p => ({
-                        ...p,
-                        mediaGallery: [...(p.mediaGallery || []), { url: '', type: 'image' }]
-                    }));
-                }}
-                className="w-full py-2 bg-[#CC0000]/10 hover:bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-            >
-                <span className="material-symbols-outlined text-[15px]">add_photo_alternate</span> Añadir elemento al carrusel
-            </button>
+          </div>
+        ))}
+
+        {textFields.length === 0 && !hasGrouped && selectedNodeId !== 'footer' && (
+          <p className="text-neutral-500 text-xs text-center py-6">Sin campos de texto configurables para esta sección.</p>
+        )}
         </div>
-    )}
-  </div>
-  )}
+        )}
 
-  {/* ══ TAB COLORES ══ */}
-  {activeTab === 'colores' && (
-  <div className="space-y-2.5">
-    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Colores de la Sección</p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-      <ColorField label="Color Primario" fieldKey="primaryColor" draftData={draftData} onChange={change} />
-      <ColorField label="Color Secundario" fieldKey="secondaryColor" draftData={draftData} onChange={change} />
-      <ColorField label="Color de Fondo" fieldKey="bgColor" draftData={draftData} onChange={change} />
-      <ColorField label="Color de Texto" fieldKey="textColor" draftData={draftData} onChange={change} />
-      <ColorField label="Color de Acento" fieldKey="accentColor" draftData={draftData} onChange={change} />
-    </div>
-  </div>
-  )}
+        {/* ══ TAB MEDIA ══ */}
+        {activeTab === 'media' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between pb-1 border-b border-white/5">
+            <p className="text-[11px] font-bold text-neutral-400 tracking-wider uppercase">
+              Media detectada ({mediaFields.length} slots)
+            </p>
+          </div>
 
-  {/* ══ TAB TIPOGRAFÍA ══ */}
-  {activeTab === 'tipografia' && (
-  <div className="space-y-2.5">
-    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Tipografía & Fuentes</p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-      <div className="space-y-0.5">
-        <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Títulos</label>
-        <select 
-          value={draftData.titleFont || 'Inter'}
-          onChange={e => change('titleFont', e.target.value)}
-          className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
-        >
-          {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {mediaFields.map(([key, val]) => {
+              const grpMatch = key.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+              return (
+                <div key={key} className="bg-neutral-900/70 border border-white/5 rounded-xl p-2.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-yellow-400 truncate">
+                      {toLabel(key)}
+                    </span>
+                    {grpMatch && (
+                      <button
+                        title="Eliminar este elemento"
+                        onClick={() => {
+                          const [, grpPfx, grpNum] = grpMatch;
+                          setDraftData(prev => {
+                            const next = { ...prev };
+                            Object.keys(next).forEach(k => {
+                              const m = k.match(/^([a-zA-Z]+?)(\d+)([A-Z][a-zA-Z]*)$/);
+                              if (m && m[1] === grpPfx && m[2] === grpNum) next[k] = '';
+                            });
+                            return next;
+                          });
+                        }}
+                        className="px-1.5 py-0.5 text-[9px] font-bold text-red-400 hover:text-red-300 rounded"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <EditorField fieldKey={key} onHover={setHoveredField}>
+                    <MediaPicker
+                      label=""
+                      compact={true}
+                      value={val || ''}
+                      onChange={url => change(key, url)}
+                      accept={key.toLowerCase().includes('video') ? 'video' : 'all'}
+                    />
+                  </EditorField>
+                </div>
+              );
+            })}
+          </div>
 
-      <div className="space-y-0.5">
-        <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Cuerpo</label>
-        <select 
-          value={draftData.bodyFont || 'Roboto'}
-          onChange={e => change('bodyFont', e.target.value)}
-          className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
-        >
-          {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-      </div>
-    </div>
-  </div>
-  )}
-
-  {/* ══ TAB ELEMENTOS (Features y Precios) ══ */}
-  {activeTab === 'elementos' && (
-  <div className="space-y-3">
-    {hasFeatures && (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider">Características ({draftData.planFeaturesExtended?.length || 0})</p>
-          <button 
-            onClick={() => {
-                setDraftData(p => ({
-                    ...p,
-                    planFeaturesExtended: [...(p.planFeaturesExtended || []), { title: 'Nueva característica', desc: '', price: '' }]
-                }));
-                setSelectedFeatureIndex((draftData.planFeaturesExtended || []).length);
-            }}
-            className="px-2 py-1 text-[10px] font-bold text-[#CC0000] border border-[#CC0000]/30 rounded-lg hover:bg-[#CC0000] hover:text-white transition-all flex items-center gap-1"
-          >
-            + Añadir
-          </button>
-        </div>
-
-        <div className="space-y-1.5">
-          {(draftData.planFeaturesExtended || []).map((f, idx) => (
-            <div key={idx} className="bg-neutral-900/80 border border-white/5 rounded-xl p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white">#{idx + 1}</span>
-                <button
+          {selectedNodeId === 'portafolio' && (
+              <button 
                   onClick={() => {
-                    if (window.confirm('¿Eliminar esta característica?')) {
-                      setDraftData(p => {
-                        const arr = [...(p.planFeaturesExtended || [])];
-                        arr.splice(idx, 1);
-                        return { ...p, planFeaturesExtended: arr };
+                      let max = 0;
+                      Object.keys(draftData).forEach(k => {
+                          if(k.startsWith('caso') && k.endsWith('LogoUrl')) {
+                              const num = parseInt(k.replace('caso', '').replace('LogoUrl', '')) || 0;
+                              if (num > max) max = num;
+                          }
                       });
-                    }
+                      const next = max + 1;
+                      setDraftData(p => ({
+                          ...p,
+                          [`caso${next}LogoUrl`]: '',
+                          [`caso${next}Nombre`]: `Caso ${next}`,
+                          [`caso${next}Category`]: 'Nueva Categoría'
+                      }));
                   }}
-                  className="text-[10px] text-red-400 font-bold hover:text-red-300"
+                  className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
+              >
+                  <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo caso
+              </button>
+          )}
+
+          {selectedNodeId === 'recursos' && (
+              <button 
+                  onClick={() => {
+                      let max = 0;
+                      Object.keys(draftData).forEach(k => {
+                          if(k.startsWith('recurso') && k.endsWith('ImageUrl')) {
+                              const num = parseInt(k.replace('recurso', '').replace('ImageUrl', '')) || 0;
+                              if (num > max) max = num;
+                          }
+                      });
+                      const next = max + 1;
+                      setDraftData(p => ({
+                          ...p,
+                          [`recurso${next}ImageUrl`]: '',
+                          [`recurso${next}Nombre`]: `Recurso ${next}`,
+                          [`recurso${next}Desc`]: 'Descripción del nuevo recurso'
+                      }));
+                  }}
+                  className="mt-2 px-3 py-2 bg-[#CC0000]/10 text-[#CC0000] border border-[#CC0000]/30 text-xs font-bold rounded-lg hover:bg-[#CC0000] hover:text-white transition-all w-full flex items-center justify-center gap-1.5"
+              >
+                  <span className="material-symbols-outlined text-[15px]">add</span> Añadir nuevo recurso
+              </button>
+          )}
+
+          {selectedNodeId === 'cultura' && (
+              <div className="space-y-3 mt-4 pt-3 border-t border-neutral-800">
+                  <p className="text-xs font-bold text-yellow-400 tracking-widest">Carrusel de Cultura</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {(draftData.mediaGallery || []).map((mediaItem, idx) => (
+                        <div key={idx} className="bg-neutral-900/80 rounded-xl p-2.5 border border-white/5 relative flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[11px] font-bold text-white">Medio {idx + 1}</span>
+                              <button onClick={() => {
+                                    if(window.confirm('¿Eliminar este medio?')) {
+                                        setDraftData(p => {
+                                            const arr = [...(p.mediaGallery || [])];
+                                            arr.splice(idx, 1);
+                                            return { ...p, mediaGallery: arr };
+                                        });
+                                    }
+                              }} className="text-[10px] text-red-500 font-bold hover:text-red-400">✕ Eliminar</button>
+                            </div>
+                            
+                            <EditorField fieldKey={`mediaGallery_${idx}_url`} onHover={setHoveredField}>
+                                <MediaPicker
+                                    label=""
+                                    compact={true}
+                                    value={mediaItem.url || ''}
+                                    onChange={url => {
+                                        setDraftData(p => {
+                                            const arr = [...(p.mediaGallery || [])];
+                                            const isVideo = url && url.match(/\.(mp4|webm|mov)$/i);
+                                            arr[idx] = { ...arr[idx], url, type: isVideo ? 'video' : 'image' };
+                                            return { ...p, mediaGallery: arr };
+                                        });
+                                    }}
+                                    accept="all"
+                                />
+                            </EditorField>
+                            
+                            <div className="mt-1.5">
+                                  <select 
+                                      value={mediaItem.type || 'image'}
+                                      onChange={e => {
+                                          setDraftData(p => {
+                                              const arr = [...(p.mediaGallery || [])];
+                                              arr[idx] = { ...arr[idx], type: e.target.value };
+                                              return { ...p, mediaGallery: arr };
+                                          });
+                                      }}
+                                      className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-neutral-300 text-[10px] outline-none"
+                                  >
+                                      <option value="image">Imagen</option>
+                                      <option value="video">Video</option>
+                                  </select>
+                            </div>
+                        </div>
+                    ))}
+                  </div>
+                  <button 
+                      onClick={() => {
+                          setDraftData(p => ({
+                              ...p,
+                              mediaGallery: [...(p.mediaGallery || []), { url: '', type: 'image' }]
+                          }));
+                      }}
+                      className="w-full py-2 bg-[#CC0000]/10 hover:bg-[#CC0000]/20 text-[#CC0000] border border-[#CC0000]/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  >
+                      <span className="material-symbols-outlined text-[15px]">add_photo_alternate</span> Añadir elemento al carrusel
+                  </button>
+              </div>
+          )}
+        </div>
+        )}
+
+        {/* ══ TAB COLORES ══ */}
+        {activeTab === 'colores' && (
+        <div className="space-y-2.5">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Colores de la Sección</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <ColorField label="Color Primario" fieldKey="primaryColor" draftData={draftData} onChange={change} />
+            <ColorField label="Color Secundario" fieldKey="secondaryColor" draftData={draftData} onChange={change} />
+            <ColorField label="Color de Fondo" fieldKey="bgColor" draftData={draftData} onChange={change} />
+            <ColorField label="Color de Texto" fieldKey="textColor" draftData={draftData} onChange={change} />
+            <ColorField label="Color de Acento" fieldKey="accentColor" draftData={draftData} onChange={change} />
+          </div>
+        </div>
+        )}
+
+        {/* ══ TAB TIPOGRAFÍA ══ */}
+        {activeTab === 'tipografia' && (
+        <div className="space-y-2.5">
+          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Tipografía & Fuentes</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-0.5">
+              <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Títulos</label>
+              <select 
+                value={draftData.titleFont || 'Inter'}
+                onChange={e => change('titleFont', e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
+              >
+                {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="text-[11px] font-semibold text-gray-300 block">Fuente de Cuerpo</label>
+              <select 
+                value={draftData.bodyFont || 'Roboto'}
+                onChange={e => change('bodyFont', e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-black/50 border border-white/10 rounded-lg text-white text-xs outline-none focus:border-[#CC0000]"
+              >
+                {GOOGLE_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* ══ TAB ELEMENTOS (Features y Precios) ══ */}
+        {activeTab === 'elementos' && (
+        <div className="space-y-3">
+          {hasFeatures && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider">Características ({draftData.planFeaturesExtended?.length || 0})</p>
+                <button 
+                  onClick={() => {
+                      setDraftData(p => ({
+                          ...p,
+                          planFeaturesExtended: [...(p.planFeaturesExtended || []), { title: 'Nueva característica', desc: '', price: '' }]
+                      }));
+                      setSelectedFeatureIndex((draftData.planFeaturesExtended || []).length);
+                  }}
+                  className="px-2 py-1 text-[10px] font-bold text-[#CC0000] border border-[#CC0000]/30 rounded-lg hover:bg-[#CC0000] hover:text-white transition-all flex items-center gap-1"
                 >
-                  ✕ Eliminar
+                  + Añadir
                 </button>
               </div>
-              <input 
-                type="text" 
-                placeholder="Título" 
-                value={f.title || ''} 
-                onChange={e => {
-                  const arr = [...(draftData.planFeaturesExtended || [])];
-                  arr[idx] = { ...arr[idx], title: e.target.value };
-                  setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
-                }}
-                className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-xs text-white outline-none" 
-              />
-              <textarea 
-                rows={2} 
-                placeholder="Descripción..." 
-                value={f.desc || ''} 
-                onChange={e => {
-                  const arr = [...(draftData.planFeaturesExtended || [])];
-                  arr[idx] = { ...arr[idx], desc: e.target.value };
-                  setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
-                }}
-                className="w-full p-2 bg-black/60 border border-white/10 rounded text-xs text-white outline-none resize-none" 
-              />
+
+              <div className="space-y-1.5">
+                {(draftData.planFeaturesExtended || []).map((f, idx) => (
+                  <div key={idx} className="bg-neutral-900/80 border border-white/5 rounded-xl p-2.5 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">#{idx + 1}</span>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('¿Eliminar esta característica?')) {
+                            setDraftData(p => {
+                              const arr = [...(p.planFeaturesExtended || [])];
+                              arr.splice(idx, 1);
+                              return { ...p, planFeaturesExtended: arr };
+                            });
+                          }
+                        }}
+                        className="text-[10px] text-red-400 font-bold hover:text-red-300"
+                      >
+                        ✕ Eliminar
+                      </button>
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Título" 
+                      value={f.title || ''} 
+                      onChange={e => {
+                        const arr = [...(draftData.planFeaturesExtended || [])];
+                        arr[idx] = { ...arr[idx], title: e.target.value };
+                        setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
+                      }}
+                      className="w-full px-2 py-1 bg-black/60 border border-white/10 rounded text-xs text-white outline-none" 
+                    />
+                    <textarea 
+                      rows={2} 
+                      placeholder="Descripción..." 
+                      value={f.desc || ''} 
+                      onChange={e => {
+                        const arr = [...(draftData.planFeaturesExtended || [])];
+                        arr[idx] = { ...arr[idx], desc: e.target.value };
+                        setDraftData(p => ({ ...p, planFeaturesExtended: arr }));
+                      }}
+                      className="w-full p-2 bg-black/60 border border-white/10 rounded text-xs text-white outline-none resize-none" 
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+        </div>
+        )}
+
         </div>
       </div>
-    )}
-  </div>
-  )}
+      )}
 
-  </div>
-  </>
-  ) : (
-  <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center custom-scrollbar">
-    <div className="max-w-md w-full">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#CC0000]/20 to-neutral-900 border border-red-500/30 flex items-center justify-center mx-auto mb-3 text-[#CC0000] shadow-[0_0_20px_rgba(204,0,0,0.2)]">
-        <span className="material-symbols-outlined text-[24px]">dashboard_customize</span>
+      {/* ─ PANEL PREVIEW ─ */}
+      {(!isMobile || showPreview) && (showPreview && activeTab !== 'correos') && (
+      <div className="flex-1 overflow-hidden border-l border-neutral-800 w-full">
+        <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
       </div>
-      <h3 className="text-sm font-black text-white tracking-wide mb-1">Editor Visual de Contenido</h3>
-      <p className="text-[11px] text-neutral-400 mb-4">Selecciona una sección del sitio para editar sus textos, imágenes y colores en tiempo real.</p>
-      
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-left">
-        {PAGE_SECTIONS.slice(0, 9).map(sec => {
-          const node = nodes.find(n => n.id === sec.id) || { id: sec.id };
-          return (
-            <button
-              key={sec.id}
-              onClick={() => handleSelectSection(node)}
-              className="p-2.5 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 border border-white/5 hover:border-[#CC0000]/40 transition-all flex flex-col gap-1.5 group"
-            >
-              <span className="material-symbols-outlined text-[18px] text-neutral-400 group-hover:text-[#CC0000] transition-colors">
-                {getSectionIcon(sec.id)}
-              </span>
-              <span className="text-[11px] font-bold text-white/90 group-hover:text-white truncate">{sec.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      )}
+
     </div>
-  </div>
   )}
-  </div>
-  )}
-
-  {/* ─ PANEL PREVIEW ─ */}
-  {(!isMobile || showPreview) && (showPreview && activeTab !== 'correos') && (
-  <div className="flex-1 overflow-hidden border-l border-neutral-800 w-full">
-    <StudioPreview nodeId={selectedNodeId} draftData={draftData} hoveredField={hoveredField} />
-  </div>
-  )}
-
-  </div>
   </>)}
   </div>
 

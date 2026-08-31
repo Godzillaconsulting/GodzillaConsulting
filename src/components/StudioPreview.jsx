@@ -188,68 +188,41 @@ const COMPONENT_MAP = {
 };
 
 
-// ── ScaledSection ─────────────────────────────────────────────────────────────
-const PREVIEW_ID ='studio-preview-scaled';
+// ── ScaledSection: Renderizado 100% nativo y responsivo sin zoom CSS deformante ──
+const PREVIEW_ID = 'studio-preview-scaled';
 
 function ScaledSection({ nodeId }) {
- const wrapperRef = useRef(null);
- const [scale, setScale] = useState(0.4);
+  const Component = COMPONENT_MAP[nodeId];
 
- useEffect(() => {
- const calc = () => {
- if (wrapperRef.current) setScale(wrapperRef.current.clientWidth / 1440);
- };
- calc();
- const ro = new ResizeObserver(calc);
- if (wrapperRef.current) ro.observe(wrapperRef.current);
- return () => ro.disconnect();
- }, []);
+  const inner = Component ? (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64 gap-3 text-neutral-500">
+        <div className="w-5 h-5 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-bold text-neutral-400">Cargando vista previa...</span>
+      </div>
+    }>
+      <Component />
+    </Suspense>
+  ) : (
+    <div className="flex flex-col items-center justify-center h-48 gap-3 text-neutral-600 bg-[#0a0a0a]">
+      <span className="material-symbols-outlined text-4xl text-neutral-700">lock</span>
+      <p className="text-sm font-medium text-neutral-400">Sin preview disponible</p>
+      <p className="text-xs text-neutral-600">Esta sección tiene contenido estático</p>
+    </div>
+  );
 
- const Component = COMPONENT_MAP[nodeId];
-
- const inner = Component
- ? (
- <Suspense fallback={
- <div className="flex items-center justify-center h-64 gap-3 text-neutral-500">
- <div className="w-4 h-4 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
- Cargando...
- </div>
- }>
- <Component />
- </Suspense>
- )
- : (
- <div className="flex flex-col items-center justify-center h-48 gap-3 text-neutral-600 bg-[#0a0a0a]">
- <span className="text-4xl">🔒</span>
- <p className="text-sm font-medium">Sin preview disponible</p>
- <p className="text-xs">Esta sección tiene contenido estático</p>
- </div>
- );
-
- return (
- <div ref={wrapperRef} className="w-full h-full overflow-y-auto relative" style={{ scrollbarGutter: 'stable' }}>
- {/* Overlay interacción bloqueada */}
- <div className="absolute inset-0 z-10 pointer-events-none" title="Vista previa — solo lectura" />
- <div
- id={PREVIEW_ID}
- style={{
- transform: `scale(${scale})`,
- transformOrigin:'top left',
- width: `${100 / scale}%`,
- minHeight: `${100 / scale}%`,
- pointerEvents:'none',
- userSelect:'none',
- }}
- >
- <div style={{
- background:'linear-gradient(135deg, #0a0a0a 0%, #110000 40%, #0a0a0a 100%)',
- minHeight:'100vh',
- }}>
-   {inner}
- </div>
- </div>
- </div>
- );
+  return (
+    <div className="w-full h-full overflow-y-auto relative custom-scrollbar select-none" style={{ scrollbarGutter: 'stable' }}>
+      {/* Overlay interacción bloqueada en preview */}
+      <div className="absolute inset-0 z-20 pointer-events-none" title="Vista previa — solo lectura" />
+      <div
+        id={PREVIEW_ID}
+        className="w-full min-h-full bg-gradient-to-br from-[#0a0a0a] via-[#110000] to-[#0a0a0a] pointer-events-none"
+      >
+        {inner}
+      </div>
+    </div>
+  );
 }
 
 // ── Exportación principal ─────────────────────────────────────────────────────

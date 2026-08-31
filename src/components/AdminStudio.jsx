@@ -1550,33 +1550,58 @@ export default function AdminStudio() {
           </>
         )}
 
-        {/* Campos agrupados (service1Title, service2Desc...) */}
+        {/* Campos agrupados (service1Title, service2Desc, caso1LogoUrl, caso1Nombre...) */}
         {hasGrouped && Object.entries(groupedFields).map(([prefix, nums]) => (
-          <div key={prefix} className="space-y-2 pt-2 border-t border-neutral-800">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold text-yellow-400 tracking-wider uppercase flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[15px]">dataset</span> {toLabel(prefix)} ({Object.keys(nums).length} elementos)
+          <div key={prefix} className="space-y-3 pt-3 border-t border-neutral-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+              <p className="text-xs font-bold text-yellow-400 tracking-wider uppercase flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">dataset</span> {toLabel(prefix)} ({Object.keys(nums).length} elementos)
               </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {};
+                    Object.keys(nums).forEach(num => { next[`${prefix}_${num}`] = true; });
+                    setOpenAccordion(prev => ({ ...prev, ...next }));
+                  }}
+                  className="px-2 py-1 bg-white/5 hover:bg-white/10 text-[10px] font-bold text-neutral-300 rounded transition-colors"
+                >
+                  Expandir todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {};
+                    Object.keys(nums).forEach(num => { next[`${prefix}_${num}`] = false; });
+                    setOpenAccordion(prev => ({ ...prev, ...next }));
+                  }}
+                  className="px-2 py-1 bg-white/5 hover:bg-white/10 text-[10px] font-bold text-neutral-300 rounded transition-colors"
+                >
+                  Colapsar todos
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               {Object.entries(nums).sort(([a],[b]) => +a - +b).map(([num, fields]) => {
                 const accKey = `${prefix}_${num}`;
-                const isOpen = openAccordion[accKey] ?? (num === '1');
+                const isOpen = openAccordion[accKey] !== false;
                 const titleField = Object.entries(fields).find(([k]) => k.toLowerCase().includes('title') || k.toLowerCase().includes('nombre'))?.[1] || `#${num}`;
 
                 return (
-                  <div key={num} className="bg-neutral-900/80 rounded-xl border border-white/5 overflow-hidden">
+                  <div key={num} className="bg-neutral-900/90 rounded-xl border border-white/10 overflow-hidden shadow-sm">
                     <div 
                       onClick={() => toggleAccordion(accKey)} 
-                      className="px-3 py-2 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-neutral-800/60 transition-colors"
+                      className="px-3.5 py-2.5 bg-black/60 flex items-center justify-between cursor-pointer hover:bg-neutral-800/80 transition-colors select-none"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-mono font-bold text-[#CC0000] bg-[#CC0000]/10 px-1.5 py-0.5 rounded shrink-0">#{num}</span>
-                        <span className="text-xs font-bold text-white/90 truncate">{String(titleField)}</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-[10px] font-mono font-bold text-white bg-[#CC0000] px-2 py-0.5 rounded-md shadow-sm shrink-0">#{num}</span>
+                        <span className="text-xs font-bold text-white truncate">{String(titleField || `Elemento #${num}`)}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button
+                          type="button"
                           title="Eliminar este elemento"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1591,38 +1616,38 @@ export default function AdminStudio() {
                               });
                             }
                           }}
-                          className="px-2 py-0.5 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                          className="px-2 py-0.5 text-[10px] font-bold text-red-400 hover:text-white hover:bg-red-600 rounded transition-colors"
                         >
-                          Eliminar
+                          ✕ Eliminar
                         </button>
-                        <span className="material-symbols-outlined text-[16px] text-neutral-400 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                        <span className="material-symbols-outlined text-[18px] text-neutral-400 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
                           expand_more
                         </span>
                       </div>
                     </div>
 
                     {isOpen && (
-                      <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
+                      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 border-t border-white/5 bg-black/30">
                         {Object.entries(fields).filter(([k]) => k !== '_keys').map(([field, val]) => {
                           const originalKey = fields._keys[field];
                           const isLong = typeof val === 'string' && (val.length > 60 || field.toLowerCase().includes('desc'));
                           return (
                             <EditorField key={originalKey} fieldKey={originalKey} onHover={setHoveredField}>
-                              <div className={`space-y-0.5 ${isLong ? 'col-span-full' : ''}`}>
-                                <label className="text-[10px] font-semibold text-gray-400 block">{toLabel(field)}</label>
+                              <div className={`space-y-1 ${isLong ? 'col-span-full' : ''}`}>
+                                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider block">{toLabel(field)}</label>
                                 {isLong ? (
                                   <textarea 
                                     rows={2} 
                                     value={val || ''} 
                                     onChange={e => change(originalKey, e.target.value)} 
-                                    className="w-full p-2 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none resize-none" 
+                                    className="w-full p-2 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none resize-none transition-colors" 
                                   />
                                 ) : (
                                   <input 
                                     type="text" 
                                     value={val || ''} 
                                     onChange={e => change(originalKey, e.target.value)} 
-                                    className="w-full px-2.5 py-1.5 bg-black/50 border border-[#CC0000]/20 rounded-lg text-white text-xs focus:border-[#CC0000] outline-none" 
+                                    className="w-full px-2.5 py-1.5 bg-black/60 border border-white/10 focus:border-[#CC0000] rounded-lg text-white font-medium text-xs outline-none transition-colors" 
                                   />
                                 )}
                               </div>

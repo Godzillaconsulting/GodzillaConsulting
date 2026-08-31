@@ -276,7 +276,7 @@ const CasosExito = () => {
                                                 draggable="false"
                                             />
                                         </div>
-                                        <div className="text-sm text-gray-400 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-4">
+                                        <div className="text-xs sm:text-sm text-gray-300 text-center font-medium mt-auto border-t border-[#CC0000]/30 w-full pt-3 px-2 truncate">
                                             {isSpanish
                                                 ? item.category
                                                 : (item.category ? t(`portfolio.categories.${item.category}`, item.category) : item.category)

@@ -181,6 +181,18 @@ router.post('/upload-video', requireAdmin, (req, res, next) => {
     });
 });
 
+// ─── Servir Archivo Directo de Disco por Nombre (ej: newsletter_cover_*.jpg) ───
+router.get('/:filename', (req, res, next) => {
+    const { filename } = req.params;
+    if (filename === 'upload' || filename === 'assets' || filename === 'file') return next();
+    const filePath = path.join(ARCHIVOS_PESADOS_DIR, filename);
+    if (fs.existsSync(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return res.sendFile(filePath);
+    }
+    next();
+});
+
 router.get('/file/:id', async (req, res) => {
     try {
         const { id } = req.params;

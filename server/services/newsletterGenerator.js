@@ -6,7 +6,7 @@ import path from 'path';
 import { ARCHIVOS_PESADOS_DIR } from '../routes/media.js';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,11 +27,11 @@ const cleanJsonStr = (text) => {
     return t;
 };
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
 import { executeAiWaterfall } from '../utils/aiWaterfall.js';
 
-const callWithTimeout = (promise, ms = 15000) => {
+const callWithTimeout = (promise, ms = 25000) => {
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error(`Timeout de ${ms}ms excedido en Gemini`)), ms);
@@ -39,32 +39,42 @@ const callWithTimeout = (promise, ms = 15000) => {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 };
 
-const generateWithRetry = async (modelName, options, maxRetries = 1) => {
-    // Capa 1: gemini-3.6-flash (activo y rápido)
-    // Capa 2: gemini-3.7-flash y gemini-3.5-flash como fallback
-    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash'];
+const generateWithRetry = async (modelName, options, maxRetries = 2) => {
+    // Modelos oficiales de Google Generative AI
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     
-    for (const currentModel of modelsToTry) {
-        let attempt = 0;
-        while (attempt < maxRetries) {
-            try {
-                await sleep(500 + Math.random() * 500); // Base jitter corto
-                const res = await callWithTimeout(ai.models.generateContent({
-                    model: currentModel,
-                    ...options
-                }), 15000);
-                if (res && res.text) return res;
-            } catch (e) {
-                attempt++;
-                console.error(`⚠️ Error Gemini (${currentModel}) Intento ${attempt}:`, e.message?.substring(0, 120));
-                console.log(`⚠️ Gemini (${currentModel}) no disponible (${e.message?.substring(0, 60)}). Probando siguiente capa...`);
-                break; // Saltar inmediatamente a la siguiente capa
+    if (genAI) {
+        for (const currentModel of modelsToTry) {
+            let attempt = 0;
+            while (attempt < maxRetries) {
+                try {
+                    await sleep(300 + Math.random() * 300);
+                    const modelConfig = {
+                        model: currentModel,
+                    };
+                    if (options.config?.systemInstruction) {
+                        modelConfig.systemInstruction = options.config.systemInstruction;
+                    }
+                    if (options.config?.responseMimeType === "application/json") {
+                        modelConfig.generationConfig = { responseMimeType: "application/json" };
+                    }
+                    const model = genAI.getGenerativeModel(modelConfig);
+                    const prompt = typeof options.contents === 'string' ? options.contents : JSON.stringify(options.contents);
+
+                    const res = await callWithTimeout(model.generateContent(prompt), 25000);
+                    const text = res?.response?.text();
+                    if (text && text.trim().length > 0) return { text };
+                } catch (e) {
+                    attempt++;
+                    console.error(`⚠️ Error Gemini (${currentModel}) Intento ${attempt}:`, e.message?.substring(0, 120));
+                    break;
+                }
             }
         }
     }
     
-    // Capa 3: Emergencia total fuera de Google — Groq/SambaNova/Cerebras con tokens extendidos
-    console.log(`🚨 Toda la red de Google falló. Activando FALLBACK Open Source con tokens extendidos...`);
+    // Capa Fallback: Emergencia total fuera de Google — Groq/SambaNova/Cerebras
+    console.log(`🚨 Red de Google no disponible. Activando FALLBACK Open Source con tokens extendidos...`);
     const systemPrompt = options.config?.systemInstruction || "Eres un analista experto.";
     const userPrompt = typeof options.contents === 'string' ? options.contents : JSON.stringify(options.contents);
     const isJson = options.config?.responseMimeType === "application/json";
@@ -77,7 +87,7 @@ const generateWithRetry = async (modelName, options, maxRetries = 1) => {
             mode: 'noTools',
             jsonMode: isJson,
             temperature: 0.3,
-            maxTokens: 6000  // Suficiente para JSON con 4 secciones densas
+            maxTokens: 6000
         });
         
         return { text: fallbackRes.content };
@@ -89,7 +99,7 @@ const generateWithRetry = async (modelName, options, maxRetries = 1) => {
 // ==========================================
 // GENERADOR PRINCIPAL
 // ==========================================
-export async function generateAndSendAutoNewsletter(feedback = null) {
+export async function generateAndSendAutoNewsletter(feedback = null, force = false) {
     console.log("🤖 Iniciando Generador Godzilla (WATERFALL METHOD & MEGA-DICTIONARY)...");
     
     // ==========================================
@@ -104,13 +114,15 @@ export async function generateAndSendAutoNewsletter(feedback = null) {
             return { skipped: true, reason: 'concurrent_generation_locked' };
         }
 
-        // 2. Verificar si ya se envió un newsletter hoy (usando sent_at)
-        const checkRes = await client.query(
-            `SELECT id FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
-        );
-        if (checkRes.rows.length > 0) {
-            console.log("⏭️ [Generador] El newsletter de hoy ya existe en la base de datos. Evitando envío doble.");
-            return { skipped: true, reason: 'already_generated_today' };
+        // 2. Verificar si ya se envió un newsletter hoy (usando sent_at), a menos que sea forzado o con feedback
+        if (!force && !feedback) {
+            const checkRes = await client.query(
+                `SELECT id FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
+            );
+            if (checkRes.rows.length > 0) {
+                console.log("⏭️ [Generador] El newsletter de hoy ya existe en la base de datos. Evitando envío doble.");
+                return { skipped: true, reason: 'already_generated_today' };
+            }
         }
     } catch (dbErr) {
         console.error("❌ Error verificando duplicados:", dbErr.message);
@@ -298,12 +310,16 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
             throw new Error(`Se generaron sólo ${sectionCount} secciones. Se requieren EXACTAMENTE 4 noticias distintas.`);
         }
 
-        // Rechazar titulares genéricos o repetidos del historial
-        const genericKeywords = ["avances en modelos", "avances en hardware", "ciberseguridad y hackeos", "medicina y salud", "geopolítica", "uso de la ia", "inteligencia artificial"];
+        // Rechazar titulares genéricos o repetidos del historial o ausencia de noticias
+        const genericKeywords = [
+            "no hay noticias", "no se registraron", "no hay incidentes", "no hay avances",
+            "no hay novedades", "sin novedades", "avances en modelos", "avances en hardware",
+            "ciberseguridad y hackeos", "medicina y salud", "geopolítica", "uso de la ia", "inteligencia artificial"
+        ];
         for (const s of parsed.pdfSections) {
             const hLower = (s.heading || '').toLowerCase().trim();
-            if (genericKeywords.some(g => hLower === g)) {
-                throw new Error(`El titular "${s.heading}" es una etiqueta genérica. Exigiendo titulares con empresas y hechos concretos.`);
+            if (genericKeywords.some(g => hLower.includes(g))) {
+                throw new Error(`El titular "${s.heading}" indica ausencia o generalidad de noticias. Exigiendo titulares con empresas y hechos concretos de hoy.`);
             }
             const isDupe = Array.from(usedHeadingsSet).some(past => past.length > 15 && (past.includes(hLower) || hLower.includes(past)));
             if (isDupe) {
@@ -316,7 +332,7 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
 
     // Intento 1: Gemini (puede estar limitado)
     try {
-        const baseResponse = await generateWithRetry('gemini-3.6-flash', {
+        const baseResponse = await generateWithRetry('gemini-2.5-flash', {
             contents: finalPrompt,
             config: { systemInstruction: systemInstruction, responseMimeType: "application/json" }
         });
@@ -328,11 +344,10 @@ DEVUELVE ÚNICAMENTE UN STRING JSON VÁLIDO PURAMENTE (sin markdown \`\`\`json) 
         console.error(`⚠️ [Fase 2] Gemini falló: ${geminiErr.message}. Activando Waterfall con tokens extendidos...`);
         
         // Intento 2: Waterfall Open Source con maxTokens alto (Groq soporta hasta 8192)
-        // El prompt se simplifica para que Groq pueda generar el JSON completo sin truncarse.
         const groqFallbackPrompt = `${finalPrompt}
 
 INSTRUCCIÓN CRÍTICA PARA GROQ/LLAMA: Debes generar un JSON COMPLETO con EXACTAMENTE 4 objetos en pdfSections. 
-El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provisto para rellenar las 4 secciones.`;
+El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provisto para rellenar las 4 secciones con empresas y hechos concretos reales.`;
 
         try {
             const { executeAiWaterfall } = await import('../utils/aiWaterfall.js');
@@ -365,7 +380,7 @@ El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provist
         console.log(`   Traduciendo a [${lang}]...`);
         const transPrompt = `Translate the following JSON precisely into ISO language code [${lang}]. Keep EXACT JSON keys and schema. Do not change structure. Return ONLY pure valid JSON:\n\n${JSON.stringify(data)}`;
         try {
-            const transRes = await generateWithRetry('gemini-3.6-flash', {
+            const transRes = await generateWithRetry('gemini-2.5-flash', {
                 contents: transPrompt,
                 config: {
                     systemInstruction: "You are a perfect JSON translator. Reply only with valid JSON.",
@@ -455,8 +470,8 @@ El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provist
                 const fileName = `newsletter_cover_${Date.now()}.jpg`;
                 const savePath = path.join(ASSETS_DIR, fileName);
                 fs.writeFileSync(savePath, buffer);
-                const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || 'https://godzillaconsulting.ai';
-                visualCoverUrl = `${botBase}/api/media/${fileName}`;
+                const botBase = process.env.PUBLIC_MEDIA_URL || process.env.BOT_MEDIA_URL || 'https://godzillaconsulting.ai';
+                visualCoverUrl = `${botBase}/api/media/assets/${fileName}`;
                 console.log(`✅ [Portada HD] Portada temática [${photoTag}] guardada localmente (${(buffer.length/1024).toFixed(0)} KB): ${visualCoverUrl}`);
             }
         }
@@ -490,7 +505,7 @@ El JSON debe terminar con }. No lo truncues. Usa el contexto de noticias provist
         [stringifiedSubject, stringifiedHtml, JSON.stringify(data), visualCoverUrl, JSON.stringify(translationsJson)]
     );
 
-    const botBase = process.env.BOT_MEDIA_URL || process.env.PUBLIC_MEDIA_URL || '';
+    const botBase = process.env.PUBLIC_MEDIA_URL || process.env.BOT_MEDIA_URL || 'https://godzillaconsulting.ai';
     const attachmentUrl = `${botBase}/api/premium/download/${nlRes.rows[0].id}`;
     const newsletterId = nlRes.rows[0].id;
 

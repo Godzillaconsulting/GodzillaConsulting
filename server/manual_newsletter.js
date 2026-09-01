@@ -3,7 +3,7 @@ import { generateAndSendAutoNewsletter } from './services/newsletterGenerator.js
 async function run() {
     console.log('Generando newsletter manualmente para compensar el que no se corrió hoy...');
     try {
-        const result = await generateAndSendAutoNewsletter();
+        const result = await generateAndSendAutoNewsletter(null, true);
         console.log('✅ Éxito:', result);
     } catch (e) {
         console.error('❌ Error:', e);

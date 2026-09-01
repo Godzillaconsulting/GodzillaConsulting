@@ -230,8 +230,12 @@ export async function enqueueNewsletter(newsletterId) {
 
             // 1. COVER
             let coverHtml = '';
-            if (nl.cover_url) {
-                coverHtml = `<div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:2px solid #CC0000;background:#000;"><img src="${nl.cover_url}" alt="Godzilla AI Cover" style="width:100%;height:auto;display:block;max-height:450px;object-fit:cover;min-height:200px;" /></div>`;
+            let coverSrc = nl.cover_url;
+            if (coverSrc) {
+                if (coverSrc.startsWith('/')) {
+                    coverSrc = `https://godzillaconsulting.ai${coverSrc}`;
+                }
+                coverHtml = `<div style="margin-bottom:0px;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:2px solid #CC0000;background:#000;"><img src="${coverSrc}" alt="Godzilla AI Cover" style="width:100%;height:auto;display:block;max-height:450px;object-fit:cover;min-height:200px;" /></div>`;
             }
 
             // 2. TEASER (Hook)

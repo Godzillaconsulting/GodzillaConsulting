@@ -117,7 +117,7 @@ export async function generateAndSendAutoNewsletter(feedback = null, force = fal
         // 2. Verificar si ya se envió un newsletter hoy (usando sent_at), a menos que sea forzado o con feedback
         if (!force && !feedback) {
             const checkRes = await client.query(
-                `SELECT id FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
+                `SELECT id FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') = DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Mexico_City') LIMIT 1`
             );
             if (checkRes.rows.length > 0) {
                 console.log("⏭️ [Generador] El newsletter de hoy ya existe en la base de datos. Evitando envío doble.");

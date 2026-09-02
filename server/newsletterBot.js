@@ -24,7 +24,7 @@ async function checkAndRunNewsletter(triggerReason = 'Programación Automática'
 
         // Revisar si ya se envió hoy en la base de datos (según zona horaria de México)
         const res = await client.query(
-            `SELECT id, subject FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'America/Mexico_City') = DATE(NOW() AT TIME ZONE 'America/Mexico_City') LIMIT 1`
+            `SELECT id, subject FROM newsletters WHERE DATE(sent_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') = DATE(NOW() AT TIME ZONE 'America/Mexico_City') LIMIT 1`
         );
         
         if (res.rows.length > 0) {
